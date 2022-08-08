@@ -122,6 +122,7 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("release", JsRelease),
 #ifdef IMAGE_DEBUG_FLAG
         DECLARE_NAPI_GETTER("test", JsTest),
+        DECLARE_NAPI_GETTER("testYUV", JsTestYUV),
 #endif
         DECLARE_NAPI_GETTER("size", JsGetSize),
         DECLARE_NAPI_GETTER("capacity", JsGetCapacity),
@@ -471,9 +472,10 @@ static void TestRequestBuffer(OHOS::sptr<OHOS::Surface> &receiverSurface,
     }
     IMAGE_ERR("RequestBuffer");
     int32_t *p = reinterpret_cast<int32_t *>(buffer->GetVirAddr());
+    uint32_t size = buffer->GetSize() / 4;
     IMAGE_ERR("RequestBuffer %{public}p", p);
     if (p != nullptr) {
-        for (int32_t i = 0; i < requestConfig.width * requestConfig.height; i++) {
+        for (int32_t i = 0; i < size; i++) {
             p[i] = i;
         }
     }
@@ -481,14 +483,14 @@ static void TestRequestBuffer(OHOS::sptr<OHOS::Surface> &receiverSurface,
     IMAGE_ERR("FlushBuffer");
 }
 
-static void DoTest(std::shared_ptr<ImageReceiver> imageReceiver)
+static void DoTest(std::shared_ptr<ImageReceiver> imageReceiver, int pixelFormat)
 {
     OHOS::BufferRequestConfig requestConfig = {
         .width = 0x100,
         .height = 0x100,
         .strideAlignment = 0x8,
-        .format = PIXEL_FMT_RGBA_8888,
-        .usage = BUFFER_USAGE_CPU_READ| BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
+        .format = pixelFormat,
+        .usage = HBM_USE_CPU_READ | HBM_USE_CPU_WRITE | HBM_USE_MEM_DMA,
         .timeout = 0,
     };
 
@@ -531,7 +533,25 @@ napi_value ImageReceiverNapi::JsTest(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->receiver_);
+        DoTest(ic.context->receiver_, PIXEL_FMT_RGBA_8888);
+        return true;
+    };
+
+    return JSCommonProcess(args);
+}
+
+napi_value ImageReceiverNapi::JsTestYUV(napi_env env, napi_callback_info info)
+{
+    IMAGE_FUNCTION_IN();
+    ImageReceiverCommonArgs args = {
+        .env = env, .info = info,
+        .async = CallType::GETTER,
+    };
+    args.argc = ARGS0;
+
+    args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
+        ic.context->constructor_->isCallBackTest = true;
+        DoTest(ic.context->receiver_, PIXEL_FMT_YCBCR_422_SP);
         return true;
     };
 

@@ -124,7 +124,7 @@ static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surfac
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    Component* y = imageNapi->CreateComponentData(ComponentType::YUV_Y, ySize, ySize, NUM1);
+    Component* y = imageNapi->CreateComponentData(ComponentType::YUV_Y, ySize, surface->GetWidth(), NUM1);
     Component* u = imageNapi->CreateComponentData(ComponentType::YUV_U, uvSize, uvStride, NUM2);
     Component* v = imageNapi->CreateComponentData(ComponentType::YUV_V, uvSize, uvStride, NUM2);
     if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
