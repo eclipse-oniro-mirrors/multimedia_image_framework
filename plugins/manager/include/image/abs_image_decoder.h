@@ -178,13 +178,13 @@ public:
 
 #ifdef IMAGE_COLORSPACE_FLAG
     // get current source is support icc profile or not.
-    bool IsSupportICCProfile()
+    virtual bool IsSupportICCProfile()
     {
         return false;
     }
 
     // if current source support icc. get relevant color gamut information by this method.
-    OHOS::ColorManager::ColorSpace getGrColorSpace()
+    virtual OHOS::ColorManager::ColorSpace getGrColorSpace()
     {
         return OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::NONE);
     }

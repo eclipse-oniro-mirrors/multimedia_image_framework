@@ -39,6 +39,7 @@ ohos_shared_library("rawplugin") {
     "//third_party/libexif",
     "//third_party/skia",
     "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
   ]
 
   if (use_mingw_win) {
@@ -59,6 +60,7 @@ ohos_shared_library("rawplugin") {
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/skia/third_party/piex",
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     ]
 
     if (DUAL_ADAPTER) {

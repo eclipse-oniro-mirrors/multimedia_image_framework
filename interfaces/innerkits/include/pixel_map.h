@@ -134,6 +134,10 @@ public:
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----begin----
     NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     NATIVEEXPORT OHOS::ColorManager::ColorSpace InnerGetGrColorSpace();
+    NATIVEEXPORT std::shared_ptr<OHOS::ColorManager::ColorSpace> InnerGetGrColorSpacePtr()
+    {
+        return grColorSpace_;
+    }
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 

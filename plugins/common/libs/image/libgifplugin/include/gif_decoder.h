@@ -48,6 +48,12 @@ public:
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
     uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value) override;
+#ifdef IMAGE_COLORSPACE_FLAG
+    bool IsSupportICCProfile() override
+    {
+        return false;
+    }
+#endif
 
 private:
     static int32_t InputStreamReader(GifFileType *gif, GifByteType *bytes, int32_t size);

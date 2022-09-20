@@ -33,6 +33,12 @@ public:
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &progContext) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+#ifdef IMAGE_COLORSPACE_FLAG
+    bool IsSupportICCProfile() override
+    {
+        return false;
+    }
+#endif
 
 private:
     uint32_t DoDecodeHeader();
