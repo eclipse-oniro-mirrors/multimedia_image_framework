@@ -517,7 +517,6 @@ createImageSource(uri: string): ImageSource;
 createImageSource(uri: string, options: SourceOptions): ImageSource;
 ```
 
-<<<<<<< HEAD
 示例：
 ```
 const imageSourceApi = image.createImageSource('/sdcard/test.jpg');
@@ -529,9 +528,6 @@ const imageSourceApi = image.createImageSource('/sdcard/test.jpg');
 createImageSource(fd: number): ImageSource;
 createImageSource(fd: number, options: SourceOptions): ImageSource;
 ```
-=======
-2.通过fd创建imagesource。
->>>>>>> 58afc35050a5e49bc6449138d15f9d4b09644c7e
 
 示例：
 ```
