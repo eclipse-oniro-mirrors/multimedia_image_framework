@@ -485,7 +485,106 @@ const imagePackerApi = image.createImagePacker()
 imagePackerApi.release()
 ```
 
-### 25.createIncrementalSource<a name="createIncrementalSource"></a>
+### 25.getReceivingSurfaceId<a name="getReceivingSurfaceId"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何获取surface id供Camera或其他组件使用。
+
+```
+getReceivingSurfaceId(): Promise<string>;
+getReceivingSurfaceId(callback: AsyncCallback<string>): void;
+```
+
+示例：
+```
+receiver.getReceivingSurfaceId().then( id => { } )
+```
+
+### 26.readLatestImage<a name="readLatestImage"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何读取最新的图片。
+
+```
+readLatestImage(callback: AsyncCallback<Image>): void;
+readLatestImage(): Promise<Image>;
+```
+
+示例：
+```
+receiver.readLatestImage().then(img => { })
+```
+
+### 27.readNextImage<a name="readNextImage"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何读取下一张图片。
+
+```
+readNextImage(callback: AsyncCallback<Image>): void;
+readNextImage(): Promise<Image>;
+```
+
+示例：
+```
+receiver.readNextImage().then(img => {})
+```
+
+### 28.on<a name="on"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何接收图片时注册回调。
+
+```
+on(type: 'imageArrival', callback: AsyncCallback<void>): void;
+```
+
+示例：
+```
+receiver.on('imageArrival', () => {})
+```
+
+### 29.release<a name="release4"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放receiver实例。
+
+```
+release(callback: AsyncCallback<void>): void;
+release(): Promise<void>;
+```
+
+1.使用createImageReceiver创建receiver实例。
+
+```
+const imageReceiverApi = image.createImageReceiver()
+```
+
+2.使用release释放packer实例。
+
+```
+imageReceiverApi.release()
+```
+
+### 30.getComponent<a name="getComponent"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据图像的组件类型从图像中获取组件缓存。
+
+```
+getComponent(componentType: ComponentType, callback: AsyncCallback<Component>): void;
+getComponent(componentType: ComponentType): Promise<Component>;
+```
+
+示例：
+```
+img.getComponent(4).then(component => { })
+```
+
+### 31.release<a name="release5"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放image实例。
+
+```
+release(callback: AsyncCallback<void>): void;
+release(): Promise<void>;
+```
+
+### 32.createIncrementalSource<a name="createIncrementalSource"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何创建增量imagesource。
 
@@ -506,7 +605,7 @@ const data = new ArrayBuffer(96)
 const imageSourceApi = image.createIncrementalSource(data)
 ```
 
-### 26.创建ImageSource实例<a name="createImageSource2"></a>
+### 33.创建ImageSource实例<a name="createImageSource2"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何通过不同方式创建imagesource。
 
@@ -517,7 +616,6 @@ createImageSource(uri: string): ImageSource;
 createImageSource(uri: string, options: SourceOptions): ImageSource;
 ```
 
-<<<<<<< HEAD
 示例：
 ```
 const imageSourceApi = image.createImageSource('/sdcard/test.jpg');
@@ -529,9 +627,6 @@ const imageSourceApi = image.createImageSource('/sdcard/test.jpg');
 createImageSource(fd: number): ImageSource;
 createImageSource(fd: number, options: SourceOptions): ImageSource;
 ```
-=======
-2.通过fd创建imagesource。
->>>>>>> 58afc35050a5e49bc6449138d15f9d4b09644c7e
 
 示例：
 ```
@@ -551,9 +646,14 @@ const data = new ArrayBuffer(112);
 const imageSourceApi = image.createImageSource(data);
 ```
 
-### 19.创建PixelMap实例<a name="createPixelMap2"></a>
+### 34.创建PixelMap实例<a name="createPixelMap2"></a>
 
 image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何通过属性创建pixelmap。
+
+```
+createPixelMap(colors: ArrayBuffer, options: InitializationOptions): Promise<PixelMap>;
+createPixelMap(colors: ArrayBuffer, options: InitializationOptions, callback: AsyncCallback<PixelMap>): void;
+```
 
 1.设置属性。
 
@@ -574,14 +674,18 @@ let opts = {
 image.createPixelMap(Color, opts)
       .then((pixelmap) => {
         expect(pixelmap !== null).assertTrue()
-        console.info('TC_001 success')
+        console.info('Succeeded in creating pixelmap.')
         done()
       })
 ```
 
-### 20.创建imagepacker实例<a name="createImagePacker2"></a>
+### 35.创建imagepacker实例<a name="createImagePacker2"></a>
 
 image提供了操作imagepacker的接口，以下展示了如何通过属性创建imagepacker。
+
+```
+createImagePacker(): ImagePacker;
+```
 
 1.创建imagesource。
 
@@ -595,3 +699,10 @@ const imageSourceApi = image.createImageSource('/sdcard/test.png')
 const imagePackerApi = image.createImagePacker()
 ```
 
+### 36.创建imagereceiver实例<a name="createImageReceiver2"></a>
+
+image提供了操作imagereceiver的接口，以下展示了如何通过属性创建imagereceiver。
+
+```
+createImageReceiver(width: number, height: number, format: number, capacity: number): ImageReceiver;
+```
