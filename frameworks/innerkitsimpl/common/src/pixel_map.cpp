@@ -1648,7 +1648,8 @@ uint32_t PixelMap::crop(const Rect &rect)
 #ifdef IMAGE_COLORSPACE_FLAG
     void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
     {
-        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace());
+        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
+            grColorSpace.GetColorSpaceName());
     }
 
     OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()
