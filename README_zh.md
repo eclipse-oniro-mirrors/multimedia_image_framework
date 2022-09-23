@@ -722,3 +722,7 @@ image提供了操作imagereceiver的接口，以下展示了如何通过属性�
 ```
 createImageReceiver(width: number, height: number, format: number, capacity: number): ImageReceiver;
 ```
+
+## 相关仓<a name="relevant"></a>
+
+[multimedia\_image\_framework](https://gitee.com/openharmony/multimedia_image_framework/blob/master/README_zh.md)
