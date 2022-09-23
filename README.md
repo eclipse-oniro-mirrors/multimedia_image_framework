@@ -32,5 +32,5 @@ The structure of the repository directory is as follows:
 
 ## Repositories Involved<a name="section1533973044317"></a>
 
-hmf/multimedia/image
+[multimedia\_image\_framework](https://gitee.com/openharmony/multimedia_image_framework/blob/master/README_zh.md)
 
