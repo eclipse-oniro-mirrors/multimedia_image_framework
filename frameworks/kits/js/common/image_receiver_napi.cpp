@@ -254,7 +254,7 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
     return result;
 }
 
-static bool CheckArgs(ImageReceiverCommonArgs &args)
+static bool CheckArgs(const ImageReceiverCommonArgs &args)
 {
     if (args.async != CallType::GETTER) {
         if (args.queryArgs == nullptr) {
@@ -703,7 +703,7 @@ static bool CheckOnParam0(napi_env env, napi_value value, const std::string& ref
     bool ret = true;
     size_t bufLength = 0;
     napi_status status = napi_get_value_string_utf8(env, value, nullptr, 0, &bufLength);
-    if (status != napi_ok || bufLength > PATH_MAX || bufLength < 0) {
+    if (status != napi_ok || bufLength > PATH_MAX) {
         return false;
     }
 
