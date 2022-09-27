@@ -1810,6 +1810,28 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
     }
     return nVal.result;
 }
+static void ParseColorSpaceObject(NapiValues &nVal)
+{
+    auto csNativeValue = reinterpret_cast<NativeValue*>(nVal.argv[NUM_0]);
+    auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<NativeObject>(csNativeValue);
+    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
+    if (nVal.context->colorSpace == nullptr) {
+        HiLog::Error(LABEL, "ColorSpace mismatch");
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+}
+static void SetColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
+{
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (context->colorSpace != nullptr) {
+        context->rPixelMap->InnerSetColorSpace(*(context->colorSpace));
+        context->status = SUCCESS;
+    }
+#else
+    context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
 napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
@@ -1826,13 +1848,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
         HiLog::Error(LABEL, "Invalid args count");
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     } else {
-        auto csNativeValue = reinterpret_cast<NativeValue*>(nVal.argv[NUM_0]);
-        auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<NativeObject>(csNativeValue);
-        nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
-        if (nVal.context->colorSpace == nullptr) {
-            HiLog::Error(LABEL, "ColorSpace mismatch");
-            nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
-        }
+        ParseColorSpaceObject(nVal);
     }
     if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
         napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
@@ -1847,14 +1863,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
         [](napi_env env, void *data)
         {
             auto context = static_cast<PixelMapAsyncContext*>(data);
-#ifdef IMAGE_COLORSPACE_FLAG
-            if (context->colorSpace != nullptr) {
-                context->rPixelMap->InnerSetColorSpace(*(context->colorSpace));
-                context->status = SUCCESS;
-            }
-#else
-            context->status = ERR_IMAGE_DATA_UNSUPPORT;
-#endif
+            SetColorSpaceExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
 
     if (nVal.status == napi_ok) {
