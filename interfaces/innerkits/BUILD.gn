@@ -65,7 +65,7 @@ config("image_external_config") {
 }
 
 js_declaration("image_js") {
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   sources = [ "//foundation/multimedia/image_framework/interfaces/kits/js/@ohos.multimedia.image.d.ts" ]
 }
 
@@ -107,7 +107,7 @@ ohos_shared_library("image") {
   ]
   relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
 
 ohos_shared_library("image_native") {
@@ -211,7 +211,7 @@ ohos_shared_library("image_native") {
 
   #  relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
 ohos_static_library("image_static_napi") {
   public_configs = [ ":image_external_config" ]
@@ -242,7 +242,7 @@ ohos_static_library("image_static_napi") {
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
   ]
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   external_deps = [ "c_utils:utils" ]
 }
 
@@ -329,5 +329,5 @@ ohos_static_library("image_static") {
     external_deps = [ "c_utils:utils" ]
   }
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

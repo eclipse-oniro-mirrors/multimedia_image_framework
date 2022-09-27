@@ -20,6 +20,6 @@ ohos_ndk_library("libpixelmap_ndk") {
 }
 
 ohos_ndk_headers("image_header") {
-  dest_dir = "$ndk_headers_out_dir/multimedia/image_standard"
+  dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
   sources = [ "./include/image_pixel_map_napi.h" ]
 }
