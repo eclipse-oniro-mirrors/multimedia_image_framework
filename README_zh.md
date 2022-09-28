@@ -12,19 +12,35 @@
   - [获取图片基本信息](#getImageInfo1)
   - [获取字节](#getBytesNumberPerRow)
   - [获取位图buffer](#getPixelBytesNumber)
+  - [获取像素密度](#getDensity)
+  - [设置透明比率](#opacity)
+  - [生成Alpha通道](#createAlphaPixelmap)
+  - [图片缩放](#scale)
+  - [位置变换](#translate)
+  - [图片旋转](#rotate)
+  - [图片翻转](#flip)
+  - [图片裁剪](#crop)
   - [释放位图](#release1)
   - [从图片源获取信息](#getImageInfo)
   - [获取整型值](#getImagePropertyInt)
-  - [获取string类型值](#String)
+  - [修改图片属性](#modifyImageProperty)
   - [创建位图](#createPixelMap)
   - [更新数据](#updateData)
   - [释放图片源实例](#release2)
   - [打包图片](#packing)
   - [释放packer实例](#release3)
+  - [获取surface id](#getReceivingSurfaceId)
+  - [读取最新图片](#readLatestImage)
+  - [读取下一张图片](#readNextImage)
+  - [注册回调](#on)
+  - [释放receiver实例](#release4)
+  - [获取组件缓存](#getComponent)
+  - [释放image实例](#release5)
   - [createIncrementalSource](#createIncrementalSource)
   - [创建ImageSource实例](#createImageSource2)
   - [创建PixelMap实例](#createPixelMap2)
   - [创建imagepacker实例](#createImagePacker2)
+  - [创建imagereceiver实例](#createImageReceiver2)
 
 ## 简介<a name="introduction"></a>
 
@@ -191,7 +207,144 @@ pixelmap.getPixelBytesNumber().then((num) => {
         })
 ```
 
-### 8.release<a name="release1"></a>
+### 8.getDensity<a name="getDensity"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何获取图片像素密度。
+
+通过调用getDensity获取图片像素密度。
+
+```
+getDensity():number;
+```
+
+示例：
+
+```
+let getDensity = pixelmap.getDensity();
+```
+
+### 9.opacity<a name="opacity"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何设置图片透明比率。
+
+通过调用opacity设置图片透明比率。
+
+```
+opacity(rate: number, callback: AsyncCallback<void>): void;
+opacity(rate: number): Promise<void>;
+```
+
+示例：
+
+```
+async function () {
+	await pixelMap.opacity(0.5);
+}
+```
+
+### 10.createAlphaPixelmap<a name="createAlphaPixelmap"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何生成一个仅包含Alpha通道信息的pixelmap。
+
+通过调用createAlphaPixelmap生成一个仅包含Alpha通道信息的pixelmap，可用于阴影效果。
+
+```
+createAlphaPixelmap(): Promise<PixelMap>;
+createAlphaPixelmap(callback: AsyncCallback<PixelMap>): void;
+```
+
+示例：
+
+```
+pixelMap.createAlphaPixelmap(async (err, alphaPixelMap) => {})
+```
+
+### 11.scale<a name="scale"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何根据输入的宽高对图片进行缩放。
+
+通过调用scale对图片进行缩放。
+
+```
+scale(x: number, y: number, callback: AsyncCallback<void>): void;
+scale(x: number, y: number): Promise<void>;
+```
+
+示例：
+
+```
+await pixelMap.scale(2.0, 1.0);
+```
+
+### 12.translate<a name="translate"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何根据输入的坐标对图片进行位置变换。
+
+通过调用translate对图片进行位置变换。
+
+```
+translate(x: number, y: number, callback: AsyncCallback<void>): void;
+translate(x: number, y: number): Promise<void>;
+```
+
+示例：
+
+```
+await pixelMap.translate(3.0, 1.0);
+```
+
+### 13.rotate<a name="rotate"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何根据输入的角度对图片进行旋转。
+
+通过调用rotate对图片进行旋转。
+
+```
+rotate(angle: number, callback: AsyncCallback<void>): void;
+rotate(angle: number): Promise<void>;
+```
+
+示例：
+
+```
+await pixelMap.rotate(90.0);
+```
+
+### 14.flip<a name="flip"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何根据输入的条件对图片进行翻转。
+
+通过调用flip对图片进行翻转。
+
+```
+flip(horizontal: boolean, vertical: boolean, callback: AsyncCallback<void>): void;
+flip(horizontal: boolean, vertical: boolean): Promise<void>;
+```
+
+示例：
+
+```
+await pixelMap.flip(false, true);
+```
+
+### 15.crop<a name="crop"></a>
+
+image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何根据输入的尺寸对图片进行裁剪。
+
+通过调用crop对图片进行裁剪。
+
+```
+crop(region: Region, callback: AsyncCallback<void>): void;
+crop(region: Region): Promise<void>;
+```
+
+示例：
+
+```
+await pixelMap.crop({ x: 0, y: 0, size: { height: 100, width: 100 } });
+```
+
+### 16.release<a name="release1"></a>
 
 image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何释放pixelmap实例。
 
@@ -213,7 +366,7 @@ pixelmap.release(()=>{
         })  
 ```
 
-### 9.getImageInfo<a name="getImageInfo"></a>
+### 17.getImageInfo<a name="getImageInfo"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据特定数字获取图片信息。
 
@@ -239,25 +392,25 @@ imageSourceApi.getImageInfo((imageInfo) => {
       })
 ```
 
-### 10.getImagePropertyInt<a name="getImagePropertyInt"></a>
+### 18.getImageProperty<a name="getImageProperty"></a>
 
-image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据索引获取属性的整型值。
-
-```
-getImagePropertyInt(index:number, key: string, defaultValue: number): Promise<number>;
-getImagePropertyInt(index:number, key: string, defaultValue: number, callback: AsyncCallback<number>): void;
-```
-
-### 11.getImagePropertyString<a name="String"></a>
-
-image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据索引获取属性的字符型值。
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据索引获取图像的指定属性键的值。
 
 ```
-getImagePropertyString(key: string): Promise<string>;
-getImagePropertyString(key: string, callback: AsyncCallback<string>): void;
+getImageProperty(key:string, options?: GetImagePropertyOptions): Promise<string>;
+getImageProperty(key:string, callback: AsyncCallback<string>): void;
 ```
 
-### 12.createPixelMap<a name="createPixelMap"></a>
+### 19.modifyImageProperty<a name="modifyImageProperty"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何通过指定的键修改图片属性的值。
+
+```
+modifyImageProperty(key: string, value: string): Promise<void>;
+modifyImageProperty(key: string, value: string, callback: AsyncCallback<void>): void;
+```
+
+### 20.createPixelMap<a name="createPixelMap"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何创建pixelmap实例。
 
@@ -273,9 +426,14 @@ const imageSourceApi = image.createImageSource('/sdcard/test.jpg')
 imageSourceApi.createPixelMap(decodingOptions, (pixelmap) => {})
 ```
 
-### 13.updateData<a name="updateData"></a>
+### 21.updateData<a name="updateData"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何更新图片数据源。
+
+```
+updateData(buf: ArrayBuffer, isFinished: boolean, value: number, length: number): Promise<void>;
+updateData(buf: ArrayBuffer, isFinished: boolean, value: number, length: number, callback: AsyncCallback<void>): void;
+```
 
 1.使用createIncrementalSource创建imagesource。
 
@@ -290,17 +448,25 @@ const imageSourceIncrementalSApi = image.createIncrementalSource(dataBuffer)
 imageSourceIncrementalSApi.updateData(array, false, (error, data) => {})
 ```
 
-### 14.release<a name="release2"></a>
+### 22.release<a name="release2"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放图片源实例。
 
 ```
+release(callback: AsyncCallback<void>): void;
 release(): Promise<void>;
 ```
 
-### 15.packing<a name="packing"></a>
+### 23.packing<a name="packing"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何压缩图片。
+
+```
+packing(source: ImageSource, option: PackingOption, callback: AsyncCallback<ArrayBuffer>): void;
+packing(source: ImageSource, option: PackingOption): Promise<ArrayBuffer>;
+packing(source: PixelMap, option: PackingOption, callback: AsyncCallback<ArrayBuffer>): void;
+packing(source: PixelMap, option: PackingOption): Promise<ArrayBuffer>;
+```
 
 1.使用createImageSource创建图片源。
 
@@ -314,9 +480,14 @@ const imageSourceApi = image.createImageSource('/sdcard/test.png')
 imagePackerApi.packing(imageSourceApi, packOpts).then((data) => {})
 ```
 
-### 16.release<a name="release3"></a>
+### 24.release<a name="release3"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放packer实例。
+
+```
+release(callback: AsyncCallback<void>): void;
+release(): Promise<void>;
+```
 
 1.使用createImagePacker创建packer实例。
 
@@ -330,9 +501,113 @@ const imagePackerApi = image.createImagePacker()
 imagePackerApi.release()
 ```
 
-### 17.createIncrementalSource<a name="createIncrementalSource"></a>
+### 25.getReceivingSurfaceId<a name="getReceivingSurfaceId"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何获取surface id供Camera或其他组件使用。
+
+```
+getReceivingSurfaceId(): Promise<string>;
+getReceivingSurfaceId(callback: AsyncCallback<string>): void;
+```
+
+示例：
+```
+receiver.getReceivingSurfaceId().then( id => { } )
+```
+
+### 26.readLatestImage<a name="readLatestImage"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何读取最新的图片。
+
+```
+readLatestImage(callback: AsyncCallback<Image>): void;
+readLatestImage(): Promise<Image>;
+```
+
+示例：
+```
+receiver.readLatestImage().then(img => { })
+```
+
+### 27.readNextImage<a name="readNextImage"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何读取下一张图片。
+
+```
+readNextImage(callback: AsyncCallback<Image>): void;
+readNextImage(): Promise<Image>;
+```
+
+示例：
+```
+receiver.readNextImage().then(img => {})
+```
+
+### 28.on<a name="on"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何接收图片时注册回调。
+
+```
+on(type: 'imageArrival', callback: AsyncCallback<void>): void;
+```
+
+示例：
+```
+receiver.on('imageArrival', () => {})
+```
+
+### 29.release<a name="release4"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放receiver实例。
+
+```
+release(callback: AsyncCallback<void>): void;
+release(): Promise<void>;
+```
+
+1.使用createImageReceiver创建receiver实例。
+
+```
+const imageReceiverApi = image.createImageReceiver()
+```
+
+2.使用release释放packer实例。
+
+```
+imageReceiverApi.release()
+```
+
+### 30.getComponent<a name="getComponent"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何根据图像的组件类型从图像中获取组件缓存。
+
+```
+getComponent(componentType: ComponentType, callback: AsyncCallback<Component>): void;
+getComponent(componentType: ComponentType): Promise<Component>;
+```
+
+示例：
+```
+img.getComponent(4).then(component => { })
+```
+
+### 31.release<a name="release5"></a>
+
+image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何释放image实例。
+
+```
+release(callback: AsyncCallback<void>): void;
+release(): Promise<void>;
+```
+
+### 32.createIncrementalSource<a name="createIncrementalSource"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何创建增量imagesource。
+
+```
+createIncrementalSource(buf: ArrayBuffer): ImageSource;
+createIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
+```
 
 1.创建buffer。
 
@@ -346,32 +621,55 @@ const data = new ArrayBuffer(96)
 const imageSourceApi = image.createIncrementalSource(data)
 ```
 
-### 18.创建ImageSource实例<a name="createImageSource2"></a>
+### 33.创建ImageSource实例<a name="createImageSource2"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何通过不同方式创建imagesource。
 
 1.通过文件路径创建imagesource。
 
 ```
-const imageSourceApi = image.createImageSource('/sdcard/test.jpg')
+createImageSource(uri: string): ImageSource;
+createImageSource(uri: string, options: SourceOptions): ImageSource;
+```
+
+示例：
+```
+const imageSourceApi = image.createImageSource('/sdcard/test.jpg');
 ```
 
 2.通过fd创建imagesource。
 
 ```
-const imageSourceApi = image.createImageSource(fd)
+createImageSource(fd: number): ImageSource;
+createImageSource(fd: number, options: SourceOptions): ImageSource;
+```
+
+示例：
+```
+const imageSourceApi = image.createImageSource(fd);
 ```
 
 3.通过buffer创建imagesource。
 
 ```
-const data = new ArrayBuffer(112)
-const imageSourceApi = image.createImageSource(data)
+createImageSource(buf: ArrayBuffer): ImageSource;
+createImageSource(buf: ArrayBuffer, options: SourceOptions): ImageSource;
 ```
 
-### 19.创建PixelMap实例<a name="createPixelMap2"></a>
+示例：
+```
+const data = new ArrayBuffer(112);
+const imageSourceApi = image.createImageSource(data);
+```
+
+### 34.创建PixelMap实例<a name="createPixelMap2"></a>
 
 image提供了操作pixelmap的接口，如创建、读取和删除，以下展示了如何通过属性创建pixelmap。
+
+```
+createPixelMap(colors: ArrayBuffer, options: InitializationOptions): Promise<PixelMap>;
+createPixelMap(colors: ArrayBuffer, options: InitializationOptions, callback: AsyncCallback<PixelMap>): void;
+```
 
 1.设置属性。
 
@@ -392,14 +690,18 @@ let opts = {
 image.createPixelMap(Color, opts)
       .then((pixelmap) => {
         expect(pixelmap !== null).assertTrue()
-        console.info('TC_001 success')
+        console.info('Succeeded in creating pixelmap.')
         done()
       })
 ```
 
-### 20.创建imagepacker实例<a name="createImagePacker2"></a>
+### 35.创建imagepacker实例<a name="createImagePacker2"></a>
 
 image提供了操作imagepacker的接口，以下展示了如何通过属性创建imagepacker。
+
+```
+createImagePacker(): ImagePacker;
+```
 
 1.创建imagesource。
 
@@ -413,3 +715,14 @@ const imageSourceApi = image.createImageSource('/sdcard/test.png')
 const imagePackerApi = image.createImagePacker()
 ```
 
+### 36.创建imagereceiver实例<a name="createImageReceiver2"></a>
+
+image提供了操作imagereceiver的接口，以下展示了如何通过属性创建imagereceiver。
+
+```
+createImageReceiver(width: number, height: number, format: number, capacity: number): ImageReceiver;
+```
+
+## 相关仓<a name="relevant"></a>
+
+[multimedia\_image\_framework](https://gitee.com/openharmony/multimedia_image_framework/blob/master/README_zh.md)
