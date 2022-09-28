@@ -102,7 +102,7 @@ static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
-        // 0-R 1-G 2-B 
+        // 0-R 1-G 2-B
         dst[NUM_0] = src[NUM_0];
         dst[NUM_1] = src[NUM_1];
         dst[NUM_2] = src[NUM_2];
