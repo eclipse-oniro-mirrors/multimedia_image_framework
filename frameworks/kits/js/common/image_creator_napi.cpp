@@ -248,7 +248,7 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
     return result;
 }
 
-static bool CheckArgs(ImageCreatorCommonArgs &args)
+static bool CheckArgs(const ImageCreatorCommonArgs &args)
 {
     if (args.async != CreatorCallType::GETTER) {
         if (args.queryArgs == nullptr) {
@@ -552,7 +552,6 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
 static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
                         std::shared_ptr<ImageNapi> &imageNapi_, napi_ref* callbackRef)
 {
-    int32_t refCount = 1;
     if (argc == ARGS1 || argc == ARGS2) {
         auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType0 == napi_object) {
@@ -571,6 +570,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
         if (argc == ARGS2) {
         auto argType1 = ImageNapiUtils::getType(env, argv[PARAM1]);
         if (argType1 == napi_function) {
+            int32_t refCount = 1;
             napi_create_reference(env, argv[PARAM1], refCount, callbackRef);
         } else {
             std::string errMsg = "Unsupport args1 type: ";
@@ -665,7 +665,7 @@ static bool CheckOnParam0(napi_env env, napi_value value, const std::string& ref
     bool ret = true;
     size_t bufLength = 0;
     napi_status status = napi_get_value_string_utf8(env, value, nullptr, 0, &bufLength);
-    if (status != napi_ok || bufLength > PATH_MAX || bufLength < 0) {
+    if (status != napi_ok || bufLength > PATH_MAX) {
         return false;
     }
 

@@ -108,9 +108,7 @@ void ImageNapi::NativeRelease()
         imageReceiver_->ReleaseBuffer(sSurfaceBuffer_);
         imageReceiver_ = nullptr;
     }
-    if (sSurfaceBuffer_ != nullptr) {
-        sSurfaceBuffer_ = nullptr;
-    }
+    sSurfaceBuffer_ = nullptr;
 }
 
 napi_value ImageNapi::Init(napi_env env, napi_value exports)
@@ -427,7 +425,6 @@ napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
     napi_value result = nullptr, thisVar = nullptr;
     size_t argc = ARGS1;
     napi_value argv[ARGS1] = {0};
-    int32_t refCount = 1;
 
     napi_get_undefined(env, &result);
 
@@ -446,6 +443,7 @@ napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
     if (argc == ARGS1) {
         auto argType = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType == napi_function) {
+            int32_t refCount = 1;
             napi_create_reference(env, argv[PARAM0], refCount, &context->callbackRef);
         } else {
             IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType);
@@ -537,7 +535,6 @@ static bool CheckComponentType(const int32_t& type)
 static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv,
                                int32_t* componentType, napi_ref* callbackRef)
 {
-    int32_t refCount = 1;
     if (argv == nullptr) {
         IMAGE_ERR("argv is nullptr");
         return false;
@@ -557,10 +554,10 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv,
             return false;
         }
     }
-
     if (argc == ARGS2) {
         auto argType1 = ImageNapiUtils::getType(env, argv[PARAM1]);
         if (argType1 == napi_function) {
+            int32_t refCount = 1;
             napi_create_reference(env, argv[PARAM1], refCount, callbackRef);
         } else {
             IMAGE_ERR("Unsupport arg 1 type: %{public}d", argType1);
