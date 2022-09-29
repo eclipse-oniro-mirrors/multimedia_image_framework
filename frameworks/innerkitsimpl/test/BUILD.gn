@@ -13,7 +13,7 @@
 
 import("//build/test.gni")
 
-module_output_path = "multimedia_image/image_standard"
+module_output_path = "multimedia_image/image_framework"
 
 ohos_unittest("imagepixelmaptest") {
   module_out_path = module_output_path

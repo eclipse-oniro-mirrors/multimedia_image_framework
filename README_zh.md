@@ -44,11 +44,11 @@
 
 ## 简介<a name="introduction"></a>
 
-**image_standard仓库**提供了一系列易用的接口用于存放image的源码信息，提供创建图片源和位图管理能力，支持运行标准系统的设备使用。
+**image_framework仓库**提供了一系列易用的接口用于存放image的源码信息，提供创建图片源和位图管理能力，支持运行标准系统的设备使用。
 
 **图1** Image组件架构图
 
-![](https://gitee.com/openharmony/multimedia_image_standard/raw/master/figures/Image%E7%BB%84%E4%BB%B6%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
+![](https://gitee.com/openharmony/multimedia_image_framework/raw/master/figures/Image%E7%BB%84%E4%BB%B6%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
 
 
 
@@ -66,7 +66,7 @@
 仓目录结构如下：
 
 ```
-/foundation/multimedia/image_standard  
+/foundation/multimedia/image_framework  
 ├── frameworks                                  # 框架代码
 │   ├── innerkitsimpl                           # 内部接口实现
 │   │   └──image                                # Native 实现

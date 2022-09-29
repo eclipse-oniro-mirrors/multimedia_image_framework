@@ -85,12 +85,12 @@ ohos_shared_library("bmpplugin") {
     #aosp_deps = [ "shared_library:libhwui" ]
   }
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
 
 ohos_prebuilt_etc("bmppluginmetadata") {
   source = "bmpplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

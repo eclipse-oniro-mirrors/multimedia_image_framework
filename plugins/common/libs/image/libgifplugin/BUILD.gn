@@ -66,7 +66,7 @@ ohos_shared_library("gifplugin") {
       "hiviewdfx_hilog_native:libhilog",
     ]
   }
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
 }
 
@@ -74,5 +74,5 @@ ohos_prebuilt_etc("gifpluginmetadata") {
   source = "gifplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
