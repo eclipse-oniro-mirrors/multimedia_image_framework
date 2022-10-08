@@ -63,16 +63,12 @@ static void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
     }
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    uint8_t A, R, G, B;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
-        A = src[NUM_0];
-        R = src[NUM_1];
-        G = src[NUM_2];
-        B = src[NUM_3];
-        dst[NUM_0] = R;
-        dst[NUM_1] = G;
-        dst[NUM_2] = B;
-        dst[NUM_3] = A;
+        // 0-R 1-G 2-B 3-A
+        dst[NUM_0] = src[NUM_1];
+        dst[NUM_1] = src[NUM_2];
+        dst[NUM_2] = src[NUM_3];
+        dst[NUM_3] = src[NUM_0];
         src += NUM_4;
         dst += NUM_4;
     }
@@ -86,16 +82,12 @@ static void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
     }
     uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    uint8_t A, R, G, B;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
-        R = src[NUM_0];
-        G = src[NUM_1];
-        B = src[NUM_2];
-        A = src[NUM_3];
-        dst[NUM_0] = A;
-        dst[NUM_1] = R;
-        dst[NUM_2] = G;
-        dst[NUM_3] = B;
+        // 0-A 1-R 2-G 3-B
+        dst[NUM_0] = src[NUM_3];
+        dst[NUM_1] = src[NUM_0];
+        dst[NUM_2] = src[NUM_1];
+        dst[NUM_3] = src[NUM_2];
         src += NUM_4;
         dst += NUM_4;
     }
@@ -109,14 +101,11 @@ static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    uint8_t R, G, B;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_4) {
-        R = src[NUM_0];
-        G = src[NUM_1];
-        B = src[NUM_2];
-        dst[NUM_0] = R;
-        dst[NUM_1] = G;
-        dst[NUM_2] = B;
+        // 0-R 1-G 2-B
+        dst[NUM_0] = src[NUM_0];
+        dst[NUM_1] = src[NUM_1];
+        dst[NUM_2] = src[NUM_2];
         src += NUM_4;
         dst += NUM_3;
     }
@@ -130,14 +119,11 @@ static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
     }
     const uint8_t *src = srcPixels;
     uint8_t *dst = dstPixels;
-    uint8_t R, G, B;
     for (uint32_t i = NUM_0 ; i < byteCount; i += NUM_3) {
-        R = src[NUM_0];
-        G = src[NUM_1];
-        B = src[NUM_2];
-        dst[NUM_0] = R;
-        dst[NUM_1] = G;
-        dst[NUM_2] = B;
+        // 0-R 1-G 2-B
+        dst[NUM_0] = src[NUM_0];
+        dst[NUM_1] = src[NUM_1];
+        dst[NUM_2] = src[NUM_2];
         dst[NUM_3] = 0;
         src += NUM_3;
         dst += NUM_4;

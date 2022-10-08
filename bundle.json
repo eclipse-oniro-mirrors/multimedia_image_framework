@@ -1,5 +1,5 @@
 {
-    "name": "@ohos/image_standard",
+    "name": "@ohos/image_framework",
     "description": "Image standard provides atomic capabilities",
     "version": "3.1",
     "license": "Apache License 2.0",
@@ -10,7 +10,7 @@
     "dirs": {},
     "scripts": {},
     "component": {
-      "name": "multimedia_image_standard",
+      "name": "multimedia_image_framework",
       "subsystem": "multimedia",
       "syscap": [
         "SystemCapability.Multimedia.Image.Core",

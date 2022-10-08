@@ -293,10 +293,8 @@ uint32_t RawDecoder::DoDecodeHeaderByPiex()
 uint32_t RawDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     HiLog::Debug(LABEL, "DoSetDecodeOptions IN index=%{public}u", index);
-    uint32_t ret = Media::ERROR;
-
+    uint32_t ret;
     opts_ = opts;
-
     if (jpegDecoder_ != nullptr) {
         HiLog::Info(LABEL, "DoSetDecodeOptions, set decode options for JpegDecoder");
         ret = jpegDecoder_->SetDecodeOptions(index, opts_, info_);
@@ -322,7 +320,7 @@ uint32_t RawDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
 uint32_t RawDecoder::DoGetImageSize(uint32_t index, PlSize &size)
 {
     HiLog::Debug(LABEL, "DoGetImageSize IN index=%{public}u", index);
-    uint32_t ret = Media::ERROR;
+    uint32_t ret;
 
     if (jpegDecoder_ != nullptr) {
         HiLog::Info(LABEL, "DoGetImageSize, get image size for JpegDecoder");
@@ -346,7 +344,7 @@ uint32_t RawDecoder::DoGetImageSize(uint32_t index, PlSize &size)
 uint32_t RawDecoder::DoDecode(uint32_t index, DecodeContext &context)
 {
     HiLog::Debug(LABEL, "DoDecode IN index=%{public}u", index);
-    uint32_t ret = Media::ERROR;
+    uint32_t ret;
 
     if (jpegDecoder_ != nullptr) {
         HiLog::Info(LABEL, "DoDecode decode by JpegDecoder.");

@@ -271,9 +271,7 @@ RefBase &RefBase::operator=(const RefBase& /*other*/)
 RefBase::RefBase(RefBase &&other) noexcept
 {
     refs_ = other.refs_;
-    if (other.refs_ != nullptr) {
-        other.refs_ = nullptr;
-    }
+    other.refs_ = nullptr;
 }
 
 RefBase &RefBase::operator=(RefBase &&other)  noexcept
