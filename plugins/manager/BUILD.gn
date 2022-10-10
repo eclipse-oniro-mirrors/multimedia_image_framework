@@ -18,6 +18,7 @@ ohos_shared_library("pluginmanager") {
   sanitize = {
     cfi = true
     debug = true
+    blocklist = "./cfi_blocklist.txt"
   }
   sources = [
     "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",

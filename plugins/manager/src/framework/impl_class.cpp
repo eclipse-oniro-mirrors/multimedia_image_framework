@@ -327,11 +327,6 @@ bool ImplClass::AnalysisMaxInstance(const json &classInfo)
     return true;
 }
 
-PluginClassBase *CfiFactory(PluginCreateFunc factory, const string &className) __attribute__((no_sanitize("cfi")))
-{
-    return factory(className);
-}
-
 PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
 {
     // since the plugin library may be unloaded and reloaded, the pointer cannot guarantee a constant value,
@@ -342,7 +337,7 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
         return nullptr;
     }
 
-    PluginClassBase *pluginBaseObj = CfiFactory(factory, className_);
+    PluginClassBase *pluginBaseObj = factory(className_);
     if (pluginBaseObj == nullptr) {
         HiLog::Error(LABEL, "create object result null, className: %{public}s.", className_.c_str());
         return nullptr;
