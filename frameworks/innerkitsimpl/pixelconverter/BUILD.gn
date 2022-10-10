@@ -15,10 +15,6 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("pixelconvertadapter_public_config") {
-  sanitize = {
-    cfi = true
-    debug = true
-  }
   visibility = [ ":*" ]
   include_dirs = [
     "//foundation/multimedia/utils/include",
@@ -88,6 +84,10 @@ config("pixelconvertadapter_public_config") {
 }
 
 ohos_shared_library("pixelconvertadapter") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
 
   public_configs = [ ":pixelconvertadapter_public_config" ]
