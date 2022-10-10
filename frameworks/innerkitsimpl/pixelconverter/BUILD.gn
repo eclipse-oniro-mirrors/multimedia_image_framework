@@ -15,6 +15,10 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("pixelconvertadapter_public_config") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   visibility = [ ":*" ]
   include_dirs = [
     "//foundation/multimedia/utils/include",

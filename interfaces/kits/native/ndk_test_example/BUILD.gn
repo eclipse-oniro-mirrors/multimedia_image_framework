@@ -30,6 +30,10 @@ ohos_copy("mypixelmap_declaration") {
 }
 
 ohos_shared_library("mypixelmap") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   install_enable = true
 
   sources = [ "my_pixel_map.cpp" ]

@@ -15,6 +15,10 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("rawplugin") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/plugin_export.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_decoder.cpp",
