@@ -20,8 +20,11 @@
 #include "image_source_napi.h"
 #include "pixel_map_napi.h"
 #include "image_packer_napi.h"
+
+#if !defined(_IOS) && !defined(_ANDROID)
 #include "image_receiver_napi.h"
 #include "image_creator_napi.h"
 #include "image_napi.h"
+#endif
 
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_NATIVE_MODULE_OHOS_IMAGE_H_

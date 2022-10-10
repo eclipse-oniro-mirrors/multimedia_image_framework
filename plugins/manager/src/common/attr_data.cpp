@@ -151,7 +151,6 @@ AttrData &AttrData::operator=(const AttrData &data)
         type_ = AttrDataType::ATTR_DATA_NULL;
         HiLog::Error(LABEL, "memcpy error in assignment operator!");
     }
-
     return *this;
 }
 
@@ -161,7 +160,6 @@ AttrData &AttrData::operator=(AttrData &&data) noexcept
     if (&data == this) {
         return *this;
     }
-
     ClearData();
     if (memcpy_s(&value_, sizeof(value_), &data.value_, sizeof(data.value_)) == EOK) {
         type_ = data.type_;
@@ -170,7 +168,6 @@ AttrData &AttrData::operator=(AttrData &&data) noexcept
         type_ = AttrDataType::ATTR_DATA_NULL;
         HiLog::Error(LABEL, "memcpy error in assignment operator!");
     }
-
     return *this;
 }
 

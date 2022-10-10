@@ -988,7 +988,9 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
         napi_get_undefined(env, &result);
     }
 
+    #if !defined(_IOS) && !defined(_ANDROID)
     ImageNapiUtils::HicheckerReport();
+    #endif
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMap", CreatePixelMapExecute,
         CreatePixelMapComplete, asyncContext, asyncContext->work);
 

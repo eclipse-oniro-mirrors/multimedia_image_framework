@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2022 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,14 +22,42 @@ Parcelable::Parcelable() : Parcelable(false)
 Parcelable::Parcelable(bool asRemote)
 {}
 
-Parcel::Parcel()
+Parcel::Parcel(Allocator *allocator)
 {}
 
-Parcel::~Parcel() = default;
+Parcel::~Parcel()
+{}
+
+size_t Parcel::GetWritableBytes() const
+{
+    return 0;
+}
+
+size_t Parcel::GetReadableBytes() const
+{
+    return 0;
+}
 
 size_t Parcel::GetDataCapacity() const
 {
     return 0;
+}
+
+bool Parcel::SetMaxCapacity(size_t maxCapacity)
+{
+    (void) maxCapacity;
+    return false;
+}
+
+bool Parcel::SetAllocator(Allocator *allocator)
+{
+    (void) allocator;
+    return true;
+}
+
+bool Parcel::CheckOffsets()
+{
+    return false;
 }
 
 bool Parcel::SetDataCapacity(size_t newCapacity)
@@ -38,16 +66,77 @@ bool Parcel::SetDataCapacity(size_t newCapacity)
     return false;
 }
 
-bool Parcel::WriteBuffer(const void *data, size_t size)
+bool Parcel::SetDataSize(size_t dataSize)
+{
+    (void) dataSize;
+    return true;
+}
+
+bool Parcel::WriteDataBytes(const void *data, size_t size)
+{
+    (void) data;
+    (void) size;
+    return true;
+}
+
+void Parcel::WritePadBytes(size_t padSize)
+{
+    (void) padSize;
+}
+
+bool Parcel::WriteUnpadBuffer(const void *data, size_t size)
 {
     (void) data;
     (void) size;
     return false;
 }
 
+template <typename T>
+bool Parcel::Write(T value)
+{
+    return false;
+}
+
 bool Parcel::WriteInt32(int32_t value)
 {
-    (void) value;
+    return Write<int32_t>(value);
+}
+
+bool Parcel::WriteUint32(uint32_t value)
+{
+    return Write<uint32_t>(value);
+}
+
+bool Parcel::WriteRemoteObject(const Parcelable *object)
+{
+    (void) object;
+    return false;
+}
+
+bool Parcel::WriteParcelable(const Parcelable *object)
+{
+    (void) object;
+    return false;
+}
+
+
+template <typename T>
+bool Parcel::Read(T &value)
+{
+    return false;
+}
+
+template <typename T>
+T Parcel::Read()
+{
+    T lvalue {};
+    return Read<T>(lvalue) ? lvalue : 0;
+}
+
+bool Parcel::ParseFrom(uintptr_t data, size_t size)
+{
+    (void) data;
+    (void) size;
     return false;
 }
 
@@ -57,8 +146,25 @@ const uint8_t *Parcel::ReadBuffer(size_t length)
     return nullptr;
 }
 
-int32_t Parcel::ReadInt32()
+const uint8_t *Parcel::ReadUnpadBuffer(size_t length)
+{
+    (void) length;
+    return nullptr;
+}
+
+size_t Parcel::GetReadPosition()
 {
     return 0;
 }
-} // namespace OHOS
+
+int32_t Parcel::ReadInt32()
+{
+    return Read<int32_t>();
+}
+
+uint32_t Parcel::ReadUint32()
+{
+    return Read<uint32_t>();
+}
+
+}  // namespace OHOS
