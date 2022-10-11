@@ -15,6 +15,10 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("pluginmanager") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
     "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
     "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
