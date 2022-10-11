@@ -329,7 +329,7 @@ bool ImplClass::AnalysisMaxInstance(const json &classInfo)
 
 PluginClassBase *CfiFactory(PluginCreateFunc factory, const string &className) __attribute__((no_sanitize("cfi")))
 {
-	    return factory(className);
+    return factory(className);
 }
 
 PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
