@@ -305,6 +305,9 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
             }
             exif_content_foreach_entry(ec,
                 [](ExifEntry *ee, void* userData) {
+                    if (ee == nullptr || userData == nullptr) {
+                        return;
+                    }
                     char tagValueChar[1024];
                     exif_entry_get_value(ee, tagValueChar, sizeof(tagValueChar));
                     std::string tagValueStr(&tagValueChar[0], &tagValueChar[strlen(tagValueChar)]);

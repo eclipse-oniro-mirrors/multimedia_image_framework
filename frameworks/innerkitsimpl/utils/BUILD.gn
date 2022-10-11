@@ -16,6 +16,10 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 if (use_clang_ios) {
   ohos_source_set("image_utils") {
+    sanitize = {
+      cfi = true
+      debug = false
+    }
     include_dirs = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
       "//foundation/multimedia/utils/include",
@@ -47,6 +51,10 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("image_utils") {
+    sanitize = {
+      cfi = true
+      debug = false
+    }
     include_dirs = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
       "//foundation/multimedia/utils/include",
