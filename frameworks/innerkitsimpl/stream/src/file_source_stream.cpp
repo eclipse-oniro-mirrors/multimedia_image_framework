@@ -93,7 +93,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return (unique_ptr<FileSourceStream>(new FileSourceStream(filePtr, size, offset, offset)));
+    return (unique_ptr<FileSourceStream>(std::make_unique FileSourceStream(filePtr, size, offset, offset)));
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

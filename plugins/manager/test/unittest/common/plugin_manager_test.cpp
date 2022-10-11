@@ -608,7 +608,8 @@ HWTEST_F(PluginManagerTest, TestGetClassByCapbility001, TestSize.Level3)
     // "labelNum" means capability name, 256 means capability value, exist in metedata.
     map<string, AttrData> capabilities = { { "labelNum", AttrData(static_cast<uint32_t>(256)) } };
     uint32_t errorCode =
-        pluginServer.PluginServerGetClassInfo<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, capabilities, classInfo);
+        pluginServer.PluginServerGetClassInfo<AbsImageDetector>(AbsImageDetector::SERVICE_FACE,
+            capabilities, classInfo);
     ASSERT_NE(classInfo.size(), 0UL);  // existing service type id, get class success, size should not be zero.
     ASSERT_EQ(errorCode, SUCCESS);
 }
@@ -638,7 +639,8 @@ HWTEST_F(PluginManagerTest, TestGetClassByCapbility002, TestSize.Level3)
     // "labelNum1" means capability name, 1000 means capability value, not exist in metedata.
     map<string, AttrData> capabilities = { { "labelNum1", AttrData(static_cast<uint32_t>(1000)) } };
     uint32_t errorCode =
-        pluginServer.PluginServerGetClassInfo<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, capabilities, classInfo);
+        pluginServer.PluginServerGetClassInfo<AbsImageDetector>(AbsImageDetector::SERVICE_FACE,
+            capabilities, classInfo);
     ASSERT_EQ(classInfo.size(), 0UL);  // non-existing service type id, get class success, size should be zero.
     ASSERT_NE(errorCode, SUCCESS);
 }
