@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "file_source_stream.h"
-#include "directory_ex.h"
+#include <unistd.h>
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
-#include <unistd.h>
+#include "directory_ex.h"
+#include "file_source_stream.h"
 
 namespace OHOS {
 namespace Media {
@@ -93,7 +93,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return (unique_ptr<FileSourceStream>(std::make_unique FileSourceStream(filePtr, size, offset, offset)));
+    return (unique_ptr<FileSourceStream>(new FileSourceStream(filePtr, size, offset, offset)));
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
