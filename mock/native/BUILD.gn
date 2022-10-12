@@ -12,28 +12,28 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 config("log_mock_config") {
   visibility = [ ":*" ]
   include_dirs = [
-    "//foundation/multimedia/image_standard/mock/native/include",
-    "//foundation/multimedia/image_standard/mock/native/include/hilog",
+    "//foundation/multimedia/image_framework/mock/native/include",
+    "//foundation/multimedia/image_framework/mock/native/include/hilog",
   ]
 }
 
 ohos_static_library("log_mock_static") {
   configs = [ ":log_mock_config" ]
   sources =
-      [ "//foundation/multimedia/image_standard/mock/native/src/HiLog.cpp" ]
+      [ "//foundation/multimedia/image_framework/mock/native/src/HiLog.cpp" ]
   subsystem_name = "multimedia"
 }
 
 config("utils_mock_config") {
   visibility = [ ":*" ]
   include_dirs = [
-    "//foundation/multimedia/image_standard/mock/native/include",
+    "//foundation/multimedia/image_framework/mock/native/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
 }
 
@@ -45,11 +45,11 @@ ohos_static_library("utils_mock_static") {
   }
   configs = [ ":utils_mock_config" ]
   sources = [
-    "//foundation/multimedia/image_standard/mock/native/src/directory_ex.cpp",
-    "//foundation/multimedia/image_standard/mock/native/src/message_parcel.cpp",
-    "//foundation/multimedia/image_standard/mock/native/src/parcel.cpp",
-    "//foundation/multimedia/image_standard/mock/native/src/refbase.cpp",
-    "//foundation/multimedia/image_standard/mock/native/src/rwlock.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/directory_ex.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/message_parcel.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/parcel.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/refbase.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/rwlock.cpp",
   ]
   deps = [ ":log_mock_static" ]
   subsystem_name = "multimedia"

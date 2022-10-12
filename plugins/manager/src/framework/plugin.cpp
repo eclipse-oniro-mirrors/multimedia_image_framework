@@ -89,6 +89,11 @@ uint32_t Plugin::Register(istream &metadata, string &&libraryPath, weak_ptr<Plug
     return SUCCESS;
 }
 
+bool CfiStartFunc_(PluginStartFunc startFunc_) __attribute__((no_sanitize("cfi")))
+{
+    return startFunc_();
+}
+
 uint32_t Plugin::Ref()
 {
     // once the client make a ref, it can use the plugin at any time,
@@ -106,7 +111,7 @@ uint32_t Plugin::Ref()
     if (state_ == PluginState::PLUGIN_STATE_RESOLVED) {
         // maybe asynchronous, or for reduce the locking time
         state_ = PluginState::PLUGIN_STATE_STARTING;
-        if (!startFunc_()) {
+        if (!CfiStartFunc_(startFunc_)) {
             HiLog::Error(LABEL, "failed to start plugin.");
             FreeLibrary();
             state_ = PluginState::PLUGIN_STATE_REGISTERED;

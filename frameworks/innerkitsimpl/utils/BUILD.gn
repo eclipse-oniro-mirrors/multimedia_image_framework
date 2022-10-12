@@ -12,50 +12,54 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("image_utils") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/utils/lite/interfaces/kits",
     "//foundation/communication/ipc/utils/include",
   ]
 
   sources = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
   ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
-    sources -= [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     include_dirs +=
-        [ "//foundation/multimedia/image_standard/mock/native/include" ]
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     ]
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
-    sources -= [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     include_dirs += [
-      "//foundation/multimedia/image_standard/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
       "//third_party/bounds_checking_function/include",
     ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
   } else {
     defines = [ "DUAL_ADAPTER" ]
 
     deps = [
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
     external_deps = [
@@ -67,43 +71,43 @@ ohos_shared_library("image_utils") {
 
   #relative_install_dir = "module/multimedia"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
 
 ohos_static_library("image_utils_static") {
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//commonlibrary/c_utils/base/include",
   ]
 
-  sources = [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_utils.cpp" ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp" ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
     include_dirs +=
-        [ "//foundation/multimedia/image_standard/mock/native/include" ]
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     ]
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     include_dirs += [
-      "//foundation/multimedia/image_standard/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
       "//third_party/bounds_checking_function/include",
     ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
   } else {
-    sources += [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     deps = [
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
     external_deps = [
@@ -113,5 +117,5 @@ ohos_static_library("image_utils_static") {
     ]
   }
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

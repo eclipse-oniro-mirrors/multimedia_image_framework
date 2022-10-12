@@ -18,6 +18,7 @@
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include <unistd.h>
 
 namespace OHOS {
 namespace Media {
@@ -64,15 +65,28 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
 {
     size_t size = 0;
-    if (!ImageUtils::GetFileSize(fd, size)) {
+
+    int dupFd = dup(fd);
+    if (dupFd < 0) {
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
+        return nullptr;
+    }
+
+    if (!ImageUtils::GetFileSize(dupFd, size)) {
         IMAGE_LOGE("[FileSourceStream]get the file size fail.");
         return nullptr;
     }
-    FILE *filePtr = fdopen(fd, "rb");
+    FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
+
+    int ret = fseek(filePtr, 0, SEEK_SET);
+    if (ret != 0) {
+        IMAGE_LOGE("[FileSourceStream]Go to 0 position fail, ret:%{public}d.", ret);
+    }
+
     int64_t offset = ftell(filePtr);
     if (offset < 0) {
         IMAGE_LOGE("[FileSourceStream]get the position fail.");

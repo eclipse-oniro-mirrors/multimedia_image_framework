@@ -389,10 +389,6 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
 
 void ImageSourceNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
-    ImageSourceNapi *pImgSrcNapi = reinterpret_cast<ImageSourceNapi*>(nativeObject);
-    if (pImgSrcNapi != nullptr) {
-        pImgSrcNapi->release();
-    }
 }
 
 napi_value ImageSourceNapi::GetSupportedFormats(napi_env env, napi_callback_info info)
@@ -717,7 +713,7 @@ napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info i
         fileDescriptor_ = asyncContext->fdIndex;
         imageSource = ImageSource::CreateImageSource(asyncContext->fdIndex, opts, errorCode);
     } else { // Input Buffer
-        status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(fileBuffer_), &(fileBufferSize_));
+        napi_get_arraybuffer_info(env, argValue[NUM_0], &(fileBuffer_), &(fileBufferSize_));
         asyncContext->sourceBuffer = fileBuffer_;
         asyncContext->sourceBufferSize = fileBufferSize_;
         imageSource = ImageSource::CreateImageSource(static_cast<uint8_t *>(fileBuffer_),

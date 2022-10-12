@@ -12,52 +12,56 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("gifplugin") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libgifplugin/src/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/plugin_export.cpp",
   ]
 
   include_dirs = [
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include/image",
-    "//foundation/multimedia/image_standard/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libgifplugin/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/giflib",
   ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
     include_dirs +=
-        [ "//foundation/multimedia/image_standard/mock/native/include" ]
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/mock/native:utils_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/giflib:gif_static",
     ]
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     include_dirs += [
-      "//foundation/multimedia/image_standard/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
       "//third_party/bounds_checking_function/include",
     ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/mock/native:utils_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
       "//third_party/giflib:gif_static",
     ]
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/giflib:libgif",
     ]
 
@@ -66,7 +70,7 @@ ohos_shared_library("gifplugin") {
       "hiviewdfx_hilog_native:libhilog",
     ]
   }
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
 }
 
@@ -74,5 +78,5 @@ ohos_prebuilt_etc("gifpluginmetadata") {
   source = "gifplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

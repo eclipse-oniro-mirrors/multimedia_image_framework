@@ -84,7 +84,7 @@ napi_value MyPixelMap::Constructor(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &thisVar);
 
-    status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
+    napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
 
     HiLog::Debug(LABEL, "Constructor OUT");
     return thisVar;

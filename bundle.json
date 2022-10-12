@@ -1,16 +1,16 @@
 {
-    "name": "@ohos/image_standard",
+    "name": "@ohos/image_framework",
     "description": "Image standard provides atomic capabilities",
     "version": "3.1",
     "license": "Apache License 2.0",
     "publishAs": "code-segment",
     "segment": {
-      "destPath": "foundation/multimedia/image_standard"
+      "destPath": "foundation/multimedia/image_framework"
     },
     "dirs": {},
     "scripts": {},
     "component": {
-      "name": "multimedia_image_standard",
+      "name": "multimedia_image_framework",
       "subsystem": "multimedia",
       "syscap": [
         "SystemCapability.Multimedia.Image.Core",
@@ -43,8 +43,8 @@
       },
       "build": {
         "sub_component": [
-          "//foundation/multimedia/image_standard:image_framework",
-          "//foundation/multimedia/image_standard:plugins"
+          "//foundation/multimedia/image_framework:image_framework",
+          "//foundation/multimedia/image_framework:plugins"
         ],
         "inner_kits": [
           {
@@ -60,9 +60,9 @@
                 "decode_listener.h",
                 "pixel_map_parcel.h"
               ],
-              "header_base": "//foundation/multimedia/image_standard/interfaces/innerkits/include"
+              "header_base": "//foundation/multimedia/image_framework/interfaces/innerkits/include"
             },
-            "name": "//foundation/multimedia/image_standard/interfaces/innerkits:image_native"
+            "name": "//foundation/multimedia/image_framework/interfaces/innerkits:image_native"
           },
           {
             "header": {
@@ -72,9 +72,9 @@
                 "native_module_ohos_image.h",
                 "pixel_map_napi.h"
               ],
-              "header_base": "//foundation/multimedia/image_standard/interfaces/kits/js/common/include"
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/js/common/include"
             },
-            "name": "//foundation/multimedia/image_standard/interfaces/innerkits:image"
+            "name": "//foundation/multimedia/image_framework/interfaces/innerkits:image"
           }
         ]
       }

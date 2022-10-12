@@ -22,9 +22,9 @@ config("module_private_config") {
   include_dirs = [
     "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/interface/vision",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
   ]
 }
 
@@ -32,19 +32,19 @@ config("module_private_config") {
 ohos_unittest("PluginManagerTest") {
   module_out_path = module_output_path
 
-  sources = [ "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_manager_test.cpp" ]
+  sources = [ "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_manager_test.cpp" ]
 
   configs = [ ":module_private_config" ]
 
   deps = [
-    "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example1:pluginexample1",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example2:pluginexample2",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example3:pluginexample3",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example1:pluginexample1",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example2:pluginexample2",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example3:pluginexample3",
     "//third_party/googletest:gtest_main",
   ]
 
-  resource_config_file = "//foundation/multimedia/image_standard/test/resource/plugins/ohos_test.xml"
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/plugins/ohos_test.xml"
 }
 
 ###############################################################################

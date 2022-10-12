@@ -715,7 +715,7 @@ declare namespace image {
    * @param buf The buffer of the image.
    * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
-  function CreateIncrementalSource(buf: ArrayBuffer): ImageSource;
+  function createIncrementalSource(buf: ArrayBuffer): ImageSource;
 
   /**
    * Creates an ImageSource instance based on the buffer in incremental.
@@ -725,7 +725,7 @@ declare namespace image {
    * @param options The config of source.
    * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
-  function CreateIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
+  function createIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
 
   /**
    * Creates an ImagePacker instance.
@@ -742,7 +742,7 @@ declare namespace image {
    * @param width The default width in pixels of the Images that this receiver will produce.
    * @param height The default height in pixels of the Images that this receiver will produce.
    * @param format The format of the Image that this receiver will produce. This must be one of the
-   *            {@link ImageFormat} constants. Note that not all formats are supported, like ImageFormat.NV21.
+   *            {@link ImageFormat} constants.
    * @param capacity The maximum number of images the user will want to access simultaneously.
    * @return Returns the ImageReceiver instance if the operation is successful; returns null otherwise.
    */
@@ -755,7 +755,7 @@ declare namespace image {
    * @param width The default width in pixels of the Images that this creator will produce.
    * @param height The default height in pixels of the Images that this creator will produce.
    * @param format The format of the Image that this creator will produce. This must be one of the
-   *            {@link ImageFormat} constants. Note that not all formats are supported, like ImageFormat.NV21.
+   *            {@link ImageFormat} constants.
    * @param capacity The maximum number of images the user will want to access simultaneously.
    * @return Returns the ImageCreator instance if the operation is successful; returns null otherwise.
    */
@@ -764,7 +764,7 @@ declare namespace image {
   /**
    * PixelMap instance.
    * @since 7
-   * @syscap SystemCapability.Multimedia.Image.ImageSource
+   * @syscap SystemCapability.Multimedia.Image.Core
    */
   interface PixelMap {
     /**

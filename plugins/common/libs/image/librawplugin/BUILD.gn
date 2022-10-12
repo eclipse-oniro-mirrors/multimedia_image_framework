@@ -12,13 +12,17 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("rawplugin") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/librawplugin/src/plugin_export.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/librawplugin/src/raw_decoder.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/librawplugin/src/raw_stream.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_decoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/raw_stream.cpp",
   ]
 
   cflags = [
@@ -28,14 +32,14 @@ ohos_shared_library("rawplugin") {
 
   include_dirs = [
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libjpegplugin/include",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/librawplugin/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include/image",
-    "//foundation/multimedia/image_standard/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//third_party/libexif",
     "//third_party/skia",
     "//third_party/skia/third_party/externals/libjpeg-turbo",
@@ -44,10 +48,10 @@ ohos_shared_library("rawplugin") {
   if (use_mingw_win) {
     defines = image_decode_windows_defines
     include_dirs +=
-        [ "//foundation/multimedia/image_standard/mock/native/include" ]
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     ]
 
     libs = [ "//prebuilts/mingw-w64/ohos/linux-x86_64/clang-mingw/x86_64-w64-mingw32/lib/libws2_32.a" ]
@@ -55,9 +59,9 @@ ohos_shared_library("rawplugin") {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
     deps = [
-      "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
-      "//foundation/multimedia/image_standard/plugins/common/libs/image/libjpegplugin:jpegplugin",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/skia/third_party/piex",
     ]
 
@@ -67,7 +71,7 @@ ohos_shared_library("rawplugin") {
     external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
   }
 
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
 }
 
@@ -75,5 +79,5 @@ ohos_prebuilt_etc("rawpluginmetadata") {
   source = "rawplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

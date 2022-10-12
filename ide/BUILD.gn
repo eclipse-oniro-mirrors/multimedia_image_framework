@@ -13,26 +13,26 @@
 
 import("//build/config/ohos/rules.gni")
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 group("image_decode_only") {
   if (host_os == "mac") {
     deps = [
-      "//foundation/multimedia/image_standard/frameworks/jni/imagesource:image_source_jni(${mac_buildtool})",
-      "//foundation/multimedia/image_standard/frameworks/jni/incrementalpixelmap:incremental_pixelmap_jni(${mac_buildtool})",
-      "//foundation/multimedia/image_standard/frameworks/jni/pixelmap:pixelmap_jni(${mac_buildtool})",
-      "//foundation/multimedia/image_standard/interfaces/innerkits:image(${mac_buildtool})",
-      "//foundation/multimedia/image_standard/plugins/common/libs:multimediaplugin(${mac_buildtool})",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/imagesource:image_source_jni(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/incrementalpixelmap:incremental_pixelmap_jni(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/pixelmap:pixelmap_jni(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/plugins/common/libs:multimediaplugin(${mac_buildtool})",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager(${mac_buildtool})",
     ]
   } else {
     deps = [
-      "//foundation/multimedia/image_standard/frameworks/jni/imagesource:image_source_jni(${windows_buildtool})",
-      "//foundation/multimedia/image_standard/frameworks/jni/incrementalpixelmap:incremental_pixelmap_jni(${windows_buildtool})",
-      "//foundation/multimedia/image_standard/frameworks/jni/pixelmap:pixelmap_jni(${windows_buildtool})",
-      "//foundation/multimedia/image_standard/interfaces/innerkits:image(${windows_buildtool})",
-      "//foundation/multimedia/image_standard/plugins/common/libs:multimediaplugin(${windows_buildtool})",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/imagesource:image_source_jni(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/incrementalpixelmap:incremental_pixelmap_jni(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/frameworks/jni/pixelmap:pixelmap_jni(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/plugins/common/libs:multimediaplugin(${windows_buildtool})",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager(${windows_buildtool})",
     ]
   }
 }

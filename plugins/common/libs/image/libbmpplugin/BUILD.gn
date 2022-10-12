@@ -12,23 +12,27 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("bmpplugin") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libbmpplugin/src/bmp_decoder.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libbmpplugin/src/bmp_stream.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libbmpplugin/src/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_decoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_stream.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/plugin_export.cpp",
   ]
 
   include_dirs = [
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include/image",
-    "//foundation/multimedia/image_standard/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libbmpplugin/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/flutter/skia/include/core",
     "//third_party/flutter/skia/include/codec",
     "//third_party/flutter/skia",
@@ -36,8 +40,8 @@ ohos_shared_library("bmpplugin") {
   if (use_mingw_win) {
     defines = image_decode_windows_defines
     include_dirs += [
-      "//foundation/multimedia/image_standard/mock/native/include",
-      "//foundation/multimedia/image_standard/mock/native/include/secure",
+      "//foundation/multimedia/image_framework/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include/secure",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/codec",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/core",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/config/win",
@@ -45,9 +49,9 @@ ohos_shared_library("bmpplugin") {
     ]
     deps = [
       "//foundation/graphic/ide/libs/skia:skia",
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils:image_utils_static",
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/flutter/build/skia:ace_skia_core",
     ]
 
@@ -55,7 +59,7 @@ ohos_shared_library("bmpplugin") {
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     include_dirs += [
-      "//foundation/multimedia/image_standard/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/codec",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/core",
       "${asdk_dir}/static_library/${target_os}_${target_cpu}/include/external/skia/include/config/mac",
@@ -64,16 +68,16 @@ ohos_shared_library("bmpplugin") {
     ]
     deps = [
       "//foundation/graphic/ide/libs/skia:skia",
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils:image_utils_static",
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager_static",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils:image_utils",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/skia:ace_skia_ohos",
     ]
 
@@ -85,12 +89,12 @@ ohos_shared_library("bmpplugin") {
     #aosp_deps = [ "shared_library:libhwui" ]
   }
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }
 
 ohos_prebuilt_etc("bmppluginmetadata") {
   source = "bmpplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

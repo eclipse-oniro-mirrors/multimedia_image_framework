@@ -12,24 +12,28 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("webpplugin") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libwebpplugin/src/plugin_export.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
   ]
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/pixelconverter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include/image",
-    "//foundation/multimedia/image_standard/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_standard/plugins/common/libs/image/libwebpplugin/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//third_party/flutter/skia/third_party/externals/libwebp/src",
     "//third_party/flutter/skia/include/core",
     "//third_party/flutter/skia/include/encode",
@@ -44,11 +48,11 @@ ohos_shared_library("webpplugin") {
   if (use_mingw_win) {
     defines = image_decode_windows_defines
     include_dirs +=
-        [ "//foundation/multimedia/image_standard/mock/native/include" ]
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
 
     deps = [
       "${asdk_dir}/static_library/${target_os}_${target_cpu}:libwebp-image_static",
-      "//foundation/multimedia/image_standard/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
   } else {
     defines = [ "DUAL_ADAPTER" ]
@@ -56,9 +60,9 @@ ohos_shared_library("webpplugin") {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
 
     deps = [
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-      "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
-      "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/skia:ace_skia_ohos",
     ]
 
@@ -68,7 +72,7 @@ ohos_shared_library("webpplugin") {
     external_deps = [ "c_utils:utils" ]
   }
 
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 
   subsystem_name = "multimedia"
 }
@@ -77,5 +81,5 @@ ohos_prebuilt_etc("webppluginmetadata") {
   source = "webpplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

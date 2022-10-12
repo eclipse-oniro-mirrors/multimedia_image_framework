@@ -19,29 +19,33 @@ import("//build/ohos.gni")
 
 js_declaration("mypixelmap_js") {
   part_name = "multimedia_image"
-  sources = [ "//foundation/multimedia/image_standard/interfaces/kits/native/ndk_test_example/@ohos.xtstest.mypixelmap.d.ts" ]
+  sources = [ "//foundation/multimedia/image_framework/interfaces/kits/native/ndk_test_example/@ohos.xtstest.mypixelmap.d.ts" ]
 }
 
 ohos_copy("mypixelmap_declaration") {
-  sources = [ "//foundation/multimedia/image_standard/interfaces/kits/native/ndk_test_example/@ohos.xtstest.mypixelmap.d.ts" ]
+  sources = [ "//foundation/multimedia/image_framework/interfaces/kits/native/ndk_test_example/@ohos.xtstest.mypixelmap.d.ts" ]
   outputs = [ target_out_dir + "/$target_name/" ]
   module_source_dir = target_out_dir + "/$target_name"
   module_install_name = ""
 }
 
 ohos_shared_library("mypixelmap") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   install_enable = true
 
   sources = [ "my_pixel_map.cpp" ]
 
   include_dirs = [
     "include",
-    "//foundation/multimedia/image_standard/interfaces/kits/native/include",
+    "//foundation/multimedia/image_framework/interfaces/kits/native/include",
   ]
 
   deps = [
     "//foundation/arkui/napi:ace_napi",
-    "//foundation/multimedia/image_standard/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
   ]
 
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]

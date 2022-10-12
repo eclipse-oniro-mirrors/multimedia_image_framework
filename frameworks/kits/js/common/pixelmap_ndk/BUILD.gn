@@ -13,9 +13,13 @@
 
 import("//build/ohos.gni")
 
-SUBSYSTEM_DIR = "//foundation/multimedia/image_standard"
+SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
 
 ohos_shared_library("pixelmap_ndk") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   include_dirs = [
     "include",
     "//foundation/arkui/napi/interfaces/inner_api",
@@ -31,5 +35,5 @@ ohos_shared_library("pixelmap_ndk") {
   deps = [ "$SUBSYSTEM_DIR/interfaces/innerkits:image" ]
 
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 }

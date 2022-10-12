@@ -309,11 +309,6 @@ napi_value ImagePackerNapi::CreateImagePacker(napi_env env, napi_callback_info i
 
 void ImagePackerNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
-    ImagePackerNapi *pImagePackerNapi = reinterpret_cast<ImagePackerNapi*>(nativeObject);
-
-    if (IMG_NOT_NULL(pImagePackerNapi)) {
-        pImagePackerNapi->release();
-    }
 }
 
 static int64_t parseBufferSize(napi_env env, napi_value root)

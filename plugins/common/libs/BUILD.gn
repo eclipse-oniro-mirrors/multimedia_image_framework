@@ -12,7 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/multimedia/image_standard/ide/image_decode_config.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 group("multimediaplugin") {
   if (use_mingw_win || use_clang_mac) {
@@ -27,10 +27,10 @@ group("multimediaplugin") {
       "image/libpngplugin:pngpluginmetadata",
       "image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
-      "//foundation/multimedia/image_standard/adapter/frameworks/libbmpplugin:bmpplugin",
-      "//foundation/multimedia/image_standard/adapter/frameworks/libbmpplugin:bmppluginmetadata",
-      "//foundation/multimedia/image_standard/adapter/frameworks/libwbmpplugin:wbmpplugin",
-      "//foundation/multimedia/image_standard/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
+      "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",
+      "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmppluginmetadata",
+      "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
+      "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
     ]
   } else {
     DUAL_ADAPTER = true
@@ -53,17 +53,17 @@ group("multimediaplugin") {
       "image/libwebpplugin:webpplugin",
       "image/libwebpplugin:webppluginmetadata",
 
-      #      "//foundation/multimedia/image_standard/adapter/frameworks/libhwjpegplugin:hwjpegplugin",
-      #      "//foundation/multimedia/image_standard/adapter/frameworks/libhwjpegplugin:hwjpegpluginmetadata",
+      #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegplugin",
+      #      "//foundation/multimedia/image_framework/adapter/frameworks/libhwjpegplugin:hwjpegpluginmetadata",
     ]
     if (DUAL_ADAPTER) {
       deps += [
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/libbmpplugin:bmpplugin",
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/libbmpplugin:bmppluginmetadata",
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/librawplugin:rawplugin",
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/librawplugin:rawpluginmetadata",
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/libwbmpplugin:wbmpplugin",
-        #        "//foundation/multimedia/image_standard/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmppluginmetadata",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/librawplugin:rawplugin",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/librawplugin:rawpluginmetadata",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
+        #        "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmppluginmetadata",
       ]
     }
   }

@@ -260,7 +260,6 @@ bool ImplClass::AnalysisServices(const json &classInfo)
     uint32_t lastInterfaceID = UINT32_MAX_VALUE;
 #endif
     uint16_t serviceType;
-    uint32_t result;
     bool serviceAdded = false;
     const json &servicesInfo = classInfo["services"];
     for (size_t i = 0; i < serviceNum; i++) {
@@ -288,7 +287,7 @@ bool ImplClass::AnalysisServices(const json &classInfo)
         }
         lastInterfaceID = interfaceID;
 #endif
-        result = JsonHelper::GetUint16Value(serviceInfo, "serviceType", serviceType);
+        uint32_t result = JsonHelper::GetUint16Value(serviceInfo, "serviceType", serviceType);
         if (result != SUCCESS) {
             if (result != ERR_NO_TARGET) {
                 HiLog::Error(LABEL, "read serviceType failed at %{public}zu.", i);
@@ -328,6 +327,11 @@ bool ImplClass::AnalysisMaxInstance(const json &classInfo)
     return true;
 }
 
+PluginClassBase *CfiFactory(PluginCreateFunc factory, const string &className) __attribute__((no_sanitize("cfi")))
+{
+    return factory(className);
+}
+
 PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
 {
     // since the plugin library may be unloaded and reloaded, the pointer cannot guarantee a constant value,
@@ -338,7 +342,7 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
         return nullptr;
     }
 
-    PluginClassBase *pluginBaseObj = factory(className_);
+    PluginClassBase *pluginBaseObj = CfiFactory(factory, className_);
     if (pluginBaseObj == nullptr) {
         HiLog::Error(LABEL, "create object result null, className: %{public}s.", className_.c_str());
         return nullptr;

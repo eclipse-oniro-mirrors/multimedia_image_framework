@@ -14,24 +14,28 @@
 import("//build/ohos.gni")
 
 ohos_shared_library("pluginexample2") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
   sources = [
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example2/cloud_label_detector2.cpp",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example2/label_detector2.cpp",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/plugin_example2/plugin_export.cpp",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example2/cloud_label_detector2.cpp",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example2/label_detector2.cpp",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example2/plugin_export.cpp",
   ]
 
   include_dirs = [
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_standard/plugins/manager/test/unittest/common/plugin_example/interface/vision",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
   ]
 
   deps = [
     "//base/hiviewdfx/hilog/frameworks/native:libhilogutil",
-    "//foundation/multimedia/image_standard/plugins/manager:pluginmanager",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
   ]
 
   subsystem_name = "multimedia"

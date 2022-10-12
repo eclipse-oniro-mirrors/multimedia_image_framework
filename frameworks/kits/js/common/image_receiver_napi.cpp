@@ -197,11 +197,6 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
 
 void ImageReceiverNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
-    ImageReceiverNapi *pImageReceiverNapi = reinterpret_cast<ImageReceiverNapi*>(nativeObject);
-
-    if (IMG_NOT_NULL(pImageReceiverNapi)) {
-        pImageReceiverNapi->release();
-    }
 }
 
 napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_info info)
@@ -259,7 +254,7 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
     return result;
 }
 
-static bool CheckArgs(ImageReceiverCommonArgs &args)
+static bool CheckArgs(const ImageReceiverCommonArgs &args)
 {
     if (args.async != CallType::GETTER) {
         if (args.queryArgs == nullptr) {
@@ -493,7 +488,7 @@ static void DoTest(std::shared_ptr<ImageReceiver> imageReceiver)
         .height = 0x100,
         .strideAlignment = 0x8,
         .format = PIXEL_FMT_RGBA_8888,
-        .usage = HBM_USE_CPU_READ | HBM_USE_CPU_WRITE | HBM_USE_MEM_DMA,
+        .usage = BUFFER_USAGE_CPU_READ| BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
         .timeout = 0,
     };
 
@@ -708,7 +703,7 @@ static bool CheckOnParam0(napi_env env, napi_value value, const std::string& ref
     bool ret = true;
     size_t bufLength = 0;
     napi_status status = napi_get_value_string_utf8(env, value, nullptr, 0, &bufLength);
-    if (status != napi_ok || bufLength > PATH_MAX || bufLength < 0) {
+    if (status != napi_ok || bufLength > PATH_MAX) {
         return false;
     }
 

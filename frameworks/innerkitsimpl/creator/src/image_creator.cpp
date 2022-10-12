@@ -232,7 +232,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     config.height = iraContext_->GetHeight();
     config.format = PIXEL_FMT_RGBA_8888;
     config.strideAlignment = 0x8;
-    config.usage = HBM_USE_CPU_READ | HBM_USE_CPU_WRITE | HBM_USE_MEM_DMA;
+    config.usage = BUFFER_USAGE_CPU_READ| BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
     config.timeout = 0;
     SurfaceError surfaceError = creatorSurface->RequestBuffer(buffer, flushFence, config);
     if (surfaceError == SURFACE_ERROR_OK) {

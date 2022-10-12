@@ -13,24 +13,24 @@
 
 import("//build/test.gni")
 
-module_output_path = "multimedia_image/image_standard"
+module_output_path = "multimedia_image/image_framework"
 
 ohos_unittest("imagepixelmaptest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_standard/adapter/frameworks/bitmapconverter/native/include",
+    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
-  sources = [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_pixel_map_test.cpp" ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_test.cpp" ]
 
   deps = [
-    #    "//foundation/multimedia/image_standard/adapter/frameworks/bitmapconverter/native:bitmapconverter",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    #    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native:bitmapconverter",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
@@ -44,24 +44,24 @@ ohos_unittest("imagepixelmapparceltest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/multimedia/image_standard/mock/native/include",
+    "//foundation/multimedia/image_framework/mock/native/include",
   ]
   sources = [ "./unittest/image_pixel_map_parcel_test.cpp" ]
 
   deps = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
 
-    #    "//foundation/multimedia/image_standard/mock/native:utils_mock_static",
-    #    "//foundation/multimedia/image_standard/mock/native:log_mock_static",
+    #    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+    #    "//foundation/multimedia/image_framework/mock/native:log_mock_static",
   ]
   external_deps = [
     "c_utils:utils",
@@ -69,7 +69,7 @@ ohos_unittest("imagepixelmapparceltest") {
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
 
-    #"//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    #"//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
   ]
 }
 
@@ -78,33 +78,33 @@ ohos_unittest("imagesourcetest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_gif_test.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_jpeg_test.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_png_test.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_webp_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_gif_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_jpeg_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_png_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_webp_test.cpp",
   ]
   if (DUAL_ADAPTER) {
     sources += [
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_bmp_test.cpp",
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_raw_test.cpp",
-      "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_wbmp_test.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_bmp_test.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_raw_test.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_wbmp_test.cpp",
     ]
   }
 
   deps = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils:image_utils",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
@@ -112,25 +112,24 @@ ohos_unittest("imagesourcetest") {
   external_deps = [ "c_utils:utils" ]
 
   # external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
-  resource_config_file =
-      "//foundation/multimedia/image_standard/test/resource/image/ohos_test.xml"
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
 }
 
 ohos_unittest("colorconvertertest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
-  sources = [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/color_converter_test.cpp" ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/color_converter_test.cpp" ]
 
   deps = [
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
@@ -144,19 +143,19 @@ ohos_unittest("transformtest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
-  sources = [ "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_transform_test.cpp" ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_transform_test.cpp" ]
 
   deps = [
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
@@ -169,10 +168,10 @@ ohos_unittest("imagecolorspacetest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_standard/interfaces/innerkits/include",
-    "//foundation/multimedia/image_standard/plugins/manager/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
@@ -185,20 +184,19 @@ ohos_unittest("imagecolorspacetest") {
   ]
 
   sources = [
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_color_space_test.cpp",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_color_space_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
   ]
 
   deps = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-    "//foundation/multimedia/image_standard/frameworks/innerkitsimpl/utils:image_utils",
-    "//foundation/multimedia/image_standard/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
-  resource_config_file =
-      "//foundation/multimedia/image_standard/test/resource/image/ohos_test.xml"
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
   external_deps = [ "c_utils:utils" ]
 }
 
