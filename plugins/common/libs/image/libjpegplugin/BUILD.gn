@@ -19,7 +19,7 @@ import("//third_party/flutter/flutter_config.gni")
 ohos_shared_library("jpegplugin") {
   sanitize = {
     cfi = true
-    debug = false
+    debug = true
   }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
