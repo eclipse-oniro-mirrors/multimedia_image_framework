@@ -15,10 +15,6 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("webpplugin") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/plugin_export.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
