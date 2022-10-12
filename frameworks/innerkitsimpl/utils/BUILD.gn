@@ -15,10 +15,6 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("image_utils") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/utils/include",
