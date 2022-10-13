@@ -86,7 +86,7 @@ config("pixelconvertadapter_public_config") {
 ohos_shared_library("pixelconvertadapter") {
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
 
