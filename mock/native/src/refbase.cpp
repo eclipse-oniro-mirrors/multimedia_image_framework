@@ -417,16 +417,16 @@ bool RefBase::IsExtendLifeTimeSet()
     return false;
 }
 
-void RefBase::OnFirstStrongRef(const void * /*objectId*/)
+void RefBase::OnFirstStrongRef(const void *)
 {}
 
-void RefBase::OnLastStrongRef(const void * /*objectId*/)
+void RefBase::OnLastStrongRef(const void *)
 {}
 
-void RefBase::OnLastWeakRef(const void * /*objectId*/)
+void RefBase::OnLastWeakRef(const void *)
 {}
 
-bool RefBase::OnAttemptPromoted(const void * /*objectId*/)
+bool RefBase::OnAttemptPromoted(const void *)
 {
     return true;
 }

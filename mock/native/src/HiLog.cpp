@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "hilog/log.h"
 #include <iostream>
 #include "__config"
 #include "iosfwd"
+#include "hilog/log.h"
 #include "hilog/log_cpp.h"
 #include "ostream"
 
