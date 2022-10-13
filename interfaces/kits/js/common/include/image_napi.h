@@ -35,8 +35,7 @@
 namespace OHOS {
 namespace Media {
 struct ImageAsyncContext;
-struct Component
-{
+struct Component {
     int32_t rowStride = 0;
     int32_t pixelStride = 0;
     std::vector<uint8_t> raw;

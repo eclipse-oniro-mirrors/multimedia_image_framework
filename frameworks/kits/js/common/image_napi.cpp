@@ -56,35 +56,43 @@ ImageNapi::~ImageNapi()
 {
     release();
 }
-static inline void YUV422SPDataCopy(uint8_t* surfaceBuffer, uint64_t bufferSize,
-    std::vector<uint8_t> &y, uint64_t ySize, std::vector<uint8_t> &u,
-    std::vector<uint8_t> &v, uint64_t uvSize, bool flip)
+struct YUV422SPData {
+    std::vector<uint8_t> y;
+    std::vector<uint8_t> u;
+    std::vector<uint8_t> v;
+    uint64_t ySize;
+    uint64_t uvSize;
+};
+
+
+static void YUV422SPDataCopy(uint8_t* surfaceBuffer, uint64_t bufferSize,
+    YUV422SPData &data, bool flip)
 {
     uint64_t ui = NUM0, vi = NUM0;
     for (uint64_t i = NUM0; i < bufferSize; i++) {
-        if (i < ySize) {
+        if (i < data.ySize) {
             if (flip) {
-                surfaceBuffer[i] = y[i];
+                surfaceBuffer[i] = data.y[i];
             } else {
-                y[i] = surfaceBuffer[i];
+                data.y[i] = surfaceBuffer[i];
             }
             continue;
         }
-        if (vi >= uvSize || ui >= uvSize) {
+        if (vi >= data.uvSize || ui >= data.uvSize) {
             // Over write buffer size.
             continue;
         }
         if (i % NUM2 == NUM1) {
             if (flip) {
-                surfaceBuffer[i] = v[vi++];
+                surfaceBuffer[i] = data.v[vi++];
             } else {
-                v[vi++] = surfaceBuffer[i];
+                data.v[vi++] = surfaceBuffer[i];
             }
         } else {
             if (flip) {
-                surfaceBuffer[i] = u[ui++];
+                surfaceBuffer[i] = data.u[ui++];
             } else {
-                u[ui++] = surfaceBuffer[i];
+                data.u[ui++] = surfaceBuffer[i];
             }
         }
     }
@@ -112,7 +120,7 @@ static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surfac
     uint64_t uvSize = static_cast<uint64_t>(surface->GetHeight() * uvStride);
     if (surfaceSize < (ySize + uvSize * NUM2)) {
         HiLog::Error(LABEL, "Surface size %{public}" PRIu64 " < y plane %{public}" PRIu64
-            " + uv plane %{public}" PRIu64 , surfaceSize, ySize, uvSize * NUM2);
+            " + uv plane %{public}" PRIu64, surfaceSize, ySize, uvSize * NUM2);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
@@ -123,14 +131,19 @@ static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surfac
         HiLog::Error(LABEL, "Create Component failed");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    YUV422SPDataCopy(surfaceBuffer, surfaceSize, y->raw, ySize, u->raw, v->raw, uvSize, false);
+    struct YUV422SPData data;
+    data.ySize = ySize;
+    data.uvSize = uvSize;
+    data.y = y->raw;
+    data.u = u->raw;
+    data.v = v->raw;
+    YUV422SPDataCopy(surfaceBuffer, surfaceSize, data, false);
     return SUCCESS;
 }
 static uint32_t SplitSurfaceToComponent(ImageNapi* imageNapi, sptr<SurfaceBuffer> surface)
 {
     auto surfaceFormat = surface->GetFormat();
-    switch (surfaceFormat)
-    {
+    switch (surfaceFormat) {
         case int32_t(ImageFormat::YCBCR_422_SP):
         case int32_t(PIXEL_FMT_YCBCR_422_SP):
             return ProcessYUV422SP(imageNapi, surface);
@@ -198,10 +211,9 @@ void ImageNapi::NativeRelease()
         sSurfaceBuffer_ = nullptr;
     }
     if (componentData_.size() > 0) {
-        for(auto iter = componentData_.begin();iter != componentData_.end();)
-        {
+        for (auto iter = componentData_.begin(); iter != componentData_.end(); iter++) {
             iter->second = nullptr;
-            componentData_.erase(iter++);
+            componentData_.erase(iter);
         }
     }
 }
@@ -599,10 +611,10 @@ static bool IsYUVType(const int32_t& type)
 }
 static inline bool IsYCbCr422SP(int32_t format)
 {
-    if(int32_t(ImageFormat::YCBCR_422_SP) == format) {
+    if (int32_t(ImageFormat::YCBCR_422_SP) == format) {
         return true;
     }
-    if(int32_t(PIXEL_FMT_YCBCR_422_SP) == format) {
+    if (int32_t(PIXEL_FMT_YCBCR_422_SP) == format) {
         return true;
     }
     return false;
@@ -657,7 +669,7 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
             HiLog::Error(LABEL, "napi_create_arraybuffer failed!");
         }
     } else {
-        HiLog::Error(LABEL, "buffer is nullptr or bufferSize is %{public}" PRIu32 , bufferSize);
+        HiLog::Error(LABEL, "buffer is nullptr or bufferSize is %{public}" PRIu32, bufferSize);
     }
 
     IMAGE_FUNCTION_OUT();
@@ -830,7 +842,13 @@ uint32_t ImageNapi::CombineComponentsIntoSurface()
     }
     uint32_t bufferSize = sSurfaceBuffer_->GetSize();
     uint8_t* buffer = static_cast<uint8_t*>(sSurfaceBuffer_->GetVirAddr());
-    YUV422SPDataCopy(buffer, bufferSize, y->raw, y->raw.size(), u->raw, v->raw, u->raw.size(), true);
+    struct YUV422SPData data;
+    data.ySize = y->raw.size();
+    data.uvSize = u->raw.size();
+    data.y = y->raw;
+    data.u = u->raw;
+    data.v = v->raw;
+    YUV422SPDataCopy(buffer, bufferSize, data, true);
     return SUCCESS;
 }
 }  // namespace Media
