@@ -17,10 +17,6 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("//third_party/flutter/flutter_config.gni")
 
 ohos_shared_library("jpegplugin") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
