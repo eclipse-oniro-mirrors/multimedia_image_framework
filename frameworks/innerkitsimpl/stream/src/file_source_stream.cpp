@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include "file_source_stream.h"
-#include "directory_ex.h"
+#include <unistd.h>
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
-#include <unistd.h>
+#include "directory_ex.h"
+#include "file_source_stream.h"
 
 namespace OHOS {
 namespace Media {

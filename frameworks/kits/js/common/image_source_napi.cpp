@@ -246,9 +246,7 @@ static napi_value CreateEnumTypeObject(napi_env env,
 }
 
 ImageSourceNapi::ImageSourceNapi():env_(nullptr)
-{
-
-}
+{   }
 
 ImageSourceNapi::~ImageSourceNapi()
 {
@@ -362,9 +360,7 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
 
     napi_status status;
     napi_value thisVar = nullptr;
-
     status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<ImageSourceNapi> pImgSrcNapi = std::make_unique<ImageSourceNapi>();
         if (pImgSrcNapi != nullptr) {

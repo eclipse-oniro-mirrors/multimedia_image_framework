@@ -338,8 +338,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     if (memset_s(dstPixels, bufferSize, 0, bufferSize) != EOK) {
         HiLog::Error(LABEL, "dstPixels memset_s failed.");
     }
-
-    Position srcPosition{ srcRect.left, srcRect.top };
+    Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowBytes(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
@@ -855,7 +854,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     }
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    Position srcPosition{ region.left, region.top };
+    Position srcPosition { region.left, region.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, dst + offset, stride,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixels by rect call ReadPixelsConvert fail.");
@@ -878,7 +877,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
     ImageInfo dstImageInfo =
 		MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t dstRowBytes = BGRA_BYTES;
-    Position srcPosition{ pos.x, pos.y };
+    Position srcPosition { pos.x, pos.y };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, &dst, dstRowBytes,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixel by pos call ReadPixelsConvert fail.");
@@ -961,7 +960,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
     ImageInfo srcImageInfo =
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t srcRowBytes = BGRA_BYTES;
-    Position dstPosition{ pos.x, pos.y };  // source is per pixel.
+    Position dstPosition { pos.x, pos.y };  // source is per pixel.
     if (!PixelConvertAdapter::WritePixelsConvert(&color, srcRowBytes, srcImageInfo, data_, dstPosition, rowDataSize_,
         imageInfo_)) {
         HiLog::Error(LABEL, "write pixel by pos call WritePixelsConvert fail.");
@@ -994,7 +993,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         HiLog::Error(LABEL, "write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    Position dstPosition{ region.left, region.top };
+    Position dstPosition { region.left, region.top };
     ImageInfo srcInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowDataSize_,

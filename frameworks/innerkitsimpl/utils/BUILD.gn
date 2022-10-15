@@ -47,6 +47,12 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("image_utils") {
+    if (!use_clang_android) {
+      sanitize = {
+        cfi = true
+        debug = true
+      }
+    }
     include_dirs = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
       "//foundation/multimedia/utils/include",
