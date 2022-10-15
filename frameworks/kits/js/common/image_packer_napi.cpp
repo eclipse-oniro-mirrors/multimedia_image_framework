@@ -493,9 +493,9 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
         napi_create_promise(env, &(asyncContext->deferred), &result);
     }
 
-    #if !defined(_IOS) && !defined(_ANDROID)
+#if !defined(_IOS) && !defined(_ANDROID)
     ImageNapiUtils::HicheckerReport();
-    #endif
+#endif
 
     if (asyncContext->errorMsg != nullptr) {
         IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackingError",

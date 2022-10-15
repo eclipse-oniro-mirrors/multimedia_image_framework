@@ -14,15 +14,16 @@
  */
 
 #include "hitrace_meter.h"
+namespace OHOS {
+    void StartTrace(uint64_t label, const std::string& value, float limit)
+    {
+        (void) label;
+        (void) value;
+        (void) limit;
+    }
 
-void StartTrace(uint64_t label, const std::string& value, float limit)
-{
-    (void) label;
-    (void) value;
-    (void) limit;
-}
-
-void FinishTrace(uint64_t label)
-{
-    (void) label;
+    void FinishTrace(uint64_t label)
+    {
+        (void) label;
+    }
 }

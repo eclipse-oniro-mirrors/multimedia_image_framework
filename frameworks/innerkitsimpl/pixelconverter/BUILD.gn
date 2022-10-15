@@ -119,10 +119,6 @@ config("pixelconvertadapter_public_config") {
 
 if (use_clang_ios) {
   ohos_source_set("pixelconvertadapter") {
-    sanitize = {
-      cfi = true
-      debug = false
-    }
     sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
 
     public_configs = [ ":pixelconvertadapter_public_config" ]
@@ -131,6 +127,7 @@ if (use_clang_ios) {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//third_party/flutter/build/skia:ace_skia_ios",
     ]
 
     #relative_install_dir = "module/multimedia"
@@ -139,10 +136,6 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("pixelconvertadapter") {
-    sanitize = {
-      cfi = true
-      debug = false
-    }
     sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
 
     public_configs = [ ":pixelconvertadapter_public_config" ]
@@ -161,13 +154,6 @@ if (use_clang_ios) {
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
         "//third_party/flutter/build/skia:ace_skia_mac",
-      ]
-    } else if (use_clang_ios) {
-      defines = image_decode_ios_defines
-      deps = [
-        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-        "//third_party/flutter/build/skia:ace_skia_ios",
       ]
     } else if (use_clang_android) {
       deps = [

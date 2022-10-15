@@ -17,10 +17,6 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("//third_party/flutter/flutter_config.gni")
 
 ohos_shared_library("jpegplugin") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
@@ -75,7 +71,6 @@ ohos_shared_library("jpegplugin") {
     defines = image_decode_mac_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//foundation/multimedia/image_framework/mock/native/include/hilog",
       "//third_party/flutter/skia/third_party/libjpeg-turbo",
       "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
     ]
@@ -91,13 +86,20 @@ ohos_shared_library("jpegplugin") {
     ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
-    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
     sources += [
       "$flutter_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
     ]
     deps = [
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/flutter/build/skia:ace_skcms",
@@ -106,17 +108,26 @@ ohos_shared_library("jpegplugin") {
     ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
-    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
     sources += [
       "$flutter_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
     ]
     deps = [
-      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      #"//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/flutter/build/skia:ace_skcms",
-      "//third_party/flutter/build/skia:ace_skia_android",
+
+      #"//third_party/flutter/build/skia:ace_skia_android",
       "//third_party/libexif:libexif",
     ]
   } else {

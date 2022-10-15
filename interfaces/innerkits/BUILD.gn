@@ -31,7 +31,9 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
     "//utils/jni/jnikit/include",
@@ -43,6 +45,21 @@ config("image_external_config") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
+    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+  ]
+
+  include_dirs += [
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//third_party/flutter/skia/include/codec",
+    "//third_party/flutter/skia",
+    "//third_party/flutter/skia/include/core",
+    "//third_party/flutter/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/libexif",
   ]
 
   if (use_mingw_win) {
@@ -106,7 +123,7 @@ ohos_copy("image_declaration") {
 }
 
 if (use_clang_ios) {
-  ohos_source_set("image_napi") {
+  ohos_source_set("image") {
     public_configs = [ ":image_external_config" ]
     sources = [
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
@@ -139,12 +156,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    ]
-
-    external_deps = [
-      "c_utils:utils",
-      "hichecker_native:libhichecker",
-      "hitrace_native:hitrace_meter",
     ]
 
     #relative_install_dir = "module/multimedia"
@@ -185,6 +196,14 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
     ]
 
+    sources += [
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
+    ]
+
     defines = image_decode_ios_defines
     cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
     sources -= [
@@ -198,9 +217,20 @@ if (use_clang_ios) {
       "//foundation/arkui/napi:ace_napi",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//third_party/flutter/build/skia:ace_skia_ios",
+    ]
+
+    sources += [
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+      "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+    ]
+    deps += [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/flutter/build/skia:ace_skia_ios",
+      "//third_party/flutter/build/libjpeg:ace_libjpeg",
+      "//third_party/flutter/build/skia:ace_skcms",
+      "//third_party/libexif:exif_static",
     ]
 
     #  relative_install_dir = "module/multimedia"
@@ -226,24 +256,7 @@ if (use_clang_ios) {
       "-DIMAGE_COLORSPACE_FLAG",
     ]
 
-    if (use_clang_ios) {
-      defines = image_decode_ios_defines
-      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
-      sources -= [
-        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
-        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
-        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
-      ]
-      deps = [
-        ":image_native",
-        "//foundation/arkui/napi:ace_napi",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      ]
-    } else if (use_clang_android) {
+    if (use_clang_android) {
       defines = image_decode_android_defines
       cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
       sources -= [
@@ -347,27 +360,17 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
         "//third_party/bounds_checking_function:libsec_statics",
       ]
-    } else if (use_clang_ios) {
-      defines = image_decode_ios_defines
-      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
-      sources -= [
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
-      ]
-      deps = [
-        "//foundation/arkui/napi:ace_napi",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-        "//third_party/flutter/build/skia:ace_skia_ios",
-      ]
     } else if (use_clang_android) {
       defines = image_decode_android_defines
       cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+
+      sources += [
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
+      ]
       sources -= [
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
@@ -384,6 +387,18 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
         "//third_party/flutter/build/skia:ace_skia_android",
+      ]
+
+      sources += [
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+        "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+      ]
+      deps += [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+        "//third_party/flutter/build/libjpeg:ace_libjpeg",
+        "//third_party/flutter/build/skia:ace_skcms",
+        "//third_party/libexif:libexif",
       ]
 
       aosp_deps = [ "shared_library:libnativewindow" ]
@@ -423,6 +438,41 @@ if (use_clang_ios) {
     part_name = "multimedia_image_framework"
   }
 }
+
+ohos_shared_library("multimedia_image") {
+  public_configs = [ ":image_external_config" ]
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
+    "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
+  ]
+
+  cflags = [ "-DIMAGE_DEBUG_FLAG" ]
+
+  defines = image_decode_android_defines
+  deps = [
+    ":image_native",
+    "//commonlibrary/c_utils/base:utils",
+    "//foundation/arkui/napi:ace_napi",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hichecker_native:libhichecker",
+    "hitrace_native:hitrace_meter",
+  ]
+  relative_install_dir = "module/multimedia"
+  subsystem_name = "multimedia"
+  part_name = "multimedia_image_framework"
+}
+
 ohos_static_library("image_static_napi") {
   public_configs = [ ":image_external_config" ]
 

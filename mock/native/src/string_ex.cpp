@@ -17,7 +17,6 @@
 using namespace std;
 
 namespace OHOS {
-
 bool IsNumericStr(const string& str)
 {
     if (str.empty()) {
@@ -29,11 +28,10 @@ bool IsNumericStr(const string& str)
             return false;
         }
     }
-
     return true;
 }
 
-string TrimStr(const string& str, const char cTrim /*= ' '*/)
+string TrimStr(const string& str, const char cTrim)
 {
     string strTmp = str;
     strTmp.erase(0, strTmp.find_first_not_of(cTrim));
@@ -75,5 +73,4 @@ void SplitStr(const string& str, const string& sep, vector<string>& strs, bool c
         }
     }
 }
-
 }

@@ -17,7 +17,6 @@
 #include <vector>
 
 namespace OHOS {
-
 /**
  * The IsNumericStr function judge all characters of the string are numbers,
  * return true if all are numbers, else false.
@@ -45,6 +44,4 @@ void SplitStr(const std::string& str, const std::string& sep, std::vector<std::s
  * return true if same, else false.
  */
 bool IsSameTextStr(const std::string& first, const std::string& second);
-
 }
-

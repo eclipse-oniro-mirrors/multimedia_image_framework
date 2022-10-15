@@ -21,6 +21,26 @@
 #define EOK (0)
 #endif
 
+#if SECUREC_SUPPORT_FORMAT_WARNING && !defined(SECUREC_PCLINT)
+#define SECUREC_ATTRIBUTE(x, y)  __attribute__((format(printf, (x), (y))))
+#else
+#define SECUREC_ATTRIBUTE(x, y)
+#endif
+
+/* if you need export the function of this library in Win32 dll, use __declspec(dllexport) */
+#ifdef SECUREC_IS_DLL_LIBRARY
+#ifdef SECUREC_DLL_EXPORT
+#define SECUREC_API __declspec(dllexport)
+#else
+#define SECUREC_API __declspec(dllimport)
+#endif
+#else
+/* Standardized function declaration . If a security function is declared in the your code,
+ * it may cause a compilation alarm,Please delete the security function you declared
+ */
+#define SECUREC_API extern
+#endif
+
 #ifndef errno_t
 typedef int errno_t;
 #endif
@@ -29,7 +49,6 @@ typedef int errno_t;
 extern "C" {
 #endif
     /**
-    * @Description:The memset_s function copies the value of c (converted to an unsigned char) into each of the first count characters of the object pointed to by dest.
     * @param dest - destination  address
     * @param destMax -The maximum length of destination buffer
     * @param c - the value to be copied
@@ -39,7 +58,6 @@ extern "C" {
     errno_t memset_s(void *dest, size_t destMax, int c, size_t count);
 
     /**
-    * @Description:The memcpy_s function copies n characters from the object pointed to by src into the object pointed to by dest.
     * @param dest - destination  address
     * @param destMax -The maximum length of destination buffer
     * @param src -source  address
@@ -47,10 +65,16 @@ extern "C" {
     * @return  EOK if there was no runtime-constraint violation
     */
     errno_t memcpy_s(void *dest, size_t destMax, const void *src, size_t count);
+
+    /**
+    * @param strDest -  produce output according to a format ,write to the character string strDest
+    * @param destMax - The maximum length of destination buffer(including the terminating null byte ('\0'))
+    * @param format - format string
+    */
+    SECUREC_API int sprintf_s(char *strDest, size_t destMax, const char *format, ...) SECUREC_ATTRIBUTE(3, 4);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
-
-#define F_DUPFD_CLOEXEC 1030
 
 #endif // MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H_

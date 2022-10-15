@@ -166,5 +166,4 @@ uint32_t Parcel::ReadUint32()
 {
     return Read<uint32_t>();
 }
-
 }  // namespace OHOS

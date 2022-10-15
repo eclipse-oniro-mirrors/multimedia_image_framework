@@ -20,7 +20,6 @@
 #include <functional>
 
 namespace OHOS {
-
 #define INITIAL_PRIMARY_VALUE (1 << 28)
 
 class RefBase;
@@ -167,7 +166,6 @@ public:
 private:
     RefCounter *refs_ = nullptr;
 };
-
 } // namespace OHOS
 
 #endif // MOCK_NATIVE_INCLUDE_REFBASE_H_

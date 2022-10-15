@@ -16,10 +16,6 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 if (use_clang_ios) {
   ohos_source_set("pluginmanager") {
-    sanitize = {
-      cfi = true
-      debug = false
-    }
     sources = [
       "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
       "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
@@ -39,7 +35,7 @@ if (use_clang_ios) {
 
     cflags = [
       "-DIMAGE_DEBUG_FLAG",
-      "-DIMAGE_COLORSPACE_FLAG",
+      #"-DIMAGE_COLORSPACE_FLAG",
     ]
 
     include_dirs = [
@@ -77,10 +73,6 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("pluginmanager") {
-    sanitize = {
-      cfi = true
-      debug = false
-    }
     sources = [
       "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
       "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
@@ -141,8 +133,8 @@ if (use_clang_ios) {
       ]
     } else if (use_clang_android) {
       include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
 
-      ldflags = [ "-Wl,-Bsymbolic" ]
       deps = [
         "//commonlibrary/c_utils/base:utils",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -230,8 +222,6 @@ ohos_static_library("pluginmanager_static") {
       "//commonlibrary/c_utils/base/include",
       "//foundation/multimedia/image_framework/mock/native/include",
     ]
-
-    ldflags = [ "-Wl,-Bsymbolic" ]
 
     deps = [
       "//commonlibrary/c_utils/base:utils",

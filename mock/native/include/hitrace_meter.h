@@ -18,6 +18,7 @@
 
 #include <string>
 
+namespace OHOS {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,3 +37,4 @@ void FinishTrace(uint64_t label);
 }
 #endif
 #endif // MOCK_NATIVE_INCLUDE_HILOG_HITRACE_METER_H
+}

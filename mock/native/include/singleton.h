@@ -35,7 +35,7 @@ private: \
 private: \
     friend DelayedRefSingleton<MyClass>; \
     ~MyClass(); \
-    MyClass();
+    MyClass()
 
 #define DECLARE_SINGLETON(MyClass) \
 do \
