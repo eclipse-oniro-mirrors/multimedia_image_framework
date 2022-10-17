@@ -116,15 +116,15 @@ napi_valuetype ImageNapiUtils::getType(napi_env env, napi_value root)
     return res;
 }
 
-#if !defined(_IOS) && !defined(_ANDROID)
 void ImageNapiUtils::HicheckerReport()
 {
+#if !defined(_IOS) && !defined(_ANDROID)
     uint32_t pid = getpid();
     uint32_t tid = gettid();
     std::string cautionMsg = "Trigger: pid = " + std::to_string(pid) + ", tid = " + std::to_string(tid);
     HiviewDFX::HiChecker::NotifySlowProcess(cautionMsg);
-}
 #endif
+}
 
 void ImageNapiUtils::CreateErrorObj(napi_env env, napi_value &errorObj,
     const int32_t errCode, const std::string errMsg)
