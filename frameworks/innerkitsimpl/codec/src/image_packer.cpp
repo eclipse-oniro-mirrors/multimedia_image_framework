@@ -23,6 +23,9 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
+#if defined(_ANDROID) || defined(_IOS)
+#include "include/jpeg_encoder.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -234,8 +237,12 @@ bool ImagePacker::GetEncoderPlugin(const PackOption &option)
     if (encoder_ != nullptr) {
         encoder_.reset();
     }
+#if defined(_ANDROID) || defined(_IOS)
+    encoder_ = std::make_unique<ImagePlugin::JpegEncoder>();
+#else 
     encoder_ = std::unique_ptr<ImagePlugin::AbsImageEncoder>(
         pluginServer_.CreateObject<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, capabilities));
+#endif
     return (encoder_ != nullptr);
 }
 

@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 module_output_path = "multimedia_image/image_framework"
 
@@ -51,6 +52,7 @@ ohos_unittest("imagepixelmapparceltest") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/multimedia/image_framework/mock/native/include",
+    "//foundation/multimedia/image_framework/mock/native/include/hilog",
   ]
   sources = [ "./unittest/image_pixel_map_parcel_test.cpp" ]
 
@@ -63,6 +65,10 @@ ohos_unittest("imagepixelmapparceltest") {
     #    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
     #    "//foundation/multimedia/image_framework/mock/native:log_mock_static",
   ]
+
+  if (use_clang_android || use_clang_ios) {
+    deps -= [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog" ]
+  }
   external_deps = [
     "c_utils:utils",
     "hitrace_native:hitrace_meter",
@@ -108,6 +114,10 @@ ohos_unittest("imagesourcetest") {
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
+
+  if (use_clang_android || use_clang_ios) {
+    deps -= [ "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog" ]
+  }
 
   external_deps = [ "c_utils:utils" ]
 
@@ -160,6 +170,11 @@ ohos_unittest("transformtest") {
     "//third_party/googletest:gtest_main",
   ]
 
+  if (use_clang_android || use_clang_ios) {
+    include_dirs -=
+        [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
+  }
+
   external_deps = [ "c_utils:utils" ]
 
   #  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
@@ -196,6 +211,14 @@ ohos_unittest("imagecolorspacetest") {
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
+
+  if (use_clang_android || use_clang_ios) {
+    deps -= [
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+    ]
+  }
+
   resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
   external_deps = [ "c_utils:utils" ]
 }

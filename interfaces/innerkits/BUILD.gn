@@ -31,7 +31,9 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
     "//utils/jni/jnikit/include",
@@ -43,6 +45,21 @@ config("image_external_config") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
+    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+  ]
+
+  include_dirs += [
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//third_party/flutter/skia/include/codec",
+    "//third_party/flutter/skia",
+    "//third_party/flutter/skia/include/core",
+    "//third_party/flutter/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/libexif",
   ]
 
   if (use_mingw_win) {
@@ -54,6 +71,35 @@ config("image_external_config") {
       "//third_party/bounds_checking_function/include",
       "//commonlibrary/c_utils/base/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    ]
+  } else if (use_clang_ios) {
+    include_dirs += [
+      "//third_party/libpng",
+      "//foundation/multimedia/image_framework/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include/secure",
+    ]
+    include_dirs -= [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
+      "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
+      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
+      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
+      "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    ]
+  } else if (use_clang_android) {
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//third_party/libpng",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
+
+    include_dirs -= [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
+      "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
+      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
+      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
+      "//foundation/graphic/graphic_2d/utils/color_manager/export",
     ]
   } else {
     include_dirs += [
@@ -76,28 +122,345 @@ ohos_copy("image_declaration") {
   module_install_name = ""
 }
 
-ohos_shared_library("image") {
+if (use_clang_ios) {
+  ohos_source_set("image") {
+    public_configs = [ ":image_external_config" ]
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
+    ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    defines = image_decode_ios_defines
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+    ]
+    deps = [
+      ":image_native",
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+
+    #relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+
+  ohos_source_set("image_native") {
+    public_configs = [ ":image_external_config" ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/basic_transformer.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/matrix.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_convert.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/scan_line_filter.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+    ]
+
+    sources += [
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
+    ]
+
+    defines = image_decode_ios_defines
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+    ]
+    deps = [
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//third_party/flutter/build/skia:ace_skia_ios",
+    ]
+
+    sources += [
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+      "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+    ]
+    deps += [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/libjpeg:ace_libjpeg",
+      "//third_party/flutter/build/skia:ace_skcms",
+      "//third_party/libexif:exif_static",
+    ]
+
+    #  relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+} else {
+  ohos_shared_library("image") {
+    public_configs = [ ":image_external_config" ]
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
+    ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    if (use_clang_android) {
+      defines = image_decode_android_defines
+      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+      sources -= [
+        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+        "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+      ]
+      deps = [
+        ":image_native",
+        "//commonlibrary/c_utils/base:utils",
+        "//foundation/arkui/napi:ace_napi",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      ]
+    } else {
+      deps = [
+        ":image_native",
+        "//foundation/arkui/napi:ace_napi",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      ]
+    }
+
+    external_deps = [
+      "c_utils:utils",
+      "hichecker_native:libhichecker",
+      "hitrace_native:hitrace_meter",
+    ]
+    relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+
+  ohos_shared_library("image_native") {
+    public_configs = [ ":image_external_config" ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/basic_transformer.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/matrix.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_convert.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/scan_line_filter.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+    ]
+
+    if (use_mingw_win) {
+      defines = image_decode_windows_defines
+      sources -= [
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+      ]
+      deps = [
+        "//foundation/graphic/graphic_2d:libsurface",
+        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+      ]
+    } else if (use_clang_mac) {
+      defines = image_decode_mac_defines
+      sources -= [
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+      ]
+      deps = [
+        "//foundation/graphic/graphic_2d:libsurface",
+        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+        "//third_party/bounds_checking_function:libsec_statics",
+      ]
+    } else if (use_clang_android) {
+      defines = image_decode_android_defines
+      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+
+      sources += [
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
+      ]
+      sources -= [
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+      ]
+      sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_map_rosen_utils.cpp" ]
+
+      deps = [
+        "//commonlibrary/c_utils/base:utils",
+        "//foundation/arkui/napi:ace_napi",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+        "//third_party/flutter/build/skia:ace_skia_android",
+      ]
+
+      sources += [
+        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+        "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+      ]
+      deps += [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+        "//third_party/flutter/build/libjpeg:ace_libjpeg",
+        "//third_party/flutter/build/skia:ace_skcms",
+        "//third_party/libexif:libexif",
+      ]
+
+      aosp_deps = [ "shared_library:libnativewindow" ]
+    } else {
+      defines = [ "DUAL_ADAPTER" ]
+      DUAL_ADAPTER = true
+
+      if (rs_enable_gpu) {
+        defines += [ "UPLOAD_GPU_ENABLED" ]
+      }
+
+      sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_map_rosen_utils.cpp" ]
+
+      deps = [
+        "//foundation/arkui/napi:ace_napi",
+        "//foundation/graphic/graphic_2d:libsurface",
+        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+        "//third_party/flutter/build/skia:ace_skia_ohos",
+      ]
+
+      if (DUAL_ADAPTER) {
+      } else {
+        deps += [ "//third_party/libpng:libpng" ]
+      }
+      external_deps = [
+        "c_utils:utils",
+        "hitrace_native:hitrace_meter",
+        "ipc:ipc_core",
+      ]
+    }
+
+    #  relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+}
+
+ohos_shared_library("multimedia_image") {
   public_configs = [ ":image_external_config" ]
   sources = [
-    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
-    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
-    "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
   ]
 
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
+  cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
+  defines = image_decode_android_defines
   deps = [
     ":image_native",
+    "//commonlibrary/c_utils/base:utils",
     "//foundation/arkui/napi:ace_napi",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
   ]
 
   external_deps = [
@@ -110,109 +473,6 @@ ohos_shared_library("image") {
   part_name = "multimedia_image_framework"
 }
 
-ohos_shared_library("image_native") {
-  public_configs = [ ":image_external_config" ]
-
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
-
-  sources = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/basic_transformer.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/matrix.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_convert.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/scan_line_filter.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_source_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_source_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
-  ]
-
-  if (use_mingw_win) {
-    defines = image_decode_windows_defines
-    sources -= [
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
-    ]
-    deps = [
-      "//foundation/graphic/graphic_2d:libsurface",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-    ]
-  } else if (use_clang_mac) {
-    defines = image_decode_mac_defines
-    sources -= [
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/buffer_packer_stream.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/file_packer_stream.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
-    ]
-    deps = [
-      "//foundation/graphic/graphic_2d:libsurface",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-      "//third_party/bounds_checking_function:libsec_statics",
-    ]
-  } else {
-    defines = [ "DUAL_ADAPTER" ]
-    DUAL_ADAPTER = true
-
-    if (rs_enable_gpu) {
-      defines += [ "UPLOAD_GPU_ENABLED" ]
-    }
-
-    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_map_rosen_utils.cpp" ]
-
-    deps = [
-      "//foundation/arkui/napi:ace_napi",
-      "//foundation/graphic/graphic_2d:libsurface",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
-    ]
-
-    if (DUAL_ADAPTER) {
-    } else {
-      deps += [ "//third_party/libpng:libpng" ]
-    }
-    external_deps = [
-      "c_utils:utils",
-      "hitrace_native:hitrace_meter",
-      "ipc:ipc_core",
-    ]
-  }
-
-  #  relative_install_dir = "module/multimedia"
-  subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
-}
 ohos_static_library("image_static_napi") {
   public_configs = [ ":image_external_config" ]
 
@@ -232,18 +492,51 @@ ohos_static_library("image_static_napi") {
     "-DIMAGE_COLORSPACE_FLAG",
   ]
 
-  deps = [
-    ":image_native",
-    "//foundation/arkui/napi:ace_napi",
-    "//foundation/graphic/graphic_2d:libsurface",
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-  ]
-  subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
-  external_deps = [ "c_utils:utils" ]
+  if (use_clang_ios) {
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+    ]
+    deps = [
+      ":image_native",
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+  } else if (use_clang_android) {
+    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
+    ]
+    deps = [
+      ":image_native",
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+  } else {
+    deps = [
+      ":image_native",
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/graphic/graphic_2d:libsurface",
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+    external_deps = [ "c_utils:utils" ]
+  }
 }
 
 ohos_static_library("image_static") {
@@ -308,6 +601,37 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
+    ]
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+    ]
+    deps = [
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+  } else if (use_clang_android) {
+    defines = image_decode_android_defines
+    sources -= [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
+    ]
+    deps = [
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/arkui/napi:ace_napi",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
   } else {
     defines = [ "DUAL_ADAPTER" ]

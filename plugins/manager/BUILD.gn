@@ -14,82 +14,152 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-ohos_shared_library("pluginmanager") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
-  sources = [
-    "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
-    "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
-  ]
-
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
-
-  include_dirs = [
-    "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
-    "//foundation/multimedia/image_framework/plugins/manager/include/utils",
-    "//foundation/multimedia/image_framework/plugins/manager/src/common",
-    "//foundation/multimedia/image_framework/plugins/manager/src/framework",
-    "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase",
-    "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/json/single_include/nlohmann",
-    "//third_party/boost/tools/build/src/engine",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-  ]
-
-  if (use_mingw_win) {
-    defines = image_decode_windows_defines
-    include_dirs +=
-        [ "//foundation/multimedia/image_framework/mock/native/include" ]
-    deps = [
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+if (use_clang_ios) {
+  ohos_source_set("pluginmanager") {
+    sources = [
+      "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
     ]
-  } else if (use_clang_mac) {
-    defines = image_decode_mac_defines
-    include_dirs += [
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      #"-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    include_dirs = [
+      "//foundation/multimedia/image_framework/plugins/manager/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+      "//foundation/multimedia/image_framework/plugins/manager/include/utils",
+      "//foundation/multimedia/image_framework/plugins/manager/src/common",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework",
+      "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase",
+      "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+      "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+      "//foundation/multimedia/utils/include",
+      "//third_party/json/single_include/nlohmann",
+      "//third_party/boost/tools/build/src/engine",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/bounds_checking_function/include",
     ]
+
+    defines = image_decode_ios_defines
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+      "//foundation/multimedia/image_framework/mock/native/include/secure",
+    ]
+
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-      "//third_party/bounds_checking_function:libsec_static",
     ]
-  } else {
-    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
 
-    ldflags = [ "-Wl,-Bsymbolic" ]
-
-    external_deps = [
-      "c_utils:utils",
-      "hiviewdfx_hilog_native:libhilog",
-    ]
+    #relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
   }
+} else {
+  ohos_shared_library("pluginmanager") {
+    if (!use_clang_android) {
+      sanitize = {
+        cfi = true
+        debug = false
+      }
+    }
+    sources = [
+      "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
+      "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
+    ]
 
-  #relative_install_dir = "module/multimedia"
-  subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    include_dirs = [
+      "//foundation/multimedia/image_framework/plugins/manager/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+      "//foundation/multimedia/image_framework/plugins/manager/include/utils",
+      "//foundation/multimedia/image_framework/plugins/manager/src/common",
+      "//foundation/multimedia/image_framework/plugins/manager/src/framework",
+      "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase",
+      "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+      "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+      "//foundation/multimedia/utils/include",
+      "//third_party/json/single_include/nlohmann",
+      "//third_party/boost/tools/build/src/engine",
+      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
+
+    if (use_mingw_win) {
+      defines = image_decode_windows_defines
+      include_dirs +=
+          [ "//foundation/multimedia/image_framework/mock/native/include" ]
+      deps = [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      ]
+    } else if (use_clang_mac) {
+      defines = image_decode_mac_defines
+      include_dirs += [
+        "//foundation/multimedia/image_framework/mock/native/include",
+        "//third_party/bounds_checking_function/include",
+      ]
+      deps = [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+        "//third_party/bounds_checking_function:libsec_static",
+      ]
+    } else if (use_clang_android) {
+      include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
+
+      deps = [
+        "//commonlibrary/c_utils/base:utils",
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      ]
+    } else {
+      include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+
+      ldflags = [ "-Wl,-Bsymbolic" ]
+
+      external_deps = [
+        "c_utils:utils",
+        "hiviewdfx_hilog_native:libhilog",
+      ]
+    }
+
+    #relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
 }
 
 ohos_static_library("pluginmanager_static") {
@@ -144,6 +214,24 @@ ohos_static_library("pluginmanager_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//third_party/bounds_checking_function:libsec_static",
+    ]
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+    include_dirs +=
+        [ "//foundation/multimedia/image_framework/mock/native/include" ]
+    deps = [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+    ]
+  } else if (use_clang_android) {
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
+
+    deps = [
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
