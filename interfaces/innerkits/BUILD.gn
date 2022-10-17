@@ -77,6 +77,10 @@ ohos_copy("image_declaration") {
 }
 
 ohos_shared_library("image") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   public_configs = [ ":image_external_config" ]
   sources = [
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
@@ -111,6 +115,10 @@ ohos_shared_library("image") {
 }
 
 ohos_shared_library("image_native") {
+  sanitize = {
+    cfi = true
+    debug = true
+  }
   public_configs = [ ":image_external_config" ]
 
   cflags = [
