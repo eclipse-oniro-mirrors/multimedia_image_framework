@@ -76,8 +76,10 @@ public:
     uint32_t PackingICCProfile(j_compress_ptr cinfo, const SkImageInfo& info);
 #endif
 private:
+#ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace grColorSpace_ =
         OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
+#endif
     bool isSupportICCProfile_;
 };
 } // namespace ImagePlugin

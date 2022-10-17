@@ -15,9 +15,11 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("rawplugin") {
-  sanitize = {
-    cfi = true
-    debug = false
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      debug = false
+    }
   }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/src/plugin_export.cpp",
