@@ -241,7 +241,7 @@ if (use_clang_ios) {
   ohos_shared_library("image") {
     sanitize = {
       cfi = true
-      debug = true
+      debug = false
     }
     public_configs = [ ":image_external_config" ]
     sources = [
@@ -299,7 +299,7 @@ if (use_clang_ios) {
   ohos_shared_library("image_native") {
     sanitize = {
       cfi = true
-      debug = true
+      debug = false
     }
     public_configs = [ ":image_external_config" ]
 
