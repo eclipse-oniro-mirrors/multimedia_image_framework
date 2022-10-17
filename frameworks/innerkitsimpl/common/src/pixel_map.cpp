@@ -346,7 +346,6 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstPixels = nullptr;
         return false;
     }
-
     dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     return true;
 }
@@ -824,7 +823,6 @@ bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
         HiLog::Error(LABEL, "CheckPixelsInput stride(%{public}d) < width*4 (%{public}d).", stride, regionStride);
         return false;
     }
-
     if (bufferSize < regionStride) {
         HiLog::Error(LABEL, "CheckPixelsInput input buffer size is < width * 4.");
         return false;
@@ -883,7 +881,6 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         HiLog::Error(LABEL, "read pixel by pos call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-
     return SUCCESS;
 }
 
@@ -1053,7 +1050,6 @@ bool PixelMap::WritePixels(const uint32_t &color)
         HiLog::Error(LABEL, "erase pixels by color call EraseBitmap fail.");
         return false;
     }
-
     return true;
 }
 
@@ -1213,9 +1209,9 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
     return base;
 }
 
-#if !defined(_IOS) &&!defined(_ANDROID)
 bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 {
+#if !defined(_IOS) &&!defined(_ANDROID)
     if (fd < 0) {
         return false;
     }
@@ -1225,12 +1221,12 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
     }
     sptr<IPCFileDescriptor> descriptor = new IPCFileDescriptor(dupFd);
     return parcel.WriteObject<IPCFileDescriptor>(descriptor);
-}
 #endif
+}
 
-#if !defined(_IOS) &&!defined(_ANDROID)
 int PixelMap::ReadFileDescriptor(Parcel &parcel)
 {
+#if !defined(_IOS) &&!defined(_ANDROID)
     sptr<IPCFileDescriptor> descriptor = parcel.ReadObject<IPCFileDescriptor>();
     if (descriptor == nullptr) {
         return -1;
@@ -1240,8 +1236,8 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
         return -1;
     }
     return dup(fd);
-}
 #endif
+}
 
 bool PixelMap::WriteImageInfo(Parcel &parcel) const
 {
