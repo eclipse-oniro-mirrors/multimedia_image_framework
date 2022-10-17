@@ -14,64 +14,109 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-ohos_shared_library("image_utils") {
-  sanitize = {
-    cfi = true
-    debug = false
-  }
-  include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/utils/lite/interfaces/kits",
-    "//foundation/communication/ipc/utils/include",
-  ]
+if (use_clang_ios) {
+  ohos_source_set("image_utils") {
+    include_dirs = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+      "//foundation/multimedia/utils/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include",
+      "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/utils/lite/interfaces/kits",
+      "//foundation/communication/ipc/utils/include",
+    ]
 
-  sources = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
-  ]
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+    ]
 
-  if (use_mingw_win) {
-    defines = image_decode_windows_defines
+    defines = image_decode_ios_defines
     sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     include_dirs +=
         [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-    ]
-  } else if (use_clang_mac) {
-    defines = image_decode_mac_defines
-    sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
-    include_dirs += [
-      "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/bounds_checking_function/include",
-    ]
-    deps = [
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-      "//third_party/bounds_checking_function:libsec_static",
-    ]
-  } else {
-    defines = [ "DUAL_ADAPTER" ]
-
-    deps = [
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hitrace_native:hitrace_meter",
-      "hiviewdfx_hilog_native:libhilog",
-    ]
+    #relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
   }
+} else {
+  ohos_shared_library("image_utils") {
+    if (!use_clang_android) {
+      sanitize = {
+        cfi = true
+        debug = false
+      }
+    }
+    include_dirs = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+      "//foundation/multimedia/utils/include",
+      "//foundation/multimedia/image_framework/plugins/manager/include",
+      "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/utils/lite/interfaces/kits",
+      "//foundation/communication/ipc/utils/include",
+    ]
 
-  #relative_install_dir = "module/multimedia"
-  subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+    sources = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+    ]
+
+    if (use_mingw_win) {
+      defines = image_decode_windows_defines
+      sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+      include_dirs +=
+          [ "//foundation/multimedia/image_framework/mock/native/include" ]
+      deps = [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+      ]
+    } else if (use_clang_mac) {
+      defines = image_decode_mac_defines
+      sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+      include_dirs += [
+        "//foundation/multimedia/image_framework/mock/native/include",
+        "//third_party/bounds_checking_function/include",
+      ]
+      deps = [
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+        "//third_party/bounds_checking_function:libsec_static",
+      ]
+    } else if (use_clang_android) {
+      defines = image_decode_android_defines
+      sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+      include_dirs +=
+          [ "//foundation/multimedia/image_framework/mock/native/include" ]
+      deps = [
+        "//commonlibrary/c_utils/base:utils",
+        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      ]
+    } else {
+      defines = [ "DUAL_ADAPTER" ]
+
+      deps = [
+        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      ]
+
+      external_deps = [
+        "c_utils:utils",
+        "hitrace_native:hitrace_meter",
+        "hiviewdfx_hilog_native:libhilog",
+      ]
+    }
+
+    #relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
 }
 
 ohos_static_library("image_utils_static") {
@@ -103,6 +148,20 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
+    ]
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+    deps = [
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    ]
+  } else if (use_clang_android) {
+    defines = image_decode_android_defines
+    deps = [
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]

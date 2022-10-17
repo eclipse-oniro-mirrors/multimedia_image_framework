@@ -54,6 +54,35 @@ ohos_shared_library("webpplugin") {
       "${asdk_dir}/static_library/${target_os}_${target_cpu}:libwebp-image_static",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
+
+    deps = [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/skia:ace_skia_ios",
+    ]
+  } else if (use_clang_android) {
+    defines = image_decode_android_defines
+    include_dirs += [
+      "//commonlibrary/c_utils/base/include",
+      "//foundation/multimedia/image_framework/mock/native/include",
+    ]
+
+    deps = [
+      "//commonlibrary/c_utils/base:utils",
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/skia:ace_skia_android",
+    ]
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true

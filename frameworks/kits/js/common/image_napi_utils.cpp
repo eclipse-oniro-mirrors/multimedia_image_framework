@@ -16,7 +16,9 @@
 #include "image_napi_utils.h"
 #include <securec.h>
 #include <unistd.h>
+#if !defined(_IOS) && !defined(_ANDROID)
 #include "hichecker.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -116,10 +118,12 @@ napi_valuetype ImageNapiUtils::getType(napi_env env, napi_value root)
 
 void ImageNapiUtils::HicheckerReport()
 {
+#if !defined(_IOS) && !defined(_ANDROID)
     uint32_t pid = getpid();
     uint32_t tid = gettid();
     std::string cautionMsg = "Trigger: pid = " + std::to_string(pid) + ", tid = " + std::to_string(tid);
     HiviewDFX::HiChecker::NotifySlowProcess(cautionMsg);
+#endif
 }
 
 void ImageNapiUtils::CreateErrorObj(napi_env env, napi_value &errorObj,

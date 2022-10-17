@@ -32,13 +32,10 @@ private: \
 } while (0)
 
 #define DECLARE_DELAYED_REF_SINGLETON(MyClass) \
-do \
-{ \
 private: \
     friend DelayedRefSingleton<MyClass>; \
     ~MyClass(); \
-    MyClass(); \
-} while (0)
+    MyClass()
 
 #define DECLARE_SINGLETON(MyClass) \
 do \

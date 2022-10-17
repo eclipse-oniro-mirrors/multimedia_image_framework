@@ -15,27 +15,20 @@
 
 #ifndef MOCK_NATIVE_INCLUDE_NOCOPYABLE_H_
 #define MOCK_NATIVE_INCLUDE_NOCOPYABLE_H_
+
 namespace OHOS {
 #define DISALLOW_COPY_AND_MOVE(className) \
-do \
-{ \
     DISALLOW_COPY(className); \
-    DISALLOW_MOVE(className); \
-} while (0)
+    DISALLOW_MOVE(className)
 
 #define DISALLOW_COPY(className) \
-do \
-{ \
     className(const className&) = delete; \
-    (className)& operator= (const className&) = delete; \
-} while (0)
+    className& operator= (const className&) = delete
 
 #define DISALLOW_MOVE(className) \
-do \
-{ \
     className(className&&) = delete; \
-    (className)& operator= ((className)&&) = delete; \
-} while (0)
+    className& operator= (className&&) = delete
+
 class NoCopyable {
 protected:
     NoCopyable() {}
