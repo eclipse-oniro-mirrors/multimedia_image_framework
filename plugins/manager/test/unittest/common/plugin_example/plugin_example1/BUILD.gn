@@ -16,7 +16,7 @@ import("//build/ohos.gni")
 ohos_shared_library("pluginexample1") {
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
   sources = [
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/plugin_example1/cloud_label_detector.cpp",
