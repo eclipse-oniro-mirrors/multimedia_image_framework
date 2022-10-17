@@ -262,7 +262,7 @@ uint32_t JpegDecoder::GetRowBytes()
     return decodeInfo_.output_width * pixelBytes;
 }
 
-uint32_t JpegDecoder::DoSwDecode(DecodeContext &context)
+uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanitize("cfi")))
 {
     if (setjmp(jerr_.setjmp_buffer)) {
         HiLog::Error(LABEL, "decode image failed.");

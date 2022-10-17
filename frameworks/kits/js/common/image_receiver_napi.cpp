@@ -772,7 +772,6 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
         IMAGE_ERR("gContext is empty");
         return;
     }
-
     if (context->env == nullptr) {
         IMAGE_ERR("env is empty");
         return;
@@ -790,7 +789,6 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
         IMAGE_ERR("DoCallBack: No memory");
         return;
     }
-
     work->data = reinterpret_cast<void *>(context.get());
     int ret = uv_queue_work(loop, work.get(), [] (uv_work_t *work) {}, [] (uv_work_t *work, int status) {
         IMAGE_LINE_IN();
@@ -817,7 +815,6 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
         delete work;
         IMAGE_LINE_OUT();
     });
-
     if (ret != 0) {
         IMAGE_ERR("Failed to execute DoCallBack work queue");
     } else {

@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "hilog/log.h"
 #include <iostream>
 #include "__config"
 #include "iosfwd"
+#include "hilog/log.h"
 #include "hilog/log_cpp.h"
 #include "ostream"
 
@@ -35,19 +35,16 @@ int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
 
 int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 
 int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 
 int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 } // namespace HiviewDFX

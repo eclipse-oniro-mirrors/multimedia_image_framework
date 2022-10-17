@@ -33,12 +33,14 @@ static napi_value Export(napi_env env, napi_value exports)
     PixelMapNapi::Init(env, exports);
     HiLog::Error(LABEL, "ImageSourceNapi CALL");
     ImageSourceNapi::Init(env, exports);
+#if !defined(_IOS) && !defined(_ANDROID)
     HiLog::Error(LABEL, "ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
     HiLog::Error(LABEL, "ImageCreatorNapi CALL");
     ImageCreatorNapi::Init(env, exports);
     HiLog::Error(LABEL, "ImageNapi CALL");
     ImageNapi::Init(env, exports);
+#endif
     return exports;
 }
 

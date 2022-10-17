@@ -32,7 +32,7 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(_IOS) &&!defined(_ANDROID)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "ipc_file_descriptor.h"
@@ -95,7 +95,7 @@ void PixelMap::FreePixelMap()
 
 void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
 {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
     int *fd = static_cast<int *>(context);
     if (addr != nullptr) {
         ::munmap(addr, size);
@@ -338,7 +338,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     if (memset_s(dstPixels, bufferSize, 0, bufferSize) != EOK) {
         HiLog::Error(LABEL, "dstPixels memset_s failed.");
     }
-    Position srcPosition{ srcRect.left, srcRect.top };
+    Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowBytes(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
@@ -853,7 +853,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     }
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    Position srcPosition{ region.left, region.top };
+    Position srcPosition { region.left, region.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, dst + offset, stride,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixels by rect call ReadPixelsConvert fail.");
@@ -875,7 +875,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
     ImageInfo dstImageInfo =
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t dstRowBytes = BGRA_BYTES;
-    Position srcPosition{ pos.x, pos.y };
+    Position srcPosition { pos.x, pos.y };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, &dst, dstRowBytes,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixel by pos call ReadPixelsConvert fail.");
@@ -957,7 +957,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
     ImageInfo srcImageInfo =
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t srcRowBytes = BGRA_BYTES;
-    Position dstPosition{ pos.x, pos.y };  // source is per pixel.
+    Position dstPosition { pos.x, pos.y };  // source is per pixel.
     if (!PixelConvertAdapter::WritePixelsConvert(&color, srcRowBytes, srcImageInfo, data_, dstPosition, rowDataSize_,
         imageInfo_)) {
         HiLog::Error(LABEL, "write pixel by pos call WritePixelsConvert fail.");
@@ -990,7 +990,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         HiLog::Error(LABEL, "write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    Position dstPosition{ region.left, region.top };
+    Position dstPosition { region.left, region.top };
     ImageInfo srcInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowDataSize_,
@@ -1066,7 +1066,7 @@ void *PixelMap::GetFd() const
 void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
 {
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
         int *fd = static_cast<int *>(context);
         if (addr != nullptr) {
             ::munmap(addr, size);
@@ -1100,7 +1100,7 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
     if (size <= MIN_IMAGEDATA_SIZE) {
         return parcel.WriteUnpadBuffer(data, size);
     }
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
     int fd = AshmemCreate("Parcel ImageData", size);
     HiLog::Info(LABEL, "AshmemCreate:[%{public}d].", fd);
     if (fd < 0) {
@@ -1171,7 +1171,7 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
             return nullptr;
         }
     } else {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(_IOS) &&!defined(_ANDROID)
         fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
             HiLog::Error(LABEL, "read fd :[%{public}d] error", fd);
@@ -1211,6 +1211,7 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 
 bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 {
+#if !defined(_IOS) &&!defined(_ANDROID)
     if (fd < 0) {
         return false;
     }
@@ -1220,10 +1221,12 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
     }
     sptr<IPCFileDescriptor> descriptor = new IPCFileDescriptor(dupFd);
     return parcel.WriteObject<IPCFileDescriptor>(descriptor);
+#endif
 }
 
 int PixelMap::ReadFileDescriptor(Parcel &parcel)
 {
+#if !defined(_IOS) &&!defined(_ANDROID)
     sptr<IPCFileDescriptor> descriptor = parcel.ReadObject<IPCFileDescriptor>();
     if (descriptor == nullptr) {
         return -1;
@@ -1233,6 +1236,7 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
         return -1;
     }
     return dup(fd);
+#endif
 }
 
 bool PixelMap::WriteImageInfo(Parcel &parcel) const
@@ -1285,7 +1289,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(_IOS) &&!defined(_ANDROID)
         if (!parcel.WriteInt32(bufferSize)) {
             return false;
         }
@@ -1345,7 +1349,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     uint8_t *base = nullptr;
     void *context = nullptr;
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
         int fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
             HiLog::Error(LABEL, "fd < 0");
