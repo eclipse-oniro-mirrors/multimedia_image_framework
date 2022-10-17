@@ -17,14 +17,16 @@ config("log_mock_config") {
   visibility = [ ":*" ]
   include_dirs = [
     "//foundation/multimedia/image_framework/mock/native/include",
-    "//foundation/multimedia/image_framework/mock/native/include/hilog",
+    "//foundation/multimedia/image_framework/mock/native/include/include/utils",
   ]
 }
 
 ohos_static_library("log_mock_static") {
   configs = [ ":log_mock_config" ]
-  sources =
-      [ "//foundation/multimedia/image_framework/mock/native/src/HiLog.cpp" ]
+  sources = [
+    "//foundation/multimedia/image_framework/mock/native/src/HiLog.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/hitrace_meter.cpp",
+  ]
   subsystem_name = "multimedia"
 }
 
@@ -42,6 +44,10 @@ ohos_static_library("utils_mock_static") {
     defines = image_decode_windows_defines
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+  } else if (use_clang_android) {
+    defines = image_decode_android_defines
   }
   configs = [ ":utils_mock_config" ]
   sources = [
@@ -50,6 +56,7 @@ ohos_static_library("utils_mock_static") {
     "//foundation/multimedia/image_framework/mock/native/src/parcel.cpp",
     "//foundation/multimedia/image_framework/mock/native/src/refbase.cpp",
     "//foundation/multimedia/image_framework/mock/native/src/rwlock.cpp",
+    "//foundation/multimedia/image_framework/mock/native/src/string_ex.cpp",
   ]
   deps = [ ":log_mock_static" ]
   subsystem_name = "multimedia"

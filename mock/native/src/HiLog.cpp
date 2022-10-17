@@ -35,19 +35,16 @@ int HiLog::Info(const HiLogLabel &label, const char *fmt, ...)
 
 int HiLog::Warn(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 
 int HiLog::Error(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 
 int HiLog::Fatal(const HiLogLabel &label, const char *fmt, ...)
 {
-    std::cout << label.tag << ": " << fmt << std::endl;
     return 0;
 }
 } // namespace HiviewDFX
