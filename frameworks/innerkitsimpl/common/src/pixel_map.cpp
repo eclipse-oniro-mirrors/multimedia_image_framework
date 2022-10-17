@@ -823,6 +823,7 @@ bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
         HiLog::Error(LABEL, "CheckPixelsInput stride(%{public}d) < width*4 (%{public}d).", stride, regionStride);
         return false;
     }
+
     if (bufferSize < regionStride) {
         HiLog::Error(LABEL, "CheckPixelsInput input buffer size is < width * 4.");
         return false;
@@ -871,7 +872,6 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         HiLog::Error(LABEL, "read pixel by pos source data is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-
     ImageInfo dstImageInfo =
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t dstRowBytes = BGRA_BYTES;
