@@ -48,7 +48,7 @@ void OutputErrorMessage(j_common_ptr dinfo)
 
 // for source manager
 // this is called by jpeg_read_header() before any data is actually read.
-void InitSrcStream(j_decompress_ptr dinfo)
+void InitSrcStream(j_decompress_ptr dinfo) __attribute__((no_sanitize("cfi")))
 {
     if ((dinfo == nullptr) || (dinfo->src == nullptr)) {
         HiLog::Error(LABEL, "init source stream error.");

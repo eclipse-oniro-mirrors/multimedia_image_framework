@@ -76,7 +76,7 @@ if (use_clang_ios) {
     if (!use_clang_android) {
       sanitize = {
         cfi = true
-        debug = true
+        debug = false
       }
     }
     sources = [

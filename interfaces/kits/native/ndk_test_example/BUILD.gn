@@ -32,7 +32,7 @@ ohos_copy("mypixelmap_declaration") {
 ohos_shared_library("mypixelmap") {
   sanitize = {
     cfi = true
-    debug = true
+    debug = false
   }
   install_enable = true
 
