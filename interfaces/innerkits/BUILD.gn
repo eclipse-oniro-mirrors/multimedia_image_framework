@@ -663,4 +663,3 @@ ohos_static_library("image_static") {
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"
 }
-
