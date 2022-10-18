@@ -103,7 +103,7 @@ ohos_shared_library("webpplugin") {
     external_deps = [ "c_utils:utils" ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
 
   subsystem_name = "multimedia"
 }

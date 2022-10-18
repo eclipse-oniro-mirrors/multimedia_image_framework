@@ -104,7 +104,7 @@ ohos_shared_library("gifplugin") {
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  part_name = "multimedia_image_standard"
+  part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
 }
 
