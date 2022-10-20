@@ -1822,7 +1822,6 @@ static void ParseColorSpaceObject(NapiValues &nVal)
 }
 static void SetColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
 {
-
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context->colorSpace != nullptr) {
         context->rPixelMap->InnerSetColorSpace(*(context->colorSpace));
