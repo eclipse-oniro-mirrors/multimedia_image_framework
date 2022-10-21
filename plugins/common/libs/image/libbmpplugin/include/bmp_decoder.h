@@ -46,6 +46,12 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
+#ifdef IMAGE_COLORSPACE_FLAG
+    bool IsSupportICCProfile() override
+    {
+        return false;
+    }
+#endif
 
 private:
     DISALLOW_COPY_AND_MOVE(BmpDecoder);

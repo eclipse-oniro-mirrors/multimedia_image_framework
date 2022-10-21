@@ -35,6 +35,11 @@ ohos_shared_library("gifplugin") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/giflib",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/flutter/skia/include/codec",
+    "//third_party/flutter/skia",
+    "//third_party/flutter/skia/include/core",
+    "//third_party/flutter/skia/third_party/skcms",
   ]
 
   if (use_mingw_win) {
@@ -90,6 +95,7 @@ ohos_shared_library("gifplugin") {
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/giflib:libgif",
     ]
@@ -99,6 +105,7 @@ ohos_shared_library("gifplugin") {
       "hiviewdfx_hilog_native:libhilog",
     ]
   }
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
 }

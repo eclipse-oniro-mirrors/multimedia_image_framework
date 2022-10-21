@@ -20,6 +20,7 @@ config("image_external_config") {
   include_dirs = [
     "include",
     "//utils/system/safwk/native/include",
+    "//foundation/ability/ability_runtime/interfaces/inner_api/runtime/include/",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
@@ -40,6 +41,7 @@ config("image_external_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
     "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
+    "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager/color_space_object_convertor",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
@@ -282,6 +284,9 @@ if (use_clang_ios) {
       deps = [
         ":image_native",
         "//foundation/arkui/napi:ace_napi",
+        "//foundation/graphic/graphic_2d:libsurface",
+        "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager:color_space_object_convertor",
+        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       ]
     }

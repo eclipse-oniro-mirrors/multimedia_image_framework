@@ -38,6 +38,11 @@ ohos_shared_library("bmpplugin") {
     "//third_party/flutter/skia/include/core",
     "//third_party/flutter/skia/include/codec",
     "//third_party/flutter/skia",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/flutter/skia/include/codec",
+    "//third_party/flutter/skia",
+    "//third_party/flutter/skia/include/core",
+    "//third_party/flutter/skia/third_party/skcms",
   ]
   if (use_mingw_win) {
     defines = image_decode_windows_defines
@@ -104,6 +109,7 @@ ohos_shared_library("bmpplugin") {
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/skia:ace_skia_ohos",
@@ -116,6 +122,7 @@ ohos_shared_library("bmpplugin") {
 
     #aosp_deps = [ "shared_library:libhwui" ]
   }
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"
 }

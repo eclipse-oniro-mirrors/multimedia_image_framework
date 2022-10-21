@@ -45,6 +45,7 @@ ohos_shared_library("rawplugin") {
     "//third_party/libexif",
     "//third_party/skia",
     "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
   ]
 
   if (use_mingw_win) {
@@ -89,6 +90,7 @@ ohos_shared_library("rawplugin") {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
     deps = [
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",

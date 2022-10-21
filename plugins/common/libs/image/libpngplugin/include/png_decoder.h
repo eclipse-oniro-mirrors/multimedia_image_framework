@@ -58,6 +58,12 @@ public:
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
     bool HasProperty(std::string key) override;
+#ifdef IMAGE_COLORSPACE_FLAG
+    bool IsSupportICCProfile() override
+    {
+        return false;
+    }
+#endif
 
 private:
     uint32_t GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat, PlAlphaType &alphaType);
