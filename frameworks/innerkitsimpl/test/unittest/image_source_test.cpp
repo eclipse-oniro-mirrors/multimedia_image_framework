@@ -219,6 +219,5 @@ HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 end";
 }
-
 } // namespace Multimedia
 } // namespace OHOS
