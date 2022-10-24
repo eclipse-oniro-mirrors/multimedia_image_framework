@@ -517,7 +517,7 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
     }
 }
 
-uint32_t JpegDecoder::DecodeHeader()  __attribute__((no_sanitize("cfi")))
+uint32_t JpegDecoder::DecodeHeader() __attribute__((no_sanitize("cfi")))
 {
     if (setjmp(jerr_.setjmp_buffer)) {
         HiLog::Error(LABEL, "get image size failed.");
