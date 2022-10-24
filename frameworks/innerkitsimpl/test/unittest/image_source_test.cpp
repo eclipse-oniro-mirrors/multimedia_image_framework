@@ -62,6 +62,8 @@ public:
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
 {
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty001 start";
+
     uint32_t ret;
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -76,6 +78,8 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
     ret = mainDecoder_->ModifyImageProperty(index, key, value, path);
 
     ASSERT_NE(packSize, 0);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty001 end";
 }
 
 /**
@@ -85,6 +89,8 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
 {
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty002 start";
+
     uint32_t ret;
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -96,9 +102,9 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
     int32_t value = 0;
     std::string key;
     ret = mainDecoder_->ModifyImageProperty(index, key, value, fd);
-
     ASSERT_NE(packSize, 0);
-    
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty002 end";
 }
 
 /**
@@ -108,6 +114,8 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
 {
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty003 start";
+
     uint32_t ret;
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -122,9 +130,61 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
 
     std::string key;
     ret = mainDecoder_->ModifyImageProperty(index, key, value, data, size);
-
     ASSERT_NE(packSize, 0);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty003 end";
 }
+
+/**
+ * @tc.name: GetNinePatchInfo001
+ * @tc.desc: test GetNinePatchInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 start";
+
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.9.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+
+    const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 end";
+}
+
+/**
+ * @tc.name: SetMemoryUsagePreference001
+ * @tc.desc: test SetMemoryUsagePreference
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 start";
+
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.9.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    MemoryUsagePreference preference = 1;
+    imageSource->SetMemoryUsagePreference(preference);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 end";
+}
+
+
+
+
+
+
 
 }
 }
