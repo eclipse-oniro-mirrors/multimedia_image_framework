@@ -180,9 +180,45 @@ HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 end";
 }
 
+/**
+ * @tc.name: GetMemoryUsagePreference001
+ * @tc.desc: test GetMemoryUsagePreference
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetMemoryUsagePreference001 start";
 
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.9.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    MemoryUsagePreference preference = 1;
+    imageSource->GetMemoryUsagePreference(preference);
 
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetMemoryUsagePreference001 end";
+}
 
+/**
+ * @tc.name: GetRedactionArea001
+ * @tc.desc: test GetRedactionArea(fd, redactionType, ranges)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 start";
+
+    int fd = 0;
+    uint32_t ret;
+    int redactionType = PERMISSION_GPS_TYPE;
+    std::unique_ptr<ImagePlugin::AbsImageDecoder> mainDecoder_;
+    ret = mainDecoder_->GetRedactionArea(fd, redactionType, ranges);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 end";
+}
 
 
 
