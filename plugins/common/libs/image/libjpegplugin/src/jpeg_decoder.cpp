@@ -148,7 +148,7 @@ int JpegDecoder::ExifPrintMethod()
     return Media::SUCCESS;
 }
 
-uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size) __attribute__((no_sanitize("cfi")))
 {
     if (index >= JPEG_IMAGE_NUM) {
         HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
