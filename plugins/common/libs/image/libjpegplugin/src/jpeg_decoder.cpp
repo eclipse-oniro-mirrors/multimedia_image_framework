@@ -148,7 +148,7 @@ int JpegDecoder::ExifPrintMethod()
     return Media::SUCCESS;
 }
 
-uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size) __attribute__((no_sanitize("cfi")))
+uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     if (index >= JPEG_IMAGE_NUM) {
         HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
@@ -517,7 +517,7 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
     }
 }
 
-uint32_t JpegDecoder::DecodeHeader() __attribute__((no_sanitize("cfi")))
+uint32_t JpegDecoder::DecodeHeader()
 {
     if (setjmp(jerr_.setjmp_buffer)) {
         HiLog::Error(LABEL, "get image size failed.");
