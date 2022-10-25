@@ -14,3 +14,5 @@
 [cfi]
 src:*jpeg_decoder.cpp*
 src:*jpeg_encoder.cpp*
+src:*exif_info.cpp*
+src:*plugin_export.cpp*
