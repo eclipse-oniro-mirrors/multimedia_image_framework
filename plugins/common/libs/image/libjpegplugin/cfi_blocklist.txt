@@ -12,4 +12,5 @@
 # limitations under the License.
 
 [cfi]
-src:*/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp*
+src:*jpeg_decoder.cpp*
+src:*jpeg_encoder.cpp*
