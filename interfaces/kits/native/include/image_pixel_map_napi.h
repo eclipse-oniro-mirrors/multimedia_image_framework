@@ -38,7 +38,6 @@
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
 #include <stdint.h>
 #include "napi/native_api.h"
-#include "napi/native_node_api.h"
 namespace OHOS {
 namespace Media {
 #ifdef __cplusplus
