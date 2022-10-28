@@ -140,7 +140,7 @@ HWTEST_F(ImageSourceTest, UpdateData001, TestSize.Level3)
   * @tc.type: FUNC
   */
 HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
-  {
+{
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo001 start";
 
     uint32_t errorCode = 0;
@@ -153,7 +153,7 @@ HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
     ret = imageSource->GetImageInfo(imageInfo);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo001 end";
- }
+}
 
 /**
  * @tc.name: GetSourceInfo001
@@ -216,13 +216,10 @@ HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
   * @tc.desc: test GetDecodeEvent
   * @tc.type: FUNC
   */
- HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
- {
+HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
+{
     GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent001 start";
 
-    // uint32_t errorCode = 0;
-    // SourceOptions opts;
-    // std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
@@ -239,7 +236,7 @@ HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
     imageSource->GetDecodeEvent();
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent001 end";
- }
+}
 
 /**
  * @tc.name: AddDecodeListener001
