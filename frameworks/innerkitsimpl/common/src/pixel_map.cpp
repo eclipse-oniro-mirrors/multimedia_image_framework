@@ -61,7 +61,7 @@ PixelMap::~PixelMap()
     FreePixelMap();
 }
 
-void PixelMap::FreePixelMap()
+void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
 {
     if (data_ == nullptr) {
         return;
