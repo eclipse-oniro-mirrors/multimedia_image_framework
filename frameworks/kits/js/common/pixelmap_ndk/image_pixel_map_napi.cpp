@@ -14,6 +14,8 @@
  */
 
 #include "image_pixel_map_napi.h"
+#include "napi/native_node_api.h"
+
 namespace OHOS {
 namespace Media {
 extern "C" int32_t OHOS_MEDIA_GetImageInfo(napi_env env, napi_value value, OhosPixelMapInfo *info);
