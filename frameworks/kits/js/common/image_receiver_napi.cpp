@@ -50,6 +50,17 @@ const int PARAM1 = 1;
 const int PARAM2 = 2;
 const int PARAM3 = 3;
 
+struct ImageEnum {
+    std::string name;
+    int32_t numVal;
+    std::string strVal;
+};
+
+static std::vector<struct ImageEnum> sImageFormatMap = {
+    {"YCBCR_422_SP", 1000, ""},
+    {"JPEG", 2000, ""},
+};
+
 ImageReceiverNapi::ImageReceiverNapi():env_(nullptr)
 {}
 
@@ -200,6 +211,16 @@ void ImageReceiverNapi::Destructor(napi_env env, void *nativeObject, void *final
 {
 }
 
+static bool checkFormat(int32_t format)
+{
+    for (auto imgEnum : sImageFormatMap) {
+        if (imgEnum.numVal == format) {
+            return true;
+        }
+    }
+    return false;
+}
+
 napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_info info)
 {
     napi_status status;
@@ -237,6 +258,11 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
             return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
                 errMsg.append(std::to_string(i)).append(" : ").append(std::to_string(status)));
         }
+    }
+
+    if (!checkFormat(args[PARAM2])) {
+        return ImageNapiUtils::ThrowExceptionError(env,
+            static_cast<int32_t>(napi_invalid_arg), "Invailed type");
     }
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
