@@ -57,8 +57,7 @@ int64_t PackImage(const std::string &filePath, std::unique_ptr<PixelMap> pixelMa
     imagePacker.AddImage(*pixelMap);
     int64_t packedSize = 0;
     imagePacker.FinalizePacking(packedSize);
-    HiLog::Debug(LABEL_TEST, "packedSize=%{public}lld.", static_cast<int64_t>(packedSize));
-    return packedSize;
+    return static_cast<int64_t>(packedSize);
 }
 
 int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
@@ -88,8 +87,7 @@ int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
     imagePacker.AddImage(*imageSource);
     int64_t packedSize = 0;
     imagePacker.FinalizePacking(packedSize);
-    HiLog::Debug(LABEL_TEST, "packedSize=%{public}lld.", static_cast<int64_t>(packedSize));
-    return packedSize;
+    return static_cast<int64_t>(packedSize);
 }
 
 bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t bufferSize)
