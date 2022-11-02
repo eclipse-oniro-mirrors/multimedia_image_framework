@@ -45,7 +45,7 @@ int64_t PackImage(const std::string &filePath, std::unique_ptr<PixelMap> pixelMa
     option.numberHint = NUM_1;
     std::set<std::string> formats;
     if (pixelMap == nullptr) {
-        HiLog::Error(LABEL, "pixelMap is nullptr");
+        HiLog::Error(LABEL_TEST, "pixelMap is nullptr");
         return 0;
     }
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
@@ -70,7 +70,7 @@ int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
     option.numberHint = 1;
     std::set<std::string> formats;
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "imageSource is nullptr");
+        HiLog::Error(LABEL_TEST, "imageSource is nullptr");
         return 0;
     }
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
@@ -101,7 +101,7 @@ bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t buffe
     }
 
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "buffer is nullptr");
+        HiLog::Error(LABEL_TEST, "buffer is nullptr");
         return false;
     }
 
@@ -125,7 +125,10 @@ bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t buffe
         fclose(fp);
         return false;
     }
-    fclose(fp);
+    int ret = fclose(fp);
+    if (ret != 0) {
+        return true;
+    }
     return true;
 }
 } // namespace ImageSourceUtil
