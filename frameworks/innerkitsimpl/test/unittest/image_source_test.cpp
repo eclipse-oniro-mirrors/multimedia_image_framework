@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-#include <fstream>
-#include "image_source.h"
-
 #include <algorithm>
+#include <fcntl.h>
+#include <fstream>
+#include <gtest/gtest.h>
 #include <vector>
+#include "image_source.h"
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
 #include "image/abs_image_decoder.h"
@@ -357,7 +357,7 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
     uint32_t index = 0;
     std::string value;
     std::string key;
-    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT);
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", std::fstream::binary | std::fstream::in);
     ret = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_NE(ret, 0);
 

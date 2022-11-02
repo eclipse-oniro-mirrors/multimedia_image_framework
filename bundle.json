@@ -76,6 +76,9 @@
             },
             "name": "//foundation/multimedia/image_framework/interfaces/innerkits:image"
           }
+        ],
+        "test": [
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest"
         ]
       }
     }

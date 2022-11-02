@@ -35,7 +35,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
-static const std::string TEST_OPTION_FORMAT_TEST = "image/jpeg";
+static const std::string OPTION_FORMAT_TEST = "image/jpeg";
 static const std::int32_t OPTION_QUALITY_TEST = 100;
 static const std::int32_t OPTION_NUMBERHINT_TEST = 1;
 
@@ -101,7 +101,7 @@ HWTEST_F(InterfaceTest, InterfaceTest003, TestSize.Level3)
         errorCode);
     incPixelMap->DetachFromDecoding();
     IncrementalDecodingStatus status = incPixelMap->GetDecodingStatus();
-    ASSERT_NE(status.decodingProgress, 0);
+    ASSERT_EQ(status.decodingProgress, 0);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest003 end";
 }
 
@@ -110,11 +110,13 @@ HWTEST_F(InterfaceTest, InterfaceTest003, TestSize.Level3)
  * @tc.desc: FreePixels
  * @tc.type: FUNC
  */
-HWTEST_F(InterfaceTest, InterfaceTest003, TestSize.Level3)
+HWTEST_F(InterfaceTest, InterfaceTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest004 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    pixelMapManager->FreePixels();
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest111 start";
+    pixelMapManager.FreePixels();
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest004 end";
 }
 
@@ -126,9 +128,10 @@ HWTEST_F(InterfaceTest, InterfaceTest003, TestSize.Level3)
 HWTEST_F(InterfaceTest, InterfaceTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest005 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    bool flag = pixelMapManager->Invalid();
-    ASSERT_EQ(flag, 0);
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    bool flag = pixelMapManager.Invalid();
+    ASSERT_EQ(flag, true);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest005 end";
 }
 
@@ -140,9 +143,9 @@ HWTEST_F(InterfaceTest, InterfaceTest005, TestSize.Level3)
 HWTEST_F(InterfaceTest, InterfaceTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest006 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    std::unique_ptr<PixelMap> pixelmap = pixelMapManager->GetPixelMap();
-    ASSERT_EQ(pixelmap.get(), nullptr);
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    pixelMapManager.GetPixelMap();
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest006 end";
 }
 
@@ -154,8 +157,9 @@ HWTEST_F(InterfaceTest, InterfaceTest006, TestSize.Level3)
 HWTEST_F(InterfaceTest, InterfaceTest007, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest007 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    int32_t count = pixelMapManager->GetByteCount();
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    int32_t count = pixelMapManager.GetByteCount();
     ASSERT_EQ(count, 0);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest007 end";
 }
@@ -168,8 +172,9 @@ HWTEST_F(InterfaceTest, InterfaceTest007, TestSize.Level3)
 HWTEST_F(InterfaceTest, InterfaceTest008, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest008 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    pixelMapManager->Ref();
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    pixelMapManager.Ref();
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest008 end";
 }
 
@@ -181,8 +186,9 @@ HWTEST_F(InterfaceTest, InterfaceTest008, TestSize.Level3)
 HWTEST_F(InterfaceTest, InterfaceTest009, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest009 start";
-    PixelMapManager *pixelMapManager = nullptr;
-    pixelMapManager->UnRef();
+    PixelMap *pixelMap = nullptr;
+    PixelMapManager pixelMapManager(pixelMap);
+    pixelMapManager.UnRef();
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest009 end";
 }
 
@@ -205,7 +211,7 @@ HWTEST_F(InterfaceTest, InterfaceTest0010, TestSize.Level3)
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     uint32_t tmp = imagePacker.StartPacking(buffer, bufferSize, option);
-    ASSERT_NE(tmp, nullptr);
+    ASSERT_EQ(tmp, SUCCESS);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0010 end";
 }
 
@@ -227,7 +233,7 @@ HWTEST_F(InterfaceTest, InterfaceTest0011, TestSize.Level3)
     ASSERT_EQ(ret, true);
     uint8_t *buffer = nullptr;
     uint32_t tmp = imagePacker.StartPacking(buffer, bufferSize, option);
-    ASSERT_EQ(tmp, nullptr);
+    ASSERT_NE(tmp, SUCCESS);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0011 end";
 }
 
@@ -246,9 +252,9 @@ HWTEST_F(InterfaceTest, InterfaceTest0012, TestSize.Level3)
     option.numberHint = OPTION_NUMBERHINT_TEST;
     size_t bufferSize = 0;
     uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
-    ASSERT_EQ(buffer, nullptr);
+    ASSERT_NE(buffer, nullptr);
     uint32_t tmp = imagePacker.StartPacking(buffer, bufferSize, option);
-    ASSERT_EQ(tmp, nullptr);
+    ASSERT_EQ(tmp, SUCCESS);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest0012 end";
 }
 }
