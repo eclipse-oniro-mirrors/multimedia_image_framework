@@ -461,7 +461,7 @@ static void TestAcquireBuffer(OHOS::sptr<OHOS::Surface> &creatorSurface, int32_t
         return;
     }
     IMAGE_ERR("...AcquireBuffer...");
-    int32_t *p = (int32_t *)buffer->GetVirAddr();
+    int32_t *p = static_cast<int32_t *>(buffer->GetVirAddr());
     IMAGE_ERR("AcquireBuffer %{public}p", p);
     InitializationOptions opts;
     opts.size.width = creatorSurface->GetDefaultWidth();
@@ -669,7 +669,7 @@ static bool CheckOnParam0(napi_env env, napi_value value, const std::string& ref
         return false;
     }
 
-    char *buffer = (char *)malloc((bufLength + 1) * sizeof(char));
+    char *buffer = static_cast<char *>(malloc((bufLength + 1) * sizeof(char)));
     if (buffer == nullptr) {
         return false;
     }

@@ -67,7 +67,7 @@ bool WbmpFormatAgent::read_mbf(uint8_t *stream, uint64_t &value, uint32_t &offse
 bool WbmpFormatAgent::read_header(const void *stream, uint32_t dataSize)
 {
     uint8_t data;
-    uint8_t *pData = (uint8_t *)stream;
+    uint8_t *pData = static_cast<uint8_t *>(const_cast<void *>(stream));
     uint32_t offset = 0;
 
     if (!read_byte(pData, data, offset, dataSize) || data != 0) { // unknown type

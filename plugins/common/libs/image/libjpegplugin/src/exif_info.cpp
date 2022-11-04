@@ -298,7 +298,7 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     exif_data_foreach_content(exifData_,
         [](ExifContent *ec, void *userData) {
             ExifIfd ifd = exif_content_get_ifd(ec);
-            ((EXIFInfo*)userData)->imageFileDirectory_ = ifd;
+            (static_cast<EXIFInfo*>(userData))->imageFileDirectory_ = ifd;
             if (ifd == EXIF_IFD_COUNT) {
                 HiLog::Debug(LABEL, "GetIfd ERROR");
                 return;
@@ -311,8 +311,8 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
                     char tagValueChar[1024];
                     exif_entry_get_value(ee, tagValueChar, sizeof(tagValueChar));
                     std::string tagValueStr(&tagValueChar[0], &tagValueChar[strlen(tagValueChar)]);
-                    if (((EXIFInfo*)userData)->CheckExifEntryValid(exif_entry_get_ifd(ee), ee->tag)) {
-                        ((EXIFInfo*)userData)->SetExifTagValues(ee->tag, tagValueStr);
+                    if ((static_cast<EXIFInfo*>(userData))->CheckExifEntryValid(exif_entry_get_ifd(ee), ee->tag)) {
+                        (static_cast<EXIFInfo*>(userData))->SetExifTagValues(ee->tag, tagValueStr);
                     }
                 }, userData);
         }, this);

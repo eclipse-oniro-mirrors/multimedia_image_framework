@@ -424,7 +424,7 @@ uint32_t Plugin::GetUint16ValueFromDecimal(const string &source, uint16_t &resul
     }
 
     // determine if all characters are numbers.
-    for (auto &character : source) {
+    for (const auto &character : source) {
         if (character < '0' || character > '9') {
             HiLog::Error(LABEL, "character out of the range of digital: %{public}s.", source.c_str());
             return ERR_INVALID_PARAMETER;
