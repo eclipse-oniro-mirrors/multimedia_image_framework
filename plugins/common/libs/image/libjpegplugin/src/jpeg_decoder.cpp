@@ -690,7 +690,8 @@ std::string SetOriginalTimes(std::string &dataTime)
         } else if (time.find_first_of(":") == time.find_last_of(":")) {
             time += ":00";
         } else {
-            time = time.substr(0, time.find("."));
+            std::string timeTmp = time;
+            time = timeTmp.substr(0, time.find("."));
         }
     }
     return data + time;

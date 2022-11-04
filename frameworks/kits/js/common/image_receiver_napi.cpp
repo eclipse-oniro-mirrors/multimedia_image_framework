@@ -707,7 +707,7 @@ static bool CheckOnParam0(napi_env env, napi_value value, const std::string& ref
         return false;
     }
 
-    char *buffer = (char *)malloc((bufLength + 1) * sizeof(char));
+    char *buffer = static_cast<char *>(malloc((bufLength + 1) * sizeof(char)));
     if (buffer == nullptr) {
         return false;
     }
