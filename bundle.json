@@ -74,8 +74,11 @@
               ],
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/js/common/include"
             },
-            "name": "//foundation/multimedia/image_framework/interfaces/innerkits:image"
+            "name": "//foundation/multimedia/image_framework/interfaces/kits/js/common:image"
           }
+        ],
+        "test": [
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest"
         ]
       }
     }
