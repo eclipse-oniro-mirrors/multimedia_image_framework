@@ -102,8 +102,8 @@ ohos_unittest("imagesourcetest") {
   if (DUAL_ADAPTER) {
     sources += [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_bmp_test.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_raw_test.cpp",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_wbmp_test.cpp",
+      # "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_raw_test.cpp",
+      # "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_wbmp_test.cpp",
     ]
   }
 
@@ -193,10 +193,7 @@ ohos_unittest("imagecolorspacetest") {
     "//commonlibrary/c_utils/base/include",
   ]
 
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
+  cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_color_space_test.cpp",
