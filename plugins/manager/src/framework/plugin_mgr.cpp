@@ -96,7 +96,6 @@ uint32_t PluginMgr::TraverseFiles(const string &canonicalPath)
 bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &libraryPath)
 {
     const string meatedataFileSuffix = "pluginmeta";
-    const string dirSeparator = "/";
 
 #ifdef _WIN32
     const string libraryFileSuffix = "dll";
@@ -136,6 +135,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
     }
 
 #if !defined(_WIN32) && !defined(_APPLE)
+    const string dirSeparator = "/";
     if (libraryPath.substr(0, 1) != dirSeparator) {
         // relative path to absolute path.
         // just keep original library name

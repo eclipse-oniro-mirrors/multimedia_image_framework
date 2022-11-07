@@ -1058,10 +1058,10 @@ AbsImageDecoder *ImageSource::CreateDecoder(uint32_t &errorCode)
     if (opts_.sampleSize != 1) {
         encodedFormat = InnerFormat::EXTENDED_FORMAT;
     }
-    map<string, AttrData> capabilities = { { IMAGE_ENCODE_FORMAT, AttrData(encodedFormat) } };
 #if defined(_ANDROID) || defined(_IOS)
     auto decoder = new JpegDecoder();
 #else
+    map<string, AttrData> capabilities = { { IMAGE_ENCODE_FORMAT, AttrData(encodedFormat) } };
     auto decoder = pluginServer_.CreateObject<AbsImageDecoder>(AbsImageDecoder::SERVICE_DEFAULT, capabilities);
 #endif
     if (decoder == nullptr) {

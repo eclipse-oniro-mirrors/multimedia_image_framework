@@ -48,7 +48,7 @@ public:
     {
         return ((serviceFlag >> SERVICETYPE_BIT_NUM) & IID_MASK);
     }
-    uint32_t Register(std::weak_ptr<Plugin> &plugin, const nlohmann::json &classInfo);
+    uint32_t Register(const std::weak_ptr<Plugin> &plugin, const nlohmann::json &classInfo);
     PluginClassBase *CreateObject(uint32_t &errorCode);
     std::weak_ptr<Plugin> GetPluginRef() const;
     const std::string &GetClassName() const;

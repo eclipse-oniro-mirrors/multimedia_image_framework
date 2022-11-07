@@ -268,6 +268,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode008, TestSize.Level3)
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 }
 
 /**
@@ -301,6 +302,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode009, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap2 = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap1.get(), nullptr);
+    ASSERT_NE(pixelMap2.get(), nullptr);
 }
 
 /**

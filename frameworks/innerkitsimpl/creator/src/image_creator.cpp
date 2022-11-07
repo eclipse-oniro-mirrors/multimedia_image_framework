@@ -123,7 +123,7 @@ static const int BIT4 = 4;
 static const int PRINT_WIDTH = 100;
 static const int PRINT_WIDTH_MOD = 99;
 static const uint8_t BIT4_MASK = 0xf;
-static void dumpBuffer(uint8_t* tempBuffer, int64_t size)
+static void dumpBuffer(const uint8_t* tempBuffer, int64_t size)
 {
     std::vector<char> ss;
     char xx[] = "0123456789ABCDEF";
@@ -206,7 +206,7 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
 {
     int32_t errorcode = 0;
     if (buffer != nullptr) {
-        uint32_t *addr = (uint32_t *)buffer->GetVirAddr();
+        uint32_t *addr = static_cast<uint32_t *>(buffer->GetVirAddr());
         uint8_t *addr2 = nullptr;
         int32_t size = buffer->GetSize();
         if (!AllocHeapBuffer(size, &addr2)) {

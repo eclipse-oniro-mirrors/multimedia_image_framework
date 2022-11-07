@@ -42,7 +42,7 @@ string ImplClass::emptyString_;
 ImplClass::ImplClass() : selfKey_(*this)
 {}
 
-uint32_t ImplClass::Register(weak_ptr<Plugin> &plugin, const json &classInfo)
+uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classInfo)
 {
     if (state_ != ClassState::CLASS_STATE_UNREGISTER) {
         // repeat registration

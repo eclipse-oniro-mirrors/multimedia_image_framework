@@ -284,9 +284,7 @@ RefBase &RefBase::operator=(RefBase &&other)  noexcept
         refs_->DecRefCount();
     }
     refs_ = other.refs_;
-    if (other.refs_ != nullptr) {
-        other.refs_ = nullptr;
-    }
+    other.refs_ = nullptr;
     return *this;
 }
 
