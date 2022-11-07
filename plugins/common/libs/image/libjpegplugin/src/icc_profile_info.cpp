@@ -109,8 +109,8 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         // get a contiguous block of profile memory with the icc signature
         sk_sp<SkData> jpegMarkerData =
                 SkData::MakeUninitialized(ICC_MARKER_HEADER_SIZE + icc->size());
-        uint8_t* ptrMaker = (uint8_t*) jpegMarkerData->writable_data();
-        (void)memcpy_s(ptrMaker, sizeof(*ptrMaker), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
+        uint8_t* ptrMaker = static_cast<uint8_t*>(jpegMarkerData->writable_data());
+	(void)memcpy_s(ptrMaker, sizeof(*ptrMaker), ICC_SIGNATURE, sizeof(ICC_SIGNATURE));
         ptrMaker += sizeof(ICC_SIGNATURE);
         // first marker
         *ptrMaker++ = 1;
