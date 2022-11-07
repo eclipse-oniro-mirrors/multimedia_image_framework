@@ -17,10 +17,12 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("//third_party/flutter/flutter_config.gni")
 
 ohos_shared_library("jpegplugin") {
-  sanitize = {
-    cfi = true
-    debug = false
-    blocklist = "./cfi_blocklist.txt"
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      debug = false
+      blocklist = "./cfi_blocklist.txt"
+    }
   }
   sources = [
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",

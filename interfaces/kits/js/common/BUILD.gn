@@ -154,9 +154,11 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("image") {
-    sanitize = {
-      cfi = true
-      debug = false
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        debug = false
+      }
     }
     public_configs = [ ":image_external_config" ]
     sources = [

@@ -19,8 +19,10 @@
 #include "image_napi_utils.h"
 #include "image_pixel_map_napi.h"
 #include "image_trace.h"
+#if !defined(_IOS) && !defined(_ANDROID)
 #include "color_space_object_convertor.h"
 #include "js_runtime_utils.h"
+#endif
 #include "hitrace_meter.h"
 
 using OHOS::HiviewDFX::HiLog;
@@ -68,7 +70,9 @@ struct PixelMapAsyncContext {
     double yArg = 0;
     bool xBarg = false;
     bool yBarg = false;
+#if !defined(_IOS) && !defined(_ANDROID)
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
+#endif
 };
 
 static PixelFormat ParsePixlForamt(int32_t val)
@@ -1812,6 +1816,7 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
 }
 static void ParseColorSpaceObject(NapiValues &nVal)
 {
+#if !defined(_IOS) && !defined(_ANDROID)
     auto csNativeValue = reinterpret_cast<NativeValue*>(nVal.argv[NUM_0]);
     auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<NativeObject>(csNativeValue);
     nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
@@ -1819,6 +1824,7 @@ static void ParseColorSpaceObject(NapiValues &nVal)
         HiLog::Error(LABEL, "ColorSpace mismatch");
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
+#endif
 }
 static void SetColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
 {
