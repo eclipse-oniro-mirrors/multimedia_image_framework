@@ -220,11 +220,101 @@ ohos_unittest("imagecolorspacetest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("formatagentplugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/format_agent_plugin_test.cpp" ]
+
+  deps = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin:imageformatagent",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("attrdatatest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/utils/include",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/attr_data_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("converterest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/matrix_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_convert_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_map_rosen_utils_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/post_proc_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/scan_line_filter_test.cpp",
+  ]
+
+  deps = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
   deps = [
+    ":attrdatatest",
     ":colorconvertertest",
+    ":converterest",
+    ":formatagentplugintest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
