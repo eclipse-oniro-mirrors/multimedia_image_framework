@@ -273,7 +273,7 @@ ohos_unittest("attrdatatest") {
   external_deps = [ "c_utils:utils" ]
 }
 
-ohos_unittest("converterest") {
+ohos_unittest("convertertest") {
   module_out_path = module_output_path
 
   include_dirs = [
@@ -307,14 +307,38 @@ ohos_unittest("converterest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("gstpluginfwtest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/gst_plugin_fw_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
     ":colorconvertertest",
-    ":converterest",
+    ":convertertest",
     ":formatagentplugintest",
+    ":gstpluginfwtest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
