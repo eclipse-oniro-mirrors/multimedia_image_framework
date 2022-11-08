@@ -267,5 +267,122 @@ HWTEST_F(ImageTransformTest, ImageTransformTest003, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform003_Rotate180 end";
 }
+
+/**
+ * @tc.name: ImageTransformTest004
+ * @tc.desc:ResetParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform004 start";
+    BasicTransformer trans;
+    trans.ResetParam();
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform004 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest005
+ * @tc.desc:SetTranslateParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform005 start";
+    BasicTransformer trans;
+    float sx = 0.5;
+    float sy = 0.5;
+    trans.SetTranslateParam(sx, sy);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform005 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest006
+ * @tc.desc:SetTranslateParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform006 start";
+    BasicTransformer trans;
+    float sx = -1;
+    float sy = 0.5;
+    trans.SetTranslateParam(sx, sy);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform006 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest007
+ * @tc.desc:SetTranslateParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform007 start";
+    BasicTransformer trans;
+    float sx = 1;
+    float sy = -1;
+    trans.SetTranslateParam(sx, sy);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform007 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest008
+ * @tc.desc:SetTranslateParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform008 start";
+    BasicTransformer trans;
+    float sx = -1;
+    float sy = 0.5;
+    trans.SetTranslateParam(sx, sy);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform008 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest009
+ * @tc.desc:SetTranslateParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform009 start";
+    BasicTransformer trans;
+    float sx = -1;
+    float sy = -1;
+    trans.SetTranslateParam(sx, sy);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform009 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0010
+ * @tc.desc:GetDstDimension
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0010 start";
+    BasicTransformer trans;
+    PixmapInfo inPutInfo;
+    ConstructPixmapInfo(inPutInfo);
+    Size dstSize = inPutInfo.imageInfo.size;
+    trans.GetDstDimension(inPutInfo.imageInfo.size, dstSize);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0010 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0011
+ * @tc.desc:SetScaleParam
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0011 start";
+    BasicTransformer trans;
+    trans.SetScaleParam(2.0f, 2.0f);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0011 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
