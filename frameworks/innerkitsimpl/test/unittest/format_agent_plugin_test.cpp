@@ -41,7 +41,6 @@ static const std::string IMAGE_INPUT_GIF_PATH = "/data/local/tmp/image/test.gif"
 static const std::string IMAGE_INPUT_BMP_PATH = "/data/local/tmp/image/test.bmp";
 static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_PNG_PATH = "/data/local/tmp/image/test.png";
-static const std::string IMAGE_INPUT_WBMP_PATH = "/data/local/tmp/image/test.wbmp";
 static const std::string IMAGE_INPUT_WEBP_PATH = "/data/local/tmp/image/test.webp";
 static const std::string BMP_FORMAT_TYPE = "image/bmp";
 static const std::string GIF_FORMAT_TYPE = "image/gif";
@@ -605,33 +604,6 @@ HWTEST_F(FormatAgentPluginTest, WbmpFormatAgentPluginTest003, TestSize.Level3)
 }
 
 /**
- * @tc.name: WbmpFormatAgentPluginTest004
- * @tc.desc: Wbmp CheckFormat
- * @tc.type: FUNC
- */
-HWTEST_F(FormatAgentPluginTest, WbmpFormatAgentPluginTest004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentPluginTest004 start";
-    ImagePlugin::WbmpFormatAgent formatAgent;
-    uint32_t datasize = formatAgent.GetHeaderSize();
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/vnd.wap.wbmp";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WBMP_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    
-    bool ret = formatAgent.CheckFormat(pixelMap->GetPixels(), datasize);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentPluginTest004 end";
-}
-
-/**
  * @tc.name: WbmpFormatAgentPluginTest005
  * @tc.desc: Wbmp CheckFormat
  * @tc.type: FUNC
@@ -644,33 +616,6 @@ HWTEST_F(FormatAgentPluginTest, WbmpFormatAgentPluginTest005, TestSize.Level3)
     bool ret = formatAgent.CheckFormat(nullptr, datasize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentPluginTest005 end";
-}
-
-/**
- * @tc.name: WbmpFormatAgentPluginTest006
- * @tc.desc: Wbmp CheckFormat
- * @tc.type: FUNC
- */
-HWTEST_F(FormatAgentPluginTest, WbmpFormatAgentPluginTest006, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentPluginTest006 start";
-    ImagePlugin::WbmpFormatAgent formatAgent;
-    uint32_t datasize = formatAgent.GetHeaderSize() - 10;
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/vnd.wap.wbmp";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WBMP_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    
-    bool ret = formatAgent.CheckFormat(pixelMap->GetPixels(), datasize);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: WbmpFormatAgentPluginTest006 end";
 }
 
 /**
