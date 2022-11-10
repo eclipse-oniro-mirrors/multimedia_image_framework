@@ -103,4 +103,18 @@
             <option name="push" value="perftest/ImagePerformanceTest_baseline.xml -> /data/test/" src="res"/>
         </preparer>
     </target>
+    <target name="formatagentplugintest">
+        <preparer>
+            <option name="push" value="images/test.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
+    <target name="convertertest">
+        <preparer>
+            <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
 </configuration>
