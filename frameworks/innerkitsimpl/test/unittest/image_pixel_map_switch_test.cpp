@@ -563,33 +563,5 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest019, TestSize.Level3)
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest019 end";
 }
-
-/**
- * @tc.name: ImagePixelMapSwitchTest020
- * @tc.desc: WritePixels
- * @tc.desc: !CheckPixelsInput(source, bufferSize, offset, stride, region)
- * @tc.type: FUNC
- */
-HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest020, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 start";
-    /**
-     * @tc.steps: step1. set pixelmap, rect and initialization options
-     * @tc.expected: step1. The new pixelmap is not null.
-     */
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = 200;
-    info.size.height = 300;
-    info.pixelFormat = PixelFormat::ARGB_8888;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
-    Position position;
-    position.x = 100;
-    position.y = 200;
-    uint32_t color = 9;
-    pixelMap.WritePixels(position, color);
-    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 end";
-}
 } // namespace Multimedia
 } // namespace OHOS
