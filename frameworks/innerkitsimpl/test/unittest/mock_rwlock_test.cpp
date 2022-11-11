@@ -15,8 +15,8 @@
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include "rwlock.h"
 #include <cassert>
+#include "rwlock.h"
 
 using namespace testing::ext;
 using namespace OHOS::Utils;
@@ -27,7 +27,7 @@ class MockRwlockTest : public testing::Test {
 public:
     MockRwlockTest() {}
     ~MockRwlockTest() {}
-};  
+};
 
 /**
  * @tc.name: LockRead001

@@ -14,12 +14,12 @@
  */
 
 #include <gtest/gtest.h>
+#include <sys/stat.h>
 #include <fstream>
-#include "directory_ex.h"
 #include <dirent.h>
 #include <iostream>
-#include <sys/stat.h>
 #include "hilog/log.h"
+#include "directory_ex.h"
 #include "log_tags.h"
 #include "unistd.h"
 
@@ -32,7 +32,7 @@ class MockDirectoryExTest : public testing::Test {
 public:
     MockDirectoryExTest() {}
     ~MockDirectoryExTest() {}
-};  
+};
 
 /**
  * @tc.name: ExtractFilePath001

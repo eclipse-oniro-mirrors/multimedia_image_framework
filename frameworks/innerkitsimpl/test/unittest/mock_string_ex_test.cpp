@@ -26,7 +26,7 @@ class MockStringExTest : public testing::Test {
 public:
     MockStringExTest() {}
     ~MockStringExTest() {}
-};  
+};
 
 /**
  * @tc.name: IsNumericStr001

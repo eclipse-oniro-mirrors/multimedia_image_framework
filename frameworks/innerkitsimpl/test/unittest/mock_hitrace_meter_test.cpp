@@ -22,11 +22,11 @@ using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
-class MockMockHitraceMeterTest : public testing::Test {
+class MockHitraceMeterTest : public testing::Test {
 public:
     MockHitraceMeterTest() {}
     ~MockHitraceMeterTest() {}
-};  
+};
 
 /**
  * @tc.name: StartTrace001
