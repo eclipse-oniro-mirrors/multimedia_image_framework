@@ -589,7 +589,6 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest020, TestSize.Level3)
     position.y = 200;
     uint32_t color = 9;
     pixelMap.WritePixels(position, color);
-    //EXPECT_EQ(ret, ERR_IMAGE_WRITE_PIXELMAP_FAILED);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 end";
 }
 } // namespace Multimedia
