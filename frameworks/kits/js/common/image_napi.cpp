@@ -124,7 +124,7 @@ static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surfac
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    Component* y = imageNapi->CreateComponentData(ComponentType::YUV_Y, ySize, ySize, NUM1);
+    Component* y = imageNapi->CreateComponentData(ComponentType::YUV_Y, ySize, surface->GetWidth(), NUM1);
     Component* u = imageNapi->CreateComponentData(ComponentType::YUV_U, uvSize, uvStride, NUM2);
     Component* v = imageNapi->CreateComponentData(ComponentType::YUV_V, uvSize, uvStride, NUM2);
     if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
@@ -688,33 +688,41 @@ static void JsGetComponentExec(napi_env env, ImageAsyncContext* context)
     SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
 }
 
-static bool CheckComponentType(const int32_t& type)
+static bool CheckComponentType(const int32_t& type, int32_t format)
 {
-    if (IsYUVType(type) || type == static_cast<int32_t>(ComponentType::JPEG)) {
+    if (IsYCbCr422SP(format) && IsYUVType(type)) {
+        return true;
+    }
+    if (!IsYCbCr422SP(format) && type == static_cast<int32_t>(ComponentType::JPEG)) {
         return true;
     }
     return false;
 }
 
-static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv,
-                               int32_t* componentType, napi_ref* callbackRef)
+static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, ImageAsyncContext* context)
 {
-    if (argv == nullptr) {
+    if (argv == nullptr || context == nullptr) {
         IMAGE_ERR("argv is nullptr");
+        return false;
+    }
+
+    if (context->constructor_ == nullptr || context->constructor_->sSurfaceBuffer_ == nullptr) {
+        IMAGE_ERR("Constructor is nullptr");
         return false;
     }
 
     if (argc == ARGS1 || argc == ARGS2) {
         auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType0 == napi_number) {
-            napi_get_value_int32(env, argv[PARAM0], componentType);
+            napi_get_value_int32(env, argv[PARAM0], &(context->componentType));
         } else {
             IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType0);
             return false;
         }
 
-        if (!CheckComponentType(*componentType)) {
-            IMAGE_ERR("Unsupport component type 0 value: %{public}d", *componentType);
+        auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
+        if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
+            IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
             return false;
         }
     }
@@ -722,7 +730,7 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv,
         auto argType1 = ImageNapiUtils::getType(env, argv[PARAM1]);
         if (argType1 == napi_function) {
             int32_t refCount = 1;
-            napi_create_reference(env, argv[PARAM1], refCount, callbackRef);
+            napi_create_reference(env, argv[PARAM1], refCount, &(context->callbackRef));
         } else {
             IMAGE_ERR("Unsupport arg 1 type: %{public}d", argType1);
             return false;
@@ -754,9 +762,7 @@ napi_value ImageNapi::JsGetComponent(napi_env env, napi_callback_info info)
             errMsg.append(std::to_string(status)));
     }
 
-    if (!JsGetComponentArgs(env, argc, argv,
-                            &(context->componentType),
-                            &(context->callbackRef))) {
+    if (!JsGetComponentArgs(env, argc, argv, context.get())) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "Unsupport arg type!");
     }
