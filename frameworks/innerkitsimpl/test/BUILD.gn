@@ -402,12 +402,11 @@ ohos_unittest("mocktest") {
   ]
 
   sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_directory_ex_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_hitrace_meter_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_parcel_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_rwlock_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_string_ex_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_directory_ex_test.cpp",
-    
   ]
 
   deps = [
@@ -415,9 +414,9 @@ ohos_unittest("mocktest") {
     "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
-    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
   ]
 
   resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
@@ -437,10 +436,10 @@ group("unittest") {
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
+    ":mocktest",
     ":pixelconvertadaptertest",
     ":pluginsmanagersrcframeworktest",
     ":transformtest",
-    ":mocktest",
   ]
 }
 ################################################

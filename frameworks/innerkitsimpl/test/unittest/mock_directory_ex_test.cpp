@@ -14,17 +14,17 @@
  */
 
 #include <gtest/gtest.h>
-#include <sys/stat.h>
 #include <fstream>
+#include "directory_ex.h"
 #include <dirent.h>
 #include <iostream>
+#include <sys/stat.h>
 #include "hilog/log.h"
-#include "directory_ex.h"
 #include "log_tags.h"
 #include "unistd.h"
 
 using namespace testing::ext;
-using namespace OHOS::Media;
+// using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
@@ -33,32 +33,6 @@ public:
     MockDirectoryExTest() {}
     ~MockDirectoryExTest() {}
 };
-
-/**
- * @tc.name: ExtractFilePath001
- * @tc.desc: test ExtractFilePath
- * @tc.type: FUNC
- */
-HWTEST_F(MockDirectoryExTest, ExtractFilePath001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFilePath001 start";
-    string fileFullName = '';
-    std::string dirPath = ExtractFilePath(fileFullName);
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFilePath001 end";
-}
-
-/**
- * @tc.name: ExtractFileName001
- * @tc.desc: test ExtractFileName
- * @tc.type: FUNC
- */
-HWTEST_F(MockDirectoryExTest, ExtractFileName001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileName001 start";
-    string fileFullName = '';
-    std::string dirName = ExtractFileName(fileFullName);
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileName001 end";
-}
  
 /**
  * @tc.name: ForceCreateDirectory001
@@ -68,7 +42,7 @@ HWTEST_F(MockDirectoryExTest, ExtractFileName001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, ForceCreateDirectory001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 start";
-    string path ='';
+    const string path = "a";
     bool ex = ForceCreateDirectory(path);
     ASSERT_EQ(ex, false);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 end";
@@ -82,23 +56,25 @@ HWTEST_F(MockDirectoryExTest, ForceCreateDirectory001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, ExtractFileExt001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileExt001 start";
-    string fileName = '';
-    std::string exFile = ExtractFilePath(fileName);
+    const string fileName = "a";
+    string exFile = ExtractFilePath(fileName);
+    ASSERT_EQ(exFile, "");
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileExt001 end";
 }
 
-/**
- * @tc.name: TransformFileName001
- * @tc.desc: test TransformFileName
- * @tc.type: FUNC
- */
-HWTEST_F(MockDirectoryExTest, TransformFileName001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 start";
-    string fileName = '';
-    std::string traFile = TransformFileName(fileName);
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 end";
-}
+// /**
+//  * @tc.name: TransformFileName001
+//  * @tc.desc: test TransformFileName
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(MockDirectoryExTest, TransformFileName001, TestSize.Level3)
+// {
+//     GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 start";
+//     const string fileName = "a";
+//     string traFile = TransformFileName(fileName);
+//     ASSERT_EQ(traFile, "");
+//     GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 end";
+// }
 
 /**
  * @tc.name: IncludeTrailingPathDelimiter001
@@ -108,8 +84,9 @@ HWTEST_F(MockDirectoryExTest, TransformFileName001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, IncludeTrailingPathDelimiter001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: IncludeTrailingPathDelimiter001 start";
-    string fileName = '';
-    std::string traFile = TransformFileName(fileName);
+    const std::string path = "a";
+    string includetra = IncludeTrailingPathDelimiter(path);
+    ASSERT_EQ(includetra, "");
     GTEST_LOG_(INFO) << "MockDirectoryExTest: IncludeTrailingPathDelimiter001 end";
 }
 
@@ -121,7 +98,7 @@ HWTEST_F(MockDirectoryExTest, IncludeTrailingPathDelimiter001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, GetDirFiles001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: GetDirFiles001 start";
-    string canonicalPath = '';
+    const string canonicalPath = "a";
     vector<string> strFiles;
     GetDirFiles(canonicalPath, strFiles);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: GetDirFiles001 end";
@@ -135,8 +112,8 @@ HWTEST_F(MockDirectoryExTest, GetDirFiles001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, PathToRealPath001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: PathToRealPath001 start";
-    string path ='';
-    string realPath ='';
+    const string path = "a";
+    string realPath = "";
     bool ptr = PathToRealPath(path, realPath);
     ASSERT_EQ(ptr, false);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: PathToRealPath001 end";
