@@ -600,9 +600,6 @@ void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
         IMAGE_ERR("Native instance is nullptr");
         context->status = ERR_IMAGE_INIT_ABNORMAL;
     } else {
-        if (SUCCESS != context->imageNapi_->CombineComponentsIntoSurface()) {
-            IMAGE_ERR("JsQueueImageCallBack: try to combine componests");
-        }
         auto surfacebuffer = context->imageNapi_->sSurfaceBuffer_;
         native->QueueImage(surfacebuffer);
         context->status = SUCCESS;

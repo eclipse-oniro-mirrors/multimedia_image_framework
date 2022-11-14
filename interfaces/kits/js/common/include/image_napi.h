@@ -24,7 +24,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <variant>
-#include <map>
 
 #include <surface.h>
 #include "napi/native_api.h"
@@ -35,11 +34,6 @@
 namespace OHOS {
 namespace Media {
 struct ImageAsyncContext;
-struct Component {
-    int32_t rowStride = 0;
-    int32_t pixelStride = 0;
-    std::vector<uint8_t> raw;
-};
 
 class ImageNapi {
 public:
@@ -53,9 +47,6 @@ public:
         std::shared_ptr<ImageCreator> imageCreator);
     void NativeRelease();
     sptr<SurfaceBuffer> sSurfaceBuffer_;
-    Component* CreateComponentData(ComponentType type, size_t size, int32_t rowStride, int32_t pixelStride);
-    Component* GetComponentData(ComponentType type);
-    uint32_t CombineComponentsIntoSurface();
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -82,7 +73,6 @@ private:
     std::shared_ptr<ImageReceiver> imageReceiver_;
     std::shared_ptr<ImageCreator> imageCreator_;
     std::shared_ptr<ImageNapi> nativeImage_;
-    std::map<ComponentType, std::unique_ptr<Component>> componentData_;
 };
 
 struct ImageAsyncContext {

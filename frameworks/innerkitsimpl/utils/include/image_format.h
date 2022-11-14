@@ -26,8 +26,6 @@ enum class ImageFormat : int32_t {
     RAW16 = 5,
     H264 = 6,
     H265 = 7,
-    YCBCR_422_SP = 1000,
-    JPEG = 2000
 };
 
 enum class ComponentType {
