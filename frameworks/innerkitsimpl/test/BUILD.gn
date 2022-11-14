@@ -405,9 +405,9 @@ ohos_unittest("mocktest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_directory_ex_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_hitrace_meter_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_parcel_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_refbase_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_rwlock_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_string_ex_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_refbase_test.cpp",
   ]
 
   deps = [
