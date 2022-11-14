@@ -15,13 +15,13 @@
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include "directory_ex.h"
 #include <dirent.h>
 #include <iostream>
 #include <sys/stat.h>
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "unistd.h"
+#include "directory_ex.h"
 
 using namespace testing::ext;
 using namespace OHOS::HiviewDFX;
