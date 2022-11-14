@@ -18,8 +18,6 @@
 #include "parcel.h"
 
 using namespace testing::ext;
-// using namespace OHOS::Media;
-// using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
 static const size_t SIZE_TEST = 0;
@@ -144,6 +142,36 @@ HWTEST_F(MockParcelTest, SetDataSize001, TestSize.Level3)
     ASSERT_EQ(setds, true);
     GTEST_LOG_(INFO) << "MockParcelTest: SetDataSize001 end";
 }
+
+// /**
+//  * @tc.name: WriteDataBytes001
+//  * @tc.desc: test WriteDataBytes
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(MockParcelTest, WriteDataBytes001, TestSize.Level3)
+// {
+//     GTEST_LOG_(INFO) << "MockParcelTest: WriteDataBytes001 start";
+//     Parcel parcel;
+//     void *data = nullptr;
+//     size_t size = 5;
+//     bool wdb = parcel.WriteDataBytes(data, size);
+//     ASSERT_EQ(wdb, true);
+//     GTEST_LOG_(INFO) << "MockParcelTest: WriteDataBytes001 end";
+// }
+
+// /**
+//  * @tc.name: WritePadBytes001
+//  * @tc.desc: test WritePadBytes
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(MockParcelTest, WritePadBytes001, TestSize.Level3)
+// {
+//     GTEST_LOG_(INFO) << "MockParcelTest: WritePadBytes001 start";
+//     Parcel parcel;
+//     size_t padSize = 6;
+//     int  wpb = parcel.WritePadBytes(padSize);
+//     GTEST_LOG_(INFO) << "MockParcelTest: WritePadBytes001 end";
+// }
 
 /**
  * @tc.name: WriteUnpadBuffer001

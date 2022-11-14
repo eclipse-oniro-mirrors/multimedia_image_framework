@@ -18,8 +18,6 @@
 #include "string_ex.h"
 
 using namespace testing::ext;
-// using namespace OHOS::Media;
-// using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
 class MockStringExTest : public testing::Test {

@@ -24,7 +24,6 @@
 #include "unistd.h"
 
 using namespace testing::ext;
-// using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
@@ -44,7 +43,7 @@ HWTEST_F(MockDirectoryExTest, ForceCreateDirectory001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 start";
     const string path = "a";
     bool ex = ForceCreateDirectory(path);
-    ASSERT_EQ(ex, false);
+    ASSERT_EQ(ex, true);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 end";
 }
 
@@ -62,20 +61,6 @@ HWTEST_F(MockDirectoryExTest, ExtractFileExt001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileExt001 end";
 }
 
-// /**
-//  * @tc.name: TransformFileName001
-//  * @tc.desc: test TransformFileName
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(MockDirectoryExTest, TransformFileName001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 start";
-//     const string fileName = "a";
-//     string traFile = TransformFileName(fileName);
-//     ASSERT_EQ(traFile, "");
-//     GTEST_LOG_(INFO) << "MockDirectoryExTest: TransformFileName001 end";
-// }
-
 /**
  * @tc.name: IncludeTrailingPathDelimiter001
  * @tc.desc: test IncludeTrailingPathDelimiter
@@ -84,7 +69,7 @@ HWTEST_F(MockDirectoryExTest, ExtractFileExt001, TestSize.Level3)
 HWTEST_F(MockDirectoryExTest, IncludeTrailingPathDelimiter001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockDirectoryExTest: IncludeTrailingPathDelimiter001 start";
-    const std::string path = "a";
+    const std::string path = "";
     string includetra = IncludeTrailingPathDelimiter(path);
     ASSERT_EQ(includetra, "");
     GTEST_LOG_(INFO) << "MockDirectoryExTest: IncludeTrailingPathDelimiter001 end";
@@ -115,7 +100,7 @@ HWTEST_F(MockDirectoryExTest, PathToRealPath001, TestSize.Level3)
     const string path = "a";
     string realPath = "";
     bool ptr = PathToRealPath(path, realPath);
-    ASSERT_EQ(ptr, false);
+    ASSERT_EQ(ptr, true);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: PathToRealPath001 end";
 }
 } // namespace Multimedia

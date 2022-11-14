@@ -20,7 +20,6 @@
 
 using namespace testing::ext;
 using namespace OHOS::Utils;
-// using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
 class MockRwlockTest : public testing::Test {

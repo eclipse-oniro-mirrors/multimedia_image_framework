@@ -37,7 +37,7 @@ HWTEST_F(MockHitraceMeterTest, StartTrace001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "MockHitraceMeterTest: StartTrace001 start";
     uint64_t label = 6;
-    std::string value = 'aaa';
+    std::string value = "aaa";
     float limit = 1.1;
     StartTrace(label, value, limit);
     GTEST_LOG_(INFO) << "MockHitraceMeterTest: StartTrace001 end";
