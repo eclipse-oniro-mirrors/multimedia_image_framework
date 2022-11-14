@@ -18,8 +18,6 @@
 #include "hitrace_meter.h"
 
 using namespace testing::ext;
-using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
 class MockHitraceMeterTest : public testing::Test {
