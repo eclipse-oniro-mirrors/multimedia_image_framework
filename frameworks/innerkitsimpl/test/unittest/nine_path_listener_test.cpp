@@ -15,9 +15,9 @@
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include "hilog/log.h"
 #include <cmath>
 #include <log_tags.h>
+#include "hilog/log.h"
 #include "securec.h"
 #include "memory.h"
 #include "nine_patch_listener.h"
