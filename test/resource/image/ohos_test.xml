@@ -63,7 +63,7 @@
     </target>
         <target name="imagecolorspacetest">
         <preparer>
-            <option name="push" value="images/jpeg_icc_test.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/jpeg_include_icc_profile.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>

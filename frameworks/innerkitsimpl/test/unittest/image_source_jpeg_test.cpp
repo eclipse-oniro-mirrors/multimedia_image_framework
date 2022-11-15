@@ -187,31 +187,6 @@ HWTEST_F(ImageSourceJpegTest, TC033, TestSize.Level3)
 }
 
 /**
- * @tc.name: TC034
- * @tc.desc: Test GetImagePropertyString
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceJpegTest, TC034, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    std::string value;
-    std::string key;
-    uint32_t ret = imageSource->GetImagePropertyString(index, key, value);
-
-    ASSERT_EQ(ret, SUCCESS);
-}
-
-/**
  * @tc.name: TC035
  * @tc.desc: Test CreatePixelMap
  * @tc.type: FUNC
@@ -1049,51 +1024,6 @@ HWTEST_F(ImageSourceJpegTest, JpegImageHwDecode001, TestSize.Level3)
      */
     int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_HW_JPEG_FILE_PATH, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
-}
-HWTEST_F(ImageSourceJpegTest, JpegImageReceiver001, TestSize.Level3)
-{
-    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-    std::shared_ptr<ImageReceiver> imageReceiver;
-    int32_t releaseFence;
-    imageReceiver = ImageReceiver::CreateImageReceiver(8 * 1024, 8, 4, 8);
-    class ReceiverSurfaceListener : public SurfaceBufferAvaliableListener
-    {
-    public:
-        void OnSurfaceBufferAvaliable() override
-        {
-            InitializationOptions opts;
-            opts.size.width = 8 * 1024;
-            opts.size.height = 8;
-            opts.pixelFormat = OHOS::Media::PixelFormat::BGRA_8888;
-            opts.alphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-            opts.scaleMode = OHOS::Media::ScaleMode::CENTER_CROP;
-            opts.editable = true;
-            HiLog::Debug(LABEL_TEST, "ReceiverSurfaceListener");
-            ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
-            std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
-            OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver1->ReadLastImage();
-            int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT);
-            imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
-        }
-    };
-    std::shared_ptr<ReceiverSurfaceListener> iReceiverSurfaceListener = std::make_shared<ReceiverSurfaceListener>();
-    imageReceiver->RegisterBufferAvaliableListener(
-        (std::shared_ptr<SurfaceBufferAvaliableListener>)iReceiverSurfaceListener);
-
-    std::string receiveKey = imageReceiver->iraContext_->GetReceiverKey();
-    HiLog::Debug(LABEL_TEST, "ReceiverKey = %{public}s", receiveKey.c_str());
-    OHOS::sptr<OHOS::Surface> receiverSurface = ImageReceiver::getSurfaceById(receiveKey);
-    receiverSurface->RequestBufferWithFence(buffer, releaseFence, requestConfig);
-    HiLog::Debug(LABEL_TEST, "RequestBufferWithFence");
-    int32_t *p = reinterpret_cast<int32_t *>(buffer->GetVirAddr());
-    if (p != nullptr)
-    {
-        for (int32_t i = 0; i < requestConfig.width * requestConfig.height; i++) {
-            p[i] = i;
-        }
-    }
-    receiverSurface->FlushBuffer(buffer, -1, flushConfig);
-    HiLog::Debug(LABEL_TEST, "FlushBuffer");
 }
 } // namespace Multimedia
 } // namespace OHOS

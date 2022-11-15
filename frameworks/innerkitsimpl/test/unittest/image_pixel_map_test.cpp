@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include "media_errors.h"
 #include "pixel_map.h"
+#include "color_space.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -32,8 +33,8 @@ constexpr int32_t PIXEL_MAP_BIG_TEST_HEIGHT = 3 * 100;
 
 class ImagePixelMapTest : public testing::Test {
 public:
-    ImagePixelMapTest(){}
-    ~ImagePixelMapTest(){}
+    ImagePixelMapTest() {}
+    ~ImagePixelMapTest() {}
 };
 
     std::unique_ptr<PixelMap> ConstructPixmap()
@@ -83,7 +84,7 @@ public:
         if (bufferSize <= 0) {
             return nullptr;
         }
-        std::unique_ptr<void> buffer = malloc(bufferSize);
+        void *buffer = malloc(bufferSize);
         if (buffer == nullptr) {
             return nullptr;
         }
@@ -580,5 +581,667 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap013, TestSize.Level3)
     EXPECT_EQ(true, pixelmap1->IsSameImage(*pixelmap2));
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap013 end";
 }
+
+
+/**
+* @tc.name: ImagePixelMap014
+* @tc.desc: test GetPixel8
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap014 GetPixel8 start";
+    PixelMap pixelMap;
+    int32_t x = 1;
+    int32_t y = 1;
+    uint8_t *ret = 0;
+    EXPECT_EQ(ret, pixelMap.GetPixel8(x, y));
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap014 GetPixel8 end";
+}
+
+/**
+* @tc.name: ImagePixelMap015
+* @tc.desc: test GetPixel16
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap015 GetPixel16 start";
+    PixelMap pixelMap;
+    int32_t x = 1;
+    int32_t y = 1;
+    uint16_t *ret = 0;
+    EXPECT_EQ(ret, pixelMap.GetPixel16(x, y));
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap015 GetPixel16 end";
+}
+
+/**
+* @tc.name: ImagePixelMap016
+* @tc.desc: test GetPixelBytes
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap016 GetPixelBytes start";
+    PixelMap pixelMap;
+    int32_t ret = 0;
+    EXPECT_EQ(ret, pixelMap.GetPixelBytes());
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap016 GetPixelBytes end";
+}
+
+/**
+* @tc.name: ImagePixelMap017
+* @tc.desc: test GetPixelBytes
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap017 scale start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    float xAxis = 2.0;
+    float yAxis = 1.0;
+    pixelMap.scale(xAxis, yAxis);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap017 scale end";
+}
+
+/**
+* @tc.name: ImagePixelMap018
+* @tc.desc: test translate
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap018 translate start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    float xAxis = 2.0;
+    float yAxis = 1.0;
+    pixelMap.translate(xAxis, yAxis);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap018 translate end";
+}
+
+/**
+* @tc.name: ImagePixelMap019
+* @tc.desc: test rotate
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap019 rotate start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    float degrees = 90.0;
+    pixelMap.rotate(degrees);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_HEIGHT;
+    int32_t height = PIXEL_MAP_TEST_WIDTH;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap019 rotate end";
+}
+
+/**
+* @tc.name: ImagePixelMap020
+* @tc.desc: test flip
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap020 flip start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    pixelMap.flip(false, true);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap020 flip end";
+}
+
+/**
+* @tc.name: ImagePixelMap021
+* @tc.desc: test crop
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap021 crop start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 1;
+    pixelMap.crop(rect);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = 3;
+    int32_t height = 3;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap021 crop end";
+}
+
+/**
+* @tc.name: ImagePixelMap022
+* @tc.desc: test SetAlpha
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap022 SetAlpha start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    float percent = 0.5;
+    pixelMap.SetAlpha(percent);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    bool getAlpha = false;
+    if (outInfo.pixelFormat != info.pixelFormat) {
+        getAlpha = true;
+    }
+    EXPECT_EQ(false, getAlpha);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap022 SetAlpha end";
+}
+
+/**
+* @tc.name: ImagePixelMap023
+* @tc.desc: test GetARGB32ColorA
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap023 GetARGB32ColorA start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t color = 1;
+    pixelMap.GetARGB32ColorA(color);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap023 GetARGB32ColorA end";
+}
+
+/**
+* @tc.name: ImagePixelMap024
+* @tc.desc: test GetARGB32ColorR
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap024 GetARGB32ColorR start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t color = 1;
+    pixelMap.GetARGB32ColorR(color);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap024 GetARGB32ColorR end";
+}
+
+/**
+* @tc.name: ImagePixelMap025
+* @tc.desc: test GetARGB32ColorG
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap025 GetARGB32ColorG start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t color = 1;
+    pixelMap.GetARGB32ColorG(color);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap025 GetARGB32ColorG end";
+}
+
+/**
+* @tc.name: ImagePixelMap026
+* @tc.desc: test GetARGB32ColorB
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap026 GetARGB32ColorB start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t color = 1;
+    pixelMap.GetARGB32ColorB(color);
+    ImageInfo outInfo;
+    pixelMap.GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap026 GetARGB32ColorB end";
+}
+
+/**
+* @tc.name: ImagePixelMap027
+* @tc.desc: test IsSameImage
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap027 IsSameImage start";
+    PixelMap pixelMap, pixelMap1;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    pixelMap1.SetImageInfo(info);
+    bool ret = pixelMap.IsSameImage(pixelMap1);
+    EXPECT_EQ(false, ret);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap027 IsSameImage end";
+}
+
+/**
+* @tc.name: ImagePixelMap028
+* @tc.desc: test ReadPixels
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap028 ReadPixels start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 96;
+    uint32_t offset = 0;
+    uint32_t stride = 8;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 2;
+    uint8_t *dst = 0;
+    uint32_t ret = pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+    bool getReadPixels = true;
+    if (ret != SUCCESS) {
+        getReadPixels = false;
+    }
+    EXPECT_EQ(false, getReadPixels);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap028 ReadPixels end";
+}
+
+/**
+* @tc.name: ImagePixelMap029
+* @tc.desc: test ReadPixels
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap029, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap029 ReadPixels start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 96;
+    uint8_t *dst = 0;
+    uint32_t ret = pixelMap.ReadPixels(bufferSize, dst);
+    bool getReadPixels = true;
+    if (ret != SUCCESS) {
+        getReadPixels = false;
+    }
+    EXPECT_EQ(false, getReadPixels);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap029 ReadPixels end";
+}
+
+/**
+* @tc.name: ImagePixelMap030
+* @tc.desc: test ReadPixel
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap030 ReadPixel start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    int32_t x = 0;
+    int32_t y = 0;
+    Position position;
+    position.x = x;
+    position.y = y;
+    uint32_t dst = 0;
+    uint32_t ret = pixelMap.ReadPixel(position, dst);
+    bool getReadPixel = true;
+    if (ret != SUCCESS) {
+        getReadPixel = false;
+    }
+    EXPECT_EQ(false, getReadPixel);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap030 ReadPixel end";
+}
+
+/**
+* @tc.name: ImagePixelMap031
+* @tc.desc: test ResetConfig
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap031 ResetConfig start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    Size size;
+    size.width = 2 * PIXEL_MAP_TEST_WIDTH;
+    size.height = 2 * PIXEL_MAP_TEST_HEIGHT;
+    PixelFormat pixelFormat = PixelFormat::RGBA_8888;
+    uint32_t ret = pixelMap.ResetConfig(size, pixelFormat);
+    bool getResetConfig = true;
+    if (ret != SUCCESS) {
+        getResetConfig = false;
+    }
+    EXPECT_EQ(false, getResetConfig);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap031 ResetConfig end";
+}
+
+/**
+* @tc.name: ImagePixelMap032
+* @tc.desc: test SetAlphaType
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap032, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap032 SetAlphaType start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    bool ret = pixelMap.SetAlphaType(alphaType);
+    EXPECT_EQ(true, ret);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap032 SetAlphaType end";
+}
+
+/**
+* @tc.name: ImagePixelMap033
+* @tc.desc: test SetAlphaType
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap033, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap033 SetAlphaType start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    bool ret = pixelMap.SetAlphaType(alphaType);
+    EXPECT_EQ(true, ret);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap033 SetAlphaType end";
+}
+
+/**
+* @tc.name: ImagePixelMap034
+* @tc.desc: test WritePixel
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap034, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap034 WritePixel start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    int32_t x = 0;
+    int32_t y = 0;
+    Position position;
+    position.x = x;
+    position.y = y;
+    uint32_t color = 9;
+    uint32_t ret = pixelMap.WritePixel(position, color);
+    bool getWritePixel = true;
+    if (ret != SUCCESS) {
+        getWritePixel = false;
+    }
+    EXPECT_EQ(false, getWritePixel);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap034 WritePixel end";
+}
+
+/**
+* @tc.name: ImagePixelMap035
+* @tc.desc: test GetFd
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap035, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap035 GetFd start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+
+    void *ret = pixelMap.GetFd();
+    bool isFd = false;
+    if (ret != nullptr) {
+        isFd = true;
+    }
+    EXPECT_EQ(false, isFd);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap035 GetFd end";
+}
+
+/**
+* @tc.name: ImagePixelMap036
+* @tc.desc: test GetCapacity
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap036, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap036 GetCapacity start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t ret = pixelMap.GetCapacity();
+    bool getCapacity = false;
+    if (ret != 0) {
+        getCapacity = true;
+    }
+    EXPECT_EQ(false, getCapacity);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap036 GetCapacity end";
+}
+
+/**
+* @tc.name: ImagePixelMap037
+* @tc.desc: test IsSourceAsResponse
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap037, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap037 IsSourceAsResponse start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    bool ret = pixelMap.IsSourceAsResponse();
+    EXPECT_EQ(false, ret);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap037 IsSourceAsResponse end";
+}
+
+/**
+* @tc.name: ImagePixelMap038
+* @tc.desc: test GetWritablePixels
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap038, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap038 GetWritablePixels start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    void *ret = pixelMap.GetWritablePixels();
+    bool getPixels = true;
+    if (ret == nullptr) {
+        getPixels = false;
+    }
+    EXPECT_EQ(false, getPixels);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap038 GetWritablePixels end";
+}
+#ifdef IMAGE_COLORSPACE_FLAG
+/**
+* @tc.name: ImagePixelMap039
+* @tc.desc: test InnerSetColorSpace
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap039, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    OHOS::ColorManager::ColorSpace grColorSpace =
+        OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
+    pixelMap.InnerSetColorSpace(grColorSpace);
+    OHOS::ColorManager::ColorSpace outColorSpace = pixelMap.InnerGetGrColorSpace();
+    EXPECT_EQ(outColorSpace, grColorSpace);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace end";
+}
+#endif
 } // namespace Multimedia
 } // namespace OHOS
