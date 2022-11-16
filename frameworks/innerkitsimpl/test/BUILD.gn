@@ -427,6 +427,39 @@ ohos_unittest("mocktest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("plugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/utils/include",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+    "//third_party/libpng",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
+  ]
+
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/nine_path_listener_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/png_decoder_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/png_ninepatch_res_test.cpp",
+  ]
+
+  deps = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin:pngplugin",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//third_party/libpng:png_static",
+  ]
+
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -443,6 +476,7 @@ group("unittest") {
     ":mocktest",
     ":pixelconvertadaptertest",
     ":pluginsmanagersrcframeworktest",
+    ":plugintest",
     ":transformtest",
   ]
 }
