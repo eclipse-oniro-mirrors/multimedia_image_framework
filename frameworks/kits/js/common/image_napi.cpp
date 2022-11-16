@@ -115,7 +115,7 @@ static uint64_t GetSurfaceDataSize(sptr<SurfaceBuffer> surface)
 
     int32_t extraDataSize = NUM0;
     auto res = surfaceExtraData->ExtraGet(SURFACE_DATA_SIZE_TAG, extraDataSize);
-    if(res != NUM0) {
+    if (res != NUM0) {
         HiLog::Error(LABEL, "Surface ExtraGet dataSize error %{public}d", res);
         return bufferSize;
     } else if (extraDataSize <= NUM0) {
