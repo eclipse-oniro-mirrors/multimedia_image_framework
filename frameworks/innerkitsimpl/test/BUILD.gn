@@ -27,7 +27,10 @@ ohos_unittest("imagepixelmaptest") {
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
-  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_test.cpp" ]
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_switch_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_test.cpp",
+  ]
 
   deps = [
     #    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native:bitmapconverter",
