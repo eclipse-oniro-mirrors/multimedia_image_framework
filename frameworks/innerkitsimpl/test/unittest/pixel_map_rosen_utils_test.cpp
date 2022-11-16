@@ -24,7 +24,6 @@
 #include "pixel_map.h"
 #include "image_source_util.h"
 #include "pixel_map_rosen_utils.h"
-#include "include/core/SkImage.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -83,45 +82,6 @@ HWTEST_F(PixelMapRosenUtilsTest, PixelMapRosenUtilsTest002, TestSize.Level3)
     bool ret = rUtils.UploadToGpu(pixelMap, context, buildMips, limitToMaxTextureSize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PixelMapRosenUtilsTest: PixelMapRosenUtilsTest002 end";
-}
-
-/**
- * @tc.name: PixelMapRosenUtilsTest003
- * @tc.desc: ExtractSkImage
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapRosenUtilsTest, PixelMapRosenUtilsTest003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapRosenUtilsTest: PixelMapRosenUtilsTest003 start";
-    PixelMapRosenUtils rUtils;
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    uint32_t index = 0;
-    DecodeOptions optsPixel;
-    errorCode = 0;
-    std::shared_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
-    sk_sp<SkImage> ret = rUtils.ExtractSkImage(pixelMap);
-    ASSERT_NE(ret, nullptr);
-    GTEST_LOG_(INFO) << "PixelMapRosenUtilsTest: PixelMapRosenUtilsTest003 end";
-}
-
-/**
- * @tc.name: PixelMapRosenUtilsTest004
- * @tc.desc: ExtractSkImage
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapRosenUtilsTest, PixelMapRosenUtilsTest004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapRosenUtilsTest: PixelMapRosenUtilsTest004 start";
-    PixelMapRosenUtils rUtils;
-    std::shared_ptr<PixelMap> pixelMap = nullptr;
-    sk_sp<SkImage> ret = rUtils.ExtractSkImage(pixelMap);
-    ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "PixelMapRosenUtilsTest: PixelMapRosenUtilsTest004 end";
 }
 }
 }
