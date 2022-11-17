@@ -22,7 +22,7 @@ config("pixelconvertadapter_public_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/utils/include",
-    "//foundation/multimedia/utils/lite/interfaces/kits",
+    "//foundation/multimedia/media_utils_lite/interfaces/kits",
     "//third_party/flutter/skia/include/core",
     "//third_party/flutter/skia/include/encode",
     "//third_party/flutter/skia",

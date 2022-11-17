@@ -22,7 +22,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/plugins/manager/include",
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/utils/lite/interfaces/kits",
+      "//foundation/multimedia/media_utils_lite/interfaces/kits",
       "//foundation/communication/ipc/utils/include",
     ]
 
@@ -59,7 +59,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/plugins/manager/include",
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/utils/lite/interfaces/kits",
+      "//foundation/multimedia/media_utils_lite/interfaces/kits",
       "//foundation/communication/ipc/utils/include",
     ]
 
