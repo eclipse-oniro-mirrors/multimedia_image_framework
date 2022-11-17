@@ -56,7 +56,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver001, TestSize.Level3)
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ASSERT_NE(imageReceiver, nullptr);
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver->ReadLastImage();
-    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT);
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
     imageReceiver->SaveBufferAsImage(fd, surfaceBuffer1, opts);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver001 end";
@@ -78,7 +78,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver002, TestSize.Level3)
     std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = nullptr;
     ASSERT_EQ(surfaceBuffer1, nullptr);
-    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT);
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
     imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver002 end";
@@ -119,7 +119,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver004, TestSize.Level3)
     opts.editable = true;
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
-    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT);
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
     imageReceiver1->SaveBufferAsImage(fd, opts);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 end";
