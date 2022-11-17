@@ -117,4 +117,9 @@
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
+    <target name="streamtest">
+        <preparer>
+            <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
 </configuration>

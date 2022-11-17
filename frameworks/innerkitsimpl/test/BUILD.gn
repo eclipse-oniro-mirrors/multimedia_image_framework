@@ -520,6 +520,43 @@ ohos_unittest("receivertest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("streamtest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/buffer_packer_stream_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/buffer_source_stream_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/file_source_stream_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/incremental_source_stream_test.cpp",
+  ]
+
+  deps = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin:imageformatagent",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -539,6 +576,7 @@ group("unittest") {
     ":pluginsmanagersrcframeworktest",
     ":plugintest",
     ":receivertest",
+    ":streamtest",
     ":transformtest",
   ]
 }

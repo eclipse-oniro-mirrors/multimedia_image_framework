@@ -258,22 +258,6 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest002, TestSize.Level3)
 }
 
 /**
- * @tc.name: ImplClassTest003
- * @tc.desc: Register
- * @tc.type: FUNC
- */
-HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest003 start";
-    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
-    std::weak_ptr<Plugin> plugin;
-    const nlohmann::json classInfo;
-    uint16_t ret = implClass.Register(plugin, classInfo);
-    ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest003 end";
-}
-
-/**
  * @tc.name: ImplClassTest004
  * @tc.desc: CreateObject
  * @tc.type: FUNC
