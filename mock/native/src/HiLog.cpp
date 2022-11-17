@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <iostream>
 #include "__config"
 #include "iosfwd"
 #include "hilog/log.h"

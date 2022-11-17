@@ -125,7 +125,7 @@ HWTEST_F(ImageSourceJpegTest, TC030, TestSize.Level3)
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
@@ -315,7 +315,7 @@ GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC055 start";
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
@@ -626,7 +626,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode005, TestSize.Level3)
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
@@ -714,7 +714,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode007, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -818,7 +818,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode009, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -889,7 +889,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode010, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
