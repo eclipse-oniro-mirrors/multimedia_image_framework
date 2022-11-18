@@ -75,7 +75,7 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest002, TestSize.Level3)
 HWTEST_F(FileSourceStreamTest, FileSourceStreamTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest003 start";
-    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT);
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd);
     ASSERT_NE(fileSourceStream, nullptr);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest003 end";
