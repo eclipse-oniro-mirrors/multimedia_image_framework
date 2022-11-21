@@ -151,7 +151,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode005, TestSize.Level3)
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(ret, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     ret = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(ret, true);
@@ -229,7 +229,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode007, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -333,7 +333,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode009, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -401,7 +401,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode010, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);

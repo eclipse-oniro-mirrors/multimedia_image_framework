@@ -465,7 +465,7 @@ HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 start";
 
-    int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT);
+    int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     int redactionType = 0;
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
