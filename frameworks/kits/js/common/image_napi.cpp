@@ -34,6 +34,7 @@ namespace {
 namespace OHOS {
 namespace Media {
 static const std::string CLASS_NAME = "ImageNapi";
+static const std::string SURFACE_DATA_SIZE_TAG = "dataSize";
 std::shared_ptr<ImageReceiver> ImageNapi::staticImageReceiverInstance_ = nullptr;
 std::shared_ptr<ImageCreator> ImageNapi::staticImageCreatorInstance_ = nullptr;
 sptr<SurfaceBuffer> ImageNapi::staticInstance_ = nullptr;
@@ -97,6 +98,39 @@ static void YUV422SPDataCopy(uint8_t* surfaceBuffer, uint64_t bufferSize,
         }
     }
 }
+
+static uint64_t GetSurfaceDataSize(sptr<SurfaceBuffer> surface)
+{
+    if (surface == nullptr) {
+        HiLog::Error(LABEL, "Nullptr surface");
+        return NUM0;
+    }
+
+    uint64_t bufferSize = surface->GetSize();
+    auto surfaceExtraData = surface->GetExtraData();
+    if (surfaceExtraData == nullptr) {
+        HiLog::Error(LABEL, "Nullptr surface extra data. return buffer size %{public}" PRIu64, bufferSize);
+        return bufferSize;
+    }
+
+    int32_t extraDataSize = NUM0;
+    auto res = surfaceExtraData->ExtraGet(SURFACE_DATA_SIZE_TAG, extraDataSize);
+    if (res != NUM0) {
+        HiLog::Error(LABEL, "Surface ExtraGet dataSize error %{public}d", res);
+        return bufferSize;
+    } else if (extraDataSize <= NUM0) {
+        HiLog::Error(LABEL, "Surface ExtraGet dataSize Ok, but size <= 0");
+        return bufferSize;
+    } else if (static_cast<uint64_t>(extraDataSize) > bufferSize) {
+        HiLog::Error(LABEL,
+            "Surface ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
+            extraDataSize, bufferSize);
+        return bufferSize;
+    }
+    HiLog::Info(LABEL, "Surface ExtraGet dataSize %{public}d", extraDataSize);
+    return extraDataSize;
+}
+
 static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surface)
 {
     IMAGE_FUNCTION_IN();
@@ -105,7 +139,7 @@ static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surfac
         HiLog::Error(LABEL, "Nullptr surface buffer");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    uint64_t surfaceSize = surface->GetSize();
+    uint64_t surfaceSize = GetSurfaceDataSize(surface);
     if (surfaceSize == NUM0) {
         HiLog::Error(LABEL, "Surface size is 0");
         return ERR_IMAGE_DATA_ABNORMAL;
@@ -652,7 +686,7 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status,
             HiLog::Error(LABEL, "Failed to GetComponentData");
         }
     } else {
-        bufferSize = surfaceBuffer->GetSize();
+        bufferSize = GetSurfaceDataSize(surfaceBuffer);
         buffer = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
         rowStride = surfaceBuffer->GetWidth();
         pixelStride = NUM1;
@@ -850,7 +884,7 @@ uint32_t ImageNapi::CombineComponentsIntoSurface()
         HiLog::Error(LABEL, "No component need to combine");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    uint32_t bufferSize = sSurfaceBuffer_->GetSize();
+    uint32_t bufferSize = GetSurfaceDataSize(sSurfaceBuffer_);
     uint8_t* buffer = static_cast<uint8_t*>(sSurfaceBuffer_->GetVirAddr());
     struct YUV422SPData data;
     data.ySize = y->raw.size();
