@@ -32,7 +32,7 @@ ohos_shared_library("pixelmap_ndk") {
   public_configs =
       [ "$SUBSYSTEM_DIR/interfaces/innerkits:image_external_config" ]
 
-  deps = [ "$SUBSYSTEM_DIR/interfaces/innerkits:image" ]
+  deps = [ "$SUBSYSTEM_DIR/interfaces/kits/js/common:image" ]
 
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"

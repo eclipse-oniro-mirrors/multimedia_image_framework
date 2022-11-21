@@ -15,21 +15,24 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 group("image_framework") {
-  if (use_clang_ios || use_clang_android) {
+  if (use_clang_ios) {
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
-      "interfaces/innerkits:image",
       "interfaces/innerkits:image_native",
+      "interfaces/kits/js/common:image",
     ]
-    if (use_clang_android) {
-      deps += [ "interfaces/innerkits:multimedia_image" ]
-    }
+  } else if (use_clang_android) {
+    deps = [
+      "frameworks/innerkitsimpl/utils:image_utils",
+      "interfaces/innerkits:image_native",
+      "interfaces/kits/js/common:multimedia_image",
+    ]
   } else {
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
       "frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
-      "interfaces/innerkits:image",
       "interfaces/innerkits:image_native",
+      "interfaces/kits/js/common:image",
     ]
   }
 }
