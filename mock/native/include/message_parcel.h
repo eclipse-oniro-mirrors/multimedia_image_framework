@@ -18,7 +18,6 @@
 #define MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H_
 #include <string>
 #include "parcel.h"
-#include "refbase.h"
 
 namespace OHOS {
 class IRemoteObject;

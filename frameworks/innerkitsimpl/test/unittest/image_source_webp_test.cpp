@@ -183,7 +183,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode005, TestSize.Level3)
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
     ASSERT_EQ(ret, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     ret = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
@@ -268,7 +268,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -370,7 +370,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode009, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -440,7 +440,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
-    uint8_t *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
     fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
