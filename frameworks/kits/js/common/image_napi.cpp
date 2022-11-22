@@ -241,9 +241,7 @@ void ImageNapi::NativeRelease()
         imageReceiver_->ReleaseBuffer(sSurfaceBuffer_);
         imageReceiver_ = nullptr;
     }
-    if (sSurfaceBuffer_ != nullptr) {
-        sSurfaceBuffer_ = nullptr;
-    }
+    sSurfaceBuffer_ = nullptr;
     if (componentData_.size() > 0) {
         for (auto iter = componentData_.begin(); iter != componentData_.end(); iter++) {
             iter->second = nullptr;
@@ -659,7 +657,6 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status,
 {
     IMAGE_FUNCTION_IN();
     napi_value result;
-    context->status = ERROR;
     napi_get_undefined(env, &result);
 
     if (context == nullptr || context->constructor_ == nullptr ||
@@ -683,6 +680,7 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status,
             rowStride = component->rowStride;
             pixelStride = component->pixelStride;
         } else {
+            context->status = ERROR;
             HiLog::Error(LABEL, "Failed to GetComponentData");
         }
     } else {
@@ -722,7 +720,7 @@ static void JsGetComponentExec(napi_env env, ImageAsyncContext* context)
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
     HiLog::Info(LABEL,
         "JsGetComponentExec surface buffer type %{public}" PRId32, surfaceBuffer->GetFormat());
-    SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
+    context->status = SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
 }
 
 static bool CheckComponentType(const int32_t& type, int32_t format)
@@ -880,7 +878,7 @@ uint32_t ImageNapi::CombineComponentsIntoSurface()
     Component* y = GetComponentData(ComponentType::YUV_Y);
     Component* u = GetComponentData(ComponentType::YUV_U);
     Component* v = GetComponentData(ComponentType::YUV_V);
-    if ((y != nullptr) || (u != nullptr) || (v != nullptr)) {
+    if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
         HiLog::Error(LABEL, "No component need to combine");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
