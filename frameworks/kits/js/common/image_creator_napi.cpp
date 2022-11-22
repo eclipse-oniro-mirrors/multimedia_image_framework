@@ -628,8 +628,7 @@ napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
 
     unique_ptr<ImageCreatorAsyncContext> context = make_unique<ImageCreatorAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
-    if (status != napi_ok || context == nullptr ||
-        context->constructor_ == nullptr) {
+    if (status != napi_ok || context->constructor_ == nullptr) {
         IMAGE_ERR("fail to unwrap constructor_ %{public}d", status);
         return result;
     }
