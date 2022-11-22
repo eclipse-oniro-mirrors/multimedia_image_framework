@@ -657,7 +657,6 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
 {
     IMAGE_FUNCTION_IN();
     napi_value result;
-    context->status = ERROR;
     napi_get_undefined(env, &result);
 
     if (context == nullptr || context->constructor_ == nullptr ||
@@ -681,6 +680,7 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
             rowStride = component->rowStride;
             pixelStride = component->pixelStride;
         } else {
+            context->status = ERROR;
             HiLog::Error(LABEL, "Failed to GetComponentData");
         }
     } else {
@@ -719,7 +719,7 @@ static void JsGetComponentExec(napi_env env, ImageAsyncContext* context)
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
     HiLog::Info(LABEL,
         "JsGetComponentExec surface buffer type %{public}" PRId32, surfaceBuffer->GetFormat());
-    SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
+    context->status = SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
 }
 
 static bool CheckComponentType(const int32_t& type, int32_t format)
