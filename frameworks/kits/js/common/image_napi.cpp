@@ -876,7 +876,7 @@ uint32_t ImageNapi::CombineComponentsIntoSurface()
     Component* y = GetComponentData(ComponentType::YUV_Y);
     Component* u = GetComponentData(ComponentType::YUV_U);
     Component* v = GetComponentData(ComponentType::YUV_V);
-    if ((y != nullptr) || (u != nullptr) || (v != nullptr)) {
+    if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
         HiLog::Error(LABEL, "No component need to combine");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
