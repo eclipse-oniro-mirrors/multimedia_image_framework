@@ -621,6 +621,7 @@ group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
+    ":codectest",
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
@@ -638,7 +639,6 @@ group("unittest") {
     ":receivertest",
     ":streamtest",
     ":transformtest",
-    ":codectest",
   ]
 }
 ################################################
