@@ -569,8 +569,8 @@ ohos_unittest("creatortest") {
   ]
 
   sources = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_creator_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_creator_manager_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_creator_test.cpp",
   ]
 
   deps = [
@@ -594,6 +594,7 @@ group("unittest") {
     ":attrdatatest",
     ":colorconvertertest",
     ":convertertest",
+    ":creatortest",
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":imagecolorspacetest",
@@ -608,7 +609,6 @@ group("unittest") {
     ":receivertest",
     ":streamtest",
     ":transformtest",
-    ":creatortest",
   ]
 }
 ################################################
