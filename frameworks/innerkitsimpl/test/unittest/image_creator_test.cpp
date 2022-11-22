@@ -27,16 +27,10 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
-
-// static constexpr int32_t WIDTH = 8192;
-// static constexpr int32_t HEIGHT = 8;
-// static constexpr int32_t FORMAT = 4;
-// static constexpr int32_t CAPACITY = 8;
-
 class ImageCreatorTest : public testing::Test {
 public:
-    ImageCreatorTest(){}
-    ~ImageCreatorTest(){}
+    ImageCreatorTest() {}
+    ~ImageCreatorTest() {}
 };
 
 /**
@@ -72,34 +66,6 @@ HWTEST_F(ImageCreatorTest, SaveSenderBufferAsImage001, TestSize.Level3)
     ASSERT_EQ(savesend, 0);
     GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage001 end";
 }
-
-// /**
-//  * @tc.name: QueueImage001
-//  * @tc.desc: test QueueImage
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, QueueImage001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 start";
-//     ImageCreator creat;
-//     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-//     creat.QueueImage(buffer);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 end";
-// }
-
-// /**
-//  * @tc.name: GetCreatorSurface001
-//  * @tc.desc: test GetCreatorSurface
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, GetCreatorSurface001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 start";
-//     ImageCreator creat;
-//     sptr<Surface> getsrf = creat.GetCreatorSurface();
-//     ASSERT_EQ(getsrf, nullptr);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 end";
-// }
 
 /**
  * @tc.name: getSurfaceById001
