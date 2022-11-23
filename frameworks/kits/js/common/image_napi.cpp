@@ -662,7 +662,6 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
     if (context == nullptr || context->constructor_ == nullptr ||
         context->constructor_->sSurfaceBuffer_ == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
-        CommonCallbackRoutine(env, context, result);
         return;
     }
 
