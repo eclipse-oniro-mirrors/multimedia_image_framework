@@ -236,6 +236,42 @@ HWTEST_F(ImagePackerTest, AddImage001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: AddImage002
+ * @tc.desc: test AddImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, AddImage002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage002 start";
+    ImagePacker pack;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    pack.AddImage(*imageSource);
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage002 end";
+}
+
+/**
+ * @tc.name: AddImage003
+ * @tc.desc: test AddImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, AddImage003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage003 start";
+    ImagePacker pack;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint32_t index = 0;
+    pack.AddImage(*imageSource, index);
+    GTEST_LOG_(INFO) << "ImagePackerTest: AddImage003 end";
+}
+
+/**
  * @tc.name: FinalizePacking001
  * @tc.desc: test FinalizePacking
  * @tc.type: FUNC
