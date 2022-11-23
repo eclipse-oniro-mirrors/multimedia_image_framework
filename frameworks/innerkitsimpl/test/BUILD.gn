@@ -96,6 +96,7 @@ ohos_unittest("imagesourcetest") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_packer_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_gif_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_jpeg_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_png_test.cpp",
