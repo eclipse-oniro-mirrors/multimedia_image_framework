@@ -63,8 +63,8 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::set<std::string> formats;
     uint32_t ret = imageSource->GetSupportedFormats(formats);
-	ASSERT_EQ(ret, SUCCESS);
-	GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats001 end";
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats001 end";
 }
 
 /**
