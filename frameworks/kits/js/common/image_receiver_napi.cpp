@@ -498,7 +498,7 @@ static void TestRequestBuffer(OHOS::sptr<OHOS::Surface> &receiverSurface,
     }
     IMAGE_ERR("RequestBuffer");
     int32_t *p = reinterpret_cast<int32_t *>(buffer->GetVirAddr());
-    uint32_t size = buffer->GetSize() / 4;
+    int32_t size = static_cast<int32_t>(buffer->GetSize() / 4);
     IMAGE_ERR("RequestBuffer %{public}p", p);
     if (p != nullptr) {
         for (int32_t i = 0; i < size; i++) {

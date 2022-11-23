@@ -241,9 +241,7 @@ void ImageNapi::NativeRelease()
         imageReceiver_->ReleaseBuffer(sSurfaceBuffer_);
         imageReceiver_ = nullptr;
     }
-    if (sSurfaceBuffer_ != nullptr) {
-        sSurfaceBuffer_ = nullptr;
-    }
+    sSurfaceBuffer_ = nullptr;
     if (componentData_.size() > 0) {
         for (auto iter = componentData_.begin(); iter != componentData_.end(); iter++) {
             iter->second = nullptr;
