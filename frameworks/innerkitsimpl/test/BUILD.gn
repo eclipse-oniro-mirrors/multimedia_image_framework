@@ -588,6 +588,43 @@ ohos_unittest("creatortest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("webpplugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/utils/include",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    "//third_party/flutter/skia/third_party/externals/libwebp/src",
+  ]
+  sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/webp_encoder_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/webp_plugin_export_test.cpp",
+  ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin:webpplugin",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -610,6 +647,7 @@ group("unittest") {
     ":receivertest",
     ":streamtest",
     ":transformtest",
+    ":webpplugintest",
   ]
 }
 ################################################
