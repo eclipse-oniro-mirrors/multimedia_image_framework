@@ -37,9 +37,29 @@ HWTEST_F(ImageCreatorManagerTest, SaveImageCreator001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: SaveImageCreator001 start";
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
     shared_ptr<ImageCreator> imageCreator;
+    string id = "1";
+    shared_ptr<ImageCreator> bki = imageCreatorManager.GetImageCreatorByKeyId(id);
+    ASSERT_EQ(bki, nullptr);
     string saveimagecreate = imageCreatorManager.SaveImageCreator(imageCreator);
     ASSERT_EQ(saveimagecreate, "1");
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: SaveImageCreator001 end";
+}
+
+/**
+ * @tc.name: SaveImageCreator002
+ * @tc.desc: test SaveImageCreator
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorManagerTest, SaveImageCreator002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: SaveImageCreator002 start";
+    ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
+    shared_ptr<ImageCreator> imageCreator;
+    string id = "1";
+    shared_ptr<ImageCreator> bki = imageCreatorManager.GetImageCreatorByKeyId(id);
+    ASSERT_EQ(bki, nullptr);
+    string saveimagecreate = imageCreatorManager.SaveImageCreator(imageCreator);
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: SaveImageCreator002 end";
 }
 
 /**
@@ -52,9 +72,25 @@ HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId001 start";
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
     string keyId = "";
+    shared_ptr<ImageCreator> imageCreator;
+    sptr<Surface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId001 end";
+}
+
+/**
+ * @tc.name: GetSurfaceByKeyId002
+ * @tc.desc: test GetSurfaceByKeyId
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId002 start";
+    ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
+    string keyId = "";
+    shared_ptr<ImageCreator> imageCreator = nullptr;
     sptr<Surface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
     ASSERT_EQ(getsurf, nullptr);
-    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId001 end";
+    GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId002 end";
 }
 
 /**
