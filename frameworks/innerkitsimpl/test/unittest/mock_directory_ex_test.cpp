@@ -32,7 +32,35 @@ public:
     MockDirectoryExTest() {}
     ~MockDirectoryExTest() {}
 };
- 
+
+/**
+ * @tc.name: ExtractFilePath001
+ * @tc.desc: test ExtractFilePath
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockDirectoryExTest, ExtractFilePath001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFilePath001 start";
+    const string fileFullName = "a";
+    string expath = ExtractFilePath(fileFullName);
+    ASSERT_EQ(expath, 1);
+    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFilePath001 end";
+}
+
+/**
+ * @tc.name: ExtractFileName001
+ * @tc.desc: test ExtractFileName
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockDirectoryExTest, ExtractFileName001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileName001 start";
+    const std::string fileFullName = "a";
+    string expath = ExtractFileName(fileFullName);
+    ASSERT_EQ(expath, 1);
+    GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileName001 end";
+}
+
 /**
  * @tc.name: ForceCreateDirectory001
  * @tc.desc: test ForceCreateDirectory
