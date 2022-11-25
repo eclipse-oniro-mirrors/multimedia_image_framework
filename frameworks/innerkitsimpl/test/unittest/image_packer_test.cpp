@@ -43,22 +43,6 @@ public:
 };
 
 /**
- * @tc.name: GetSupportedFormats001
- * @tc.desc: test GetSupportedFormats
- * @tc.type: FUNC
- */
-HWTEST_F(ImagePackerTest, GetSupportedFormats001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePackerTest: GetSupportedFormats001 start";
-    ImagePacker pack;
-    std::vector<ClassInfo> classInfos;
-    std::set<std::string> formats;
-    uint32_t getsupport = pack.GetSupportedFormats(formats);
-    ASSERT_EQ(getsupport, OHOS::Media::SUCCESS);
-    GTEST_LOG_(INFO) << "ImagePackerTest: GetSupportedFormats001 end";
-}
-
-/**
  * @tc.name: StartPacking001
  * @tc.desc: test StartPacking
  * @tc.type: FUNC
