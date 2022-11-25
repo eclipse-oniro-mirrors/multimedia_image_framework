@@ -23,6 +23,8 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace Multimedia {
+static constexpr int32_t PIXEL_MAP_TEST_WIDTH = 3;
+static constexpr int32_t PIXEL_MAP_TEST_HEIGHT = 3;
 class ImagePixelMapSwitchTest : public testing::Test {
 public:
     ImagePixelMapSwitchTest() {}
@@ -562,6 +564,291 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest019, TestSize.Level3)
     uint32_t ret = pixelMap.WritePixel(position, color);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest019 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest020
+ * @tc.desc: WritePixel
+ * @tc.desc: IsValidImageInfo(imageInfo_)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 start";
+    /**
+     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    PixelMap pixelMap;
+    ImageInfo info;
+    pixelMap.SetImageInfo(info);
+    Position position;
+    position.x = 0;
+    position.y = 0;
+    uint32_t color = 9;
+    uint32_t ret = pixelMap.WritePixel(position, color);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest020 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest021
+ * @tc.desc: WritePixel
+ * @tc.desc: data_ == nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest021 start";
+    /**
+     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    PixelMap pixelMap;
+    Position position;
+    position.x = 0;
+    position.y = 0;
+    uint32_t color = 9;
+    pixelMap.WritePixel(position, color);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest021 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest022
+ * @tc.desc: FreePixelMap
+ * @tc.desc: case AllocatorType::SHARE_MEM_ALLOC:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest022 start";
+    /**
+     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    int8_t bytesPerPixel = 3;
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::RGB_565;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(bufferSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest022 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest023
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest023 start";
+    /**
+     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    const uint32_t *colors = nullptr;
+    uint32_t colorlength = 8;
+    const int32_t offset = 1;
+    InitializationOptions opts;
+    opts.size.width = 200;
+    opts.size.height = 300;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = opts.size.width;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(colors, colorlength, offset, width, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest023 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest024
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest024 start";
+    /**
+     * @tc.steps: step1. set pixelmap, rect and initialization options
+     * @tc.expected: step1. The new pixelmap is not null.
+     */
+    const uint32_t color[8] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    uint32_t colorlength = 0;
+    const int32_t offset = 1;
+    InitializationOptions opts;
+    opts.size.width = 200;
+    opts.size.height = 300;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = opts.size.width;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(color, colorlength, offset, width, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest024 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest025
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest025 start";
+
+    InitializationOptions opts;
+    opts.size.width = 102400;
+    opts.size.height = 102400;
+    opts.pixelFormat = PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest025 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest026
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest026 start";
+
+    InitializationOptions opts;
+    opts.size.width = 102400;
+    opts.size.height = 102400;
+    opts.pixelFormat = PixelFormat::BGRA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest026 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest027
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest027 start";
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    PixelMap srcPixelMap;
+    srcPixelMap.SetImageInfo(info);
+    InitializationOptions opts;
+    opts.size.width = 200;
+    opts.size.height = 300;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.width = 300;
+    rect.height = 400;
+    std::unique_ptr<PixelMap> newPixelMap = PixelMap::Create(srcPixelMap, rect, opts);
+    EXPECT_EQ(newPixelMap, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest027 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest027_1
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest027_1, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest027 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::NV21;
+    info.colorSpace = ColorSpace::SRGB;
+    bool isReused = false;
+    pixelMap.SetImageInfo(info, isReused);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest027 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest028
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest028 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::CMYK;
+    info.colorSpace = ColorSpace::SRGB;
+    bool isReused = false;
+    pixelMap.SetImageInfo(info, isReused);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest028 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest029
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest029, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest029 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.colorSpace = ColorSpace::SRGB;
+    bool isReused = false;
+    pixelMap.SetImageInfo(info, isReused);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest029 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest030
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest030 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.colorSpace = ColorSpace::SRGB;
+    bool isReused = false;
+    pixelMap.SetImageInfo(info, isReused);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest030 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
