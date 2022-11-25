@@ -218,6 +218,178 @@ HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest006, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest006 end";
 }
+
+/**
+ * @tc.name: PixelConvertAdapterTest007
+ * @tc.desc: WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest007 start";
+    PixelMap pixelMap;
+    uint32_t srcRowBytes = 2;
+    uint32_t rowDataSize = 3 * srcRowBytes;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 4;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * 3;
+    void *srcPixels = malloc(bufferSize);
+    EXPECT_NE(srcPixels, nullptr);
+
+    PixelMap pixelMap1;
+    uint32_t dstRowBytes = 2;
+    uint32_t rowDataSize1 = 3 * dstRowBytes;
+    ImageInfo dstInfo;
+    dstInfo.size.width = 4;
+    dstInfo.size.height = 4;
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+    dstInfo.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(dstInfo);
+    uint32_t bufferSize1 = rowDataSize1 * 3;
+    void *dstPixels = malloc(bufferSize1);
+    EXPECT_NE(dstPixels, nullptr);
+
+    Position dstPos;
+    dstPos.x = 0;
+    dstPos.y = 0;
+    bool ret = PixelConvertAdapter::WritePixelsConvert(srcPixels,
+        srcRowBytes, info, dstPixels, dstPos, dstRowBytes, dstInfo);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest007 end";
+}
+
+/**
+ * @tc.name: PixelConvertAdapterTest008
+ * @tc.desc: WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest008 start";
+    PixelMap pixelMap;
+    uint32_t srcRowBytes = 2;
+    uint32_t rowDataSize = 3 * srcRowBytes;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * 3;
+    void *srcPixels = malloc(bufferSize);
+    EXPECT_NE(srcPixels, nullptr);
+
+    PixelMap pixelMap1;
+    uint32_t dstRowBytes = 2;
+    uint32_t rowDataSize1 = 3 * dstRowBytes;
+    ImageInfo dstInfo;
+    dstInfo.size.width = 4;
+    dstInfo.size.height = 3;
+    dstInfo.pixelFormat = PixelFormat::ARGB_8888;
+    dstInfo.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(dstInfo);
+    uint32_t bufferSize1 = rowDataSize1 * 3;
+    void *dstPixels = malloc(bufferSize1);
+    EXPECT_NE(dstPixels, nullptr);
+
+    Position dstPos;
+    dstPos.x = 0;
+    dstPos.y = 0;
+    bool ret = PixelConvertAdapter::WritePixelsConvert(srcPixels,
+        srcRowBytes, info, dstPixels, dstPos, dstRowBytes, dstInfo);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest008 end";
+}
+
+/**
+ * @tc.name: PixelConvertAdapterTest009
+ * @tc.desc: WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest009 start";
+    PixelMap pixelMap;
+    uint32_t srcRowBytes = 2;
+    uint32_t rowDataSize = 3 * srcRowBytes;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * 3;
+    void *srcPixels = malloc(bufferSize);
+    EXPECT_NE(srcPixels, nullptr);
+
+    PixelMap pixelMap1;
+    uint32_t dstRowBytes = 2;
+    uint32_t rowDataSize1 = 3 * dstRowBytes;
+    ImageInfo dstInfo;
+    dstInfo.size.width = 4;
+    dstInfo.size.height = 3;
+    dstInfo.pixelFormat = PixelFormat::RGB_888;
+    dstInfo.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(dstInfo);
+    uint32_t bufferSize1 = rowDataSize1 * 3;
+    void *dstPixels = malloc(bufferSize1);
+    EXPECT_NE(dstPixels, nullptr);
+
+    Position dstPos;
+    dstPos.x = 0;
+    dstPos.y = 0;
+    bool ret = PixelConvertAdapter::WritePixelsConvert(srcPixels,
+        srcRowBytes, info, dstPixels, dstPos, dstRowBytes, dstInfo);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest009 end";
+}
+
+/**
+ * @tc.name: PixelConvertAdapterTest0010
+ * @tc.desc: WritePixelsConvert
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertAdapterTest, PixelConvertAdapterTest0010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0010 start";
+    PixelMap pixelMap;
+    uint32_t srcRowBytes = 2;
+    uint32_t rowDataSize = 3 * srcRowBytes;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 4;
+    info.pixelFormat = PixelFormat::RGB_888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t bufferSize = rowDataSize * 3;
+    void *srcPixels = malloc(bufferSize);
+    EXPECT_NE(srcPixels, nullptr);
+
+    PixelMap pixelMap1;
+    uint32_t dstRowBytes = 2;
+    uint32_t rowDataSize1 = 3 * dstRowBytes;
+    ImageInfo dstInfo;
+    dstInfo.size.width = 4;
+    dstInfo.size.height = 4;
+    dstInfo.pixelFormat = PixelFormat::RGB_888;
+    dstInfo.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(dstInfo);
+    uint32_t bufferSize1 = rowDataSize1 * 3;
+    void *dstPixels = malloc(bufferSize1);
+    EXPECT_NE(dstPixels, nullptr);
+
+    Position dstPos;
+    dstPos.x = 0;
+    dstPos.y = 0;
+    bool ret = PixelConvertAdapter::WritePixelsConvert(srcPixels,
+        srcRowBytes, info, dstPixels, dstPos, dstRowBytes, dstInfo);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PixelConvertAdapterTest: PixelConvertAdapterTest0010 end";
+}
 }
 }
 
