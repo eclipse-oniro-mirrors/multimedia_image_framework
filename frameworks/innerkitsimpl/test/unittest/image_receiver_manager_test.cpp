@@ -28,6 +28,10 @@ using namespace OHOS::Media;
 using namespace std;
 namespace OHOS {
 namespace Multimedia {
+static constexpr int32_t RECEIVER_TEST_WIDTH = 8192;
+static constexpr int32_t RECEIVER_TEST_HEIGHT = 8;
+static constexpr int32_t RECEIVER_TEST_CAPACITY = 8;
+static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
 class ImageReceiverManagerTest : public testing::Test {
 public:
     ImageReceiverManagerTest() {}
@@ -61,6 +65,43 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager002, TestSize.Level3)
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::shared_ptr<ImageReceiver> imaReceive = imageReceiverManager.getImageReceiverByKeyId(id);
     GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager002 end";
+}
+
+/**
+ * @tc.name: ImageReceiverManager003
+ * @tc.desc: test getSurfaceByKeyId
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager003 start";
+    auto iva = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
+    ASSERT_EQ(receiverKey, "1");
+    auto surface = imageReceiverManager.getSurfaceByKeyId("");
+    bool result = (surface == nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager003 end";
+}
+
+/**
+ * @tc.name: ImageReceiverManager004
+ * @tc.desc: test getSurfaceByKeyId
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager004 start";
+    auto iva = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
+    auto surface = imageReceiverManager.getSurfaceByKeyId(receiverKey);
+    bool result = (surface != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager004 end";
 }
 }
 }

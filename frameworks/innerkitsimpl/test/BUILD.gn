@@ -592,6 +592,7 @@ ohos_unittest("webpplugintest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
     "//foundation/multimedia/utils/include",
@@ -609,6 +610,8 @@ ohos_unittest("webpplugintest") {
     "//third_party/flutter/skia/third_party/externals/libwebp/src",
   ]
   sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/plugin_server_test.cpp",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/webp_decoder_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/webp_encoder_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/webp_plugin_export_test.cpp",
   ]
