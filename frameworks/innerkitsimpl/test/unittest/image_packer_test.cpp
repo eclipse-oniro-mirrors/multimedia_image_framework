@@ -14,6 +14,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <fstream>
 #include "image/abs_image_encoder.h"
 #include "image_packer.h"
@@ -24,9 +27,6 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -124,7 +124,7 @@ HWTEST_F(ImagePackerTest, StartPacking003, TestSize.Level3)
  * @tc.desc: test StartPacking
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerTest, StartPacking004, TestSize.Level3) 
+HWTEST_F(ImagePackerTest, StartPacking004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking004 start";
     ImagePacker pack;

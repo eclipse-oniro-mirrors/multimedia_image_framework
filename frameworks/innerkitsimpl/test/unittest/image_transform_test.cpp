@@ -384,5 +384,167 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0011, TestSize.Level3)
     trans.SetScaleParam(2.0f, 2.0f);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0011 end";
 }
+
+/**
+ * @tc.name: ImageTransformTest0012
+ * @tc.desc:TransformPixmap pixelBytes is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0012 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    PixmapInfo outPutInfo;
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0012 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0013
+ * @tc.desc:TransformPixmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0013 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 0;
+    inPutInfo.imageInfo.size.height = 0;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    PixmapInfo outPutInfo;
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0013 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0014
+ * @tc.desc:TransformPixmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0014 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 1;
+    inPutInfo.imageInfo.size.height = 0;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    PixmapInfo outPutInfo;
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0014 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0015
+ * @tc.desc:TransformPixmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0015 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 0;
+    inPutInfo.imageInfo.size.height = 1;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    PixmapInfo outPutInfo;
+    ASSERT_EQ(outPutInfo.data, nullptr);
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0015 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0016
+ * @tc.desc:TransformPixmap bufferSize > PIXEL_MAP_MAX_RAM_SIZE
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0016 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 1024 * 100;
+    inPutInfo.imageInfo.size.height = 1024 * 10;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    PixmapInfo outPutInfo;
+    ASSERT_EQ(outPutInfo.data, nullptr);
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0016 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0017
+ * @tc.desc:TransformPixmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0017 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 3;
+    inPutInfo.imageInfo.size.height = 4;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
+    PixmapInfo outPutInfo;
+    ASSERT_EQ(outPutInfo.data, nullptr);
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0017 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0018
+ * @tc.desc:TransformPixmap RGB_888
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0018 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 3;
+    inPutInfo.imageInfo.size.height = 4;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::RGB_888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
+    PixmapInfo outPutInfo;
+    outPutInfo.imageInfo.size.width = 3;
+    outPutInfo.imageInfo.size.height = 4;
+    outPutInfo.imageInfo.pixelFormat = PixelFormat::RGB_888;
+
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0018 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0019
+ * @tc.desc:TransformPixmap ALPHA_8
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0019 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 3;
+    inPutInfo.imageInfo.size.height = 4;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::ALPHA_8;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
+    PixmapInfo outPutInfo;
+    outPutInfo.imageInfo.size.width = 3;
+    outPutInfo.imageInfo.size.height = 4;
+    outPutInfo.imageInfo.pixelFormat = PixelFormat::ALPHA_8;
+
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0019 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

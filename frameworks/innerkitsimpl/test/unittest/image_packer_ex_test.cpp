@@ -42,12 +42,12 @@ HWTEST_F(ImagePackerExTest, ImagePackerExTest001, TestSize.Level3)
     std::ostream &outputStream = std::cout;
     PackOption option;
     option.format = "image/jpeg";
-    imageEx->StartPacking(outputStream ,option);
+    imageEx->StartPacking(outputStream, option);
 
     PackOption option2;
     option2.format = "";
     option2.quality = 101;
-    imageEx->StartPacking(outputStream ,option2);
+    imageEx->StartPacking(outputStream, option2);
     delete imageEx;
     GTEST_LOG_(INFO) << "ImagePackerExTest: ImagePackerExTest001 end";
 }

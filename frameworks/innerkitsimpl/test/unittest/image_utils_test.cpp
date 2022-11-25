@@ -96,7 +96,7 @@ HWTEST_F(ImageUtilsTest, GetFileSize002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize002 start";
     ImageUtils imageUtils;
     size_t size;
-    const std::string path = nullptr;
+    const std::string path = "";
     imageUtils.GetFileSize(path, size);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize002 end";
 }
@@ -183,7 +183,7 @@ HWTEST_F(ImageUtilsTest, GetPixelBytes001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, PathToRealPath001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath001 start";
-    const string path = nullptr;
+    const string path = "";
     string realPath;
     ImageUtils::PathToRealPath(path, realPath);
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath001 end";
@@ -199,7 +199,7 @@ HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 start";
     char *buffer = (char*)malloc(PATH_MAX+1);
     memset(buffer, 0, sizeof(PATH_MAX+1));
-    for (int i = 0; i <= PATH_MAX; i++){
+    for (int i = 0; i <= PATH_MAX; i++) {
         buffer[i] = i;
     }
     const string path = buffer;
@@ -242,6 +242,5 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflow001, TestSize.Level3)
     ImageUtils::CheckMulOverflow(width, height, bytesPerPixel);
     GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflow001 end";
 }
-
 }
 }

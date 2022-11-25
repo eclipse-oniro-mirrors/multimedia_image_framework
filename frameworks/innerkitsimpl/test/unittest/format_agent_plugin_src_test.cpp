@@ -85,6 +85,5 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat003, TestSize.Level3)
     heifFormatAgent.CheckFormat(headerData, dataSize);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat003 end";
 }
-
 }
 }

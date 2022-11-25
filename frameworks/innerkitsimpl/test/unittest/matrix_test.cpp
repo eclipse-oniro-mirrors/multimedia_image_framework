@@ -381,5 +381,107 @@ HWTEST_F(MatrixTest, MatrixTest0022, TestSize.Level3)
     matrix_.Print();
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0022 end";
 }
+
+/**
+ * @tc.name: MatrixTest0023
+ * @tc.desc: IdentityXY OperType is not 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, MatrixTest0023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0023 start";
+    Matrix matrix_;
+    Matrix m;
+    float tx = 1;
+    float ty = 1;
+    m.SetTranslate(tx, ty);
+    ASSERT_NE(m.GetOperType(), 0);
+
+    float sx = 1;
+    float sy = 1;
+    Point pt;
+    pt.x = 1;
+    pt.y = 1;
+    matrix_.IdentityXY(m, sx, sy, pt);
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0023 end";
+}
+
+/**
+ * @tc.name: MatrixTest0024
+ * @tc.desc: Invert sx is 1e-7
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, MatrixTest0024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0024 start";
+    Matrix matrix_;
+    Matrix m;
+    float tx = 0;
+    float ty = 0;
+    float sx = 1e-7;
+    float sy = 1;
+    matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    bool ret = m.Invert(matrix_);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0024 end";
+}
+
+/**
+ * @tc.name: MatrixTest0025
+ * @tc.desc: Invert sy is 1e-7
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, MatrixTest0025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0025 start";
+    Matrix matrix_;
+    Matrix m;
+    float tx = 0;
+    float ty = 0;
+    float sx = 1;
+    float sy = 1e-7;
+    matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    bool ret = m.Invert(matrix_);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0025 end";
+}
+
+/**
+ * @tc.name: MatrixTest0026
+ * @tc.desc: InvertForRotate invDet is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, MatrixTest0026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0026 start";
+    Matrix matrix_;
+    Matrix m;
+    float tx = 0;
+    float ty = 0;
+    float sx = -1;
+    float sy = 1;
+    matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    bool ret = m.InvertForRotate(matrix_);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0026 end";
+}
+
+/**
+ * @tc.name: MatrixTest0027
+ * @tc.desc: SetConcat
+ * @tc.type: FUNC
+ */
+HWTEST_F(MatrixTest, MatrixTest0027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0027 start";
+    Matrix matrix_;
+    float tx = 1;
+    float ty = 1;
+    matrix_.SetTranslate(tx, ty);
+    ASSERT_EQ(matrix_.GetOperType(), Matrix::OperType::TRANSLATE);
+    Matrix m;
+    matrix_.SetConcat(m);
+    GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0027 end";
+}
 }
 }
