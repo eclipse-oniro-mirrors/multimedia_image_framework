@@ -57,7 +57,6 @@ struct ImageEnum {
 };
 
 static std::vector<struct ImageEnum> sImageFormatMap = {
-    {"CAMERA_APP_INNER", 4, ""},
     {"JPEG", 2000, ""},
 };
 
