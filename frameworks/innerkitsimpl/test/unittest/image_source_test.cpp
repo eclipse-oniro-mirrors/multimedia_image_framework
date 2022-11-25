@@ -56,7 +56,6 @@ public:
 HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats001 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -82,6 +81,25 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats002, TestSize.Level3)
     std::set<std::string> formats;
     imageSource->GetSupportedFormats(formats);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats002 end";
+}
+
+/**
+ * @tc.name: GetSupportedFormats003
+ * @tc.desc: test GetSupportedFormats
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/test.nrw";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    std::set<std::string> formats;
+    if (imageSource != nullptr) {
+        imageSource->GetSupportedFormats(formats);
+    }
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats003 end";
 }
 
 /**
@@ -192,6 +210,31 @@ HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CreateImageSource009
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource009 start";
+    size_t bufferSize = 0;
+    bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
+    ASSERT_EQ(ret, true);
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
+    ASSERT_NE(buffer, nullptr);
+    ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_JPEG_PATH, buffer, bufferSize);
+    ASSERT_EQ(ret, true);
+    uint32_t size = bufferSize;
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    ImageSource::CreateImageSource(buffer, size, opts, errorCode);
+    ImageSource::CreateImageSource(buffer, -1, opts, errorCode);
+    buffer = nullptr;
+    ImageSource::CreateImageSource(buffer, size, opts, errorCode);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource009 end";
+}
+
+/**
  * @tc.name: CreateIncrementalImageSource001
  * @tc.desc: test CreateIncrementalImageSource
  * @tc.type: FUNC
@@ -223,6 +266,26 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
     ASSERT_EQ(crepixelmapex, nullptr);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx001 end";
+}
+
+/**
+ * @tc.name: CreatePixelMapEx002
+ * @tc.desc: test CreatePixelMapEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint32_t index = 1;
+    const DecodeOptions opt;
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 end";
 }
 
 /**
@@ -296,6 +359,31 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CreateIncrementalPixelMap002
+ * @tc.desc: test CreateIncrementalPixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap002 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+
+    uint32_t info = 100;
+    DecodeOptions op;
+    op.sampleSize = 1;
+    imageSource->CreatePixelMap(info, op, errorCode);
+    info = -1;
+    op.sampleSize = 0;
+    imageSource->CreatePixelMap(info, op, errorCode);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap002 end";
+}
+
+/**
  * @tc.name: UpdateData001
  * @tc.desc: test UpdateData
  * @tc.type: FUNC
@@ -349,6 +437,26 @@ HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
     uint32_t ret = imageSource->GetImageInfo(index, imageInfo);
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo001 end";
+}
+
+ /**
+  * @tc.name: GetImageInfo002
+  * @tc.desc: test GetImageInfo
+  * @tc.type: FUNC
+  */
+HWTEST_F(ImageSourceTest, GetImageInfo002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo002 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+
+    ImageInfo imageInfo;
+    uint32_t index = 1;
+    imageSource->GetImageInfo(index, imageInfo);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo002 end";
 }
 
 /**
@@ -666,6 +774,24 @@ HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetNinePatchInfo002
+ * @tc.desc: test GetNinePatchInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetNinePatchInfo002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo002 start";
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    opts.formatHint = "aaa";
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo002 end";
+}
+
+/**
  * @tc.name: SetMemoryUsagePreference001
  * @tc.desc: test SetMemoryUsagePreference
  * @tc.type: FUNC
@@ -731,6 +857,40 @@ HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
     ASSERT_NE(ret, 0);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 end";
+}
+
+/**
+ * @tc.name: FloatToUint8001
+ * @tc.desc: static inline uint8_t FloatToUint8(float f)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, FloatToUint8001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: FloatToUint8001 start";
+
+    int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    int redactionType = 0;
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    imageSource->GetRedactionArea(fd, redactionType, ranges);
+    // ImageSource.FloatToUint8(-2.0f);
+    // ImageSource.FloatToUint8(0.5f);
+    // uint32_t index = 1;
+    // const DecodeOptions opts2;
+    // std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, opts2, errorCode);
+    // ImageInfo info;
+    // size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
+    // auto buffer = malloc(bufferSize);
+    // pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    // ConvertYUV420ToRGBA(static_cast<uint8_t *>(buffer), bufferSize, false, false, errorCode);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: FloatToUint8001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

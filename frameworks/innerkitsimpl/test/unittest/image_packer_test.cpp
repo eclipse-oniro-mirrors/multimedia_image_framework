@@ -24,6 +24,9 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -121,12 +124,12 @@ HWTEST_F(ImagePackerTest, StartPacking003, TestSize.Level3)
  * @tc.desc: test StartPacking
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerTest, StartPacking004, TestSize.Level3)
+HWTEST_F(ImagePackerTest, StartPacking004, TestSize.Level3) 
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking004 start";
     ImagePacker pack;
     const std::string filePath;
-    const PackOption option;
+    PackOption option;
     uint32_t startpc = pack.StartPacking(filePath, option);
     ASSERT_EQ(startpc, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking004 end";
@@ -177,12 +180,16 @@ HWTEST_F(ImagePackerTest, StartPacking007, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking007 start";
     ImagePacker pack;
     const int fd = 0;
+    const int fd2 = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     PackOption option;
     option.format = "image/jpeg";
     option.quality = NUM_100;
     option.numberHint = NUM_1;
-    uint32_t startpc = pack.StartPacking(fd, option);
-    ASSERT_EQ(startpc, 0);
+    pack.StartPacking(fd, option);
+    pack.StartPacking(fd2, option);
+    PackOption option2;
+    option2.format = "";
+    pack.StartPacking(fd2, option2);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking007 end";
 }
 
@@ -197,8 +204,8 @@ HWTEST_F(ImagePackerTest, StartPacking008, TestSize.Level3)
     ImagePacker pack;
     std::ostream &outputStream = std::cout;
     const PackOption option;
-    uint32_t startpc = pack.StartPacking(outputStream, option);
-    ASSERT_EQ(startpc, ERR_IMAGE_INVALID_PARAMETER);
+    pack.StartPacking(outputStream, option);
+    
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking008 end";
 }
 
@@ -222,6 +229,48 @@ HWTEST_F(ImagePackerTest, StartPacking009, TestSize.Level3)
 }
 
 /**
+ * @tc.name: StartPacking010
+ * @tc.desc: test StartPacking
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, StartPacking010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking010 start";
+    ImagePacker pack;
+    uint8_t *outPut = nullptr;
+    PackOption option;
+    option.format = "";
+    option.quality = NUM_100;
+    option.numberHint = NUM_1;
+    pack.StartPacking(outPut, static_cast<uint32_t>(100), option);
+    pack.StartPacking(outPut, static_cast<uint32_t>(-1), option);
+    uint8_t outPut2 = 1;
+    pack.StartPacking(&outPut2, static_cast<uint32_t>(-1), option);
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking010 end";
+}
+
+/**
+ * @tc.name: StartPacking012
+ * @tc.desc: test StartPacking
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, StartPacking012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking012 start";
+    ImagePacker pack;
+    const std::string filePath = IMAGE_INPUT_JPEG_PATH;
+    const std::string filePath2 = "ImagePackerTestNoImage.jpg";
+    PackOption option;
+    option.format = "image/jpeg";
+    option.quality = NUM_100;
+    option.numberHint = NUM_1;
+    pack.StartPacking(filePath2, option);
+    option.format = "";
+    pack.StartPacking(filePath, option);
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking012 end";
+}
+
+/**
  * @tc.name: AddImage001
  * @tc.desc: test AddImage
  * @tc.type: FUNC
@@ -232,6 +281,11 @@ HWTEST_F(ImagePackerTest, AddImage001, TestSize.Level3)
     ImagePacker pack;
     PixelMap pixelMap;
     pack.AddImage(pixelMap);
+    SourceOptions opts;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> imageSource =
+    ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    pack.AddImage(*imageSource);
     GTEST_LOG_(INFO) << "ImagePackerTest: AddImage001 end";
 }
 
@@ -246,6 +300,7 @@ HWTEST_F(ImagePackerTest, AddImage002, TestSize.Level3)
     ImagePacker pack;
     uint32_t errorCode = 0;
     SourceOptions opts;
+    opts.formatHint = -1;
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     pack.AddImage(*imageSource);
