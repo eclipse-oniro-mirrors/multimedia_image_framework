@@ -33,33 +33,6 @@ public:
     ~ImageCreatorTest() {}
 };
 
-// /**
-//  * @tc.name: OnBufferRelease001
-//  * @tc.desc: test OnBufferRelease
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, OnBufferRelease001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease001 start";
-//     ImageCreator creat;
-//     sptr<SurfaceBuffer> buffer;
-//     GSError onbuffer = creat.OnBufferRelease(buffer);
-//     ASSERT_EQ(onbuffer, GSERROR_NO_ENTRY);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease001 end";
-// }
-
-// /**
-//  * @tc.name: OnBufferAvailable001
-//  * @tc.desc: test OnBufferAvailable
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, OnBufferAvailable001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable001 start";
-//     OnBufferAvailable();
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable001 end";
-// }
-
 /**
  * @tc.name: CreateImageCreator001
  * @tc.desc: test CreateImageCreator
@@ -116,65 +89,6 @@ HWTEST_F(ImageCreatorTest, SaveSTP002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSTP002 end";
 }
 
-// /**
-//  * @tc.name: ReleaseBuffer001
-//  * @tc.desc: test ReleaseBuffer
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, ReleaseBuffer001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: ReleaseBuffer001 start";
-//     AllocatorType allocatorType;
-//     uint8_t **buffer = nullptr;
-//     ReleaseBuffer(allocatorType, buffer);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: ReleaseBuffer001 end";
-// }
-
-// /**
-//  * @tc.name: AllocHeapBuffer001
-//  * @tc.desc: test AllocHeapBuffer
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, AllocHeapBuffer001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer001 start";
-//     uint64_t bufferSize = 0;
-//     uint8_t **buffer = 'a';
-//     bool alloc = AllocHeapBuffer(bufferSize, buffer);
-//     ASSERT_EQ(alloc, false);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer001 end";
-// }
-
-// /**
-//  * @tc.name: AllocHeapBuffer002
-//  * @tc.desc: test AllocHeapBuffer
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, AllocHeapBuffer002, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer002 start";
-//     uint64_t bufferSize = 1;
-//     uint8_t **buffer = nullptr;
-//     bool alloc = AllocHeapBuffer(bufferSize, buffer);
-//     ASSERT_EQ(alloc, false);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer002 end";
-// }
-
-// /**
-//  * @tc.name: AllocHeapBuffer003
-//  * @tc.desc: test AllocHeapBuffer
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, AllocHeapBuffer003, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer003 start";
-//     uint64_t bufferSize = 1;
-//     uint8_t **buffer = "a";
-//     bool alloc = AllocHeapBuffer(bufferSize, buffer);
-//     ASSERT_EQ(alloc, true);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: AllocHeapBuffer003 end";
-// }
-
 /**
  * @tc.name: SaveSenderBufferAsImage001
  * @tc.desc: test SaveSenderBufferAsImage
@@ -206,47 +120,6 @@ HWTEST_F(ImageCreatorTest, SaveSenderBufferAsImage002, TestSize.Level3)
     ASSERT_EQ(savesend, 0);
     GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSenderBufferAsImage002 end";
 }
-
-// /**
-//  * @tc.name: DequeueImage001
-//  * @tc.desc: test DequeueImage
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, DequeueImage001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueImage001 start";
-//     ImageCreator creat;
-//     OHOS::sptr<OHOS::SurfaceBuffer> dequeimage = creat.DequeueImage();
-//     ASSERT_NE(dequeimage, nullptr);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueImage001 end";
-// }
-
-// /**
-//  * @tc.name: QueueImage001
-//  * @tc.desc: test QueueImage
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, QueueImage001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 start";
-//     ImageCreator creat;
-//     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-//     creat.QueueImage(buffer);
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 end";
-// }
-
-// /**
-//  * @tc.name: GetCreatorSurface001
-//  * @tc.desc: test GetCreatorSurface
-//  * @tc.type: FUNC
-//  */
-// HWTEST_F(ImageCreatorTest, GetCreatorSurface001, TestSize.Level3)
-// {
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 start";
-//     ImageCreator creat;
-//     sptr<Surface> ImageCreator = creat.GetCreatorSurface();
-//     GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 end";
-// }
 
 /**
  * @tc.name: getSurfaceById001
