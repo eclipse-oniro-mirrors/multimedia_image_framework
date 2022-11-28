@@ -169,9 +169,8 @@ HWTEST_F(ImageSourceTest, CreateImageSource006, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string pathName = "a";
-    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(pathName, opts, errorCode);
-    ASSERT_EQ(creimagesource, nullptr);
+    const std::string pathName = "data/localtest";
+    ImageSource::CreateImageSource(pathName, opts, errorCode);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource006 end";
 }
