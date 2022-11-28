@@ -26,8 +26,11 @@ ohos_unittest("imagepixelmaptest") {
     "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   ]
   sources = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_packer_ex_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_switch_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_test.cpp",
   ]
@@ -130,6 +133,60 @@ ohos_unittest("imagesourcetest") {
   resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("format_agent_plugin_src_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//commonlibrary/c_utils/base/include",
+  ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/format_agent_plugin_src_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin:imageformatagent",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+  ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+}
+
+ohos_unittest("imageutilstest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//commonlibrary/c_utils/base/include",
+    "//foundation/multimedia/media_utils_lite/interfaces/kits",
+    "//foundation/communication/ipc/utils/include",
+  ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+
+    #"hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
+  ]
+
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+}
+
 ohos_unittest("colorconvertertest") {
   module_out_path = module_output_path
 
@@ -184,6 +241,7 @@ ohos_unittest("transformtest") {
 
   #  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 }
+
 ohos_unittest("imagecolorspacetest") {
   module_out_path = module_output_path
 
@@ -636,12 +694,14 @@ group("unittest") {
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
+    ":format_agent_plugin_src_test",
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
+    ":imageutilstest",
     ":interfacetest",
     ":mocktest",
     ":pixelconvertadaptertest",
