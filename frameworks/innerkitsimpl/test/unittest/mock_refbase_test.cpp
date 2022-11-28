@@ -25,6 +25,40 @@ public:
     MockRefbaseTest() {}
     ~MockRefbaseTest() {}
 };
+RefCounter *refs_ = nullptr;
+/**
+ * @tc.name: GetRefPtr001
+ * @tc.desc: test GetRefPtr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockRefbaseTest, GetRefPtr001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetRefPtr001 start";
+    RefCounter *base = nullptr;
+    void *cookie = nullptr;
+    WeakRefCounter ref(base, cookie);
+    ref.GetRefPtr();
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetRefPtr001 end";
+}
+
+// /**
+//  * @tc.name: IncWeakRefCount001
+//  * @tc.desc: test IncWeakRefCount
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(MockRefbaseTest, IncWeakRefCount001, TestSize.Level3)
+// {
+//     GTEST_LOG_(INFO) << "MockRefbaseTest: IncWeakRefCount001 start";
+//     RefCounter *base = nullptr;
+//     void *cookie = nullptr;
+//     WeakRefCounter ref(base, cookie);
+    
+//     const void *objectId = nullptr;
+//     GTEST_LOG_(INFO) << "aaaaaaaaaaaaaaaaaaaaaaa";
+//     ref.IncWeakRefCount(objectId);
+//     GTEST_LOG_(INFO) << "MockRefbaseTest: DecWeakRefCount001 end";
+// }
+
 
 /**
  * @tc.name: DecWeakRefCount001
@@ -41,6 +75,23 @@ HWTEST_F(MockRefbaseTest, DecWeakRefCount001, TestSize.Level3)
     ref.DecWeakRefCount(objectId);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecWeakRefCount001 end";
 }
+
+// /**
+//  * @tc.name: AttemptIncStrongRef001
+//  * @tc.desc: test AttemptIncStrongRef
+//  * @tc.type: FUNC
+//  */
+// HWTEST_F(MockRefbaseTest, AttemptIncStrongRef001, TestSize.Level3)
+// {
+//     GTEST_LOG_(INFO) << "MockRefbaseTest: AttemptIncStrongRef001 start";
+//     const void *objectId = nullptr;
+//     RefCounter *base = nullptr;
+//     void *cookie = nullptr;
+//     WeakRefCounter ref(base, cookie);
+//     bool attempis = ref.AttemptIncStrongRef(objectId);
+//     ASSERT_EQ(attempis, true);
+//     GTEST_LOG_(INFO) << "MockRefbaseTest: AttemptIncStrongRef001 end";
+// }
 
 /**
  * @tc.name: GetRefCount001
@@ -152,16 +203,16 @@ HWTEST_F(MockRefbaseTest, GetWeakRefCount001, TestSize.Level3)
 }
 
 /**
- * @tc.name: SetAttemptAcquire001
+ * @tc.name: SetAttemptAcquire002
  * @tc.desc: test SetAttemptAcquire
  * @tc.type: FUNC
  */
-HWTEST_F(MockRefbaseTest, SetAttemptAcquire001, TestSize.Level3)
+HWTEST_F(MockRefbaseTest, SetAttemptAcquire002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire001 start";
+    GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire002 start";
     RefCounter refs;
     refs.SetAttemptAcquire();
-    GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire001 end";
+    GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire002 end";
 }
 
 /**
@@ -290,6 +341,20 @@ HWTEST_F(MockRefbaseTest, GetSptrRefCount001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetSptrRefCount002
+ * @tc.desc: test GetSptrRefCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockRefbaseTest, GetSptrRefCount002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetSptrRefCount002 start";
+    RefBase refb;
+    int getref = refb.GetSptrRefCount();
+    ASSERT_NE(getref, 0);
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetSptrRefCount002 end";
+}
+
+/**
  * @tc.name: CreateWeakRef001
  * @tc.desc: test CreateWeakRef
  * @tc.type: FUNC
@@ -302,6 +367,21 @@ HWTEST_F(MockRefbaseTest, CreateWeakRef001, TestSize.Level3)
     WeakRefCounter *createwk = refb.CreateWeakRef(cookie);
     ASSERT_NE(createwk, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: CreateWeakRef001 end";
+}
+
+/**
+ * @tc.name: CreateWeakRef002
+ * @tc.desc: test CreateWeakRef
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockRefbaseTest, CreateWeakRef002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockRefbaseTest: CreateWeakRef002 start";
+    void *cookie = nullptr;
+    RefBase refb;
+    WeakRefCounter *createwk = refb.CreateWeakRef(cookie);
+    ASSERT_NE(createwk, nullptr);
+    GTEST_LOG_(INFO) << "MockRefbaseTest: CreateWeakRef002 end";
 }
 
 /**
@@ -330,6 +410,34 @@ HWTEST_F(MockRefbaseTest, DecWeakRef001, TestSize.Level3)
     RefBase refb;
     refb.DecWeakRef(objectId);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecWeakRef001 end";
+}
+
+/**
+ * @tc.name: GetWptrRefCount001
+ * @tc.desc: test GetWptrRefCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockRefbaseTest, GetWptrRefCount001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetWptrRefCount001 start";
+    RefBase refb;
+    int getwp = refb.GetWptrRefCount();
+    ASSERT_EQ(getwp, 0);
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetWptrRefCount001 end";
+}
+
+/**
+ * @tc.name: GetWptrRefCount002
+ * @tc.desc: test GetWptrRefCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(MockRefbaseTest, GetWptrRefCount002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetWptrRefCount002 start";
+    RefBase refb;
+    int getwp = refb.GetWptrRefCount();
+    ASSERT_EQ(getwp, 0);
+    GTEST_LOG_(INFO) << "MockRefbaseTest: GetWptrRefCount002 end";
 }
 
 /**
