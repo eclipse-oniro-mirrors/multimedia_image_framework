@@ -645,7 +645,7 @@ HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     if (imageSource != nullptr) {
-        const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
+        imageSource->GetNinePatchInfo();
     }
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 end";
