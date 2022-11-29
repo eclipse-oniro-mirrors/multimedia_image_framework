@@ -18,7 +18,8 @@
 #include "plugin_export.h"
 
 using namespace testing::ext;
-
+namespace OHOS {
+namespace Multimedia {
 class WebpPluginExportTest : public testing::Test {
 public:
     WebpPluginExportTest() {}
@@ -39,3 +40,5 @@ HWTEST_F(WebpPluginExportTest, PluginExternalCreate001, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "WebpPluginExportTest: PluginExternalCreate001 end";
 }
+} // namespace Multimedia
+} // namespace OHOS
