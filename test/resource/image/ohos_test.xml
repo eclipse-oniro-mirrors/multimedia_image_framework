@@ -48,6 +48,7 @@
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_packing.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_large.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.9.png -> /data/local/tmp/image" src="res"/>
