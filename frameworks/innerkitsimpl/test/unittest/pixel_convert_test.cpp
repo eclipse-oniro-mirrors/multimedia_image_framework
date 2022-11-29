@@ -1812,5 +1812,107 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0048, TestSize.Level3)
     colorConverterPointer->Convert(destination, source, 2);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0048 start";
 }
+
+/**
+ * @tc.name: PixelConvertTest0049
+ * @tc.desc: Create srcImageInfo.alphaType is IMAGE_ALPHA_TYPE_UNKNOWN
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelConvertTest0049, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0049 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    EXPECT_NE(colorConverterPointer, nullptr);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0049 end";
+}
+
+/**
+ * @tc.name: PixelConvertTest0050
+ * @tc.desc: Create dstImageInfo.alphaType is IMAGE_ALPHA_TYPE_UNKNOWN
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelConvertTest0050, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0050 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    EXPECT_NE(colorConverterPointer, nullptr);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0050 end";
+}
+
+/**
+ * @tc.name: PixelConvertTest0051
+ * @tc.desc: Create ImageInfo.alphaType is IMAGE_ALPHA_TYPE_UNKNOWN
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelConvertTest0051, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0051 start";
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    EXPECT_NE(colorConverterPointer, nullptr);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0051 end";
+}
+
+/**
+ * @tc.name: PixelConvertTest0052
+ * @tc.desc: RGB_161616 to ABGR_8888 UNPREMUL to UNPREMUL.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelConvertTest, PixelConvertTest0052, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0052 start";
+    /**
+     * @tc.steps: step1. set parameters to build object.
+     * @tc.expected: step1. set parameters success.
+     */
+    ImageInfo srcImageInfo;
+    srcImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    srcImageInfo.pixelFormat = static_cast<PixelFormat>(RGB_161616);
+
+    ImageInfo dstImageInfo;
+    dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    dstImageInfo.pixelFormat = static_cast<PixelFormat>(ABGR_8888);
+
+    uint8_t source[50] = { 0 };
+    uint32_t destination[8] = { 0 };
+    uint32_t result[3] = { 0 };
+    if (IS_LITTLE_ENDIAN) {
+        result[0] = 0x80020408;
+        result[1] = 0x40020408;
+    } else {
+        result[0] = 0x08040280;
+        result[1] = 0x08040240;
+    }
+    /**
+     * @tc.steps: step2. build pixel convert object.
+     * @tc.expected: step2. The return value is the same as the result.
+     */
+    std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    colorConverterPointer->Convert(destination, source, 2);
+    GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0052 start";
+}
 }
 }
