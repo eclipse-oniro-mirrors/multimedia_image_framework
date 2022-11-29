@@ -38,7 +38,7 @@ namespace Multimedia {
 constexpr uint32_t NUM_1 = 1;
 constexpr uint32_t NUM_100 = 100;
 constexpr int64_t BUFFER_SIZE = 2 * 1024 * 1024;
-static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_packing.jpg";
 class ImagePackerTest : public testing::Test {
 public:
     ImagePackerTest() {}
