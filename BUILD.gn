@@ -48,7 +48,9 @@ group("image_test_list") {
   testonly = true
 
   # image
-  deps = [ "frameworks/innerkitsimpl/test:unittest" ]
+  if (!use_clang_android && !use_clang_ios) {
+    deps = [ "frameworks/innerkitsimpl/test:unittest" ]
+  }
 }
 
 config("media_config") {
