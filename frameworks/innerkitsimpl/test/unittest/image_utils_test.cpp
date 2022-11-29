@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <fcntl.h>
 #include <fstream>
 #include "image_utils.h"
 #include "image_trace.h"
