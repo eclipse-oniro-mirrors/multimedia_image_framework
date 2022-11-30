@@ -63,9 +63,7 @@ public:
         const int fd) override;
     uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         uint8_t *data, uint32_t size) override;
-    uint32_t GetRedactionArea(const int &fd,
-                              const int &redactionType,
-                              std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
+    uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace getGrColorSpace();
@@ -74,7 +72,7 @@ public:
 
 private:
     DISALLOW_COPY_AND_MOVE(JpegDecoder);
-    int ExifPrintMethod();
+    bool ParseExifData();
     J_COLOR_SPACE GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat);
     void CreateHwDecompressor();
     uint32_t DoSwDecode(DecodeContext &context);

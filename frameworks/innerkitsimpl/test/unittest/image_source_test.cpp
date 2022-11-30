@@ -777,16 +777,15 @@ HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetRedactionArea001
- * @tc.desc: test GetRedactionArea(fd, redactionType, ranges)
+ * @tc.name: GetFilterArea001
+ * @tc.desc: test GetFilterArea(filterType, ranges)
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
+HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 start";
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterArea001 start";
 
-    int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    int redactionType = 0;
+    int filterType = 0;
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
@@ -795,10 +794,10 @@ HWTEST_F(ImageSourceTest, GetRedactionArea001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    uint32_t ret = imageSource->GetRedactionArea(fd, redactionType, ranges);
+    uint32_t ret = imageSource->GetFilterArea(filterType, ranges);
     ASSERT_NE(ret, 0);
 
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetRedactionArea001 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterArea001 end";
 }
 
 /**

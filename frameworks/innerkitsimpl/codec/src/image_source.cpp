@@ -1241,20 +1241,18 @@ MemoryUsagePreference ImageSource::GetMemoryUsagePreference()
     return preference_;
 }
 
-uint32_t ImageSource::GetRedactionArea(const int &fd,
-                                       const int &redactionType,
-                                       std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        IMAGE_LOGE("[ImageSource]get valid image status fail on get redaction area, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get filter area, ret:%{public}u.", ret);
         return ret;
     }
-    ret = mainDecoder_->GetRedactionArea(fd, redactionType, ranges);
+    ret = mainDecoder_->GetFilterArea(privacyType, ranges);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("[ImageSource] GetRedactionArea fail, ret:%{public}u", ret);
+        IMAGE_LOGE("[ImageSource] GetFilterArea fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
