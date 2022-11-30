@@ -232,34 +232,36 @@ HWTEST_F(PluginLibJpegTest, exif_info011, TestSize.Level3)
 
 /**
  * @tc.name: exif_info012
- * @tc.desc: GetRedactionArea
+ * @tc.desc: GetFilterArea
  * @tc.type: FUNC
  */
 HWTEST_F(PluginLibJpegTest, exif_info012, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info012 start";
     EXIFInfo exinfo;
-    int fd = open("/data/local/tmp/image/test_noexit.jpg", O_RDWR, S_IRUSR | S_IWUSR);
-    int redactionType = 0;
+    const uint32_t bufSize = 5;
+    uint8_t buf[bufSize] = "exif";
+    int filterType = 0;
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    exinfo.GetRedactionArea(fd, redactionType, ranges);
+    exinfo.GetFilterArea(buf, bufSize, filterType, ranges);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info012 end";
 }
 
 /**
  * @tc.name: exif_info013
- * @tc.desc: GetRedactionArea
+ * @tc.desc: GetFilterArea
  * @tc.type: FUNC
  */
 HWTEST_F(PluginLibJpegTest, exif_info013, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info013 start";
     EXIFInfo exinfo;
-    const int fd = open("/data/local/tmp/image/test_null.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    int redactionType = 0;
+    const uint32_t bufSize = 5;
+    uint8_t buf[bufSize] = "exif";
+    int filterType = 0;
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    uint32_t ret = exinfo.GetRedactionArea(fd, redactionType, ranges);
-    ASSERT_EQ(ret, ERR_MEDIA_BUFFER_TOO_SMALL);
+    uint32_t ret = exinfo.GetFilterArea(buf, bufSize, filterType, ranges);
+    ASSERT_EQ(ret, 1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info013 end";
 }
 } // namespace Multimedia

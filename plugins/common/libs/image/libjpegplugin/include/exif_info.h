@@ -50,8 +50,11 @@ public:
     uint32_t ModifyExifData(const ExifTag &tag, const std::string &value, const std::string &path);
     uint32_t ModifyExifData(const ExifTag &tag, const std::string &value, const int fd);
     uint32_t ModifyExifData(const ExifTag &tag, const std::string &value, unsigned char *data, uint32_t size);
-    uint32_t
-        GetRedactionArea(const int &fd, const int &redactionType, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    uint32_t GetFilterArea(const uint8_t *buf,
+                              const uint32_t &bufSize,
+                              const int &privacyType,
+                              std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    bool IsExifDataParsed();
 
 public:
     static const std::string DEFAULT_EXIF_VALUE;
@@ -84,24 +87,25 @@ private:
         unsigned char *buf, FILE *fp);
     void UpdateCacheExifData(FILE *fp);
     bool CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag);
-    void GetAreaFromExifEntries(const int &redactionType,
+    void GetAreaFromExifEntries(const int &privacyType,
                                 const std::vector<DirectoryEntry> &entryArray,
                                 std::vector<std::pair<uint32_t, uint32_t>> &ranges);
 
 private:
     ExifIfd imageFileDirectory_;
     ExifData* exifData_;
+    bool isExifDataParsed_;
 };
 
 class ByteOrderedBuffer {
 public:
-    ByteOrderedBuffer(unsigned char *fileBuf, uint32_t bufferLength);
+    ByteOrderedBuffer(const uint8_t *fileBuf, uint32_t bufferLength);
     ~ByteOrderedBuffer();
     void GenerateDEArray();
 
 public:
     ExifByteOrder byteOrder_ = EXIF_BYTE_ORDER_MOTOROLA;
-    unsigned char *buf_ = nullptr;
+    const uint8_t *buf_;
     uint32_t bufferLength_ = 0;
     uint32_t curPosition_ = 0;
     std::vector<DirectoryEntry> directoryEntryArray_;

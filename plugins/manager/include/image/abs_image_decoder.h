@@ -169,9 +169,8 @@ public:
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
 
-    // get redaction area.
-    virtual uint32_t
-        GetRedactionArea(const int &fd, const int &redactionType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+    // get filter area.
+    virtual uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
     {
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
