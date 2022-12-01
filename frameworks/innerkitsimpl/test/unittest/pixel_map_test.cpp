@@ -95,9 +95,11 @@ std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFo
 
 std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaType)
 {
+    int32_t width = 200;
+    int32_t height = 300;
     InitializationOptions opts;
-    opts.size.width = 200;
-    opts.size.height = 300;
+    opts.size.width = width;
+    opts.size.height = height;
     opts.pixelFormat = format;
     opts.alphaType = alphaType;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
