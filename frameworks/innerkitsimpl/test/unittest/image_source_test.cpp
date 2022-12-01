@@ -586,8 +586,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt001, TestSize.Level3)
     std::string key;
     imageSource->GetImagePropertyInt(index, key, value);
 
-
-
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt001 end";
 }
 
