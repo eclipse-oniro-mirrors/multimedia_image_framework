@@ -154,7 +154,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource005, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const std::string pathName = IMAGE_INPUT_JPEG_PATH;
-    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(pathName, opts, errorCode);
+    ImageSource::CreateImageSource(pathName, opts, errorCode);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource005 end";
 }
 
@@ -186,7 +186,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource007, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ImageSource::CreateImageSource(fd, opts, errorCode);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource007 end";
 }
 
@@ -202,8 +202,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = 0;
-    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(fd, opts, errorCode);
-    ASSERT_EQ(creimagesource, nullptr);
+    ImageSource::CreateImageSource(fd, opts, errorCode);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource008 end";
 }
@@ -218,7 +217,7 @@ HWTEST_F(ImageSourceTest, CreateIncrementalImageSource001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 start";
     uint32_t errorCode = 0;
     const IncrementalSourceOptions opts;
-    std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateIncrementalImageSource(opts, errorCode);
+    ImageSource::CreateIncrementalImageSource(opts, errorCode);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 end";
 }
 
@@ -257,7 +256,7 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index = 1;
     const DecodeOptions opt;
-    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opt, errorCode);
+    imageSource->CreatePixelMapEx(index, opt, errorCode);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 end";
 }
