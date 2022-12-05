@@ -198,7 +198,7 @@ HWTEST_F(ImageUtilsTest, PathToRealPath001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 start";
-    char buffer[PATH_MAX+1] = {0};
+    char buffer[PATH_MAX+1] = {'\0'};
     for (int i = 0; i <= PATH_MAX; i++) {
         buffer[i] = i;
     }
