@@ -69,6 +69,10 @@ int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle);
 int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y);
 int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int32_t width, int32_t height);
 
+int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info);
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr);
+int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native);
+
 #ifdef __cplusplus
 };
 #endif

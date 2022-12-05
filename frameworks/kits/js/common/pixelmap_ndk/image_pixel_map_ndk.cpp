@@ -17,7 +17,8 @@
 #include "image_pixel_map_napi_ex.h"
 
 #include "common_utils.h"
-#include "image_pixel_map_ndk.h"
+#include "image_pixel_map_napi_kits.h"
+#include "pngpriv.h"
 
 namespace OHOS {
 namespace Media {
@@ -253,6 +254,47 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
     pixelmap->crop(region);
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
+
+NDK_EXPORT
+int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info)
+{
+    auto pixelmap = getPixelMapInNative(native);
+    if (pixelmap == nullptr || info == nullptr) {
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageInfo srcInfo;
+    pixelmap->GetImageInfo(srcInfo);
+    info->width = srcInfo.size.width;
+    info->height = srcInfo.size.height;
+    info->rowSize = pixelmap->GetRowBytes();
+    info->pixelFormat = static_cast<int32_t>(srcInfo.pixelFormat);
+    return OHOS_IMAGE_RESULT_SUCCESS;
+}
+
+NDK_EXPORT
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
+{
+    auto pixelmap = getPixelMapInNative(native);
+    if (pixelmap == nullptr || addr == nullptr) {
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+
+    native->napi->LockPixelMap();
+    *addr = png_constcast(uint8_t*, pixelmap->GetPixels());
+    return OHOS_IMAGE_RESULT_SUCCESS;
+}
+
+NDK_EXPORT
+int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
+{
+    auto pixelmap = getPixelMapInNative(native);
+    if (pixelmap == nullptr) {
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+    native->napi->UnlockPixelMap();
+    return OHOS_IMAGE_RESULT_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif
