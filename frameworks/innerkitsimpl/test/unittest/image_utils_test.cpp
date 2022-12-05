@@ -199,16 +199,13 @@ HWTEST_F(ImageUtilsTest, PathToRealPath001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 start";
-    char *buffer = (char*)malloc(PATH_MAX+1);
-    ASSERT_NE(buffer, nullptr);
-    (void)memset_s(buffer, PATH_MAX+1, 0, PATH_MAX+1);
+    char buffer[PATH_MAX+1];
     for (int i = 0; i <= PATH_MAX; i++) {
         buffer[i] = i;
     }
     const string path = buffer;
     string realPath;
     ImageUtils::PathToRealPath(path, realPath);
-    free(buffer);
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 end";
 }
 
