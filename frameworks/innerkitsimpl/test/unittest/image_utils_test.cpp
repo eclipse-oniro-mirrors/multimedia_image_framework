@@ -200,9 +200,8 @@ HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 start";
     char *buffer = (char*)malloc(PATH_MAX+1);
-    if (memset_s(buffer, sizeof(buffer), 0, sizeof(PATH_MAX+1)) != EOK) {
-        ASSERT_NE(*buffer, 0);
-    }
+    ASSERT_NE(buffer, nullptr);
+    (void)memset_s(buffer, PATH_MAX+1, 0, PATH_MAX+1);
     for (int i = 0; i <= PATH_MAX; i++) {
         buffer[i] = i;
     }
