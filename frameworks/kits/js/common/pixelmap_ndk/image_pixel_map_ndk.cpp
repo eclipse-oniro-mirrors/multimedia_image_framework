@@ -14,7 +14,6 @@
  */
 
 #include "image_pixel_map_napi.h"
-#include "image_pixel_map_napi_ex.h"
 
 #include "common_utils.h"
 #include "image_pixel_map_napi_kits.h"
