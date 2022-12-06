@@ -16,7 +16,6 @@
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
-#include <securec.h>
 #include "image_utils.h"
 #include "image_trace.h"
 #include "source_stream.h"
@@ -199,15 +198,13 @@ HWTEST_F(ImageUtilsTest, PathToRealPath001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 start";
-    char *buffer = (char*)malloc(PATH_MAX+1);
-    memset_s(buffer, sizeof(PATH_MAX+1), 0, sizeof(PATH_MAX+1));
+    char buffer[PATH_MAX+1] = {'\0'};
     for (int i = 0; i <= PATH_MAX; i++) {
         buffer[i] = i;
     }
     const string path = buffer;
     string realPath;
     ImageUtils::PathToRealPath(path, realPath);
-    free(buffer);
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 end";
 }
 
