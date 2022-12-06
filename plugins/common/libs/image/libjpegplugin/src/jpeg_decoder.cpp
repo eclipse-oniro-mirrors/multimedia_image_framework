@@ -185,7 +185,7 @@ J_COLOR_SPACE JpegDecoder::GetDecodeFormat(PlPixelFormat format, PlPixelFormat &
             break;
         }
         case PlPixelFormat::RGB_888: {
-            //NOTICE: libjpeg make BE as default when we are LE
+            // NOTICE: libjpeg make BE as default when we are LE
             colorSpace = JCS_EXT_BGR;
             break;
         }
