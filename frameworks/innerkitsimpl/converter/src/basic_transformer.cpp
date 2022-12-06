@@ -31,6 +31,28 @@
 #include <sys/mman.h>
 #endif
 
+namespace {
+    constexpr uint32_t RGB24_R_MASK = 0x00ff0000;
+    constexpr uint32_t RGB24_G_MASK = 0x0000ff00;
+    constexpr uint32_t RGB24_B_MASK = 0x000000ff;
+    constexpr uint16_t RGB16_R_MASK = 0xf800;
+    constexpr uint16_t RGB16_G_MASK = 0x07e0;
+    constexpr uint16_t RGB16_B_MASK = 0x001f;
+
+    constexpr uint32_t RGB32_RGB16_R_SHIFT = 0x13;
+    constexpr uint32_t RGB32_RGB16_G_SHIFT = 0xA;
+    constexpr uint32_t RGB32_RGB16_B_SHIFT = 0x3;
+
+    constexpr uint32_t RGB16_RGB32_R_SHIFT = 0x8;
+    constexpr uint32_t RGB16_RGB32_G_SHIFT = 0x3;
+    constexpr uint32_t RGB16_RGB32_B_SHIFT = 0x3;
+
+    constexpr uint32_t RGB24_R_SHIFT = 0x10;
+    constexpr uint32_t RGB24_G_SHIFT = 0x8;
+    constexpr uint32_t OFFSET_0 = 0;
+    constexpr uint32_t OFFSET_1 = 1;
+    constexpr uint32_t OFFSET_2 = 2;
+}
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -255,6 +277,23 @@ void BasicTransformer::GetRotateDimension(Matrix::CalcXYProc fInvProc, const Siz
     minY_ = std::min(min14Y, min23Y);
 }
 
+static uint32_t RGB565to32(uint16_t c)
+{
+    uint32_t color = c;
+    uint32_t r = (color & RGB16_R_MASK) >> RGB16_RGB32_R_SHIFT;
+    uint32_t g = (color & RGB16_G_MASK) >> RGB16_RGB32_G_SHIFT;
+    uint32_t b = (color & RGB16_B_MASK) << RGB16_RGB32_B_SHIFT;
+    return (r << SHIFT_16_BIT) | (g << SHIFT_8_BIT) | b;
+}
+
+static uint16_t Color32toRGB565(uint32_t c)
+{
+    uint16_t r = (c & RGB24_R_MASK) >> RGB32_RGB16_R_SHIFT;
+    uint16_t g = (c & RGB24_G_MASK) >> RGB32_RGB16_G_SHIFT;
+    uint16_t b = (c & RGB24_B_MASK) >> RGB32_RGB16_B_SHIFT;
+    return (r << 11) | (g << 5) | b;
+}
+
 void BasicTransformer::BilinearProc(const Point &pt, const PixmapInfo &pixmapInfo, const uint32_t rb,
                                     const int32_t shiftBytes, uint8_t *data)
 {
@@ -271,29 +310,47 @@ void BasicTransformer::BilinearProc(const Point &pt, const PixmapInfo &pixmapInf
     uint32_t suby = GetSubValue(srcY);
 
     AroundPixels aroundPixels;
+    uint32_t filterColor = OFFSET_0;
 
     switch (pixmapInfo.imageInfo.pixelFormat) {
         case PixelFormat::RGBA_8888:
         case PixelFormat::ARGB_8888:
         case PixelFormat::BGRA_8888:
+        {
             GetAroundPixelRGBA(aroundPos, pixmapInfo.data, rb, aroundPixels);
+            uint32_t *tmp32 = reinterpret_cast<uint32_t *>(data + shiftBytes);
+            *tmp32 = FilterProc(subx, suby, aroundPixels);
             break;
+        }
         case PixelFormat::RGB_565:
-            GetAroundPixelRGB565(aroundPos, pixmapInfo.data, rb, aroundPixels);
+        {    GetAroundPixelRGB565(aroundPos, pixmapInfo.data, rb, aroundPixels);
+            filterColor = FilterProc(subx, suby, aroundPixels);
+            uint16_t *tmp16 = reinterpret_cast<uint16_t *>(data + shiftBytes);
+            *tmp16 = Color32toRGB565(filterColor);
             break;
+        }
         case PixelFormat::RGB_888:
+        {
             GetAroundPixelRGB888(aroundPos, pixmapInfo.data, rb, aroundPixels);
+            filterColor = FilterProc(subx, suby, aroundPixels);
+            uint8_t *tmp24 = data + shiftBytes;
+            *tmp24 = static_cast<uint8_t>((filterColor & RGB24_R_MASK) >> RGB24_R_SHIFT);
+            *(tmp24 + OFFSET_1) = static_cast<uint8_t>((filterColor & RGB24_G_MASK) >> RGB24_G_SHIFT);
+            *(tmp24 + OFFSET_2) = static_cast<uint8_t>(filterColor & RGB24_B_MASK);
             break;
+        }
         case PixelFormat::ALPHA_8:
+        {
             GetAroundPixelALPHA8(aroundPos, pixmapInfo.data, rb, aroundPixels);
+            filterColor = FilterProc(subx, suby, aroundPixels);
+            uint8_t *tmp8 = data + shiftBytes;
+            *tmp8 = static_cast<uint8_t>(filterColor & RGB24_B_MASK);
             break;
+        }
         default:
             IMAGE_LOGE("[BasicTransformer] pixel format not supported, format:%d", pixmapInfo.imageInfo.pixelFormat);
             return;
     }
-
-    uint32_t *tmp = reinterpret_cast<uint32_t *>(data + shiftBytes);
-    *tmp = FilterProc(subx, suby, aroundPixels);
 }
 
 void BasicTransformer::GetAroundPixelRGB565(const AroundPos aroundPos, uint8_t *data, uint32_t rb,
@@ -301,10 +358,11 @@ void BasicTransformer::GetAroundPixelRGB565(const AroundPos aroundPos, uint8_t *
 {
     const uint16_t *row0 = reinterpret_cast<uint16_t *>(data + aroundPos.y0 * rb);
     const uint16_t *row1 = reinterpret_cast<uint16_t *>(data + aroundPos.y1 * rb);
-    aroundPixels.color00 = row0[aroundPos.x0];
-    aroundPixels.color01 = row0[aroundPos.x1];
-    aroundPixels.color10 = row1[aroundPos.x0];
-    aroundPixels.color11 = row1[aroundPos.x1];
+    
+    aroundPixels.color00 = RGB565to32(row0[aroundPos.x0]);
+    aroundPixels.color01 = RGB565to32(row0[aroundPos.x1]);
+    aroundPixels.color10 = RGB565to32(row1[aroundPos.x0]);
+    aroundPixels.color11 = RGB565to32(row1[aroundPos.x1]);
 }
 
 void BasicTransformer::GetAroundPixelRGB888(const AroundPos aroundPos, uint8_t *data, uint32_t rb,
