@@ -320,7 +320,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
 
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createImageSource", CreateImageSource),
-        DECLARE_NAPI_STATIC_FUNCTION("createIncrementalSource", CreateIncrementalSource),
+        DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
             CreateEnumTypeObject(env, napi_number, &pixelMapFormatRef_, sPixelMapFormatMap)),
         DECLARE_NAPI_PROPERTY("PropertyKey",

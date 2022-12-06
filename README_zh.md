@@ -36,7 +36,7 @@
   - [释放receiver实例](#release4)
   - [获取组件缓存](#getComponent)
   - [释放image实例](#release5)
-  - [createIncrementalSource](#createIncrementalSource)
+  - [CreateIncrementalSource](#CreateIncrementalSource)
   - [创建ImageSource实例](#createImageSource2)
   - [创建PixelMap实例](#createPixelMap2)
   - [创建imagepacker实例](#createImagePacker2)
@@ -435,11 +435,11 @@ updateData(buf: ArrayBuffer, isFinished: boolean, value: number, length: number)
 updateData(buf: ArrayBuffer, isFinished: boolean, value: number, length: number, callback: AsyncCallback<void>): void;
 ```
 
-1.使用createIncrementalSource创建imagesource。
+1.使用CreateIncrementalSource创建imagesource。
 
 ```
 const dataBuffer = new ArrayBuffer(96)
-const imageSourceIncrementalSApi = image.createIncrementalSource(dataBuffer)
+const imageSourceIncrementalSApi = image.CreateIncrementalSource(dataBuffer)
 ```
 
 2.使用updateData更新图片源。
@@ -600,13 +600,13 @@ release(callback: AsyncCallback<void>): void;
 release(): Promise<void>;
 ```
 
-### 32.createIncrementalSource<a name="createIncrementalSource"></a>
+### 32.CreateIncrementalSource<a name="CreateIncrementalSource"></a>
 
 image提供了操作imagesource的接口，如创建、读取和删除，以下展示了如何创建增量imagesource。
 
 ```
-createIncrementalSource(buf: ArrayBuffer): ImageSource;
-createIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
+CreateIncrementalSource(buf: ArrayBuffer): ImageSource;
+CreateIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
 ```
 
 1.创建buffer。
@@ -615,10 +615,10 @@ createIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
 const data = new ArrayBuffer(96)
 ```
 
-2.使用createIncrementalSource创建imagesource。
+2.使用CreateIncrementalSource创建imagesource。
 
 ```
-const imageSourceApi = image.createIncrementalSource(data)
+const imageSourceApi = image.CreateIncrementalSource(data)
 ```
 
 ### 33.创建ImageSource实例<a name="createImageSource2"></a>
