@@ -370,6 +370,11 @@ PixelMapNapiFuncs* PixelMapNapiNativeEntry()
 NDK_EXPORT
 PixelMapNapi* PixelMapNapi_Unwrap(napi_env env, napi_value value)
 {
+    napi_valuetype valueType;
+    napi_typeof(env, value, &valueType);
+    if (valueType != napi_object) {
+        return nullptr;
+    }
     std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
     napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&pixelMapNapi));
     if ((status == napi_ok) && pixelMapNapi != nullptr) {

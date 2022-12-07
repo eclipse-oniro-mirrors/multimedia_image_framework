@@ -62,6 +62,7 @@ config("image_external_config") {
     "//third_party/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
     "//third_party/libexif",
+    "//third_party/zlib",
   ]
 
   if (use_mingw_win) {

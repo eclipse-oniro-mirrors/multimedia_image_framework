@@ -28,18 +28,9 @@ struct NativePixelMap {
     PixelMapNapi* napi = nullptr;
 };
 
-namespace {
-    constexpr uint32_t NUM_0 = 0;
-    constexpr uint32_t NUM_1 = 1;
-}
 NDK_EXPORT
 NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
 {
-    napi_valuetype valueType;
-    napi_typeof(env, source, &valueType);
-    if (valueType != napi_object) {
-        return nullptr;
-    }
     PixelMapNapi* napi = PixelMapNapi_Unwrap(env, source);
     if (napi == nullptr) {
         return nullptr;
