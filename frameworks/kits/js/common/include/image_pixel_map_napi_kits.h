@@ -19,19 +19,60 @@
 #include "common_utils.h"
 #include "pixel_map.h"
 #include "pixel_map_napi.h"
+#include "image_pixel_map_napi.h"
 
 namespace OHOS {
 namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
-napi_value PixelMapNapi_Create(napi_env env, InitializationOptions info, uint32_t* buf, size_t len);
-napi_value PixelMapNapi_CreateAlpha(napi_env env, napi_value source);
+struct PixelMapNapiArgs {
+    PixelMapCreateOpions createOptions;
+    void* inBuffer;
+    size_t bufferLen;
+    napi_value inValue;
+    int32_t inNum0;
+    int32_t inNum1;
+    int32_t inNum2;
+    int32_t inNum3;
+    float inFloat0;
+    float inFloat1;
+    napi_value* outValue;
+    int32_t* outNum;
+    OhosPixelMapInfo *outInfo;
+    void** outAddr;
+};
+
+using PixelMapNapiArgs = struct PixelMapNapiArgs;
+using PixelMapNapiEnvFunc = int32_t (*)(napi_env env, PixelMapNapiArgs* args);
+using PixelMapNapiCtxFunc = int32_t (*)(PixelMapNapi* native, PixelMapNapiArgs* args);
+
+struct PixelMapNapiFuncs {
+    PixelMapNapiEnvFunc create;
+    PixelMapNapiEnvFunc createAlpha;
+
+    PixelMapNapiCtxFunc getRowBytes;
+    PixelMapNapiCtxFunc isEditable;
+    PixelMapNapiCtxFunc isSupportAlpha;
+    PixelMapNapiCtxFunc getDensity;
+    PixelMapNapiCtxFunc setAlphaAble;
+    PixelMapNapiCtxFunc setDensity;
+    PixelMapNapiCtxFunc setOpacity;
+
+    PixelMapNapiCtxFunc scale;
+    PixelMapNapiCtxFunc translate;
+    PixelMapNapiCtxFunc rotate;
+    PixelMapNapiCtxFunc flip;
+    PixelMapNapiCtxFunc crop;
+
+    PixelMapNapiCtxFunc getImageInfo;
+    PixelMapNapiCtxFunc accessPixels;
+    PixelMapNapiCtxFunc unAccessPixels;
+};
+using PixelMapNapiFuncs = struct PixelMapNapiFuncs;
+
+PixelMapNapiFuncs* PixelMapNapiNativeEntry();
 PixelMapNapi* PixelMapNapi_Unwrap(napi_env env, napi_value value);
-PixelMap* PixelMapNapi_Get(PixelMapNapi* napi);
-PixelFormat PixelMapNapi_ParsePixelForamt(int32_t val);
-AlphaType PixelMapNapi_ParseAlphaType(int32_t val);
-ScaleMode PixelMapNapi_ParseScaleMode(int32_t val);
 #ifdef __cplusplus
 };
 #endif
