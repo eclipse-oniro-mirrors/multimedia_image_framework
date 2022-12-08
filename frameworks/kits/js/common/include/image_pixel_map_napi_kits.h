@@ -27,7 +27,7 @@ namespace Media {
 extern "C" {
 #endif
 struct PixelMapNapiArgs {
-    PixelMapCreateOpions createOptions;
+    OhosPixelMapCreateOps createOptions;
     void* inBuffer;
     size_t bufferLen;
     napi_value inValue;

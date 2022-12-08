@@ -41,7 +41,7 @@ NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
 }
 
 NDK_EXPORT
-int32_t OH_PixelMap_CreatePixelMap(napi_env env, PixelMapCreateOpions info,
+int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res)
 {
     auto entry = PixelMapNapiNativeEntry();

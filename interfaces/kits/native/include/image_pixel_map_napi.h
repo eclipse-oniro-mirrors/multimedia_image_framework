@@ -119,7 +119,7 @@ enum {
     OHOS_PIXEL_MAP_EDITABLE = 1,
 };
 
-struct PixelMapCreateOpions {
+struct OhosPixelMapCreateOps {
     uint32_t width;
     uint32_t height;
     int32_t pixelFormat;
@@ -177,7 +177,7 @@ int32_t OH_AccessPixels(napi_env env, napi_value value, void** addrPtr);
 int32_t OH_UnAccessPixels(napi_env env, napi_value value);
 
 
-int32_t OH_PixelMap_CreatePixelMap(napi_env env, PixelMapCreateOpions info,
+int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res);
 int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha);
 NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source);
