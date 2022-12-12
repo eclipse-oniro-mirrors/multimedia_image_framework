@@ -16,8 +16,8 @@
 #ifndef JPEG_UTILS_H
 #define JPEG_UTILS_H
 
-#include <setjmp.h>
-#include <stdio.h>
+#include <csetjmp>
+#include <cstdio>
 #include <cstdint>
 #include <string>
 #include "hilog/log.h"

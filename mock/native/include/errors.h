@@ -17,7 +17,7 @@
 #ifndef MOCK_NATIVE_INCLUDE_ERRORS_H_
 #define MOCK_NATIVE_INCLUDE_ERRORS_H_
 
-#include <errno.h>
+#include <cerrno>
 
 namespace OHOS {
 /**

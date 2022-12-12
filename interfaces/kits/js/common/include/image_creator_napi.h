@@ -129,7 +129,7 @@ struct ImageCreatorCommonArgs {
 
 class ImageCreatorReleaseListener : public SurfaceBufferReleaseListener {
 public:
-    ~ImageCreatorReleaseListener()
+    ~ImageCreatorReleaseListener() override
     {
         context = nullptr;
         callBack = nullptr;

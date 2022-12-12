@@ -19,7 +19,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <unistd.h>
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) && !defined(_ANDROID)
 #include <sys/mman.h>

@@ -16,7 +16,7 @@
 #ifndef GIF_FORMAT_AGENT_H
 #define GIF_FORMAT_AGENT_H
 
-#include <stdint.h>
+#include <cstdint>
 #include "abs_image_format_agent.h"
 #include "iosfwd"
 #include "plugin_class_base.h"

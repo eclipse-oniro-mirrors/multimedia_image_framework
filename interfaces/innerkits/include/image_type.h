@@ -16,7 +16,7 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_IMAGE_TYPE_H_
 #define INTERFACES_INNERKITS_INCLUDE_IMAGE_TYPE_H_
 
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace OHOS {
 namespace Media {

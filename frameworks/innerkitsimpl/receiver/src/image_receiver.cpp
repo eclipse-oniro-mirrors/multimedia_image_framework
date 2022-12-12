@@ -99,7 +99,7 @@ namespace OHOS {
             if (buffer != nullptr) {
                 uint32_t *addr = reinterpret_cast<uint32_t *>(buffer->GetVirAddr());
                 int32_t size = buffer->GetSize();
-                errorcode = SaveSTP(addr, (uint32_t)size, fd, initializationOpts);
+                errorcode = SaveSTP(addr, static_cast<uint32_t>(size), fd, initializationOpts);
                 if ((iraContext_->GetReceiverBufferConsumer()) != nullptr) {
                     (iraContext_->GetReceiverBufferConsumer())->ReleaseBuffer(buffer, -1);
                 } else {

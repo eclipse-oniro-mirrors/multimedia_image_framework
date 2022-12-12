@@ -84,12 +84,12 @@ bool WbmpFormatAgent::read_header(const void *stream, uint32_t dataSize)
     if (!read_mbf(pData, width, offset, dataSize) || width > 0xFFFF || !width) {
         return false;
     }
-    HiLog::Debug(LABEL, "read_header width %{public}lld.", (long long)width);
+    HiLog::Debug(LABEL, "read_header width %{public}lld.", static_cast<long long>(width));
 
     if (!read_mbf(pData, height, offset, dataSize) || height > 0xFFFF || !height) {
         return false;
     }
-    HiLog::Debug(LABEL, "read_header height %{public}lld.", (long long)height);
+    HiLog::Debug(LABEL, "read_header height %{public}lld.", static_cast<long long>(height));
 
     return true;
 }

@@ -588,7 +588,7 @@ static bool ParseDecodeOptions(napi_env env, napi_value root, DecodeOptions* opt
     } else {
         if (opts->rotateNewDegrees >= 0 &&
             opts->rotateNewDegrees <= 360) { // 360 is the maximum rotation angle.
-            opts->rotateDegrees = (float)opts->rotateNewDegrees;
+            opts->rotateDegrees = static_cast<float>(opts->rotateNewDegrees);
         } else {
             HiLog::Debug(LABEL, "Invalid rotate %{public}d", opts->rotateNewDegrees);
             error = "DecodeOptions mismatch";

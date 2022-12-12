@@ -61,7 +61,7 @@ public:
         rwLockable_.LockWrite();
     }
 
-    ~UniqueWriteGuard()
+    ~UniqueWriteGuard() override
     {
         rwLockable_.UnLockWrite();
     }
@@ -83,7 +83,7 @@ public:
         rwLockable_.LockRead();
     }
 
-    ~UniqueReadGuard()
+    ~UniqueReadGuard() override
     {
         rwLockable_.UnLockRead();
     }

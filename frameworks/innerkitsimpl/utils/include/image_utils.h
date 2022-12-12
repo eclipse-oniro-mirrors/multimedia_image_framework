@@ -16,7 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_UTILS_H_
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_UTILS_H_
 
-#include <stdint.h>
+#include <cstdlib>
 #include <cstdio>
 #include <string>
 #include "image_type.h"

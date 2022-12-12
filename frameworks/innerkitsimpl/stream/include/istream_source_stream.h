@@ -27,7 +27,7 @@ namespace Media {
 class IstreamSourceStream : public SourceStream {
 public:
     static std::unique_ptr<IstreamSourceStream> CreateSourceStream(std::unique_ptr<std::istream> inputStream);
-    ~IstreamSourceStream();
+    ~IstreamSourceStream() override;
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;
     bool Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override;
     bool Peek(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;

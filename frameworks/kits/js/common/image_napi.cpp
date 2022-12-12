@@ -643,10 +643,10 @@ static bool IsYUVType(const int32_t& type)
 }
 static inline bool IsYCbCr422SP(int32_t format)
 {
-    if (int32_t(ImageFormat::YCBCR_422_SP) == format) {
+    if (format == int32_t(ImageFormat::YCBCR_422_SP)) {
         return true;
     }
-    if (int32_t(PIXEL_FMT_YCBCR_422_SP) == format) {
+    if (format == int32_t(PIXEL_FMT_YCBCR_422_SP)) {
         return true;
     }
     return false;

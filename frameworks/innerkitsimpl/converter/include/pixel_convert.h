@@ -170,9 +170,9 @@ static inline uint16_t U8ToU16(uint8_t val1, uint8_t val2)
 
 static inline uint32_t HalfToUint32(const uint8_t* ui, bool isLittleEndian)
 {
-    uint16_t val = isLittleEndian?U8ToU16(*ui, *(ui + 1)):U8ToU16(*(ui + 1), *ui);
+    uint16_t val = isLittleEndian ? U8ToU16(*ui, *(ui + 1)) : U8ToU16(*(ui + 1), *ui);
     float fRet = HalfToFloat(val);
-    return static_cast<uint32_t> (fRet);
+    return static_cast<uint32_t>(fRet);
 }
 
 using ProcFuncType = void (*)(void *destinationRow, const uint8_t *sourceRow, uint32_t sourceWidth,
