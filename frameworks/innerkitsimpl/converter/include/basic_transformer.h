@@ -39,6 +39,9 @@ static constexpr uint32_t SUB_VALUE_SHIFT = 12;
 static constexpr uint8_t COLOR_DEFAULT = 0;
 static constexpr int32_t RGB888_BYTE = 3;
 
+struct BilinearPixelProcArgs;
+using BilinearPixelProcArgs = struct BilinearPixelProcArgs;
+
 static inline bool CheckOutOfRange(const Point &pt, const Size &size)
 {
     if ((pt.x >= 0) && (pt.x < size.width) && (pt.y >= 0) && (pt.y < size.height)) {
@@ -184,6 +187,7 @@ private:
 
     void GetAroundPixelALPHA8(const AroundPos aroundPos, uint8_t *data, uint32_t rb, AroundPixels &aroundPixels);
 
+    void BilinearPixelProc(const AroundPos aroundPos, BilinearPixelProcArgs &args);
     /* Calculate the target pixel based on the pixels of 4 nearby points.
      * Fill in new pixels with formula
      * f(i+u,j+v) = (1-u)(1-v)f(i,j) + (1-u)vf(i,j+1) + u(1-v)f(i+1,j) + uvf(i+1,j+1)

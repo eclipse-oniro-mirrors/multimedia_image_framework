@@ -359,11 +359,13 @@ uint32_t JpegEncoder::RGB565Encoder(const uint8_t *data)
 
     while (encodeInfo_.next_scanline < encodeInfo_.image_height) {
         orgRowBuffer = base + encodeInfo_.next_scanline * orgRowStride;
-
-        transform_scanline_565(
-            reinterpret_cast<char*>(&outRowBuffer[0]),
+        skcms(reinterpret_cast<char*>(&outRowBuffer[0]),
             reinterpret_cast<const char*>(orgRowBuffer),
-            encodeInfo_.image_width, encodeInfo_.input_components);
+            encodeInfo_.image_width,
+            skcms_PixelFormat_RGB_565,
+            skcms_AlphaFormat_Unpremul,
+            skcms_PixelFormat_RGB_888,
+            skcms_AlphaFormat_Unpremul);
 
         uint8_t *rowBufferPtr = outRowBuffer.get();
         jpeg_write_scanlines(&encodeInfo_, &rowBufferPtr, RW_LINE_NUM);
