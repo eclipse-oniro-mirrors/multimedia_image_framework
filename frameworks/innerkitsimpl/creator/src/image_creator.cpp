@@ -213,7 +213,7 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
             HiLog::Error(LABEL, "AllocHeapBuffer failed");
             return ERR_MEDIA_INVALID_VALUE;
         }
-        errorcode = SaveSTP(addr, addr2, (uint32_t)size, initializationOpts);
+        errorcode = SaveSTP(addr, addr2, static_cast<uint32_t>(size), initializationOpts);
         (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
         HiLog::Info(LABEL, "start release");
     } else {
@@ -232,7 +232,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     config.height = iraContext_->GetHeight();
     config.format = PIXEL_FMT_RGBA_8888;
     config.strideAlignment = 0x8;
-    config.usage = BUFFER_USAGE_CPU_READ| BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
+    config.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA;
     config.timeout = 0;
     SurfaceError surfaceError = creatorSurface->RequestBuffer(buffer, flushFence, config);
     if (surfaceError == SURFACE_ERROR_OK) {

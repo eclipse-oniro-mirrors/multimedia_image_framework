@@ -45,7 +45,7 @@ struct IncrementalDecodingStatus {
 class IncrementalPixelMap : public PixelMap, public PeerListener {
 public:
     IncrementalPixelMap() = delete;
-    ~IncrementalPixelMap();
+    ~IncrementalPixelMap() override;
     uint32_t PromoteDecoding(uint8_t &decodeProgress);
     void DetachFromDecoding();
     const IncrementalDecodingStatus &GetDecodingStatus();

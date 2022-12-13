@@ -22,8 +22,6 @@
 #include "image_type.h"
 #include "matrix.h"
 
-namespace OHOS {
-namespace Media {
 static constexpr uint32_t IMAGE_SUCCESS = 0;                                     // success
 static constexpr uint32_t IMAGE_BASE_ERROR = 1000;                               // base error
 static constexpr uint32_t ERR_IMAGE_GENERAL_ERROR = IMAGE_BASE_ERROR + 1;        // general error
@@ -39,7 +37,8 @@ static constexpr uint32_t SUB_VALUE_SHIFT = 12;
 static constexpr uint8_t COLOR_DEFAULT = 0;
 static constexpr int32_t RGB888_BYTE = 3;
 
-
+namespace OHOS {
+namespace Media {
 struct BilinearPixelProcArgs;
 using BilinearPixelProcArgs = struct BilinearPixelProcArgs;
 

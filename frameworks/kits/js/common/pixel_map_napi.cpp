@@ -1865,8 +1865,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "SetColorSpaceExec", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             SetColorSpaceExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));

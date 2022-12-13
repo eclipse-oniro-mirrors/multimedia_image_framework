@@ -120,7 +120,7 @@ struct ImageReceiverCommonArgs {
 
 class ImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {
 public:
-    ~ImageReceiverAvaliableListener()
+    ~ImageReceiverAvaliableListener() override
     {
         context = nullptr;
         callBack = nullptr;

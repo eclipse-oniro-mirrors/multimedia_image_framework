@@ -42,7 +42,7 @@ struct VersionNum;
 class Plugin final : public NoCopyable {
 public:
     Plugin();
-    ~Plugin();
+    ~Plugin() override;
     uint32_t Register(std::istream &metadata, std::string &&libraryPath, std::weak_ptr<Plugin> &plugin);
     uint32_t Ref();
     void DeRef();

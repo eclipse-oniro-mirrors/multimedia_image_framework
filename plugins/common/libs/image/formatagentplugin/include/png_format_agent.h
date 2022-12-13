@@ -16,7 +16,7 @@
 #ifndef PNG_FORMAT_AGENT_H
 #define PNG_FORMAT_AGENT_H
 
-#include <stdint.h>
+#include <cstdint>
 #include "abs_image_format_agent.h"
 #include "iosfwd"
 #include "plugin_class_base.h"

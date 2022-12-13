@@ -259,8 +259,8 @@ uint32_t PostProc::ConvertProc(const Rect &cropRect, ImageInfo &dstImageInfo, Pi
     }
 
     // we suppose a quick method to scanline in mostly seen cases: NO CROP && hasPixelConvert
-    if (GetCropValue(cropRect, srcImageInfo.size) == CropValue::NOCROP
-        && dstImageInfo.pixelFormat == PixelFormat::ARGB_8888 && hasPixelConvert) {
+    if (GetCropValue(cropRect, srcImageInfo.size) == CropValue::NOCROP &&
+        dstImageInfo.pixelFormat == PixelFormat::ARGB_8888 && hasPixelConvert) {
         IMAGE_LOGI("[PostProc]no need crop, only pixel convert.");
         return PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
     }
@@ -323,7 +323,7 @@ uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64
     }
     bufferSize = static_cast<uint64_t>(imageInfo.size.width) * imageInfo.size.height * pixelBytes;
     IMAGE_LOGD("[PostProc]size.width:%{public}d, size.height:%{public}d, bufferSize:%{public}lld",
-               imageInfo.size.width, imageInfo.size.height, (long long)bufferSize);
+               imageInfo.size.width, imageInfo.size.height, static_cast<long long>(bufferSize));
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         *resultData = AllocSharedMemory(imageInfo.size, bufferSize, fd);
         if (*resultData == nullptr) {
@@ -376,7 +376,7 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 #else
     fd = AshmemCreate("Parcel RawData", bufferSize);
     if (fd < 0) {
-        IMAGE_LOGE("[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld", (long long)bufferSize);
+        IMAGE_LOGE("[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld", static_cast<long long>(bufferSize));
         return nullptr;
     }
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);

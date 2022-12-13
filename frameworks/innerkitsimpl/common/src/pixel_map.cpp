@@ -1469,7 +1469,7 @@ static float ProcessPremulF16Pixel(float mulPixel, float alpha, const float perc
         return FLOAT_ZERO;
     }
     float res = mulPixel * percent / alpha;
-    return res > MAX_HALF? MAX_HALF: res;
+    return res > MAX_HALF ? MAX_HALF : res;
 }
 
 static void SetF16PixelAlpha(uint8_t *pixel, const float percent, bool isPixelPremul)
@@ -1551,8 +1551,8 @@ static uint32_t DoSetAlpha(const PixelFormat pixelFormat, uint8_t *pixels,
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    if (AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN == alphaType ||
-        AlphaType::IMAGE_ALPHA_TYPE_OPAQUE == alphaType) {
+    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
+        alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
         HiLog::Error(LABEL,
             "Could not set alpha on %{public}s",
             GetNamedAlphaType(alphaType).c_str());
@@ -1619,7 +1619,7 @@ void PixelMap::flip(bool xAxis, bool yAxis)
     if (xAxis == false && yAxis == false) {
         return;
     }
-    scale(xAxis?-1:1, yAxis?-1:1);
+    scale(xAxis ? -1 : 1, yAxis ? -1 : 1);
 }
 uint32_t PixelMap::crop(const Rect &rect)
 {

@@ -39,7 +39,7 @@ struct FunctionWrapper {
 template<typename T, void (*P)(T *)>
 class TAutoCallProc : public std::unique_ptr<T, FunctionWrapper<remove_pointer_t<decltype(P)>, P>> {
 public:
-    TAutoCallProc(T *obj) : std::unique_ptr<T, FunctionWrapper<remove_pointer_t<decltype(P)>, P>>(obj)
+    explicit TAutoCallProc(T *obj) : std::unique_ptr<T, FunctionWrapper<remove_pointer_t<decltype(P)>, P>>(obj)
     {}
 
     operator T *() const
