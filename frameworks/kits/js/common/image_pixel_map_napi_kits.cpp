@@ -16,6 +16,8 @@
 #include "image_pixel_map_napi_kits.h"
 #include "pixel_map_napi.h"
 #include "pngpriv.h"
+#include <map>
+
 namespace {
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
@@ -23,7 +25,8 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-
+using PixelMapNapiEnvFunc = int32_t (*)(napi_env env, PixelMapNapiArgs* args);
+using PixelMapNapiCtxFunc = int32_t (*)(PixelMapNapi* native, PixelMapNapiArgs* args);
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -47,7 +50,7 @@ static bool isUndefine(napi_env env, napi_value value)
 }
 static PixelMap* GetPixelMap(PixelMapNapi* napi)
 {
-    if (napi == nullptr || napi->GetPixelMap()) {
+    if (napi == nullptr || napi->GetPixelMap() == nullptr) {
         return nullptr;
     }
     return napi->GetPixelMap()->get();
@@ -120,7 +123,7 @@ static int32_t PixelMapNapiCreateAlpha(napi_env env, PixelMapNapiArgs* args)
     }
     *(args->outValue) = undefinedValue;
 
-    auto pixelmap = GetPixelMap(PixelMapNapi_Unwrap(env, args->inValue));
+    auto pixelmap = PixelMapNapi::GetPixelMap(env, args->inValue);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -150,7 +153,6 @@ static int32_t PixelMapNapiGetRowBytes(PixelMapNapi* native, PixelMapNapiArgs* a
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-
     *(args->outNum) = pixelmap->GetRowBytes();
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
@@ -242,12 +244,10 @@ static int32_t PixelMapNapiSetOpacity(PixelMapNapi* native, PixelMapNapiArgs* ar
 
 static int32_t PixelMapNapiScale(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-
     pixelmap->scale(args->inFloat0, args->inFloat1);
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
@@ -341,30 +341,46 @@ static int32_t PixelMapNapiUnAccessPixels(PixelMapNapi* native, PixelMapNapiArgs
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
-static PixelMapNapiFuncs g_PixelMapNapiEntry = {
-    .create = PixelMapNapiCreate,
-    .createAlpha = PixelMapNapiCreateAlpha,
-    .getRowBytes = PixelMapNapiGetRowBytes,
-    .isEditable = PixelMapNapiIsEditable,
-    .isSupportAlpha = PixelMapNapiIsSupportAlpha,
-    .getDensity = PixelMapNapiGetDensity,
-    .setAlphaAble = PixelMapNapiSetAlphaAble,
-    .setDensity = PixelMapNapiSetDensity,
-    .setOpacity = PixelMapNapiSetOpacity,
-    .scale = PixelMapNapiScale,
-    .translate = PixelMapNapiTranslate,
-    .rotate = PixelMapNapiRotate,
-    .flip = PixelMapNapiFlip,
-    .crop = PixelMapNapiCrop,
-    .getImageInfo = PixelMapNapiGetImageInfo,
-    .accessPixels = PixelMapNapiAccessPixels,
-    .unAccessPixels = PixelMapNapiUnAccessPixels,
+static const std::map<int32_t, PixelMapNapiEnvFunc> g_EnvFunctions = {
+    {ENV_FUNC_CREATE, PixelMapNapiCreate},
+    {ENV_FUNC_CREATE_ALPHA, PixelMapNapiCreateAlpha},
+};
+static const std::map<int32_t, PixelMapNapiCtxFunc> g_CtxFunctions = {
+    {CTX_FUNC_GET_ROW_BYTES, PixelMapNapiGetRowBytes},
+    {CTX_FUNC_IS_EDITABLE, PixelMapNapiIsEditable},
+    {CTX_FUNC_IS_SUPPORT_ALPHA, PixelMapNapiIsSupportAlpha},
+    {CTX_FUNC_GET_DENSITY, PixelMapNapiGetDensity},
+    {CTX_FUNC_SET_ALPHAABLE, PixelMapNapiSetAlphaAble},
+    {CTX_FUNC_SET_DENSITY, PixelMapNapiSetDensity},
+    {CTX_FUNC_SET_OPACITY, PixelMapNapiSetOpacity},
+    {CTX_FUNC_SCALE, PixelMapNapiScale},
+    {CTX_FUNC_TRANSLATE, PixelMapNapiTranslate},
+    {CTX_FUNC_ROTATE, PixelMapNapiRotate},
+    {CTX_FUNC_FLIP, PixelMapNapiFlip},
+    {CTX_FUNC_CROP, PixelMapNapiCrop},
+    {CTX_FUNC_GET_IMAGE_INFO, PixelMapNapiGetImageInfo},
+    {CTX_FUNC_ACCESS_PIXELS, PixelMapNapiAccessPixels},
+    {CTX_FUNC_UNACCESS_PIXELS, PixelMapNapiUnAccessPixels},
 };
 
 NDK_EXPORT
-PixelMapNapiFuncs* PixelMapNapiNativeEntry()
+int32_t PixelMapNapiNativeEnvCall(int32_t mode, napi_env env, PixelMapNapiArgs* args)
 {
-    return &g_PixelMapNapiEntry;
+    auto funcSearch = g_EnvFunctions.find(mode);
+    if (funcSearch == g_EnvFunctions.end()) {
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+    return funcSearch->second(env, args);
+}
+
+NDK_EXPORT
+int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNapiArgs* args)
+{
+    auto funcSearch = g_CtxFunctions.find(mode);
+    if (funcSearch == g_CtxFunctions.end()) {
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+    return funcSearch->second(native, args);
 }
 
 NDK_EXPORT

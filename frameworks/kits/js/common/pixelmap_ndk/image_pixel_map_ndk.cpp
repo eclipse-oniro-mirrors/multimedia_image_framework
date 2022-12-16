@@ -44,10 +44,6 @@ NDK_EXPORT
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
-    }
     PixelMapNapiArgs args;
     args.createOptions.width = info.width;
     args.createOptions.height = info.height;
@@ -58,163 +54,158 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     args.inBuffer = buf;
     args.bufferLen = len;
     args.outValue = res;
-    return entry->create(env, &args);
+    return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE, env, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
-    }
     PixelMapNapiArgs args;
     args.inValue = source;
     args.outValue = alpha;
-    return entry->createAlpha(env, &args);
+    return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE_ALPHA, env, &args);
 }
 
 
 NDK_EXPORT
 int32_t OH_PixelMap_GetBytesNumberPerRow(const NativePixelMap* native, int32_t* num)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outNum = num;
-    return entry->getRowBytes(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_ROW_BYTES, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_GetIsEditable(const NativePixelMap* native, int32_t* editable)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outNum = editable;
-    return entry->isEditable(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_IS_EDITABLE, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_IsSupportAlpha(const NativePixelMap* native, int32_t* alpha)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outNum = alpha;
-    return entry->isSupportAlpha(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_IS_SUPPORT_ALPHA, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_SetAlphaAble(const NativePixelMap* native, int32_t alpha)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inNum0 = alpha;
-    return entry->setAlphaAble(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_ALPHAABLE, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_GetDensity(const NativePixelMap* native, int32_t* density)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outNum = density;
-    return entry->getDensity(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_DENSITY, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_SetDensity(const NativePixelMap* native, int32_t density)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inNum0 = density;
-    return entry->setDensity(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_DENSITY, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inFloat0 = opacity;
-    return entry->setOpacity(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_OPACITY, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
-    return entry->scale(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_Translate(const NativePixelMap* native, float x, float y)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
-    return entry->translate(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_TRANSLATE, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inFloat0 = angle;
-    return entry->rotate(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_ROTATE, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.inNum0 = x;
     args.inNum1 = y;
-    return entry->flip(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_FLIP, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int32_t width, int32_t height)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
@@ -222,42 +213,42 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
     args.inNum1 = y;
     args.inNum2 = width;
     args.inNum3 = height;
-    return entry->crop(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_CROP, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outInfo = info;
-    return entry->getImageInfo(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_IMAGE_INFO, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
     args.outAddr = addr;
-    return entry->accessPixels(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_ACCESS_PIXELS, native->napi, &args);
 }
 
 NDK_EXPORT
 int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
 {
-    auto entry = PixelMapNapiNativeEntry();
-    if (entry == nullptr || native == nullptr || native->napi == nullptr) {
+    
+    if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
-    return entry->accessPixels(native->napi, &args);
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_UNACCESS_PIXELS, native->napi, &args);
 }
 
 #ifdef __cplusplus

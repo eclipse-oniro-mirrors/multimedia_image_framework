@@ -44,35 +44,29 @@ struct PixelMapNapiArgs {
 };
 
 using PixelMapNapiArgs = struct PixelMapNapiArgs;
-using PixelMapNapiEnvFunc = int32_t (*)(napi_env env, PixelMapNapiArgs* args);
-using PixelMapNapiCtxFunc = int32_t (*)(PixelMapNapi* native, PixelMapNapiArgs* args);
-
-struct PixelMapNapiFuncs {
-    PixelMapNapiEnvFunc create;
-    PixelMapNapiEnvFunc createAlpha;
-
-    PixelMapNapiCtxFunc getRowBytes;
-    PixelMapNapiCtxFunc isEditable;
-    PixelMapNapiCtxFunc isSupportAlpha;
-    PixelMapNapiCtxFunc getDensity;
-    PixelMapNapiCtxFunc setAlphaAble;
-    PixelMapNapiCtxFunc setDensity;
-    PixelMapNapiCtxFunc setOpacity;
-
-    PixelMapNapiCtxFunc scale;
-    PixelMapNapiCtxFunc translate;
-    PixelMapNapiCtxFunc rotate;
-    PixelMapNapiCtxFunc flip;
-    PixelMapNapiCtxFunc crop;
-
-    PixelMapNapiCtxFunc getImageInfo;
-    PixelMapNapiCtxFunc accessPixels;
-    PixelMapNapiCtxFunc unAccessPixels;
+enum {
+    ENV_FUNC_CREATE,
+    ENV_FUNC_CREATE_ALPHA,
+    CTX_FUNC_GET_ROW_BYTES,
+    CTX_FUNC_IS_EDITABLE,
+    CTX_FUNC_IS_SUPPORT_ALPHA,
+    CTX_FUNC_GET_DENSITY,
+    CTX_FUNC_SET_ALPHAABLE,
+    CTX_FUNC_SET_DENSITY,
+    CTX_FUNC_SET_OPACITY,
+    CTX_FUNC_SCALE,
+    CTX_FUNC_TRANSLATE,
+    CTX_FUNC_ROTATE,
+    CTX_FUNC_FLIP,
+    CTX_FUNC_CROP,
+    CTX_FUNC_GET_IMAGE_INFO,
+    CTX_FUNC_ACCESS_PIXELS,
+    CTX_FUNC_UNACCESS_PIXELS,
 };
-using PixelMapNapiFuncs = struct PixelMapNapiFuncs;
 
-PixelMapNapiFuncs* PixelMapNapiNativeEntry();
 PixelMapNapi* PixelMapNapi_Unwrap(napi_env env, napi_value value);
+int32_t PixelMapNapiNativeEnvCall(int32_t mode, napi_env env, PixelMapNapiArgs* args);
+int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNapiArgs* args);
 #ifdef __cplusplus
 };
 #endif
