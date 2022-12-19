@@ -511,7 +511,7 @@ bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, Pixel
         output.Destroy();
         return false;
     }
-    pixelMap.SetPixelsAddr(output.data, nullptr, output.bufferSize, decodeOpts_.allocatorType, nullptr);
+    pixelMap.SetPixelsAddr(output.data, output.context, output.bufferSize, decodeOpts_.allocatorType, nullptr);
     return true;
 }
 
