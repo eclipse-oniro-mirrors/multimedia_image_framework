@@ -410,7 +410,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0012, TestSize.Level3)
 
 /**
  * @tc.name: ImageTransformTest0013
- * @tc.desc:TransformPixmap 
+ * @tc.desc:TransformPixmap
  * @tc.type: FUNC
  */
 HWTEST_F(ImageTransformTest, ImageTransformTest0013, TestSize.Level3)

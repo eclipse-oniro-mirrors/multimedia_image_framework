@@ -30,10 +30,6 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
-// constexpr uint32_t ERR_IMAGE_TRANSFORM1 = 1000;
-// constexpr uint32_t ERR_IMAGE_TRANSFORM2 = 2000;
-// constexpr uint32_t ERR_IMAGE_TRANSFORM3 = 3000;
-
 class PostProcTest : public testing::Test {
 public:
     PostProcTest() {}
