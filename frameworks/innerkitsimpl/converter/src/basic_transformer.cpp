@@ -118,6 +118,9 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
         outPixmap.data = static_cast<uint8_t *>(malloc(bufferSize));
     } else {
         outPixmap.data = allocate(dstSize, bufferSize, fd);
+        auto tmp = std::make_unique<int32_t>();
+        *tmp = fd;
+        outPixmap.context = tmp.release();
     }
     if (outPixmap.data == nullptr) {
         IMAGE_LOGE("[BasicTransformer]apply heap memory failed");
