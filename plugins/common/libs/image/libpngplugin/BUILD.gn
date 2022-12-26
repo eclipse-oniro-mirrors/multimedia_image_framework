@@ -39,7 +39,7 @@ ohos_shared_library("pngplugin") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
   ]
-  deps = [ "//third_party/zlib:libz" ]
+  deps = [ "//third_party/zlib:shared_libz" ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
