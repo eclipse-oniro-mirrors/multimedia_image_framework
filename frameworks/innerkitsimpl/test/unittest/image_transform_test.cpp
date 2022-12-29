@@ -395,9 +395,16 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0012, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0012 start";
     PixmapInfo inPutInfo;
     inPutInfo.imageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    inPutInfo.imageInfo.size.width = 3;
+    inPutInfo.imageInfo.size.height = 4;
+    inPutInfo.imageInfo.colorSpace = ColorSpace::SRGB;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(res, ERR_IMAGE_INVALID_PIXEL);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0012 end";
 }
 
@@ -413,15 +420,19 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0013, TestSize.Level3)
     inPutInfo.imageInfo.size.width = 0;
     inPutInfo.imageInfo.size.height = 0;
     inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(res, ERR_IMAGE_ALLOC_MEMORY_FAILED);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0013 end";
 }
 
 /**
  * @tc.name: ImageTransformTest0014
- * @tc.desc:TransformPixmap
+ * @tc.desc:TransformPixmap inPutInfo.imageInfo.size.height is 0
  * @tc.type: FUNC
  */
 HWTEST_F(ImageTransformTest, ImageTransformTest0014, TestSize.Level3)
@@ -431,15 +442,19 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0014, TestSize.Level3)
     inPutInfo.imageInfo.size.width = 1;
     inPutInfo.imageInfo.size.height = 0;
     inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(res, ERR_IMAGE_ALLOC_MEMORY_FAILED);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0014 end";
 }
 
 /**
  * @tc.name: ImageTransformTest0015
- * @tc.desc:TransformPixmap
+ * @tc.desc:TransformPixmap inPutInfo.imageInfo.size.width is 0
  * @tc.type: FUNC
  */
 HWTEST_F(ImageTransformTest, ImageTransformTest0015, TestSize.Level3)
@@ -449,10 +464,13 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0015, TestSize.Level3)
     inPutInfo.imageInfo.size.width = 0;
     inPutInfo.imageInfo.size.height = 1;
     inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
-    ASSERT_EQ(outPutInfo.data, nullptr);
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(res, ERR_IMAGE_ALLOC_MEMORY_FAILED);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0015 end";
 }
 
