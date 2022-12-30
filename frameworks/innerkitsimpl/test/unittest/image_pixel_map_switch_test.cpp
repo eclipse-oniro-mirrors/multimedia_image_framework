@@ -905,12 +905,12 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031, TestSize.Level3)
 }
 
 /**
- * @tc.name: ImagePixelMapSwitchTest031
+ * @tc.name: ImagePixelMapSwitchTest031_1
  * @tc.desc:
  * @tc.desc:
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031, TestSize.Level3)
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031_1, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 start";
     PixelMap pixelMap;
