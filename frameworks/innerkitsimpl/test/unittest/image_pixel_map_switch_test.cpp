@@ -901,9 +901,37 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031, TestSize.Level3)
 
     rect.width = MAX_DIMENSION + 1;
     pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest031
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 96;
+    uint32_t offset = 0;
+    uint32_t stride = 8;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 2;
+    uint8_t *dst = 0;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
 
     rect.height = 0;
-    rect.width = 2;
     pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
 
     rect.height = MAX_DIMENSION + 1;
