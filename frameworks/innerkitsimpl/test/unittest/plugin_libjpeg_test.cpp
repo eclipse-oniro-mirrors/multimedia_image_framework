@@ -63,6 +63,49 @@ HWTEST_F(PluginLibJpegTest, exif_info001_1, TestSize.Level3)
 }
 
 /**
+ * @tc.name: exif_info001_2
+ * @tc.desc: ParseExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info001_2, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_2 start";
+    EXIFInfo exinfo;
+    unsigned char *buf = nullptr;
+    unsigned len = 0;
+    exinfo.ParseExifData(buf, len);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_2 end";
+}
+
+/**
+ * @tc.name: exif_info001_3
+ * @tc.desc: ParseExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info001_3, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_3 start";
+    EXIFInfo exinfo;
+    string data = "";
+    exinfo.ParseExifData(data);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_3 end";
+}
+
+/**
+ * @tc.name: exif_info001_4
+ * @tc.desc: ParseExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info001_4, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_4 start";
+    EXIFInfo exinfo;
+    string data = "aaaaaaa";
+    exinfo.ParseExifData(data);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info001_4 end";
+}
+
+/**
  * @tc.name: exif_info002
  * @tc.desc: ModifyExifData
  * @tc.type: FUNC

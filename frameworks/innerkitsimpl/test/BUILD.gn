@@ -765,6 +765,46 @@ ohos_unittest("pluginlibjpegtest") {
   ]
 }
 
+ohos_unittest("rawdecodertest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/utils/include",
+    "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
+    "//third_party/skia",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/utils/include",
+  ]
+
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/raw_decoder_test.cpp" ]
+
+  deps = [
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin:rawplugin",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin:webpplugin",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+    "//third_party/skia/third_party/piex",
+  ]
+
+  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -787,6 +827,7 @@ group("unittest") {
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
     ":plugintest",
+    ":rawdecodertest",
     ":receivertest",
     ":streamtest",
     ":transformtest",

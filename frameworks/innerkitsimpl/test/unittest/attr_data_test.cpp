@@ -172,6 +172,22 @@ HWTEST_F(AttrDataTest, AttrDataTest008, TestSize.Level3)
 }
 
 /**
+ * @tc.name: AttrDataTest009
+ * @tc.desc: test InsertSet type is std::string &&
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest009 start";
+    std::string &&value = "111";
+    MultimediaPlugin::AttrData aData(value);
+    std::string &&value1 = "1111";
+    uint32_t ret = aData.SetData(value1);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest009 end";
+}
+
+/**
  * @tc.name: AttrDataTest0010
  * @tc.desc: test InsertSet type is uint32_t
  * @tc.type: FUNC
@@ -476,6 +492,45 @@ HWTEST_F(AttrDataTest, AttrDataTest0029, TestSize.Level3)
 }
 
 /**
+ * @tc.name: AttrDataTest0030
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0030 start";
+    uint32_t value1 = 0;
+    uint32_t value2 = 1000;
+    MultimediaPlugin::AttrData aData(value1, value2);
+    uint32_t value3 = 0;
+    uint32_t value4 = 1000;
+    uint32_t ret = aData.SetData(value3, value4);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t value0 = 1;
+    bool res = aData.InRange(value0);
+    ASSERT_EQ(res, true);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0030 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0031
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0031 start";
+    MultimediaPlugin::AttrData aData;
+    std::string value = "1";
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    std::string value1 = "11";
+    bool res = aData.InRange(value1);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0031 end";
+}
+
+/**
  * @tc.name: AttrDataTest0033
  * @tc.desc: test GetValue and data type is bool
  * @tc.type: FUNC
@@ -566,6 +621,461 @@ HWTEST_F(AttrDataTest, AttrDataTest0038, TestSize.Level3)
     uint32_t ret = aData.GetValue(v);
     ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0038 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0039
+ * @tc.desc: test GetValue and data type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0039, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0039 start";
+    MultimediaPlugin::AttrData aData;
+    bool value1 = false;
+    aData.SetData(value1);
+    MultimediaPlugin::AttrData aData1(aData);
+    aData1.ClearData();
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0039 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0040
+ * @tc.desc: test GetValue and data type is uint32_t
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0040, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0040 start";
+    uint32_t value = 0;
+    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData1(aData);
+    aData1.ClearData();
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0040 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0041
+ * @tc.desc: test InsertSet type is uint32_t
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0041, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0041 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 0;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1(aData);
+    aData1.ClearData();
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0041 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0042
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0042, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0042 start";
+    std::string value = "111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1(aData);
+    aData1.ClearData();
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0042 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0043
+ * @tc.desc: test SetData and ClearData data type is uint32_t and uint32_t
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0043, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0043 start";
+    uint32_t value1 = 0;
+    uint32_t value2 = 1000;
+    MultimediaPlugin::AttrData aData(value1, value2);
+    uint32_t value3 = 0;
+    uint32_t value4 = 1000;
+    uint32_t ret = aData.SetData(value3, value4);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1(aData);
+    aData1.ClearData();
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0043 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0044
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0044, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0044 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 0;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const std::string value1 = "111";
+    aData.SetData(value1);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0044 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0045
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0045, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0045 start";
+    std::string value1 = "111";
+    MultimediaPlugin::AttrData aData(value1);
+    uint32_t value = 0;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, ERR_UNSUPPORTED);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0045 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0046
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0046, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0046 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 0;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t value1 = 1;
+    bool res = aData.InRange(value1);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0046 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0047
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0047, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0047 start";
+    std::string value = "111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value);
+    ASSERT_EQ(res, ERR_INTERNAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0047 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0048
+ * @tc.desc: test InsertSet type is uint32_t
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0048, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0048 start";
+    uint32_t value = 1;
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value);
+    ASSERT_EQ(res, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0048 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0049
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0049, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0049 start";
+    std::string value = "111";
+    std::string value1 = "1111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0049 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0050
+ * @tc.desc: test InsertSet type is uint32_t
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0050, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0050 start";
+    uint32_t value = 1;
+    uint32_t value1 = 11;
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0050 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0051
+ * @tc.desc: test InsertSet type is std::string &&
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0051, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0051 start";
+    std::string &&value = "111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0051 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0052
+ * @tc.desc: test InsertSet type is std::string &&
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0052, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0052 start";
+    std::string &&value = "111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value);
+    ASSERT_EQ(res, ERR_INTERNAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0052 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0053
+ * @tc.desc: test InsertSet type is std::string &&
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0053, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0053 start";
+    std::string &&value = "111";
+    std::string &&value1 = "1111";
+    MultimediaPlugin::AttrData aData;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t res = aData.InsertSet(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0053 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0054
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0054, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0054 start";
+    uint32_t value = 0;
+    MultimediaPlugin::AttrData aData(value);
+    std::string &&value1 = "111";
+    uint32_t ret = aData.InsertSet(value1);
+    ASSERT_EQ(ret, ERR_UNSUPPORTED);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0054 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0055
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0055, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0055 start";
+    MultimediaPlugin::AttrData aData;
+    std::string value = "1";
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0055 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0055
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0056, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0055 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 1;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0056 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0057
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0057, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0057 start";
+    std::string value = "1";
+    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0057 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0058
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0058, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0058 start";
+    uint32_t value = 1;
+    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0058 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0059
+ * @tc.desc: test InsertSet type is std::string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0059, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0059 start";
+    bool value = true;
+    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0059 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0060
+ * @tc.desc: test InsertSet type is range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0060, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0060 start";
+    uint32_t value1 = 0;
+    uint32_t value2 = 1000;
+    MultimediaPlugin::AttrData aData(value1, value2);
+    uint32_t value3 = 0;
+    uint32_t value4 = 1000;
+    uint32_t ret = aData.SetData(value3, value4);
+    ASSERT_EQ(ret, SUCCESS);
+    MultimediaPlugin::AttrData aData1;
+    bool res = aData1.InRange(aData);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0060 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0061
+ * @tc.desc: test GetMinValue and data type is uint32_t range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0061, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0061 start";
+    uint32_t value1 = 0;
+    uint32_t value2 = 1000;
+    MultimediaPlugin::AttrData aData(value1, value2);
+    uint32_t value3 = 0;
+    uint32_t value4 = 1000;
+    uint32_t ret = aData.SetData(value3, value4);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t v;
+    uint32_t res = aData.GetMinValue(v);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0061 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0062
+ * @tc.desc: test GetMinValue and data type is uint32_t set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0062, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0062 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 1;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t v;
+    uint32_t res = aData.GetMinValue(v);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0062 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0063
+ * @tc.desc: test GetMaxValue and data type is uint32_t range
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0063, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0063 start";
+    uint32_t value1 = 0;
+    uint32_t value2 = 1000;
+    MultimediaPlugin::AttrData aData(value1, value2);
+    uint32_t value3 = 0;
+    uint32_t value4 = 1000;
+    uint32_t ret = aData.SetData(value3, value4);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t v;
+    uint32_t res = aData.GetMaxValue(v);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0063 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0064
+ * @tc.desc: test GetMaxValue and data type is uint32_t set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0064, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0064 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 1;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t v;
+    uint32_t res = aData.GetMaxValue(v);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0064 end";
 }
 }
 }
