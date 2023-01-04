@@ -549,7 +549,7 @@ ohos_unittest("mocktest") {
   external_deps = [ "c_utils:utils" ]
 }
 
-ohos_unittest("plugintest") {
+ohos_unittest("pngtest") {
   module_out_path = module_output_path
 
   include_dirs = [
@@ -805,11 +805,46 @@ ohos_unittest("rawdecodertest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("bmpplugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/utils/include",
+    "//third_party/googletest/googletest/include",
+    "//commonlibrary/c_utils/base/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+  ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/bmp_decoder_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin:bmpplugin",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
+    ":bmpplugintest",
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
@@ -826,7 +861,7 @@ group("unittest") {
     ":pixelconvertadaptertest",
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
-    ":plugintest",
+    ":pngtest",
     ":rawdecodertest",
     ":receivertest",
     ":streamtest",
