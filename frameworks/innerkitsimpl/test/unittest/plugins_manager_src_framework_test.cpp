@@ -415,6 +415,22 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest0014, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ImplClassTest0015
+ * @tc.desc: GetCapability
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0015 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    const nlohmann::json classInfo;
+    uint32_t ret = implClass.Register(plugin, classInfo);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0015 end";
+}
+
+/**
  * @tc.name: JsonHelperTest001
  * @tc.desc: CheckElementExistence
  * @tc.type: FUNC
