@@ -12,26 +12,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include <gtest/gtest.h>
-#include <fstream>
+#include "bmp_decoder.h"
 #include "buffer_source_stream.h"
-#include "media_errors.h"
-#include "memory.h"
-#include "png_decoder.h"
-#include "securec.h"
+#include "image_packer.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::ImagePlugin;
 namespace OHOS {
-namespace Multimedia {
+namespace ImagePlugin {
 static constexpr size_t NUMBER_ONE = 1;
 static constexpr size_t NUMBER_TWO = 2;
-class PngDecoderTest : public testing::Test {
+class BmpDecoderTest : public testing::Test {
 public:
-    PngDecoderTest() {}
-    ~PngDecoderTest() {}
+    BmpDecoderTest() {}
+    ~BmpDecoderTest() {}
 };
 
 class MockInputDataStream : public SourceStream {
@@ -120,19 +115,19 @@ private:
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest001, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     ImagePlugin::PlSize plSize;
-    pngDecoder->SetSource(*streamPtr.release());
-    pngDecoder->GetImageSize(2, plSize);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetSource(*streamPtr.release());
+    bmpDecoder->GetImageSize(2, plSize);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest001 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest001 end";
 }
 
 /**
@@ -140,19 +135,19 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest001, TestSize.Level3)
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest002, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest002 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     ImagePlugin::PlSize plSize;
-    pngDecoder->GetImageSize(0, plSize);
+    bmpDecoder->GetImageSize(0, plSize);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetSource(*streamPtr.release());
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest002 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest002 end";
 }
 
 /**
@@ -160,17 +155,17 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest002, TestSize.Level3)
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest003, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest003 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
-    pngDecoder->GetImageSize(0, plSize);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->GetImageSize(0, plSize);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest003 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest003 end";
 }
 
 /**
@@ -178,18 +173,18 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest003, TestSize.Level3)
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest004, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest004 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest004 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
-    pngDecoder->GetImageSize(0, plSize);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->GetImageSize(0, plSize);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest004 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest004 end";
 }
 
 /**
@@ -197,19 +192,19 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest004, TestSize.Level3)
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest005, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest005, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest005 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest005 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetStreamSize(1);
     mock->SetReturn(true);
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
-    pngDecoder->GetImageSize(0, plSize);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->GetImageSize(0, plSize);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest005 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest005 end";
 }
 
 /**
@@ -217,19 +212,19 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest005, TestSize.Level3)
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, GetImageSizeTest006, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, GetImageSizeTest006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest006 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest006 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetStreamSize(2);
     mock->SetReturn(true);
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
-    pngDecoder->GetImageSize(0, plSize);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->GetImageSize(0, plSize);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest006 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest006 end";
 }
 
 /**
@@ -237,20 +232,20 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest006, TestSize.Level3)
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
+    bmpDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
     PlImageInfo info;
-    pngDecoder->SetDecodeOptions(2, opts, info);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetDecodeOptions(2, opts, info);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest001 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest001 end";
 }
 
 /**
@@ -258,20 +253,20 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, SetDecodeOptionsTest002, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest002 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     PixelDecodeOptions opts;
     PlImageInfo info;
-    pngDecoder->SetDecodeOptions(0, opts, info);
+    bmpDecoder->SetDecodeOptions(0, opts, info);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetSource(*streamPtr.release());
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest002 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest002 end";
 }
 
 /**
@@ -279,21 +274,21 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest002, TestSize.Level3)
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest003 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
+    bmpDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
     opts.desiredPixelFormat = PlPixelFormat::RGB_565;
     PlImageInfo info;
-    pngDecoder->SetDecodeOptions(0, opts, info);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest003 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest003 end";
 }
 
 /**
@@ -301,19 +296,19 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, SetDecodeOptionsTest004, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest004 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest004 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     PixelDecodeOptions opts;
     PlImageInfo info;
-    pngDecoder->SetDecodeOptions(0, opts, info);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest004 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest004 end";
 }
 
 /**
@@ -321,19 +316,19 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest004, TestSize.Level3)
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, DecodeTest001, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, DecodeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
+    bmpDecoder->SetSource(*streamPtr.release());
     DecodeContext context;
-    pngDecoder->Decode(2, context);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->Decode(2, context);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest001 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest001 end";
 }
 
 /**
@@ -341,34 +336,19 @@ HWTEST_F(PngDecoderTest, DecodeTest001, TestSize.Level3)
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, DecodeTest002, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, DecodeTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest002 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     DecodeContext context;
-    pngDecoder->Decode(0, context);
+    bmpDecoder->Decode(0, context);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetSource(*streamPtr.release());
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest002 end";
-}
-
-/**
- * @tc.name: HasProperty001
- * @tc.desc: test HasProperty
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, HasProperty001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: HasProperty001 start";
-    ImagePlugin::PngDecoder pngdcod;
-    std::string key = "";
-    bool haspro = pngdcod.HasProperty(key);
-    ASSERT_EQ(haspro, false);
-    GTEST_LOG_(INFO) << "PngDecoderTest: HasProperty001 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest002 end";
 }
 
 /**
@@ -376,19 +356,19 @@ HWTEST_F(PngDecoderTest, HasProperty001, TestSize.Level3)
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
+    bmpDecoder->SetSource(*streamPtr.release());
     ProgDecodeContext context;
-    pngDecoder->PromoteIncrementalDecode(2, context);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->PromoteIncrementalDecode(2, context);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest001 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest001 end";
 }
 
 /**
@@ -396,19 +376,19 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest002, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, PromoteIncrementalDecodeTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest002 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     ProgDecodeContext context;
-    pngDecoder->PromoteIncrementalDecode(0, context);
+    bmpDecoder->PromoteIncrementalDecode(0, context);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    pngDecoder->SetSource(*streamPtr.release());
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->SetSource(*streamPtr.release());
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest002 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest002 end";
 }
 
 /**
@@ -416,18 +396,18 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest002, TestSize.Level3)
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
+HWTEST_F(BmpDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest003 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
-    pngDecoder->SetSource(*mock.get());
+    bmpDecoder->SetSource(*mock.get());
     ProgDecodeContext context;
-    pngDecoder->PromoteIncrementalDecode(0, context);
-    bool result = (pngDecoder != nullptr);
+    bmpDecoder->PromoteIncrementalDecode(0, context);
+    bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest003 end";
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest003 end";
 }
-} // namespace Multimedia
-} // namespace OHOS
+}
+}
