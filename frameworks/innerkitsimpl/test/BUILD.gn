@@ -839,6 +839,41 @@ ohos_unittest("bmpplugintest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("gifplugintest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
+    "//foundation/multimedia/utils/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//foundation/multimedia/image_framework/plugins/manager/include/image",
+    "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
+    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "//foundation/multimedia/utils/include",
+    "//third_party/googletest/googletest/include",
+    "//third_party/giflib",
+    "//commonlibrary/c_utils/base/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
+  ]
+  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/gif_decoder_test.cpp" ]
+
+  deps = [
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin:gifplugin",
+    "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -850,6 +885,7 @@ group("unittest") {
     ":creatortest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
+    ":gifplugintest",
     ":gstpluginfwtest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
