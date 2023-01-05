@@ -114,6 +114,27 @@ bool PixelMapRosenUtils::UploadToGpu(
     return pixelMap->rosenImageWrapper_ != nullptr;
 }
 
+struct PixelMapReleaseContext {
+    explicit PixelMapReleaseContext(std::shared_ptr<PixelMap> pixelMap) : pixelMap_(pixelMap) {}
+
+    ~PixelMapReleaseContext()
+    {
+        pixelMap_ = nullptr;
+    }
+
+private:
+    std::shared_ptr<PixelMap> pixelMap_;
+};
+
+static void PixelMapReleaseProc(const void* /* pixels */, void* context)
+{
+    PixelMapReleaseContext* ctx = static_cast<PixelMapReleaseContext*>(context);
+    if (ctx) {
+        delete ctx;
+        ctx = nullptr;
+    }
+}
+
 sk_sp<SkImage> PixelMapRosenUtils::ExtractSkImage(std::shared_ptr<PixelMap> pixelMap)
 {
     if (!pixelMap) {
@@ -123,7 +144,8 @@ sk_sp<SkImage> PixelMapRosenUtils::ExtractSkImage(std::shared_ptr<PixelMap> pixe
         auto skImageInfo = MakeSkImageInfo(pixelMap->imageInfo_);
         SkPixmap skPixmap(skImageInfo, reinterpret_cast<const void*>(pixelMap->GetPixels()), pixelMap->GetRowBytes());
         pixelMap->rosenImageWrapper_ =
-            std::make_shared<RosenImageWrapper>(SkImage::MakeFromRaster(skPixmap, nullptr, nullptr));
+            std::make_shared<RosenImageWrapper>(
+                SkImage::MakeFromRaster(skPixmap, PixelMapReleaseProc, new PixelMapReleaseContext(pixelMap)));
     }
     return pixelMap->rosenImageWrapper_->GetSkImage();
 }
