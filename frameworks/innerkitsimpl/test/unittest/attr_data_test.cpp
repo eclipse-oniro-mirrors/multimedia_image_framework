@@ -1077,5 +1077,143 @@ HWTEST_F(AttrDataTest, AttrDataTest0064, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0064 end";
 }
+
+/**
+ * @tc.name: AttrDataTest0065
+ * @tc.desc: test GetMinValue and data type is uint32_t set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0065, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0065 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 1;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMinValue(value1);
+    ASSERT_EQ(res, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0065 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0066
+ * @tc.desc: test GetMinValue and data type is string set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0066, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0066 start";
+    MultimediaPlugin::AttrData aData;
+    std::string value = "111";
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMinValue(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0066 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0067
+ * @tc.desc: test GetMinValue and data type is string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0067, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0067 start";
+    std::string value = "111";
+    MultimediaPlugin::AttrData aData(value);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMinValue(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0067 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0068
+ * @tc.desc: test GetMaxValue and data type is uint32_t set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0068, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0068 start";
+    MultimediaPlugin::AttrData aData;
+    uint32_t value = 1;
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMaxValue(value1);
+    ASSERT_EQ(res, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0068 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0069
+ * @tc.desc: test GetMaxValue and data type is string set
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0069, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0069 start";
+    MultimediaPlugin::AttrData aData;
+    std::string value = "111";
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMaxValue(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0069 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0070
+ * @tc.desc: test GetMaxValue and data type is string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0070, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0070 start";
+    std::string value = "111";
+    MultimediaPlugin::AttrData aData(value);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetMaxValue(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0070 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0071
+ * @tc.desc: test GetMaxValue and data type is string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0071, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0071 start";
+    MultimediaPlugin::AttrData aData;
+    std::string value = "111";
+    uint32_t ret = aData.InsertSet(value);
+    ASSERT_EQ(ret, SUCCESS);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetValue(value1);
+    ASSERT_EQ(res, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0071 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0072
+ * @tc.desc: test GetMaxValue and data type is string
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0072, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0072 start";
+    std::string value = "111";
+    MultimediaPlugin::AttrData aData(value);
+    const string *value1 = nullptr;
+    uint32_t res = aData.GetValue(value1);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0072 end";
+}
 }
 }
