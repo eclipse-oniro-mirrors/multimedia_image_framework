@@ -23,6 +23,7 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace Multimedia {
+constexpr int32_t MAX_DIMENSION = INT32_MAX >> 2;
 static constexpr int32_t PIXEL_MAP_TEST_WIDTH = 3;
 static constexpr int32_t PIXEL_MAP_TEST_HEIGHT = 3;
 class ImagePixelMapSwitchTest : public testing::Test {
@@ -849,6 +850,211 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest030, TestSize.Level3)
     bool isReused = false;
     pixelMap.SetImageInfo(info, isReused);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest030 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest031
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 0;
+    uint32_t offset = 0;
+    uint32_t stride = 8;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 2;
+    uint8_t *dst = 0;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+    
+    bufferSize = 96;
+    rect.left = -1;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.left = 0;
+    rect.top = -1;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.top = 0;
+    stride = std::numeric_limits<int32_t>::max();
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    stride = 8;
+    offset = 128;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    offset = 0;
+    rect.width = 0;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.width = MAX_DIMENSION + 1;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest031_1
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest031_1, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 96;
+    uint32_t offset = 0;
+    uint32_t stride = 8;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 2;
+    uint8_t *dst = 0;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.height = 0;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.height = MAX_DIMENSION + 1;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.height = 1;
+    rect.left = 3;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    rect.left = 0;
+    rect.top = 3;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    stride = 6;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    stride = 8;
+    bufferSize = 6;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+
+    bufferSize = 96;
+    offset = 96;
+    pixelMap.ReadPixels(bufferSize, offset, stride, rect, dst);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest031 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest032
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest032, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest032 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint64_t bufferSize = 96;
+    uint32_t offset = 0;
+    uint32_t stride = 8;
+    Rect rect;
+    rect.left = 0;
+    rect.top = 0;
+    rect.height = 1;
+    rect.width = 2;
+    uint8_t *source = nullptr;
+    pixelMap.WritePixels(source, bufferSize, offset, stride, rect);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest032 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest033
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest033, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest033 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 0;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    uint32_t color = 1;
+    pixelMap.WritePixels(color);
+
+    info.size.width = 200;
+    pixelMap.SetImageInfo(info);
+    pixelMap.WritePixels(color);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest033 end";
+}
+
+/**
+ * @tc.name: ImagePixelMapSwitchTest034
+ * @tc.desc:
+ * @tc.desc:
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest034, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest034 start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 200;
+    info.size.height = 300;
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    float percent = 0.0;
+    pixelMap.SetAlpha(percent);
+
+    percent = 2.0;
+    pixelMap.SetAlpha(percent);
+
+    percent = 0.5;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    pixelMap.SetImageInfo(info);
+    pixelMap.SetAlpha(percent);
+
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    pixelMap.SetImageInfo(info);
+    pixelMap.SetAlpha(percent);
+
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    pixelMap.SetImageInfo(info);
+    pixelMap.SetAlpha(percent);
+
+    info.pixelFormat = PixelFormat::BGRA_8888;
+    pixelMap.SetImageInfo(info);
+    pixelMap.SetAlpha(percent);
+
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    pixelMap.SetImageInfo(info);
+    pixelMap.SetAlpha(percent);
+    GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest034 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
