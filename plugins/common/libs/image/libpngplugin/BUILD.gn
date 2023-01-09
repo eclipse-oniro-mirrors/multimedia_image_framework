@@ -44,7 +44,7 @@ ohos_shared_library("pngplugin") {
     "//third_party/flutter/skia/include/core",
     "//third_party/flutter/skia/third_party/skcms",
   ]
-  deps = [ "//third_party/zlib:libz" ]
+  deps = [ "//third_party/zlib:shared_libz" ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
