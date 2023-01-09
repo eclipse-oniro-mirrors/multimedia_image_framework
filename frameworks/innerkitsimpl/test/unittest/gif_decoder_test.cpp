@@ -328,5 +328,41 @@ HWTEST_F(GifDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "GifDecoderTest: PromoteIncrementalDecodeTest003 end";
 }
+
+/**
+ * @tc.name: GetTopLevelImageNumTest001
+ * @tc.desc: Test of GetTopLevelImageNum
+ * @tc.type: FUNC
+ */
+HWTEST_F(GifDecoderTest, GetTopLevelImageNum001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GifDecoderTest: GetTopLevelImageNum001 start";
+    auto gifDecoder = std::make_shared<GifDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    uint32_t num = 0;
+    gifDecoder->SetSource(*streamPtr.release());
+    uint32_t res = gifDecoder->GetTopLevelImageNum(num);
+    ASSERT_EQ(res, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "GifDecoderTest: GetTopLevelImageNum001 end";
+}
+
+/**
+ * @tc.name: GetTopLevelImageNumTest002
+ * @tc.desc: Test of GetTopLevelImageNum
+ * @tc.type: FUNC
+ */
+HWTEST_F(GifDecoderTest, GetTopLevelImageNum002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "GifDecoderTest: GetTopLevelImageNum002 start";
+    auto gifDecoder = std::make_shared<GifDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    gifDecoder->SetSource(*mock.get());
+    uint32_t num = 0;
+    uint32_t res = gifDecoder->GetTopLevelImageNum(num);
+    ASSERT_EQ(res, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "GifDecoderTest: GetTopLevelImageNum002 end";
+}
 }
 }
