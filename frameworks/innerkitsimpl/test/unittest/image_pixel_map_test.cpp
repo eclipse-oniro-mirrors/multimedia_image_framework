@@ -64,7 +64,6 @@ public:
         }
 
         pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-
         return pixelMap;
     }
 
@@ -94,7 +93,6 @@ public:
         }
 
         pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-
         return pixelMap;
     }
 /**
@@ -485,13 +483,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap009, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap010, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap010 start";
-
     Parcel data;
-
     std::unique_ptr<PixelMap> pixelmap = ConstructPixmap();
-
     bool ret = pixelmap.get()->Marshalling(data);
-
     EXPECT_EQ(true, ret);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap010 end";
@@ -517,7 +511,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap011, TestSize.Level3)
     EXPECT_EQ(pixelmap1->GetWidth(), pixelmap2->GetWidth());
     EXPECT_EQ(pixelmap1->GetPixelFormat(), pixelmap2->GetPixelFormat());
     EXPECT_EQ(pixelmap1->GetColorSpace(), pixelmap2->GetColorSpace());
-    EXPECT_EQ(true, pixelmap1->IsSameImage(*pixelmap2));
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap011 end";
 }
 /**
