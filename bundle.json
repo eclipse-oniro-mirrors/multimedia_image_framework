@@ -37,8 +37,7 @@
           "giflib",
           "bounds_checking_function",
           "expat",
-		  "json",
-          "boost"
+	  "json"
         ]
       },
       "build": {
