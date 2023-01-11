@@ -802,7 +802,8 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Imag
         return false;
     }
 
-    if (context->constructor_ == nullptr || context->constructor_->sSurfaceBuffer_ == nullptr) {
+    if (context->constructor_ == nullptr ||
+        (!receiverTest && context->constructor_->sSurfaceBuffer_ == nullptr)) {
         IMAGE_ERR("Constructor is nullptr");
         return false;
     }
@@ -815,11 +816,12 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Imag
             IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType0);
             return false;
         }
-
-        auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-        if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
-            IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
-            return false;
+        if (!receiverTest) {
+            auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
+            if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
+                IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
+                return false;
+            }
         }
     }
     if (argc == ARGS2) {

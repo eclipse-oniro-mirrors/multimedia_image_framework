@@ -44,6 +44,7 @@ static const std::string CLASS_NAME = "ImageCreator";
 shared_ptr<ImageCreator> ImageCreatorNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageCreatorNapi::sConstructor_ = nullptr;
 static bool g_creatorTest = false;
+static std::shared_ptr<ImageCreatorReleaseListener> g_listener = nullptr;
 
 const int ARGS0 = 0;
 const int ARGS1 = 1;
@@ -529,7 +530,7 @@ static void DoTest(std::shared_ptr<ImageCreator> imageCreator)
     IMAGE_ERR("TestAcquireBuffer 1...");
     TestAcquireBuffer(creatorSurface, flushFence, timestamp, damage, imageCreator);
 }
-
+static void DoCallBackAfterWork(uv_work_t *work, int status);
 napi_value ImageCreatorNapi::JsTest(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
@@ -541,6 +542,12 @@ napi_value ImageCreatorNapi::JsTest(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         DoTest(ic.context->creator_);
+        if (g_creatorTest && g_listener != nullptr) {
+            unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
+            work->data = reinterpret_cast<void *>(g_listener->context.get());
+            DoCallBackAfterWork(work.release(), ARGS0);
+            g_listener = nullptr;
+        }
         return true;
     };
 
@@ -642,6 +649,7 @@ void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
     if (g_creatorTest) {
         context->status = SUCCESS;
         CommonCallbackRoutine(env, context, result);
+        return;
     }
 
     auto native = context->constructor_->imageCreator_;
@@ -849,6 +857,10 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         IMAGE_LINE_IN();
         if (g_creatorTest) {
+            g_listener = make_shared<ImageCreatorReleaseListener>();
+            g_listener->context = std::move(ic.context);
+            g_listener->context->env = args.env;
+            g_listener->name = args.name;
             return true;
         }
         napi_get_undefined(args.env, &(ic.result));
