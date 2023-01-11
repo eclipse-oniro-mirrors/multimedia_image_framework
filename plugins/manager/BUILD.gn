@@ -50,7 +50,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
       "//foundation/multimedia/utils/include",
       "//third_party/json/single_include/nlohmann",
-      "//third_party/boost/tools/build/src/engine",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
       "//foundation/multimedia/image_framework/mock/native/include",
     ]
@@ -113,7 +112,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
       "//foundation/multimedia/utils/include",
       "//third_party/json/single_include/nlohmann",
-      "//third_party/boost/tools/build/src/engine",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
       "//foundation/multimedia/image_framework/mock/native/include",
     ]
@@ -192,7 +190,6 @@ ohos_static_library("pluginmanager_static") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//third_party/json/single_include/nlohmann",
-    "//third_party/boost/tools/build/src/engine",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
 
