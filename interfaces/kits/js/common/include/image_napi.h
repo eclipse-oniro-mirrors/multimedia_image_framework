@@ -49,6 +49,7 @@ public:
     static std::shared_ptr<ImageNapi> GetImageSource(napi_env env, napi_value image);
     static napi_value Create(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
         std::shared_ptr<ImageReceiver> imageReceiver);
+    static napi_value Create(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver);
     static napi_value CreateBufferToImage(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
         std::shared_ptr<ImageCreator> imageCreator);
     void NativeRelease();
