@@ -1394,6 +1394,182 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     return pixelMap;
 }
 
+void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const
+{
+    buff.push_back(value);
+}
+
+uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
+{
+    return buff[cursor++];
+}
+
+uint8_t PixelMap::GetVarintLen(int32_t value) const
+{
+    uint8_t len = 1;
+    while (value > TLV_VARINT_MASK) {
+        len++;
+        value >>= TLV_VARINT_BITS;
+    }
+    return len;
+}
+
+void PixelMap::WriteVarint(std::vector<uint8_t> &buff, int32_t value) const
+{
+    while (value > TLV_VARINT_MASK) {
+        buff.push_back(TLV_VARINT_MORE | uint8_t(value & TLV_VARINT_MASK));
+        value >>= TLV_VARINT_BITS;
+    }
+    buff.push_back(uint8_t(value));
+}
+
+int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
+{
+    int32_t value = 0;
+    uint8_t shift = 0;
+    int32_t item = 0;
+    do {
+        item = int32_t(buff[cursor++]);
+        value |= (item & TLV_VARINT_MASK) << shift;
+        shift += TLV_VARINT_BITS;
+    } while ((item & TLV_VARINT_MORE) != 0);
+    return value;
+}
+
+void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const
+{
+    for (int32_t offset = 0; offset < size; offset++) {
+        buff.push_back(*(data + offset));
+    }
+}
+
+uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor)
+{
+    if (size <= 0) {
+        HiLog::Error(LABEL, "pixel map tlv read data fail: invalid size[%{public}d]", size);
+        return nullptr;
+    }
+    uint8_t *data = static_cast<uint8_t *>(malloc(size));
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "pixel map tlv read data fail: malloc memory size[%{public}d]", size);
+        return nullptr;
+    }
+    for (int32_t offset = 0; offset < size; offset++) {
+        *(data + offset) = buff[cursor++];
+    }
+    return data;
+}
+
+bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
+{
+    WriteUint8(buff, TLV_IMAGE_WIDTH);
+    WriteVarint(buff, GetVarintLen(imageInfo_.size.width));
+    WriteVarint(buff, imageInfo_.size.width);
+    WriteUint8(buff, TLV_IMAGE_HEIGHT);
+    WriteVarint(buff, GetVarintLen(imageInfo_.size.height));
+    WriteVarint(buff, imageInfo_.size.height);
+    WriteUint8(buff, TLV_IMAGE_PIXELFORMAT);
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.pixelFormat)));
+    WriteVarint(buff, static_cast<int32_t>(imageInfo_.pixelFormat));
+    WriteUint8(buff, TLV_IMAGE_COLORSPACE);
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.colorSpace)));
+    WriteVarint(buff, static_cast<int32_t>(imageInfo_.colorSpace));
+    WriteUint8(buff, TLV_IMAGE_ALPHATYPE);
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(imageInfo_.alphaType)));
+    WriteVarint(buff, static_cast<int32_t>(imageInfo_.alphaType));
+    WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
+    WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
+    WriteVarint(buff, imageInfo_.baseDensity);
+    WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
+    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(allocatorType_)));
+    WriteVarint(buff, static_cast<int32_t>(allocatorType_));
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
+        WriteUint8(buff, TLV_END); // end tag
+        HiLog::Error(LABEL, "pixel map tlv encode fail: unsupport SHARE_MEM_ALLOC");
+        return false;
+    }
+    WriteUint8(buff, TLV_IMAGE_DATA);
+    const uint8_t *data = data_;
+    int32_t dataSize = rowDataSize_ * imageInfo_.size.height;
+    if (data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
+        WriteVarint(buff, 0); // L is zero and no value
+        WriteUint8(buff, TLV_END); // end tag
+        HiLog::Error(LABEL, "pixel map tlv encode fail: no data");
+        return false;
+    }
+    WriteVarint(buff, dataSize);
+    WriteData(buff, data, dataSize);
+    WriteUint8(buff, TLV_END); // end tag
+    return true;
+}
+
+void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
+{
+    int cursor = 0;
+    for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
+        int32_t len = ReadVarint(buff, cursor);
+        switch (tag) {
+            case TLV_IMAGE_WIDTH:
+                info.size.width = ReadVarint(buff, cursor);
+                break;
+            case TLV_IMAGE_HEIGHT:
+                info.size.height = ReadVarint(buff, cursor);
+                break;
+            case TLV_IMAGE_PIXELFORMAT:
+                info.pixelFormat = static_cast<PixelFormat>(ReadVarint(buff, cursor));
+                break;
+            case TLV_IMAGE_COLORSPACE:
+                info.colorSpace = static_cast<ColorSpace>(ReadVarint(buff, cursor));
+                break;
+            case TLV_IMAGE_ALPHATYPE:
+                info.alphaType = static_cast<AlphaType>(ReadVarint(buff, cursor));
+                break;
+            case TLV_IMAGE_BASEDENSITY:
+                info.baseDensity = ReadVarint(buff, cursor);
+                break;
+            case TLV_IMAGE_ALLOCATORTYPE:
+                type = ReadVarint(buff, cursor);
+                break;
+            case TLV_IMAGE_DATA:
+                size = len;
+                *data = ReadData(buff, size, cursor);
+                break;
+            default:
+                cursor += len; // skip unknown tag
+                HiLog::Warn(LABEL, "pixel map tlv decode warn: unknown tag[%{public}d]", tag);
+                break;
+        }
+    }
+}
+
+PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
+{
+    PixelMap *pixelMap = new PixelMap();
+    if (pixelMap == nullptr) {
+        HiLog::Error(LABEL, "pixel map tlv decode fail: new PixelMap error");
+        return nullptr;
+    }
+    ImageInfo imageInfo;
+    int32_t dataSize = 0;
+    uint8_t *data = nullptr;
+    int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
+    ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data);
+    if (data == nullptr) {
+        delete pixelMap;
+        HiLog::Error(LABEL, "pixel map tlv decode fail: no data");
+        return nullptr;
+    }
+    uint32_t ret = pixelMap->SetImageInfo(imageInfo);
+    if (ret != SUCCESS) {
+        free(data);
+        delete pixelMap;
+        HiLog::Error(LABEL, "pixel map tlv decode fail: set image info error[%{public}d]", ret);
+        return nullptr;
+    }
+    pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
+    return pixelMap;
+}
+
 static const string GetNamedAlphaType(const AlphaType alphaType)
 {
     switch (alphaType) {
