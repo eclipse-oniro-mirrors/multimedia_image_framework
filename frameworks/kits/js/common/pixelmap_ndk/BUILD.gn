@@ -27,9 +27,9 @@ ohos_shared_library("pixelmap_ndk") {
     "//third_party/node/src",
   ]
 
-  sources = [ 
+  sources = [
     "image_pixel_map_napi.cpp",
-    "image_pixel_map_ndk.cpp"
+    "image_pixel_map_ndk.cpp",
   ]
 
   public_configs =
