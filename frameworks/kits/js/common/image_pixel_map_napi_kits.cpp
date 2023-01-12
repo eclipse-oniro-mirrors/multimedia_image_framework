@@ -14,9 +14,10 @@
  */
 
 #include "image_pixel_map_napi_kits.h"
+
+#include <map>
 #include "pixel_map_napi.h"
 #include "pngpriv.h"
-#include <map>
 
 namespace {
     constexpr uint32_t NUM_0 = 0;
@@ -88,7 +89,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_value undefinedValue = nullptr;
-    if((!makeUndefined(env, &undefinedValue)) || args->inBuffer == nullptr || args->bufferLen <= NUM_0 ) {
+    if ((!makeUndefined(env, &undefinedValue)) || args->inBuffer == nullptr || args->bufferLen <= NUM_0) {
         *(args->outValue) = undefinedValue;
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -117,7 +118,7 @@ static int32_t PixelMapNapiCreateAlpha(napi_env env, PixelMapNapiArgs* args)
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_value undefinedValue = nullptr;
-    if((!makeUndefined(env, &undefinedValue)) || args->inValue == nullptr ) {
+    if ((!makeUndefined(env, &undefinedValue)) || args->inValue == nullptr) {
         *(args->outValue) = undefinedValue;
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -298,7 +299,7 @@ static int32_t PixelMapNapiCrop(PixelMapNapi* native, PixelMapNapiArgs* args)
     Rect region;
     region.left = args->inNum0;
     region.top = args->inNum1;
-    region.width = args->inNum2; 
+    region.width = args->inNum2;
     region.height = args->inNum3;
     pixelmap->crop(region);
     return OHOS_IMAGE_RESULT_SUCCESS;
@@ -363,7 +364,7 @@ static const std::map<int32_t, PixelMapNapiCtxFunc> g_CtxFunctions = {
     {CTX_FUNC_UNACCESS_PIXELS, PixelMapNapiUnAccessPixels},
 };
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t PixelMapNapiNativeEnvCall(int32_t mode, napi_env env, PixelMapNapiArgs* args)
 {
     auto funcSearch = g_EnvFunctions.find(mode);
@@ -373,7 +374,7 @@ int32_t PixelMapNapiNativeEnvCall(int32_t mode, napi_env env, PixelMapNapiArgs* 
     return funcSearch->second(env, args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNapiArgs* args)
 {
     auto funcSearch = g_CtxFunctions.find(mode);
@@ -383,7 +384,7 @@ int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNa
     return funcSearch->second(native, args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 PixelMapNapi* PixelMapNapi_Unwrap(napi_env env, napi_value value)
 {
     napi_valuetype valueType;

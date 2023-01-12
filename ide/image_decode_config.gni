@@ -26,3 +26,4 @@ image_decode_windows_defines = [ "_WIN32" ]
 image_decode_mac_defines = [ "_APPLE" ]
 image_decode_ios_defines = [ "_IOS" ]
 image_decode_android_defines = [ "_ANDROID" ]
+image_subsystem = "//foundation/multimedia/image_framework"

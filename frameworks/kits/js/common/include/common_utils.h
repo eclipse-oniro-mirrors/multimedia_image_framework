@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_
 #define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_
 
-#define NDK_EXPORT __attribute__((visibility("default")))
+// Media Image Development Kit
+#define MIDK_EXPORT __attribute__((visibility("default")))
 
 #endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_

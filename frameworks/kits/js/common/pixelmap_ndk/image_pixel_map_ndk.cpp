@@ -28,7 +28,7 @@ struct NativePixelMap {
     PixelMapNapi* napi = nullptr;
 };
 
-NDK_EXPORT
+MIDK_EXPORT
 NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
 {
     PixelMapNapi* napi = PixelMapNapi_Unwrap(env, source);
@@ -40,7 +40,7 @@ NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
     return result.release();
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res)
 {
@@ -57,7 +57,7 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE, env, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha)
 {
     PixelMapNapiArgs args;
@@ -67,7 +67,7 @@ int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_va
 }
 
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_GetBytesNumberPerRow(const NativePixelMap* native, int32_t* num)
 {
     if (native == nullptr || native->napi == nullptr) {
@@ -78,10 +78,9 @@ int32_t OH_PixelMap_GetBytesNumberPerRow(const NativePixelMap* native, int32_t* 
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_ROW_BYTES, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_GetIsEditable(const NativePixelMap* native, int32_t* editable)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -90,10 +89,9 @@ int32_t OH_PixelMap_GetIsEditable(const NativePixelMap* native, int32_t* editabl
     return PixelMapNapiNativeCtxCall(CTX_FUNC_IS_EDITABLE, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_IsSupportAlpha(const NativePixelMap* native, int32_t* alpha)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -102,10 +100,9 @@ int32_t OH_PixelMap_IsSupportAlpha(const NativePixelMap* native, int32_t* alpha)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_IS_SUPPORT_ALPHA, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_SetAlphaAble(const NativePixelMap* native, int32_t alpha)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -114,10 +111,9 @@ int32_t OH_PixelMap_SetAlphaAble(const NativePixelMap* native, int32_t alpha)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_ALPHAABLE, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_GetDensity(const NativePixelMap* native, int32_t* density)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -126,10 +122,9 @@ int32_t OH_PixelMap_GetDensity(const NativePixelMap* native, int32_t* density)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_DENSITY, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_SetDensity(const NativePixelMap* native, int32_t density)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -138,10 +133,9 @@ int32_t OH_PixelMap_SetDensity(const NativePixelMap* native, int32_t density)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_DENSITY, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -150,10 +144,9 @@ int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_OPACITY, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -163,10 +156,9 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_Translate(const NativePixelMap* native, float x, float y)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -176,10 +168,9 @@ int32_t OH_PixelMap_Translate(const NativePixelMap* native, float x, float y)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_TRANSLATE, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -188,10 +179,9 @@ int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_ROTATE, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -201,10 +191,9 @@ int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_FLIP, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int32_t width, int32_t height)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -216,10 +205,9 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
     return PixelMapNapiNativeCtxCall(CTX_FUNC_CROP, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -228,10 +216,9 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo 
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_IMAGE_INFO, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -240,10 +227,9 @@ int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
     return PixelMapNapiNativeCtxCall(CTX_FUNC_ACCESS_PIXELS, native->napi, &args);
 }
 
-NDK_EXPORT
+MIDK_EXPORT
 int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
 {
-    
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }

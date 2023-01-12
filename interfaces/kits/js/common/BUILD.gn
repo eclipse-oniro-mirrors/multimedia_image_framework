@@ -131,7 +131,7 @@ if (use_clang_ios) {
     sources = [
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
@@ -168,7 +168,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
