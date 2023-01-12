@@ -212,7 +212,6 @@ static int32_t PixelMapNapiGetDensity(PixelMapNapi* native, PixelMapNapiArgs* ar
 
 static int32_t PixelMapNapiSetDensity(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -231,7 +230,6 @@ static int32_t PixelMapNapiSetDensity(PixelMapNapi* native, PixelMapNapiArgs* ar
 
 static int32_t PixelMapNapiSetOpacity(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -255,7 +253,6 @@ static int32_t PixelMapNapiScale(PixelMapNapi* native, PixelMapNapiArgs* args)
 
 static int32_t PixelMapNapiTranslate(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -267,7 +264,6 @@ static int32_t PixelMapNapiTranslate(PixelMapNapi* native, PixelMapNapiArgs* arg
 
 static int32_t PixelMapNapiRotate(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -279,7 +275,6 @@ static int32_t PixelMapNapiRotate(PixelMapNapi* native, PixelMapNapiArgs* args)
 
 static int32_t PixelMapNapiFlip(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -291,7 +286,6 @@ static int32_t PixelMapNapiFlip(PixelMapNapi* native, PixelMapNapiArgs* args)
 
 static int32_t PixelMapNapiCrop(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -307,7 +301,6 @@ static int32_t PixelMapNapiCrop(PixelMapNapi* native, PixelMapNapiArgs* args)
 
 static int32_t PixelMapNapiGetImageInfo(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr || args->outInfo == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -324,7 +317,6 @@ static int32_t PixelMapNapiGetImageInfo(PixelMapNapi* native, PixelMapNapiArgs* 
 
 static int32_t PixelMapNapiAccessPixels(PixelMapNapi* native, PixelMapNapiArgs* args)
 {
-
     auto pixelmap = CheckAndGetPixelMap(native, args);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
