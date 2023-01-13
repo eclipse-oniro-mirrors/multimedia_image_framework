@@ -55,6 +55,7 @@ ohos_shared_library("jpegplugin") {
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
     "//third_party/libexif",
+    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
 
   if (use_mingw_win) {
@@ -170,6 +171,7 @@ ohos_shared_library("jpegplugin") {
 
     external_deps = [
       "c_utils:utils",
+      "hitrace_native:hitrace_meter",
       "hiviewdfx_hilog_native:libhilog",
     ]
   }
