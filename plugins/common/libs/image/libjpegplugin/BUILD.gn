@@ -55,7 +55,6 @@ ohos_shared_library("jpegplugin") {
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
     "//third_party/libexif",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
 
   if (use_mingw_win) {
