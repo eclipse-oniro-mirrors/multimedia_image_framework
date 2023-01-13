@@ -240,7 +240,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     } else {
         HiLog::Debug(LABEL, "error : request buffer is null");
     }
-    if (buffer->GetVirAddr() != nullptr) {
+    if (buffer != nullptr && buffer->GetVirAddr() != nullptr) {
         bufferCreatorMap_.insert(
             std::map<uint8_t*, ImageCreator*>::value_type(static_cast<uint8_t*>(buffer->GetVirAddr()), this));
     }
