@@ -15,6 +15,7 @@
 
 #include "jpeg_decoder.h"
 #include <map>
+#include "hitrace_meter.h"
 #include "image_trace.h"
 #include "jerror.h"
 #include "media_errors.h"
