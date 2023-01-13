@@ -221,19 +221,16 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
 
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
-
     status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (status != napi_ok) {
         std::string errMsg = "Invailed arg counts ";
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             errMsg.append(std::to_string(argc)));
     }
-
     if (argc != ARGS4) {
         IMAGE_ERR("Invailed arg counts %{public}zu", argc);
         return result;
     }
-
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype argvType = ImageNapiUtils::getType(env, argv[i]);
         if (argvType != napi_number) {
@@ -249,7 +246,6 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
                 errMsg.append(std::to_string(i)).append(" : ").append(std::to_string(status)));
         }
     }
-
     if (isTest(args)) {
         g_creatorTest = true;
     }
@@ -267,7 +263,6 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
             IMAGE_ERR("New instance could not be obtained");
         }
     }
-
     IMAGE_ERR("Failed to get reference of constructor");
     return result;
 }
@@ -317,7 +312,6 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
     ic.argc = args.argc;
     ic.argv.resize(ic.argc);
     napi_get_undefined(args.env, &ic.result);
-
     IMG_NAPI_CHECK_RET(CheckArgs(args), ic.result);
 
     IMG_JS_ARGS(args.env, args.info, ic.status, ic.argc, &(ic.argv[0]), ic.thisVar);
@@ -333,11 +327,9 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
 
         IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->constructor_),
             ic.result, IMAGE_ERR("fail to unwrap context"));
-
         if (ic.context->constructor_ == nullptr) {
             return ic.result;
         }
-
         if (!g_creatorTest) {
             ic.context->creator_ = ic.context->constructor_->imageCreator_;
 
@@ -350,7 +342,6 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
             return ic.result;
         }
     }
-
     if (args.async == CreatorCallType::ASYNC) {
         if (args.asyncLater) {
             args.nonAsyncBack(args, ic);
@@ -368,7 +359,6 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
     } else {
         args.nonAsyncBack(args, ic);
     }
-
     IMAGE_FUNCTION_OUT();
     return ic.result;
 }
