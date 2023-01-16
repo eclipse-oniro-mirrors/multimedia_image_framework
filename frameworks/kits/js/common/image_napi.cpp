@@ -716,13 +716,13 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
     IMAGE_FUNCTION_IN();
     napi_value result;
     napi_get_undefined(env, &result);
-    if (g_receiverTest) {
-        TestGetComponentCallBack(env, status, context);
-        return;
-    }
     if (context == nullptr || context->constructor_ == nullptr ||
         context->constructor_->sSurfaceBuffer_ == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
+        return;
+    }
+    if (g_receiverTest) {
+        TestGetComponentCallBack(env, status, context);
         return;
     }
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
