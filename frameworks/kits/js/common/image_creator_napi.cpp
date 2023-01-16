@@ -201,7 +201,7 @@ void ImageCreatorNapi::Destructor(napi_env env, void *nativeObject, void *finali
 {
 }
 
-static bool isTest(int32_t* args)
+static bool isTest(const int32_t* args)
 {
     if ((args[PARAM0] ==  TEST_WIDTH) &&
         (args[PARAM1] ==  TEST_HEIGHT) &&

@@ -697,6 +697,10 @@ static inline bool IsYCbCr422SP(int32_t format)
 }
 static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "Invalid input context");
+        return;
+    }
     napi_value result;
     napi_value array;
     void *nativePtr = nullptr;
