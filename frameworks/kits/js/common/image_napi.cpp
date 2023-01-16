@@ -697,6 +697,10 @@ static inline bool IsYCbCr422SP(int32_t format)
 }
 static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "Invalid input context");
+        return;
+    }
     napi_value result;
     napi_value array;
     void *nativePtr = nullptr;
@@ -716,13 +720,13 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
     IMAGE_FUNCTION_IN();
     napi_value result;
     napi_get_undefined(env, &result);
+    if (g_receiverTest) {
+        TestGetComponentCallBack(env, status, context);
+        return;
+    }
     if (context == nullptr || context->constructor_ == nullptr ||
         context->constructor_->sSurfaceBuffer_ == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
-        return;
-    }
-    if (g_receiverTest) {
-        TestGetComponentCallBack(env, status, context);
         return;
     }
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
