@@ -233,6 +233,28 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetImageSizeTest007
+ * @tc.desc: Test of GetImageSize, cover code branch: if (state_ >= PngDecodingState::BASE_INFO_PARSED) branch: true
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetImageSizeTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest007 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(2);
+    mock->SetReturn(true);
+    pngDecoder->SetSource(*mock.get());
+    DecodeContext context;
+    pngDecoder->Decode(2, context);
+    ImagePlugin::PlSize plSize;
+    pngDecoder->GetImageSize(0, plSize);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest007 end";
+}
+
+/**
  * @tc.name: SetDecodeOptionsTest001
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
@@ -317,6 +339,182 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SetDecodeOptionsTest005
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest005 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest005 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest006
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest006 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PlPixelFormat::RGB_888;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest006 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest007
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest007 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PlPixelFormat::RGBA_F16;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest007 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest008
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest008 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PlPixelFormat::BGRA_8888;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest008 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest009
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest009 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat = PlPixelFormat::ARGB_8888;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest009 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest010
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest010 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredSize.width = 0;
+    opts.desiredSize.height = 0;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest010 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest011
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest011 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredSize.width = 0;
+    opts.desiredSize.height = 1;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest011 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest012
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest012 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    PixelDecodeOptions opts;
+    opts.desiredSize.width = 1;
+    PlImageInfo info;
+    pngDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest012 end";
+}
+
+/**
  * @tc.name: DecodeTest001
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
@@ -357,6 +555,48 @@ HWTEST_F(PngDecoderTest, DecodeTest002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: DecodeTest003
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    DecodeContext context;
+    pngDecoder->Decode(2, context);
+    pngDecoder->Decode(2, context);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest003 end";
+}
+
+/**
+ * @tc.name: DecodeTest004
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest004 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    DecodeContext context;
+    pngDecoder->Reset();
+    pngDecoder->Decode(2, context);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest004 end";
+}
+
+/**
  * @tc.name: HasProperty001
  * @tc.desc: test HasProperty
  * @tc.type: FUNC
@@ -373,7 +613,7 @@ HWTEST_F(PngDecoderTest, HasProperty001, TestSize.Level3)
 
 /**
  * @tc.name: PromoteIncrementalDecodeTest001
- * @tc.desc: Test of Decode
+ * @tc.desc: Test of PromoteIncrementalDecode
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
@@ -393,7 +633,7 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest001, TestSize.Level3)
 
 /**
  * @tc.name: PromoteIncrementalDecodeTest002
- * @tc.desc: Test of Decode
+ * @tc.desc: Test of PromoteIncrementalDecode
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest002, TestSize.Level3)
@@ -413,7 +653,7 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest002, TestSize.Level3)
 
 /**
  * @tc.name: PromoteIncrementalDecodeTest003
- * @tc.desc: Test of Decode
+ * @tc.desc: Test of PromoteIncrementalDecode
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
@@ -428,6 +668,47 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest003 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest004
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest004 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    ProgDecodeContext context;
+    context.decodeContext.allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    pngDecoder->PromoteIncrementalDecode(0, context);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest004 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest005 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    ProgDecodeContext context;
+    context.decodeContext.allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    pngDecoder->Reset();
+    pngDecoder->PromoteIncrementalDecode(0, context);
+    bool result = (pngDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest005 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
