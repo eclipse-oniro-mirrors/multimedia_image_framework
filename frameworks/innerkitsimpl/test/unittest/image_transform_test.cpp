@@ -468,6 +468,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0015, TestSize.Level3)
     int32_t height = 4;
     inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
+    ASSERT_EQ(outPutInfo.data, nullptr);
     BasicTransformer trans;
     uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
     ASSERT_EQ(res, ERR_IMAGE_ALLOC_MEMORY_FAILED);
@@ -486,10 +487,14 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0016, TestSize.Level3)
     inPutInfo.imageInfo.size.width = 1024 * 100;
     inPutInfo.imageInfo.size.height = 1024 * 10;
     inPutInfo.imageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
     PixmapInfo outPutInfo;
     ASSERT_EQ(outPutInfo.data, nullptr);
     BasicTransformer trans;
-    trans.TransformPixmap(inPutInfo, outPutInfo);
+    uint32_t res = trans.TransformPixmap(inPutInfo, outPutInfo);
+    ASSERT_EQ(res, ERR_IMAGE_ALLOC_MEMORY_FAILED);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0016 end";
 }
 
@@ -563,6 +568,30 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0019, TestSize.Level3)
     BasicTransformer trans;
     trans.TransformPixmap(inPutInfo, outPutInfo);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0019 end";
+}
+
+/**
+ * @tc.name: ImageTransformTest0020
+ * @tc.desc:TransformPixmap RGBA_F16
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageTransformTest, ImageTransformTest0020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0020 start";
+    PixmapInfo inPutInfo;
+    inPutInfo.imageInfo.size.width = 3;
+    inPutInfo.imageInfo.size.height = 4;
+    inPutInfo.imageInfo.pixelFormat = PixelFormat::RGBA_F16;
+    int32_t width = 3;
+    int32_t height = 4;
+    inPutInfo.data = new uint8_t[width * height * 4];
+    PixmapInfo outPutInfo;
+    outPutInfo.imageInfo.size.width = 3;
+    outPutInfo.imageInfo.size.height = 4;
+
+    BasicTransformer trans;
+    trans.TransformPixmap(inPutInfo, outPutInfo);
+    GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0020 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

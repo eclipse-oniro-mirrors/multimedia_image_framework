@@ -465,6 +465,96 @@ HWTEST_F(PostProcTest, PostProcTest0016, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PostProcTest0017
+ * @tc.desc: test ConvertProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0016 start";
+    Rect cropRect;
+    cropRect.top = 0;
+    cropRect.width = 100;
+    cropRect.left = 0;
+    cropRect.height = 200;
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 0;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 0;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 100;
+    decodeOpts.desiredSize.height = 200;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    ImageInfo srcImageInfo;
+    ImageInfo dstImageInfo;
+    pixelMap->GetImageInfo(srcImageInfo);
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    uint32_t ret = postProc.ConvertProc(cropRect, dstImageInfo, *pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0016 end";
+}
+
+/**
+ * @tc.name: PostProcTest0018
+ * @tc.desc: test ConvertProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0018 start";
+    Rect cropRect;
+    cropRect.top = 0;
+    cropRect.width = 100;
+    cropRect.left = 0;
+    cropRect.height = 200;
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 100;
+    decodeOpts.desiredSize.height = 200;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    ImageInfo srcImageInfo;
+    ImageInfo dstImageInfo;
+    pixelMap->GetImageInfo(srcImageInfo);
+    srcImageInfo.pixelFormat = PixelFormat::RGB_888;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    uint32_t ret = postProc.ConvertProc(cropRect, dstImageInfo, *pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0018 end";
+}
+
+/**
  * @tc.name: PostProcTest0027
  * @tc.desc:RotatePixelMap
  * @tc.type: FUNC
