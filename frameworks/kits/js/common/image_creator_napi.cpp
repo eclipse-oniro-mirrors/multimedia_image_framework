@@ -207,7 +207,7 @@ static bool isTest(const int32_t* args, const int32_t len)
         (args[PARAM1] ==  TEST_HEIGHT) &&
         (args[PARAM2] ==  TEST_FORMAT) &&
         (args[PARAM3] ==  TEST_CAPACITY) &&
-        (len == 4)) {
+        (len == ARGS4)) {
         return true;
     }
     return false;
