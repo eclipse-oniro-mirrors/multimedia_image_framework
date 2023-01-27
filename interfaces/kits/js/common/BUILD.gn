@@ -62,6 +62,7 @@ config("image_external_config") {
     "//third_party/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
     "//third_party/libexif",
+    "//third_party/zlib",
   ]
 
   if (use_mingw_win) {
@@ -128,6 +129,7 @@ if (use_clang_ios) {
   ohos_source_set("image") {
     public_configs = [ ":image_external_config" ]
     sources = [
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
@@ -162,6 +164,7 @@ if (use_clang_ios) {
     }
     public_configs = [ ":image_external_config" ]
     sources = [
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",

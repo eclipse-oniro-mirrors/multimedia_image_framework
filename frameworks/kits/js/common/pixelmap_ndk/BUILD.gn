@@ -27,7 +27,10 @@ ohos_shared_library("pixelmap_ndk") {
     "//third_party/node/src",
   ]
 
-  sources = [ "image_pixel_map_napi.cpp" ]
+  sources = [
+    "image_pixel_map_napi.cpp",
+    "image_pixel_map_ndk.cpp",
+  ]
 
   public_configs =
       [ "$SUBSYSTEM_DIR/interfaces/innerkits:image_external_config" ]
