@@ -27,6 +27,7 @@
 #include "plugin_utils.h"
 #include "png_format_agent.h"
 #include "raw_format_agent.h"
+#include "svg_format_agent.h"
 #include "string"
 #include "utility"
 #include "wbmp_format_agent.h"
@@ -47,6 +48,7 @@ PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::HeifFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::BmpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::RawFormatAgent)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::SvgFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WbmpFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS_END
 

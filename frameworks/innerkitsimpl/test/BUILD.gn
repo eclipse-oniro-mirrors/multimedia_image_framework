@@ -140,6 +140,7 @@ ohos_unittest("imagesourcetest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_source_webp_test.cpp",
+    "unittest/image_source_svg_test.cpp",
   ]
   if (DUAL_ADAPTER) {
     sources += [
@@ -361,7 +362,10 @@ ohos_unittest("formatagentplugintest") {
     "//commonlibrary/c_utils/base/include",
   ]
 
-  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/format_agent_plugin_test.cpp" ]
+  sources = [
+    "unittest/format_agent_plugin_svg_test.cpp",
+    "unittest/format_agent_plugin_test.cpp",
+  ]
 
   deps = [
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
@@ -559,15 +563,18 @@ ohos_unittest("pngtest") {
     "//commonlibrary/c_utils/base/include",
     "//third_party/libpng",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
+    "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
   ]
 
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/nine_path_listener_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/png_decoder_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/png_ninepatch_res_test.cpp",
+    "unittest/svg_decoder_test.cpp",
   ]
 
   deps = [
+    "$image_subsystem/plugins/common/libs/image/libsvgplugin:svgplugin",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",

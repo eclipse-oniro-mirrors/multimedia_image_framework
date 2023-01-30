@@ -31,6 +31,7 @@ ohos_shared_library("imageformatagent") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/raw_format_agent.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/wbmp_format_agent.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/webp_format_agent.cpp",
+    "src/svg_format_agent.cpp",
   ]
 
   include_dirs = [

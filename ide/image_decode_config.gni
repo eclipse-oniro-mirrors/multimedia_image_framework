@@ -31,3 +31,7 @@ image_oundation = "oundation"
 image_multimedia = "multimedia"
 image_dir = "image_framework"
 image_subsystem = "/$image_sep_f$image_oundation/$image_multimedia/$image_dir"
+graphic_multimedia = "graphic"
+graphic_dir = "graphic_2d"
+graphic_subsystem =
+    "/$image_sep_f$image_oundation/$graphic_multimedia/$graphic_dir"
