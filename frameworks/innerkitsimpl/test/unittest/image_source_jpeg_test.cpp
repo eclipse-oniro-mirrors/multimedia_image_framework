@@ -952,6 +952,53 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode010, TestSize.Level3)
 }
 
 /**
+ * @tc.name: JpegImageDecode011
+ * @tc.desc: PixelMap to tlv test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, JpegImageDecode011, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create new image source by correct jpeg file path and jpeg format hit.
+     * @tc.expected: step1. create new image source success.
+     */
+    uint32_t status = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HW_JPEG_PATH, opts, status);
+    ASSERT_EQ(status, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    /**
+     * @tc.steps: step2. decode created image source to pixel map by default decode options
+     * @tc.expected: step2. decode created image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, status);
+    HiLog::Debug(LABEL_TEST, "create pixel map ret=%{public}u.", status);
+    ASSERT_EQ(status, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    /**
+     * @tc.steps: step3. encode the pixel map to buffer.
+     * @tc.expected: step3. encode the pixel map to buffer success.
+     */
+    std::vector<uint8_t> buff;
+    bool res = pixelMap->EncodeTlv(buff);
+    ASSERT_EQ(res, true);
+
+    /**
+     * @tc.steps: step4. decode the pixel map from buffer.
+     * @tc.expected: step4. decode success and pack pixel map success and the jpeg compress file size not equals to 0.
+     */
+    PixelMap *pixelMap2 = PixelMap::DecodeTlv(buff);
+    std::unique_ptr<PixelMap> p(pixelMap2);
+    int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_HW_JPEG_FILE_PATH, std::move(p));
+    ASSERT_NE(packSize, 0);
+}
+
+/**
  * @tc.name: JpgImageCrop001
  * @tc.desc: Crop jpg image from istream source stream
  * @tc.type: FUNC
