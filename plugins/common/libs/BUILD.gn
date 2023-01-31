@@ -27,6 +27,8 @@ group("multimediaplugin") {
       "image/libpngplugin:pngpluginmetadata",
       "image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
+      "image/libsvgplugin:svgplugin",
+      "image/libsvgplugin:svgpluginmetadata",
       "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmpplugin",
       "//foundation/multimedia/image_framework/adapter/frameworks/libbmpplugin:bmppluginmetadata",
       "//foundation/multimedia/image_framework/adapter/frameworks/libwbmpplugin:wbmpplugin",
@@ -50,6 +52,8 @@ group("multimediaplugin") {
       "image/libpngplugin:pngpluginmetadata",
       "image/librawplugin:rawplugin",
       "image/librawplugin:rawpluginmetadata",
+      "image/libsvgplugin:svgplugin",
+      "image/libsvgplugin:svgpluginmetadata",
       "image/libwebpplugin:webpplugin",
       "image/libwebpplugin:webppluginmetadata",
 
