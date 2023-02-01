@@ -85,7 +85,7 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
                 return ERR_IMAGE_TRANSFORM;
             }
             info.baseDensity = opts.fitDensity;
-            pixelMap.SetImageInfo(info);
+            pixelMap.SetImageInfo(info, true);
         }
     }
     return SUCCESS;
