@@ -25,7 +25,6 @@
 
 namespace OHOS {
 namespace Media {
-class RosenImageWrapper;
 using TransColorProc = bool (*)(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
 using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
@@ -229,10 +228,6 @@ private:
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
     bool useSourceAsResponse_ = false;
-
-    // only used by rosen backend
-    std::shared_ptr<RosenImageWrapper> rosenImageWrapper_;
-    friend class PixelMapRosenUtils;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;

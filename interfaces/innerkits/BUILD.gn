@@ -13,7 +13,6 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
-import("//foundation/graphic/graphic_2d/graphic_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("image_external_config") {
@@ -292,7 +291,6 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
       ]
-      sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_map_rosen_utils.cpp" ]
 
       deps = [
         "//commonlibrary/c_utils/base:utils",
@@ -319,12 +317,6 @@ if (use_clang_ios) {
     } else {
       defines = [ "DUAL_ADAPTER" ]
       DUAL_ADAPTER = true
-
-      if (rs_enable_gpu) {
-        defines += [ "UPLOAD_GPU_ENABLED" ]
-      }
-
-      sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_map_rosen_utils.cpp" ]
 
       deps = [
         "//foundation/arkui/napi:ace_napi",
