@@ -20,6 +20,7 @@ group("image_framework") {
       "frameworks/innerkitsimpl/utils:image_utils",
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:image",
+      "interfaces/kits/js/common:image_napi",
     ]
   } else if (use_clang_android) {
     deps = [
@@ -33,6 +34,7 @@ group("image_framework") {
       "frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:image",
+      "interfaces/kits/js/common:image_napi",
     ]
   }
 }
