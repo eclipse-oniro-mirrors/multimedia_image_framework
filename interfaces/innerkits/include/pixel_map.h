@@ -105,6 +105,7 @@ public:
     NATIVEEXPORT void FreePixelMap();
     NATIVEEXPORT AllocatorType GetAllocatorType();
     NATIVEEXPORT void *GetFd() const;
+    NATIVEEXPORT void SetFreePixelMapProc(CustomFreePixelMap func);
 
     NATIVEEXPORT uint32_t GetCapacity()
     {
@@ -225,6 +226,7 @@ private:
     TransColorProc colorProc_ = nullptr;
     void *context_ = nullptr;
     CustomFreePixelMap custFreePixelMap_ = nullptr;
+    CustomFreePixelMap freePixelMapProc_ = nullptr;
     AllocatorType allocatorType_ = AllocatorType::HEAP_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
