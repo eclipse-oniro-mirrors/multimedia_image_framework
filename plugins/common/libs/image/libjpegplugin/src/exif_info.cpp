@@ -27,34 +27,36 @@ namespace ImagePlugin {
 namespace {
     using namespace OHOS::HiviewDFX;
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "Exif" };
-    static const int PARSE_EXIF_SUCCESS = 0;
-    static const int PARSE_EXIF_DATA_ERROR = 10001;
-    static const int PARSE_EXIF_IFD_ERROR = 10002;
-    static const int BUFFER_POSITION_4 = 4;
-    static const int BUFFER_POSITION_5 = 5;
-    static const int BUFFER_POSITION_6 = 6;
-    static const int BUFFER_POSITION_7 = 7;
-    static const int BUFFER_POSITION_8 = 8;
-    static const int BUFFER_POSITION_9 = 9;
-    static const int BUFFER_POSITION_12 = 12;
-    static const int BUFFER_POSITION_13 = 13;
-    static const int LENGTH_OFFSET_2 = 2;
-    static const int BYTE_COUNTS_12 = 12;
-    static const int MOVE_OFFSET_8 = 8;
-    static const int MOVE_OFFSET_16 = 16;
-    static const int MOVE_OFFSET_24 = 24;
-    static const int CONSTANT_2 = 2;
-    static const int CONSTANT_3 = 3;
-    static const int CONSTANT_4 = 4;
-    static const unsigned long MAX_FILE_SIZE = 1000 * 1000 * 1000;
+    static constexpr int PARSE_EXIF_SUCCESS = 0;
+    static constexpr int PARSE_EXIF_DATA_ERROR = 10001;
+    static constexpr int PARSE_EXIF_IFD_ERROR = 10002;
+    static constexpr int BUFFER_POSITION_4 = 4;
+    static constexpr int BUFFER_POSITION_5 = 5;
+    static constexpr int BUFFER_POSITION_6 = 6;
+    static constexpr int BUFFER_POSITION_7 = 7;
+    static constexpr int BUFFER_POSITION_8 = 8;
+    static constexpr int BUFFER_POSITION_9 = 9;
+    static constexpr int BUFFER_POSITION_12 = 12;
+    static constexpr int BUFFER_POSITION_13 = 13;
+    static constexpr int LENGTH_OFFSET_2 = 2;
+    static constexpr int BYTE_COUNTS_12 = 12;
+    static constexpr int MOVE_OFFSET_8 = 8;
+    static constexpr int MOVE_OFFSET_16 = 16;
+    static constexpr int MOVE_OFFSET_24 = 24;
+    static constexpr int CONSTANT_2 = 2;
+    static constexpr int CONSTANT_3 = 3;
+    static constexpr int CONSTANT_4 = 4;
+    static constexpr unsigned long MAX_FILE_SIZE = 1000 * 1000 * 1000;
+    static constexpr uint32_t ERROR_PARSE_EXIF_FAILED = 1;
+    static constexpr uint32_t ERROR_NO_EXIF_TAGS = 2;
 
     /* raw EXIF header data */
     static const unsigned char exifHeader[] = {
         0xff, 0xd8, 0xff, 0xe1
     };
     /* Offset of tiff begin from jpeg file begin */
-    static const uint32_t TIFF_OFFSET_FROM_FILE_BEGIN = 12;
-    static const int PERMISSION_GPS_TYPE = 1;
+    static constexpr uint32_t TIFF_OFFSET_FROM_FILE_BEGIN = 12;
+    static constexpr int PERMISSION_GPS_TYPE = 1;
 
     static const struct TagEntry {
         /*! Tag ID. There may be duplicate tags when the same number is used for
@@ -276,7 +278,8 @@ EXIFInfo::EXIFInfo()
       isoSpeedRatings_(DEFAULT_EXIF_VALUE),
       sceneType_(DEFAULT_EXIF_VALUE),
       imageFileDirectory_(EXIF_IFD_COUNT),
-      exifData_(nullptr)
+      exifData_(nullptr),
+      isExifDataParsed_(false)
 {
 }
 
@@ -320,12 +323,18 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (imageFileDirectory_ == EXIF_IFD_COUNT) {
         return PARSE_EXIF_IFD_ERROR;
     }
+    isExifDataParsed_ = true;
     return PARSE_EXIF_SUCCESS;
 }
 
 int EXIFInfo::ParseExifData(const std::string &data)
 {
     return ParseExifData((const unsigned char *)data.data(), data.length());
+}
+
+bool EXIFInfo::IsExifDataParsed()
+{
+    return isExifDataParsed_;
 }
 
 void EXIFInfo::SetExifTagValues(const ExifTag &tag, const std::string &value)
@@ -1000,60 +1009,32 @@ void EXIFInfo::UpdateCacheExifData(FILE *fp)
     fileBuf = nullptr;
 }
 
-uint32_t EXIFInfo::GetRedactionArea(const int &fd,
-                                    const int &redactionType,
-                                    std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+uint32_t EXIFInfo::GetFilterArea(const uint8_t *buf,
+                                 const uint32_t &bufSize,
+                                 const int &privacyType,
+                                 std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    // Do not close origin fd by fclose function, so dup fd
-    FILE *file = fdopen(dup(fd), "rb");
-    if (file == nullptr) {
-        HiLog::Error(LABEL, "Error creating file %{public}d", fd);
-        return Media::ERR_MEDIA_IO_ABNORMAL;
-    }
-
-    // read jpeg file to buff
-    unsigned long fileLength = GetFileSize(file);
-    if (fileLength == 0 || fileLength > MAX_FILE_SIZE) {
-        HiLog::Error(LABEL, "Get file size failed.");
-        (void)fclose(file);
-        return Media::ERR_MEDIA_BUFFER_TOO_SMALL;
-    }
-
-    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
-    if (fileBuf == nullptr) {
-        HiLog::Error(LABEL, "Allocate buf for %{public}d failed.", fd);
-        (void)fclose(file);
-        return Media::ERR_IMAGE_MALLOC_ABNORMAL;
-    }
-
-    // Set current position to begin of file.
-    (void)fseek(file, 0L, 0);
-    if (fread(fileBuf, fileLength, 1, file) != 1) {
-        HiLog::Error(LABEL, "Read %{public}d failed.", fd);
-        ReleaseSource(&fileBuf, &file);
-        return Media::ERR_MEDIA_READ_PARCEL_FAIL;
-    }
-
-    std::unique_ptr<ByteOrderedBuffer> byteOrderedBuffer = std::make_unique<ByteOrderedBuffer>(fileBuf, fileLength);
+    std::unique_ptr<ByteOrderedBuffer> byteOrderedBuffer = std::make_unique<ByteOrderedBuffer>(buf, bufSize);
     byteOrderedBuffer->GenerateDEArray();
     if (byteOrderedBuffer->directoryEntryArray_.size() == 0) {
         HiLog::Error(LABEL, "Read Exif info range failed.");
-        ReleaseSource(&fileBuf, &file);
-        return Media::ERR_MEDIA_READ_PARCEL_FAIL;
+        return ERROR_PARSE_EXIF_FAILED;
     }
 
-    GetAreaFromExifEntries(redactionType, byteOrderedBuffer->directoryEntryArray_, ranges);
-    // close file
-    (void)fclose(file);
-    free(fileBuf);
+    GetAreaFromExifEntries(privacyType, byteOrderedBuffer->directoryEntryArray_, ranges);
+    if (ranges.size() == 0) {
+        HiLog::Error(LABEL, "There is no exif info need filtered in this image.");
+        return ERROR_NO_EXIF_TAGS;
+    }
+
     return Media::SUCCESS;
 }
 
-void EXIFInfo::GetAreaFromExifEntries(const int &redactionType,
+void EXIFInfo::GetAreaFromExifEntries(const int &privacyType,
                                       const std::vector<DirectoryEntry> &entryArray,
                                       std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    if (redactionType == PERMISSION_GPS_TYPE) {
+    if (privacyType == PERMISSION_GPS_TYPE) {
         for (size_t i = 0; i < entryArray.size(); i++) {
             if (entryArray[i].ifd == EXIF_IFD_GPS) {
                 std::pair<uint32_t, uint32_t> range =
@@ -1064,7 +1045,7 @@ void EXIFInfo::GetAreaFromExifEntries(const int &redactionType,
     }
 }
 
-ByteOrderedBuffer::ByteOrderedBuffer(unsigned char *fileBuf, uint32_t bufferLength)
+ByteOrderedBuffer::ByteOrderedBuffer(const uint8_t *fileBuf, uint32_t bufferLength)
     : buf_(fileBuf), bufferLength_(bufferLength)
 {
     if (bufferLength >= BUFFER_POSITION_12 && bufferLength >= BUFFER_POSITION_13) {
@@ -1076,10 +1057,7 @@ ByteOrderedBuffer::ByteOrderedBuffer(unsigned char *fileBuf, uint32_t bufferLeng
     }
 }
 
-ByteOrderedBuffer::~ByteOrderedBuffer()
-{
-    buf_ = nullptr;
-}
+ByteOrderedBuffer::~ByteOrderedBuffer() {}
 
 void ByteOrderedBuffer::GenerateDEArray()
 {
@@ -1148,8 +1126,7 @@ void ByteOrderedBuffer::GetDataRangeFromDE(const ExifIfd &ifd, const int16_t &co
         uint32_t nextEntryOffset = Peek() + CONSTANT_4;
 
         uint32_t byteCount = 0;
-        bool valid = false;
-        valid = SetDEDataByteCount(tagNumber, dataFormat, numberOfComponents, byteCount);
+        bool valid = SetDEDataByteCount(tagNumber, dataFormat, numberOfComponents, byteCount);
         if (!valid) {
             curPosition_ = static_cast<uint32_t>(nextEntryOffset);
             continue;
