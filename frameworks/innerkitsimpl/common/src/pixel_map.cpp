@@ -1393,7 +1393,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {
         if (pixelMap->freePixelMapProc_ != nullptr) {
-            pixelMap->freePixelMapProc_(base, context, bufferSize)
+            pixelMap->freePixelMapProc_(base, context, bufferSize);
         }
         ReleaseMemory(allocType, base, context, bufferSize);
         if (context != nullptr) {
