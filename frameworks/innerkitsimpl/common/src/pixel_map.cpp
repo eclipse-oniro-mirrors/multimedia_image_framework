@@ -68,7 +68,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 
     if (freePixelMapProc_ != nullptr) {
-        freePixelMapProc_(data_, context_, pixelsSize_)
+        freePixelMapProc_(data_, context_, pixelsSize_);
     }
     
     switch (allocatorType_) {
