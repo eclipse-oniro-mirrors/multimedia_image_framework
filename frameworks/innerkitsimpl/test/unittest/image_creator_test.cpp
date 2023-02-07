@@ -148,5 +148,116 @@ HWTEST_F(ImageCreatorTest, ReleaseCreator001, TestSize.Level3)
     creat.ReleaseCreator();
     GTEST_LOG_(INFO) << "ImageCreatorTest: ReleaseCreator001 end";
 }
+
+/**
+ * @tc.name: OnBufferAvailable001
+ * @tc.desc: test OnBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferAvailable001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<ImageCreatorSurfaceListener> listener = new ImageCreatorSurfaceListener();
+    listener->ic_ = creator;
+    listener->OnBufferAvailable();
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable001 end";
+}
+
+/**
+ * @tc.name: DequeueImage001
+ * @tc.desc: test DequeueImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, DequeueImage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueImage001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueImage001 end";
+}
+
+/**
+ * @tc.name: OnBufferRelease001
+ * @tc.desc: test OnBufferRelease
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferRelease001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    (void)ImageCreator::OnBufferRelease(buffer);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease001 end";
+}
+
+/**
+ * @tc.name: QueueImage001
+ * @tc.desc: test QueueImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, QueueImage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    creator->QueueImage(buffer);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueImage001 end";
+}
+
+/**
+ * @tc.name: SaveSTP002
+ * @tc.desc: test SaveSTP
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, SaveSTP003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSTP003 start";
+
+    uint32_t color[64] = {};
+    uint32_t colorlength = 64;
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.height = 8;
+    opts.size.width = 8;
+
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorlength, opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    int64_t bufferSize = 2 * 1024 * 1024;
+    uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
+
+    ImagePacker imagePacker;
+    PackOption option;
+    option.format = ImageReceiver::OPTION_FORMAT;
+    option.numberHint = ImageReceiver::OPTION_NUMBERHINT;
+    option.quality = ImageReceiver::OPTION_QUALITY;
+    std::set<std::string> formats;
+
+    uint32_t ret = imagePacker.GetSupportedFormats(formats);
+    ASSERT_EQ(ret, SUCCESS);
+
+    imagePacker.StartPacking(buffer, bufferSize, option);
+    imagePacker.AddImage(*pixelMap);
+    int64_t packedSize = 0;
+    imagePacker.FinalizePacking(packedSize);
+    ASSERT_NE(packedSize, 0);
+
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(8, 8, 3, 1);
+    ASSERT_NE(creator, nullptr);
+
+    int32_t status = creator->SaveSTP(color, buffer, colorlength, opts);
+    ASSERT_EQ(status, ERR_MEDIA_INVALID_VALUE);
+
+    free(buffer);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSTP003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
