@@ -66,6 +66,11 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     if (data_ == nullptr) {
         return;
     }
+
+    if (freePixelMapProc_ != nullptr) {
+        freePixelMapProc_(data_, context_, pixelsSize_);
+    }
+    
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
             free(data_);
@@ -105,6 +110,11 @@ void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
         delete fd;
     }
 #endif
+}
+
+void PixelMap::SetFreePixelMapProc(CustomFreePixelMap func)
+{
+    freePixelMapProc_ = func;
 }
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
@@ -1382,6 +1392,9 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {
+        if (pixelMap->freePixelMapProc_ != nullptr) {
+            pixelMap->freePixelMapProc_(base, context, bufferSize);
+        }
         ReleaseMemory(allocType, base, context, bufferSize);
         if (context != nullptr) {
             delete static_cast<int32_t *>(context);
