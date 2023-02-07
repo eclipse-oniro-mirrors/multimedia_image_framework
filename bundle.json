@@ -37,8 +37,7 @@
           "giflib",
           "bounds_checking_function",
           "expat",
-		  "json",
-          "boost"
+	  "json"
         ]
       },
       "build": {
@@ -75,6 +74,15 @@
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/js/common/include"
             },
             "name": "//foundation/multimedia/image_framework/interfaces/kits/js/common:image"
+                },
+                {
+                    "header": {
+                        "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
+                        "header_files": [
+                            "image_pixel_map_napi.h"
+                        ]
+                    },
+                    "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk"
           }
         ],
         "test": [

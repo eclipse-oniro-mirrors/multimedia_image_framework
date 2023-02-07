@@ -62,6 +62,7 @@ config("image_external_config") {
     "//third_party/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
     "//third_party/libexif",
+    "//third_party/zlib",
   ]
 
   if (use_mingw_win) {
@@ -128,6 +129,7 @@ if (use_clang_ios) {
   ohos_source_set("image") {
     public_configs = [ ":image_external_config" ]
     sources = [
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
@@ -153,6 +155,35 @@ if (use_clang_ios) {
     part_name = "multimedia_image_framework"
   }
 } else {
+  ohos_shared_library("image_napi") {
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        debug = false
+      }
+    }
+    sources = [
+      "$image_subsystem/frameworks/kits/js/common/native_module_ohos_image.cpp",
+    ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    deps = [
+      ":image",
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    ]
+
+    external_deps = [ "napi:ace_napi" ]
+
+    output_name = "libimage"
+    relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+
   ohos_shared_library("image") {
     if (!use_clang_android && !use_clang_ios) {
       sanitize = {
@@ -162,13 +193,13 @@ if (use_clang_ios) {
     }
     public_configs = [ ":image_external_config" ]
     sources = [
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
     ]
 
@@ -211,7 +242,7 @@ if (use_clang_ios) {
       "hichecker_native:libhichecker",
       "hitrace_native:hitrace_meter",
     ]
-    relative_install_dir = "module/multimedia"
+    output_name = "libimage_napi"
     subsystem_name = "multimedia"
     part_name = "multimedia_image_framework"
   }

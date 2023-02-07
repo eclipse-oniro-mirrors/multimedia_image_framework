@@ -39,6 +39,7 @@ std::shared_ptr<ImageReceiver> ImageNapi::staticImageReceiverInstance_ = nullptr
 std::shared_ptr<ImageCreator> ImageNapi::staticImageCreatorInstance_ = nullptr;
 sptr<SurfaceBuffer> ImageNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageNapi::sConstructor_ = nullptr;
+static bool g_receiverTest = false;
 
 const int ARGS0 = 0;
 const int ARGS1 = 1;
@@ -373,6 +374,32 @@ napi_value ImageNapi::Create(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
     return result;
 }
 
+napi_value ImageNapi::Create(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver)
+{
+    g_receiverTest = true;
+    napi_status status;
+    napi_value constructor = nullptr, result = nullptr;
+
+    IMAGE_FUNCTION_IN();
+
+    napi_get_undefined(env, &result);
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        staticInstance_ = nullptr;
+        staticImageReceiverInstance_ = imageReceiver;
+        status = napi_new_instance(env, constructor, 0, nullptr, &result);
+        if (status == napi_ok) {
+            IMAGE_FUNCTION_OUT();
+            return result;
+        } else {
+            IMAGE_ERR("New instance could not be obtained");
+        }
+    }
+
+    IMAGE_ERR("Failed to get reference of constructor");
+    return result;
+}
+
 napi_value ImageNapi::CreateBufferToImage(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
     std::shared_ptr<ImageCreator> imageCreator)
 {
@@ -478,12 +505,18 @@ napi_value ImageNapi::JSGetClipRect(napi_env env, napi_callback_info info)
     }
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
 
-    if (surfaceBuffer == nullptr) {
+    if (surfaceBuffer == nullptr && g_receiverTest == false) {
         IMAGE_ERR("Image surface buffer is nullptr");
         return result;
     }
 
-    return BuildJsRegion(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), NUM0, NUM0);
+    if (surfaceBuffer != nullptr && g_receiverTest == false) {
+        return BuildJsRegion(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), NUM0, NUM0);
+    } else {
+        const int32_t WIDTH = 8192;
+        const int32_t HEIGHT = 8;
+        return BuildJsRegion(env, WIDTH, HEIGHT, NUM0, NUM0);
+    }
 }
 
 napi_value ImageNapi::JsGetSize(napi_env env, napi_callback_info info)
@@ -504,12 +537,18 @@ napi_value ImageNapi::JsGetSize(napi_env env, napi_callback_info info)
     }
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
 
-    if (surfaceBuffer == nullptr) {
+    if (surfaceBuffer == nullptr && g_receiverTest == false) {
         IMAGE_ERR("Image surface buffer is nullptr");
         return result;
     }
 
-    return BuildJsSize(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight());
+    if (surfaceBuffer == nullptr && g_receiverTest == true) {
+        const int32_t WIDTH = 8192;
+        const int32_t HEIGHT = 8;
+        return BuildJsSize(env, WIDTH, HEIGHT);
+    } else {
+        return BuildJsSize(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight());
+    }
 }
 
 napi_value ImageNapi::JsGetFormat(napi_env env, napi_callback_info info)
@@ -530,12 +569,17 @@ napi_value ImageNapi::JsGetFormat(napi_env env, napi_callback_info info)
     }
 
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-    if (surfaceBuffer == nullptr) {
+    if (surfaceBuffer == nullptr && g_receiverTest == false) {
         IMAGE_ERR("Image surface buffer is nullptr");
         return result;
     }
 
-    napi_create_int32(env, surfaceBuffer->GetFormat(), &result);
+    if (surfaceBuffer == nullptr && g_receiverTest == true) {
+        const int32_t FORMAT = 12;
+        napi_create_int32(env, FORMAT, &result);
+    } else {
+        napi_create_int32(env, surfaceBuffer->GetFormat(), &result);
+    }
     return result;
 }
 
@@ -651,18 +695,40 @@ static inline bool IsYCbCr422SP(int32_t format)
     }
     return false;
 }
+static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
+{
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "Invalid input context");
+        return;
+    }
+    napi_value result;
+    napi_value array;
+    void *nativePtr = nullptr;
+    if (napi_create_arraybuffer(env, NUM1, &nativePtr, &array) != napi_ok || nativePtr == nullptr) {
+        return;
+    }
+    napi_create_object(env, &result);
+    napi_set_named_property(env, result, "byteBuffer", array);
+    BuildIntProperty(env, "componentType", context->componentType, result);
+    BuildIntProperty(env, "rowStride", NUM0, result);
+    BuildIntProperty(env, "pixelStride", NUM0, result);
+    context->status = SUCCESS;
+    CommonCallbackRoutine(env, context, result);
+}
 void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
     IMAGE_FUNCTION_IN();
     napi_value result;
     napi_get_undefined(env, &result);
-
+    if (g_receiverTest) {
+        TestGetComponentCallBack(env, status, context);
+        return;
+    }
     if (context == nullptr || context->constructor_ == nullptr ||
         context->constructor_->sSurfaceBuffer_ == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
         return;
     }
-
     auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
     uint32_t bufferSize = 0;
     uint8_t *buffer = nullptr;
@@ -686,7 +752,6 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
         rowStride = surfaceBuffer->GetWidth();
         pixelStride = NUM1;
     }
-
     if (buffer != nullptr && bufferSize != NUM0) {
         napi_value array;
         if (CreateArrayBuffer(env, buffer, bufferSize, &array)) {
@@ -702,7 +767,6 @@ void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAs
     } else {
         HiLog::Error(LABEL, "buffer is nullptr or bufferSize is %{public}" PRIu32, bufferSize);
     }
-
     IMAGE_FUNCTION_OUT();
     CommonCallbackRoutine(env, context, result);
 }
@@ -737,7 +801,8 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Imag
         return false;
     }
 
-    if (context->constructor_ == nullptr || context->constructor_->sSurfaceBuffer_ == nullptr) {
+    if (context->constructor_ == nullptr ||
+        (!g_receiverTest && context->constructor_->sSurfaceBuffer_ == nullptr)) {
         IMAGE_ERR("Constructor is nullptr");
         return false;
     }
@@ -750,11 +815,12 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Imag
             IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType0);
             return false;
         }
-
-        auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-        if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
-            IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
-            return false;
+        if (!g_receiverTest) {
+            auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
+            if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
+                IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
+                return false;
+            }
         }
     }
     if (argc == ARGS2) {

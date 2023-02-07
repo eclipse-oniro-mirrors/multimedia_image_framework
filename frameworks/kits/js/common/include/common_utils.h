@@ -13,25 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef PIXEL_MAP_ROSEN_UTILS_H_
-#define PIXEL_MAP_ROSEN_UTILS_H_
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_
 
-#include "pixel_map.h"
+// Media Image Development Kit
+#define MIDK_EXPORT __attribute__((visibility("default")))
 
-template <typename T>
-class sk_sp;
-class SkImage;
-class GrContext;
-
-namespace OHOS {
-namespace Media {
-class PixelMapRosenUtils {
-public:
-    static bool UploadToGpu(
-        std::shared_ptr<PixelMap> pixelMap, GrContext *context, bool buildMips, bool limitToMaxTextureSize = false);
-    static sk_sp<SkImage> ExtractSkImage(std::shared_ptr<PixelMap> pixelMap);
-};
-} // namespace Media
-} // namespace OHOS
-
-#endif // PIXEL_MAP_ROSEN_UTILS_H_
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_COMMON_UTILS_H_

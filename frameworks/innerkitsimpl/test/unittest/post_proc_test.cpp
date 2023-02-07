@@ -30,7 +30,6 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
-
 class PostProcTest : public testing::Test {
 public:
     PostProcTest() {}
@@ -344,6 +343,84 @@ HWTEST_F(PostProcTest, PostProcTest0011, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PostProcTest0012
+ * @tc.desc: test CenterScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0012 start";
+    int32_t width = 200;
+    int32_t height = 300;
+    InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    Size targetSize;
+    targetSize.width = 400;
+    targetSize.height = 600;
+    bool ret = postProc.CenterScale(targetSize, *pixelMap);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0012 end";
+}
+
+/**
+ * @tc.name: PostProcTest0013
+ * @tc.desc: test CenterScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0013 start";
+    int32_t width = 200;
+    int32_t height = 300;
+    InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    Size targetSize;
+    targetSize.width = 100;
+    targetSize.height = 600;
+    bool ret = postProc.CenterScale(targetSize, *pixelMap);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0013 end";
+}
+
+/**
+ * @tc.name: PostProcTest0014
+ * @tc.desc: test CenterScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0014 start";
+    int32_t width = 200;
+    int32_t height = 300;
+    InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = PixelFormat::ARGB_8888;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    Size targetSize;
+    targetSize.width = 400;
+    targetSize.height = 200;
+    bool ret = postProc.CenterScale(targetSize, *pixelMap);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0014 end";
+}
+
+/**
  * @tc.name: PostProcTest0016
  * @tc.desc: test ConvertProc
  * @tc.type: FUNC
@@ -385,6 +462,96 @@ HWTEST_F(PostProcTest, PostProcTest0016, TestSize.Level3)
     uint32_t ret = postProc.ConvertProc(cropRect, dstImageInfo, *pixelMap, srcImageInfo);
     ASSERT_NE(ret, -1);
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0016 end";
+}
+
+/**
+ * @tc.name: PostProcTest0017
+ * @tc.desc: test ConvertProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0016 start";
+    Rect cropRect;
+    cropRect.top = 0;
+    cropRect.width = 100;
+    cropRect.left = 0;
+    cropRect.height = 200;
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 0;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 0;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 100;
+    decodeOpts.desiredSize.height = 200;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    ImageInfo srcImageInfo;
+    ImageInfo dstImageInfo;
+    pixelMap->GetImageInfo(srcImageInfo);
+    srcImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    uint32_t ret = postProc.ConvertProc(cropRect, dstImageInfo, *pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0016 end";
+}
+
+/**
+ * @tc.name: PostProcTest0018
+ * @tc.desc: test ConvertProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0018 start";
+    Rect cropRect;
+    cropRect.top = 0;
+    cropRect.width = 100;
+    cropRect.left = 0;
+    cropRect.height = 200;
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 100;
+    decodeOpts.desiredSize.height = 200;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    PostProc postProc;
+    ImageInfo srcImageInfo;
+    ImageInfo dstImageInfo;
+    pixelMap->GetImageInfo(srcImageInfo);
+    srcImageInfo.pixelFormat = PixelFormat::RGB_888;
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    uint32_t ret = postProc.ConvertProc(cropRect, dstImageInfo, *pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0018 end";
 }
 
 /**
@@ -539,6 +706,147 @@ HWTEST_F(PostProcTest, PostProcTest0032, TestSize.Level3)
     bool ret = postProc.TranslatePixelMap(tX, tY, *pixelMap);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0032 end";
+}
+
+/**
+ * @tc.name: PostProcTest0033
+ * @tc.desc: test DecodePostProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0033, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0033 start";
+    DecodeOptions decodeOpts;
+    PixelMap pixelMap;
+    PostProc postProc;
+    FinalOutputStep finalOutputStep = FinalOutputStep::NO_CHANGE;
+    uint32_t errorCode = postProc.DecodePostProc(decodeOpts, pixelMap, finalOutputStep);
+    ASSERT_NE(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0033 end";
+}
+
+/**
+ * @tc.name: PostProcTest0034
+ * @tc.desc: test DecodePostProc MemoryUsagePreference is LOW_RAM
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0034, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0034 start";
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    decodeOpts.preference = MemoryUsagePreference::LOW_RAM;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    ImageInfo imageInfo;
+    imageInfo.baseDensity = 1;
+    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    pixelMap->SetImageInfo(imageInfo);
+
+    PostProc postProc;
+    FinalOutputStep finalOutputStep = FinalOutputStep::DENSITY_CHANGE;
+    errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), finalOutputStep);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0034 end";
+}
+
+/**
+ * @tc.name: PostProcTest0035
+ * @tc.desc: test DecodePostProc MemoryUsagePreference is DEFAULT
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0035, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0035 start";
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    ImageInfo imageInfo;
+    imageInfo.baseDensity = 1;
+    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    pixelMap->SetImageInfo(imageInfo);
+
+    PostProc postProc;
+    FinalOutputStep finalOutputStep = FinalOutputStep::DENSITY_CHANGE;
+    errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), finalOutputStep);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0035 end";
+}
+
+/**
+ * @tc.name: PostProcTest0036
+ * @tc.desc: test DecodePostProc AlphaType is IMAGE_ALPHA_TYPE_UNPREMUL
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0036, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0036 start";
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    ImageInfo imageInfo;
+    imageInfo.baseDensity = 1;
+    imageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    pixelMap->SetImageInfo(imageInfo);
+
+    PostProc postProc;
+    FinalOutputStep finalOutputStep = FinalOutputStep::DENSITY_CHANGE;
+    errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), finalOutputStep);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0036 end";
 }
 }
 }

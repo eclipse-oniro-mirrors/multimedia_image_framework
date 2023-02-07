@@ -98,6 +98,36 @@ struct OhosPixelMapInfo {
     int32_t pixelFormat;
 };
 
+struct NativePixelMap;
+
+typedef struct NativePixelMap NativePixelMap;
+
+enum {
+    OHOS_PIXEL_MAP_ALPHA_TYPE_UNKNOWN = 0,
+    OHOS_PIXEL_MAP_ALPHA_TYPE_OPAQUE = 1,
+    OHOS_PIXEL_MAP_ALPHA_TYPE_PREMUL = 2,
+    OHOS_PIXEL_MAP_ALPHA_TYPE_UNPREMUL = 3
+};
+
+enum {
+    OHOS_PIXEL_MAP_SCALE_MODE_FIT_TARGET_SIZE = 0,
+    OHOS_PIXEL_MAP_SCALE_MODE_CENTER_CROP = 1,
+};
+
+enum {
+    OHOS_PIXEL_MAP_READ_ONLY = 0,
+    OHOS_PIXEL_MAP_EDITABLE = 1,
+};
+
+struct OhosPixelMapCreateOps {
+    uint32_t width;
+    uint32_t height;
+    int32_t pixelFormat;
+    uint32_t editable;
+    uint32_t alphaType;
+    uint32_t scaleMode;
+};
+
 /**
  * @brief Obtains information about a given <b>PixelMap</b> and stores the information in a {@link OhosPixelMapInfo}
  * structure.
@@ -145,6 +175,28 @@ int32_t OH_AccessPixels(napi_env env, napi_value value, void** addrPtr);
  * @version 1.0
  */
 int32_t OH_UnAccessPixels(napi_env env, napi_value value);
+
+
+int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, napi_value* res);
+int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha);
+NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source);
+int32_t OH_PixelMap_GetBytesNumberPerRow(const NativePixelMap* native, int32_t* num);
+int32_t OH_PixelMap_GetIsEditable(const NativePixelMap* native, int32_t* editable);
+int32_t OH_PixelMap_IsSupportAlpha(const NativePixelMap* native, int32_t* alpha);
+int32_t OH_PixelMap_SetAlphaAble(const NativePixelMap* native, int32_t alpha);
+int32_t OH_PixelMap_GetDensity(const NativePixelMap* native, int32_t* density);
+int32_t OH_PixelMap_SetDensity(const NativePixelMap* native, int32_t density);
+int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity);
+int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
+int32_t OH_PixelMap_Translate(const NativePixelMap* native, float x, float y);
+int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle);
+int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y);
+int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int32_t width, int32_t height);
+
+int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info);
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr);
+int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native);
 
 #ifdef __cplusplus
 };

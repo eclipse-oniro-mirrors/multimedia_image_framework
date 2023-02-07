@@ -544,6 +544,10 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 
 void PixelMapNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+    if (nativeObject != nullptr) {
+        delete reinterpret_cast<PixelMapNapi*>(nativeObject);
+        nativeObject = nullptr;
+    }
 }
 
 STATIC_EXEC_FUNC(CreatePixelMap)

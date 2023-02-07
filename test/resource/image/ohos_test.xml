@@ -61,6 +61,8 @@
             <option name="push" value="images/test.rw2 -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.wbmp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.nrw -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.svg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_large.svg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -117,6 +119,7 @@
             <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.svg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="convertertest">
