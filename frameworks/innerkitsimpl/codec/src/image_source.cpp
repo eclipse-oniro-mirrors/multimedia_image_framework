@@ -39,6 +39,7 @@
 #endif
 #include "include/utils/SkBase64.h"
 #include "image_trace.h"
+#include "string_ex.h"
 
 namespace OHOS {
 namespace Media {
@@ -1501,6 +1502,95 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 
     IMAGE_LOGD("[ImageSource]CreatePixelMapForYUV OUT");
     return pixelMap;
+}
+
+unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts,
+    uint32_t &errorCode)
+{
+    IMAGE_LOGD("[ImageSource]CreatePixelMapList IN");
+
+    auto frameSum = GetFrameSum(errorCode);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame sum error.");
+        return nullptr;
+    }
+
+    IMAGE_LOGD("[ImageSource]CreatePixelMapList frameSum=%{public}u", frameSum);
+
+    auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
+    for (uint32_t index = 0; index < frameSum; index++) {
+        auto pixelMap = CreatePixelMap(index, opts, errorCode);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("[ImageSource]CreatePixelMapList create PixelMap error. index=%{public}u", index);
+            return nullptr;
+        }
+        pixelMaps->push_back(std::move(pixelMap));
+    }
+
+    errorCode = SUCCESS;
+
+    IMAGE_LOGD("[ImageSource]CreatePixelMapList OUT");
+    return pixelMaps;
+}
+
+unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
+{
+    IMAGE_LOGD("[ImageSource]GetDelayTime IN");
+
+    auto frameSum = GetFrameSum(errorCode);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]GetDelayTime get number error.");
+        return nullptr;
+    }
+
+    IMAGE_LOGD("[ImageSource]GetDelayTime frameSum=%{public}u", frameSum);
+
+    auto delayTimes = std::make_unique<vector<int32_t>>();
+    const string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+    for (uint32_t index = 0; index < frameSum; index++) {
+        string delayTimeStr;
+        errorCode = mainDecoder_->GetImagePropertyString(index, GIF_IMAGE_DELAY_TIME, delayTimeStr);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("[ImageSource]GetDelayTime get delay time issue. index=%{public}u", index);
+            return nullptr;
+        }
+        if (!IsNumericStr(delayTimeStr)) {
+            IMAGE_LOGE("[ImageSource]GetDelayTime not a numeric string. delayTimeStr=%{public}s",
+                delayTimeStr.c_str());
+            return nullptr;
+        }
+        int delayTime = 0;
+        if (!StrToInt(delayTimeStr, delayTime)) {
+            IMAGE_LOGE("[ImageSource]GetDelayTime to int fail. delayTimeStr=%{public}s", delayTimeStr.c_str());
+            return nullptr;
+        }
+        delayTimes->push_back(delayTime);
+    }
+
+    errorCode = SUCCESS;
+
+    IMAGE_LOGD("[ImageSource]GetDelayTime OUT");
+    return delayTimes;
+}
+
+uint32_t ImageSource::GetFrameSum(uint32_t &errorCode)
+{
+    IMAGE_LOGD("[ImageSource]GetFrameSum IN");
+
+    uint32_t frameSum = GetSourceInfo(errorCode).topLevelImageNum;
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]GetFrameSum get source info error.");
+        return 0;
+    }
+
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]GetFrameSum image decode plugin is null.");
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return 0;
+    }
+
+    IMAGE_LOGD("[ImageSource]GetFrameSum OUT, frameSum=%{public}u", frameSum);
+    return frameSum;
 }
 } // namespace Media
 } // namespace OHOS
