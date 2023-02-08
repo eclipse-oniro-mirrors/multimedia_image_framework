@@ -1236,5 +1236,149 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap039, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace end";
 }
 #endif
+
+std::unique_ptr<PixelMap> CreatePixelMapCommon(int32_t width, int32_t height)
+{
+    const uint32_t dataLength = width * height;
+    uint32_t *data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = width;
+    opts.size.height = height;
+    std::unique_ptr<PixelMap> pixelmap = PixelMap::Create(data, dataLength, opts);
+    delete[] data;
+    return pixelmap;
+}
+
+/**
+* @tc.name: CheckPixelsInput001
+* @tc.desc: test CheckPixelsInput
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, CheckPixelsInput001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: CheckPixelsInput001 start";
+    std::unique_ptr<PixelMap> pixelMap = CreatePixelMapCommon(8, 8);;
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    uint8_t *source = nullptr;
+    int32_t bufferSize = 0;
+    uint32_t stride = 0;
+    uint32_t offset = 0;
+    struct Rect region = {0};
+    uint32_t status = 0;
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+
+    // test source is nullptr
+    ASSERT_EQ(source, nullptr);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    // test bufferSize is 0
+    source = static_cast<uint8_t *>(malloc(1));
+    ASSERT_NE(source, nullptr);
+
+    ASSERT_EQ(bufferSize, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    bufferSize = pixelMap->GetByteCount();
+    ASSERT_NE(bufferSize, 0);
+
+    // test region.left < 0
+    region = {.left = -1, .top = 0, .width = imageInfo.size.width, .height = imageInfo.size.height};
+    ASSERT_EQ(region.left < 0 ? 0 : 1, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    // test region.top < 0
+    region = {.left = 0, .top = -1, .width = imageInfo.size.width, .height = imageInfo.size.height};
+    ASSERT_NE(region.left < 0 ? 0 : 1, 0);
+    ASSERT_EQ(region.top < 0 ? 0 : 1, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    free(source);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: CheckPixelsInput001 end";
+}
+
+/**
+* @tc.name: CheckPixelsInput002
+* @tc.desc: test CheckPixelsInput
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, CheckPixelsInput002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: CheckPixelsInput002 start";
+    std::unique_ptr<PixelMap> pixelMap = CreatePixelMapCommon(8, 8);;
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    uint8_t *source = static_cast<uint8_t *>(malloc(1));
+    int32_t bufferSize = pixelMap->GetByteCount();
+    uint32_t stride = 0;
+    uint32_t offset = 0;
+    struct Rect region = {0};
+    uint32_t status = 0;
+
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(bufferSize, 0);
+
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
+
+    region = {.left = 0, .top = 0, .width = imageInfo.size.width, .height = imageInfo.size.height};
+    ASSERT_NE(region.left < 0 ? 0 : 1, 0);
+    ASSERT_NE(region.top < 0 ? 0 : 1, 0);
+
+    // test stride > numeric_limits<int32_t>::max()
+    stride = std::numeric_limits<uint32_t>::max();
+    ASSERT_EQ(stride > std::numeric_limits<int32_t>::max() ? 0 : 1, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    stride = 0;
+    ASSERT_NE(stride > std::numeric_limits<int32_t>::max() ? 0 : 1, 0);
+
+    // test static_cast<uint64_t>(offset) > bufferSize
+    offset = static_cast<uint32_t>(bufferSize + 1);
+    ASSERT_EQ(static_cast<uint64_t>(offset) > bufferSize ? 0 : 1, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    offset = 0;
+    ASSERT_NE(static_cast<uint64_t>(offset) > bufferSize ? 0 : 1, 0);
+    status = pixelMap->WritePixels(source, bufferSize, offset, stride, region);
+    ASSERT_EQ(status, ERR_IMAGE_INVALID_PARAMETER);
+
+    free(source);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: CheckPixelsInput002 end";
+}
+
+/**
+* @tc.name: TlvEncode001
+* @tc.desc: test TlvEncode
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, TlvEncode001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: TlvEncode001 start";
+    std::unique_ptr<PixelMap> pixelMap = CreatePixelMapCommon(8, 8);;
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    std::vector<uint8_t> buff;
+    bool success = pixelMap->EncodeTlv(buff);
+    ASSERT_EQ(success, true);
+
+    PixelMap *pixelMap2 = PixelMap::DecodeTlv(buff);
+    ASSERT_NE(pixelMap2, nullptr);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: TlvEncode001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
