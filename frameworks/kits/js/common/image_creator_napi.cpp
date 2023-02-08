@@ -201,12 +201,13 @@ void ImageCreatorNapi::Destructor(napi_env env, void *nativeObject, void *finali
 {
 }
 
-static bool isTest(const int32_t* args)
+static bool isTest(const int32_t* args, const int32_t len)
 {
     if ((args[PARAM0] ==  TEST_WIDTH) &&
         (args[PARAM1] ==  TEST_HEIGHT) &&
         (args[PARAM2] ==  TEST_FORMAT) &&
-        (args[PARAM3] ==  TEST_CAPACITY)) {
+        (args[PARAM3] ==  TEST_CAPACITY) &&
+        (len == ARGS4)) {
         return true;
     }
     return false;
@@ -251,7 +252,8 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
         }
     }
 
-    if (isTest(args)) {
+    int32_t len = sizeof(args) / sizeof(args[PARAM0]);
+    if (isTest(args, len)) {
         g_creatorTest = true;
     }
     status = napi_get_reference_value(env, sConstructor_, &constructor);
