@@ -252,7 +252,7 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
         }
     }
 
-    int32_t len = sizeof(args)/sizeof(args[PARAM0]);
+    int32_t len = sizeof(args) / sizeof(args[PARAM0]);
     if (isTest(args, len)) {
         g_creatorTest = true;
     }
