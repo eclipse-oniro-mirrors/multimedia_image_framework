@@ -609,7 +609,7 @@ uint32_t JpegDecoder::GetImagePropertyInt(uint32_t index, const std::string &key
         if (PROPERTY_INT.find(exifInfo_.orientation_) != PROPERTY_INT.end()) {
             value = PROPERTY_INT.at(exifInfo_.orientation_);
         } else {
-            HiLog::Error(LABEL, "[GetImagePropertyInt] The exifinfo:%{public}s is not found", exifInfo_.orientation_);
+            HiLog::Error(LABEL, "[GetImagePropertyInt] The exifinfo:%{public}s is not found", exifInfo_.orientation_.c_str());
             return Media::ERR_MEDIA_VALUE_INVALID;
         }
     } else {
