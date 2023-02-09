@@ -624,8 +624,8 @@ uint32_t JpegDecoder::GetImagePropertyInt(uint32_t index, const std::string &key
             return Media::ERR_MEDIA_VALUE_INVALID;
         }
     } else {
-         HiLog::Error(LABEL, "[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
-         return Media::ERR_MEDIA_VALUE_INVALID;
+        HiLog::Error(LABEL, "[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
+        return Media::ERR_MEDIA_VALUE_INVALID;
     }
     return Media::SUCCESS;
 }
@@ -634,7 +634,8 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
 {
     HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());
     if (IsSameTextStr(key, ACTUAL_IMAGE_ENCODED_FORMAT)) {
-        HiLog::Error(LABEL, "[GetImagePropertyString] this key is used to check the original format of raw image!");
+        HiLog::Error(LABEL,
+            "[GetImagePropertyString] this key is used to check the original format of raw image!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
 
