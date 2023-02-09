@@ -165,7 +165,7 @@ namespace OHOS {
         {
             std::shared_ptr<ImageReceiver> iva = std::make_shared<ImageReceiver>();
             iva->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
-            iva->receiverConsumerSurface_ = Surface::CreateSurfaceAsConsumer();
+            iva->receiverConsumerSurface_ = IConsumerSurface::Create();
             if (iva->receiverConsumerSurface_ == nullptr) {
                 HiLog::Debug(LABEL, "SurfaceAsConsumer == nullptr");
                 return iva;
@@ -180,7 +180,6 @@ namespace OHOS {
                 return iva;
             }
 
-            iva->receiverProducerSurface_->SetDefaultWidthAndHeight(width, height);
             iva->iraContext_->SetReceiverBufferConsumer(iva->receiverConsumerSurface_);
             iva->iraContext_->SetReceiverBufferProducer(iva->receiverProducerSurface_);
             iva->iraContext_->SetWidth(width);
@@ -203,7 +202,7 @@ namespace OHOS {
             int64_t timestamp = 0;
             OHOS::Rect damage = {};
             OHOS::sptr<OHOS::SurfaceBuffer> buffer;
-            sptr<Surface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+            sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
             SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
             if (surfaceError == SURFACE_ERROR_OK) {
                 iraContext_->currentBuffer_ = buffer;
@@ -220,7 +219,7 @@ namespace OHOS {
             OHOS::Rect damage = {};
             OHOS::sptr<OHOS::SurfaceBuffer> buffer;
             OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
-            sptr<Surface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+            sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
             SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
             while (surfaceError == SURFACE_ERROR_OK) {
                 bufferBefore = buffer;

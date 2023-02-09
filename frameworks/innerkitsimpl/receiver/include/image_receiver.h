@@ -40,7 +40,7 @@ public:
 class ImageReceiver {
 public:
     std::shared_ptr<ImageReceiverContext> iraContext_ = nullptr;
-    sptr<Surface> receiverConsumerSurface_ = nullptr;
+    sptr<IConsumerSurface> receiverConsumerSurface_ = nullptr;
     sptr<Surface> receiverProducerSurface_ = nullptr;
     std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener_ = nullptr;
     ImageReceiver() {}

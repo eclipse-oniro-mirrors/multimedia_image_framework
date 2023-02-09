@@ -131,7 +131,7 @@ HWTEST_F(ImageCreatorTest, getSurfaceById001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorTest: getSurfaceById001 start";
     ImageCreator creat;
     std::string id = "";
-    sptr<Surface> getsrfid = creat.getSurfaceById(id);
+    sptr<IConsumerSurface> getsrfid = creat.getSurfaceById(id);
     ASSERT_EQ(getsrfid, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorTest: getSurfaceById001 end";
 }
