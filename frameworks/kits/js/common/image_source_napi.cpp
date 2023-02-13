@@ -1598,16 +1598,10 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
     return context;
 }
 
-static ImageSourceAsyncContext* ConvertToAsyncContext(void *data, bool check)
+static ImageSourceAsyncContext* CheckAsyncContext(ImageSourceAsyncContext* context, bool check)
 {
-    if (data == nullptr) {
-        HiLog::Error(LABEL, "data is nullptr");
-        return nullptr;
-    }
-
-    auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "empty context");
+        HiLog::Error(LABEL, "context is nullptr");
         return nullptr;
     }
 
@@ -1631,9 +1625,14 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
 {
     HiLog::Debug(LABEL, "CreatePixelMapListExec IN");
 
-    auto context = ConvertToAsyncContext(data, true);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
@@ -1654,9 +1653,14 @@ STATIC_COMPLETE_FUNC(CreatePixelMapList)
 {
     HiLog::Debug(LABEL, "CreatePixelMapListComplete IN");
 
-    auto context = ConvertToAsyncContext(data, false);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
@@ -1717,9 +1721,14 @@ STATIC_EXEC_FUNC(GetDelayTime)
 {
     HiLog::Debug(LABEL, "GetDelayTimeExec IN");
 
-    auto context = ConvertToAsyncContext(data, true);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
@@ -1740,9 +1749,14 @@ STATIC_COMPLETE_FUNC(GetDelayTime)
 {
     HiLog::Debug(LABEL, "GetDelayTimeComplete IN");
 
-    auto context = ConvertToAsyncContext(data, false);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
@@ -1802,9 +1816,14 @@ STATIC_EXEC_FUNC(GetFrameSum)
 {
     HiLog::Debug(LABEL, "GetFrameSumExec IN");
 
-    auto context = ConvertToAsyncContext(data, true);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
@@ -1826,9 +1845,14 @@ STATIC_COMPLETE_FUNC(GetFrameSum)
 {
     HiLog::Debug(LABEL, "GetFrameSumComplete IN");
 
-    auto context = ConvertToAsyncContext(data, false);
+    if (data == nullptr) {
+        HiLog::Error(LABEL, "data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
-        HiLog::Error(LABEL, "to async context fail");
+        HiLog::Error(LABEL, "check async context fail");
         return;
     }
 
