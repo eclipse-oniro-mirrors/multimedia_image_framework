@@ -1507,15 +1507,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts,
     uint32_t &errorCode)
 {
-    IMAGE_LOGD("[ImageSource]CreatePixelMapList IN");
-
     auto frameSum = GetFrameSum(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame sum error.");
         return nullptr;
     }
-
-    IMAGE_LOGD("[ImageSource]CreatePixelMapList frameSum=%{public}u", frameSum);
 
     auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
     for (uint32_t index = 0; index < frameSum; index++) {
@@ -1529,21 +1525,16 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
 
     errorCode = SUCCESS;
 
-    IMAGE_LOGD("[ImageSource]CreatePixelMapList OUT");
     return pixelMaps;
 }
 
 unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
-    IMAGE_LOGD("[ImageSource]GetDelayTime IN");
-
     auto frameSum = GetFrameSum(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetDelayTime get number error.");
         return nullptr;
     }
-
-    IMAGE_LOGD("[ImageSource]GetDelayTime frameSum=%{public}u", frameSum);
 
     auto delayTimes = std::make_unique<vector<int32_t>>();
     const string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
@@ -1569,14 +1560,11 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 
     errorCode = SUCCESS;
 
-    IMAGE_LOGD("[ImageSource]GetDelayTime OUT");
     return delayTimes;
 }
 
 uint32_t ImageSource::GetFrameSum(uint32_t &errorCode)
 {
-    IMAGE_LOGD("[ImageSource]GetFrameSum IN");
-
     uint32_t frameSum = GetSourceInfo(errorCode).topLevelImageNum;
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetFrameSum get source info error.");
@@ -1589,7 +1577,6 @@ uint32_t ImageSource::GetFrameSum(uint32_t &errorCode)
         return 0;
     }
 
-    IMAGE_LOGD("[ImageSource]GetFrameSum OUT, frameSum=%{public}u", frameSum);
     return frameSum;
 }
 } // namespace Media
