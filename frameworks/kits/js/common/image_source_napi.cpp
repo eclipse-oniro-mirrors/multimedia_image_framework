@@ -1627,9 +1627,9 @@ static ImageSourceAsyncContext* ConvertToAsyncContext(void *data, bool check)
     return context;
 }
 
-static void CreatePixelMapListExecute(napi_env env, void *data)
+STATIC_EXEC_FUNC(CreatePixelMapList)
 {
-    HiLog::Debug(LABEL, "CreatePixelMapListExecute IN");
+    HiLog::Debug(LABEL, "CreatePixelMapListExec IN");
 
     auto context = ConvertToAsyncContext(data, true);
     if (context == nullptr) {
@@ -1647,10 +1647,10 @@ static void CreatePixelMapListExecute(napi_env env, void *data)
         context->status = ERROR;
     }
 
-    HiLog::Debug(LABEL, "CreatePixelMapListExecute OUT");
+    HiLog::Debug(LABEL, "CreatePixelMapListExec OUT");
 }
 
-static void CreatePixelMapListComplete(napi_env env, napi_status status, void *data)
+STATIC_COMPLETE_FUNC(CreatePixelMapList)
 {
     HiLog::Debug(LABEL, "CreatePixelMapListComplete IN");
 
@@ -1704,7 +1704,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
     ImageNapiUtils::HicheckerReport();
 
     napi_status status;
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMapList", CreatePixelMapListExecute,
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMapList", CreatePixelMapListExec,
         CreatePixelMapListComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
@@ -1713,9 +1713,9 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
     return result;
 }
 
-static void GetDelayTimeExecute(napi_env env, void *data)
+STATIC_EXEC_FUNC(GetDelayTime)
 {
-    HiLog::Debug(LABEL, "GetDelayTimeExecute IN");
+    HiLog::Debug(LABEL, "GetDelayTimeExec IN");
 
     auto context = ConvertToAsyncContext(data, true);
     if (context == nullptr) {
@@ -1733,10 +1733,10 @@ static void GetDelayTimeExecute(napi_env env, void *data)
         context->status = ERROR;
     }
 
-    HiLog::Debug(LABEL, "GetDelayTimeExecute OUT");
+    HiLog::Debug(LABEL, "GetDelayTimeExec OUT");
 }
 
-static void GetDelayTimeComplete(napi_env env, napi_status status, void *data)
+STATIC_COMPLETE_FUNC(GetDelayTime)
 {
     HiLog::Debug(LABEL, "GetDelayTimeComplete IN");
 
@@ -1789,7 +1789,7 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     }
 
     napi_status status;
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetDelayTime", GetDelayTimeExecute,
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetDelayTime", GetDelayTimeExec,
         GetDelayTimeComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
@@ -1798,9 +1798,9 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     return result;
 }
 
-static void GetFrameSumExecute(napi_env env, void *data)
+STATIC_EXEC_FUNC(GetFrameSum)
 {
-    HiLog::Debug(LABEL, "GetFrameSumExecute IN");
+    HiLog::Debug(LABEL, "GetFrameSumExec IN");
 
     auto context = ConvertToAsyncContext(data, true);
     if (context == nullptr) {
@@ -1810,7 +1810,7 @@ static void GetFrameSumExecute(napi_env env, void *data)
 
     uint32_t errorCode = 0;
     context->frameSum = context->rImageSource->GetFrameSum(errorCode);
-    HiLog::Debug(LABEL, "GetFrameSumExecute frameSum=%{public}u, errorCode=%{public}u", context->frameSum, errorCode);
+    HiLog::Debug(LABEL, "GetFrameSumExec frameSum=%{public}u, errorCode=%{public}u", context->frameSum, errorCode);
     if (errorCode == SUCCESS) {
         context->status = SUCCESS;
     } else {
@@ -1819,10 +1819,10 @@ static void GetFrameSumExecute(napi_env env, void *data)
         context->status = ERROR;
     }
 
-    HiLog::Debug(LABEL, "GetFrameSumExecute OUT");
+    HiLog::Debug(LABEL, "GetFrameSumExec OUT");
 }
 
-static void GetFrameSumComplete(napi_env env, napi_status status, void *data)
+STATIC_COMPLETE_FUNC(GetFrameSum)
 {
     HiLog::Debug(LABEL, "GetFrameSumComplete IN");
 
@@ -1867,7 +1867,7 @@ napi_value ImageSourceNapi::GetFrameSum(napi_env env, napi_callback_info info)
     }
 
     napi_status status;
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetFrameSum", GetFrameSumExecute,
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetFrameSum", GetFrameSumExec,
         GetFrameSumComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
