@@ -28,9 +28,12 @@
 #include "pixel_map.h"
 #include "display_type.h"
 #include "image_receiver_context.h"
+#include "native_image.h"
 
 namespace OHOS {
 namespace Media {
+class IBufferProcessor;
+class NativeImage;
 class SurfaceBufferAvaliableListener {
 public:
     SurfaceBufferAvaliableListener()= default;
@@ -44,13 +47,7 @@ public:
     sptr<Surface> receiverProducerSurface_ = nullptr;
     std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener_ = nullptr;
     ImageReceiver() {}
-    ~ImageReceiver()
-    {
-        receiverConsumerSurface_ = nullptr;
-        receiverProducerSurface_ = nullptr;
-        iraContext_ = nullptr;
-        surfaceBufferAvaliableListener_ = nullptr;
-    }
+    ~ImageReceiver();
     static inline int32_t pipeFd[2] = {};
     static inline std::string OPTION_FORMAT = "image/jpeg";
     static inline std::int32_t OPTION_QUALITY = 100;
@@ -75,6 +72,12 @@ public:
     }
     static sptr<Surface> getSurfaceById(std::string id);
     void ReleaseReceiver();
+
+    std::shared_ptr<IBufferProcessor> GetBufferProcessor();
+    std::shared_ptr<NativeImage> NextNativeImage();
+    std::shared_ptr<NativeImage> LastNativeImage();
+private:
+    std::shared_ptr<IBufferProcessor> bufferProcessor_;
 };
 class ImageReceiverSurfaceListener : public IBufferConsumerListener {
 public:

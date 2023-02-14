@@ -94,7 +94,7 @@ struct ImageCreatorAsyncContext {
     uint32_t status;
     sptr<SurfaceBuffer> surfaceBuffer;
     std::shared_ptr<ImageSource> imageSource_;
-    std::shared_ptr<ImageNapi> imageNapi_;
+    std::shared_ptr<NativeImage> imageNapi_;
 };
 struct ImageCreatorInnerContext {
     napi_status status;

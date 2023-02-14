@@ -22,6 +22,39 @@
 
 namespace OHOS {
     namespace Media {
+
+class ImageReceiverBufferProcessor : public IBufferProcessor {
+public:
+    explicit ImageReceiverBufferProcessor(ImageReceiver* receiver) : receiver_(receiver)
+    {
+    }
+    ~ImageReceiverBufferProcessor()
+    {
+        receiver_ = nullptr;
+    }
+    void BufferRelease(sptr<SurfaceBuffer>& buffer) override
+    {
+        if (receiver_ != nullptr) {
+            receiver_->ReleaseBuffer(buffer);
+        }
+    }
+private:
+    ImageReceiver* receiver_ = nullptr;
+};
+        ImageReceiver::~ImageReceiver()
+        {
+            if (iraContext_ != nullptr) {
+                ImageReceiverManager::ReleaseReceiverById(iraContext_->GetReceiverKey());
+            }
+            if (receiverConsumerSurface_ != nullptr) {
+                receiverConsumerSurface_->UnregisterConsumerListener();
+            }
+            receiverConsumerSurface_ = nullptr;
+            receiverProducerSurface_ = nullptr;
+            iraContext_ = nullptr;
+            surfaceBufferAvaliableListener_ = nullptr;
+            bufferProcessor_ = nullptr;
+        }
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageReceiver"};
         using namespace OHOS::HiviewDFX;
 
@@ -137,7 +170,6 @@ namespace OHOS {
                 buffer = nullptr;
             }
         }
-
         void ImageReceiverSurfaceListener ::OnBufferAvailable()
         {
             HiLog::Debug(LABEL, "OnBufferAvailable");
@@ -239,5 +271,38 @@ namespace OHOS {
         {
             ImageReceiver::~ImageReceiver();
         }
+
+std::shared_ptr<IBufferProcessor> ImageReceiver::GetBufferProcessor()
+{
+    if (bufferProcessor_ == nullptr) {
+        bufferProcessor_ = std::make_shared<ImageReceiverBufferProcessor>(this);
+    }
+    return bufferProcessor_;
+}
+
+std::shared_ptr<NativeImage> ImageReceiver::NextNativeImage()
+{
+    if (GetBufferProcessor() == nullptr) {
+        return nullptr;
+    }
+
+    auto surfaceBuffer = ReadNextImage();
+    if (surfaceBuffer == nullptr) {
+        return nullptr;
+    }
+    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
+}
+std::shared_ptr<NativeImage> ImageReceiver::LastNativeImage()
+{
+    if (GetBufferProcessor() == nullptr) {
+        return nullptr;
+    }
+
+    auto surfaceBuffer = ReadLastImage();
+    if (surfaceBuffer == nullptr) {
+        return nullptr;
+    }
+    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
+}
     } // namespace Media
 } // namespace OHOS

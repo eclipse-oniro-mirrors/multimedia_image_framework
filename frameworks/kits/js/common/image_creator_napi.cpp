@@ -571,21 +571,22 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
         }
 
         auto native = context->constructor_->imageCreator_;
-        if (native == nullptr) {
-            IMAGE_ERR("Native instance is nullptr");
-            context->status = ERR_IMAGE_INIT_ABNORMAL;
+        if (native != nullptr) {
+        result = ImageNapi::Create(env, native->DequeueNativeImage());
+        if (result == nullptr) {
+            IMAGE_ERR("ImageNapi Create failed");
+        }
         } else {
-            auto surfacebuffer = native->DequeueImage();
-            result = ImageNapi::CreateBufferToImage(env, surfacebuffer, native);
-            if (result == nullptr) {
-                IMAGE_ERR("ImageNapi Create failed");
-                context->status = ERR_IMAGE_INIT_ABNORMAL;
-                napi_get_undefined(env, &result);
-            } else {
-                context->status = SUCCESS;
-            }
+            IMAGE_ERR("Native instance is nullptr");
         }
 
+        if (result == nullptr) {
+            napi_get_undefined(env, &result);
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
+        } else {
+            context->status = SUCCESS;
+        }
+        
         IMAGE_LINE_OUT();
         CommonCallbackRoutine(env, context, result);
     };
@@ -594,12 +595,12 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
 }
 
 static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
-                        std::shared_ptr<ImageNapi> &imageNapi_, napi_ref* callbackRef)
+                        std::shared_ptr<NativeImage> &imageNapi_, napi_ref* callbackRef)
 {
     if (argc == ARGS1 || argc == ARGS2) {
         auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType0 == napi_object) {
-            imageNapi_ = ImageNapi::GetImageSource(env, argv[PARAM0]);
+            imageNapi_ = ImageNapi::GetNativeImage(env, argv[PARAM0]);
             if (imageNapi_ == nullptr) {
                 ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
                     "Could not get queue type object");
@@ -645,15 +646,14 @@ void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
     }
 
     auto native = context->constructor_->imageCreator_;
-    if (native == nullptr) {
+    if (native == nullptr || context->imageNapi_ == nullptr) {
         IMAGE_ERR("Native instance is nullptr");
         context->status = ERR_IMAGE_INIT_ABNORMAL;
     } else {
-        if (SUCCESS != context->imageNapi_->CombineComponentsIntoSurface()) {
+        if (SUCCESS != context->imageNapi_->CombineYUVComponents()) {
             IMAGE_ERR("JsQueueImageCallBack: try to combine componests");
         }
-        auto surfacebuffer = context->imageNapi_->sSurfaceBuffer_;
-        native->QueueImage(surfacebuffer);
+        native->QueueNativeImage(context->imageNapi_);
         context->status = SUCCESS;
     }
     IMAGE_LINE_OUT();
