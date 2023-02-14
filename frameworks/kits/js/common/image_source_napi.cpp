@@ -117,6 +117,7 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"SCENE_TYPE", 0, "SceneType"},
     {"ISO_SPEED_RATINGS", 0, "ISOSpeedRatings"},
     {"F_NUMBER", 0, "FNumber"},
+    {"COMPRESSED_BITS_PER_PIXEL", 0, "CompressedBitsPerPixel"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},

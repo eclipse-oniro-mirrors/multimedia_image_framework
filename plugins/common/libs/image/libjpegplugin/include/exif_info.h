@@ -71,6 +71,7 @@ public:
     std::string fNumber_;
     std::string isoSpeedRatings_;
     std::string sceneType_;
+    std::string compressedBitsPerPixel_;
 
 private:
     void SetExifTagValues(const ExifTag &tag, const std::string &value);
