@@ -60,7 +60,7 @@ static int32_t ImageReceiverNapiCreate(napi_env env, struct ImageReceiverArgs* a
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
-static int32_t ImageReceiverNapiGetSurfaceId(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
+static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr) {
@@ -148,7 +148,7 @@ static const std::map<int32_t, ImageReceiverNapiEnvFunc> g_EnvFunctions = {
     {ENV_FUNC_IMAGE_RECEIVER_CREATE, ImageReceiverNapiCreate},
 };
 static const std::map<int32_t, ImageReceiverNapiCtxFunc> g_CtxFunctions = {
-    {CTX_FUNC_IMAGE_RECEIVER_GET_SURFACE_ID, ImageReceiverNapiGetSurfaceId},
+    {CTX_FUNC_IMAGE_RECEIVER_GET_RECEIVER_ID, ImageReceiverNapiGetReceiverId},
     {CTX_FUNC_IMAGE_RECEIVER_READ_LATEST_IMAGE, ImageReceiverNapiReadLatestImage},
     {CTX_FUNC_IMAGE_RECEIVER_READ_NEXT_IMAGE, ImageReceiverNapiReadNextImage},
     {CTX_FUNC_IMAGE_RECEIVER_ON, ImageReceiverNapiOn},

@@ -27,7 +27,7 @@ namespace {
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
-    const std::string SURFACE_DATA_SIZE_TAG = "dataSize";
+    const std::string DATA_SIZE_TAG = "dataSize";
 }
 
 namespace OHOS {
@@ -101,7 +101,7 @@ int32_t NativeImage::SplitYUV422SPComponent()
     uint64_t surfaceSize = NUM_0;
     auto res = GetDataSize(surfaceSize);
     if (res != SUCCESS || surfaceSize == NUM_0) {
-        HiLog::Error(LABEL, "Surface size is 0");
+        HiLog::Error(LABEL, "S size is 0");
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
 
@@ -118,7 +118,7 @@ int32_t NativeImage::SplitYUV422SPComponent()
     yuv.ySize = static_cast<uint64_t>(width * height);
     yuv.uvSize = static_cast<uint64_t>(height * uvStride);
     if (surfaceSize < (yuv.ySize + yuv.uvSize * NUM_2)) {
-        HiLog::Error(LABEL, "Surface size %{public}" PRIu64 " < y plane %{public}" PRIu64
+        HiLog::Error(LABEL, "S size %{public}" PRIu64 " < y plane %{public}" PRIu64
             " + uv plane %{public}" PRIu64, surfaceSize, yuv.ySize, yuv.uvSize * NUM_2);
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
@@ -259,24 +259,24 @@ int32_t NativeImage::GetDataSize(uint64_t &size)
     }
 
     size = static_cast<uint64_t>(buffer_->GetSize());
-    auto surfaceExtraData = buffer_->GetExtraData();
-    if (surfaceExtraData == nullptr) {
-        HiLog::Info(LABEL, "Nullptr surface extra data. return buffer size %{public}" PRIu64, size);
+    auto extraData = buffer_->GetExtraData();
+    if (extraData == nullptr) {
+        HiLog::Info(LABEL, "Nullptr s extra data. return buffer size %{public}" PRIu64, size);
         return SUCCESS;
     }
 
     int32_t extraDataSize = NUMI_0;
-    auto res = surfaceExtraData->ExtraGet(SURFACE_DATA_SIZE_TAG, extraDataSize);
+    auto res = extraData->ExtraGet(DATA_SIZE_TAG, extraDataSize);
     if (res != NUM_0) {
-        HiLog::Info(LABEL, "Surface ExtraGet dataSize error %{public}d", res);
+        HiLog::Info(LABEL, "S ExtraGet dataSize error %{public}d", res);
     } else if (extraDataSize <= NUMI_0) {
-        HiLog::Info(LABEL, "Surface ExtraGet dataSize Ok, but size <= 0");
+        HiLog::Info(LABEL, "S ExtraGet dataSize Ok, but size <= 0");
     } else if (static_cast<uint64_t>(extraDataSize) > size) {
         HiLog::Info(LABEL,
-            "Surface ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
+            "S ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
             extraDataSize, size);
     } else {
-        HiLog::Info(LABEL, "Surface ExtraGet dataSize %{public}d", extraDataSize);
+        HiLog::Info(LABEL, "S ExtraGet dataSize %{public}d", extraDataSize);
         size = extraDataSize;
     }
     return SUCCESS;

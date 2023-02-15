@@ -62,7 +62,7 @@ int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* nativ
     }
     ImageReceiverArgs args;
     args.id = id;
-    return ImageReceiverNativeCtxCall(CTX_FUNC_IMAGE_RECEIVER_GET_SURFACE_ID, native->napi, &args);
+    return ImageReceiverNativeCtxCall(CTX_FUNC_IMAGE_RECEIVER_GET_RECEIVER_ID, native->napi, &args);
 }
 
 MIDK_EXPORT

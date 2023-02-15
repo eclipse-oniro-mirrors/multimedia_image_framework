@@ -19,7 +19,8 @@
 #include <map>
 #include <memory>
 #include <vector>
-#include <surface.h>
+#include "log_tags.h"
+#include "image_receiver_context.h"
 #include "image_format.h"
 
 namespace OHOS {
