@@ -38,11 +38,25 @@ ohos_shared_library("svgplugin") {
     "//third_party/flutter/skia",
   ]
 
-  deps = [
-    "$graphic_subsystem/utils/color_manager:color_manager",
-    "$image_subsystem/plugins/manager:pluginmanager",
-    "//third_party/flutter/build/skia:ace_skia_ohos",
-  ]
+  if (use_clang_android) {
+    defines = image_decode_android_defines
+    deps = [
+      "$image_subsystem/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/skia:ace_skia_android",
+    ]
+  } else if (use_clang_ios) {
+    defines = image_decode_ios_defines
+    deps = [
+      "$image_subsystem/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/skia:ace_skia_ios",
+    ]
+  } else {
+    deps = [
+      "$graphic_subsystem/utils/color_manager:color_manager",
+      "$image_subsystem/plugins/manager:pluginmanager",
+      "//third_party/flutter/build/skia:ace_skia_ohos",
+    ]
+  }
 
   external_deps = [
     "c_utils:utils",
