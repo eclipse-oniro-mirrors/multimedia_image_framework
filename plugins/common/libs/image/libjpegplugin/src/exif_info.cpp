@@ -277,6 +277,7 @@ EXIFInfo::EXIFInfo()
       fNumber_(DEFAULT_EXIF_VALUE),
       isoSpeedRatings_(DEFAULT_EXIF_VALUE),
       sceneType_(DEFAULT_EXIF_VALUE),
+      compressedBitsPerPixel_(DEFAULT_EXIF_VALUE),
       imageFileDirectory_(EXIF_IFD_COUNT),
       exifData_(nullptr),
       isExifDataParsed_(false)
@@ -365,6 +366,8 @@ void EXIFInfo::SetExifTagValues(const ExifTag &tag, const std::string &value)
         isoSpeedRatings_ = value;
     } else if (tag == EXIF_TAG_SCENE_TYPE) {
         sceneType_ = value;
+    } else if (tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
+        compressedBitsPerPixel_ = value;
     } else {
         HiLog::Error(LABEL, "No match tag name!");
     }
@@ -1392,7 +1395,8 @@ bool EXIFInfo::CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag)
                 tag == EXIF_TAG_EXPOSURE_TIME ||
                 tag == EXIF_TAG_FNUMBER ||
                 tag == EXIF_TAG_ISO_SPEED_RATINGS ||
-                tag == EXIF_TAG_SCENE_TYPE) {
+                tag == EXIF_TAG_SCENE_TYPE ||
+                tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
                 ret = true;
             }
             break;
