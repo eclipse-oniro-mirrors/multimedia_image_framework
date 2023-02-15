@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "image_ndk_kits.h"
+#include "image_mdk_kits.h"
 
 #include <map>
 

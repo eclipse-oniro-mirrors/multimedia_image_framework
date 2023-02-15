@@ -223,14 +223,10 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
     status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-    if (status != napi_ok) {
+    if (status != napi_ok || (argc != ARGS4)) {
         std::string errMsg = "Invailed arg counts ";
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             errMsg.append(std::to_string(argc)));
-    }
-    if (argc != ARGS4) {
-        IMAGE_ERR("Invailed arg counts %{public}zu", argc);
-        return result;
     }
     for (size_t i = PARAM0; i < argc; i++) {
         napi_valuetype argvType = ImageNapiUtils::getType(env, argv[i]);

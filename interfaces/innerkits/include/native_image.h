@@ -34,7 +34,7 @@ struct NativeComponent {
 
 class IBufferProcessor {
 public:
-    virtual ~IBufferProcessor(){};
+    virtual ~IBufferProcessor() {};
     virtual void BufferRelease(sptr<SurfaceBuffer>& buffer) = 0;
 };
 

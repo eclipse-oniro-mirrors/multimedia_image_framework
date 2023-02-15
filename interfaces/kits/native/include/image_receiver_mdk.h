@@ -25,7 +25,7 @@
  */
 
 /**
- * @file image_receiver_ndk.h
+ * @file image_receiver_mdk.h
  *
  * @brief Declares functions for you to access image in native layer.
  *
@@ -33,12 +33,12 @@
  * @version 1.0
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_NDK_H_
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_NDK_H_
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
 #include <cstdint>
 #include "napi/native_api.h"
-#include "image_ndk_common.h"
-#include "image_ndk.h"
+#include "image_mdk_common.h"
+#include "image_mdk.h"
 
 namespace OHOS {
 namespace Media {
@@ -73,4 +73,4 @@ int32_t OH_Image_Receiver_Release(ImageReceiverNative* native);
 /** @} */
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_NDK_H_
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_

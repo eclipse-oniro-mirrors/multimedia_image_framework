@@ -32,7 +32,7 @@ ohos_shared_library("image_ndk") {
     debug = false
   }
 
-  sources = [ "image_ndk.cpp" ]
+  sources = [ "image_mdk.cpp" ]
   public_configs = [ ":native_public_config" ]
   external_deps = [ "multimedia_image_framework:image" ]
 
@@ -46,7 +46,7 @@ ohos_shared_library("image_receiver_ndk") {
     debug = false
   }
 
-  sources = [ "image_receiver_ndk.cpp" ]
+  sources = [ "image_receiver_mdk.cpp" ]
   public_configs = [ ":native_public_config" ]
   external_deps = [ "multimedia_image_framework:image" ]
 

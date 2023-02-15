@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "image_ndk.h"
+#include "image_mdk.h"
 
 #include "common_utils.h"
-#include "image_ndk_kits.h"
+#include "image_mdk_kits.h"
 
 namespace OHOS {
 namespace Media {

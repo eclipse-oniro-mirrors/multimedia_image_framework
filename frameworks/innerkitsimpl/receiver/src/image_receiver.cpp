@@ -18,29 +18,11 @@
 #include "image_source.h"
 #include "image_utils.h"
 #include "hilog/log.h"
+#include "image_receiver_buffer_processor.h"
 #include "image_receiver_manager.h"
 
 namespace OHOS {
     namespace Media {
-
-class ImageReceiverBufferProcessor : public IBufferProcessor {
-public:
-    explicit ImageReceiverBufferProcessor(ImageReceiver* receiver) : receiver_(receiver)
-    {
-    }
-    ~ImageReceiverBufferProcessor()
-    {
-        receiver_ = nullptr;
-    }
-    void BufferRelease(sptr<SurfaceBuffer>& buffer) override
-    {
-        if (receiver_ != nullptr) {
-            receiver_->ReleaseBuffer(buffer);
-        }
-    }
-private:
-    ImageReceiver* receiver_ = nullptr;
-};
         ImageReceiver::~ImageReceiver()
         {
             if (iraContext_ != nullptr) {

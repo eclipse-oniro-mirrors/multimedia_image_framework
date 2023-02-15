@@ -61,8 +61,7 @@ public:
         auto iter = holder_.find(localId);
         if (iter != holder_.end()) {
             auto res = iter->second;
-            while (exist(localId))
-            {
+            while (exist(localId)) {
                 holder_.erase(localId);
             }
             return res;
@@ -73,8 +72,7 @@ public:
     {
         std::lock_guard<std::mutex> guard(holderMutex_);
         std::string localId = processEof(id);
-        while (exist(localId))
-        {
+        while (exist(localId)) {
             holder_.erase(localId);
         }
     }
@@ -98,7 +96,7 @@ private:
     }
     std::string processEof(std::string id)
     {
-        if(!id.empty() && (id.back() == '\0')) {
+        if (!id.empty() && (id.back() == '\0')) {
             std::string tmp = std::string(id);
             tmp.pop_back();
             return tmp;

@@ -19,7 +19,7 @@
 #include "common_utils.h"
 #include "native_image.h"
 #include "image_napi.h"
-#include "image_ndk.h"
+#include "image_mdk.h"
 
 namespace OHOS {
 namespace Media {

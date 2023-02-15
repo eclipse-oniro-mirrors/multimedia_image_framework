@@ -35,7 +35,7 @@ namespace OHOS {
 namespace Media {
 struct ImageReceiverCommonArgs;
 struct ImageReceiverAsyncContext;
-using Context = ImageReceiverAsyncContext*;
+using Context = ImageReceiverAsyncContext* ;
 using CompleteCallback = void (*)(napi_env env, napi_status status, Context context);
 struct ImageReceiverCreateArgs {
     int32_t width;

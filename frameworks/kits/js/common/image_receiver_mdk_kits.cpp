@@ -13,7 +13,8 @@
  * limitations under the License.
  */
 
-#include "image_receiver_ndk_kits.h"
+#include "image_receiver_mdk_kits.h"
+#include "image_receiver_napi_listener.h"
 #include "image_napi.h"
 
 #include <map>
@@ -22,21 +23,6 @@ namespace OHOS {
 namespace Media {
 using ImageReceiverNapiEnvFunc = int32_t (*)(napi_env env, struct ImageReceiverArgs* args);
 using ImageReceiverNapiCtxFunc = int32_t (*)(ImageReceiverNapi* native, struct ImageReceiverArgs* args);
-class ImageReceiverNapiListener : public SurfaceBufferAvaliableListener {
-public:
-    ~ImageReceiverNapiListener() override
-    {
-        callBack = nullptr;
-    }
-    void OnSurfaceBufferAvaliable() override
-    {
-        if (callBack != nullptr) {
-            (*callBack)();
-        }
-    }
-    OH_Image_Receiver_On_Callback* callBack = nullptr;
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif

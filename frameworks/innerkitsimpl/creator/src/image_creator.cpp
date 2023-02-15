@@ -18,6 +18,7 @@
 #include "image_source.h"
 #include "image_utils.h"
 #include "hilog/log.h"
+#include "image_creator_buffer_processor.h"
 #include "image_creator_manager.h"
 
 namespace OHOS {
@@ -25,25 +26,6 @@ namespace Media {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageCreator"};
 std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
 using namespace OHOS::HiviewDFX;
-
-class ImageCreatorBufferProcessor : public IBufferProcessor {
-public:
-    explicit ImageCreatorBufferProcessor(ImageCreator* creator) : creator_(creator)
-    {
-    }
-    ~ImageCreatorBufferProcessor()
-    {
-        creator_ = nullptr;
-    }
-    void BufferRelease(sptr<SurfaceBuffer>& buffer) override
-    {
-        // Do not release heare.
-        (void)buffer;
-    }
-private:
-    ImageCreator* creator_ = nullptr;
-};
-
 ImageCreator::~ImageCreator()
 {
     if (iraContext_ != nullptr) {

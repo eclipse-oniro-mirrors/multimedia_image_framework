@@ -25,7 +25,7 @@
  */
 
 /**
- * @file image_ndk.h
+ * @file image_mdk.h
  *
  * @brief Declares functions for you to access image in native layer.
  *
@@ -33,11 +33,11 @@
  * @version 1.0
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_NDK_H_
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_NDK_H_
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_
 #include <cstdint>
 #include "napi/native_api.h"
-#include "image_ndk_common.h"
+#include "image_mdk_common.h"
 namespace OHOS {
 namespace Media {
 #ifdef __cplusplus
@@ -75,4 +75,4 @@ int32_t OH_Image_Release(ImageNative* native);
 /** @} */
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_NDK_H_
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_

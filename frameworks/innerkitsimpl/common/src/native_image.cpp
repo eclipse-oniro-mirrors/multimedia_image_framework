@@ -14,10 +14,10 @@
  */
 
 #include <cinttypes>
-#include "native_image.h"
 #include "media_errors.h"
 #include "hilog/log.h"
 #include "log_tags.h"
+#include "native_image.h"
 
 using OHOS::HiviewDFX::HiLog;
 
@@ -32,8 +32,8 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-NativeImage::NativeImage(sptr<SurfaceBuffer> buffer, std::shared_ptr<IBufferProcessor> releaser) :
-    buffer_(buffer), releaser_(releaser)
+NativeImage::NativeImage(sptr<SurfaceBuffer> buffer,
+    std::shared_ptr<IBufferProcessor> releaser) : buffer_(buffer), releaser_(releaser)
 {}
 
 struct YUVData {
@@ -307,7 +307,7 @@ NativeComponent* NativeImage::GetComponent(int32_t type)
     if (GetFormat(format) == SUCCESS && type == format) {
         return CreateCombineComponent(type);
     }
-    SplitSurfaceToComponent();;
+    SplitSurfaceToComponent();
     // Try again
     component = GetCachedComponent(type);
 

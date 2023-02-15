@@ -241,13 +241,13 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
     auto reference = std::make_unique<ImageReceiverNapi>();
     reference->env_ = env;
     reference->imageReceiver_ = ImageReceiver::CreateImageReceiver((inputArgs.args)[PARAM0],
-        (inputArgs.args)[PARAM1],(inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
+        (inputArgs.args)[PARAM1], (inputArgs.args)[PARAM2], (inputArgs.args)[PARAM3]);
     if (reference->imageReceiver_ == nullptr) {
         IMAGE_ERR("Create native image receiver failed");
         return undefineVar;
     }
     napi_status status = napi_wrap(env, inputArgs.thisVar, reinterpret_cast<void *>(reference.get()),
-                               ImageReceiverNapi::Destructor, nullptr, nullptr);
+        ImageReceiverNapi::Destructor, nullptr, nullptr);
     if (status == napi_ok) {
         reference.release();
         return inputArgs.thisVar;

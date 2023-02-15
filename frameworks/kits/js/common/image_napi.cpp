@@ -76,7 +76,6 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
     size_t size = IMG_ARRAY_SIZE(props);
     napi_value thisVar = nullptr;
     auto name = MY_NAME.c_str();
-
     if (napi_define_class(env, name, SIZE_MAX, Constructor, nullptr, size, props, &thisVar) != napi_ok) {
         IMAGE_ERR("Define class failed");
         return exports;
@@ -481,7 +480,8 @@ static inline bool IsEqual(const int32_t& check,  ImageFormat format)
 {
     return (check == int32_t(format));
 }
-static inline bool IsEqual(const int32_t& check,  ComponentType type) {
+static inline bool IsEqual(const int32_t& check,  ComponentType type)
+{
     return (check == int32_t(type));
 }
 static inline bool IsYUVComponent(const int32_t& type)

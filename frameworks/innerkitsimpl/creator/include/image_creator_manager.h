@@ -44,7 +44,6 @@ public:
 private:
     ImageCreatorManager() {};
     ImageHolderManager<ImageCreator> creatorManager_;
-
 };
 } // namespace Media
 } // namespace OHOS
