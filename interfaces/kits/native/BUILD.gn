@@ -32,9 +32,9 @@ ohos_ndk_library("libimage_ndk") {
 
 ohos_ndk_headers("image_ndk_header") {
   dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
-  sources = [ 
-      "./include/image_ndk_common.h",
-      "./include/image_ndk.h",
+  sources = [
+    "./include/image_ndk.h",
+    "./include/image_ndk_common.h",
   ]
 }
 

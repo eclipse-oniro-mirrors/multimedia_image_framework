@@ -20,6 +20,7 @@ config("image_external_config") {
   include_dirs = [
     "include",
     "//utils/system/safwk/native/include",
+    "${image_subsystem}/frameworks/kits/js/common/ndk/include",
     "//foundation/ability/ability_runtime/interfaces/inner_api/runtime/include/",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
@@ -30,7 +31,6 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
-    "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
@@ -194,8 +194,8 @@ if (use_clang_ios) {
     }
     public_configs = [ ":image_external_config" ]
     sources = [
-      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_ndk_kits.cpp",
+      "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_receiver_ndk_kits.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
