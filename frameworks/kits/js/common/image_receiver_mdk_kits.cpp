@@ -63,14 +63,14 @@ static int32_t ImageReceiverNapiCreate(napi_env env, struct ImageReceiverArgs* a
 static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
-    if (receiver == nullptr || receiver->iraContext_ == nullptr) {
+    if (receiver == nullptr || receiver->iraContext_ == nullptr || args->id == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto sId = receiver->iraContext_->GetReceiverKey();
-    if (sId.empty() || sId.c_str() == nullptr) {
+    if (sId.empty() || sId.c_str() == nullptr || args->inLen < sId.size()) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-    args->id = sId.c_str();
+    memcpy_s(args->id, args->inLen, sId.c_str(), sId.size());
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 

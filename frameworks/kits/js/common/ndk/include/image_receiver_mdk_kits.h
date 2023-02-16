@@ -28,7 +28,8 @@ extern "C" {
 #endif
 
 struct ImageReceiverArgs {
-    const char* id;
+    char* id;
+    size_t inLen;
     int32_t inNum0;
     int32_t inNum1;
     int32_t inNum2;

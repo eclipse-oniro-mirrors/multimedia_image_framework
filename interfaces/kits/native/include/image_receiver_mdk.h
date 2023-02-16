@@ -59,7 +59,7 @@ struct OhosImageReceiverInfo {
 
 int32_t OH_Image_Receiver_CreateImageReceiver(napi_env env, struct OhosImageReceiverInfo info, napi_value* res);
 ImageReceiverNative* OH_Image_Receiver_InitImageReceiverNative(napi_env env, napi_value source);
-int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* native, char* id);
+int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* native, char* id, size_t len);
 int32_t OH_Image_Receiver_ReadLatestImage(const ImageReceiverNative* native, napi_value* image);
 int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_value* image);
 int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receiver_On_Callback callback);

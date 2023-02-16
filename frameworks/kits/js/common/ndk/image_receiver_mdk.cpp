@@ -55,13 +55,14 @@ int32_t OH_Image_Receiver_CreateImageReceiver(napi_env env,
 }
 
 MIDK_EXPORT
-int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* native, char* id)
+int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* native, char* id, size_t len)
 {
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageReceiverArgs args;
     args.id = id;
+    args.inLen = len;
     return ImageReceiverNativeCtxCall(CTX_FUNC_IMAGE_RECEIVER_GET_RECEIVER_ID, native->napi, &args);
 }
 
