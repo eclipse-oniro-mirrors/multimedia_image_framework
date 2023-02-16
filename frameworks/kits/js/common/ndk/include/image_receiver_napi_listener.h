@@ -30,10 +30,10 @@ public:
     void OnSurfaceBufferAvaliable() override
     {
         if (callBack != nullptr) {
-            (*callBack)();
+            callBack();
         }
     }
-    OH_Image_Receiver_On_Callback* callBack = nullptr;
+    OH_Image_Receiver_On_Callback callBack = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

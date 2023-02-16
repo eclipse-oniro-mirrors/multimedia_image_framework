@@ -34,7 +34,7 @@ struct ImageReceiverArgs {
     int32_t inNum2;
     int32_t inNum3;
     napi_env inEnv;
-    OH_Image_Receiver_On_Callback* callback;
+    OH_Image_Receiver_On_Callback callback;
     napi_value* outValue;
     int32_t* outNum0;
     struct OhosImageSize* outSize;

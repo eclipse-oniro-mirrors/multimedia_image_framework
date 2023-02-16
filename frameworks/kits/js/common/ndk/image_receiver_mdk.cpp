@@ -88,7 +88,7 @@ int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_
 }
 
 MIDK_EXPORT
-int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receiver_On_Callback* callback)
+int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receiver_On_Callback callback)
 {
     if (native == nullptr || native->napi == nullptr || callback == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
