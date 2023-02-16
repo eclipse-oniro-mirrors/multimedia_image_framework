@@ -632,6 +632,10 @@ uint32_t GifDecoder::GetImagePropertyString(uint32_t index, const std::string &k
 {
     HiLog::Debug(LABEL, "[GetImagePropertyString] enter, index:%{public}u, key:%{public}s", index, key.c_str());
 
+    if (key != GIF_IMAGE_DELAY_TIME) {
+        return AbsImageDecoder::GetImagePropertyString(index, key, value);
+    }
+
     int32_t intValue = 0;
     uint32_t errorCode = GetImagePropertyInt(index, key, intValue);
     if (errorCode != SUCCESS) {
