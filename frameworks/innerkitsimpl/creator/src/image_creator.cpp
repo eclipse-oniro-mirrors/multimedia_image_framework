@@ -62,7 +62,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
 {
     std::shared_ptr<ImageCreator> iva = std::make_shared<ImageCreator>();
     iva->iraContext_ = ImageCreatorContext::CreateImageCreatorContext();
-    iva->creatorConsumerSurface_ = Surface::CreateSurfaceAsConsumer();
+    iva->creatorConsumerSurface_ = IConsumerSurface::Create();
     if (iva->creatorConsumerSurface_ == nullptr) {
         HiLog::Debug(LABEL, "SurfaceAsConsumer == nullptr");
         return iva;
@@ -75,7 +75,6 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     RegisterConsumerListener((sptr<IBufferConsumerListener> &)listener);
     auto p = iva->creatorConsumerSurface_->GetProducer();
     iva->creatorProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
-    iva->creatorProducerSurface_->SetDefaultWidthAndHeight(width, height);
     iva->creatorProducerSurface_->SetQueueSize(capicity);
     if (iva->creatorProducerSurface_ == nullptr) {
         HiLog::Debug(LABEL, "SurfaceAsProducer == nullptr");
@@ -261,15 +260,15 @@ void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
         HiLog::Debug(LABEL, "Queue fail");
     }
 }
-sptr<Surface> ImageCreator::GetCreatorSurface()
+sptr<IConsumerSurface> ImageCreator::GetCreatorSurface()
 {
     return iraContext_->GetCreatorBufferConsumer();
 }
 
-sptr<Surface> ImageCreator::getSurfaceById(std::string id)
+sptr<IConsumerSurface> ImageCreator::getSurfaceById(std::string id)
 {
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
-    sptr<Surface> surface = imageCreatorManager.GetSurfaceByKeyId(id);
+    sptr<IConsumerSurface> surface = imageCreatorManager.GetSurfaceByKeyId(id);
     HiLog::Debug(LABEL, "getSurfaceByCreatorId");
     return surface;
 }

@@ -73,7 +73,7 @@ HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId001, TestSize.Level3)
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
     string keyId = "";
     shared_ptr<ImageCreator> imageCreator;
-    sptr<Surface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
+    sptr<IConsumerSurface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId001 end";
 }
 
@@ -88,7 +88,7 @@ HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId002, TestSize.Level3)
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
     string keyId = "";
     shared_ptr<ImageCreator> imageCreator = nullptr;
-    sptr<Surface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
+    sptr<IConsumerSurface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
     ASSERT_EQ(getsurf, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId002 end";
 }

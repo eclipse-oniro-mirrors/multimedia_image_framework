@@ -42,7 +42,7 @@ public:
 };
 class ImageCreator {
 public:
-    sptr<Surface> creatorConsumerSurface_ = nullptr;
+    sptr<IConsumerSurface> creatorConsumerSurface_ = nullptr;
     sptr<Surface> creatorProducerSurface_ = nullptr;
     std::shared_ptr<ImageCreatorContext> iraContext_ = nullptr;
     std::shared_ptr<SurfaceBufferReleaseListener> surfaceBufferReleaseListener_ = nullptr;
@@ -80,8 +80,8 @@ public:
     {
         surfaceBufferReleaseListener_ = release;
     };
-    sptr<Surface> GetCreatorSurface();
-    static sptr<Surface> getSurfaceById(std::string id);
+    sptr<IConsumerSurface> GetCreatorSurface();
+    static sptr<IConsumerSurface> getSurfaceById(std::string id);
     void ReleaseCreator();
     static GSError OnBufferRelease(sptr<SurfaceBuffer> &buffer);
     static std::map<uint8_t*, ImageCreator*> bufferCreatorMap_;

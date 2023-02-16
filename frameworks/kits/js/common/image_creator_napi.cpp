@@ -479,7 +479,7 @@ napi_value ImageCreatorNapi::JsGetFormat(napi_env env, napi_callback_info info)
 }
 
 #ifdef IMAGE_DEBUG_FLAG
-static void TestAcquireBuffer(OHOS::sptr<OHOS::Surface> &creatorSurface, int32_t &fence,
+static void TestAcquireBuffer(OHOS::sptr<OHOS::IConsumerSurface> &creatorSurface, int32_t &fence,
     int64_t &timestamp, OHOS::Rect &damage, std::shared_ptr<ImageCreator> imageCreator)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> buffer;
@@ -513,7 +513,7 @@ static void DoTest(std::shared_ptr<ImageCreator> imageCreator)
     }
     std::string creatorKey = imageCreator->iraContext_->GetCreatorKey();
     IMAGE_ERR("CreatorKey = %{public}s", creatorKey.c_str());
-    OHOS::sptr<OHOS::Surface> creatorSurface = ImageCreator::getSurfaceById(creatorKey);
+    OHOS::sptr<OHOS::IConsumerSurface> creatorSurface = ImageCreator::getSurfaceById(creatorKey);
     IMAGE_ERR("getDefaultWidth = %{public}d", creatorSurface->GetDefaultWidth());
     IMAGE_ERR("getDefaultHeight = %{public}d", creatorSurface->GetDefaultHeight());
     int32_t flushFence = 0;

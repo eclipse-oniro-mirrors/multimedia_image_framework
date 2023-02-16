@@ -18,6 +18,7 @@
 
 #include <surface.h>
 #include <list>
+#include "iconsumer_surface.h"
 #include "hilog/log.h"
 
 namespace OHOS {
@@ -30,11 +31,11 @@ public:
     };
     OHOS::sptr<OHOS::SurfaceBuffer> currentCreatorBuffer_;
     static std::shared_ptr<ImageCreatorContext> CreateImageCreatorContext();
-    void SetCreatorBufferConsumer(sptr<Surface> &consumer)
+    void SetCreatorBufferConsumer(sptr<IConsumerSurface> &consumer)
     {
         creatorConsumerSurface_ = consumer;
     }
-    sptr<Surface> GetCreatorBufferConsumer()
+    sptr<IConsumerSurface> GetCreatorBufferConsumer()
     {
         return creatorConsumerSurface_;
     }
@@ -97,7 +98,7 @@ public:
 private:
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageCreatorContext"};
-    OHOS::sptr<Surface> creatorConsumerSurface_;
+    OHOS::sptr<IConsumerSurface> creatorConsumerSurface_;
     OHOS::sptr<Surface> creatorProducerSurface_;
     int32_t width_;
     int32_t height_;

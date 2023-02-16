@@ -29,7 +29,7 @@ string ImageCreatorManager::SaveImageCreator(shared_ptr<ImageCreator> imageCreat
     mapCreator_.insert(pair<string, shared_ptr<ImageCreator>>(id, imageCreator));
     return id;
 }
-sptr<Surface> ImageCreatorManager::GetSurfaceByKeyId(string keyId)
+sptr<IConsumerSurface> ImageCreatorManager::GetSurfaceByKeyId(string keyId)
 {
     map<string, shared_ptr<ImageCreator>>::iterator iter;
     shared_ptr<ImageCreator> imageCreator = nullptr;
