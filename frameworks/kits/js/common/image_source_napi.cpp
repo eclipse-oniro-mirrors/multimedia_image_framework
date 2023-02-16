@@ -1638,8 +1638,12 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
         return;
     }
 
+    context->pixelMaps = nullptr;
     uint32_t errorCode = 0;
-    context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
+    uint32_t frameSum = context->rImageSource->GetFrameSum(errorCode);
+    if ((errorCode == SUCCESS) && (context->index >= NUM_0) && (context->index < frameSum)) {
+        context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
+    }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
         context->status = SUCCESS;
     } else {
