@@ -1584,8 +1584,10 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
     if (argCount > NUM_0) {
         if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
             HiLog::Debug(LABEL, "UnwrapContextForList object");
-            IMG_NAPI_CHECK_RET_D(ParseDecodeOptions(env, argValue[NUM_0], &(context->decodeOpts),
-                &(context->index), context->errMsg), nullptr, HiLog::Error(LABEL, "DecodeOptions mismatch"));
+            if (!ParseDecodeOptions(env, argValue[NUM_0], &(context->decodeOpts),
+                                    &(context->index), context->errMsg)) {
+                HiLog::Error(LABEL, "DecodeOptions mismatch");
+            }
         }
 
         if (ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
