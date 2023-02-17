@@ -1647,7 +1647,7 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
         context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "Create PixelMap List error, errorCode=%{public}u", errorCode);
+        HiLog::Error(LABEL, "Create PixelMap List error, error=%{public}u", errorCode);
         context->errMsg = "Create PixelMap List error";
         context->status = ERROR;
     }
@@ -1743,7 +1743,7 @@ STATIC_EXEC_FUNC(GetDelayTime)
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->delayTimes)) {
         context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "Get DelayTime error, errorCode=%{public}u", errorCode);
+        HiLog::Error(LABEL, "Get DelayTime error, error=%{public}u", errorCode);
         context->errMsg = "Get DelayTime error";
         context->status = ERROR;
     }
@@ -1835,11 +1835,11 @@ STATIC_EXEC_FUNC(GetFrameCount)
 
     uint32_t errorCode = 0;
     context->frameCount = context->rImageSource->GetFrameCount(errorCode);
-    HiLog::Debug(LABEL, "GetFrameCountExec frameCount=%{public}u, errorCode=%{public}u", context->frameCount, errorCode);
+    HiLog::Debug(LABEL, "GetFrameCountExec count=%{public}u, error=%{public}u", context->frameCount, errorCode);
     if (errorCode == SUCCESS) {
         context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "Get FrameCount error, errorCode=%{public}u", errorCode);
+        HiLog::Error(LABEL, "Get FrameCount error, error=%{public}u", errorCode);
         context->errMsg = "Get FrameCount error";
         context->status = ERROR;
     }
