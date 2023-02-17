@@ -1507,14 +1507,14 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts,
     uint32_t &errorCode)
 {
-    auto frameSum = GetFrameSum(errorCode);
+    auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame sum error.");
         return nullptr;
     }
 
     auto pixelMaps = std::make_unique<vector<unique_ptr<PixelMap>>>();
-    for (uint32_t index = 0; index < frameSum; index++) {
+    for (uint32_t index = 0; index < frameCount; index++) {
         auto pixelMap = CreatePixelMap(index, opts, errorCode);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("[ImageSource]CreatePixelMapList create PixelMap error. index=%{public}u", index);
@@ -1530,7 +1530,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
 
 unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
-    auto frameSum = GetFrameSum(errorCode);
+    auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetDelayTime get number error.");
         return nullptr;
@@ -1538,7 +1538,7 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 
     auto delayTimes = std::make_unique<vector<int32_t>>();
     const string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
-    for (uint32_t index = 0; index < frameSum; index++) {
+    for (uint32_t index = 0; index < frameCount; index++) {
         string delayTimeStr;
         errorCode = mainDecoder_->GetImagePropertyString(index, GIF_IMAGE_DELAY_TIME, delayTimeStr);
         if (errorCode != SUCCESS) {
@@ -1563,21 +1563,21 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
     return delayTimes;
 }
 
-uint32_t ImageSource::GetFrameSum(uint32_t &errorCode)
+uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 {
-    uint32_t frameSum = GetSourceInfo(errorCode).topLevelImageNum;
+    uint32_t frameCount = GetSourceInfo(errorCode).topLevelImageNum;
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]GetFrameSum get source info error.");
+        IMAGE_LOGE("[ImageSource]GetFrameCount get source info error.");
         return 0;
     }
 
     if (InitMainDecoder() != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]GetFrameSum image decode plugin is null.");
+        IMAGE_LOGE("[ImageSource]GetFrameCount image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return 0;
     }
 
-    return frameSum;
+    return frameCount;
 }
 } // namespace Media
 } // namespace OHOS

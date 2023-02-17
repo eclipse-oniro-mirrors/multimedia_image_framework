@@ -223,13 +223,13 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime003, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetFrameSum001
- * @tc.desc: test GetFrameSum
+ * @tc.name: GetFrameCount001
+ * @tc.desc: test GetFrameCount
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceGifExTest, GetFrameSum001, TestSize.Level3)
+HWTEST_F(ImageSourceGifExTest, GetFrameCount001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum001 start";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount001 start";
 
     const std::string testName = TEST_FILE_SINGLE_FRAME_GIF;
 
@@ -238,21 +238,21 @@ HWTEST_F(ImageSourceGifExTest, GetFrameSum001, TestSize.Level3)
     const std::string inName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
 
-    auto frameSum = imageSource->GetFrameSum(errorCode);
+    auto frameCount = imageSource->GetFrameCount(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_EQ(frameSum, 1);
+    ASSERT_EQ(frameCount, 1);
 
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum001 end";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount001 end";
 }
 
 /**
- * @tc.name: GetFrameSum002
- * @tc.desc: test GetFrameSum
+ * @tc.name: GetFrameCount002
+ * @tc.desc: test GetFrameCount
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceGifExTest, GetFrameSum002, TestSize.Level3)
+HWTEST_F(ImageSourceGifExTest, GetFrameCount002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum002 start";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount002 start";
 
     const std::string testName = TEST_FILE_MULTI_FRAME_GIF;
 
@@ -261,20 +261,20 @@ HWTEST_F(ImageSourceGifExTest, GetFrameSum002, TestSize.Level3)
     const std::string inName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
 
-    auto frameSum = imageSource->GetFrameSum(errorCode);
-    ASSERT_EQ(frameSum, 3);
+    auto frameCount = imageSource->GetFrameCount(errorCode);
+    ASSERT_EQ(frameCount, 3);
 
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum002 end";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount002 end";
 }
 
 /**
- * @tc.name: GetFrameSum003
- * @tc.desc: test GetFrameSum
+ * @tc.name: GetFrameCount003
+ * @tc.desc: test GetFrameCount
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceGifExTest, GetFrameSum003, TestSize.Level3)
+HWTEST_F(ImageSourceGifExTest, GetFrameCount003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum003 start";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount003 start";
 
     const std::string testName = TEST_FILE_JPG;
 
@@ -283,10 +283,10 @@ HWTEST_F(ImageSourceGifExTest, GetFrameSum003, TestSize.Level3)
     const std::string inName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
 
-    auto frameSum = imageSource->GetFrameSum(errorCode);
-    ASSERT_EQ(frameSum, 1);
+    auto frameCount = imageSource->GetFrameCount(errorCode);
+    ASSERT_EQ(frameCount, 1);
 
-    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameSum003 end";
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

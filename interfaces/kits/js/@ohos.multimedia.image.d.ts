@@ -1100,7 +1100,7 @@ declare namespace image {
     /**
      * Creates a PixelMap array based on image decoding parameters. This method uses a promise to
      * return the array.
-     * @since 7
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param options Image decoding parameters.
      * @returns A Promise instance used to return the PixelMap array.
@@ -1110,7 +1110,7 @@ declare namespace image {
     /**
      * Creates a PixelMap array based on image decoding parameters. This method uses a callback to
      * return the array.
-     * @since 7
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param options Image decoding parameters.
      * @param callback Callback used to return the PixelMap array.
@@ -1119,7 +1119,7 @@ declare namespace image {
 
     /**
      * Obtains the array of delay time in an image. This method uses a promise to return the array.
-     * @since 7
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @returns A Promise instance used to return the array.
      */
@@ -1127,27 +1127,27 @@ declare namespace image {
 
     /**
      * Obtains the array of delay time in an image. This method uses a callback to to return the array.
-     * @since 7
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param callback Callback used to return the array.
      */
     getDelayTime(callback: AsyncCallback<Array<number>>): void;
 
     /**
-     * Obtains the sum of frame in an image. This method uses a promise to return the number.
-     * @since 7
+     * Obtains the count of frame in an image. This method uses a promise to return the number.
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @returns A Promise instance used to return the number.
      */
-    getFrameSum(): Promise<number>;
+    getFrameCount(): Promise<number>;
 
     /**
-     * Obtains the sum of frame in an image. This method uses a callback to to return the number.
-     * @since 7
+     * Obtains the count of frame in an image. This method uses a callback to to return the number.
+     * @since 10
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param callback Callback used to return the number.
      */
-    getFrameSum(callback: AsyncCallback<number>): void;
+    getFrameCount(callback: AsyncCallback<number>): void;
 
     /**
      * Obtains the value of a property in an image with the specified index. This method uses a

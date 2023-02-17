@@ -85,7 +85,7 @@ struct ImageSourceAsyncContext {
     std::string errMsg;
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
     std::unique_ptr<std::vector<int32_t>> delayTimes;
-    uint32_t frameSum = 0;
+    uint32_t frameCount = 0;
 };
 
 struct ImageEnum {
@@ -316,7 +316,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getDelayTime", GetDelayTime),
-        DECLARE_NAPI_FUNCTION("getFrameSum", GetFrameSum),
+        DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
@@ -1640,8 +1640,8 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
 
     context->pixelMaps = nullptr;
     uint32_t errorCode = 0;
-    uint32_t frameSum = context->rImageSource->GetFrameSum(errorCode);
-    if ((errorCode == SUCCESS) && (context->index >= NUM_0) && (context->index < frameSum)) {
+    uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
+    if ((errorCode == SUCCESS) && (context->index >= NUM_0) && (context->index < frameCount)) {
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
     }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {
@@ -1818,9 +1818,9 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     return result;
 }
 
-STATIC_EXEC_FUNC(GetFrameSum)
+STATIC_EXEC_FUNC(GetFrameCount)
 {
-    HiLog::Debug(LABEL, "GetFrameSumExec IN");
+    HiLog::Debug(LABEL, "GetFrameCountExec IN");
 
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
@@ -1834,22 +1834,22 @@ STATIC_EXEC_FUNC(GetFrameSum)
     }
 
     uint32_t errorCode = 0;
-    context->frameSum = context->rImageSource->GetFrameSum(errorCode);
-    HiLog::Debug(LABEL, "GetFrameSumExec frameSum=%{public}u, errorCode=%{public}u", context->frameSum, errorCode);
+    context->frameCount = context->rImageSource->GetFrameCount(errorCode);
+    HiLog::Debug(LABEL, "GetFrameCountExec frameCount=%{public}u, errorCode=%{public}u", context->frameCount, errorCode);
     if (errorCode == SUCCESS) {
         context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "Get FrameSum error, errorCode=%{public}u", errorCode);
-        context->errMsg = "Get FrameSum error";
+        HiLog::Error(LABEL, "Get FrameCount error, errorCode=%{public}u", errorCode);
+        context->errMsg = "Get FrameCount error";
         context->status = ERROR;
     }
 
-    HiLog::Debug(LABEL, "GetFrameSumExec OUT");
+    HiLog::Debug(LABEL, "GetFrameCountExec OUT");
 }
 
-STATIC_COMPLETE_FUNC(GetFrameSum)
+STATIC_COMPLETE_FUNC(GetFrameCount)
 {
-    HiLog::Debug(LABEL, "GetFrameSumComplete IN");
+    HiLog::Debug(LABEL, "GetFrameCountComplete IN");
 
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
@@ -1864,23 +1864,23 @@ STATIC_COMPLETE_FUNC(GetFrameSum)
 
     napi_value result = nullptr;
     if (context->status == SUCCESS) {
-        HiLog::Debug(LABEL, "GetFrameSumComplete uint");
-        napi_create_uint32(env, context->frameSum, &result);
+        HiLog::Debug(LABEL, "GetFrameCountComplete uint");
+        napi_create_uint32(env, context->frameCount, &result);
     } else {
-        HiLog::Debug(LABEL, "GetFrameSumComplete undefined");
+        HiLog::Debug(LABEL, "GetFrameCountComplete undefined");
         napi_get_undefined(env, &result);
     }
 
-    context->frameSum = 0;
+    context->frameCount = 0;
 
-    HiLog::Debug(LABEL, "GetFrameSumComplete OUT");
+    HiLog::Debug(LABEL, "GetFrameCountComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
-napi_value ImageSourceNapi::GetFrameSum(napi_env env, napi_callback_info info)
+napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "GetFrameSum IN");
-    StartTrace(HITRACE_TAG_ZIMAGE, "GetFrameSum");
+    HiLog::Debug(LABEL, "GetFrameCount IN");
+    StartTrace(HITRACE_TAG_ZIMAGE, "GetFrameCount");
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
@@ -1897,12 +1897,12 @@ napi_value ImageSourceNapi::GetFrameSum(napi_env env, napi_callback_info info)
     }
 
     napi_status status;
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetFrameSum", GetFrameSumExec,
-        GetFrameSumComplete, asyncContext, asyncContext->work);
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetFrameCount", GetFrameCountExec,
+        GetFrameCountComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
     FinishTrace(HITRACE_TAG_ZIMAGE);
-    HiLog::Debug(LABEL, "GetFrameSum OUT");
+    HiLog::Debug(LABEL, "GetFrameCount OUT");
     return result;
 }
 }  // namespace Media
