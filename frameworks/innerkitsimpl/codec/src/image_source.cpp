@@ -1509,7 +1509,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
 {
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame sum error.");
+        IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame count error.");
         return nullptr;
     }
 
@@ -1532,7 +1532,7 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]GetDelayTime get number error.");
+        IMAGE_LOGE("[ImageSource]GetDelayTime get frame sum error.");
         return nullptr;
     }
 
