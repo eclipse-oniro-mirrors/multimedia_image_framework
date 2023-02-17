@@ -74,6 +74,7 @@ int32_t OH_Image_Receiver_ReadLatestImage(const ImageReceiverNative* native, nap
     }
     ImageReceiverArgs args;
     args.outValue = image;
+    args.inEnv = native->env;
     return ImageReceiverNativeCtxCall(CTX_FUNC_IMAGE_RECEIVER_READ_LATEST_IMAGE, native->napi, &args);
 }
 
@@ -85,6 +86,7 @@ int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_
     }
     ImageReceiverArgs args;
     args.outValue = image;
+    args.inEnv = native->env;
     return ImageReceiverNativeCtxCall(CTX_FUNC_IMAGE_RECEIVER_READ_NEXT_IMAGE, native->napi, &args);
 }
 

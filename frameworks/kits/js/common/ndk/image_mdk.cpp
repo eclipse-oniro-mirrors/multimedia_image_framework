@@ -83,8 +83,9 @@ int32_t OH_Image_GetComponent(const ImageNative* native, int32_t componentType,
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageNapiArgs args;
+    args.inNum0 = componentType;
     args.outComponent = componentNative;
-    auto res = ImageNapiNativeCtxCall(CTX_FUNC_IMAGE_FORMAT, native->napi, &args);
+    auto res = ImageNapiNativeCtxCall(CTX_FUNC_IMAGE_GET_COMPONENT, native->napi, &args);
     return res;
 }
 

@@ -240,7 +240,7 @@ NativeComponent* NativeImage::CreateCombineComponent(int32_t type)
 {
     uint64_t size = NUM_0;
     GetDataSize(size);
-    return CreateComponent(type, static_cast<size_t>(size), NUM_0, NUM_0, GetSurfaceBufferAddr());
+    return CreateComponent(type, static_cast<size_t>(size), buffer_->GetWidth(), NUM_1, GetSurfaceBufferAddr());
 }
 int32_t NativeImage::GetSize(int32_t &width, int32_t &height)
 {
