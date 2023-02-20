@@ -27,7 +27,7 @@ public:
     {
         callBack = nullptr;
     }
-    void OnSurfaceBufferAvaliable() override
+    void OnSurfaceBufferAvaliable() __attribute__((no_sanitize("cfi"))) override
     {
         if (callBack != nullptr) {
             callBack();
