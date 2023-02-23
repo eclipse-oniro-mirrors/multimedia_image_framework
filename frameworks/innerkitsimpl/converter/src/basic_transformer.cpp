@@ -185,22 +185,12 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
     outPixmap.imageInfo.alphaType = inPixmap.imageInfo.alphaType;
     outPixmap.imageInfo.baseDensity = inPixmap.imageInfo.baseDensity;
 
-#ifdef _WIN32
-    errno_t backRet = memset_s(outPixmap.data, COLOR_DEFAULT, bufferSize * sizeof(uint8_t));
-    if (backRet != EOK) {
-        IMAGE_LOGE("[BasicTransformer]apply heap memory failed.", backRet);
-        ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
-            fd, bufferSize, outPixmap.data);
-        return ERR_IMAGE_GENERAL_ERROR;
-    }
-#else
     if (memset_s(outPixmap.data, bufferSize * sizeof(uint8_t), COLOR_DEFAULT, bufferSize * sizeof(uint8_t)) != EOK) {
         IMAGE_LOGE("[BasicTransformer]apply heap memory failed.");
         ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
             fd, bufferSize, outPixmap.data);
         return ERR_IMAGE_GENERAL_ERROR;
     }
-#endif
 
     if (!DrawPixelmap(inPixmap, pixelBytes, dstSize, outPixmap.data)) {
         IMAGE_LOGE("[BasicTransformer] the matrix can not invert.");
@@ -353,8 +343,8 @@ void BasicTransformer::BilinearPixelProc(const AroundPos aroundPos, struct Bilin
 void BasicTransformer::BilinearProc(const Point &pt, const PixmapInfo &pixmapInfo, const uint32_t rb,
                                     const int32_t shiftBytes, uint8_t *data)
 {
-    uint32_t srcX = (pt.x * MULTI_65536) - HALF_BASIC;
-    uint32_t srcY = (pt.y * MULTI_65536) - HALF_BASIC;
+    uint32_t srcX = (pt.x * MULTI_65536) - HALF_BASIC < 0 ? 0 : (pt.x * MULTI_65536) - HALF_BASIC;
+    uint32_t srcY = (pt.y * MULTI_65536) - HALF_BASIC < 0 ? 0 : (pt.y * MULTI_65536) - HALF_BASIC;
 
     struct BilinearPixelProcArgs procArgs;
     procArgs.format = pixmapInfo.imageInfo.pixelFormat;
