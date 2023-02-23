@@ -12,6 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * @addtogroup image
+ * @{
+ *
+ * @brief Provides access image functions.
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 10
+ * @version 2.0
+ */
+
+/**
+ * @file image_mdk_common.h
+ *
+ * @brief Declares common enumerates and structure for image.
+ *
+ * @since 10
+ * @version 2.0
+ */
+
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_COMMON_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_COMMON_H_
 namespace OHOS {
@@ -20,13 +41,29 @@ namespace Media {
 extern "C" {
 #endif
 
+/**
+ * @brief Enumerates the result codes that may be returned by a function.
+ *
+ * @since 8
+ * @version 1.0
+ */
 enum {
+    /** Success result */
     OHOS_IMAGE_RESULT_SUCCESS = 0,
+    /** Invalid parameters */
     OHOS_IMAGE_RESULT_BAD_PARAMETER = -1,
 };
 
+/**
+ * @brief Defines image size.
+ *
+ * @since 10
+ * @version 2.0
+ */
 struct OhosImageSize {
+    /** Image width, in pixels. */
     int32_t width;
+    /** Image height, in pixels. */
     int32_t height;
 };
 
