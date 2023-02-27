@@ -81,7 +81,7 @@ enum {
     /** Chroma info.*/
     OHOS_IMAGE_COMPONENT_FORMAT_YUV_V = 3,
     /** Jpeg type.*/
-    OHOS_IMAGE_COMPONENT_FORMAT_JPEG = 4, 
+    OHOS_IMAGE_COMPONENT_FORMAT_JPEG = 4,
 };
 
 /**
