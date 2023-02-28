@@ -28,6 +28,7 @@ public:
     ImageNapi();
     ~ImageNapi();
     static napi_value Init(napi_env env, napi_value exports);
+    static napi_value Create(napi_env env);
     static napi_value Create(napi_env env, std::shared_ptr<NativeImage> nativeImage);
     static std::shared_ptr<NativeImage> GetNativeImage(napi_env env, napi_value image);
 
@@ -47,6 +48,7 @@ private:
     static thread_local napi_ref sConstructor_;
     static ImageHolderManager<NativeImage> sNativeImageHolder_;
     std::shared_ptr<NativeImage> native_;
+    bool isTestImage_;
 };
 } // namespace Media
 } // namespace OHOS

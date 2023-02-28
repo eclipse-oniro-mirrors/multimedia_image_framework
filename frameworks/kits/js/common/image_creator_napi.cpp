@@ -560,7 +560,7 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
         if (g_creatorTest) {
-            result = ImageNapi::Create(env, nullptr);
+            result = ImageNapi::Create(env);
             context->status = SUCCESS;
             CommonCallbackRoutine(env, context, result);
             return;
@@ -590,6 +590,16 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
     return JSCommonProcess(args);
 }
 
+static bool IsTestImageArgs(napi_env env, napi_value value)
+{
+    if (g_creatorTest) {
+        ImageNapi* image = nullptr;
+        napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&image));
+        return (status == napi_ok && image != nullptr);
+    }
+    return false;
+}
+
 static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
                         std::shared_ptr<NativeImage> &imageNapi_, napi_ref* callbackRef)
 {
@@ -597,7 +607,7 @@ static bool JsQueueArgs(napi_env env, size_t argc, napi_value* argv,
         auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
         if (argType0 == napi_object) {
             imageNapi_ = ImageNapi::GetNativeImage(env, argv[PARAM0]);
-            if (imageNapi_ == nullptr) {
+            if (imageNapi_ == nullptr && !IsTestImageArgs(env, argv[PARAM0])) {
                 ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
                     "Could not get queue type object");
                 return false;
