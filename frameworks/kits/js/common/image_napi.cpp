@@ -490,7 +490,7 @@ napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
         return result;
     }
     if (argc == NUM1) {
-        if (JsGetCallbackFunc(env, argv[NUM0], &(context->callbackRef))) {
+        if (!JsGetCallbackFunc(env, argv[NUM0], &(context->callbackRef))) {
             IMAGE_ERR("Unsupport arg 0 type");
             return result;
         }
