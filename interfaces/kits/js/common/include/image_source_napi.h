@@ -62,6 +62,9 @@ private:
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapList(napi_env env, napi_callback_info info);
+    static napi_value GetDelayTime(napi_env env, napi_callback_info info);
+    static napi_value GetFrameCount(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;

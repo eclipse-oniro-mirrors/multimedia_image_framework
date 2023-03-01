@@ -18,7 +18,6 @@ import { AsyncCallback } from './basic';
 /**
  * @name image
  * @since 6
- * @import import image from '@ohos.multimedia.image';
  */
 declare namespace image {
 
@@ -45,7 +44,7 @@ declare namespace image {
     RGB_565 = 2,
 
     /**
-     * Indicates that each pixel is stored on 32 bits. Components R, G, B, and A each occupies 8 bits
+     * Indicates that each pixel is stored on 32 bits. Each pixel contains 4 components：B(8bits), G(8bits), R(8bits), A(8bits)
      * and are stored from the higher-order to the lower-order bits.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -53,7 +52,7 @@ declare namespace image {
     RGBA_8888 = 3,
 
     /**
-     * Indicates that each pixel is stored on 32 bits. Components B, G, R, and A each occupies 8 bits
+     * Indicates that each pixel is stored on 32 bits. Each pixel contains 4 components：B(8bits), G(8bits), R(8bits), A(8bits)
      * and are stored from the higher-order to the lower-order bits.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -61,7 +60,7 @@ declare namespace image {
     BGRA_8888 = 4,
 
     /**
-     * Indicates that each pixel is stored on 24 bits. Only the R, G, and B each occupies 8 bits
+     * Indicates that each pixel is stored on 24 bits. Each pixel contains 3 components：R(8bits), G(8bits), B(8bits)
      * and are stored from the higher-order to the lower-order bits.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -69,7 +68,7 @@ declare namespace image {
     RGB_888 = 5,
 
     /**
-     * Indicates that each pixel is stored on 8 bits. Only the ALPHA which occupies 8 bits
+     * Indicates that each pixel is stored on 8 bits. Each pixel contains 1 component：ALPHA(8bits)
      * and is stored from the higher-order to the lower-order bits.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -77,7 +76,7 @@ declare namespace image {
     ALPHA_8 = 6,
 
     /**
-     * Indicates that each pixel is stored on 32 bits. Components B, G, R, and A each occupies 8 bits
+     * Indicates that each pixel is stored on 32 bits. Each pixel contains 4 components：B(8bits), G(8bits), R(8bits), A(8bits)
      * and are stored from the higher-order to the lower-order bits in F16.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -85,7 +84,7 @@ declare namespace image {
     RGBA_F16 = 7,
 
     /**
-     * Indicates that The storage order is to store Y first and then V U alternately each occupies 8 bits
+     * Indicates that the storage order is to store Y first and then V U alternately each occupies 8 bits
      * and are stored from the higher-order to the lower-order bits.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -93,7 +92,7 @@ declare namespace image {
     NV21 = 8,
 
     /**
-     * Indicates that The storage order is to store Y first and then U V alternately each occupies 8 bits
+     * Indicates that the storage order is to store Y first and then U V alternately each occupies 8 bits
      * and are stored from the higher-order to the lower-order bits.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
@@ -430,17 +429,15 @@ declare namespace image {
     format: string;
 
     /**
-     * Quality of the target image. The value is an integer ranging from 0 to 100. A larger value indicates better
-     * image quality but larger space occupied.
+     * Quality of the target image. The value is an integer ranging from 0 to 100. A larger value indicates better.
      * @since 6
      * @syscap SystemCapability.Multimedia.Image.ImagePacker
      */
     quality: number;
 
     /**
-     * BufferSize of the target image. The value is an integer which better not be too big.
-     * if this bufferSize is less than or equal to 0, it will be converted to 10MB.
-     * image quality but larger space occupied.
+     * BufferSize of the target image.
+     * If this bufferSize is less than or equal to 0, it will be converted to 10MB.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImagePacker
      */
@@ -656,7 +653,7 @@ declare namespace image {
    * @since 6
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param uri Image source URI.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(uri: string): ImageSource;
 
@@ -666,7 +663,7 @@ declare namespace image {
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param uri Image source URI.
    * @param options The config of Image source.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(uri: string, options: SourceOptions): ImageSource;
 
@@ -675,7 +672,7 @@ declare namespace image {
    * @since 7
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param fd ID of a file descriptor.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(fd: number): ImageSource;
 
@@ -685,7 +682,7 @@ declare namespace image {
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param fd ID of a file descriptor.
    * @param options The config of Image source.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(fd: number, options: SourceOptions): ImageSource;
 
@@ -694,7 +691,7 @@ declare namespace image {
    * @since 9
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param buf The buffer of the image.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(buf: ArrayBuffer): ImageSource;
 
@@ -704,7 +701,7 @@ declare namespace image {
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param buf The buffer of the image.
    * @param options The config of Image source.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function createImageSource(buf: ArrayBuffer, options: SourceOptions): ImageSource;
 
@@ -713,7 +710,7 @@ declare namespace image {
    * @since 9
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param buf The buffer of the image.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function CreateIncrementalSource(buf: ArrayBuffer): ImageSource;
 
@@ -723,7 +720,7 @@ declare namespace image {
    * @syscap SystemCapability.Multimedia.Image.ImageSource
    * @param buf The buffer of the image.
    * @param options The config of source.
-   * @return Returns the ImageSource instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageSource instance if the operation is successful; returns null otherwise.
    */
   function CreateIncrementalSource(buf: ArrayBuffer, options?: SourceOptions): ImageSource;
 
@@ -731,7 +728,7 @@ declare namespace image {
    * Creates an ImagePacker instance.
    * @since 6
    * @syscap SystemCapability.Multimedia.Image.ImagePacker
-   * @return Returns the ImagePacker instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImagePacker instance if the operation is successful; returns null otherwise.
    */
   function createImagePacker(): ImagePacker;
 
@@ -744,7 +741,7 @@ declare namespace image {
    * @param format The format of the Image that this receiver will produce. This must be one of the
    *            {@link ImageFormat} constants.
    * @param capacity The maximum number of images the user will want to access simultaneously.
-   * @return Returns the ImageReceiver instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageReceiver instance if the operation is successful; returns null otherwise.
    */
   function createImageReceiver(width: number, height: number, format: number, capacity: number): ImageReceiver;
 
@@ -757,7 +754,7 @@ declare namespace image {
    * @param format The format of the Image that this creator will produce. This must be one of the
    *            {@link ImageFormat} constants.
    * @param capacity The maximum number of images the user will want to access simultaneously.
-   * @return Returns the ImageCreator instance if the operation is successful; returns null otherwise.
+   * @returns Returns the ImageCreator instance if the operation is successful; returns null otherwise.
    */
   function createImageCreator(width: number, height: number, format: number, capacity: number): ImageCreator;
 
@@ -780,7 +777,7 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param dst A buffer to which the image pixel map data will be written.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     readPixelsToBuffer(dst: ArrayBuffer): Promise<void>;
 
@@ -799,7 +796,7 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param area Area from which the image pixel map data will be read.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     readPixels(area: PositionArea): Promise<void>;
 
@@ -818,7 +815,7 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param area Area to which the image pixel map data will be written.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     writePixels(area: PositionArea): Promise<void>;
 
@@ -838,7 +835,7 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param src A buffer from which the image data will be read.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     writeBufferToPixels(src: ArrayBuffer): Promise<void>;
 
@@ -856,7 +853,7 @@ declare namespace image {
      * Obtains pixel map information about this image. This method uses a promise to return the information.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return A Promise instance used to return the image pixel map information. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the image pixel map information. If the operation fails, an error message is returned.
      */
     getImageInfo(): Promise<ImageInfo>;
 
@@ -872,7 +869,7 @@ declare namespace image {
      * Obtains the number of bytes in each line of the image pixel map.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return Number of bytes in each line.
+     * @returns Number of bytes in each line.
      */
     getBytesNumberPerRow(): number;
 
@@ -880,7 +877,7 @@ declare namespace image {
      * Obtains the total number of bytes of the image pixel map.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return Total number of bytes.
+     * @returns Total number of bytes.
      */
     getPixelBytesNumber(): number;
 
@@ -888,7 +885,7 @@ declare namespace image {
      * Obtains the density of the image pixel map.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return The number of density.
+     * @returns The number of density.
      */
     getDensity():number;
 
@@ -906,20 +903,20 @@ declare namespace image {
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param rate The value of transparent rate.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     opacity(rate: number): Promise<void>;
 
     /**
-     * Obtains new pixel map with allpha information. This method uses a promise to return the information.
+     * Obtains new pixel map with alpha information. This method uses a promise to return the information.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return A Promise instance used to return the new image pixel map. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the new image pixel map. If the operation fails, an error message is returned.
      */
     createAlphaPixelmap(): Promise<PixelMap>;
 
     /**
-     * Obtains new pixel map with allpha information. This method uses a callback to return the information.
+     * Obtains new pixel map with alpha information. This method uses a callback to return the information.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param callback Callback used to return the new image pixel map. If the operation fails, an error message is returned.
@@ -942,7 +939,7 @@ declare namespace image {
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param x The zoom value of width.
 	 * @param y The zoom value of height.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     scale(x: number, y: number): Promise<void>;
 
@@ -962,7 +959,7 @@ declare namespace image {
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param x The position value of width.
 	 * @param y The position value of height.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     translate(x: number, y: number): Promise<void>;
 
@@ -980,7 +977,7 @@ declare namespace image {
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param angle The rotation angle.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     rotate(angle: number): Promise<void>;
 
@@ -1000,7 +997,7 @@ declare namespace image {
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param horizontal Is flip in horizontal.
      * @param vertical Is flip in vertical.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     flip(horizontal: boolean, vertical: boolean): Promise<void>;
 
@@ -1018,7 +1015,7 @@ declare namespace image {
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param region The region to crop.
-     * @return A Promise instance used to return the operation result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the operation result. If the operation fails, an error message is returned.
      */
     crop(region: Region): Promise<void>;
 
@@ -1034,7 +1031,7 @@ declare namespace image {
      * Releases this PixelMap object. This method uses a promise to return the result.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return A Promise instance used to return the instance release result. If the operation fails, an error message is returned.
+     * @returns A Promise instance used to return the instance release result. If the operation fails, an error message is returned.
      */
     release(): Promise<void>;
   }
@@ -1068,7 +1065,7 @@ declare namespace image {
      * @since 6
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param index Sequence number of an image. If this parameter is not specified, the default value 0 is used.
-     * @return A Promise instance used to return the image information.
+     * @returns A Promise instance used to return the image information.
      */
     getImageInfo(index?: number): Promise<ImageInfo>;
 
@@ -1078,7 +1075,7 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param options Image decoding parameters.
-     * @return A Promise instance used to return the PixelMap object.
+     * @returns A Promise instance used to return the PixelMap object.
      */
     createPixelMap(options?: DecodingOptions): Promise<PixelMap>;
     
@@ -1101,13 +1098,65 @@ declare namespace image {
     createPixelMap(options: DecodingOptions, callback: AsyncCallback<PixelMap>): void;
 
     /**
+     * Creates a PixelMap array based on image decoding parameters. This method uses a promise to
+     * return the array.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @param options Image decoding parameters.
+     * @returns A Promise instance used to return the PixelMap array.
+     */
+    createPixelMapList(options?: DecodingOptions): Promise<Array<PixelMap>>;
+
+    /**
+     * Creates a PixelMap array based on image decoding parameters. This method uses a callback to
+     * return the array.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @param options Image decoding parameters.
+     * @param callback Callback used to return the PixelMap array.
+     */
+    createPixelMapList(options: DecodingOptions, callback: AsyncCallback<Array<PixelMap>>): void;
+
+    /**
+     * Obtains the array of delay time in an image. This method uses a promise to return the array.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @returns A Promise instance used to return the array.
+     */
+    getDelayTime(): Promise<Array<number>>;
+
+    /**
+     * Obtains the array of delay time in an image. This method uses a callback to to return the array.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @param callback Callback used to return the array.
+     */
+    getDelayTime(callback: AsyncCallback<Array<number>>): void;
+
+    /**
+     * Obtains the count of frame in an image. This method uses a promise to return the number.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @returns A Promise instance used to return the number.
+     */
+    getFrameCount(): Promise<number>;
+
+    /**
+     * Obtains the count of frame in an image. This method uses a callback to to return the number.
+     * @since 10
+     * @syscap SystemCapability.Multimedia.Image.ImageSource
+     * @param callback Callback used to return the number.
+     */
+    getFrameCount(callback: AsyncCallback<number>): void;
+
+    /**
      * Obtains the value of a property in an image with the specified index. This method uses a
      * promise to return the property value in a string.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param key Name of the property whose value is to be obtained.
      * @param options Index of the image.
-     * @return A Promise instance used to return the property value. If the operation fails, the default value is returned.
+     * @returns A Promise instance used to return the property value. If the operation fails, the default value is returned.
      */
     getImageProperty(key: string, options?: GetImagePropertyOptions): Promise<string>;
 
@@ -1139,7 +1188,7 @@ declare namespace image {
      * @syscap SystemCapability.Multimedia.Image.ImageSource
      * @param key Name of the property whose value is to be modified.
      * @param value The value to be set to property.
-     * @return A Promise instance used to return the property value.
+     * @returns A Promise instance used to return the property value.
      */
     modifyImageProperty(key: string, value: string): Promise<void>;
 
@@ -1162,7 +1211,7 @@ declare namespace image {
      * @param isFinished If is it finished.
      * @param value The offset of data.
      * @param length The length fo buf.
-     * @return A Promise instance used to return the property value.
+     * @returns A Promise instance used to return the property value.
      */
     updateData(buf: ArrayBuffer, isFinished: boolean, value: number, length: number): Promise<void>;
 
@@ -1190,7 +1239,7 @@ declare namespace image {
      * Releases an ImageSource instance and uses a promise to return the result.
      * @since 6
      * @syscap SystemCapability.Multimedia.Image.ImageSource
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     release(): Promise<void>;
 
@@ -1224,7 +1273,7 @@ declare namespace image {
      * @syscap SystemCapability.Multimedia.Image.ImagePacker
      * @param source Image to be processed.
      * @param option Option for image packing.
-     * @return A Promise instance used to return the compressed or packed data.
+     * @returns A Promise instance used to return the compressed or packed data.
      */
     packing(source: ImageSource, option: PackingOption): Promise<ArrayBuffer>;
 
@@ -1244,7 +1293,7 @@ declare namespace image {
       * @syscap SystemCapability.Multimedia.Image.ImagePacker
       * @param source PixelMap to be processed.
       * @param option Option for image packing.
-      * @return A Promise instance used to return the compressed or packed data.
+      * @returns A Promise instance used to return the compressed or packed data.
       */
      packing(source: PixelMap, option: PackingOption): Promise<ArrayBuffer>;
 
@@ -1260,7 +1309,7 @@ declare namespace image {
      * Releases an ImagePacker instance and uses a promise to return the result.
      * @since 6
      * @syscap SystemCapability.Multimedia.Image.ImagePacker
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     release(): Promise<void>;
 
@@ -1313,7 +1362,7 @@ declare namespace image {
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      * @param componentType The component type of image.
-     * @return A Promise instance used to return the component buffer.
+     * @returns A Promise instance used to return the component buffer.
      */
     getComponent(componentType: ComponentType): Promise<Component>;
 
@@ -1329,7 +1378,7 @@ declare namespace image {
      * Release current image to receive another and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     release(): Promise<void>;
   }
@@ -1362,7 +1411,7 @@ declare namespace image {
     readonly format: ImageFormat;
 
     /**
-     * get an id which indicates a surface and can be used to set to Camera or other component can receive a surface
+     * Get an id which indicates a surface and can be used to set to Camera or other component can receive a surface
      * and uses a callback to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageReceiver
@@ -1371,11 +1420,11 @@ declare namespace image {
     getReceivingSurfaceId(callback: AsyncCallback<string>): void;
 
     /**
-     * get an id which indicates a surface and can be used to set to Camera or other component can receive a surface
+     * Get an id which indicates a surface and can be used to set to Camera or other component can receive a surface
      * and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageReceiver
-     * @return A Promise instance used to return the surface id.
+     * @returns A Promise instance used to return the surface id.
      */
     getReceivingSurfaceId(): Promise<string>;
 
@@ -1391,7 +1440,7 @@ declare namespace image {
      * Get lasted image from receiver and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageReceiver
-     * @return A Promise instance used to return the latest image.
+     * @returns A Promise instance used to return the latest image.
      */
     readLatestImage(): Promise<Image>;
 
@@ -1407,7 +1456,7 @@ declare namespace image {
      * Get next image from receiver and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageReceiver
-     * @return A Promise instance used to return the next image.
+     * @returns A Promise instance used to return the next image.
      */
     readNextImage(): Promise<Image>;
 
@@ -1432,7 +1481,7 @@ declare namespace image {
      * Release image receiver instance and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageReceiver
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     release(): Promise<void>;
   }
@@ -1458,7 +1507,7 @@ declare namespace image {
     readonly format: ImageFormat;
 
     /**
-     * apply for new graphic buffer from free queue and uses a callback to return the result.
+     * Apply for new graphic buffer from free queue and use a callback to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageCreator
      * @param callback Callback to return the operation result.
@@ -1466,15 +1515,15 @@ declare namespace image {
     dequeueImage(callback: AsyncCallback<Image>): void;
 
     /**
-     * apply for new graphic buffer from free queue and uses a promise to return the result.
+     * Apply for new graphic buffer from free queue and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageCreator
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     dequeueImage(): Promise<Image>;
 
     /**
-     * queue buffer to dirty queue and uses a callback to return the result.
+     * Queue buffer to dirty queue and uses a callback to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageCreator
      * @param callback Callback to return the operation result.
@@ -1482,10 +1531,10 @@ declare namespace image {
     queueImage(interface: Image, callback: AsyncCallback<void>): void;
 
     /**
-     * queue buffer to dirty queue and uses a promise to return the result.
+     * Queue buffer to dirty queue and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageCreator
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     queueImage(interface: Image): Promise<void>;
 
@@ -1510,7 +1559,7 @@ declare namespace image {
      * Releases buffer in bufferqueue instance and uses a promise to return the result.
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.ImageCreator
-     * @return A Promise instance used to return the operation result.
+     * @returns A Promise instance used to return the operation result.
      */
     release(): Promise<void>;
   }

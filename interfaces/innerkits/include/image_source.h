@@ -176,6 +176,10 @@ public:
     NATIVEEXPORT void SetMemoryUsagePreference(const MemoryUsagePreference preference);
     NATIVEEXPORT MemoryUsagePreference GetMemoryUsagePreference();
     NATIVEEXPORT uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    NATIVEEXPORT std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> CreatePixelMapList(const DecodeOptions &opts,
+        uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDelayTime(uint32_t &errorCode);
+    NATIVEEXPORT uint32_t GetFrameCount(uint32_t &errorCode);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
