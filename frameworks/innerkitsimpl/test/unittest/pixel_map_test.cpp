@@ -35,6 +35,7 @@ std::unique_ptr<PixelMap> ConstructPixmap(AllocatorType type)
 {
     int32_t pixelMapWidth = 4;
     int32_t pixelMapHeight = 3;
+    int32_t bytesPerPixel = 3;
     std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
     ImageInfo info;
     info.size.width = pixelMapWidth;
@@ -43,7 +44,7 @@ std::unique_ptr<PixelMap> ConstructPixmap(AllocatorType type)
     info.colorSpace = ColorSpace::SRGB;
     pixelMap->SetImageInfo(info);
 
-    int32_t rowDataSize = pixelMapWidth;
+    int32_t rowDataSize = pixelMapWidth * bytesPerPixel;
     uint32_t bufferSize = rowDataSize * pixelMapHeight;
     if (bufferSize <= 0) {
         return nullptr;
@@ -74,7 +75,8 @@ std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height, PixelFo
     info.alphaType = alphaType;
     pixelMap->SetImageInfo(info);
 
-    int32_t rowDataSize = width;
+    int32_t bytesPerPixel = 3;
+    int32_t rowDataSize = width * bytesPerPixel;
     uint32_t bufferSize = rowDataSize * height;
     if (bufferSize <= 0) {
         return nullptr;
@@ -1177,5 +1179,31 @@ HWTEST_F(PixelMapTest, PixelMapTest029, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest029 end";
 }
+
+#ifdef IMAGE_COLORSPACE_FLAG
+/**
+* @tc.name: ImagePixelMap030
+* @tc.desc: test InnerSetColorSpace
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(PixelMapTest, PixelMapTest030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    OHOS::ColorManager::ColorSpace grColorSpace =
+        OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
+    pixelMap.InnerSetColorSpace(grColorSpace);
+    OHOS::ColorManager::ColorSpace outColorSpace = pixelMap.InnerGetGrColorSpace();
+    pixelMap.InnerSetColorSpace(outColorSpace);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace end";
+}
+#endif
 }
 }

@@ -33,6 +33,7 @@ namespace Multimedia {
     {
         int32_t pixelMapWidth = 4;
         int32_t pixelMapHeight = 3;
+        int32_t bytesPerPixel = 3;
         std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
         ImageInfo info;
         info.size.width = pixelMapWidth;
@@ -41,7 +42,7 @@ namespace Multimedia {
         info.colorSpace = ColorSpace::SRGB;
         pixelMap->SetImageInfo(info);
 
-        int32_t rowDataSize = pixelMapWidth;
+        int32_t rowDataSize = pixelMapWidth * bytesPerPixel;
         uint32_t bufferSize = rowDataSize * pixelMapHeight;
         void *buffer = malloc(bufferSize);
         char *ch = reinterpret_cast<char *>(buffer);
