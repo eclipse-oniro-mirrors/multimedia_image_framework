@@ -19,10 +19,16 @@ module_output_path = "multimedia_image/image_framework"
 ohos_unittest("commontest") {
   module_out_path = module_output_path
 
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "$graphic_subsystem/utils/color_manager/export",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
@@ -34,6 +40,7 @@ ohos_unittest("commontest") {
   ]
 
   deps = [
+    "$graphic_subsystem/utils/color_manager:color_manager",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
@@ -880,6 +887,26 @@ ohos_unittest("gifplugintest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("ndktest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "/utils/include",
+    "/interfaces/innerkits/include",
+    "//third_party/googletest/googletest/include",
+    "../../../../../arkui/napi/interfaces/inner_api",
+    "../../../../../arkui/napi/interfaces/kits",
+    "//third_party/node/src",
+  ]
+  sources = [ "unittest/ndk_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -900,6 +927,7 @@ group("unittest") {
     ":imageutilstest",
     ":interfacetest",
     ":mocktest",
+    ":ndktest",
     ":pixelconvertadaptertest",
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
