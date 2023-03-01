@@ -31,8 +31,11 @@ static const std::string INPUT_PATH = "/data/local/tmp/image/";
 static const std::string OUTPUT_PATH = "/data/local/tmp/image/output_";
 static const std::string OUTPUT_EXT = ".jpg";
 static const std::string TEST_FILE_SINGLE_FRAME_GIF = "test.gif";
+static const size_t TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT = 1;
 static const std::string TEST_FILE_MULTI_FRAME_GIF = "moving_test.gif";
+static const size_t TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT = 3;
 static const std::string TEST_FILE_JPG = "test.jpg";
+static const size_t TEST_FILE_JPG_FRAME_COUNT = 1;
 }
 
 class ImageSourceGifExTest : public testing::Test {
@@ -54,20 +57,20 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList001, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMaps, nullptr);
-    ASSERT_EQ(pixelMaps->size(), 1);
+    ASSERT_EQ(pixelMaps->size(), TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT);
 
     int32_t index = 0;
     for (auto &pixelMap : *pixelMaps) {
         ASSERT_NE(pixelMap, nullptr);
-        const std::string outName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
-        int64_t packSize = PackImage(outName, std::move(pixelMap));
+        const std::string outputName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
+        int64_t packSize = PackImage(outputName, std::move(pixelMap));
         ASSERT_NE(packSize, 0);
         index++;
     }
@@ -88,20 +91,20 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList002, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMaps, nullptr);
-    ASSERT_EQ(pixelMaps->size(), 3);
+    ASSERT_EQ(pixelMaps->size(), TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
     int32_t index = 0;
     for (auto &pixelMap : *pixelMaps) {
         ASSERT_NE(pixelMap, nullptr);
-        const std::string outName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
-        int64_t packSize = PackImage(outName, std::move(pixelMap));
+        const std::string outputName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
+        int64_t packSize = PackImage(outputName, std::move(pixelMap));
         ASSERT_NE(packSize, 0);
         index++;
     }
@@ -122,20 +125,20 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList003, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMaps, nullptr);
-    ASSERT_EQ(pixelMaps->size(), 1);
+    ASSERT_EQ(pixelMaps->size(), TEST_FILE_JPG_FRAME_COUNT);
 
     int32_t index = 0;
     for (auto &pixelMap : *pixelMaps) {
         ASSERT_NE(pixelMap, nullptr);
-        const std::string outName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
-        int64_t packSize = PackImage(outName, std::move(pixelMap));
+        const std::string outputName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
+        int64_t packSize = PackImage(outputName, std::move(pixelMap));
         ASSERT_NE(packSize, 0);
         index++;
     }
@@ -156,13 +159,13 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime001, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(delayTimes, nullptr);
-    ASSERT_EQ(delayTimes->size(), 1);
+    ASSERT_EQ(delayTimes->size(), TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT);
 
     for (auto delayTime : *delayTimes) {
         HiLog::Debug(LABEL_TEST, "delay time is %{public}u.", delayTime);
@@ -184,13 +187,13 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime002, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(delayTimes, nullptr);
-    ASSERT_EQ(delayTimes->size(), 3);
+    ASSERT_EQ(delayTimes->size(), TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
     for (auto delayTime : *delayTimes) {
         HiLog::Debug(LABEL_TEST, "delay time is %{public}u.", delayTime);
@@ -212,8 +215,8 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime003, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_NE(errorCode, SUCCESS);
@@ -235,12 +238,12 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount001, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_EQ(frameCount, 1);
+    ASSERT_EQ(frameCount, TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount001 end";
 }
@@ -258,11 +261,11 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount002, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
-    ASSERT_EQ(frameCount, 3);
+    ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount002 end";
 }
@@ -280,11 +283,11 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount003, TestSize.Level3)
 
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const std::string inName = INPUT_PATH + testName;
-    auto imageSource = ImageSource::CreateImageSource(inName, opts, errorCode);
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
-    ASSERT_EQ(frameCount, 1);
+    ASSERT_EQ(frameCount, TEST_FILE_JPG_FRAME_COUNT);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetFrameCount003 end";
 }
