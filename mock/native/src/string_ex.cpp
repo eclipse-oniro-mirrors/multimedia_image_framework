@@ -46,6 +46,25 @@ string UpperStr(const string& str)
     return upperString;
 }
 
+bool StrToInt(const string& str, int& value)
+{
+    if (str.empty() || (!isdigit(str.front()) && (str.front() != '-'))) {
+        return false;
+    }
+
+    char* end = nullptr;
+    errno = 0;
+    auto addr = str.c_str();
+    auto result = strtol(addr, &end, 10); /* 10 means decimal */
+    if ((end == addr) || (end[0] != '\0') || (errno == ERANGE) ||
+            (result > INT_MAX) || (result < INT_MIN)) {
+        return false;
+    }
+
+    value = static_cast<int>(result);
+    return true;
+}
+
 bool IsSameTextStr(const string& first, const string& second)
 {
     return UpperStr(first) == UpperStr(second);
