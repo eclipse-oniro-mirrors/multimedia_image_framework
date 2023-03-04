@@ -44,4 +44,9 @@ void SplitStr(const std::string& str, const std::string& sep, std::vector<std::s
  * return true if same, else false.
  */
 bool IsSameTextStr(const std::string& first, const std::string& second);
+
+/**
+ * str to int
+ */
+bool StrToInt(const std::string& str, int& value);
 }
