@@ -53,11 +53,9 @@ bool StrToInt(const string& str, int& value)
     }
 
     char* end = nullptr;
-    errno = 0;
     auto addr = str.c_str();
     auto result = strtol(addr, &end, 10); /* 10 means decimal */
-    if ((end == addr) || (end[0] != '\0') || (errno == ERANGE) ||
-            (result > INT_MAX) || (result < INT_MIN)) {
+    if ((end == addr) || (end[0] != '\0') || (result > INT_MAX) || (result < INT_MIN)) {
         return false;
     }
 
