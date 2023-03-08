@@ -214,6 +214,7 @@ if (use_clang_ios) {
     ]
 
     sources = [
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",

@@ -1,0 +1,56 @@
+# Copyright (C) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+
+SEPARATOR = "/"
+BASE_DIR = "$SEPARATOR/foundation"
+THIRD_DIR = "$SEPARATOR/third_party"
+
+config("native_public_config") {
+  include_dirs = [
+    "include",
+    "$BASE_DIR/arkui/napi/interfaces/inner_api",
+    "$BASE_DIR/arkui/napi/interfaces/kits",
+    "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
+    "$THIRD_DIR/node/src",
+  ]
+}
+
+ohos_shared_library("image_ndk") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  sources = [ "image_mdk.cpp" ]
+  public_configs = [ ":native_public_config" ]
+  external_deps = [ "multimedia_image_framework:image" ]
+
+  subsystem_name = "multimedia"
+  part_name = "multimedia_image_framework"
+}
+
+ohos_shared_library("image_receiver_ndk") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  sources = [ "image_receiver_mdk.cpp" ]
+  public_configs = [ ":native_public_config" ]
+  external_deps = [ "multimedia_image_framework:image" ]
+
+  subsystem_name = "multimedia"
+  part_name = "multimedia_image_framework"
+}

@@ -1,0 +1,21 @@
+[
+    {
+        "first_introduced": "1",
+        "name": "OH_Image_InitImageNative"
+    },
+    {
+        "name": "OH_Image_ClipRect"
+    },
+    {
+        "name": "OH_Image_Size"
+    },
+    {
+        "name": "OH_Image_Format"
+    },
+    {
+        "name": "OH_Image_GetComponent"
+    },
+    {
+        "name": "OH_Image_Release"
+    }
+]

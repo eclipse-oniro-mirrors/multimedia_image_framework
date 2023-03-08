@@ -22,6 +22,7 @@
 #include <securec.h>
 #include "display_type.h"
 #include "image_creator.h"
+#include "image_holder_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,9 +40,10 @@ public:
     string SaveImageCreator(shared_ptr<ImageCreator> imageCreator);
     sptr<IConsumerSurface> GetSurfaceByKeyId(string keyId);
     shared_ptr<ImageCreator> GetImageCreatorByKeyId(string keyId);
+    static void ReleaseCreatorById(string id);
 private:
-    map<string, shared_ptr<ImageCreator>> mapCreator_;
     ImageCreatorManager() {};
+    ImageHolderManager<ImageCreator> creatorManager_;
 };
 } // namespace Media
 } // namespace OHOS

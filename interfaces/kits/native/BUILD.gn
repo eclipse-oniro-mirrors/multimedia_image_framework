@@ -23,3 +23,28 @@ ohos_ndk_headers("image_header") {
   dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
   sources = [ "./include/image_pixel_map_napi.h" ]
 }
+
+ohos_ndk_library("libimage_ndk") {
+  ndk_description_file = "./libimage_ndk.ndk.json"
+  min_compact_version = "1"
+  output_name = "image_ndk"
+}
+
+ohos_ndk_headers("image_ndk_header") {
+  dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
+  sources = [
+    "./include/image_mdk.h",
+    "./include/image_mdk_common.h",
+  ]
+}
+
+ohos_ndk_library("libimage_receiver_ndk") {
+  ndk_description_file = "./libimage_receiver_ndk.ndk.json"
+  min_compact_version = "1"
+  output_name = "image_receiver_ndk"
+}
+
+ohos_ndk_headers("image_receiver_ndk_header") {
+  dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
+  sources = [ "./include/image_receiver_mdk.h" ]
+}

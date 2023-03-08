@@ -30,6 +30,8 @@ group("image_framework") {
   } else {
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
+      "frameworks/kits/js/common/ndk:image_ndk",
+      "frameworks/kits/js/common/ndk:image_receiver_ndk",
       "frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:image",

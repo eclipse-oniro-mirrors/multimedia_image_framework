@@ -35,8 +35,14 @@ namespace OHOS {
 namespace Media {
 struct ImageReceiverCommonArgs;
 struct ImageReceiverAsyncContext;
-using Context = ImageReceiverAsyncContext*;
+using Context = ImageReceiverAsyncContext* ;
 using CompleteCallback = void (*)(napi_env env, napi_status status, Context context);
+struct ImageReceiverCreateArgs {
+    int32_t width;
+    int32_t height;
+    int32_t format;
+    int32_t capicity;
+};
 class ImageReceiverNapi {
 public:
     ImageReceiverNapi();
@@ -45,6 +51,8 @@ public:
     static void DoCallBack(std::shared_ptr<ImageReceiverAsyncContext> context,
                            std::string name,
                            CompleteCallback callBack);
+    ImageReceiver* GetNative();
+    static napi_value CreateImageReceiverJsObject(napi_env env, struct ImageReceiverCreateArgs args);
     void NativeRelease();
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;

@@ -1,0 +1,33 @@
+[
+    {
+        "first_introduced": "1",
+        "name": "OH_Image_Receiver_CreateImageReceiver"
+    },
+    {
+        "name": "OH_Image_Receiver_InitImageReceiverNative"
+    },
+    {
+        "name": "OH_Image_Receiver_GetReceivingSurfaceId"
+    },
+    {
+        "name": "OH_Image_Receiver_ReadLatestImage"
+    },
+    {
+        "name": "OH_Image_Receiver_ReadNextImage"
+    },
+    {
+        "name": "OH_Image_Receiver_On"
+    },
+    {
+        "name": "OH_Image_Receiver_GetSize"
+    },
+    {
+        "name": "OH_Image_Receiver_GetCapacity"
+    },
+    {
+        "name": "OH_Image_Receiver_GetFormat"
+    },
+    {
+        "name": "OH_Image_Receiver_Release"
+    }
+]

@@ -30,10 +30,12 @@
 #include "display_type.h"
 #include "image_creator_context.h"
 #include "image_receiver.h"
-
+#include "native_image.h"
 
 namespace OHOS {
 namespace Media {
+class IBufferProcessor;
+class NativeImage;
 class SurfaceBufferReleaseListener {
 public:
     SurfaceBufferReleaseListener()= default;
@@ -48,14 +50,7 @@ public:
     std::shared_ptr<SurfaceBufferReleaseListener> surfaceBufferReleaseListener_ = nullptr;
     std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener_ = nullptr;
     ImageCreator() {};
-    ~ImageCreator()
-    {
-        creatorConsumerSurface_ = nullptr;
-        creatorProducerSurface_ = nullptr;
-        iraContext_ = nullptr;
-        surfaceBufferReleaseListener_ = nullptr;
-        surfaceBufferAvaliableListener_ = nullptr;
-    }
+    ~ImageCreator();
     void RegisterBufferAvaliableListener(
         std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener)
     {
@@ -85,6 +80,12 @@ public:
     void ReleaseCreator();
     static GSError OnBufferRelease(sptr<SurfaceBuffer> &buffer);
     static std::map<uint8_t*, ImageCreator*> bufferCreatorMap_;
+
+    std::shared_ptr<IBufferProcessor> GetBufferProcessor();
+    std::shared_ptr<NativeImage> DequeueNativeImage();
+    void QueueNativeImage(std::shared_ptr<NativeImage> image);
+private:
+    std::shared_ptr<IBufferProcessor> bufferProcessor_;
 };
 class ImageCreatorSurfaceListener : public IBufferConsumerListener {
 public:

@@ -14,240 +14,53 @@
  */
 
 #include "image_napi.h"
-#include "media_errors.h"
+
+#include "napi/native_node_api.h"
 #include "hilog/log.h"
+#include "media_errors.h"
 #include "image_format.h"
 #include "image_napi_utils.h"
 
-using OHOS::HiviewDFX::HiLog;
-using std::string;
-using std::shared_ptr;
-using std::unique_ptr;
-using std::vector;
-using std::make_shared;
-using std::make_unique;
-
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageNapi"};
+    constexpr int NUM0 = 0;
+    constexpr int NUM1 = 1;
+    constexpr int NUM2 = 2;
+    const std::string MY_NAME = "ImageNapi";
 }
 
 namespace OHOS {
 namespace Media {
-static const std::string CLASS_NAME = "ImageNapi";
-static const std::string SURFACE_DATA_SIZE_TAG = "dataSize";
-std::shared_ptr<ImageReceiver> ImageNapi::staticImageReceiverInstance_ = nullptr;
-std::shared_ptr<ImageCreator> ImageNapi::staticImageCreatorInstance_ = nullptr;
-sptr<SurfaceBuffer> ImageNapi::staticInstance_ = nullptr;
+using OHOS::HiviewDFX::HiLog;
+struct ImageAsyncContext {
+    napi_env env = nullptr;
+    napi_async_work work = nullptr;
+    napi_deferred deferred = nullptr;
+    napi_ref callbackRef = nullptr;
+    napi_ref thisRef = nullptr;
+    ImageNapi *napi = nullptr;
+    uint32_t status;
+    int32_t componentType;
+    NativeImage* image = nullptr;
+    NativeComponent* component = nullptr;
+    bool isTestContext = false;
+};
+ImageHolderManager<NativeImage> ImageNapi::sNativeImageHolder_;
 thread_local napi_ref ImageNapi::sConstructor_ = nullptr;
-static bool g_receiverTest = false;
 
-const int ARGS0 = 0;
-const int ARGS1 = 1;
-const int ARGS2 = 2;
-const int PARAM0 = 0;
-const int PARAM1 = 1;
-const int PARAM2 = 2;
-const int NUM0 = 0;
-const int NUM1 = 1;
-const int NUM2 = 2;
-
-ImageNapi::ImageNapi():env_(nullptr)
+ImageNapi::ImageNapi()
 {}
 
 ImageNapi::~ImageNapi()
 {
-    release();
-}
-struct YUV422SPData {
-    std::vector<uint8_t> y;
-    std::vector<uint8_t> u;
-    std::vector<uint8_t> v;
-    uint64_t ySize;
-    uint64_t uvSize;
-};
-
-
-static void YUV422SPDataCopy(uint8_t* surfaceBuffer, uint64_t bufferSize,
-    YUV422SPData &data, bool flip)
-{
-    uint64_t ui = NUM0, vi = NUM0;
-    for (uint64_t i = NUM0; i < bufferSize; i++) {
-        if (i < data.ySize) {
-            if (flip) {
-                surfaceBuffer[i] = data.y[i];
-            } else {
-                data.y[i] = surfaceBuffer[i];
-            }
-            continue;
-        }
-        if (vi >= data.uvSize || ui >= data.uvSize) {
-            // Over write buffer size.
-            continue;
-        }
-        if (i % NUM2 == NUM1) {
-            if (flip) {
-                surfaceBuffer[i] = data.v[vi++];
-            } else {
-                data.v[vi++] = surfaceBuffer[i];
-            }
-        } else {
-            if (flip) {
-                surfaceBuffer[i] = data.u[ui++];
-            } else {
-                data.u[ui++] = surfaceBuffer[i];
-            }
-        }
-    }
-}
-
-static uint64_t GetSurfaceDataSize(sptr<SurfaceBuffer> surface)
-{
-    if (surface == nullptr) {
-        HiLog::Error(LABEL, "Nullptr surface");
-        return NUM0;
-    }
-
-    uint64_t bufferSize = surface->GetSize();
-    auto surfaceExtraData = surface->GetExtraData();
-    if (surfaceExtraData == nullptr) {
-        HiLog::Error(LABEL, "Nullptr surface extra data. return buffer size %{public}" PRIu64, bufferSize);
-        return bufferSize;
-    }
-
-    int32_t extraDataSize = NUM0;
-    auto res = surfaceExtraData->ExtraGet(SURFACE_DATA_SIZE_TAG, extraDataSize);
-    if (res != NUM0) {
-        HiLog::Error(LABEL, "Surface ExtraGet dataSize error %{public}d", res);
-        return bufferSize;
-    } else if (extraDataSize <= NUM0) {
-        HiLog::Error(LABEL, "Surface ExtraGet dataSize Ok, but size <= 0");
-        return bufferSize;
-    } else if (static_cast<uint64_t>(extraDataSize) > bufferSize) {
-        HiLog::Error(LABEL,
-            "Surface ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
-            extraDataSize, bufferSize);
-        return bufferSize;
-    }
-    HiLog::Info(LABEL, "Surface ExtraGet dataSize %{public}d", extraDataSize);
-    return extraDataSize;
-}
-
-static uint32_t ProcessYUV422SP(ImageNapi* imageNapi, sptr<SurfaceBuffer> surface)
-{
-    IMAGE_FUNCTION_IN();
-    uint8_t* surfaceBuffer = static_cast<uint8_t*>(surface->GetVirAddr());
-    if (surfaceBuffer == nullptr) {
-        HiLog::Error(LABEL, "Nullptr surface buffer");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    uint64_t surfaceSize = GetSurfaceDataSize(surface);
-    if (surfaceSize == NUM0) {
-        HiLog::Error(LABEL, "Surface size is 0");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    if (surface->GetHeight() <= NUM0 || surface->GetWidth() <= NUM0) {
-        HiLog::Error(LABEL, "Invaild width %{public}" PRId32 " height %{public}" PRId32,
-            surface->GetWidth(), surface->GetHeight());
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    uint64_t ySize = static_cast<uint64_t>(surface->GetHeight() * surface->GetWidth());
-    uint64_t uvStride = static_cast<uint64_t>((surface->GetWidth() + NUM1) / NUM2);
-    uint64_t uvSize = static_cast<uint64_t>(surface->GetHeight() * uvStride);
-    if (surfaceSize < (ySize + uvSize * NUM2)) {
-        HiLog::Error(LABEL, "Surface size %{public}" PRIu64 " < y plane %{public}" PRIu64
-            " + uv plane %{public}" PRIu64, surfaceSize, ySize, uvSize * NUM2);
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-
-    Component* y = imageNapi->CreateComponentData(ComponentType::YUV_Y, ySize, surface->GetWidth(), NUM1);
-    Component* u = imageNapi->CreateComponentData(ComponentType::YUV_U, uvSize, uvStride, NUM2);
-    Component* v = imageNapi->CreateComponentData(ComponentType::YUV_V, uvSize, uvStride, NUM2);
-    if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
-        HiLog::Error(LABEL, "Create Component failed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    struct YUV422SPData data;
-    data.ySize = ySize;
-    data.uvSize = uvSize;
-    data.y = y->raw;
-    data.u = u->raw;
-    data.v = v->raw;
-    YUV422SPDataCopy(surfaceBuffer, surfaceSize, data, false);
-    return SUCCESS;
-}
-static uint32_t SplitSurfaceToComponent(ImageNapi* imageNapi, sptr<SurfaceBuffer> surface)
-{
-    auto surfaceFormat = surface->GetFormat();
-    switch (surfaceFormat) {
-        case int32_t(ImageFormat::YCBCR_422_SP):
-        case int32_t(PIXEL_FMT_YCBCR_422_SP):
-            return ProcessYUV422SP(imageNapi, surface);
-        default:
-            break;
-    }
-    // Unsupport split component
-    return ERR_IMAGE_DATA_UNSUPPORT;
-}
-
-static void CommonCallbackRoutine(napi_env env, ImageAsyncContext* &context,
-                                  const napi_value &valueParam)
-{
-    IMAGE_FUNCTION_IN();
-    napi_value result[2] = {0};
-    napi_value retVal;
-    napi_value callback = nullptr;
-
-    napi_get_undefined(env, &result[0]);
-    napi_get_undefined(env, &result[1]);
-
-    if (context == nullptr) {
-        IMAGE_ERR("context is nullptr");
-        return;
-    }
-
-    if (context->status == SUCCESS) {
-        result[1] = valueParam;
-    }
-
-    if (context->deferred) {
-        if (context->status == SUCCESS) {
-            napi_resolve_deferred(env, context->deferred, result[1]);
-        } else {
-            ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-                "There is generic napi failure!");
-            napi_reject_deferred(env, context->deferred, result[0]);
-        }
-    } else {
-        if (context->status == SUCCESS) {
-            napi_create_uint32(env, context->status, &result[0]);
-        } else {
-            ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-                "There is generic napi failure!");
-        }
-        napi_get_reference_value(env, context->callbackRef, &callback);
-        napi_call_function(env, nullptr, callback, PARAM2, result, &retVal);
-        napi_delete_reference(env, context->callbackRef);
-    }
-
-    napi_delete_async_work(env, context->work);
-
-    delete context;
-    context = nullptr;
-    IMAGE_FUNCTION_OUT();
+    NativeRelease();
 }
 
 void ImageNapi::NativeRelease()
 {
-    if (imageReceiver_ != nullptr) {
-        imageReceiver_->ReleaseBuffer(sSurfaceBuffer_);
-        imageReceiver_ = nullptr;
-    }
-    sSurfaceBuffer_ = nullptr;
-    if (componentData_.size() > 0) {
-        for (auto iter = componentData_.begin(); iter != componentData_.end(); iter++) {
-            iter->second = nullptr;
-            componentData_.erase(iter);
-        }
+    if (native_ != nullptr) {
+        native_->release();
+        native_ = nullptr;
     }
 }
 
@@ -261,197 +74,264 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getComponent", JsGetComponent),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
     };
-    napi_value constructor = nullptr;
+    size_t size = IMG_ARRAY_SIZE(props);
+    napi_value thisVar = nullptr;
+    auto name = MY_NAME.c_str();
+    if (napi_define_class(env, name, SIZE_MAX, Constructor, nullptr, size, props, &thisVar) != napi_ok) {
+        IMAGE_ERR("Define class failed");
+        return exports;
+    }
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, Constructor,
-        nullptr, IMG_ARRAY_SIZE(props), props, &constructor)),
-        nullptr,
-        IMAGE_ERR("define class fail")
-    );
+    if (sConstructor_ != nullptr) {
+        napi_delete_reference(env, sConstructor_);
+        sConstructor_ = nullptr;
+    }
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_create_reference(env, constructor, 1, &sConstructor_)),
-        nullptr,
-        IMAGE_ERR("create reference fail")
-    );
+    if (napi_create_reference(env, thisVar, NUM1, &sConstructor_) != napi_ok) {
+        IMAGE_ERR("Create reference failed");
+        return exports;
+    }
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
-        napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor)),
-        nullptr,
-        IMAGE_ERR("set named property fail")
-    );
+    if (napi_set_named_property(env, exports, name, thisVar) != napi_ok) {
+        IMAGE_ERR("Define class failed");
+        return exports;
+    }
 
     IMAGE_DEBUG("Init success");
-
-    IMAGE_FUNCTION_OUT();
     return exports;
 }
 
-std::shared_ptr<ImageNapi> ImageNapi::GetImageSource(napi_env env, napi_value image)
-{
-    std::unique_ptr<ImageNapi> imageNapi = std::make_unique<ImageNapi>();
 
-    napi_status status = napi_unwrap(env, image, reinterpret_cast<void**>(&imageNapi));
-    if (!IMG_IS_OK(status)) {
+std::shared_ptr<NativeImage> ImageNapi::GetNativeImage(napi_env env, napi_value image)
+{
+    ImageNapi* napi = nullptr;
+
+    napi_status status = napi_unwrap(env, image, reinterpret_cast<void**>(&napi));
+    if (!IMG_IS_OK(status) || napi == nullptr) {
         IMAGE_ERR("GetImage napi unwrap failed");
         return nullptr;
     }
+    IMAGE_INFO("get nativeImage");
 
-    if (imageNapi == nullptr) {
-        IMAGE_ERR("GetImage imageNapi is nullptr");
-        return nullptr;
-    }
-    IMAGE_ERR("get nativeImage");
-
-    return imageNapi;
+    return napi->native_;
 }
 
 napi_value ImageNapi::Constructor(napi_env env, napi_callback_info info)
 {
-    napi_value undefineVar = nullptr;
-    napi_get_undefined(env, &undefineVar);
-
     napi_status status;
     napi_value thisVar = nullptr;
+    napi_value undefineVar;
+    size_t argc = NUM1;
+    napi_value argv[NUM1];
 
     IMAGE_FUNCTION_IN();
-    status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
-    if (status == napi_ok && thisVar != nullptr) {
-        std::unique_ptr<ImageNapi> reference = std::make_unique<ImageNapi>();
-        if (reference != nullptr) {
-            reference->env_ = env;
-            reference->sSurfaceBuffer_ = staticInstance_;
-            reference->imageReceiver_ = staticImageReceiverInstance_;
-            staticImageReceiverInstance_ = nullptr;
-            status = napi_wrap(env, thisVar, reinterpret_cast<void *>(reference.get()),
-                               ImageNapi::Destructor, nullptr, nullptr);
-            if (status == napi_ok) {
-                IMAGE_FUNCTION_OUT();
-                reference.release();
-                return thisVar;
-            } else {
-                IMAGE_ERR("Failure wrapping js to native napi");
-            }
+    napi_get_undefined(env, &undefineVar);
+    status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
+    if (status != napi_ok || thisVar == nullptr || argc != NUM1) {
+        IMAGE_ERR("Constructor Failed to napi_get_cb_info");
+        return undefineVar;
+    }
+    std::string id;
+    if (!ImageNapiUtils::GetUtf8String(env, argv[NUM0], id) || (id.size() == NUM0)) {
+        IMAGE_ERR("Failed to parse native image id");
+        return undefineVar;
+    }
+    std::unique_ptr<ImageNapi> napi = std::make_unique<ImageNapi>();
+    napi->native_ = sNativeImageHolder_.get(id);
+    napi->isTestImage_ = false;
+    if (napi->native_ == nullptr) {
+        if (MY_NAME.compare(id.c_str()) == 0) {
+            napi->isTestImage_ = true;
+        } else {
+            IMAGE_ERR("Failed to get native image");
+            return undefineVar;
         }
     }
+    status = napi_wrap(env, thisVar,
+        reinterpret_cast<void *>(napi.get()), ImageNapi::Destructor, nullptr, nullptr);
+    if (status != napi_ok) {
+        IMAGE_ERR("Failure wrapping js to native napi");
+        return undefineVar;
+    }
 
-    return undefineVar;
+    napi.release();
+    IMAGE_FUNCTION_OUT();
+    return thisVar;
 }
 
 void ImageNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+    if (nativeObject != nullptr) {
+        delete reinterpret_cast<ImageNapi *>(nativeObject);
+    }
 }
 
-napi_value ImageNapi::Create(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
-    std::shared_ptr<ImageReceiver> imageReceiver)
+napi_value ImageNapi::Create(napi_env env)
 {
-    napi_status status;
-    napi_value constructor = nullptr, result = nullptr;
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_value argv[NUM1];
 
     IMAGE_FUNCTION_IN();
-    if (surfaceBuffer == nullptr) {
-        IMAGE_ERR("surfaceBuffer is nullptr");
-        return result;
+    if (env == nullptr) {
+        IMAGE_ERR("Input args is invalid");
+        return nullptr;
     }
-
-    napi_get_undefined(env, &result);
-
-    status = napi_get_reference_value(env, sConstructor_, &constructor);
-    if (IMG_IS_OK(status)) {
-        staticInstance_ = surfaceBuffer;
-        staticImageReceiverInstance_ = imageReceiver;
-        status = napi_new_instance(env, constructor, 0, nullptr, &result);
-        if (status == napi_ok) {
-            IMAGE_FUNCTION_OUT();
-            return result;
-        } else {
+    if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {
+        if (napi_create_string_utf8(env, MY_NAME.c_str(), NAPI_AUTO_LENGTH, &(argv[NUM0])) != napi_ok) {
+            IMAGE_ERR("Create native image id Failed");
+        }
+        if (napi_new_instance(env, constructor, NUM1, argv, &result) != napi_ok) {
             IMAGE_ERR("New instance could not be obtained");
         }
     }
-
-    IMAGE_ERR("Failed to get reference of constructor");
+    IMAGE_FUNCTION_OUT();
     return result;
 }
-
-napi_value ImageNapi::Create(napi_env env, std::shared_ptr<ImageReceiver> imageReceiver)
+napi_value ImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> nativeImage)
 {
-    g_receiverTest = true;
-    napi_status status;
-    napi_value constructor = nullptr, result = nullptr;
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_value argv[NUM1];
 
     IMAGE_FUNCTION_IN();
-
-    napi_get_undefined(env, &result);
-    status = napi_get_reference_value(env, sConstructor_, &constructor);
-    if (IMG_IS_OK(status)) {
-        staticInstance_ = nullptr;
-        staticImageReceiverInstance_ = imageReceiver;
-        status = napi_new_instance(env, constructor, 0, nullptr, &result);
-        if (status == napi_ok) {
-            IMAGE_FUNCTION_OUT();
-            return result;
-        } else {
+    if (env == nullptr || nativeImage == nullptr) {
+        IMAGE_ERR("Input args is invalid %{public}p vs %{public}p", env, nativeImage.get());
+        return nullptr;
+    }
+    if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {
+        auto id = sNativeImageHolder_.save(nativeImage);
+        if (napi_create_string_utf8(env, id.c_str(), NAPI_AUTO_LENGTH, &(argv[NUM0])) != napi_ok) {
+            IMAGE_ERR("Create native image id Failed");
+        }
+        if (napi_new_instance(env, constructor, NUM1, argv, &result) != napi_ok) {
             IMAGE_ERR("New instance could not be obtained");
         }
     }
-
-    IMAGE_ERR("Failed to get reference of constructor");
+    IMAGE_FUNCTION_OUT();
     return result;
 }
-
-napi_value ImageNapi::CreateBufferToImage(napi_env env, sptr<SurfaceBuffer> surfaceBuffer,
-    std::shared_ptr<ImageCreator> imageCreator)
+static inline bool JsCheckObjectType(napi_env env, napi_value value, napi_valuetype type)
 {
-    napi_status status;
-    napi_value constructor = nullptr, result = nullptr;
-
-    IMAGE_FUNCTION_IN();
-    if (surfaceBuffer == nullptr) {
-        IMAGE_ERR("surfaceBuffer is nullptr");
-        return result;
-    }
-
-    napi_get_undefined(env, &result);
-
-    status = napi_get_reference_value(env, sConstructor_, &constructor);
-    if (IMG_IS_OK(status)) {
-        staticInstance_ = surfaceBuffer;
-        staticImageCreatorInstance_ = imageCreator;
-        status = napi_new_instance(env, constructor, 0, nullptr, &result);
-        if (status == napi_ok) {
-            IMAGE_FUNCTION_OUT();
-            return result;
-        } else {
-            IMAGE_ERR("New instance could not be obtained");
-        }
-    }
-
-    IMAGE_ERR("Failed to get reference of constructor");
-    return result;
+    return (ImageNapiUtils::getType(env, value) == type);
 }
 
-unique_ptr<ImageAsyncContext> ImageNapi::UnwarpContext(napi_env env, napi_callback_info info)
+static inline bool JsGetCallbackFunc(napi_env env, napi_value value, napi_ref *result)
 {
-    napi_status status;
-    napi_value thisVar = nullptr;
-    size_t argc = ARGS0;
+    if (JsCheckObjectType(env, value, napi_function)) {
+        napi_create_reference(env, value, NUM1, result);
+        return true;
+    }
+    return false;
+}
 
-    IMAGE_FUNCTION_IN();
-
-    status = napi_get_cb_info(env, info, &argc, nullptr, &thisVar, nullptr);
+static inline bool JsGetInt32Args(napi_env env, napi_value value, int *result)
+{
+    if (JsCheckObjectType(env, value, napi_number)) {
+        napi_get_value_int32(env, value, result);
+        return true;
+    }
+    return false;
+}
+using AsyncExecCallback = void (*)(napi_env env, ImageAsyncContext* ctx);
+using AsyncCompleteCallback = void (*)(napi_env env, napi_status status, ImageAsyncContext* ctx);
+static bool JsCreateWork(napi_env env, const char* name, AsyncExecCallback exec,
+    AsyncCompleteCallback complete, ImageAsyncContext* ctx)
+{
+    napi_value resource = nullptr;
+    napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &resource);
+    napi_status status = napi_create_async_work(
+        env, nullptr, resource, reinterpret_cast<napi_async_execute_callback>(exec),
+        reinterpret_cast<napi_async_complete_callback>(complete), static_cast<void *>(ctx), &(ctx->work));
     if (status != napi_ok) {
-        IMAGE_ERR("fail to napi_get_cb_info %{public}d", status);
+        IMAGE_ERR("fail to create async work %{public}d", status);
+        return false;
+    }
+
+    if (napi_queue_async_work(env, ctx->work) != napi_ok) {
+        IMAGE_ERR("fail to queue async work");
+        return false;
+    }
+    return true;
+}
+
+NativeImage* ImageNapi::GetNative()
+{
+    if (native_ != nullptr) {
+        return native_.get();
+    }
+    return nullptr;
+}
+
+static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callback_info info,
+    size_t* argc = nullptr, napi_value* argv = nullptr)
+{
+    napi_value thisVar = nullptr;
+    size_t tmp = NUM0;
+
+    IMAGE_FUNCTION_IN();
+
+    if (napi_get_cb_info(env, info, (argc == nullptr)?&tmp:argc, argv, &thisVar, nullptr) != napi_ok) {
+        IMAGE_ERR("Fail to napi_get_cb_info");
         return nullptr;
     }
 
-    unique_ptr<ImageAsyncContext> context = make_unique<ImageAsyncContext>();
-    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
-    if (status != napi_ok || context->constructor_ == nullptr) {
-        IMAGE_ERR("fail to unwrap constructor_ %{public}d", status);
+    std::unique_ptr<ImageAsyncContext> ctx = std::make_unique<ImageAsyncContext>();
+    if (napi_unwrap(env, thisVar, reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
+        IMAGE_ERR("fail to unwrap constructor_");
         return nullptr;
     }
-    return context;
+    ctx->image = ctx->napi->GetNative();
+    napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    return ctx;
+}
+
+static inline void ProcessPromise(napi_env env, napi_deferred deferred, napi_value* result, bool resolved)
+{
+    if (resolved) {
+        napi_resolve_deferred(env, deferred, result[NUM1]);
+    } else {
+        napi_reject_deferred(env, deferred, result[NUM0]);
+    }
+}
+static inline void ProcessCallback(napi_env env, napi_ref ref, napi_value* result)
+{
+    napi_value retVal;
+    napi_value callback;
+    napi_get_reference_value(env, ref, &callback);
+    napi_call_function(env, nullptr, callback, NUM2, result, &retVal);
+    napi_delete_reference(env, ref);
+}
+static void CommonCallbackRoutine(napi_env env, ImageAsyncContext* &context, const napi_value &valueParam)
+{
+    IMAGE_FUNCTION_IN();
+    napi_value result[2] = {0};
+
+    if (context == nullptr) {
+        IMAGE_ERR("context is nullptr");
+        return;
+    }
+
+    if (context->status == SUCCESS) {
+        napi_create_uint32(env, context->status, &result[0]);
+        result[1] = valueParam;
+    } else {
+        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
+            "There is generic napi failure!");
+        napi_get_undefined(env, &result[1]);
+    }
+
+    if (context->deferred) {
+        ProcessPromise(env, context->deferred, result, context->status == SUCCESS);
+    } else {
+        ProcessCallback(env, context->callbackRef, result);
+    }
+
+    napi_delete_async_work(env, context->work);
+
+    delete context;
+    context = nullptr;
+    IMAGE_FUNCTION_OUT();
 }
 
 static void BuildIntProperty(napi_env env, const std::string &name,
@@ -490,96 +370,79 @@ static napi_value BuildJsRegion(napi_env env, int32_t width,
 napi_value ImageNapi::JSGetClipRect(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    unique_ptr<ImageAsyncContext> context;
 
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
-    context = UnwarpContext(env, info);
-    if (context == nullptr) {
-        return result;
-    }
-
-    if (context->constructor_ == nullptr) {
-        IMAGE_ERR("Image context is nullptr");
-        return result;
-    }
-    auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-
-    if (surfaceBuffer == nullptr && g_receiverTest == false) {
-        IMAGE_ERR("Image surface buffer is nullptr");
-        return result;
-    }
-
-    if (surfaceBuffer != nullptr && g_receiverTest == false) {
-        return BuildJsRegion(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight(), NUM0, NUM0);
-    } else {
+    std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
+    if (context != nullptr && context->napi != nullptr && context->napi->isTestImage_) {
         const int32_t WIDTH = 8192;
         const int32_t HEIGHT = 8;
         return BuildJsRegion(env, WIDTH, HEIGHT, NUM0, NUM0);
     }
+    if (context == nullptr || context->image == nullptr) {
+        IMAGE_ERR("Image surface buffer is nullptr");
+        return result;
+    }
+
+    int32_t width = NUM0;
+    int32_t height = NUM0;
+    if (context->image->GetSize(width, height) != SUCCESS) {
+        IMAGE_ERR("Image native get size failed");
+        return result;
+    }
+    return BuildJsRegion(env, width, height, NUM0, NUM0);
 }
 
 napi_value ImageNapi::JsGetSize(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    unique_ptr<ImageAsyncContext> context;
 
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
-    context = UnwarpContext(env, info);
-    if (context == nullptr) {
-        return result;
+    std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
+    if (context != nullptr && context->napi != nullptr && context->napi->isTestImage_) {
+        const int32_t WIDTH = 8192;
+        const int32_t HEIGHT = 8;
+        return BuildJsSize(env, WIDTH, HEIGHT);
     }
-
-    if (context->constructor_ == nullptr) {
-        IMAGE_ERR("Image context is nullptr");
-        return result;
-    }
-    auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-
-    if (surfaceBuffer == nullptr && g_receiverTest == false) {
+    if (context == nullptr || context->image == nullptr) {
         IMAGE_ERR("Image surface buffer is nullptr");
         return result;
     }
 
-    if (surfaceBuffer == nullptr && g_receiverTest == true) {
-        const int32_t WIDTH = 8192;
-        const int32_t HEIGHT = 8;
-        return BuildJsSize(env, WIDTH, HEIGHT);
-    } else {
-        return BuildJsSize(env, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight());
+    int32_t width = NUM0;
+    int32_t height = NUM0;
+    if (context->image->GetSize(width, height) != SUCCESS) {
+        IMAGE_ERR("Image native get size failed");
+        return result;
     }
+    return BuildJsSize(env, width, height);
 }
 
 napi_value ImageNapi::JsGetFormat(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-    unique_ptr<ImageAsyncContext> context;
 
     IMAGE_FUNCTION_IN();
     napi_get_undefined(env, &result);
-    context = UnwarpContext(env, info);
-    if (context == nullptr) {
+    std::unique_ptr<ImageAsyncContext> context = UnwrapContext(env, info);
+    if (context != nullptr && context->napi != nullptr && context->napi->isTestImage_) {
+        const int32_t FORMAT = 12;
+        napi_create_int32(env, FORMAT, &result);
         return result;
     }
-
-    if (context->constructor_ == nullptr) {
-        IMAGE_ERR("Image context is nullptr");
-        return result;
-    }
-
-    auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-    if (surfaceBuffer == nullptr && g_receiverTest == false) {
+    if (context == nullptr || context->image == nullptr) {
         IMAGE_ERR("Image surface buffer is nullptr");
         return result;
     }
 
-    if (surfaceBuffer == nullptr && g_receiverTest == true) {
-        const int32_t FORMAT = 12;
-        napi_create_int32(env, FORMAT, &result);
-    } else {
-        napi_create_int32(env, surfaceBuffer->GetFormat(), &result);
+    int32_t format = NUM0;
+    if (context->image->GetFormat(format) != SUCCESS) {
+        IMAGE_ERR("Image native get format failed");
+        return result;
     }
+
+    napi_create_int32(env, format, &result);
     return result;
 }
 
@@ -594,9 +457,21 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
         IMAGE_ERR("context is nullptr");
         return;
     }
-    context->constructor_->NativeRelease();
-    context->status = SUCCESS;
 
+    if (context->thisRef != nullptr) {
+        napi_value thisVar;
+        napi_get_reference_value(env, context->thisRef, &thisVar);
+        napi_delete_reference(env, context->thisRef);
+        if (thisVar != nullptr) {
+            ImageNapi *tmp = nullptr;
+            auto status = napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&tmp));
+            if (status != napi_ok) {
+                IMAGE_ERR("NAPI remove wrap failed status %{public}d", status);
+            }
+        }
+    }
+
+    context->status = SUCCESS;
     IMAGE_FUNCTION_OUT();
     CommonCallbackRoutine(env, context, result);
 }
@@ -604,61 +479,29 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
 napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
-    napi_status status;
-    napi_value result = nullptr, thisVar = nullptr;
-    size_t argc = ARGS1;
-    napi_value argv[ARGS1] = {0};
+    napi_value result = nullptr;
+    size_t argc = NUM1;
+    napi_value argv[NUM1] = {0};
 
     napi_get_undefined(env, &result);
-
-    status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to napi_get_cb_info %{public}d", status);
-        return result;
-    }
-
-    unique_ptr<ImageAsyncContext> context = UnwarpContext(env, info);
+    auto context = UnwrapContext(env, info, &argc, argv);
     if (context == nullptr) {
-        IMAGE_ERR("fail to unwrap constructor_ %{public}d", status);
+        IMAGE_ERR("fail to unwrap constructor_");
         return result;
     }
-
-    if (argc == ARGS1) {
-        auto argType = ImageNapiUtils::getType(env, argv[PARAM0]);
-        if (argType == napi_function) {
-            int32_t refCount = 1;
-            napi_create_reference(env, argv[PARAM0], refCount, &context->callbackRef);
-        } else {
-            IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType);
+    if (argc == NUM1) {
+        if (!JsGetCallbackFunc(env, argv[NUM0], &(context->callbackRef))) {
+            IMAGE_ERR("Unsupport arg 0 type");
             return result;
         }
-    }
-
-    if (context->callbackRef == nullptr) {
-        napi_create_promise(env, &(context->deferred), &result);
     } else {
-        napi_get_undefined(env, &result);
+        napi_create_promise(env, &(context->deferred), &result);
     }
 
-    napi_value resource = nullptr;
-    napi_create_string_utf8(env, "JsRelease", NAPI_AUTO_LENGTH, &resource);
-    status = napi_create_async_work(
-        env, nullptr, resource, [](napi_env env, void* data) {},
-        reinterpret_cast<napi_async_complete_callback>(JSReleaseCallBack),
-        static_cast<void *>(context.get()), &(context->work));
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to create async work %{public}d", status);
-        return result;
+    if (JsCreateWork(env, "JsRelease", [](napi_env env, ImageAsyncContext* data) {},
+        JSReleaseCallBack, context.get())) {
+        context.release();
     }
-
-    status = napi_queue_async_work(env, context->work);
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to queue async work %{public}d", status);
-        return result;
-    }
-
-    context.release();
-
     IMAGE_FUNCTION_OUT();
     return result;
 }
@@ -676,24 +519,44 @@ static bool CreateArrayBuffer(napi_env env, uint8_t* src, size_t srcLen, napi_va
     return true;
 }
 
-static bool IsYUVType(const int32_t& type)
+static inline bool IsEqual(const int32_t& check,  ImageFormat format)
 {
-    if (type == static_cast<int32_t>(ComponentType::YUV_Y) ||
-        type == static_cast<int32_t>(ComponentType::YUV_U) ||
-        type == static_cast<int32_t>(ComponentType::YUV_V)) {
-        return true;
-    }
-    return false;
+    return (check == int32_t(format));
 }
-static inline bool IsYCbCr422SP(int32_t format)
+static inline bool IsEqual(const int32_t& check,  ComponentType type)
 {
-    if (format == int32_t(ImageFormat::YCBCR_422_SP)) {
-        return true;
+    return (check == int32_t(type));
+}
+static inline bool IsYUVComponent(const int32_t& type)
+{
+    return (IsEqual(type, ComponentType::YUV_Y) ||
+        IsEqual(type, ComponentType::YUV_U) ||
+        IsEqual(type, ComponentType::YUV_V));
+}
+static inline bool IsYUV422SPImage(int32_t format)
+{
+    return (IsEqual(format, ImageFormat::YCBCR_422_SP) ||
+        (format == int32_t(PIXEL_FMT_YCBCR_422_SP)));
+}
+static inline bool CheckComponentType(const int32_t& type, int32_t format)
+{
+    return ((IsYUV422SPImage(format) && IsYUVComponent(type)) ||
+        (!IsYUV422SPImage(format) && IsEqual(type, ComponentType::JPEG)));
+}
+
+static bool BuildJsComponentObject(napi_env env, int32_t type, uint8_t* buffer,
+    NativeComponent* component, napi_value* result)
+{
+    napi_value array;
+    if (!CreateArrayBuffer(env, buffer, component->size, &array)) {
+        return false;
     }
-    if (format == int32_t(PIXEL_FMT_YCBCR_422_SP)) {
-        return true;
-    }
-    return false;
+    napi_create_object(env, result);
+    napi_set_named_property(env, *result, "byteBuffer", array);
+    BuildIntProperty(env, "componentType", type, *result);
+    BuildIntProperty(env, "rowStride", component->rowStride, *result);
+    BuildIntProperty(env, "pixelStride", component->pixelStride, *result);
+    return true;
 }
 static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
@@ -715,123 +578,101 @@ static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyn
     context->status = SUCCESS;
     CommonCallbackRoutine(env, context, result);
 }
-void ImageNapi::JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
+
+static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
     IMAGE_FUNCTION_IN();
     napi_value result;
     napi_get_undefined(env, &result);
-    if (g_receiverTest) {
+
+    if (context != nullptr && context->napi != nullptr && context->isTestContext) {
         TestGetComponentCallBack(env, status, context);
         return;
     }
-    if (context == nullptr || context->constructor_ == nullptr ||
-        context->constructor_->sSurfaceBuffer_ == nullptr) {
+
+    if (context == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
         return;
     }
-    auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-    uint32_t bufferSize = 0;
+    context->status = ERROR;
+    NativeComponent* component = context->component;
+    if (component == nullptr) {
+        HiLog::Error(LABEL, "Invalid component");
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+
     uint8_t *buffer = nullptr;
-    uint32_t rowStride = 0;
-    uint32_t pixelStride = 0;
-    if (IsYCbCr422SP(surfaceBuffer->GetFormat()) && IsYUVType(context->componentType)) {
-        Component* component = context->constructor_->GetComponentData(
-            ComponentType(context->componentType));
-        if (component != nullptr) {
-            bufferSize = component->raw.size();
-            buffer = component->raw.data();
-            rowStride = component->rowStride;
-            pixelStride = component->pixelStride;
-        } else {
-            context->status = ERROR;
-            HiLog::Error(LABEL, "Failed to GetComponentData");
-        }
+    if (component->virAddr != nullptr) {
+        buffer = component->virAddr;
     } else {
-        bufferSize = GetSurfaceDataSize(surfaceBuffer);
-        buffer = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-        rowStride = surfaceBuffer->GetWidth();
-        pixelStride = NUM1;
+        buffer = component->raw.data();
     }
-    if (buffer != nullptr && bufferSize != NUM0) {
-        napi_value array;
-        if (CreateArrayBuffer(env, buffer, bufferSize, &array)) {
-            napi_create_object(env, &result);
-            napi_set_named_property(env, result, "byteBuffer", array);
-            BuildIntProperty(env, "componentType", context->componentType, result);
-            BuildIntProperty(env, "rowStride", rowStride, result);
-            BuildIntProperty(env, "pixelStride", pixelStride, result);
-            context->status = SUCCESS;
-        } else {
-            HiLog::Error(LABEL, "napi_create_arraybuffer failed!");
-        }
+
+    if (buffer == nullptr || component->size == NUM0) {
+        HiLog::Error(LABEL, "Invalid buffer");
+        CommonCallbackRoutine(env, context, result);
+        return;
+    }
+
+    if (BuildJsComponentObject(env, context->componentType, buffer, component, &result)) {
+        context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "buffer is nullptr or bufferSize is %{public}" PRIu32, bufferSize);
+        HiLog::Error(LABEL, "napi_create_arraybuffer failed!");
     }
+
     IMAGE_FUNCTION_OUT();
     CommonCallbackRoutine(env, context, result);
 }
 static void JsGetComponentExec(napi_env env, ImageAsyncContext* context)
 {
-    if (context == nullptr || context->constructor_ == nullptr ||
-        context->constructor_->sSurfaceBuffer_ == nullptr) {
+    if (context == nullptr || context->napi == nullptr) {
         HiLog::Error(LABEL, "Invalid input context");
         return;
     }
-    auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-    HiLog::Info(LABEL,
-        "JsGetComponentExec surface buffer type %{public}" PRId32, surfaceBuffer->GetFormat());
-    context->status = SplitSurfaceToComponent(context->constructor_, surfaceBuffer);
-}
 
-static bool CheckComponentType(const int32_t& type, int32_t format)
-{
-    if (IsYCbCr422SP(format) && IsYUVType(type)) {
-        return true;
+    auto native = context->napi->GetNative();
+    if (native == nullptr) {
+        HiLog::Error(LABEL, "Empty native");
+        return;
     }
-    if (!IsYCbCr422SP(format) && type == static_cast<int32_t>(ComponentType::JPEG)) {
-        return true;
-    }
-    return false;
+    context->component = native->GetComponent(context->componentType);
 }
 
 static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, ImageAsyncContext* context)
 {
-    if (argv == nullptr || context == nullptr) {
+    if (argv == nullptr || context == nullptr || argc < NUM1 || context->napi == nullptr) {
         IMAGE_ERR("argv is nullptr");
         return false;
     }
 
-    if (context->constructor_ == nullptr ||
-        (!g_receiverTest && context->constructor_->sSurfaceBuffer_ == nullptr)) {
-        IMAGE_ERR("Constructor is nullptr");
+    if (!JsGetInt32Args(env, argv[NUM0], &(context->componentType))) {
+        IMAGE_ERR("Unsupport arg 0 type");
         return false;
     }
 
-    if (argc == ARGS1 || argc == ARGS2) {
-        auto argType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
-        if (argType0 == napi_number) {
-            napi_get_value_int32(env, argv[PARAM0], &(context->componentType));
-        } else {
-            IMAGE_ERR("Unsupport arg 0 type: %{public}d", argType0);
-            return false;
-        }
-        if (!g_receiverTest) {
-            auto surfaceBuffer = context->constructor_->sSurfaceBuffer_;
-            if (!CheckComponentType(context->componentType, surfaceBuffer->GetFormat())) {
-                IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
-                return false;
-            }
-        }
+    auto native = context->napi->GetNative();
+    if (native == nullptr && !context->isTestContext) {
+        IMAGE_ERR("native is nullptr");
+        return false;
     }
-    if (argc == ARGS2) {
-        auto argType1 = ImageNapiUtils::getType(env, argv[PARAM1]);
-        if (argType1 == napi_function) {
-            int32_t refCount = 1;
-            napi_create_reference(env, argv[PARAM1], refCount, &(context->callbackRef));
-        } else {
-            IMAGE_ERR("Unsupport arg 1 type: %{public}d", argType1);
-            return false;
-        }
+
+    int32_t format = NUM0;
+    if (context->isTestContext) {
+        const int32_t TEST_FORMAT = 12;
+        format = TEST_FORMAT;
+    } else {
+        native->GetFormat(format);
+    }
+
+    if (!CheckComponentType(context->componentType, format)) {
+        IMAGE_ERR("Unsupport component type 0 value: %{public}d", context->componentType);
+        return false;
+    }
+
+    if (argc == NUM2 && !JsGetCallbackFunc(env, argv[NUM1], &(context->callbackRef))) {
+        IMAGE_ERR("Unsupport arg 1 type");
+        return false;
     }
     return true;
 }
@@ -839,26 +680,17 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Imag
 napi_value ImageNapi::JsGetComponent(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
-    napi_status status;
-    napi_value result = nullptr, thisVar = nullptr;
-    size_t argc = ARGS2;
-    napi_value argv[ARGS2] = {0};
+    napi_value result = nullptr;
+    size_t argc = NUM2;
+    napi_value argv[NUM2] = {0};
 
     napi_get_undefined(env, &result);
-
-    status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to napi_get_cb_info %{public}d", status);
-        return result;
-    }
-
-    unique_ptr<ImageAsyncContext> context = UnwarpContext(env, info);
+    auto context = UnwrapContext(env, info, &argc, argv);
     if (context == nullptr) {
-        std::string errMsg = "fail to unwrap constructor_ ";
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
-            errMsg.append(std::to_string(status)));
+            "fail to unwrap constructor_ ");
     }
-
+    context->isTestContext = context->napi->isTestImage_;
     if (!JsGetComponentArgs(env, argc, argv, context.get())) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "Unsupport arg type!");
@@ -866,93 +698,14 @@ napi_value ImageNapi::JsGetComponent(napi_env env, napi_callback_info info)
 
     if (context->callbackRef == nullptr) {
         napi_create_promise(env, &(context->deferred), &result);
-    } else {
-        napi_get_undefined(env, &result);
     }
 
-    napi_value resource = nullptr;
-    napi_create_string_utf8(env, "JsGetComponent", NAPI_AUTO_LENGTH, &resource);
-    status = napi_create_async_work(
-        env, nullptr, resource,
-        reinterpret_cast<napi_async_execute_callback>(JsGetComponentExec),
-        reinterpret_cast<napi_async_complete_callback>(JsGetComponentCallBack),
-        static_cast<void *>(context.get()), &(context->work));
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to create async work %{public}d", status);
-        return result;
+    if (JsCreateWork(env, "JsGetComponent", JsGetComponentExec, JsGetComponentCallBack, context.get())) {
+        context.release();
     }
-
-    status = napi_queue_async_work(env, context->work);
-    if (status != napi_ok) {
-        IMAGE_ERR("fail to queue async work %{public}d", status);
-        return result;
-    }
-    context.release();
 
     IMAGE_FUNCTION_OUT();
     return result;
-}
-
-void ImageNapi::release()
-{
-    if (!isRelease) {
-        NativeRelease();
-        isRelease = true;
-    }
-}
-Component* ImageNapi::CreateComponentData(ComponentType type, size_t size,
-    int32_t rowStride, int32_t pixelStride)
-{
-    Component* result = nullptr;
-    if (size == NUM0) {
-        HiLog::Error(LABEL, "Could't create 0 size component data");
-        return result;
-    }
-    auto iter = componentData_.find(type);
-    if (iter != componentData_.end()) {
-        HiLog::Info(LABEL, "Component %{public}d already exist. No need create", type);
-        return iter->second.get();
-    }
-    std::unique_ptr<Component> component = std::make_unique<Component>();
-    component->pixelStride = pixelStride;
-    component->rowStride = rowStride;
-    component->raw.resize(size);
-    componentData_.insert(std::map<ComponentType, std::unique_ptr<Component>>::value_type(type,
-        std::move(component)));
-    result = GetComponentData(type);
-    return result;
-}
-Component* ImageNapi::GetComponentData(ComponentType type)
-{
-    auto iter = componentData_.find(type);
-    if (iter != componentData_.end()) {
-        return iter->second.get();
-    }
-    return nullptr;
-}
-uint32_t ImageNapi::CombineComponentsIntoSurface()
-{
-    if (!IsYCbCr422SP(sSurfaceBuffer_->GetFormat())) {
-        HiLog::Info(LABEL, "No need to combine components for NO YUV format now");
-        return SUCCESS;
-    }
-    Component* y = GetComponentData(ComponentType::YUV_Y);
-    Component* u = GetComponentData(ComponentType::YUV_U);
-    Component* v = GetComponentData(ComponentType::YUV_V);
-    if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
-        HiLog::Error(LABEL, "No component need to combine");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    uint32_t bufferSize = GetSurfaceDataSize(sSurfaceBuffer_);
-    uint8_t* buffer = static_cast<uint8_t*>(sSurfaceBuffer_->GetVirAddr());
-    struct YUV422SPData data;
-    data.ySize = y->raw.size();
-    data.uvSize = u->raw.size();
-    data.y = y->raw;
-    data.u = u->raw;
-    data.v = v->raw;
-    YUV422SPDataCopy(buffer, bufferSize, data, true);
-    return SUCCESS;
 }
 }  // namespace Media
 }  // namespace OHOS

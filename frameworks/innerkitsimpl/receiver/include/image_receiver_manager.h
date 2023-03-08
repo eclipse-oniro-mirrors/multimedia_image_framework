@@ -22,6 +22,7 @@
 #include <securec.h>
 #include "display_type.h"
 #include "image_receiver.h"
+#include "image_holder_manager.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,9 +40,11 @@ public:
     string SaveImageReceiver(shared_ptr<ImageReceiver> imageReceiver);
     sptr<Surface> getSurfaceByKeyId(string keyId);
     shared_ptr<ImageReceiver> getImageReceiverByKeyId(string keyId);
+    static void ReleaseReceiverById(string id);
 private:
-    map<string, shared_ptr<ImageReceiver>> mapReceiver_;
+
     ImageReceiverManager() {}
+    ImageHolderManager<ImageReceiver> receiverManager_;
 };
 } // namespace Media
 } // namespace OHOS

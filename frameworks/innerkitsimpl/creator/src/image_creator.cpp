@@ -18,6 +18,7 @@
 #include "image_source.h"
 #include "image_utils.h"
 #include "hilog/log.h"
+#include "image_creator_buffer_processor.h"
 #include "image_creator_manager.h"
 
 namespace OHOS {
@@ -25,6 +26,17 @@ namespace Media {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageCreator"};
 std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
 using namespace OHOS::HiviewDFX;
+ImageCreator::~ImageCreator()
+{
+    if (iraContext_ != nullptr) {
+        ImageCreatorManager::ReleaseCreatorById(iraContext_->GetCreatorKey());
+    }
+    creatorConsumerSurface_ = nullptr;
+    creatorProducerSurface_ = nullptr;
+    iraContext_ = nullptr;
+    surfaceBufferReleaseListener_ = nullptr;
+    surfaceBufferAvaliableListener_ = nullptr;
+}
 
 GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
 {
@@ -272,10 +284,37 @@ sptr<IConsumerSurface> ImageCreator::getSurfaceById(std::string id)
     HiLog::Debug(LABEL, "getSurfaceByCreatorId");
     return surface;
 }
-
 void ImageCreator::ReleaseCreator()
 {
     ImageCreator::~ImageCreator();
+}
+
+std::shared_ptr<IBufferProcessor> ImageCreator::GetBufferProcessor()
+{
+    if (bufferProcessor_ == nullptr) {
+        bufferProcessor_ = std::make_shared<ImageCreatorBufferProcessor>(this);
+    }
+    return bufferProcessor_;
+}
+std::shared_ptr<NativeImage> ImageCreator::DequeueNativeImage()
+{
+    if (GetBufferProcessor() == nullptr) {
+        return nullptr;
+    }
+
+    auto surfaceBuffer = DequeueImage();
+    if (surfaceBuffer == nullptr) {
+        return nullptr;
+    }
+    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
+}
+void ImageCreator::QueueNativeImage(std::shared_ptr<NativeImage> image)
+{
+    if (image == nullptr || image->GetBuffer() == nullptr) {
+        return;
+    }
+    auto buffer = image->GetBuffer();
+    QueueImage(buffer);
 }
 } // namespace Media
 } // namespace OHOS

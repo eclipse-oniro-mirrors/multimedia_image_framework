@@ -83,6 +83,26 @@
                         ]
                     },
                     "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk"
+                },
+                {
+                    "header": {
+                        "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
+                        "header_files": [
+                            "image_mdk_common.h",
+                            "image_mdk.h"
+                        ]
+                    },
+                    "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_ndk"
+                },
+                {
+                    "header": {
+                        "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
+                        "header_files": [
+                            "image_mdk_common.h",
+                            "image_receiver_mdk.h"
+                        ]
+                    },
+                    "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_receiver_ndk"
           }
         ],
         "test": [

@@ -16,41 +16,27 @@
 #include "image_creator_manager.h"
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 string ImageCreatorManager::SaveImageCreator(shared_ptr<ImageCreator> imageCreator)
 {
-    string id = "1";
-
-    if (GetImageCreatorByKeyId(id) != nullptr) {
-        mapCreator_.erase(id);
-    }
-
-    mapCreator_.insert(pair<string, shared_ptr<ImageCreator>>(id, imageCreator));
-    return id;
+    return creatorManager_.save(imageCreator);
 }
 sptr<IConsumerSurface> ImageCreatorManager::GetSurfaceByKeyId(string keyId)
 {
-    map<string, shared_ptr<ImageCreator>>::iterator iter;
-    shared_ptr<ImageCreator> imageCreator = nullptr;
-    iter = mapCreator_.find(keyId);
-    if (iter != mapCreator_.end()) {
-        imageCreator = iter->second;
-    }
-    if (imageCreator == nullptr) {
+    auto creator = GetImageCreatorByKeyId(keyId);
+    if (creator == nullptr) {
         return nullptr;
     }
-    return imageCreator->GetCreatorSurface();
+    return creator->GetCreatorSurface();
 }
 shared_ptr<ImageCreator> ImageCreatorManager::GetImageCreatorByKeyId(string keyId)
 {
-    map<string, shared_ptr<ImageCreator>>::iterator iter;
-    shared_ptr<ImageCreator> imageCreator = nullptr;
-    iter = mapCreator_.find(keyId);
-    if (iter != mapCreator_.end()) {
-        imageCreator = iter->second;
-    }
-    return imageCreator;
+    return creatorManager_.get(keyId);
+}
+void ImageCreatorManager::ReleaseCreatorById(string id)
+{
+    ImageCreatorManager& manager = ImageCreatorManager::getInstance();
+    manager.creatorManager_.release(id);
 }
 } // namespace Media
 } // namespace OHOS
