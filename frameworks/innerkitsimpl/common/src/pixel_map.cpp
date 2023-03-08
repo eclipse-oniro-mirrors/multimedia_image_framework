@@ -119,7 +119,8 @@ void PixelMap::SetFreePixelMapProc(CustomFreePixelMap func)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
-    if (data_ != nullptr) {
+    if (data_ != nullptr || (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr)) {
+        HiLog::Error(LABEL, "SetPixelsAddr error type %{public}d ", type);
         FreePixelMap();
     }
     data_ = static_cast<uint8_t *>(addr);
@@ -1303,8 +1304,8 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         }
 
         int *fd = static_cast<int *>(context_);
-        if (*fd < 0) {
-            HiLog::Error(LABEL, "write pixel map failed, fd < 0.");
+        if (fd == nullptr || *fd < 0) {
+            HiLog::Error(LABEL, "write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
             return false;
         }
 
