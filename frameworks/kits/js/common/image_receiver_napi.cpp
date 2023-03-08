@@ -707,6 +707,15 @@ static void DoCallBackTest(OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1)
     imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
 }
 #endif
+static void FailedCallbackRoutine(napi_env env, Context &context, uint32_t errCode)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    if (context != nullptr) {
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
+    }
+    CommonCallbackRoutine(env, context, result);
+}
 napi_value ImageReceiverNapi::JsReadLatestImage(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
@@ -721,36 +730,33 @@ napi_value ImageReceiverNapi::JsReadLatestImage(napi_env env, napi_callback_info
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
         IMAGE_LINE_IN();
-        napi_value result = nullptr;
-
         auto native = context->constructor_->imageReceiver_;
-        if (native != nullptr) {
-            auto image = native->LastNativeImage();
-#ifdef IMAGE_DEBUG_FLAG
-            if (context->constructor_->isCallBackTest) {
-                context->constructor_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-                if (image != nullptr) {
-                    DoCallBackTest(image->GetBuffer());
-                }
-#endif
-            }
-#endif
-            result = ImageNapi::Create(env, image);
-            if (result == nullptr) {
-                IMAGE_ERR("ImageNapi Create failed");
-            }
-        } else {
+        if (native == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
         }
-
+        auto image = native->LastNativeImage();
+        if (image == nullptr) {
+            IMAGE_ERR("LastNativeImage is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
+        }
+#ifdef IMAGE_DEBUG_FLAG
+        if (context->constructor_->isCallBackTest) {
+            context->constructor_->isCallBackTest = false;
+#ifdef IMAGE_SAVE_BUFFER_TO_PIC
+            DoCallBackTest(image->GetBuffer());
+#endif
+        }
+#endif
+        napi_value result = ImageNapi::Create(env, image);
         if (result == nullptr) {
-            napi_get_undefined(env, &result);
-            context->status = ERR_IMAGE_INIT_ABNORMAL;
-        } else {
-            context->status = SUCCESS;
+            IMAGE_ERR("ImageNapi Create is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
         }
-
+        context->status = SUCCESS;
         IMAGE_LINE_OUT();
         CommonCallbackRoutine(env, context, result);
     };
@@ -772,36 +778,33 @@ napi_value ImageReceiverNapi::JsReadNextImage(napi_env env, napi_callback_info i
 
     args.callBack = [](napi_env env, napi_status status, Context context) {
         IMAGE_LINE_IN();
-        napi_value result = nullptr;
-
         auto native = context->constructor_->imageReceiver_;
-        if (native != nullptr) {
-            auto image = native->NextNativeImage();
-#ifdef IMAGE_DEBUG_FLAG
-            if (context->constructor_->isCallBackTest) {
-                context->constructor_->isCallBackTest = false;
-#ifdef IMAGE_SAVE_BUFFER_TO_PIC
-                if (image != nullptr) {
-                    DoCallBackTest(image->GetBuffer());
-                }
-#endif
-            }
-#endif
-            result = ImageNapi::Create(env, native->NextNativeImage());
-            if (result == nullptr) {
-                IMAGE_ERR("ImageNapi Create failed");
-            }
-        } else {
+        if (native == nullptr) {
             IMAGE_ERR("Native instance is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
         }
-
+        auto image = native->NextNativeImage();
+        if (image == nullptr) {
+            IMAGE_ERR("NextNativeImage is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
+        }
+#ifdef IMAGE_DEBUG_FLAG
+        if (context->constructor_->isCallBackTest) {
+            context->constructor_->isCallBackTest = false;
+#ifdef IMAGE_SAVE_BUFFER_TO_PIC
+            DoCallBackTest(image->GetBuffer());
+#endif
+        }
+#endif
+        napi_value result = ImageNapi::Create(env, image);
         if (result == nullptr) {
-            napi_get_undefined(env, &result);
-            context->status = ERR_IMAGE_INIT_ABNORMAL;
-        } else {
-            context->status = SUCCESS;
+            IMAGE_ERR("ImageNapi Create is nullptr");
+            FailedCallbackRoutine(env, context, ERR_IMAGE_INIT_ABNORMAL);
+            return;
         }
-
+        context->status = SUCCESS;
         IMAGE_LINE_OUT();
         CommonCallbackRoutine(env, context, result);
     };
