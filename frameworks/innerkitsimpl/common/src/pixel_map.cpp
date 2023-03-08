@@ -1305,7 +1305,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd < 0) {
-            HiLog::Error(LABEL, "write pixel map failed, fd < 0.");
+            HiLog::Error(LABEL, "write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
             return false;
         }
 
