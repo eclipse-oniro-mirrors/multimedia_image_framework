@@ -16,6 +16,8 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_H_
 #define INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_H_
 
+#include <atomic>
+#include <cstdint>
 #include <memory>
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
@@ -48,7 +50,11 @@ constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 
 class PixelMap : public Parcelable {
 public:
-    PixelMap() = default;
+    PixelMap()
+    {
+        static std::atomic<uint32_t> currentId = 0;
+        uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
+    }
     virtual ~PixelMap();
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength,
                                                          const InitializationOptions &opts);
@@ -125,6 +131,11 @@ public:
     NATIVEEXPORT void *GetWritablePixels() const
     {
         return static_cast<void *>(data_);
+    }
+
+    NATIVEEXPORT uint32_t GetUniqueId() const
+    {
+        return uniqueId_;
     }
 
     NATIVEEXPORT bool Marshalling(Parcel &data) const override;
@@ -230,6 +241,9 @@ private:
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
     bool useSourceAsResponse_ = false;
+
+    // only used by rosen backend
+    uint32_t uniqueId_ = 0;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
