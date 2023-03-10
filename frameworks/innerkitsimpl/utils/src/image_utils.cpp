@@ -19,8 +19,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
-#include "__config"
 #include <string>
+#include "__config"
 #include "hilog/log_cpp.h"
 #include "image_log.h"
 #include "ios"
