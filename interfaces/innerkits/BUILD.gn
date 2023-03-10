@@ -286,6 +286,7 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
       ]
       sources -= [
+        "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
