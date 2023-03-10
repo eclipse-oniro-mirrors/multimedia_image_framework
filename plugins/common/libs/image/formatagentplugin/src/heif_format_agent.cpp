@@ -19,6 +19,7 @@
 #include "log_tags.h"
 #include "plugin_service.h"
 #include "string"
+#include "securec.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -60,7 +61,13 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         return false;
     }
 
-    const uint32_t *ptr = static_cast<const uint32_t *>(headerData);
+    uint8_t tmpBuff[HEADER_SIZE];
+    if (memcpy_s(tmpBuff, HEADER_SIZE, headerData, dataSize) != 0) {
+        HiLog::Error(LABEL, "memcpy headerData data size:[%{public}d] error.", dataSize);
+        return false;
+    }
+    
+    const uint32_t *ptr = reinterpret_cast<const uint32_t *>(tmpBuff);
     uint64_t chunkSize = EndianSwap32(ptr[0]);  // first item
     uint32_t chunkType = EndianSwap32(ptr[1]);  // second item
     if (chunkType != Fourcc('f', 't', 'y', 'p')) {
@@ -69,7 +76,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     int64_t offset = OFFSET_SIZE;
-    if (!IsHeif64(headerData, dataSize, offset, chunkSize)) {
+    if (!IsHeif64(tmpBuff, dataSize, offset, chunkSize)) {
         return false;
     }
     int64_t chunkDataSize = static_cast<int64_t>(chunkSize) - offset;
@@ -86,7 +93,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
                 // Skip this index, it refers to the minorVersion, not a brand.
                 continue;
             }
-            auto *brandPtr = static_cast<const uint32_t *>(headerData) + (numCompatibleBrands + i);
+            auto *brandPtr = reinterpret_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
             uint32_t brand = EndianSwap32(*brandPtr);
             if (brand == Fourcc('m', 'i', 'f', '1') || brand == Fourcc('h', 'e', 'i', 'c') ||
                 brand == Fourcc('m', 's', 'f', '1') || brand == Fourcc('h', 'e', 'v', 'c')) {
