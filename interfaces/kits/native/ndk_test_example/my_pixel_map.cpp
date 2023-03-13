@@ -138,7 +138,7 @@ napi_value MyPixelMap::TestAccessPixels(napi_env env, napi_callback_info info)
     HiLog::Debug(LABEL, "OH_AccessPixels Test|Begin");
     void* addrPtr = nullptr;
     int32_t res = OH_AccessPixels(env, argValue[0], &addrPtr);
-    HiLog::Debug(LABEL, "OH_AccessPixels Test|End, res=%{public}d, addrPtr=%{public}p", res, addrPtr);
+    HiLog::Debug(LABEL, "OH_AccessPixels Test|End, res=%{public}d", res);
 
     HiLog::Debug(LABEL, "TestAccessPixels OUT");
     return result;
