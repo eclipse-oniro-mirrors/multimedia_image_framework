@@ -27,6 +27,7 @@ using namespace OHOS::MultimediaPlugin;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static constexpr int32_t LENGTH = 8;
 
 class ImageUtilsTest : public testing::Test {
 public:
@@ -240,6 +241,33 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflow001, TestSize.Level3)
     int32_t bytesPerPixel = 0;
     ImageUtils::CheckMulOverflow(width, height, bytesPerPixel);
     GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflow001 end";
+}
+
+/**
+ * @tc.name: BGRAToARGB001
+ * @tc.desc: BGRAToARGB
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, BGRAToARGB001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: BGRAToARGB001 start";
+    uint8_t src[LENGTH] = {0, 1, 2, 3, 4, 5, 6, 7};
+    uint8_t dst[LENGTH] = {0};
+    ImageUtils::BGRAToARGB(src, dst, LENGTH);
+    for (int i = 0; i < LENGTH; i++) {
+        GTEST_LOG_(INFO) << "BGRAToARGB" << "i:" << i << " " \
+            << static_cast<int>(src[i]) << "," << static_cast<int>(dst[i]);
+    }
+
+    uint8_t src2[LENGTH] = {7, 6, 5, 4, 3, 2, 1, 0};
+    uint8_t dst2[LENGTH] = {0};
+    ImageUtils::ARGBToBGRA(src2, dst2, LENGTH);
+    for (int i = 0; i < LENGTH; i++) {
+        GTEST_LOG_(INFO) << "ARGBToBGRA" << "i:" << i << " " \
+            << static_cast<int>(src2[i]) << "," << static_cast<int>(dst2[i]);
+    }
+    EXPECT_NE(dst2, nullptr);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: BGRAToARGB001 end";
 }
 }
 }
