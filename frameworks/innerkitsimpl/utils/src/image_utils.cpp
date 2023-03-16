@@ -32,6 +32,8 @@
 #include "string"
 #include "type_traits"
 #include "vector"
+#include "image_trace.h"
+#include "hitrace_meter.h"
 
 namespace OHOS {
 namespace Media {
