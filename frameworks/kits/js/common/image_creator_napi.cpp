@@ -489,7 +489,6 @@ static void TestAcquireBuffer(OHOS::sptr<OHOS::IConsumerSurface> &creatorSurface
         return;
     }
     IMAGE_ERR("...AcquireBuffer...");
-    int32_t *p = static_cast<int32_t *>(buffer->GetVirAddr());
     InitializationOptions opts;
     opts.size.width = creatorSurface->GetDefaultWidth();
     opts.size.height = creatorSurface->GetDefaultHeight();
