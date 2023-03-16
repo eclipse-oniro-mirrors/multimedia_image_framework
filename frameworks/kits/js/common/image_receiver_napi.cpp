@@ -556,7 +556,6 @@ static void TestRequestBuffer(OHOS::sptr<OHOS::Surface> &receiverSurface,
     IMAGE_ERR("RequestBuffer");
     int32_t *p = reinterpret_cast<int32_t *>(buffer->GetVirAddr());
     int32_t size = static_cast<int32_t>(buffer->GetSize() / 4);
-    IMAGE_ERR("RequestBuffer %{public}p", p);
     if (p != nullptr) {
         for (int32_t i = 0; i < size; i++) {
             p[i] = i;
@@ -962,8 +961,6 @@ napi_value ImageReceiverNapi::JsOn(napi_env env, napi_callback_info info)
         listener->context = std::move(ic.context);
         listener->context->env = args.env;
         listener->name = args.name;
-
-        IMAGE_ERR("listener is %{public}p", listener.get());
 
         native->RegisterBufferAvaliableListener((std::shared_ptr<SurfaceBufferAvaliableListener> &)listener);
 
