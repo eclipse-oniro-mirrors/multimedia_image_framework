@@ -814,8 +814,8 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
 uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, uint8_t *data, uint32_t size)
 {
-    HiLog::Debug(LABEL, "[ModifyImageProperty] with buffer:%{public}p, key:%{public}s, value:%{public}s",
-        data, key.c_str(), value.c_str());
+    HiLog::Debug(LABEL, "[ModifyImageProperty] with key:%{public}s, value:%{public}s",
+        key.c_str(), value.c_str());
     ExifTag tag = getExifTagFromKey(key);
     if (tag == EXIF_TAG_PRINT_IMAGE_MATCHING) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;

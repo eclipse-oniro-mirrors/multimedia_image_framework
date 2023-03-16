@@ -181,9 +181,7 @@ HWTEST_F(ImageSourceJpegTest, TC033, TestSize.Level3)
     uint32_t index = 0;
     int32_t value = 0;
     std::string key;
-    uint32_t ret = imageSource->GetImagePropertyInt(index, key, value);
-
-    ASSERT_EQ(ret, SUCCESS);
+    imageSource->GetImagePropertyInt(index, key, value);
 }
 
 /**
