@@ -103,15 +103,6 @@
                         ]
                     },
                     "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_receiver_ndk"
-          },
-          {
-            "header": {
-              "header_files": [
-                "image_utils.h"
-              ],
-              "header_base": "//foundation/multimedia/frameworks/innerkitsimpl/utils/include/"
-            },
-            "name": "//foundation/multimedia/frameworks/innerkitsimpl/utils:image_utils"
           }
         ],
         "test": [
