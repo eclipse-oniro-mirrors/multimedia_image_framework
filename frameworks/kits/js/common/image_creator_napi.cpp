@@ -489,8 +489,6 @@ static void TestAcquireBuffer(OHOS::sptr<OHOS::IConsumerSurface> &creatorSurface
         return;
     }
     IMAGE_ERR("...AcquireBuffer...");
-    int32_t *p = static_cast<int32_t *>(buffer->GetVirAddr());
-    IMAGE_ERR("AcquireBuffer %{public}p", p);
     InitializationOptions opts;
     opts.size.width = creatorSurface->GetDefaultWidth();
     opts.size.height = creatorSurface->GetDefaultHeight();
@@ -873,8 +871,6 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
         listener->context = std::move(ic.context);
         listener->context->env = args.env;
         listener->name = args.name;
-
-        IMAGE_ERR("listener is %{public}p", listener.get());
 
         native->RegisterBufferReleaseListener((std::shared_ptr<SurfaceBufferReleaseListener> &)listener);
 
