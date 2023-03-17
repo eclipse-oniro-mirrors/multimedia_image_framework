@@ -149,11 +149,8 @@ if (use_clang_ios) {
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       deps = [
-        "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-        "//foundation/communication/ipc/utils/include",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
         "//third_party/flutter/build/skia:ace_skia_windows",
-        "//utils/jni:utils_jnikit_win",
       ]
     } else if (use_clang_mac) {
       defines = image_decode_mac_defines
