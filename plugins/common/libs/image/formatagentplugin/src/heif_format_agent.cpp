@@ -66,7 +66,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         HiLog::Error(LABEL, "memcpy headerData data size:[%{public}d] error.", dataSize);
         return false;
     }
-    
+
     const uint32_t *ptr = reinterpret_cast<const uint32_t *>(tmpBuff);
     uint64_t chunkSize = EndianSwap32(ptr[0]);  // first item
     uint32_t chunkType = EndianSwap32(ptr[1]);  // second item

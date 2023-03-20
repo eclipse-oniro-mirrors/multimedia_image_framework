@@ -41,6 +41,9 @@ ImageCreator::~ImageCreator()
 GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
 {
     HiLog::Info(LABEL, "OnBufferRelease");
+    if (buffer == nullptr) {
+        return GSERROR_NO_ENTRY;
+    }
     auto iter = bufferCreatorMap_.find(static_cast<uint8_t*>(buffer->GetVirAddr()));
     if (iter == bufferCreatorMap_.end()) {
         return GSERROR_NO_ENTRY;
