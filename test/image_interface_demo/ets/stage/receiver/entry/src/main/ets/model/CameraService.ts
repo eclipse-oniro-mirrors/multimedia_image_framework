@@ -58,22 +58,9 @@ class CameraService {
 ////      从ImageReceiver读取最新的图片，并使用callback返回结果。 success
 //      this.mReceiver.readLatestImage((err, image) => {
 //        Logger.info(this.tag, 'q_y3 readLatestImage')
-//        if (err || image === undefined) {
-//          Logger.error(this.tag, 'q_y4 failed to get valid image')
-//          return
-//        }
 //        image.getComponent(4, (errMsg, img) => {
 //          Logger.info(this.tag, 'q_y5 getComponent')
-//          if (errMsg || img === undefined) {
-//            Logger.info(this.tag, 'q_y6 failed to get valid buffer')
-//            return
-//          }
 //          let buffer = new ArrayBuffer(4096)
-//          if (img.byteBuffer) {
-//            buffer = img.byteBuffer
-//          } else {
-//            Logger.error(this.tag, ' q_y7 img.byteBuffer is undefined')
-//          }
 //          this.savePicture(buffer, image)
 //        })
 //      })
@@ -81,47 +68,19 @@ class CameraService {
 ////      从ImageReceiver读取最新的图片，并使用promise返回结果。 success
 //      this.mReceiver.readLatestImage().then(image => {
 //        Logger.info(this.tag, 'q_y8 readLatestImage')
-//        if (image === undefined) {
-//          Logger.error(this.tag, 'q_y9 failed to get valid image')
-//          return
-//        }
 //        image.getComponent(4, (errMsg, img) => {
 //          Logger.info(this.tag, 'q_y10 getComponent')
-//          if (errMsg || img === undefined) {
-//            Logger.info(this.tag, 'q_y11 failed to get valid buffer')
-//            return
-//          }
 //          let buffer = new ArrayBuffer(4096)
-//          if (img.byteBuffer) {
-//            buffer = img.byteBuffer
-//          } else {
-//            Logger.error(this.tag, ' q_y12 img.byteBuffer is undefined')
-//          }
 //          this.savePicture(buffer, image)
 //        })
-//      }).catch(error => {
-//        Logger.info('q_y13 readLatestImage failed.');
-//      })
+     })
 
 //      从ImageReceiver读取下一张图片，并使用callback返回结果。 success
 //      this.mReceiver.readNextImage((err, image) => {
 //        Logger.info(this.tag, 'q_y14 readNextImage')
-//        if (err || image === undefined) {
-//          Logger.error(this.tag, 'q_y15 failed to get valid image')
-//          return
-//        }
 //        image.getComponent(4, (errMsg, img) => {
 //          Logger.info(this.tag, 'q_y16 getComponent')
-//          if (errMsg || img === undefined) {
-//            Logger.info(this.tag, 'q_y17 failed to get valid buffer')
-//            return
-//          }
 //          let buffer = new ArrayBuffer(4096)
-//          if (img.byteBuffer) {
-//            buffer = img.byteBuffer
-//          } else {
-//            Logger.error(this.tag, ' q_y18 img.byteBuffer is undefined')
-//          }
 //          this.savePicture(buffer, image)
 //        })
 //      })
@@ -166,19 +125,12 @@ class CameraService {
 //      }).catch(error => {
 //        Logger.error('q_y28 getReceivingSurfaceId failed.')
 //      })
-
     })
 
 //    释放ImageReceiver实例并使用promise返回结果.  success
-//    this.mReceiver.release().then(() => {
-//      Logger.info('q_y29 release succeeded.');
-//    }).catch(error => {
-//      Logger.error('q_y30 release failed.');
-//    })
+//    this.mReceiver.release().then(() => {})
 //    释放ImageReceiver实例并使用callback返回结果.  success
-//    this.mReceiver.release(() => {
-//      Logger.info('q_y31 release succeeded.');
-//    })
+//    this.mReceiver.release(() => {})
   }
 
   async savePicture(buffer: ArrayBuffer, img: image.Image) {
