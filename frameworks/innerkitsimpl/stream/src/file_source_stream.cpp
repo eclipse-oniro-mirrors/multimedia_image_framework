@@ -32,6 +32,7 @@ FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, 
 
 FileSourceStream::~FileSourceStream()
 {
+    IMAGE_LOGE("[FileSourceStream]destructor enter.");
     fclose(filePtr_);
     ResetReadBuffer();
 }
