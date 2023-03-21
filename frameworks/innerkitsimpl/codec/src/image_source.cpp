@@ -739,6 +739,7 @@ void ImageSource::RemoveDecodeListener(DecodeListener *listener)
 
 ImageSource::~ImageSource()
 {
+    IMAGE_LOGE("ImageSource destructor enter");
     std::lock_guard<std::mutex> guard(listenerMutex_);
     for (const auto &listener : listeners_) {
         listener->OnPeerDestory();
