@@ -28,7 +28,9 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static constexpr int32_t LENGTH = 8;
-
+constexpr int32_t RGB_888_PIXEL_BYTES = 3;
+constexpr int32_t RGBA_F16_PIXEL_BYTES = 8;
+constexpr int32_t NV12_PIXEL_BYTES = 2;
 class ImageUtilsTest : public testing::Test {
 public:
     ImageUtilsTest() {}
@@ -84,7 +86,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize001 start";
     ImageUtils imageUtils;
     size_t size;
-    imageUtils.GetFileSize(IMAGE_INPUT_JPEG_PATH, size);
+    bool res = imageUtils.GetFileSize(IMAGE_INPUT_JPEG_PATH, size);
+    ASSERT_EQ(res, true);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize001 end";
 }
 
@@ -99,7 +102,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize002, TestSize.Level3)
     ImageUtils imageUtils;
     size_t size;
     const std::string path = "";
-    imageUtils.GetFileSize(path, size);
+    bool res = imageUtils.GetFileSize(path, size);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize002 end";
 }
 
@@ -114,7 +118,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize003, TestSize.Level3)
     ImageUtils imageUtils;
     size_t size;
     const std::string path = "test/aaa";
-    imageUtils.GetFileSize(path, size);
+    bool res = imageUtils.GetFileSize(path, size);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize003 end";
 }
 
@@ -129,7 +134,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize004, TestSize.Level3)
     const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ImageUtils imageUtils;
     size_t size;
-    imageUtils.GetFileSize(fd, size);
+    bool res = imageUtils.GetFileSize(fd, size);
+    ASSERT_EQ(res, true);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize004 end";
 }
 
@@ -144,7 +150,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize005, TestSize.Level3)
     const int fd = -1;
     ImageUtils imageUtils;
     size_t size;
-    imageUtils.GetFileSize(fd, size);
+    bool res = imageUtils.GetFileSize(fd, size);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize005 end";
 }
 
@@ -159,7 +166,8 @@ HWTEST_F(ImageUtilsTest, GetFileSize006, TestSize.Level3)
     const int fd = 100;
     ImageUtils imageUtils;
     size_t size;
-    imageUtils.GetFileSize(fd, size);
+    bool res = imageUtils.GetFileSize(fd, size);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetFileSize006 end";
 }
 
@@ -171,9 +179,12 @@ HWTEST_F(ImageUtilsTest, GetFileSize006, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, GetPixelBytes001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 start";
-    ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
-    ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
-    ImageUtils::GetPixelBytes(PixelFormat::NV12);
+    int32_t res1 = ImageUtils::GetPixelBytes(PixelFormat::RGB_888);
+    ASSERT_EQ(res1, RGB_888_PIXEL_BYTES);
+    int32_t res2 = ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
+    ASSERT_EQ(res2, RGBA_F16_PIXEL_BYTES);
+    int32_t res3 = ImageUtils::GetPixelBytes(PixelFormat::NV12);
+    ASSERT_EQ(res3, NV12_PIXEL_BYTES);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 end";
 }
 
@@ -187,7 +198,8 @@ HWTEST_F(ImageUtilsTest, PathToRealPath001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath001 start";
     const string path = "";
     string realPath;
-    ImageUtils::PathToRealPath(path, realPath);
+    bool res = ImageUtils::PathToRealPath(path, realPath);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath001 end";
 }
 
@@ -205,7 +217,8 @@ HWTEST_F(ImageUtilsTest, PathToRealPath002, TestSize.Level3)
     }
     const string path = buffer;
     string realPath;
-    ImageUtils::PathToRealPath(path, realPath);
+    bool res = ImageUtils::PathToRealPath(path, realPath);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: PathToRealPath002 end";
 }
 
@@ -218,13 +231,16 @@ HWTEST_F(ImageUtilsTest, IsValidImageInfo001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: IsValidImageInfo001 start";
     ImageInfo info;
-    ImageUtils::IsValidImageInfo(info);
+    bool res1 = ImageUtils::IsValidImageInfo(info);
+    ASSERT_EQ(res1, false);
     info.size.width = 0;
     info.size.height = 0;
-    ImageUtils::IsValidImageInfo(info);
+    bool res2 = ImageUtils::IsValidImageInfo(info);
+    ASSERT_EQ(res2, false);
     info.size.width = 100;
     info.size.height = 10;
-    ImageUtils::IsValidImageInfo(info);
+    bool res3 = ImageUtils::IsValidImageInfo(info);
+    ASSERT_EQ(res3, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: IsValidImageInfo001 end";
 }
 
@@ -239,7 +255,8 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflow001, TestSize.Level3)
     int32_t width = 0;
     int32_t height = 0;
     int32_t bytesPerPixel = 0;
-    ImageUtils::CheckMulOverflow(width, height, bytesPerPixel);
+    bool res = ImageUtils::CheckMulOverflow(width, height, bytesPerPixel);
+    ASSERT_EQ(res, true);
     GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflow001 end";
 }
 
