@@ -50,7 +50,8 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat001, TestSize.Level3)
     HeifFormatAgent heifFormatAgent;
     const void *headerData = nullptr;
     uint32_t dataSize = 0;
-    heifFormatAgent.CheckFormat(headerData, dataSize);
+    bool res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat end";
 }
 
@@ -67,7 +68,8 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat002, TestSize.Level3)
     head[0] = 0;
     head[1] = 'f';
     uint32_t dataSize = 0;
-    heifFormatAgent.CheckFormat(head, dataSize);
+    bool res = heifFormatAgent.CheckFormat(head, dataSize);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat002 end";
 }
 
@@ -82,7 +84,8 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat003, TestSize.Level3)
     HeifFormatAgent heifFormatAgent;
     const void *headerData = nullptr;
     uint32_t dataSize = LEAST_SIZE;
-    heifFormatAgent.CheckFormat(headerData, dataSize);
+    bool res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat003 end";
 }
 }

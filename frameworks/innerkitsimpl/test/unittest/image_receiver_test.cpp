@@ -58,7 +58,8 @@ HWTEST_F(ImageReceiverTest, ImageReceiver001, TestSize.Level3)
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver->ReadLastImage();
     int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
-    imageReceiver->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    int32_t res = imageReceiver->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver001 end";
 }
 
@@ -80,7 +81,8 @@ HWTEST_F(ImageReceiverTest, ImageReceiver002, TestSize.Level3)
     ASSERT_EQ(surfaceBuffer1, nullptr);
     int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
-    imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    int32_t res = imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver002 end";
 }
 
@@ -101,7 +103,8 @@ HWTEST_F(ImageReceiverTest, ImageReceiver003, TestSize.Level3)
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = nullptr;
     ASSERT_EQ(surfaceBuffer1, nullptr);
     int fd = -1;
-    imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    int32_t res = imageReceiver1->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver003 end";
 }
 
@@ -121,7 +124,8 @@ HWTEST_F(ImageReceiverTest, ImageReceiver004, TestSize.Level3)
     std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
     int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
-    imageReceiver1->SaveBufferAsImage(fd, opts);
+    int32_t res = imageReceiver1->SaveBufferAsImage(fd, opts);
+    ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 end";
 }
 
@@ -140,7 +144,8 @@ HWTEST_F(ImageReceiverTest, ImageReceiver005, TestSize.Level3)
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
     int fd = -1;
-    imageReceiver1->SaveBufferAsImage(fd, opts);
+    int32_t res = imageReceiver1->SaveBufferAsImage(fd, opts);
+    ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver005 end";
 }
 
