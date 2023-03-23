@@ -76,6 +76,7 @@ private:
     static napi_value JSCommonProcess(ImageReceiverCommonArgs &args);
 #ifdef IMAGE_DEBUG_FLAG
     static napi_value JsTest(napi_env env, napi_callback_info info);
+    static napi_value JsCheckDeviceTest(napi_env env, napi_callback_info info);
     static napi_value JsTestYUV(napi_env env, napi_callback_info info);
 #endif
     void release();
