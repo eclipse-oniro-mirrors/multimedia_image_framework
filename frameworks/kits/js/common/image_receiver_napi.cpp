@@ -37,6 +37,7 @@ namespace {
 namespace OHOS {
 namespace Media {
 static const std::string CLASS_NAME = "ImageReceiver";
+static const std::string DEVICE_ERRCODE = "801";
 shared_ptr<ImageReceiver> ImageReceiverNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageReceiverNapi::sConstructor_ = nullptr;
 using SurfaceListener = SurfaceBufferAvaliableListener;
@@ -133,6 +134,7 @@ napi_value ImageReceiverNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("release", JsRelease),
 #ifdef IMAGE_DEBUG_FLAG
         DECLARE_NAPI_GETTER("test", JsTest),
+        DECLARE_NAPI_GETTER("checkDeviceTest", JsCheckDeviceTest),
         DECLARE_NAPI_GETTER("testYUV", JsTestYUV),
 #endif
         DECLARE_NAPI_GETTER("size", JsGetSize),
@@ -560,6 +562,30 @@ napi_value ImageReceiverNapi::JsTest(napi_env env, napi_callback_info info)
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
         DoTest(ic.context->receiver_, PIXEL_FMT_RGBA_8888);
+        return true;
+    };
+
+    return JSCommonProcess(args);
+}
+
+napi_value ImageReceiverNapi::JsCheckDeviceTest(napi_env env, napi_callback_info info)
+{
+    IMAGE_FUNCTION_IN();
+    ImageReceiverCommonArgs args = {
+        .env = env, .info = info,
+        .async = CallType::GETTER,
+    };
+    args.argc = ARGS0;
+
+    args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
+        napi_get_undefined(args.env, &(ic.result));
+        napi_value mess = nullptr;
+        ic.context->constructor_->isCallBackTest = true;
+        napi_create_string_utf8(args.env, DEVICE_ERRCODE.c_str(), NAPI_AUTO_LENGTH, &mess);
+        ic.result = mess;
+        if (args.async != CallType::GETTER) {
+            DoTest(ic.context->receiver_, PIXEL_FMT_RGBA_8888);
+        }
         return true;
     };
 
