@@ -37,8 +37,6 @@ static bool makeUndefined(napi_env env, napi_value* value)
     if (env != nullptr) {
         napi_get_undefined(env, value);
         return true;
-    } else {
-        value = nullptr;
     }
     return false;
 }
@@ -140,7 +138,7 @@ static int32_t PixelMapNapiCreateAlpha(napi_env env, PixelMapNapiArgs* args)
     return isUndefine(env, *(args->outValue))?OHOS_IMAGE_RESULT_BAD_PARAMETER:OHOS_IMAGE_RESULT_SUCCESS;
 }
 
-static PixelMap* CheckAndGetPixelMap(PixelMapNapi* native, PixelMapNapiArgs* args)
+static PixelMap* CheckAndGetPixelMap(PixelMapNapi* native, const PixelMapNapiArgs* args)
 {
     if (args == nullptr) {
         return nullptr;
