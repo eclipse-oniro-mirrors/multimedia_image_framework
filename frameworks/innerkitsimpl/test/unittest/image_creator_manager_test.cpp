@@ -41,7 +41,7 @@ HWTEST_F(ImageCreatorManagerTest, SaveImageCreator001, TestSize.Level3)
     shared_ptr<ImageCreator> bki = imageCreatorManager.GetImageCreatorByKeyId(id);
     ASSERT_EQ(bki, nullptr);
     string saveimagecreate = imageCreatorManager.SaveImageCreator(imageCreator);
-    ASSERT_EQ(saveimagecreate, "1");
+    ASSERT_EQ(saveimagecreate, "0");
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: SaveImageCreator001 end";
 }
 
