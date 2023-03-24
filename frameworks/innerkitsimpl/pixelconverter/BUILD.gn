@@ -164,7 +164,7 @@ if (use_clang_ios) {
         "//third_party/flutter/build/skia:ace_skia_android",
       ]
 
-      aosp_deps = [ "shared_library:libnativewindow" ]
+      libs = [ "nativewindow" ]
     } else {
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -209,7 +209,7 @@ ohos_static_library("pixelconvertadapter_static") {
       "//third_party/flutter/build/skia:ace_skia_android",
     ]
 
-    aosp_deps = [ "shared_library:libnativewindow" ]
+    libs = [ "nativewindow" ]
   } else {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",

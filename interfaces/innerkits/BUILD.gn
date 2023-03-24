@@ -315,7 +315,7 @@ if (use_clang_ios) {
         "//third_party/libexif:libexif",
       ]
 
-      aosp_deps = [ "shared_library:libnativewindow" ]
+      libs = [ "nativewindow" ]
     } else {
       defines = [ "DUAL_ADAPTER" ]
       DUAL_ADAPTER = true

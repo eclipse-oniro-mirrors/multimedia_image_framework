@@ -105,7 +105,7 @@ ohos_shared_library("bmpplugin") {
       "//third_party/flutter/build/skia:ace_skia_android",
     ]
 
-    aosp_deps = [ "shared_library:libnativewindow" ]
+    libs = [ "nativewindow" ]
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
@@ -119,8 +119,6 @@ ohos_shared_library("bmpplugin") {
       "c_utils:utils",
       "hiviewdfx_hilog_native:libhilog",
     ]
-
-    #aosp_deps = [ "shared_library:libhwui" ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   subsystem_name = "multimedia"
