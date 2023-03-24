@@ -37,7 +37,7 @@ static NativeImage* GetNativeImage(ImageNapi* napi)
     return napi->GetNative();
 }
 
-static NativeImage* CheckAndGetImage(ImageNapi* native, struct ImageNapiArgs* args)
+static NativeImage* CheckAndGetImage(ImageNapi* native, const struct ImageNapiArgs* args)
 {
     if (args == nullptr) {
         return nullptr;

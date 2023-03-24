@@ -441,5 +441,24 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0017, TestSize.
     ASSERT_EQ(ret, SIZE_T);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0017 end";
 }
+
+/**
+ * @tc.name: UpdateDataTest001
+ * @tc.desc: UpdateData
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, UpdateDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: UpdateDataTest001 start";
+    IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
+    ASSERT_NE(ins, nullptr);
+    const uint8_t data[64] = {0};
+    uint32_t size = 64;
+    bool isCompleted = true;
+    uint32_t ret = ins->UpdateData(data, size, isCompleted);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: UpdateDataTest001 end";
+}
 }
 }

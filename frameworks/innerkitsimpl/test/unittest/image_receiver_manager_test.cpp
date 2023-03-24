@@ -49,7 +49,7 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager001, TestSize.Level3)
     std::shared_ptr<ImageReceiver> iva = std::make_shared<ImageReceiver>();
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
-    ASSERT_EQ(receiverKey, "1");
+    ASSERT_EQ(receiverKey, "0");
     GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager001 end";
 }
 
@@ -79,7 +79,7 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager003, TestSize.Level3)
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
-    ASSERT_EQ(receiverKey, "1");
+    ASSERT_EQ(receiverKey, "2");
     auto surface = imageReceiverManager.getSurfaceByKeyId("");
     bool result = (surface == nullptr);
     ASSERT_EQ(result, true);

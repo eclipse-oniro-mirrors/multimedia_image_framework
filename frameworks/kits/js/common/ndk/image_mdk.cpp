@@ -94,7 +94,6 @@ int32_t OH_Image_Release(ImageNative* native)
 {
     if (native != nullptr) {
         delete native;
-        native = nullptr;
     }
     return OHOS_IMAGE_RESULT_SUCCESS;
 }

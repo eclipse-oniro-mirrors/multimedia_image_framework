@@ -34,7 +34,7 @@ static ImageReceiver* GetNativeReceiver(ImageReceiverNapi* napi)
     return napi->GetNative();
 }
 
-static ImageReceiver* CheckAndGetReceiver(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
+static ImageReceiver* CheckAndGetReceiver(ImageReceiverNapi* native, const struct ImageReceiverArgs* args)
 {
     if (args == nullptr) {
         return nullptr;

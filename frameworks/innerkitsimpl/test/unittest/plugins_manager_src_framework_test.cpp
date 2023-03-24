@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#include "attr_data.h"
 #include "capability.h"
 #include "impl_class_key.h"
 #include "impl_class_mgr.h"
@@ -718,6 +719,24 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, PluginTest007, TestSize.Level3)
     const std::string ret = plugin.GetPackageName();
     ASSERT_EQ(ret, "");
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest007 end";
+}
+
+/**
+ * @tc.name: SetCapabilityTest001
+ * @tc.desc: SetCapability
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, SetCapabilityTest001, TestSize.Level3)
+{
+    std::map<std::string, AttrData> caps;
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SetCapabilityTest001 start";
+    Capability capability(caps);
+    const nlohmann::json classInfo;
+    uint32_t ret = capability.SetCapability(classInfo);
+    capability.IsCompatible(caps);
+    std::map<std::string, AttrData> cap = capability.GetCapability();
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: SetCapabilityTest001 end";
 }
 }
 }
