@@ -19,6 +19,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
@@ -111,6 +112,7 @@ public:
     NATIVEEXPORT AllocatorType GetAllocatorType();
     NATIVEEXPORT void *GetFd() const;
     NATIVEEXPORT void SetFreePixelMapProc(CustomFreePixelMap func);
+    NATIVEEXPORT void SetTrtansformered(bool isTrtansformered);
 
     NATIVEEXPORT uint32_t GetCapacity()
     {
@@ -120,6 +122,11 @@ public:
     NATIVEEXPORT bool IsEditable()
     {
         return editable_;
+    }
+
+    NATIVEEXPORT bool IsTransformered()
+    {
+        return isTrtansformered_;
     }
 
     // judgement whether create pixelmap use source as result
@@ -241,6 +248,8 @@ private:
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
     bool useSourceAsResponse_ = false;
+    bool isTrtansformered_ = false;
+    std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();
 
     // only used by rosen backend
     uint32_t uniqueId_ = 0;

@@ -117,6 +117,12 @@ void PixelMap::SetFreePixelMapProc(CustomFreePixelMap func)
     freePixelMapProc_ = func;
 }
 
+void PixelMap::SetTrtansformered(bool isTrtansformered)
+{
+    std::unique_lock<std::mutex> lock(*transformMutex_);
+    isTrtansformered_ = isTrtansformered;
+}
+
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     if (data_ != nullptr || (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr)) {
