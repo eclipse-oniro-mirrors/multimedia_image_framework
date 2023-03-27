@@ -1373,10 +1373,13 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         }
         void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (ptr == MAP_FAILED) {
-            ::close(fd);
-            delete pixelMap;
-            HiLog::Error(LABEL, "shared memory map failed, errno:%{public}d", errno);
-            return nullptr;
+            ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
+            if (ptr == MAP_FAILED) {
+                ::close(fd);
+                delete pixelMap;
+                HiLog::Error(LABEL, "shared memory map in memalloc failed, errno:%{public}d", errno);
+                return nullptr;
+            }
         }
         context = new int32_t();
         if (context == nullptr) {
