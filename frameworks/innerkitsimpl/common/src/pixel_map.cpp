@@ -1373,7 +1373,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         }
         void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (ptr == MAP_FAILED) {
-            ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+            ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
             if (ptr == MAP_FAILED) {
                 ::close(fd);
                 delete pixelMap;
