@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "svg_decoder.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
@@ -20,6 +21,7 @@
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "media_errors.h"
+
 namespace OHOS {
 namespace ImagePlugin {
 using namespace OHOS::HiviewDFX;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,22 +14,25 @@
  */
 #ifndef SVG_DECODER_H
 #define SVG_DECODER_H
+
 #include "abs_image_decoder.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkSize.h"
+
 #ifdef USE_NEWSVG_IN_NEWSKIA_FLAG
 #include "modules/svg/include/SkSVGDOM.h"
 #else
 #include "experimental/svg/model/SkSVGDOM.h"
 #endif
+
 namespace OHOS {
 namespace ImagePlugin {
 class SvgDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase {
 public:
     SvgDecoder();
-    ~SvgDecoder() override;
+    ~SvgDecoder();
     void SetSource(InputDataStream &sourceStream) override;
     void Reset() override;
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,20 +14,17 @@
  */
 
 #include <gtest/gtest.h>
-#include "hilog/log.h"
 #include "image_source_util.h"
 #include "log_tags.h"
 #include "media_errors.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
 namespace Multimedia {
 namespace {
-static constexpr HiLogLabel LABEL_TEST = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceSvgTest" };
 static const std::string SVG_FORMAT_TYPE = "image/svg+xml";
 static const std::string INPUT_PATH = "/data/local/tmp/image/";
 static const std::string OUTPUT_PATH = "/data/local/tmp/image/output_";
@@ -36,20 +33,16 @@ static const std::string TEST_FILE_SVG = "test.svg";
 static const std::string TEST_FILE_LARGE_SVG = "test_large.svg";
 }
 
-class ImageSourceSvgTest : public testing::Test {
-public:
-    ImageSourceSvgTest() {}
-    ~ImageSourceSvgTest() {}
-};
+class ImageSourceSvgTest : public testing::Test {};
 
 /**
- * @tc.name: SvgImageDecode001
+ * @tc.name: SvgImageDecode
  * @tc.desc: Decode svg image from file source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceSvgTest, SvgImageDecode001, TestSize.Level3)
+HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode001 start";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode start";
 
     const std::string testName = TEST_FILE_SVG;
 
@@ -71,7 +64,6 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 
@@ -83,17 +75,17 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode001, TestSize.Level3)
     auto packSize = PackImage(outName, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
 
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode001 end";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode end";
 }
 
 /**
- * @tc.name: SvgImageDecode002
+ * @tc.name: SvgCreateImageSource
  * @tc.desc: Decode svg image from file source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceSvgTest, SvgImageDecode002, TestSize.Level3)
+HWTEST_F(ImageSourceSvgTest, SvgCreateImageSource, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode002 start";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgCreateImageSource start";
 
     const std::string testName = TEST_FILE_LARGE_SVG;
 
@@ -115,7 +107,6 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode002, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     auto pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 
@@ -127,7 +118,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode002, TestSize.Level3)
     auto packSize = PackImage(outName, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
 
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode002 end";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgCreateImageSource end";
 }
 } // namespace Multimedia
 } // namespace OHOS

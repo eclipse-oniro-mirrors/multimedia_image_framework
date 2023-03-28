@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,11 +24,7 @@ namespace OHOS {
 namespace ImagePlugin {
 static constexpr size_t NUMBER_ONE = 1;
 static constexpr size_t NUMBER_TWO = 2;
-class SvgDecoderTest : public testing::Test {
-public:
-    SvgDecoderTest() {}
-    ~SvgDecoderTest() {}
-};
+class SvgDecoderTest : public testing::Test {};
 
 class MockInputDataStream : public SourceStream {
 public:
@@ -42,11 +38,11 @@ public:
 
     bool Read(uint32_t desiredSize, DataStreamBuffer &outData) override
     {
-        if (streamSize == NUMBER_ONE) {
-            streamBuffer = std::make_shared<uint8_t>(streamSize);
-            outData.inputStreamBuffer = streamBuffer.get();
-        } else if (streamSize == NUMBER_TWO) {
-            outData.dataSize = streamSize;
+        if (streamSize_ == NUMBER_ONE) {
+            streamBuffer_ = std::make_shared<uint8_t>(streamSize_);
+            outData.inputStreamBuffer = streamBuffer_.get();
+        } else if (streamSize_ == NUMBER_TWO) {
+            outData.dataSize = streamSize_;
         }
         return returnValue_;
     }
@@ -93,7 +89,7 @@ public:
 
     size_t GetStreamSize()
     {
-        return streamSize;
+        return streamSize_;
     }
 
     void SetReturn(bool returnValue)
@@ -103,13 +99,13 @@ public:
 
     void SetStreamSize(size_t size)
     {
-        streamSize = size;
+        streamSize_ = size;
     }
 
 private:
     bool returnValue_ = false;
-    size_t streamSize = 0;
-    std::shared_ptr<uint8_t> streamBuffer = nullptr;
+    size_t streamSize_ = 0;
+    std::shared_ptr<uint8_t> streamBuffer_ = nullptr;
 };
 
 /**
