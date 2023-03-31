@@ -1509,11 +1509,6 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
     WriteVarint(buff, GetVarintLen(static_cast<int32_t>(allocatorType_)));
     WriteVarint(buff, static_cast<int32_t>(allocatorType_));
-    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
-        WriteUint8(buff, TLV_END); // end tag
-        HiLog::Error(LABEL, "pixel map tlv encode fail: unsupport SHARE_MEM_ALLOC");
-        return false;
-    }
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     int32_t dataSize = rowDataSize_ * imageInfo_.size.height;
