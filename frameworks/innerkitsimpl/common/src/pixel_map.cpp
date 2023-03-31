@@ -125,9 +125,12 @@ void PixelMap::SetTrtansformered(bool isTrtansformered)
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
-    if (data_ != nullptr || (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr)) {
-        HiLog::Error(LABEL, "SetPixelsAddr error type %{public}d ", type);
+    if (data_ != nullptr) {
+        HiLog::Error(LABEL, "SetPixelsAddr error ");
         FreePixelMap();
+    }
+    if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
+        HiLog::Error(LABEL, "SetPixelsAddr error type %{public}d ", type);
     }
     data_ = static_cast<uint8_t *>(addr);
     context_ = context;
