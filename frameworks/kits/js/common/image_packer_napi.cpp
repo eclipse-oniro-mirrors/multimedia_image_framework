@@ -48,7 +48,7 @@ const uint8_t BYTE_FULL = 0xFF;
 const int32_t SIZE = 100;
 const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
-const int64_t DEFAULT_BUFFER_SIZE = 10 * 1024 * 1024; // 10M is the maximum default packedSize
+const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
 
 struct ImagePackerAsyncContext {
     napi_env env;
