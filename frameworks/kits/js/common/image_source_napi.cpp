@@ -702,7 +702,7 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         napi_delete_reference(env, arrayRef);
     }
     return imageSource;
-} 
+}
 
 napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info info)
 {
