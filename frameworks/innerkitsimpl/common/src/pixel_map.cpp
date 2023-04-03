@@ -1510,7 +1510,9 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     AllocatorType tmpAllocatorType = allocatorType_;
     if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
         tmpAllocatorType = AllocatorType::HEAP_ALLOC;
-        HiLog::Error(LABEL, "pixel map tlv encode unsupport SHARE_MEM_ALLOC, use HEAP_ALLOC");
+        HiLog::Info(LABEL, "pixel map tlv encode unsupport SHARE_MEM_ALLOC, use HEAP_ALLOC."\
+                    "width: %{piblic}d,height: %{public}d",
+                    imageInfo_.size.width, imageInfo_.size.height);
     }
     WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
     WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
