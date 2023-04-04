@@ -25,6 +25,7 @@
 using OHOS::HiviewDFX::HiLog;
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageSourceNapi"};
+    constexpr int INVALID_FD = -1;
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
@@ -60,10 +61,10 @@ struct ImageSourceAsyncContext {
     napi_ref callbackRef = nullptr;
     ImageSourceNapi *constructor_;
     uint32_t status;
-    std::string pathName;
-    int fdIndex;
-    void* sourceBuffer;
-    size_t sourceBufferSize;
+    std::string pathName = "";
+    int fdIndex = INVALID_FD;
+    void* sourceBuffer = nullptr;
+    size_t sourceBufferSize = NUM_0;
     std::string keyStr;
     std::string valueStr;
     std::string defaultValueStr;
@@ -658,8 +659,7 @@ static void parseSourceOptions(napi_env env, napi_value root, SourceOptions* opt
         HiLog::Info(LABEL, "sourceSize:(%{public}d, %{public}d)", opts->size.width, opts->size.height);
     }
 }
-
-napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info info)
+static void PrepareNapiEnv(napi_env env)
 {
     napi_value globalValue;
     napi_get_global(env, &globalValue);
@@ -671,7 +671,42 @@ napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info i
     napi_value funcArgv[1] = { imageInfo };
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+}
+static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_value argValue,
+    SourceOptions &opts, ImageSourceAsyncContext* context)
+{
+    std::unique_ptr<ImageSource> imageSource = nullptr;
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
 
+    auto inputType = ImageNapiUtils::getType(env, argValue);
+    if (napi_string == inputType) { // File Path
+        if (!ImageNapiUtils::GetUtf8String(env, argValue, context->pathName)) {
+            HiLog::Error(LABEL, "fail to get pathName");
+            return imageSource;
+        }
+        context->pathName = FileUrlToRawPath(context->pathName);
+        context->pathNameLength = context->pathName.size();
+        HiLog::Debug(LABEL, "pathName is [%{public}s]", context->pathName.c_str());
+        imageSource = ImageSource::CreateImageSource(context->pathName, opts, errorCode);
+    } else if (napi_number == inputType) { // Fd
+        napi_get_value_int32(env, argValue, &context->fdIndex);
+        HiLog::Debug(LABEL, "CreateImageSource fdIndex is [%{public}d]", context->fdIndex);
+        imageSource = ImageSource::CreateImageSource(context->fdIndex, opts, errorCode);
+    } else { // Input Buffer
+        uint32_t refCount = NUM_1;
+        napi_ref arrayRef = nullptr;
+        napi_create_reference(env, argValue, refCount, &arrayRef);
+        napi_get_arraybuffer_info(env, argValue, &(context->sourceBuffer), &(context->sourceBufferSize));
+        imageSource = ImageSource::CreateImageSource(static_cast<uint8_t *>(context->sourceBuffer),
+            context->sourceBufferSize, opts, errorCode);
+        napi_delete_reference(env, arrayRef);
+    }
+    return imageSource;
+}
+
+napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info info)
+{
+    PrepareNapiEnv(env);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -681,53 +716,25 @@ napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info i
     size_t argCount = 2;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to napi_get_cb_info"));
-
-    filePath_ = "";
-    fileDescriptor_ = -1;
-    fileBuffer_ = nullptr;
-    fileBufferSize_ = 0;
-
-    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
-    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = nullptr;
-
     NAPI_ASSERT(env, argCount > 0, "No arg!");
 
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+    SourceOptions opts;
     if (argCount > NUM_1) {
         parseSourceOptions(env, argValue[NUM_1], &opts);
     }
-
-    auto inputType = ImageNapiUtils::getType(env, argValue[NUM_0]);
-    if (napi_string == inputType) { // File Path
-        if (!ImageNapiUtils::GetUtf8String(env, argValue[NUM_0], asyncContext->pathName)) {
-            HiLog::Error(LABEL, "fail to get pathName");
-            napi_get_undefined(env, &result);
-            return result;
-        }
-        asyncContext->pathName = FileUrlToRawPath(asyncContext->pathName);
-        asyncContext->pathNameLength = asyncContext->pathName.size();
-        HiLog::Debug(LABEL, "pathName is [%{public}s]", asyncContext->pathName.c_str());
-        filePath_ = asyncContext->pathName;
-        imageSource = ImageSource::CreateImageSource(asyncContext->pathName, opts, errorCode);
-    } else if (napi_number == inputType) { // Fd
-        napi_get_value_int32(env, argValue[NUM_0], &asyncContext->fdIndex);
-        HiLog::Debug(LABEL, "CreateImageSource fdIndex is [%{public}d]", asyncContext->fdIndex);
-        fileDescriptor_ = asyncContext->fdIndex;
-        imageSource = ImageSource::CreateImageSource(asyncContext->fdIndex, opts, errorCode);
-    } else { // Input Buffer
-        napi_get_arraybuffer_info(env, argValue[NUM_0], &(fileBuffer_), &(fileBufferSize_));
-        asyncContext->sourceBuffer = fileBuffer_;
-        asyncContext->sourceBufferSize = fileBufferSize_;
-        imageSource = ImageSource::CreateImageSource(static_cast<uint8_t *>(fileBuffer_),
-            fileBufferSize_, opts, errorCode);
-    }
-
-    if (errorCode != SUCCESS || imageSource == nullptr) {
+    std::unique_ptr<ImageSource> imageSource = CreateNativeImageSource(env, argValue[NUM_0],
+        opts, asyncContext.get());
+    if (imageSource == nullptr) {
         HiLog::Error(LABEL, "CreateImageSourceExec error");
         napi_get_undefined(env, &result);
         return result;
     }
+    filePath_ = asyncContext->pathName;
+    fileDescriptor_ = asyncContext->fdIndex;
+    fileBuffer_ = asyncContext->sourceBuffer;
+    fileBufferSize_ = asyncContext->sourceBufferSize;
+
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
