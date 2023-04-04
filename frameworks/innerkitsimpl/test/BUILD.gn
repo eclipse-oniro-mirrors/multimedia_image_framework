@@ -98,8 +98,6 @@ ohos_unittest("imagepixelmapparceltest") {
     "//commonlibrary/c_utils/base/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/multimedia/image_framework/mock/native/include",
-    "//foundation/multimedia/image_framework/mock/native/include/hilog",
   ]
   sources = [ "./unittest/image_pixel_map_parcel_test.cpp" ]
 
@@ -108,9 +106,6 @@ ohos_unittest("imagepixelmapparceltest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
-
-    #    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-    #    "//foundation/multimedia/image_framework/mock/native:log_mock_static",
   ]
 
   if (use_clang_android || use_clang_ios) {
@@ -526,40 +521,6 @@ ohos_unittest("pluginsmanagersrcframeworktest") {
   external_deps = [ "c_utils:utils" ]
 }
 
-ohos_unittest("mocktest") {
-  module_out_path = module_output_path
-
-  include_dirs = [
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_framework/mock/native/include",
-  ]
-
-  sources = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_directory_ex_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_hitrace_meter_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_parcel_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_refbase_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_rwlock_test.cpp",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/mock_string_ex_test.cpp",
-  ]
-
-  deps = [
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits:libhilog",
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-    "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
-
-  resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
-}
-
 ohos_unittest("pngtest") {
   module_out_path = module_output_path
 
@@ -927,7 +888,6 @@ group("unittest") {
     ":imagesourcetest",
     ":imageutilstest",
     ":interfacetest",
-    ":mocktest",
     ":ndktest",
     ":pixelconvertadaptertest",
     ":pluginlibjpegtest",
