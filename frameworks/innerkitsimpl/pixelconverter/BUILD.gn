@@ -160,8 +160,8 @@ if (use_clang_ios) {
       ]
     } else if (use_clang_android) {
       deps = [
+        "$plugins_lib_root/skia:skia_android",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//third_party/flutter/build/skia:ace_skia_android",
       ]
 
       aosp_deps = [ "shared_library:libnativewindow" ]
