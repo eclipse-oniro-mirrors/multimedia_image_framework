@@ -48,9 +48,9 @@ ohos_shared_library("jpegplugin") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/include/codec",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/include/core",
+    "$skia_root/skia/include/codec",
+    "$skia_root/skia",
+    "$skia_root/skia/include/core",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
@@ -69,10 +69,10 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
-      "//third_party/flutter/build/skia:ace_skcms",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
       "//third_party/libexif:libexif",
     ]
+    deps += skia_skcms
+    deps += skia_platform
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     include_dirs += [
@@ -85,17 +85,17 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
-      "//third_party/flutter/build/skia:ace_skcms",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
       "//third_party/libexif:libexif",
     ]
+    deps += skia_skcms
+    deps += skia_platform
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     sources += [
-      "$flutter_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
+      "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
     ]
     deps = [
       #"//third_party/flutter/skia/third_party/libjpeg-turbo:libjpeg",
@@ -103,10 +103,10 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
-      "//third_party/flutter/build/skia:ace_skcms",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
       "//third_party/libexif:libexif",
     ]
+    deps += skia_skcms
+    deps += skia_platform
 
     if (DUAL_ADAPTER) {
     } else {

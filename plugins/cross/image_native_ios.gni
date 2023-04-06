@@ -20,7 +20,7 @@ image_native_ios_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
 image_native_ios_sources = [
   # webp
-  "$flutter_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+  "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
 
   # image_native
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
@@ -109,9 +109,9 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   "//foundation/graphic/graphic_2d/utils/color_manager/export",
   "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-  "//third_party/flutter/skia/include/codec",
-  "//third_party/flutter/skia",
-  "//third_party/flutter/skia/include/core",
+  "$skia_root/skia/include/codec",
+  "$skia_root/skia",
+  "$skia_root/skia/include/core",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
   "//foundation/multimedia/image_framework/mock/native/include/log",
   "//commonlibrary/c_utils/base/include",
@@ -123,12 +123,12 @@ image_native_ios_include_dirs = [
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
   "//third_party/flutter/skia/third_party/externals/libwebp/src",
-  "//third_party/flutter/skia/include/encode",
-  "//third_party/flutter/skia/src/ports/skia_ohos",
-  "//third_party/flutter/skia/src/ports",
-  "//third_party/flutter/skia/src/images",
+  "$skia_root/skia/include/encode",
+  "$skia_root/skia/src/ports/skia_ohos",
+  "$skia_root/skia/src/ports",
+  "$skia_root/skia/src/images",
   "//third_party/expat/lib",
-  "//third_party/flutter/skia/include/private",
+  "$skia_root/skia/include/private",
   "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
 
   # bmp
@@ -196,8 +196,6 @@ image_native_ios_deps = [
 
   # jpeg
   "//third_party/flutter/build/libjpeg:ace_libjpeg",
-  "//third_party/flutter/build/skia:ace_skcms",
-  "//third_party/flutter/build/skia:ace_skia_ios",
 
   # png
   #"//third_party/libpng:png_static",
@@ -209,6 +207,8 @@ image_native_ios_deps = [
   # raw
   "//third_party/skia/third_party/piex",
 ]
+image_native_ios_deps += skia_skcms
+image_native_ios_deps += skia_platform
 
 image_native_ios_external_deps = [
   # common

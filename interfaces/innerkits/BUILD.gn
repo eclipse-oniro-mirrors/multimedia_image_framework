@@ -56,9 +56,9 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "//third_party/flutter/skia/include/codec",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/include/core",
+    "$skia_root/skia/include/codec",
+    "$skia_root/skia",
+    "$skia_root/skia/include/core",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
     "//third_party/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
@@ -205,8 +205,8 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-        "//third_party/flutter/build/skia:ace_skia_ohos",
       ]
+      deps += skia_platform
 
       if (DUAL_ADAPTER) {
       } else {

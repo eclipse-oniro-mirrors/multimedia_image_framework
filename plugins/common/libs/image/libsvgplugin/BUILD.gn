@@ -35,14 +35,14 @@ ohos_shared_library("svgplugin") {
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
-    "//third_party/flutter/skia",
+    "$skia_root/skia",
   ]
 
   deps = [
     "$graphic_subsystem/utils/color_manager:color_manager",
     "$image_subsystem/plugins/manager:pluginmanager",
-    "//third_party/flutter/build/skia:ace_skia_ohos",
   ]
+  deps += skia_platform
 
   external_deps = [
     "c_utils:utils",

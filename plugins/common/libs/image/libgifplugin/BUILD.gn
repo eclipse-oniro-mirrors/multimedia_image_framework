@@ -36,9 +36,9 @@ ohos_shared_library("gifplugin") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/giflib",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/flutter/skia/include/codec",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/include/core",
+    "$skia_root/skia/include/codec",
+    "$skia_root/skia",
+    "$skia_root/skia/include/core",
     "//third_party/flutter/skia/third_party/skcms",
   ]
 

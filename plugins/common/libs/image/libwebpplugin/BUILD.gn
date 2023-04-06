@@ -37,14 +37,14 @@ ohos_shared_library("webpplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//third_party/flutter/skia/third_party/externals/libwebp/src",
-    "//third_party/flutter/skia/include/core",
-    "//third_party/flutter/skia/include/encode",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/src/ports/skia_ohos",
-    "//third_party/flutter/skia/src/ports",
-    "//third_party/flutter/skia/src/images",
+    "$skia_root/skia/include/core",
+    "$skia_root/skia/include/encode",
+    "$skia_root/skia",
+    "$skia_root/skia/src/ports/skia_ohos",
+    "$skia_root/skia/src/ports",
+    "$skia_root/skia/src/images",
     "//third_party/expat/lib",
-    "//third_party/flutter/skia/include/private",
+    "$skia_root/skia/include/private",
     "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
   ]
@@ -67,8 +67,8 @@ ohos_shared_library("webpplugin") {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
     ]
+    deps += skia_platform
 
     if (DUAL_ADAPTER) {
     }
