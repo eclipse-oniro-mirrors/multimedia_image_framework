@@ -16,10 +16,12 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_RECEIVER_INCLUDE_IMAGE_RECEIVER_H_
 #define FRAMEWORKS_INNERKITSIMPL_RECEIVER_INCLUDE_IMAGE_RECEIVER_H_
 
-#include <surface.h>
 #include <cstdint>
-#include <string>
+#include <mutex>
 #include <securec.h>
+#include <string>
+#include <surface.h>
+
 #include "hilog/log.h"
 #include "image_format.h"
 #include "image_type.h"
@@ -45,6 +47,7 @@ public:
     std::shared_ptr<ImageReceiverContext> iraContext_ = nullptr;
     sptr<IConsumerSurface> receiverConsumerSurface_ = nullptr;
     sptr<Surface> receiverProducerSurface_ = nullptr;
+    std::mutex imageReceiverMutex_;
     std::shared_ptr<SurfaceBufferAvaliableListener> surfaceBufferAvaliableListener_ = nullptr;
     ImageReceiver() {}
     ~ImageReceiver();
