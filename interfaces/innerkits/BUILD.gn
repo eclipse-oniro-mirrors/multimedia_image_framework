@@ -76,7 +76,7 @@ config("image_external_config") {
   } else if (use_clang_ios) {
     include_dirs += [
       "//third_party/libpng",
-      "${image_subsystem}/mock/native/include/log",
+      "$image_subsystem/mock/native/include/log",
       "//foundation/multimedia/image_framework/mock/native/include/secure",
     ]
     include_dirs -= [
@@ -91,7 +91,7 @@ config("image_external_config") {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
       "//third_party/libpng",
-      "${image_subsystem}/mock/native/include/log",
+      "$image_subsystem/mock/native/include/log",
     ]
 
     include_dirs -= [

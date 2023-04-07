@@ -79,7 +79,7 @@ config("pixelconvertadapter_public_config") {
       "//third_party/flutter/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
-      "${image_subsystem}/mock/native/include/log",
+      "$image_subsystem/mock/native/include/log",
     ]
   } else if (use_clang_android) {
     include_dirs += [
@@ -96,7 +96,7 @@ config("pixelconvertadapter_public_config") {
       "//third_party/flutter/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
-      "${image_subsystem}/mock/native/include/log",
+      "$image_subsystem/mock/native/include/log",
     ]
   } else {
     include_dirs += [
