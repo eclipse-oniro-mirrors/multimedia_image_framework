@@ -140,9 +140,8 @@ sk_sp<SkImage> PixelMapRosenUtils::ExtractSkImage(std::shared_ptr<PixelMap> pixe
     if (!pixelMap) {
         return nullptr;
     }
-    if (pixelMap->rosenImageWrapper_) {
-        return pixelMap->rosenImageWrapper_->GetSkImage();
-    }
+    ImageInfo imageInfo;
+    pixelMap->GetImageInfo(imageInfo);
     auto skImageInfo = MakeSkImageInfo(pixelMap->imageInfo_);
     SkPixmap skPixmap(skImageInfo, reinterpret_cast<const void*>(pixelMap->GetPixels()), pixelMap->GetRowBytes());
     return SkImage::MakeFromRaster(skPixmap, PixelMapReleaseProc, new PixelMapReleaseContext(pixelMap));
