@@ -39,7 +39,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
-    external_deps = [ "c_utils:utils_static_ios" ]
+    external_deps = [ "c_utils:utilsbase" ]
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -154,7 +154,7 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
-    external_deps = [ "c_utils:utils_static_ios" ]
+    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     deps = [
