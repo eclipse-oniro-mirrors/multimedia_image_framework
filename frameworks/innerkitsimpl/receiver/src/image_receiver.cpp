@@ -25,6 +25,7 @@ namespace OHOS {
     namespace Media {
         ImageReceiver::~ImageReceiver()
         {
+            std::lock_guard<std::mutex> guard(imageReceiverMutex_);
             if (iraContext_ != nullptr) {
                 ImageReceiverManager::ReleaseReceiverById(iraContext_->GetReceiverKey());
             }
@@ -138,6 +139,7 @@ namespace OHOS {
 
         void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
         {
+            std::lock_guard<std::mutex> guard(imageReceiverMutex_);
             if (buffer != nullptr) {
                 if (iraContext_ != nullptr) {
                     auto listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
