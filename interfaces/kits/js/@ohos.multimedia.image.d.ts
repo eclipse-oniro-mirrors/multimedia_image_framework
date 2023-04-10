@@ -13,7 +13,7 @@
 * limitations under the License.
 */
 
-import { AsyncCallback } from './basic';
+import { AsyncCallback } from './@ohos.base';
 import colorSpaceManager from './@ohos.graphics.colorSpaceManager.d.ts';
 
 /**
