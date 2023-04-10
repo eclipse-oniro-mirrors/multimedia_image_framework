@@ -79,7 +79,7 @@ config("pixelconvertadapter_public_config") {
       "//third_party/flutter/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
   } else if (use_clang_android) {
     include_dirs += [
@@ -96,7 +96,7 @@ config("pixelconvertadapter_public_config") {
       "//third_party/flutter/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
   } else {
     include_dirs += [
@@ -126,9 +126,10 @@ if (use_clang_ios) {
     defines = image_decode_ios_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//third_party/flutter/build/skia:ace_skia_ios",
     ]
+
+    external_deps = [ "c_utils:utilsbase" ]
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -200,9 +201,9 @@ ohos_static_library("pixelconvertadapter_static") {
     defines = image_decode_ios_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//third_party/flutter/build/skia:ace_skia_ios",
     ]
+    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",

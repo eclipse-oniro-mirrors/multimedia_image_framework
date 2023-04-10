@@ -51,20 +51,19 @@ if (use_clang_ios) {
       "//foundation/multimedia/utils/include",
       "//third_party/json/single_include/nlohmann",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
 
     defines = image_decode_ios_defines
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
       "//foundation/multimedia/image_framework/mock/native/include/secure",
     ]
 
-    deps = [
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-    ]
+    deps = [ "$image_subsystem/mock/native:log_mock_static" ]
+
+    external_deps = [ "c_utils:utilsbase" ]
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -113,17 +112,13 @@ if (use_clang_ios) {
       "//foundation/multimedia/utils/include",
       "//third_party/json/single_include/nlohmann",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
 
     if (use_mingw_win) {
       defines = image_decode_windows_defines
-      include_dirs +=
-          [ "//foundation/multimedia/image_framework/mock/native/include" ]
-      deps = [
-        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-      ]
+      include_dirs += [ "$image_subsystem/mock/native/include/log" ]
+      deps = [ "$image_subsystem/mock/native:log_mock_static" ]
     } else if (use_clang_mac) {
       defines = image_decode_mac_defines
       include_dirs += [
@@ -132,7 +127,6 @@ if (use_clang_ios) {
       ]
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
         "//third_party/bounds_checking_function:libsec_static",
       ]
     } else if (use_clang_android) {
@@ -199,7 +193,6 @@ ohos_static_library("pluginmanager_static") {
         [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
     ]
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
@@ -209,26 +202,22 @@ ohos_static_library("pluginmanager_static") {
     ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
-    include_dirs +=
-        [ "//foundation/multimedia/image_framework/mock/native/include" ]
-    deps = [
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
-    ]
+    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
+    deps = [ "$image_subsystem/mock/native:log_mock_static" ]
+    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
 
     deps = [
+      "$image_subsystem/mock/native:log_mock_static",
       "//commonlibrary/c_utils/base:utils",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]

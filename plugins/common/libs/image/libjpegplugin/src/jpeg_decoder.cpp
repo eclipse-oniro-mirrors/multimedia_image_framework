@@ -95,7 +95,7 @@ JpegSrcMgr::JpegSrcMgr(InputDataStream *stream) : inputStream(stream)
 JpegDecoder::JpegDecoder() : srcMgr_(nullptr)
 {
     CreateDecoder();
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(_ANDROID) && !defined(_IOS)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_ANDROID) && !defined(IOS_PLATFORM)
     CreateHwDecompressor();
 #endif
 }
@@ -257,7 +257,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(rowStride) * decodeInfo_.output_height;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(_ANDROID) && !defined(_IOS)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_ANDROID) && !defined(IOS_PLATFORM)
             int fd = AshmemCreate("JPEG RawData", byteCount);
             if (fd < 0) {
                 return ERR_SHAMEM_DATA_ABNORMAL;

@@ -84,7 +84,7 @@ ohos_shared_library("bmpplugin") {
     defines = image_decode_ios_defines
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystemmock/native/include/log",
     ]
     deps = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
@@ -95,7 +95,7 @@ ohos_shared_library("bmpplugin") {
   } else if (use_clang_android) {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
     deps = [
       "//commonlibrary/c_utils/base:utils",

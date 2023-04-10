@@ -79,7 +79,7 @@ config("image_external_config") {
   } else if (use_clang_ios) {
     include_dirs += [
       "//third_party/libpng",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
       "//foundation/multimedia/image_framework/mock/native/include/secure",
     ]
     include_dirs -= [
@@ -94,7 +94,7 @@ config("image_external_config") {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
       "//third_party/libpng",
-      "//foundation/multimedia/image_framework/mock/native/include",
+      "$image_subsystem/mock/native/include/log",
     ]
 
     include_dirs -= [
@@ -147,9 +147,10 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
+
+    external_deps = [ "c_utils:utilsbase" ]
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -226,7 +227,6 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       ]
     } else {
@@ -270,7 +270,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
