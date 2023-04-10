@@ -133,91 +133,91 @@ declare namespace image {
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    BITS_PER_SAMPLE = "BitsPerSample",
+    BITS_PER_SAMPLE = 'BitsPerSample',
 
     /**
      * Image rotation mode.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    ORIENTATION = "Orientation",
+    ORIENTATION = 'Orientation',
 
     /**
      * Image length.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    IMAGE_LENGTH = "ImageLength",
+    IMAGE_LENGTH = 'ImageLength',
 
     /**
      * Image width.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    IMAGE_WIDTH = "ImageWidth",
+    IMAGE_WIDTH = 'ImageWidth',
 
     /**
      * GPS latitude.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    GPS_LATITUDE = "GPSLatitude",
+    GPS_LATITUDE = 'GPSLatitude',
 
     /**
      * GPS longitude.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    GPS_LONGITUDE = "GPSLongitude",
+    GPS_LONGITUDE = 'GPSLongitude',
 
     /**
      * GPS latitude reference. For example, N indicates north latitude and S indicates south latitude.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    GPS_LATITUDE_REF = "GPSLatitudeRef",
+    GPS_LATITUDE_REF = 'GPSLatitudeRef',
 
     /**
      * GPS longitude reference. For example, E indicates east longitude and W indicates west longitude.
      * @since 7
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    GPS_LONGITUDE_REF = "GPSLongitudeRef",
+    GPS_LONGITUDE_REF = 'GPSLongitudeRef',
 
     /**
      * Shooting time
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    DATE_TIME_ORIGINAL = "DateTimeOriginal",
+    DATE_TIME_ORIGINAL = 'DateTimeOriginal',
 
     /**
      * Exposure time
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    EXPOSURE_TIME = "ExposureTime",
+    EXPOSURE_TIME = 'ExposureTime',
 
     /**
      * Scene type
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    SCENE_TYPE = "SceneType",
+    SCENE_TYPE = 'SceneType',
 
     /**
      * ISO speedratings
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    ISO_SPEED_RATINGS = "ISOSpeedRatings",
+    ISO_SPEED_RATINGS = 'ISOSpeedRatings',
 
     /**
      * Aperture value
      * @since 9
      * @syscap SystemCapability.Multimedia.Image.Core
      */
-    F_NUMBER = "FNumber",
+    F_NUMBER = 'FNumber',
   }
 
   /**
@@ -225,7 +225,7 @@ declare namespace image {
    * @since 9
    * @syscap SystemCapability.Multimedia.Image.Core
    */
-   enum ImageFormat {
+  enum ImageFormat {
     /**
      * YCBCR422 semi-planar format.
      * @since 9
@@ -535,7 +535,7 @@ declare namespace image {
    * @since 9
    * @syscap SystemCapability.Multimedia.Image.Core
    */
-   interface Component {
+  interface Component {
     /**
      * Component type.
      * @since 9
