@@ -14,7 +14,7 @@
 */
 
 import { AsyncCallback } from './basic';
-import colorSpaceManager from './@ohos.graphics.colorSpaceManager.d.ts';
+import type colorSpaceManager from './@ohos.graphics.colorSpaceManager.d.ts';
 
 /**
  * @name image
