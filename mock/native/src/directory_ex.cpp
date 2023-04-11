@@ -21,9 +21,7 @@
 #include "unistd.h"
 
 using namespace std;
-
 namespace OHOS {
-
 string ExtractFilePath(const string& fileFullName)
 {
     return string(fileFullName).substr(0, fileFullName.rfind("/") + 1);
