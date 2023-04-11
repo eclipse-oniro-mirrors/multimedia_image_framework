@@ -231,6 +231,12 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     napi_get_undefined(env, &result[NUM_0]);
     napi_get_undefined(env, &result[NUM_1]);
 
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        return;
+    }
+
     if (asyncContext == nullptr) {
         return;
     }
@@ -253,6 +259,7 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     }
 
     napi_delete_async_work(env, asyncContext->work);
+    napi_close_handle_scope(env, scope);
 
     delete asyncContext;
     asyncContext = nullptr;
@@ -1306,9 +1313,15 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
         [](napi_env env, void *data)
         {
+            napi_handle_scope scope = nullptr;
+            napi_open_handle_scope(env, &scope);
+            if (scope == nullptr) {
+                return;
+            }
             auto context = static_cast<PixelMapAsyncContext*>(data);
             if (context->nConstructor->IsLockPixelMap()) {
                 context->status = ERROR;
+                napi_close_handle_scope(env, scope);
                 return;
             } else {
                 if (context->nConstructor->nativePixelMap_ != nullptr
@@ -1319,6 +1332,7 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
 		        }
                 context->status = SUCCESS;
             }
+            napi_close_handle_scope(env, scope);
         }, EmptyResultComplete, asyncContext, asyncContext->work);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
