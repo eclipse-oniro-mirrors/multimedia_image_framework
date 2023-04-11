@@ -76,6 +76,7 @@ config("image_external_config") {
   } else if (use_clang_ios) {
     include_dirs += [
       "//third_party/libpng",
+      "$image_subsystem/mock/native/include",
       "$image_subsystem/mock/native/include/log",
       "//foundation/multimedia/image_framework/mock/native/include/secure",
     ]
@@ -187,13 +188,14 @@ if (use_clang_ios) {
     ]
     deps += [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/flutter/build/skia:ace_skcms",
       "//third_party/libexif:exif_static",
     ]
 
-    external_deps = [ "c_utils:utilsbase" ]
+    #external_deps = [ "c_utils:utilsbase" ]
 
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
