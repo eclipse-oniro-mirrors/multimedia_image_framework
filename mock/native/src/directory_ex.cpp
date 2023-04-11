@@ -18,16 +18,10 @@
 #include <dirent.h>
 #include <iostream>
 #include <sys/stat.h>
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "unistd.h"
 
 using namespace std;
-
 namespace OHOS {
-using namespace OHOS::HiviewDFX;
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "directory_ex_mock" };
-
 string ExtractFilePath(const string& fileFullName)
 {
     return string(fileFullName).substr(0, fileFullName.rfind("/") + 1);
@@ -136,13 +130,11 @@ bool PathToRealPath(const string& path, string& realPath)
 {
 #if !defined(_WIN32) && !defined(_APPLE)
     if (path.empty()) {
-        HiLog::Error(LABEL, "path is empty!");
         return false;
     }
 #endif
 
     if ((path.length() >= PATH_MAX)) {
-        HiLog::Error(LABEL, "path len is error, the len is: [%{public}zu]", path.length());
         return false;
     }
 
@@ -150,19 +142,16 @@ bool PathToRealPath(const string& path, string& realPath)
 
 #ifdef _WIN32
     if (_fullpath(tmpPath, path.c_str(), PATH_MAX) == NULL) {
-        HiLog::Error(LABEL, "path to realpath error");
         return false;
     }
 #else
     if (realpath(path.c_str(), tmpPath) == nullptr) {
-        HiLog::Error(LABEL, "path to realpath error");
         return false;
     }
 #endif
 
     realPath = tmpPath;
     if (access(realPath.c_str(), F_OK) != 0) {
-        HiLog::Error(LABEL, "check realpath (%{public}s) error", realPath.c_str());
         return false;
     }
     return true;
