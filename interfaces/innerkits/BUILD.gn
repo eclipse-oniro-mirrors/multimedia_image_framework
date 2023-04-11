@@ -187,8 +187,8 @@ if (use_clang_ios) {
       "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
     ]
     deps += [
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "$image_subsystem/mock/native:utils_mock_static",
+      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/flutter/build/skia:ace_skcms",
