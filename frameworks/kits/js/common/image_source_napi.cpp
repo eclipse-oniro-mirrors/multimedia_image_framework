@@ -562,11 +562,6 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
         }
     }
 
-    if (opts == nullptr) {
-        HiLog::Error(LABEL, "opts is nullptr");
-        return false;
-    }
-
     if (!GET_INT32_BY_NAME(root, "fitDensity", opts->fitDensity)) {
         HiLog::Debug(LABEL, "no fitDensity");
     }
@@ -808,7 +803,7 @@ napi_value ImageSourceNapi::CreateIncrementalSource(napi_env env, napi_callback_
     DecodeOptions decodeOpts;
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     HiLog::Debug(LABEL, "CreateIncrementalImageSource end");
-    if (errorCode != SUCCESS || imageSource == nullptr) {
+    if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "CreateIncrementalImageSource error");
         napi_get_undefined(env, &result);
         return result;
