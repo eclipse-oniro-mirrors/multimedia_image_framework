@@ -16,16 +16,17 @@
 #include "pixel_map.h"
 #include <iostream>
 #include <unistd.h>
-#include "hilog/log.h"
+
 #include "image_utils.h"
+#include "image_trace.h"
+#include "hilog/log.h"
+#include "hitrace_meter.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
 #include "post_proc.h"
 #include "parcel.h"
-#include "image_trace.h"
-#include "hitrace_meter.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -1725,31 +1726,19 @@ static void SetUintPixelAlpha(uint8_t *pixel, const float percent,
     pixel[alphaIndex] = static_cast<uint8_t>(UINT8_MAX * percent + HALF_ONE);
 }
 
-static uint32_t DoSetAlpha(const PixelFormat pixelFormat, uint8_t *pixels,
-    uint32_t pixelsSize, uint8_t pixelByte, int8_t alphaIndex,
-    const float percent, bool isPixelPremul)
+static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
 {
-    if (alphaIndex == INVALID_ALPHA_INDEX) {
-        HiLog::Error(LABEL, "Invaild alpha index");
-        return ERR_IMAGE_INVALID_PARAMETER;
+    switch (pixelFormat) {
+        case PixelFormat::ARGB_8888:
+        case PixelFormat::ALPHA_8:
+            return ARGB_ALPHA_INDEX;
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGBA_F16:
+            return BGRA_ALPHA_INDEX;
+        default:
+            return INVALID_ALPHA_INDEX;
     }
-
-    if ((pixelFormat == PixelFormat::ALPHA_8 && pixelByte != ALPHA_BYTES) ||
-        (pixelFormat == PixelFormat::RGBA_F16 && pixelByte != RGBA_F16_BYTES)) {
-        HiLog::Error(LABEL, "Pixel format %{public}s mismatch pixelByte %{public}d",
-            GetNamedPixelFormat(pixelFormat).c_str(), pixelByte);
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    for (uint32_t i = 0; i < pixelsSize;) {
-        uint8_t* pixel = pixels + i;
-        if (pixelFormat == PixelFormat::RGBA_F16) {
-            SetF16PixelAlpha(pixel, percent, isPixelPremul);
-        } else {
-            SetUintPixelAlpha(pixel, percent, pixelByte, alphaIndex, isPixelPremul);
-        }
-        i += pixelByte;
-    }
-    return SUCCESS;
 }
 
 uint32_t PixelMap::SetAlpha(const float percent)
@@ -1770,31 +1759,32 @@ uint32_t PixelMap::SetAlpha(const float percent)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    bool pixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
-    int8_t alphaIndex = INVALID_ALPHA_INDEX;
+    bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     auto pixelFormat = GetPixelFormat();
-    switch (pixelFormat) {
-        case PixelFormat::ARGB_8888:
-        case PixelFormat::ALPHA_8: {
-            alphaIndex = ARGB_ALPHA_INDEX;
-            break;
-        }
-        case PixelFormat::RGBA_8888:
-        case PixelFormat::BGRA_8888:
-        case PixelFormat::RGBA_F16: {
-            alphaIndex = BGRA_ALPHA_INDEX;
-            break;
-        }
-        default: {
-            HiLog::Error(LABEL,
-                "Could not set alpha on %{public}s",
-                GetNamedPixelFormat(pixelFormat).c_str());
-            return ERR_IMAGE_DATA_UNSUPPORT;
-        }
+    uint32_t pixelsSize = GetByteCount();
+    int8_t alphaIndex = GetAlphaIndex(pixelFormat);
+    if (alphaIndex == INVALID_ALPHA_INDEX) {
+        HiLog::Error(LABEL, "Could not set alpha on %{public}s",
+            GetNamedPixelFormat(pixelFormat).c_str());
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    return DoSetAlpha(pixelFormat, data_,
-        GetByteCount(), pixelBytes_,
-        alphaIndex, percent, pixelPremul);
+
+    if ((pixelFormat == PixelFormat::ALPHA_8 && pixelBytes_ != ALPHA_BYTES) ||
+        (pixelFormat == PixelFormat::RGBA_F16 && pixelBytes_ != RGBA_F16_BYTES)) {
+        HiLog::Error(LABEL, "Pixel format %{public}s mismatch pixelByte %{public}d",
+            GetNamedPixelFormat(pixelFormat).c_str(), pixelBytes_);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    for (uint32_t i = 0; i < pixelsSize;) {
+        uint8_t* pixel = data_ + i;
+        if (pixelFormat == PixelFormat::RGBA_F16) {
+            SetF16PixelAlpha(pixel, percent, isPixelPremul);
+        } else {
+            SetUintPixelAlpha(pixel, percent, pixelBytes_, alphaIndex, isPixelPremul);
+        }
+        i += pixelBytes_;
+    }
+    return SUCCESS;
 }
 
 void PixelMap::scale(float xAxis, float yAxis)
