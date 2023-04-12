@@ -34,7 +34,7 @@
 #include "plugin_server.h"
 #include "post_proc.h"
 #include "source_stream.h"
-#if defined(_ANDROID) || defined(IOS_PLATFORM)
+#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #endif
 #include "include/utils/SkBase64.h"
@@ -1060,12 +1060,8 @@ AbsImageDecoder *ImageSource::CreateDecoder(uint32_t &errorCode)
     if (opts_.sampleSize != 1) {
         encodedFormat = InnerFormat::EXTENDED_FORMAT;
     }
-#if defined(_ANDROID) || defined(IOS_PLATFORM)
-    auto decoder = new JpegDecoder();
-#else
     map<string, AttrData> capabilities = { { IMAGE_ENCODE_FORMAT, AttrData(encodedFormat) } };
     auto decoder = pluginServer_.CreateObject<AbsImageDecoder>(AbsImageDecoder::SERVICE_DEFAULT, capabilities);
-#endif
     if (decoder == nullptr) {
         IMAGE_LOGE("[ImageSource]failed to create decoder object.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;

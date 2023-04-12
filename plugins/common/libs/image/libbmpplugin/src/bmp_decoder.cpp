@@ -102,6 +102,7 @@ uint32_t BmpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
 uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &context)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
     int fd = AshmemCreate("BMP RawData", byteCount);
     if (fd < 0) {
         return ERR_SHAMEM_DATA_ABNORMAL;
@@ -129,6 +130,7 @@ uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &contex
     context.pixelsBuffer.bufferSize = byteCount;
     context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     context.freeFunc = nullptr;
+#endif
     return SUCCESS;
 }
 

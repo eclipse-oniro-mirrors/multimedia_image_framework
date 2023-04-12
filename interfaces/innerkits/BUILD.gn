@@ -14,6 +14,7 @@
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+import("$image_subsystem/plugins/cross/image_native_android.gni")
 
 config("image_external_config") {
   include_dirs = [
@@ -124,7 +125,18 @@ ohos_copy("image_declaration") {
   module_install_name = ""
 }
 
-if (use_clang_ios) {
+if (use_clang_android) {
+  ohos_shared_library("image_native") {
+    defines = image_decode_android_defines
+    cflags = image_native_android_cflags
+    sources = image_native_android_sources
+    include_dirs = image_native_android_include_dirs
+    deps = image_native_android_deps
+    version_script = "libimage_native.versionscript"
+    subsystem_name = "multimedia"
+    part_name = "multimedia_image_framework"
+  }
+} else if (use_clang_ios) {
   ohos_source_set("image_native") {
     public_configs = [ ":image_external_config" ]
 
