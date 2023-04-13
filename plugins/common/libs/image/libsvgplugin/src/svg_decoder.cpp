@@ -42,7 +42,7 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
             static_cast<unsigned long long>(byteCount));
         return false;
     }
-
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
     int fd = AshmemCreate("SVG RawData", byteCount);
     if (fd < 0) {
         HiLog::Error(LABEL, "[AllocShareBuffer] create fail");
@@ -81,6 +81,10 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 
     HiLog::Debug(LABEL, "[AllocShareBuffer] OUT");
     return true;
+#else
+    HiLog::Error(LABEL, "[AllocShareBuffer] Not support Ashmem!");
+    return false;
+#endif
 }
 
 bool AllocHeapBuffer(DecodeContext &context, uint64_t byteCount)

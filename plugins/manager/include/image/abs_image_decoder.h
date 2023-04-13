@@ -21,7 +21,7 @@
 #include <vector>
 #include <cmath>
 #include <unistd.h>
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(_ANDROID)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #endif

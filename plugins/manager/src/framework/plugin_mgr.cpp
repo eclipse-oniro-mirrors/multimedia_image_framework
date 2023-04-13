@@ -15,6 +15,7 @@
 
 #include "plugin_mgr.h"
 #include <fstream>
+#include <sstream>
 #include "directory_ex.h"
 #include "hilog/log.h"
 #include "json.hpp"
@@ -22,11 +23,13 @@
 #include "log_tags.h"
 #include "platform_adp.h"
 #include "plugin.h"
+#include "plugin_metadata.h"
 
 namespace OHOS {
 namespace MultimediaPlugin {
 using nlohmann::json;
 using std::ifstream;
+using std::istringstream;
 using std::size_t;
 using std::string;
 using std::vector;
@@ -38,6 +41,17 @@ PlatformAdp &PluginMgr::platformAdp_ = DelayedRefSingleton<PlatformAdp>::GetInst
 
 uint32_t PluginMgr::Register(const vector<string> &canonicalPaths)
 {
+    if (canonicalPaths.empty()) {
+        const vector<string> &metadata = OHOS::MultimediaPlugin::META_DATA;
+        for (size_t i = 0; i < metadata.size(); i++) {
+            uint32_t errorCode = RegisterPlugin(metadata[i]);
+            if (errorCode != SUCCESS) {
+                return errorCode;
+            }
+        }
+        return SUCCESS;
+    }
+
     bool pathTraversed = false;
     uint32_t errorCode = SUCCESS;
     for (const string &path : canonicalPaths) {
@@ -188,6 +202,56 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
     }
 
     auto insertRet = plugins_.insert(PluginMap::value_type(&key, std::move(plugin)));
+    if (!insertRet.second) {
+        HiLog::Error(LABEL, "failed to insert Plugin");
+        return ERR_INTERNAL;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
+{
+    string libraryPath;
+    json root = nlohmann::json::parse(metadataJson);
+    if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
+        HiLog::Error(LABEL, "read libraryPath failed.");
+        return false;
+    }
+
+    auto iter = plugins_.find(&libraryPath);
+    if (iter != plugins_.end()) {
+        // already registered before, just skip it.
+        HiLog::Debug(LABEL, "the libraryPath has already been registered before.");
+        return ERR_GENERAL;
+    }
+
+    istringstream metadata(metadataJson);
+    if (!metadata) {
+        HiLog::Error(LABEL, "failed to read metadata.");
+        return ERR_GENERAL;
+    }
+
+    auto crossPlugin = std::make_shared<Plugin>();
+    if (crossPlugin == nullptr) {
+        HiLog::Error(LABEL, "failed to create Plugin.");
+        return ERR_INTERNAL;
+    }
+
+    weak_ptr<Plugin> weakPtr = crossPlugin;
+    auto regRet = crossPlugin->Register(metadata, std::move(libraryPath), weakPtr);
+    if (regRet != SUCCESS) {
+        HiLog::Error(LABEL, "failed to register plugin,ERRNO: %{public}u.", regRet);
+        return regRet;
+    }
+
+    const std::string &key = crossPlugin->GetLibraryPath();
+    if (key.empty()) {
+        HiLog::Error(LABEL, "get empty libraryPath.");
+        return ERR_INTERNAL;
+    }
+
+    auto insertRet = plugins_.insert(PluginMap::value_type(&key, std::move(crossPlugin)));
     if (!insertRet.second) {
         HiLog::Error(LABEL, "failed to insert Plugin");
         return ERR_INTERNAL;

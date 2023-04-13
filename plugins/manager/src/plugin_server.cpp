@@ -40,6 +40,9 @@ static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "Plugi
 
 uint32_t PluginServer::Register(vector<string> &&pluginPaths)
 {
+    if (pluginPaths.empty()) {
+        return pluginFw_.Register(pluginPaths);
+    }
     vector<string> canonicalPaths;
     vector<string> gstCanonicalPaths;
     for (string &path : pluginPaths) {

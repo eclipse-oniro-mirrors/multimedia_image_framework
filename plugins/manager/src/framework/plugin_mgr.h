@@ -37,6 +37,7 @@ private:
     uint32_t TraverseFiles(const std::string &canonicalPath);
     bool CheckPluginMetaFile(const std::string &candidateFile, std::string &libraryPath);
     uint32_t RegisterPlugin(const std::string &metadataPath, std::string &&libraryPath);
+    uint32_t RegisterPlugin(const std::string &metadataJson);
 
     static PlatformAdp &platformAdp_;
     using PluginMap = PointerKeyMap<const std::string, std::shared_ptr<Plugin>>;

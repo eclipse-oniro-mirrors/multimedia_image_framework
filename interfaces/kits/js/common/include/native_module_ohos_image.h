@@ -21,7 +21,7 @@
 #include "pixel_map_napi.h"
 #include "image_packer_napi.h"
 
-#if !defined(IOS_PLATFORM) && !defined(_ANDROID)
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "image_receiver_napi.h"
 #include "image_creator_napi.h"
 #include "image_napi.h"

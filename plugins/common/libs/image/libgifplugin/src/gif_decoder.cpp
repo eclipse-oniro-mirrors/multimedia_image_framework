@@ -510,7 +510,7 @@ uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
 
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
         if (context.pixelsBuffer.buffer == nullptr) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
             int fd = AshmemCreate("GIF RawData", imageBufferSize);
             if (fd < 0) {
                 return ERR_SHAMEM_DATA_ABNORMAL;
