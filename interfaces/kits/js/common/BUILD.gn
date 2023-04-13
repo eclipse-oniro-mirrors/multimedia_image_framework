@@ -150,8 +150,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
 
-    external_deps = [ "c_utils:utilsbase" ]
-
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     part_name = "multimedia_image_framework"

@@ -38,3 +38,8 @@ graphic_dir = "graphic_2d"
 graphic_subsystem =
     "/$image_sep_f$image_oundation/$graphic_multimedia/$graphic_dir"
 plugins_lib_root = "/$image_sep_p$image_lugins/libs"
+comlib_sep_c = "/c"
+comlib_ommonlibrary = "ommonlibrary"
+commonlibrary_c_utils = "c_utils"
+commonlibrary_subsystem =
+    "/$comlib_sep_c$comlib_ommonlibrary/$commonlibrary_c_utils"

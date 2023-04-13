@@ -74,7 +74,6 @@ ohos_shared_library("gifplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/giflib:libgif",
     ]
-    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
