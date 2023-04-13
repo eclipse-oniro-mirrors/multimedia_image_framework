@@ -110,7 +110,6 @@ ohos_shared_library("jpegplugin") {
       "//third_party/flutter/build/skia:ace_skia_ios",
       "//third_party/libexif:libexif",
     ]
-    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]

@@ -129,8 +129,6 @@ if (use_clang_ios) {
       "//third_party/flutter/build/skia:ace_skia_ios",
     ]
 
-    external_deps = [ "c_utils:utilsbase" ]
-
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     part_name = "multimedia_image_framework"
@@ -203,7 +201,6 @@ ohos_static_library("pixelconvertadapter_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//third_party/flutter/build/skia:ace_skia_ios",
     ]
-    external_deps = [ "c_utils:utilsbase" ]
   } else if (use_clang_android) {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
