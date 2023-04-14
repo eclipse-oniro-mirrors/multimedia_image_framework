@@ -75,36 +75,6 @@ config("image_external_config") {
       "//commonlibrary/c_utils/base/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
-  } else if (use_clang_ios) {
-    include_dirs += [
-      "//third_party/libpng",
-      "$image_subsystem/mock/native/include",
-      "$image_subsystem/mock/native/include/log",
-      "//foundation/multimedia/image_framework/mock/native/include/secure",
-    ]
-    include_dirs -= [
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-      "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    ]
-  } else if (use_clang_android) {
-    include_dirs += [
-      "//commonlibrary/c_utils/base/include",
-      "//third_party/libpng",
-      "$image_subsystem/mock/native/include/log",
-    ]
-
-    include_dirs -= [
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-      "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    ]
   } else {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
@@ -224,47 +194,6 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
         "//third_party/bounds_checking_function:libsec_statics",
       ]
-    } else if (use_clang_android) {
-      defines = image_decode_android_defines
-      cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
-
-      sources += [
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
-      ]
-      sources -= [
-        "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
-      ]
-
-      deps = [
-        "//commonlibrary/c_utils/base:utils",
-        "//foundation/arkui/napi:ace_napi",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-        "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-        "//third_party/flutter/build/skia:ace_skia_android",
-      ]
-
-      sources += [
-        "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
-        "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
-      ]
-      deps += [
-        "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//third_party/flutter/build/libjpeg:ace_libjpeg",
-        "//third_party/flutter/build/skia:ace_skcms",
-        "//third_party/libexif:libexif",
-      ]
-
-      libs = [ "nativewindow" ]
     } else {
       defines = [ "DUAL_ADAPTER" ]
       DUAL_ADAPTER = true

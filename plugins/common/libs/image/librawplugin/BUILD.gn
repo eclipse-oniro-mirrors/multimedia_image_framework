@@ -58,34 +58,6 @@ ohos_shared_library("rawplugin") {
     ]
 
     libs = [ "//prebuilts/mingw-w64/ohos/linux-x86_64/clang-mingw/x86_64-w64-mingw32/lib/libws2_32.a" ]
-  } else if (use_clang_android) {
-    defines = image_decode_android_defines
-    include_dirs +=
-        [ "//foundation/multimedia/image_framework/mock/native/include" ]
-
-    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
-
-    deps = [
-      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/skia/third_party/piex",
-    ]
-  } else if (use_clang_ios) {
-    defines = image_decode_ios_defines
-    include_dirs +=
-        [ "//foundation/multimedia/image_framework/mock/native/include" ]
-
-    cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
-
-    deps = [
-      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/skia/third_party/piex",
-    ]
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
