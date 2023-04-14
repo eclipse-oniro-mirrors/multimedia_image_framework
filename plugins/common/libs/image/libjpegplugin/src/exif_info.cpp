@@ -805,6 +805,37 @@ ExifByteOrder EXIFInfo::GetExifByteOrder(const bool &isNewExifData, unsigned cha
     }
 }
 
+static int gcd(int a, int b)
+{
+    if (b == 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
+
+static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
+{
+    int intPart = stoi(decimal.substr(0, decimal.find(".")));
+    double decPart = stod(decimal.substr(decimal.find(".")));
+
+    int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
+    int denominator = pow(10, decimal.length() - decimal.find(".") - 1);
+
+    int gcdVal = gcd(numerator, denominator);
+    if (gcdVal == 0) {
+        HiLog::Error(LABEL, "gcdVal is zero");
+        return false;
+    }
+    numerator /= gcdVal;
+    denominator /= gcdVal;
+
+    numerator += intPart * denominator;
+
+    result.numerator = numerator;
+    result.denominator = denominator;
+    return true;
+}
+
 bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
@@ -843,7 +874,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
-            exif_set_long((*ptrEntry)->data, order, (ExifLong)atoi(value.c_str()));
+            exif_set_short((*ptrEntry)->data, order, (ExifShort)atoi(value.c_str()));
             break;
         }
         case EXIF_TAG_IMAGE_WIDTH: {
@@ -852,7 +883,21 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
-            exif_set_long((*ptrEntry)->data, order, (ExifLong)atoi(value.c_str()));
+            exif_set_short((*ptrEntry)->data, order, (ExifShort)atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_COMPRESSED_BITS_PER_PIXEL: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_COMPRESSED_BITS_PER_PIXEL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get exif entry failed.");
+                return false;
+            }
+            ExifRational rat;
+            if (!GetFractionFromStr(value, rat)) {
+                HiLog::Error(LABEL, "Get fraction from value failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, rat);
             break;
         }
         case EXIF_TAG_GPS_LATITUDE: {
