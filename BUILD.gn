@@ -41,10 +41,11 @@ group("image_framework") {
 }
 
 group("plugins") {
-  deps = [
-    "plugins/common/libs:multimediaplugin",
-    "plugins/manager:pluginmanager",
-  ]
+  deps = [ "plugins/manager:pluginmanager" ]
+
+  if (!use_clang_android && !use_clang_ios) {
+    deps += [ "plugins/common/libs:multimediaplugin" ]
+  }
 }
 
 group("image_test_list") {
