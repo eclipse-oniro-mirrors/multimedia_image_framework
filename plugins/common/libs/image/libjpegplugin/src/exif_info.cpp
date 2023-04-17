@@ -805,12 +805,12 @@ ExifByteOrder EXIFInfo::GetExifByteOrder(const bool &isNewExifData, unsigned cha
     }
 }
 
-static int gcd(int a, int b)
+static int Gcd(int a, int b)
 {
     if (b == 0) {
         return a;
     }
-    return gcd(b, a % b);
+    return Gcd(b, a % b);
 }
 
 static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
@@ -821,7 +821,7 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
     int numerator = decPart * pow(10, decimal.length() - decimal.find(".") - 1);
     int denominator = pow(10, decimal.length() - decimal.find(".") - 1);
 
-    int gcdVal = gcd(numerator, denominator);
+    int gcdVal = Gcd(numerator, denominator);
     if (gcdVal == 0) {
         HiLog::Error(LABEL, "gcdVal is zero");
         return false;
