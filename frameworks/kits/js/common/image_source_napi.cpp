@@ -672,6 +672,7 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
 {
     std::unique_ptr<ImageSource> imageSource = nullptr;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    napi_status status;
 
     auto inputType = ImageNapiUtils::getType(env, argValue);
     if (napi_string == inputType) { // File Path
@@ -691,7 +692,11 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         uint32_t refCount = NUM_1;
         napi_ref arrayRef = nullptr;
         napi_create_reference(env, argValue, refCount, &arrayRef);
-        napi_get_arraybuffer_info(env, argValue, &(context->sourceBuffer), &(context->sourceBufferSize));
+        status = napi_get_arraybuffer_info(env, argValue, &(context->sourceBuffer), &(context->sourceBufferSize));
+        if (status != napi_ok) {
+            HiLog::Error(LABEL, "fail to get arraybufferinfo");
+            return nullptr;
+        }
         imageSource = ImageSource::CreateImageSource(static_cast<uint8_t *>(context->sourceBuffer),
             context->sourceBufferSize, opts, errorCode);
         napi_delete_reference(env, arrayRef);
