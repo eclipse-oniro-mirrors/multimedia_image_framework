@@ -224,6 +224,12 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     napi_get_undefined(env, &result[NUM_0]);
     napi_get_undefined(env, &result[NUM_1]);
 
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        return;
+    }
+
     if (asyncContext == nullptr) {
         return;
     }
@@ -246,6 +252,7 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     }
 
     napi_delete_async_work(env, asyncContext->work);
+    napi_close_handle_scope(env, scope);
 
     delete asyncContext;
     asyncContext = nullptr;
