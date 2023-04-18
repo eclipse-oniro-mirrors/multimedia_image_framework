@@ -28,9 +28,8 @@ ohos_static_library("log_mock_static") {
     "//foundation/multimedia/image_framework/mock/native/src/hitrace_meter.cpp",
   ]
   if (use_clang_ios || use_clang_android) {
-    sources -=
-        [ "//foundation/multimedia/image_framework/mock/native/src/HiLog.cpp" ]
-    deps = [ "//foundation/graphic/graphic_2d/rosen/modules/platform:hilog" ]
+    sources -= [ "$image_subsystem/mock/native/src/HiLog.cpp" ]
+    deps = [ "$graphic_subsystem/rosen/modules/platform:hilog" ]
   }
   subsystem_name = "multimedia"
 }
