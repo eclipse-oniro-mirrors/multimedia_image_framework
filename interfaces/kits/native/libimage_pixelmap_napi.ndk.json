@@ -8,5 +8,59 @@
   },
   {
     "name": "OH_UnAccessPixels"
+  },
+  {
+    "name": "OH_PixelMap_CreatePixelMap"
+  },
+  {
+    "name": "OH_PixelMap_CreateAlphaPixelMap"
+  },
+  {
+    "name": "OH_PixelMap_InitNativePixelMap"
+  },
+  {
+    "name": "OH_PixelMap_GetBytesNumberPerRow"
+  },
+  {
+    "name": "OH_PixelMap_GetIsEditable"
+  },
+  {
+    "name": "OH_PixelMap_IsSupportAlpha"
+  },
+  {
+    "name": "OH_PixelMap_SetAlphaAble"
+  },
+  {
+    "name": "OH_PixelMap_GetDensity"
+  },
+  {
+    "name": "OH_PixelMap_SetDensity"
+  },
+  {
+    "name": "OH_PixelMap_SetOpacity"
+  },
+  {
+    "name": "OH_PixelMap_Scale"
+  },
+  {
+    "name": "OH_PixelMap_Translate"
+  },
+  {
+    "name": "OH_PixelMap_Rotate"
+  },
+  {
+    "name": "OH_PixelMap_Flip"
+  },
+  {
+    "name": "OH_PixelMap_Crop"
+  },
+  {
+    "name": "OH_PixelMap_GetImageInfo"
+  },
+  {
+    "name": "OH_PixelMap_AccessPixels"
+  },
+  {
+    "name": "OH_PixelMap_UnAccessPixels"
   }
 ]
