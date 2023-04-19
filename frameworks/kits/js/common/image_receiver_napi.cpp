@@ -872,6 +872,11 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
             napi_value retVal;
             napi_value callback = nullptr;
             if (context->env != nullptr && context->callbackRef != nullptr) {
+                napi_handle_scope scope = nullptr;
+                napi_open_handle_scope(context->env, &scope);
+                if (scope == nullptr) {
+                    return;
+                }
                 napi_create_uint32(context->env, SUCCESS, &result[0]);
                 napi_get_undefined(context->env, &result[1]);
                 napi_get_reference_value(context->env, context->callbackRef, &callback);
@@ -880,6 +885,7 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
                 } else {
                     IMAGE_ERR("napi_get_reference_value callback is empty");
                 }
+                napi_close_handle_scope(context->env, scope);
             } else {
                 IMAGE_ERR("env or callbackRef is empty");
             }
