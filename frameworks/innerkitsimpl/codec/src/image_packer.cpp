@@ -237,12 +237,8 @@ bool ImagePacker::GetEncoderPlugin(const PackOption &option)
     if (encoder_ != nullptr) {
         encoder_.reset();
     }
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    encoder_ = std::make_unique<ImagePlugin::JpegEncoder>();
-#else 
     encoder_ = std::unique_ptr<ImagePlugin::AbsImageEncoder>(
         pluginServer_.CreateObject<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, capabilities));
-#endif
     return (encoder_ != nullptr);
 }
 
