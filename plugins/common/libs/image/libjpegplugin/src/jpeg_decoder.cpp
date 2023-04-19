@@ -55,6 +55,9 @@ constexpr uint8_t JPG_MARKER_APP0 = 0XE0;
 constexpr uint8_t JPG_MARKER_APPN = 0XEF;
 constexpr size_t TIMES_LEN = 19;
 constexpr size_t DATE_LEN = 10;
+constexpr float SCALES[] = { 0.1875f, 0.3125f, 0.4375f, 0.5625f, 0.6875f, 0.8125f, 0.9375f, 1.0f };
+constexpr int SCALE_NUMS[] = { 2, 3, 4, 5, 6, 7, 8, 8 };
+constexpr int SCALE_NUMS_LENGTH = 7;
 const std::string BITS_PER_SAMPLE = "BitsPerSample";
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_LENGTH = "ImageLength";
@@ -201,6 +204,56 @@ J_COLOR_SPACE JpegDecoder::GetDecodeFormat(PlPixelFormat format, PlPixelFormat &
     return colorSpace;
 }
 
+static int CalculateInSampleSize(const jpeg_decompress_struct &dInfo, const PixelDecodeOptions &opts)
+{
+    int inSampleSize = 1;
+    // Input height and width of image
+    int width = dInfo.image_width;
+    int height = dInfo.image_height;
+
+    if (opts.desiredSize.height > 0 && opts.desiredSize.width > 0) {
+        int reqHeight = opts.desiredSize.height;
+        int reqWidth = opts.desiredSize.width;
+
+        if (height > reqHeight || width > reqWidth) {
+            const int halfHeight = height >> 1;
+            const int halfWidth = width >> 1;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) >= reqHeight && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize <<= 1;
+            }
+        }
+    }
+    return inSampleSize;
+}
+
+/*
+ * Calculate a valid scale fraction for this decoder, given an input sampleSize
+ */
+static void GetScaledFraction(const int& inSampleSize, jpeg_decompress_struct& dInfo)
+{
+    // libjpeg-turbo supports scaling only by 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8, and 1/1
+    // Using binary search to find the appropriate scaling ratio based on SCALES and SCALE-NUM arrays
+    unsigned int num = 1;
+    unsigned int denom = 8;
+    float desiredScale = 1.0f / static_cast<float>(inSampleSize);
+
+    int left = 0, right = SCALE_NUMS_LENGTH;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (desiredScale >= SCALES[mid]) {
+            num = SCALE_NUMS[mid];
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    dInfo.scale_num = num;
+    dInfo.scale_denom = denom;
+}
+
 uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     if (index >= JPEG_IMAGE_NUM) {
@@ -225,6 +278,8 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
         state_ = JpegDecodingState::BASE_INFO_PARSED;
     }
     // only state JpegDecodingState::BASE_INFO_PARSED can go here.
+    int inSampleSize = CalculateInSampleSize(decodeInfo_, opts);
+    GetScaledFraction(inSampleSize, decodeInfo_);
     uint32_t ret = StartDecompress(opts);
     if (ret != Media::SUCCESS) {
         HiLog::Error(LABEL, "start decompress failed on set decode options:%{public}u.", ret);
@@ -533,7 +588,7 @@ uint32_t JpegDecoder::DecodeHeader()
 
     // call jpeg_save_markers, use to get ICC profile.
     jpeg_save_markers(&decodeInfo_, PL_ICC_MARKER, PL_MARKER_LENGTH_LIMIT);
-    int32_t ret = jpeg_read_header(&decodeInfo_, false);
+    int32_t ret = jpeg_read_header(&decodeInfo_, true);
     streamPosition_ = srcMgr_.inputStream->Tell();
     if (ret == JPEG_SUSPENDED) {
         HiLog::Debug(LABEL, "image input data incomplete, decode header error:%{public}u.", ret);
