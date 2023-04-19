@@ -683,6 +683,24 @@ ExifEntry* EXIFInfo::InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag)
     }
     return entry;
 }
+static void EXIFInfoBufferCheck(ExifEntry *exifEntry, size_t len)
+{
+    if (exifEntry == nullptr || (exifEntry->size >= len)) {
+        return;
+    }
+    /* Create a memory allocator to manage this ExifEntry */
+    ExifMem *exifMem = exif_mem_new_default();
+    if (exifMem == nullptr) {
+        HiLog::Error(LABEL, "Create mem failed!");
+        return;
+    }
+    auto buf = exif_mem_realloc(exifMem, exifEntry->data, len);
+    if (buf != nullptr) {
+        exifEntry->data = static_cast<unsigned char*>(buf);
+        exifEntry->size = len;
+    }
+    exif_mem_unref(exifMem);
+}
 
 ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
     size_t len, ExifFormat format)
@@ -691,6 +709,7 @@ ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
     ExifEntry *exifEntry;
 
     if ((exifEntry = exif_content_get_entry(exif->ifd[ifd], tag)) != nullptr) {
+        EXIFInfoBufferCheck(exifEntry, len);
         return exifEntry;
     }
 
@@ -955,7 +974,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         case EXIF_TAG_GPS_LONGITUDE_REF: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF,
                 value.length(), EXIF_FORMAT_ASCII);
-            if ((*ptrEntry) == nullptr) {
+            if ((*ptrEntry) == nullptr || (*ptrEntry)->size < value.length()) {
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
