@@ -87,7 +87,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         return false;
     }
     uint32_t numCompatibleBrands = (chunkDataSize - OFFSET_SIZE) / sizeof(uint32_t);
-    if (numCompatibleBrands != 0 && numCompatibleBrands < HEADER_SIZE) {
+    if (numCompatibleBrands != 0 && numCompatibleBrands + TIMES_TWO < HEADER_SIZE) {
         for (size_t i = 0; i < numCompatibleBrands + 2; ++i) {  // need next 2 item
             if (i == 1) {
                 // Skip this index, it refers to the minorVersion, not a brand.
