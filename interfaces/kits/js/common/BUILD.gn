@@ -214,6 +214,8 @@ if (use_clang_ios) {
       defines = image_decode_android_defines
       cflags -= [ "-DIMAGE_COLORSPACE_FLAG" ]
       sources -= [
+        "$image_subsystem/frameworks/kits/js/common/image_mdk_kits.cpp",
+        "$image_subsystem/frameworks/kits/js/common/image_receiver_mdk_kits.cpp",
         "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
         "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
         "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_receiver_napi.cpp",
