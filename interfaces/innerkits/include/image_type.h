@@ -164,7 +164,7 @@ struct DecodeOptions {
     static constexpr uint32_t DEFAULT_SAMPLE_SIZE = 1;
     uint32_t sampleSize = DEFAULT_SAMPLE_SIZE;
     PixelFormat desiredPixelFormat = PixelFormat::UNKNOWN;
-    AllocatorType allocatorType = AllocatorType::HEAP_ALLOC;
+    AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     ColorSpace desiredColorSpace = ColorSpace::SRGB;
     bool allowPartialImage = true;
     bool editable = false;

@@ -58,6 +58,10 @@ private:
                        int32_t targetHeight);
     uint32_t CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImageInfo, PixelMap &pixelMap,
                                  int32_t pixelBytes, ScanlineFilter &scanlineFilter);
+    bool CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& dstSize,
+                    const int32_t srcWidth, const int32_t srcHeight);
+    bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
+                               uint8_t *resultData, uint32_t rowBytes);
     DecodeOptions decodeOpts_;
 };
 } // namespace Media
