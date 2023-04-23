@@ -43,3 +43,53 @@ comlib_ommonlibrary = "ommonlibrary"
 commonlibrary_c_utils = "c_utils"
 commonlibrary_subsystem =
     "/$comlib_sep_c$comlib_ommonlibrary/$commonlibrary_c_utils"
+
+# skia
+image_use_new_skia = defined(use_new_skia) && use_new_skia
+
+if (image_use_new_skia) {
+  image_decode_windows_defines += [ "USE_NEW_SK" ]
+  image_decode_mac_defines += [ "USE_NEW_SK" ]
+  image_decode_ios_defines += [ "USE_NEW_SK" ]
+  image_decode_android_defines += [ "USE_NEW_SK" ]
+}
+
+if (image_use_new_skia) {
+  skia_root = "//third_party"
+  skia_deps_root = skia_root
+  skia_core = [ "$skia_deps_root/skia:skia_core" ]
+  skia_skcms = [ "$skia_deps_root/skia:skcms" ]
+} else {
+  skia_root = "//third_party/flutter"
+  skia_deps_root = "$skia_root/build"
+  skia_core = [ "$skia_deps_root/skia:ace_skia_core" ]
+  skia_skcms = [ "$skia_deps_root/skia:ace_skcms" ]
+}
+
+if (use_clang_android) {
+  skia_platform = [ "$plugins_lib_root/skia:skia_android" ]
+} else if (use_clang_ios) {
+  if (image_use_new_skia) {
+    skia_platform = [ "$skia_deps_root/skia:skia_ios" ]
+  } else {
+    skia_platform = [ "$skia_deps_root/skia:ace_skia_ios" ]
+  }
+} else if (use_mingw_win) {
+  if (image_use_new_skia) {
+    skia_platform = [ "$skia_deps_root/skia:skia_windows" ]
+  } else {
+    skia_platform = [ "$skia_deps_root/skia:ace_skia_windows" ]
+  }
+} else if (use_clang_mac) {
+  if (image_use_new_skia) {
+    skia_platform = [ "$skia_deps_root/skia:skia_mac" ]
+  } else {
+    skia_platform = [ "$skia_deps_root/skia:ace_skia_mac" ]
+  }
+} else {
+  if (image_use_new_skia) {
+    skia_platform = [ "$skia_deps_root/skia:skia_ohos" ]
+  } else {
+    skia_platform = [ "$skia_deps_root/skia:ace_skia_ohos" ]
+  }
+}

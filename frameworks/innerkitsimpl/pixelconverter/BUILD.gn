@@ -23,15 +23,15 @@ config("pixelconvertadapter_public_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/utils/include",
     "//foundation/multimedia/media_utils_lite/interfaces/kits",
-    "//third_party/flutter/skia/include/core",
-    "//third_party/flutter/skia/include/encode",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/src/ports/skia_ohos",
-    "//third_party/flutter/skia/src/ports",
-    "//third_party/flutter/skia/src/images",
-    "//third_party/flutter/skia/src/ports/skia_ohos",
+    "$skia_root/skia/include/core",
+    "$skia_root/skia/include/encode",
+    "$skia_root/skia",
+    "$skia_root/skia/src/ports/skia_ohos",
+    "$skia_root/skia/src/ports",
+    "$skia_root/skia/src/images",
+    "$skia_root/skia/src/ports/skia_ohos",
     "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
-    "//third_party/flutter/skia/include/private",
+    "$skia_root/skia/include/private",
     "//third_party/bounds_checking_function/include",
   ]
 
@@ -40,13 +40,13 @@ config("pixelconvertadapter_public_config") {
       "//foundation/multimedia/image_framework/mock/native/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
       "//foundation/communication/ipc/utils/include",
-      "//third_party/flutter/skia/include/core",
-      "//third_party/flutter/skia/include/encode",
-      "//third_party/flutter/skia",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
-      "//third_party/flutter/skia/src/ports",
-      "//third_party/flutter/skia/src/images",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
+      "$skia_root/skia/include/core",
+      "$skia_root/skia/include/encode",
+      "$skia_root/skia",
+      "$skia_root/skia/src/ports/skia_ohos",
+      "$skia_root/skia/src/ports",
+      "$skia_root/skia/src/images",
+      "$skia_root/skia/src/ports/skia_ohos",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
@@ -54,13 +54,13 @@ config("pixelconvertadapter_public_config") {
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//third_party/flutter/skia/include/core",
-      "//third_party/flutter/skia/include/encode",
-      "//third_party/flutter/skia",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
-      "//third_party/flutter/skia/src/ports",
-      "//third_party/flutter/skia/src/images",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
+      "$skia_root/skia/include/core",
+      "$skia_root/skia/include/encode",
+      "$skia_root/skia",
+      "$skia_root/skia/src/ports/skia_ohos",
+      "$skia_root/skia/src/ports",
+      "$skia_root/skia/src/images",
+      "$skia_root/skia/src/ports/skia_ohos",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
@@ -69,14 +69,14 @@ config("pixelconvertadapter_public_config") {
       "//commonlibrary/c_utils/base/include",
       "//foundation/communication/ipc/utils/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//third_party/flutter/skia/include/core",
-      "//third_party/flutter/skia/include/encode",
-      "//third_party/flutter/skia",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
-      "//third_party/flutter/skia/src/ports",
-      "//third_party/flutter/skia/src/images",
+      "$skia_root/skia/include/core",
+      "$skia_root/skia/include/encode",
+      "$skia_root/skia",
+      "$skia_root/skia/src/ports/skia_ohos",
+      "$skia_root/skia/src/ports",
+      "$skia_root/skia/src/images",
       "//third_party/expat/lib",
-      "//third_party/flutter/skia/include/private",
+      "$skia_root/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
@@ -86,14 +86,14 @@ config("pixelconvertadapter_public_config") {
       "//commonlibrary/c_utils/base/include",
       "//foundation/communication/ipc/utils/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//third_party/flutter/skia/include/core",
-      "//third_party/flutter/skia/include/encode",
-      "//third_party/flutter/skia",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
-      "//third_party/flutter/skia/src/ports",
-      "//third_party/flutter/skia/src/images",
+      "$skia_root/skia/include/core",
+      "$skia_root/skia/include/encode",
+      "$skia_root/skia",
+      "$skia_root/skia/src/ports/skia_ohos",
+      "$skia_root/skia/src/ports",
+      "$skia_root/skia/src/images",
       "//third_party/expat/lib",
-      "//third_party/flutter/skia/include/private",
+      "$skia_root/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
@@ -103,14 +103,14 @@ config("pixelconvertadapter_public_config") {
       "//commonlibrary/c_utils/base/include",
       "//foundation/communication/ipc/utils/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-      "//third_party/flutter/skia/include/core",
-      "//third_party/flutter/skia/include/encode",
-      "//third_party/flutter/skia",
-      "//third_party/flutter/skia/src/ports/skia_ohos",
-      "//third_party/flutter/skia/src/ports",
-      "//third_party/flutter/skia/src/images",
+      "$skia_root/skia/include/core",
+      "$skia_root/skia/include/encode",
+      "$skia_root/skia",
+      "$skia_root/skia/src/ports/skia_ohos",
+      "$skia_root/skia/src/ports",
+      "$skia_root/skia/src/images",
       "//third_party/expat/lib",
-      "//third_party/flutter/skia/include/private",
+      "$skia_root/skia/include/private",
       "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
@@ -126,8 +126,8 @@ if (use_clang_ios) {
     defines = image_decode_ios_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_ios",
     ]
+    deps += skia_platform
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -149,14 +149,14 @@ if (use_clang_ios) {
       defines = image_decode_windows_defines
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//third_party/flutter/build/skia:ace_skia_windows",
       ]
+      deps += skia_platform
     } else if (use_clang_mac) {
       defines = image_decode_mac_defines
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//third_party/flutter/build/skia:ace_skia_mac",
       ]
+      deps += skia_platform
     } else if (use_clang_android) {
       deps = [
         "$plugins_lib_root/skia:skia_android",
@@ -167,9 +167,8 @@ if (use_clang_ios) {
     } else {
       deps = [
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-        "//third_party/flutter/build/skia:ace_skia_ohos",
       ]
-
+      deps += skia_platform
       external_deps = [ "c_utils:utils" ]
     }
 
@@ -187,32 +186,32 @@ ohos_static_library("pixelconvertadapter_static") {
     defines = image_decode_windows_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_windows",
     ]
+    deps += skia_platform
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_mac",
     ]
+    deps += skia_platform
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_ios",
     ]
+    deps += skia_platform
   } else if (use_clang_android) {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_android",
     ]
+    deps += skia_platform
 
     libs = [ "nativewindow" ]
   } else {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//third_party/flutter/build/skia:ace_skia_ohos",
     ]
+    deps += skia_platform
 
     external_deps = [
       "c_utils:utils",

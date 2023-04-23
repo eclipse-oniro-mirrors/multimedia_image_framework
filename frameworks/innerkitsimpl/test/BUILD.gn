@@ -709,9 +709,9 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/include/codec",
-    "//third_party/flutter/skia",
-    "//third_party/flutter/skia/include/core",
+    "$skia_root/skia/include/codec",
+    "$skia_root/skia",
+    "$skia_root/skia/include/core",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
     "//third_party/flutter/skia/third_party/skcms",
@@ -726,12 +726,12 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     "//third_party/flutter/build/libjpeg:ace_libjpeg",
-    "//third_party/flutter/build/skia:ace_skcms",
-    "//third_party/flutter/build/skia:ace_skia_ohos",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
     "//third_party/libexif:libexif",
   ]
+  deps += skia_skcms
+  deps += skia_platform
   resource_config_file = "//foundation/multimedia/image_framework/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
