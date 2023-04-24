@@ -202,6 +202,7 @@ image_native_ios_deps = [
   # gif
   "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
+
   # raw
   "//third_party/skia/third_party/piex",
 ]
