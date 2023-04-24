@@ -266,7 +266,7 @@ if (use_clang_ios) {
     defines = image_decode_android_defines
     deps = [
       "//commonlibrary/c_utils/base:utils",
-      "//plugins/libs/napi:napi_android",
+      "$plugins_lib_root/napi:napi_android",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
