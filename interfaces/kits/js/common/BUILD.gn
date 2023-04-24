@@ -250,36 +250,38 @@ if (use_clang_ios) {
     part_name = "multimedia_image_framework"
   }
 
-  ohos_shared_library("multimedia_image") {
-    public_configs = [ ":image_external_config" ]
-    sources = [
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
-      "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
-    ]
+  if (use_clang_android) {
+    ohos_shared_library("multimedia_image") {
+      public_configs = [ ":image_external_config" ]
+      sources = [
+        "$image_subsystem/frameworks/kits/js/common/image_packer_napi.cpp",
+        "$image_subsystem/frameworks/kits/js/common/image_source_napi.cpp",
+        "$image_subsystem/frameworks/kits/js/common/native_module_ohos_image.cpp",
+        "$image_subsystem/frameworks/kits/js/common/pixel_map_napi.cpp",
+        "$image_subsystem/kits/js/common/image_napi_utils.cpp",
+      ]
 
-    cflags = [ "-DIMAGE_DEBUG_FLAG" ]
+      cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
-    defines = image_decode_android_defines
-    deps = [
-      "//commonlibrary/c_utils/base:utils",
-      "//foundation/arkui/napi:ace_napi",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
-      "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-      "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    ]
+      defines = image_decode_android_defines
+      deps = [
+        "$commonlibrary_subsystem/base:utils",
+        "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+        "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+        "$image_subsystem/interfaces/innerkits:image_native",
+        "$image_subsystem/mock/native:log_mock_static",
+        "$image_subsystem/plugins/manager:pluginmanager",
+        "$plugins_lib_root/napi:napi_android",
+      ]
 
-    external_deps = [
-      "c_utils:utils",
-      "hichecker_native:libhichecker",
-      "hitrace_native:hitrace_meter",
-    ]
-    relative_install_dir = "module/multimedia"
-    subsystem_name = "multimedia"
-    part_name = "multimedia_image_framework"
+      external_deps = [
+        "c_utils:utils",
+        "hichecker_native:libhichecker",
+        "hitrace_native:hitrace_meter",
+      ]
+      relative_install_dir = "module/multimedia"
+      subsystem_name = "multimedia"
+      part_name = "multimedia_image_framework"
+    }
   }
 }

@@ -11,6 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import("//build/ohos_var.gni")
+
 # source code for Windows.
 use_mingw_win = "${current_os}_${current_cpu}" == "mingw_x86_64"
 use_clang_mac = "${current_os}_${current_cpu}" == "mac_x64"
@@ -46,13 +48,6 @@ commonlibrary_subsystem =
 
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia
-
-if (image_use_new_skia) {
-  image_decode_windows_defines += [ "USE_NEW_SK" ]
-  image_decode_mac_defines += [ "USE_NEW_SK" ]
-  image_decode_ios_defines += [ "USE_NEW_SK" ]
-  image_decode_android_defines += [ "USE_NEW_SK" ]
-}
 
 if (image_use_new_skia) {
   skia_root = "//third_party"
