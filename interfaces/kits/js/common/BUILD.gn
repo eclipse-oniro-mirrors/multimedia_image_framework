@@ -250,7 +250,8 @@ if (use_clang_ios) {
     part_name = "multimedia_image_framework"
   }
 
-  ohos_shared_library("multimedia_image") {
+  if (use_clang_android) {
+    ohos_shared_library("multimedia_image") {
     public_configs = [ ":image_external_config" ]
     sources = [
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
@@ -281,5 +282,6 @@ if (use_clang_ios) {
     relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     part_name = "multimedia_image_framework"
+  }
   }
 }
