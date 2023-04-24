@@ -21,7 +21,7 @@
 #include "include/core/SkStream.h"
 #include "include/core/SkSize.h"
 
-#ifdef USE_NEWSVG_IN_NEWSKIA_FLAG
+#if defined(USE_NEWSVG_IN_NEWSKIA_FLAG) || defined(NEW_SKIA)
 #include "modules/svg/include/SkSVGDOM.h"
 #else
 #include "experimental/svg/model/SkSVGDOM.h"
