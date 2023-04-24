@@ -50,13 +50,6 @@ commonlibrary_subsystem =
 image_use_new_skia = defined(use_new_skia) && use_new_skia
 
 if (image_use_new_skia) {
-  image_decode_windows_defines += [ "USE_NEW_SK" ]
-  image_decode_mac_defines += [ "USE_NEW_SK" ]
-  image_decode_ios_defines += [ "USE_NEW_SK" ]
-  image_decode_android_defines += [ "USE_NEW_SK" ]
-}
-
-if (image_use_new_skia) {
   skia_root = "//third_party"
   skia_deps_root = skia_root
   skia_core = [ "$skia_deps_root/skia:skia_core" ]
