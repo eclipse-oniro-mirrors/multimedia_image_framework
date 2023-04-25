@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <cstring>
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -99,8 +100,8 @@ namespace InnerFormat {
 // BASE64 image prefix type data:image/<type>;base64,<data>
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string BASE64_URL_PREFIX = ";base64,";
-static const int INT_2 = 2;
-static const int INT_8 = 8;
+static const int INT_ZERO = 0;
+
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -1349,57 +1350,39 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
 }
 unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t size)
 {
-    string data1(reinterpret_cast<const char*>(data), size);
-    return DecodeBase64(data1);
-}
-
-unique_ptr<SourceStream> ImageSource::DecodeBase64(const string &data)
-{
-    if (data.size() < IMAGE_URL_PREFIX.size() ||
-       (data.compare(0, IMAGE_URL_PREFIX.size(), IMAGE_URL_PREFIX) != 0)) {
+    if (size < IMAGE_URL_PREFIX.size() ||
+        ::memcmp(data, IMAGE_URL_PREFIX.c_str(), IMAGE_URL_PREFIX.size()) != INT_ZERO) {
         IMAGE_LOGD("[ImageSource]Base64 image header mismatch.");
         return nullptr;
     }
-
-    size_t encoding = data.find(BASE64_URL_PREFIX, IMAGE_URL_PREFIX.size());
-    if (encoding == data.npos) {
+    const char* data1 = reinterpret_cast<const char*>(data);
+    auto sub = ::strstr(data1, BASE64_URL_PREFIX.c_str());
+    if (sub == nullptr) {
         IMAGE_LOGE("[ImageSource]Base64 mismatch.");
         return nullptr;
     }
-    string b64Data = data.substr(encoding + BASE64_URL_PREFIX.size());
-    size_t rawDataLen = b64Data.size() - count(b64Data.begin(), b64Data.end(), '=');
-    rawDataLen -= (rawDataLen / INT_8) * INT_2;
-#ifdef NEW_SKIA
-    size_t outputLen = 0;
-    SkBase64::Error error = SkBase64::Decode(b64Data.data(), b64Data.size(), nullptr, &outputLen);
-    if (error != SkBase64::Error::kNoError) {
-        IMAGE_LOGE("[ImageSource]base64 image decode failed!");
-        return nullptr;
-    }
-
-    sk_sp<SkData> resData = SkData::MakeUninitialized(outputLen);
-    const uint8_t* imageData = resData->bytes();
-
-    IMAGE_LOGD("[ImageSource][NewSkia]Create BufferSource from decoded base64 string.");
-    return BufferSourceStream::CreateSourceStream(imageData, rawDataLen);
-#else
+    uint32_t subSize = size - (sub - data1) - BASE64_URL_PREFIX.size();
+    IMAGE_LOGD("[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.",
+        data, sub, subSize);
     SkBase64 base64Decoder;
-    if (base64Decoder.decode(b64Data.data(), b64Data.size()) != SkBase64::kNoError) {
+    if (base64Decoder.decode(sub, subSize) != SkBase64::kNoError) {
         IMAGE_LOGE("[ImageSource]base64 image decode failed!");
         return nullptr;
     }
-
     auto base64Data = base64Decoder.getData();
     const uint8_t* imageData = reinterpret_cast<uint8_t*>(base64Data);
     IMAGE_LOGD("[ImageSource]Create BufferSource from decoded base64 string.");
-    auto result = BufferSourceStream::CreateSourceStream(imageData, rawDataLen);
-
+    auto result = BufferSourceStream::CreateSourceStream(imageData, base64Decoder.getDataSize());
     if (base64Data != nullptr) {
         delete[] base64Data;
         base64Data = nullptr;
     }
     return result;
-#endif
+}
+
+unique_ptr<SourceStream> ImageSource::DecodeBase64(const string &data)
+{
+    return DecodeBase64(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
 }
 
 bool ImageSource::IsSpecialYUV()
