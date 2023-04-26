@@ -159,7 +159,6 @@ if (use_clang_ios) {
       deps += skia_platform
     } else if (use_clang_android) {
       deps = [
-        "$plugins_lib_root/skia:skia_android",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
 
