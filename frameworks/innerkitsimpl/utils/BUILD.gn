@@ -154,10 +154,9 @@ ohos_static_library("image_utils_static") {
     ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
+    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
     deps = [
-      "//commonlibrary/c_utils/base:utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-      "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]

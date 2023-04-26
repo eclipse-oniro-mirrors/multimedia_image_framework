@@ -47,6 +47,13 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
 
+  # image_napi
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
+
   # formatagent
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/bmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/gif_format_agent.cpp",
@@ -207,33 +214,31 @@ image_native_android_deps = [
   # manager
   # svg
   # common-deps
-  "//commonlibrary/c_utils/base:utils",
+  "//commonlibrary/c_utils/base:utilsbase",
 
   # image_native
   "//foundation/arkui/napi:ace_napi",
 
   # webp
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
 
   # bmp
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-  "//foundation/multimedia/image_framework/mock/native:utils_mock_static",
 
   # jpeg
   "//third_party/flutter/build/libjpeg:ace_libjpeg",
 
   # gif
-  "//third_party/giflib:libgif",
-  "//third_party/libexif:libexif",
-  "//third_party/libpng:png_static",
+  "//third_party/flutter/build/libpng:ace_libpng",
+  "//third_party/giflib:gif_static",
+  "//third_party/libexif:exif_static",
 
   # raw
   "//third_party/skia/third_party/piex",
 
   # formatagent
   # png
-  "//third_party/zlib:shared_libz",
 ]
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform
