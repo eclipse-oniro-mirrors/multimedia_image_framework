@@ -858,26 +858,26 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 static void ExifIntValueByFormat(unsigned char *b, ExifByteOrder order, ExifFormat format, long value)
 {
     switch (format) {
-    case EXIF_FORMAT_SHORT:
-        exif_set_short(b, order, (ExifShort)value);
-        break;
-    case EXIF_FORMAT_SSHORT:
-        exif_set_sshort(b, order, (ExifSShort)value);
-        break;
-    case EXIF_FORMAT_LONG:
-        exif_set_long(b, order, (ExifLong)value);
-        break;
-    case EXIF_FORMAT_SLONG:
-        exif_set_slong(b, order, (ExifSLong)value);
-        break;
-    case EXIF_FORMAT_BYTE:
-    case EXIF_FORMAT_SRATIONAL:
-    case EXIF_FORMAT_UNDEFINED:
-    case EXIF_FORMAT_ASCII:
-    case EXIF_FORMAT_RATIONAL:
-    default:
-        HiLog::Error(LABEL, "ExifIntValueByFormat unsupport format %{public}d.", format);
-        break;
+        case EXIF_FORMAT_SHORT:
+            exif_set_short(b, order, (ExifShort)value);
+            break;
+        case EXIF_FORMAT_SSHORT:
+            exif_set_sshort(b, order, (ExifSShort)value);
+            break;
+        case EXIF_FORMAT_LONG:
+            exif_set_long(b, order, (ExifLong)value);
+            break;
+        case EXIF_FORMAT_SLONG:
+            exif_set_slong(b, order, (ExifSLong)value);
+            break;
+        case EXIF_FORMAT_BYTE:
+        case EXIF_FORMAT_SRATIONAL:
+        case EXIF_FORMAT_UNDEFINED:
+        case EXIF_FORMAT_ASCII:
+        case EXIF_FORMAT_RATIONAL:
+        default:
+            HiLog::Error(LABEL, "ExifIntValueByFormat unsupport format %{public}d.", format);
+            break;
     }
 }
 
