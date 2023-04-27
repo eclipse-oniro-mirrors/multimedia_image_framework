@@ -1537,6 +1537,10 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ReadVarint(buff, cursor);
+        if (static_cast<size_t>(cursor + len) > buff.size()) {
+            HiLog::Error(LABEL, "ReadTlvAttr out of range");
+            return;
+        }
         switch (tag) {
             case TLV_IMAGE_WIDTH:
                 info.size.width = ReadVarint(buff, cursor);
