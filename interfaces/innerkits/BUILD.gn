@@ -298,8 +298,8 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
     ]
     deps = [
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
       "//foundation/arkui/napi:ace_napi",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
@@ -313,9 +313,9 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver_manager.cpp",
     ]
     deps = [
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
       "//commonlibrary/c_utils/base:utils",
       "//foundation/arkui/napi:ace_napi",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
@@ -324,10 +324,10 @@ ohos_static_library("image_static") {
     DUAL_ADAPTER = true
 
     deps = [
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
       "//foundation/arkui/napi:ace_napi",
       "//foundation/graphic/graphic_2d:libsurface",
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
-      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
