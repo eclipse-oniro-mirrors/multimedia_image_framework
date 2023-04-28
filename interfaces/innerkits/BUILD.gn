@@ -109,6 +109,7 @@ if (use_clang_android) {
   }
 } else if (use_clang_ios) {
   ohos_source_set("image_native") {
+    public_configs = [ ":image_external_config" ]
     defines = image_decode_ios_defines
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
