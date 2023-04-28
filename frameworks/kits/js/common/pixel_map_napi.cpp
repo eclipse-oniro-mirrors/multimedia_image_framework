@@ -1785,7 +1785,6 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
         napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
     }
 
-    HiLog::Debug(LABEL, "[PixelMap]GetColorSpaceComplete IN");
     napi_get_undefined(env, &nVal.result);
     nVal.context->status = ERROR;
 
@@ -1800,7 +1799,9 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
         }
     }
 #endif
-    HiLog::Debug(LABEL, "[PixelMap]GetColorSpaceComplete OUT");
+    if (nVal.context->status != SUCCESS) {
+        napi_create_int32(env, nVal.context->status, &nVal.result);
+    }
     return nVal.result;
 }
 static void ParseColorSpaceObject(NapiValues &nVal)
@@ -1813,18 +1814,6 @@ static void ParseColorSpaceObject(NapiValues &nVal)
         HiLog::Error(LABEL, "ColorSpace mismatch");
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
-#endif
-}
-
-static void SetColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
-{
-#ifdef IMAGE_COLORSPACE_FLAG
-    if (context->colorSpace != nullptr) {
-        context->rPixelMap->InnerSetColorSpace(*(context->colorSpace));
-        context->status = SUCCESS;
-    }
-#else
-    context->status = ERR_IMAGE_DATA_UNSUPPORT;
 #endif
 }
 
@@ -1846,10 +1835,15 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     } else {
         ParseColorSpaceObject(nVal);
     }
-    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
-        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nVal.context->colorSpace != nullptr) {
+        nVal.context->rPixelMap->InnerSetColorSpace(*(nVal.context->colorSpace));
+        nVal.context->status = SUCCESS;
     }
-    SetColorSpaceExec(env, reinterpret_cast<PixelMapAsyncContext*>(nVal.context.get()));
+#else
+    nVal.context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+    napi_create_int32(env, nVal.context->status, &nVal.result);
     return nVal.result;
 }
 
