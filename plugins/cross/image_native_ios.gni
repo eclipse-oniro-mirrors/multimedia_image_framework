@@ -46,6 +46,13 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
 
+  # image_napi
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/native_module_ohos_image.cpp",
+  "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixel_map_napi.cpp",
+
   # formatagent
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/bmp_format_agent.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/src/gif_format_agent.cpp",
