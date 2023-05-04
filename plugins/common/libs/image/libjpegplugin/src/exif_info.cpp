@@ -855,6 +855,32 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
     return true;
 }
 
+static void ExifIntValueByFormat(unsigned char *b, ExifByteOrder order, ExifFormat format, long value)
+{
+    switch (format) {
+        case EXIF_FORMAT_SHORT:
+            exif_set_short(b, order, (ExifShort)value);
+            break;
+        case EXIF_FORMAT_SSHORT:
+            exif_set_sshort(b, order, (ExifSShort)value);
+            break;
+        case EXIF_FORMAT_LONG:
+            exif_set_long(b, order, (ExifLong)value);
+            break;
+        case EXIF_FORMAT_SLONG:
+            exif_set_slong(b, order, (ExifSLong)value);
+            break;
+        case EXIF_FORMAT_BYTE:
+        case EXIF_FORMAT_SRATIONAL:
+        case EXIF_FORMAT_UNDEFINED:
+        case EXIF_FORMAT_ASCII:
+        case EXIF_FORMAT_RATIONAL:
+        default:
+            HiLog::Error(LABEL, "ExifIntValueByFormat unsupport format %{public}d.", format);
+            break;
+    }
+}
+
 bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
@@ -867,7 +893,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             }
             std::vector<std::string> bitsVec;
             SplitStr(value, ",", bitsVec);
-            if (bitsVec.size() > CONSTANT_2) {
+            if (bitsVec.size() > CONSTANT_4) {
                 HiLog::Error(LABEL, "BITS_PER_SAMPLE Invalid value %{public}s", value.c_str());
                 return false;
             }
@@ -884,7 +910,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
-            exif_set_short((*ptrEntry)->data, order, (ExifShort)atoi(value.c_str()));
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
         case EXIF_TAG_IMAGE_LENGTH: {
@@ -893,7 +919,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
-            exif_set_short((*ptrEntry)->data, order, (ExifShort)atoi(value.c_str()));
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
         case EXIF_TAG_IMAGE_WIDTH: {
@@ -902,7 +928,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get exif entry failed.");
                 return false;
             }
-            exif_set_short((*ptrEntry)->data, order, (ExifShort)atoi(value.c_str()));
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
         case EXIF_TAG_COMPRESSED_BITS_PER_PIXEL: {
