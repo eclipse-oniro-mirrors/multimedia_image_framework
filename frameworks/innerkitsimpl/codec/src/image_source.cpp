@@ -1364,6 +1364,24 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     uint32_t subSize = size - (sub - data1) - BASE64_URL_PREFIX.size();
     IMAGE_LOGD("[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.",
         data, sub, subSize);
+#ifdef NEW_SKIA
+    size_t outputLen = 0;
+    SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
+    if (error != SkBase64::Error::kNoError) {
+        IMAGE_LOGE("[ImageSource]Base64 decode get out size failed.");
+        return nullptr;
+    }
+
+    sk_sp<SkData> resData = SkData::MakeUninitialized(outputLen);
+    error = SkBase64::Decode(sub, subSize, resData->writable_data(), &outputLen);
+    if (error != SkBase64::Error::kNoError) {
+        IMAGE_LOGE("[ImageSource]Base64 decode get data failed.");
+        return nullptr;
+    }
+    IMAGE_LOGD("[ImageSource][NewSkia]Create BufferSource from decoded base64 string.");
+    auto imageData = static_cast<const uint8_t*>(resData->data());
+    return BufferSourceStream::CreateSourceStream(imageData, resData->size());
+#else
     SkBase64 base64Decoder;
     if (base64Decoder.decode(sub, subSize) != SkBase64::kNoError) {
         IMAGE_LOGE("[ImageSource]base64 image decode failed!");
@@ -1378,6 +1396,7 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
         base64Data = nullptr;
     }
     return result;
+#endif
 }
 
 unique_ptr<SourceStream> ImageSource::DecodeBase64(const string &data)
