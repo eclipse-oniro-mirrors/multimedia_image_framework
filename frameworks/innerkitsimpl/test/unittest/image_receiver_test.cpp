@@ -162,6 +162,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver006, TestSize.Level3)
     std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver1->ReadLastImage();
     imageReceiver1->ReleaseBuffer(surfaceBuffer1);
+    ASSERT_EQ(surfaceBuffer1, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver006 end";
 }
 
@@ -255,6 +256,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0012, TestSize.Level3)
     imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     OHOS::sptr<OHOS::SurfaceBuffer> surfacebuffer = imageReceiver->ReadNextImage();
+    ASSERT_EQ(surfacebuffer, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0012 end";
 }
 
@@ -270,6 +272,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0013, TestSize.Level3)
     imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     OHOS::sptr<OHOS::SurfaceBuffer> surfacebuffer = imageReceiver->ReadLastImage();
+    ASSERT_EQ(surfacebuffer, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0013 end";
 }
 }

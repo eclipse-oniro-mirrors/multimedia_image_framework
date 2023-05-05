@@ -74,6 +74,7 @@ HWTEST_F(ImageCreatorManagerTest, GetSurfaceByKeyId001, TestSize.Level3)
     string keyId = "";
     shared_ptr<ImageCreator> imageCreator;
     sptr<IConsumerSurface> getsurf = imageCreatorManager.GetSurfaceByKeyId(keyId);
+    ASSERT_EQ(getsurf, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorManagerTest: GetSurfaceByKeyId001 end";
 }
 

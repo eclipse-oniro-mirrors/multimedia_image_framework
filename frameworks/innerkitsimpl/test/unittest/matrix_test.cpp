@@ -39,6 +39,8 @@ HWTEST_F(MatrixTest, MatrixTest001, TestSize.Level3)
     float tx = 1;
     float ty = 1;
     matrix_.SetTranslate(tx, ty);
+    ASSERT_EQ(matrix_.GetTransX(), tx);
+    ASSERT_EQ(matrix_.GetTranY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest001 end";
 }
 
@@ -54,6 +56,8 @@ HWTEST_F(MatrixTest, MatrixTest002, TestSize.Level3)
     float tx = 0;
     float ty = 1;
     matrix_.SetTranslate(tx, ty);
+    ASSERT_EQ(matrix_.GetTransX(), tx);
+    ASSERT_EQ(matrix_.GetTranY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest002 end";
 }
 
@@ -69,6 +73,8 @@ HWTEST_F(MatrixTest, MatrixTest003, TestSize.Level3)
     float tx = 1;
     float ty = 0;
     matrix_.SetTranslate(tx, ty);
+    ASSERT_EQ(matrix_.GetTransX(), tx);
+    ASSERT_EQ(matrix_.GetTranY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest003 end";
 }
 
@@ -84,6 +90,8 @@ HWTEST_F(MatrixTest, MatrixTest004, TestSize.Level3)
     float tx = 1;
     float ty = 1;
     matrix_.SetScale(tx, ty);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_EQ(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest004 end";
 }
 
@@ -99,6 +107,8 @@ HWTEST_F(MatrixTest, MatrixTest005, TestSize.Level3)
     float tx = 0;
     float ty = 1;
     matrix_.SetScale(tx, ty);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_EQ(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest005 end";
 }
 
@@ -114,6 +124,8 @@ HWTEST_F(MatrixTest, MatrixTest006, TestSize.Level3)
     float tx = 1;
     float ty = 0;
     matrix_.SetScale(tx, ty);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_EQ(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest006 end";
 }
 
@@ -129,6 +141,8 @@ HWTEST_F(MatrixTest, MatrixTest007, TestSize.Level3)
     float tx = 0.5;
     float ty = 1;
     matrix_.SetScale(tx, ty);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_EQ(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest007 end";
 }
 
@@ -145,6 +159,8 @@ HWTEST_F(MatrixTest, MatrixTest008, TestSize.Level3)
     float ty = 1;
     float degrees = 90;
     matrix_.SetRotate(degrees, tx, ty);
+    ASSERT_NE(matrix_.GetTransX(), tx);
+    ASSERT_NE(matrix_.GetTranY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest008 end";
 }
 
@@ -161,6 +177,8 @@ HWTEST_F(MatrixTest, MatrixTest009, TestSize.Level3)
     float ty = 1;
     float degrees = 180;
     matrix_.SetRotate(degrees, tx, ty);
+    ASSERT_NE(matrix_.GetTransX(), tx);
+    ASSERT_NE(matrix_.GetTranY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest009 end";
 }
 
@@ -178,6 +196,8 @@ HWTEST_F(MatrixTest, MatrixTest0010, TestSize.Level3)
     float sinValue = 1;
     float cosValue = 0;
     matrix_.SetSinCos(sinValue, cosValue, px, py);
+    ASSERT_NE(matrix_.GetTransX(), px);
+    ASSERT_NE(matrix_.GetTranY(), py);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0010 end";
 }
 
@@ -192,6 +212,8 @@ HWTEST_F(MatrixTest, MatrixTest0011, TestSize.Level3)
     Matrix matrix_;
     Matrix m;
     matrix_.SetConcat(m);
+    ASSERT_EQ(matrix_.GetTransX(), m.GetTransX());
+    ASSERT_EQ(matrix_.GetTranY(), m.GetTranY());
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0011 end";
 }
 
@@ -209,6 +231,8 @@ HWTEST_F(MatrixTest, MatrixTest0012, TestSize.Level3)
     float sx = 1;
     float sy = 1;
     matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    ASSERT_NE(matrix_.GetScaleX(), tx);
+    ASSERT_NE(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0012 end";
 }
 
@@ -226,6 +250,8 @@ HWTEST_F(MatrixTest, MatrixTest0013, TestSize.Level3)
     float sx = 1;
     float sy = 1;
     matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_NE(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0013 end";
 }
 
@@ -243,6 +269,8 @@ HWTEST_F(MatrixTest, MatrixTest0014, TestSize.Level3)
     float sx = 0;
     float sy = 1;
     matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    ASSERT_EQ(matrix_.GetScaleX(), tx);
+    ASSERT_NE(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0014 end";
 }
 
@@ -260,6 +288,8 @@ HWTEST_F(MatrixTest, MatrixTest0015, TestSize.Level3)
     float sx = 0;
     float sy = 0;
     matrix_.SetTranslateAndScale(tx, ty, sx, sy);
+    ASSERT_NE(matrix_.GetScaleX(), tx);
+    ASSERT_NE(matrix_.GetScaleY(), ty);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0015 end";
 }
 
@@ -309,6 +339,8 @@ HWTEST_F(MatrixTest, MatrixTest0018, TestSize.Level3)
     pt.x = 1;
     pt.y = 1;
     matrix_.IdentityXY(m, sx, sy, pt);
+    ASSERT_EQ(matrix_.GetTransX(), m.GetTransX());
+    ASSERT_EQ(matrix_.GetTranY(), m.GetTranY());
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0018 end";
 }
 
@@ -328,6 +360,8 @@ HWTEST_F(MatrixTest, MatrixTest0019, TestSize.Level3)
     pt.x = 1;
     pt.y = 1;
     matrix_.ScaleXY(m, sx, sy, pt);
+    ASSERT_EQ(matrix_.GetScaleX(), m.GetScaleX());
+    ASSERT_EQ(matrix_.GetScaleY(), m.GetScaleY());
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0019 end";
 }
 
@@ -347,6 +381,8 @@ HWTEST_F(MatrixTest, MatrixTest0020, TestSize.Level3)
     pt.x = 1;
     pt.y = 1;
     matrix_.TransXY(m, tx, ty, pt);
+    ASSERT_EQ(matrix_.GetTransX(), m.GetTransX());
+    ASSERT_EQ(matrix_.GetTranY(), m.GetTranY());
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0020 end";
 }
 
@@ -379,6 +415,7 @@ HWTEST_F(MatrixTest, MatrixTest0022, TestSize.Level3)
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0022 start";
     Matrix matrix_;
     matrix_.Print();
+    ASSERT_NE(&matrix_, nullptr);
     GTEST_LOG_(INFO) << "MatrixTest: MatrixTest0022 end";
 }
 

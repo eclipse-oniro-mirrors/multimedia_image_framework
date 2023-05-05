@@ -44,6 +44,7 @@ HWTEST_F(AttrDataTest, AttrDataTest001, TestSize.Level3)
     MultimediaPlugin::AttrData aData(value);
     bool value1 = false;
     aData.SetData(value1);
+    ASSERT_EQ(aData.GetValue(value), SUCCESS);
     aData.ClearData();
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest001 end";
 }
@@ -60,6 +61,7 @@ HWTEST_F(AttrDataTest, AttrDataTest002, TestSize.Level3)
     MultimediaPlugin::AttrData aData(value);
     bool value1 = true;
     aData.SetData(value1);
+    ASSERT_EQ(aData.GetValue(value), SUCCESS);
     aData.ClearData();
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest002 end";
 }
@@ -76,7 +78,9 @@ HWTEST_F(AttrDataTest, AttrDataTest003, TestSize.Level3)
     MultimediaPlugin::AttrData aData(value);
     uint32_t value1 = 2;
     aData.SetData(value1);
+    ASSERT_EQ(aData.GetValue(value), SUCCESS);
     aData.ClearData();
+    ASSERT_EQ(value, value1);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest003 end";
 }
 
@@ -632,9 +636,12 @@ HWTEST_F(AttrDataTest, AttrDataTest0039, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0039 start";
     MultimediaPlugin::AttrData aData;
+    bool value = true;
     bool value1 = false;
     aData.SetData(value1);
     MultimediaPlugin::AttrData aData1(aData);
+    ASSERT_EQ(aData1.GetValue(value), SUCCESS);
+    ASSERT_EQ(value, value1);
     aData1.ClearData();
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0039 end";
 }
@@ -648,8 +655,11 @@ HWTEST_F(AttrDataTest, AttrDataTest0040, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0040 start";
     uint32_t value = 0;
+    uint32_t value1 = 1;
     MultimediaPlugin::AttrData aData(value);
     MultimediaPlugin::AttrData aData1(aData);
+    ASSERT_EQ(aData1.GetValue(value1), SUCCESS);
+    ASSERT_EQ(value, value1);
     aData1.ClearData();
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0040 end";
 }

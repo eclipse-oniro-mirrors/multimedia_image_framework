@@ -81,6 +81,7 @@ HWTEST_F(InterfaceTest, InterfaceTest002, TestSize.Level3)
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts,
         errorCode);
     incPixelMap->DetachFromDecoding();
+    ASSERT_EQ(incPixelMap, nullptr);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest002 end";
 }
 
@@ -115,8 +116,8 @@ HWTEST_F(InterfaceTest, InterfaceTest004, TestSize.Level3)
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest004 start";
     PixelMap *pixelMap = nullptr;
     PixelMapManager pixelMapManager(pixelMap);
-    GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest111 start";
     pixelMapManager.FreePixels();
+    ASSERT_EQ(&pixelMapManager.GetPixelMap(), nullptr);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest004 end";
 }
 
@@ -145,7 +146,7 @@ HWTEST_F(InterfaceTest, InterfaceTest006, TestSize.Level3)
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest006 start";
     PixelMap *pixelMap = nullptr;
     PixelMapManager pixelMapManager(pixelMap);
-    pixelMapManager.GetPixelMap();
+    ASSERT_EQ(&pixelMapManager.GetPixelMap(), nullptr);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest006 end";
 }
 
@@ -175,6 +176,7 @@ HWTEST_F(InterfaceTest, InterfaceTest008, TestSize.Level3)
     PixelMap *pixelMap = nullptr;
     PixelMapManager pixelMapManager(pixelMap);
     pixelMapManager.Ref();
+    ASSERT_EQ(pixelMap, nullptr);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest008 end";
 }
 
@@ -189,6 +191,7 @@ HWTEST_F(InterfaceTest, InterfaceTest009, TestSize.Level3)
     PixelMap *pixelMap = nullptr;
     PixelMapManager pixelMapManager(pixelMap);
     pixelMapManager.UnRef();
+    ASSERT_EQ(pixelMap, nullptr);
     GTEST_LOG_(INFO) << "InterfaceTest: InterfaceTest009 end";
 }
 

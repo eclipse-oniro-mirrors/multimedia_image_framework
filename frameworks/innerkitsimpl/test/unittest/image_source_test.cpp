@@ -217,7 +217,8 @@ HWTEST_F(ImageSourceTest, CreateIncrementalImageSource001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 start";
     uint32_t errorCode = 0;
     const IncrementalSourceOptions opts;
-    ImageSource::CreateIncrementalImageSource(opts, errorCode);
+    std::unique_ptr<ImageSource> img = ImageSource::CreateIncrementalImageSource(opts, errorCode);
+    ASSERT_NE(img, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 end";
 }
 
@@ -229,7 +230,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalImageSource001, TestSize.Level3)
 HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx001 start";
-
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
@@ -237,7 +237,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
     const DecodeOptions opts;
     std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opts, errorCode);
     ASSERT_EQ(crepixelmapex, nullptr);
-
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx001 end";
 }
 
@@ -249,7 +248,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
 HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -257,7 +255,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
     uint32_t index = 1;
     const DecodeOptions opt;
     imageSource->CreatePixelMapEx(index, opt, errorCode);
-
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 end";
 }
 
@@ -269,7 +266,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
 HWTEST_F(ImageSourceTest, CreatePixelMap001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap001 start";
-
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
@@ -277,7 +273,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMap001, TestSize.Level3)
     const DecodeOptions opts;
     std::unique_ptr<PixelMap> crepixelmap = imageSource->CreatePixelMap(index, opts, errorCode);
     ASSERT_EQ(crepixelmap, nullptr);
-
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap001 end";
 }
 

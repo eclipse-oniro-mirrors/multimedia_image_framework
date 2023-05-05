@@ -108,6 +108,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CapabilityTest005, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest005 start";
     Capability capability;
     std::map<std::string, AttrData> ret = capability.GetCapability();
+    ASSERT_NE(&ret, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CapabilityTest005 end";
 }
 
@@ -122,6 +123,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassKeyTest001, TestSize.Level3)
     ImplClass key;
     ImplClassKey implClassKey(key);
     implClassKey.OnObjectDestroy();
+    ASSERT_NE(&implClassKey, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassKeyTest001 end";
 }
 
@@ -342,6 +344,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest009, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest009 start";
     ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
     implClass.OnObjectDestroy();
+    ASSERT_NE(&implClass, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest009 end";
 }
 
@@ -412,6 +415,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest0014, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0014 start";
     ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
     const std::map<std::string, AttrData> ret = implClass.GetCapability();
+    ASSERT_EQ(ret.empty(), true);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0014 end";
 }
 
