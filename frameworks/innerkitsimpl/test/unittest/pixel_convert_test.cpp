@@ -57,7 +57,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest001, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::BGRA_8888;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_NE(colorConverterPointer, nullptr);
+    ASSERT_NE(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest001 end";
 }
 
@@ -78,7 +78,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest002, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::BGRA_8888;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_EQ(colorConverterPointer, nullptr);
+    ASSERT_EQ(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest002 end";
 }
 
@@ -99,7 +99,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest003, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_EQ(colorConverterPointer, nullptr);
+    ASSERT_EQ(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest003 end";
 }
 
@@ -123,6 +123,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest004, TestSize.Level3)
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 1);
+    ASSERT_NE(&source, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest004 end";
 }
 
@@ -146,6 +147,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest005, TestSize.Level3)
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 1);
+    ASSERT_NE(destination[0], 1);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest005 end";
 }
 
@@ -169,6 +171,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest006, TestSize.Level3)
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 1);
+    ASSERT_NE(source[0], 1);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest006 end";
 }
 
@@ -189,7 +192,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest007, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_EQ(colorConverterPointer, nullptr);
+    ASSERT_EQ(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest007 end";
 }
 
@@ -210,7 +213,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest008, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_EQ(colorConverterPointer, nullptr);
+    ASSERT_EQ(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest008 end";
 }
 
@@ -250,6 +253,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest009, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest009 start";
 }
 
@@ -289,6 +293,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0010, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0010 start";
 }
 
@@ -328,6 +333,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0011, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0011 start";
 }
 
@@ -367,6 +373,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0012, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0012 start";
 }
 
@@ -406,6 +413,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0013, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0013 start";
 }
 
@@ -445,6 +453,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0014, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0014 start";
 }
 
@@ -484,6 +493,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0015, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0015 start";
 }
 
@@ -523,6 +533,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0016, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0016 start";
 }
 
@@ -562,6 +573,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0017, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0017 start";
 }
 
@@ -601,6 +613,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0018, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0018 start";
 }
 
@@ -640,6 +653,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0019, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0019 start";
 }
 
@@ -679,6 +693,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0020, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0020 start";
 }
 
@@ -718,6 +733,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0021, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0021 start";
 }
 
@@ -757,6 +773,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0022, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0022 start";
 }
 
@@ -796,6 +813,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0023, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0023 start";
 }
 
@@ -835,6 +853,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0099, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0099 start";
 }
 
@@ -874,6 +893,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0024, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0024 start";
 }
 
@@ -913,6 +933,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0025, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0025 start";
 }
 
@@ -952,6 +973,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0026, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0026 start";
 }
 
@@ -991,6 +1013,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0027, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0027 start";
 }
 
@@ -1030,6 +1053,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0028, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0028 start";
 }
 
@@ -1069,6 +1093,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0029, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0029 start";
 }
 
@@ -1108,6 +1133,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0030, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0030 start";
 }
 
@@ -1147,6 +1173,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0031, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0031 start";
 }
 
@@ -1186,6 +1213,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0032, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0032 start";
 }
 
@@ -1225,6 +1253,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0033, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0033 start";
 }
 
@@ -1264,6 +1293,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0034, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0034 start";
 }
 
@@ -1303,6 +1333,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0035, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0035 start";
 }
 
@@ -1342,6 +1373,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0036, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0036 start";
 }
 
@@ -1381,6 +1413,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0037, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0037 start";
 }
 
@@ -1420,6 +1453,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0038, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0038 start";
 }
 
@@ -1459,6 +1493,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0039, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0039 start";
 }
 
@@ -1498,6 +1533,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0040, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0040 start";
 }
 
@@ -1537,6 +1573,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0041, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0041 start";
 }
 
@@ -1576,6 +1613,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0042, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0042 start";
 }
 
@@ -1615,6 +1653,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0043, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0043 start";
 }
 
@@ -1654,6 +1693,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0044, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0044 start";
 }
 
@@ -1693,6 +1733,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0045, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0045 start";
 }
 
@@ -1732,6 +1773,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0046, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0046 start";
 }
 
@@ -1771,6 +1813,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0047, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0047 start";
 }
 
@@ -1810,6 +1853,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0048, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0048 start";
 }
 
@@ -1830,7 +1874,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0049, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_NE(colorConverterPointer, nullptr);
+    ASSERT_NE(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0049 end";
 }
 
@@ -1851,7 +1895,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0050, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_NE(colorConverterPointer, nullptr);
+    ASSERT_NE(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0050 end";
 }
 
@@ -1872,7 +1916,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0051, TestSize.Level3)
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
 
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
-    EXPECT_NE(colorConverterPointer, nullptr);
+    ASSERT_NE(colorConverterPointer, nullptr);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0051 end";
 }
 
@@ -1912,6 +1956,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0052, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0052 start";
 }
 }

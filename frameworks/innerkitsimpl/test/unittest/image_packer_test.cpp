@@ -173,7 +173,8 @@ HWTEST_F(ImagePackerTest, StartPacking007, TestSize.Level3)
     pack.StartPacking(fd2, option);
     PackOption option2;
     option2.format = "";
-    pack.StartPacking(fd2, option2);
+    uint32_t ret = pack.StartPacking(fd2, option2);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking007 end";
 }
 
@@ -188,8 +189,8 @@ HWTEST_F(ImagePackerTest, StartPacking008, TestSize.Level3)
     ImagePacker pack;
     std::ostream &outputStream = std::cout;
     const PackOption option;
-    pack.StartPacking(outputStream, option);
-    
+    uint32_t ret = pack.StartPacking(outputStream, option);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking008 end";
 }
 
@@ -229,7 +230,8 @@ HWTEST_F(ImagePackerTest, StartPacking010, TestSize.Level3)
     pack.StartPacking(outPut, static_cast<uint32_t>(100), option);
     pack.StartPacking(outPut, static_cast<uint32_t>(-1), option);
     uint8_t outPut2 = 1;
-    pack.StartPacking(&outPut2, static_cast<uint32_t>(-1), option);
+    uint32_t ret = pack.StartPacking(&outPut2, static_cast<uint32_t>(-1), option);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking010 end";
 }
 
@@ -250,7 +252,8 @@ HWTEST_F(ImagePackerTest, StartPacking012, TestSize.Level3)
     option.numberHint = NUM_1;
     pack.StartPacking(filePath2, option);
     option.format = "";
-    pack.StartPacking(filePath, option);
+    uint32_t ret = pack.StartPacking(filePath, option);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking012 end";
 }
 
@@ -268,8 +271,9 @@ HWTEST_F(ImagePackerTest, AddImage001, TestSize.Level3)
     SourceOptions opts;
     uint32_t errorCode = 0;
     std::unique_ptr<ImageSource> imageSource =
-    ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    pack.AddImage(*imageSource);
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint32_t ret = pack.AddImage(*imageSource);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: AddImage001 end";
 }
 
@@ -287,7 +291,8 @@ HWTEST_F(ImagePackerTest, AddImage002, TestSize.Level3)
     opts.formatHint = -1;
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    pack.AddImage(*imageSource);
+    uint32_t ret = pack.AddImage(*imageSource);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: AddImage002 end";
 }
 
@@ -306,7 +311,8 @@ HWTEST_F(ImagePackerTest, AddImage003, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index = 0;
-    pack.AddImage(*imageSource, index);
+    uint32_t ret = pack.AddImage(*imageSource, index);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: AddImage003 end";
 }
 
@@ -319,7 +325,8 @@ HWTEST_F(ImagePackerTest, FinalizePacking001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: FinalizePacking001 start";
     ImagePacker pack;
-    pack.FinalizePacking();
+    uint32_t ret = pack.FinalizePacking();
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: FinalizePacking001 end";
 }
 
@@ -333,7 +340,8 @@ HWTEST_F(ImagePackerTest, FinalizePacking002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePackerTest: FinalizePacking002 start";
     ImagePacker pack;
     int64_t packedSize = 0;
-    pack.FinalizePacking(packedSize);
+    uint32_t ret = pack.FinalizePacking(packedSize);
+    ASSERT_NE(ret, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerTest: FinalizePacking002 end";
 }
 } // namespace Multimedia
