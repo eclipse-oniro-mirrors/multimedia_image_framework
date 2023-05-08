@@ -1344,6 +1344,22 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
     int32_t bufferSize = parcel.ReadInt32();
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    if (bytesPerPixel == 0) {
+        HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
+        return nullptr;
+    }
+    int32_t rowDataSize = 0;
+    if (imgInfo.pixelFormat == PixelFormat::ALPHA_8) {
+        rowDataSize = bytesPerPixel * ((imgInfo.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize);
+    } else {
+        rowDataSize = bytesPerPixel * imgInfo.size.width;
+    }
+    if (bufferSize != rowDataSize * imgInfo.size.height) {
+        HiLog::Error(LABEL, "unmarshalling bufferSize parcelling error");
+        return nullptr;
+    }
     uint8_t *base = nullptr;
     void *context = nullptr;
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
