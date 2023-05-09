@@ -1444,6 +1444,10 @@ void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const
 
 uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
 {
+    if (static_cast<size_t>(cursor + 1) > buff.size()) {
+        HiLog::Error(LABEL, "ReadUint8 out of range");
+        return TLV_END;
+    }
     return buff[cursor++];
 }
 
@@ -1472,6 +1476,10 @@ int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
     uint8_t shift = 0;
     int32_t item = 0;
     do {
+        if (static_cast<size_t>(cursor + 1) > buff.size()) {
+            HiLog::Error(LABEL, "ReadVarint out of range");
+            return static_cast<int32_t>(TLV_END);
+        }
         item = int32_t(buff[cursor++]);
         value |= (item & TLV_VARINT_MASK) << shift;
         shift += TLV_VARINT_BITS;
@@ -1490,6 +1498,10 @@ uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &c
 {
     if (size <= 0) {
         HiLog::Error(LABEL, "pixel map tlv read data fail: invalid size[%{public}d]", size);
+        return nullptr;
+    }
+    if (static_cast<size_t>(cursor + size) > buff.size()) {
+        HiLog::Error(LABEL, "ReadData out of range");
         return nullptr;
     }
     uint8_t *data = static_cast<uint8_t *>(malloc(size));
@@ -1553,7 +1565,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ReadVarint(buff, cursor);
-        if (static_cast<size_t>(cursor + len) > buff.size()) {
+        if (len <= 0 || static_cast<size_t>(cursor + len) > buff.size()) {
             HiLog::Error(LABEL, "ReadTlvAttr out of range");
             return;
         }
