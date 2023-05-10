@@ -25,10 +25,20 @@
       "ram": "10000KB",
       "deps": {
         "components": [
+          "common",
+          "c_utils",
+          "graphic_standard",
+          "hichecker_native",
+          "hitrace_native",
+          "hiviewdfx_hilog_native",
+          "ipc",
           "ipc_core",
           "libhilog",
           "bytrace_core",
-          "libhichecker"
+          "libhichecker",
+          "multimedia",
+          "napi",
+          "zlib"
         ],
         "third_party": [
           "flutter",
@@ -37,7 +47,7 @@
           "giflib",
           "bounds_checking_function",
           "expat",
-	  "json"
+          "json"
         ]
       },
       "build": {
