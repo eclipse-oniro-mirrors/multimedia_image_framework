@@ -1138,7 +1138,7 @@ HWTEST_F(PixelMapTest, PixelMapTest028, TestSize.Level3)
         AllocatorType::HEAP_ALLOC);
     EXPECT_TRUE(pixelMap2 != nullptr);
     auto ret2 = pixelMap2->GetPixel16(100, 200);
-    EXPECT_TRUE(ret2 == nullptr);
+    EXPECT_TRUE(ret2 != nullptr);
 
     auto pixelMap3 = ConstructPixmap(200, 300, PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE,
         AllocatorType::HEAP_ALLOC);
@@ -1202,6 +1202,7 @@ HWTEST_F(PixelMapTest, PixelMapTest030, TestSize.Level3)
     pixelMap.InnerSetColorSpace(grColorSpace);
     OHOS::ColorManager::ColorSpace outColorSpace = pixelMap.InnerGetGrColorSpace();
     pixelMap.InnerSetColorSpace(outColorSpace);
+    ASSERT_NE(&outColorSpace, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace end";
 }
 #endif

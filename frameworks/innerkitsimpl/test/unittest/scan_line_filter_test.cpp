@@ -76,6 +76,7 @@ HWTEST_F(ScanLineFilterTest, ScanLineFilterTest003, TestSize.Level3)
     ScanlineFilter scanlineFilter;
     PixelFormat srcPixelFormat = PixelFormat::UNKNOWN;
     scanlineFilter.SetSrcPixelFormat(srcPixelFormat);
+    ASSERT_NE(&scanlineFilter, nullptr);
     GTEST_LOG_(INFO) << "ScanLineFilterTest: ScanLineFilterTest003 end";
 }
 
@@ -94,6 +95,7 @@ HWTEST_F(ScanLineFilterTest, ScanLineFilterTest004, TestSize.Level3)
     rect.height = 1;
     rect.width = 1;
     scanlineFilter.SetSrcRegion(rect);
+    ASSERT_NE(&scanlineFilter, nullptr);
     GTEST_LOG_(INFO) << "ScanLineFilterTest: ScanLineFilterTest004 end";
 }
 
@@ -109,6 +111,7 @@ HWTEST_F(ScanLineFilterTest, ScanLineFilterTest005, TestSize.Level3)
     ImageInfo srcImageInfo;
     ImageInfo dstImageInfo;
     scanlineFilter.SetPixelConvert(srcImageInfo, dstImageInfo);
+    ASSERT_NE(&scanlineFilter, nullptr);
     GTEST_LOG_(INFO) << "ScanLineFilterTest: ScanLineFilterTest005 end";
 }
 

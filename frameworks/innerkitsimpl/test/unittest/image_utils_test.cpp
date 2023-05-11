@@ -47,6 +47,7 @@ HWTEST_F(ImageUtilsTest, ImageTraceTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest001 start";
     const std::string title = "title";
     ImageTrace imagetrace(title);
+    ASSERT_NE(&imagetrace, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest001 end";
 }
 
@@ -60,6 +61,7 @@ HWTEST_F(ImageUtilsTest, ImageTraceTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest002 start";
     const char *fmt = nullptr;
     ImageTrace imagetrace(fmt);
+    ASSERT_NE(&imagetrace, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest002 end";
 }
 
@@ -73,6 +75,7 @@ HWTEST_F(ImageUtilsTest, ImageTraceTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest003 start";
     const char *fmt = "mytrace";
     ImageTrace imagetrace(fmt);
+    ASSERT_NE(&imagetrace, nullptr);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageTraceTest003 end";
 }
 

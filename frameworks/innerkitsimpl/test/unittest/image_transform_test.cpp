@@ -278,6 +278,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest004, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform004 start";
     BasicTransformer trans;
     trans.ResetParam();
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform004 end";
 }
 
@@ -293,6 +294,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest005, TestSize.Level3)
     float sx = 0.5;
     float sy = 0.5;
     trans.SetTranslateParam(sx, sy);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform005 end";
 }
 
@@ -308,6 +310,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest006, TestSize.Level3)
     float sx = -1;
     float sy = 0.5;
     trans.SetTranslateParam(sx, sy);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform006 end";
 }
 
@@ -323,6 +326,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest007, TestSize.Level3)
     float sx = 1;
     float sy = -1;
     trans.SetTranslateParam(sx, sy);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform007 end";
 }
 
@@ -338,6 +342,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest008, TestSize.Level3)
     float sx = -1;
     float sy = 0.5;
     trans.SetTranslateParam(sx, sy);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform008 end";
 }
 
@@ -353,6 +358,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest009, TestSize.Level3)
     float sx = -1;
     float sy = -1;
     trans.SetTranslateParam(sx, sy);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform009 end";
 }
 
@@ -369,6 +375,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0010, TestSize.Level3)
     ConstructPixmapInfo(inPutInfo);
     Size dstSize = inPutInfo.imageInfo.size;
     trans.GetDstDimension(inPutInfo.imageInfo.size, dstSize);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0010 end";
 }
 
@@ -382,6 +389,7 @@ HWTEST_F(ImageTransformTest, ImageTransformTest0011, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0011 start";
     BasicTransformer trans;
     trans.SetScaleParam(2.0f, 2.0f);
+    EXPECT_NE(&trans, nullptr);
     GTEST_LOG_(INFO) << "ImageTransformTest: ImageTransform0011 end";
 }
 

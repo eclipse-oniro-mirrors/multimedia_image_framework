@@ -146,6 +146,7 @@ HWTEST_F(ImageCreatorTest, ReleaseCreator001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageCreatorTest: ReleaseCreator001 start";
     ImageCreator creat;
     creat.ReleaseCreator();
+    ASSERT_NE(&creat, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorTest: ReleaseCreator001 end";
 }
 

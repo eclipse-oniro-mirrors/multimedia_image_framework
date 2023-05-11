@@ -47,8 +47,10 @@ HWTEST_F(ImagePackerExTest, ImagePackerExTest001, TestSize.Level3)
     PackOption option2;
     option2.format = "";
     option2.quality = 101;
-    imageEx->StartPacking(outputStream, option2);
+    uint32_t ret = imageEx->StartPacking(outputStream, option2);
     delete imageEx;
+    uint32_t SUCCESS = 0;
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImagePackerExTest: ImagePackerExTest001 end";
 }
 }

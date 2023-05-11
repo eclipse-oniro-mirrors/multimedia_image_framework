@@ -64,6 +64,7 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager002, TestSize.Level3)
     std::string id = "1";
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::shared_ptr<ImageReceiver> imaReceive = imageReceiverManager.getImageReceiverByKeyId(id);
+    ASSERT_EQ(imaReceive, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverManagerTest: ImageReceiverManager002 end";
 }
 
