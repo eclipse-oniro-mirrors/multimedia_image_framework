@@ -1361,7 +1361,8 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
         IMAGE_LOGE("[ImageSource]Base64 mismatch.");
         return nullptr;
     }
-    uint32_t subSize = size - (sub - data1) - BASE64_URL_PREFIX.size();
+    sub = sub + BASE64_URL_PREFIX.size();
+    uint32_t subSize = size - (sub - data1);
     IMAGE_LOGD("[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.",
         data, sub, subSize);
 #ifdef NEW_SKIA
