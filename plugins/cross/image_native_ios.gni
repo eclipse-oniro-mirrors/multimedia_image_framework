@@ -19,6 +19,23 @@ import("//third_party/flutter/flutter_config.gni")
 image_native_ios_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
 image_native_ios_sources = [
+  # plugin_manager
+  "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
+
   # webp
   "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
 
@@ -91,9 +108,6 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libsvgplugin/src/svg_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
-
-  # plugin_manager
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
 ]
 
 # image_native: not support
@@ -106,6 +120,14 @@ image_native_ios_sources -= [
 ]
 
 image_native_ios_include_dirs = [
+  # manager
+  "//foundation/multimedia/image_framework/plugins/manager/include/utils",
+  "//foundation/multimedia/image_framework/plugins/manager/src/common",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework",
+  "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase",
+  "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
+  "//third_party/json/single_include/nlohmann",
+
   # common
   "//foundation/multimedia/utils/include",
   "//foundation/multimedia/image_framework/interfaces/innerkits/include",
@@ -126,6 +148,9 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/mock/native/include/secure",
   "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   "//third_party/flutter/skia/third_party/skcms",
+  "//commonlibrary/c_utils/base/include",
+  "$image_subsystem/mock/native/include/log",
+  "//foundation/multimedia/image_framework/mock/native/include/secure",
 
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
@@ -196,10 +221,9 @@ image_native_ios_deps = [
 
   # image_native
   "//foundation/arkui/napi:ace_napi",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
-  "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
 
   # jpeg
   "//third_party/flutter/build/libjpeg:ace_libjpeg",
