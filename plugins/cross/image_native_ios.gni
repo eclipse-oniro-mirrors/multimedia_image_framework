@@ -20,7 +20,6 @@ image_native_ios_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
 image_native_ios_sources = [
   # plugin_manager
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
@@ -29,6 +28,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
   "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
