@@ -19,6 +19,23 @@ import("//third_party/flutter/flutter_config.gni")
 image_native_android_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
 
 image_native_android_sources = [
+  # manager
+  "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
+  "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
+
   # jpeg
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
@@ -92,23 +109,6 @@ image_native_android_sources = [
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
-
-  # manager
-  "//foundation/multimedia/image_framework/plugins/manager/src/common/attr_data.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/common/platform_adp.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/capability.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_key.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/impl_class_mgr.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/json_helper.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_export.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_fw.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_info_lock.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/framework/plugin_mgr.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/plugin_server.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase/plugin_class_base.cpp",
-  "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
 ]
 
 # image_native: not support
