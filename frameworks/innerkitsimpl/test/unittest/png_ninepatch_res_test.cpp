@@ -37,6 +37,7 @@ HWTEST_F(PngNinepatchResTest, DeviceToFile001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngNinepatchResTest: DeviceToFile001 start";
     ImagePlugin::PngNinePatchRes pngnp;
     pngnp.DeviceToFile();
+    ASSERT_NE(&pngnp, nullptr);
     GTEST_LOG_(INFO) << "PngNinepatchResTest: DeviceToFile001 end";
 }
 
@@ -50,6 +51,7 @@ HWTEST_F(PngNinepatchResTest, FileToDevice001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngNinepatchResTest: FileToDevice001 start";
     ImagePlugin::PngNinePatchRes pngnp;
     pngnp.FileToDevice();
+    ASSERT_NE(&pngnp, nullptr);
     GTEST_LOG_(INFO) << "PngNinepatchResTest: FileToDevice001 end";
 }
 

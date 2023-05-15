@@ -154,6 +154,8 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassMgrTest002, TestSize.Level3)
     ImplClassMgr &implClassMgr = DelayedRefSingleton<ImplClassMgr>::GetInstance();
     std::weak_ptr<Plugin> plugin;
     implClassMgr.DeleteClass(plugin);
+    std::shared_ptr<ImplClass> implClass = implClassMgr.GetImplClass("plugin", "plugin");
+    ASSERT_EQ(implClass, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassMgrTest002 end";
 }
 
@@ -358,6 +360,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, ImplClassTest0010, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0010 start";
     ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
     const std::set<uint32_t> ret = implClass.GetServices();
+    ASSERT_NE(&ret, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ImplClassTest0010 end";
 }
 
@@ -653,7 +656,9 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, PluginTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest002 start";
     Plugin plugin;
+    plugin.Ref();
     plugin.DeRef();
+    ASSERT_NE(&plugin, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest002 end";
 }
 
@@ -667,6 +672,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, PluginTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest003 start";
     Plugin plugin;
     plugin.Block();
+    ASSERT_NE(&plugin, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest003 end";
 }
 
@@ -680,6 +686,7 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, PluginTest004, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest004 start";
     Plugin plugin;
     plugin.Unblock();
+    ASSERT_NE(&plugin, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: PluginTest004 end";
 }
 

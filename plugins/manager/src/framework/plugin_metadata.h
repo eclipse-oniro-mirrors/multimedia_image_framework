@@ -16,9 +16,6 @@
 #ifndef PLUGIN_METADATA_H
 #define PLUGIN_METADATA_H
 
-#include <vector>
-#include <string>
-
 namespace OHOS {
 namespace MultimediaPlugin {
 const std::vector<std::string> META_DATA = {

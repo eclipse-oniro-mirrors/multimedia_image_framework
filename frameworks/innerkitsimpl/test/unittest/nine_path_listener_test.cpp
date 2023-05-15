@@ -64,6 +64,7 @@ HWTEST_F(NinePathListenerTest, Scale001, TestSize.Level3)
     int32_t scaledWidth = 3;
     int32_t scaledHeight = 4;
     ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
+    ASSERT_NE(&ninepath, nullptr);
     GTEST_LOG_(INFO) << "NinePathListenerTest: Scale001 end";
 }
 } // namespace Multimedia
