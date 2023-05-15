@@ -17,7 +17,7 @@
  * @addtogroup image
  * @{
  *
- * @brief Provides functions to access the native buffer of image, receiving ready buffer from native.
+ * @brief Provides APIs for obtaining image data from the native layer.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -27,7 +27,7 @@
 /**
  * @file image_receiver_mdk.h
  *
- * @brief Declares functions for you to access native image buffer in native layer.
+ * @brief Declares the APIs for obtaining image data from the native layer.
  *
  * @since 10
  * @version 2.0
@@ -46,9 +46,16 @@ namespace Media {
 extern "C" {
 #endif
 
-struct ImageReceiverNative_;
 /**
- * @brief Defines native image receiver object for native receiving functions.
+ * @brief Defines an <b>ImageReceiver</b> object at the native layer.
+ *
+ * @since 10
+ * @version 2.0
+ */
+struct ImageReceiverNative_;
+
+/**
+ * @brief Defines the data type name of a native image receiver.
  *
  * @since 10
  * @version 2.0
@@ -56,7 +63,7 @@ struct ImageReceiverNative_;
 typedef struct ImageReceiverNative_ ImageReceiverNative;
 
 /**
- * @brief Defines a type of callback on native image ready.
+ * @brief Defines the callbacks for images at the native layer.
  *
  * @since 10
  * @version 2.0
@@ -64,32 +71,29 @@ typedef struct ImageReceiverNative_ ImageReceiverNative;
 typedef void (*OH_Image_Receiver_On_Callback)();
 
 /**
- * @brief Defines image receiver create infomations.
+ * @brief Defines the information about an image receiver.
  *
  * @since 10
  * @version 2.0
  */
 struct OhosImageReceiverInfo {
-    /** Default image width size on receive. */
+    /* Default width of the image received by the consumer, in pixels. */
     int32_t width;
-    /** Default image height size on receive. */
+    /* Default height of the image received by the consumer, in pixels. */
     int32_t height;
-    /** Create image format throught receiver. */
+    /* Image format {@link OHOS_IMAGE_FORMAT_JPEG} created by using the receiver. */
     int32_t format;
-    /** Max capicity of images cache. */
+    /* Maximum number of images that can be cached. */
     int32_t capicity;
 };
 
 /**
- * @brief Obtains JavaScript Native API <b>ImageReceiver</b> object by a given infomations {@link
- * OhosImageReceiverInfo} structure.
+ * @brief Creates an <b>ImageReceiver</b> object at the application layer.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param info Indicates infomations of creating a image receiver. For details,
- * see {@link OhosImageReceiverInfo}.
- * @param res Indicates the pointer to JavaScript Native API <b>ImageReceiver</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param env Indicates the NAPI environment pointer.
+ * @param info Indicates the options for setting the <b>ImageReceiver</b> object.
+ * @param res Indicates the pointer to the <b>ImageReceiver</b> object obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see OhosImageReceiverInfo
  * @since 10
  * @version 2.0
@@ -97,13 +101,13 @@ struct OhosImageReceiverInfo {
 int32_t OH_Image_Receiver_CreateImageReceiver(napi_env env, struct OhosImageReceiverInfo info, napi_value* res);
 
 /**
- * @brief Unwrap native {@link ImageReceiverNative} value from input JavaScript Native API
- * <b>ImageReceiver</b> object.
+ * @brief Initializes an {@link ImageReceiverNative} object at the native layer
+ * through an <b>ImageReceiver</b> object at the application layer.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param source Indicates JavaScript Native API <b>ImageReceiver</b> object.
- * @return Returns {@link ImageReceiverNative} pointer if the operation is successful;
- * returns nullptr result if the operation fails.
+ * @param env Indicates the NAPI environment pointer.
+ * @param source Indicates an <b>ImageReceiver</b> object.
+ * @return Returns the pointer to the {@link ImageReceiverNative} object obtained if the operation is successful;
+ * returns a null pointer otherwise.
  * @see ImageReceiverNative, OH_Image_Receiver_Release
  * @since 10
  * @version 2.0
@@ -111,13 +115,12 @@ int32_t OH_Image_Receiver_CreateImageReceiver(napi_env env, struct OhosImageRece
 ImageReceiverNative* OH_Image_Receiver_InitImageReceiverNative(napi_env env, napi_value source);
 
 /**
- * @brief Get receiver id from native {@link ImageReceiverNative} value.
+ * @brief Obtains the receiver ID through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param id Indicates the pointer to a char buffer for taking the string id.
- * @param len Indicates the <b>id</b> char buffer size.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param id Indicates the pointer to the buffer that stores the ID string obtained.
+ * @param len Indicates the size of the buffer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -125,12 +128,11 @@ ImageReceiverNative* OH_Image_Receiver_InitImageReceiverNative(napi_env env, nap
 int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* native, char* id, size_t len);
 
 /**
- * @brief Read the latest image from native {@link ImageReceiverNative} value at least one image ready.
+ * @brief Obtains the latest image through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param image Indicates the pointer to JavaScript Native API <b>Image</b> object by reading.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param image Indicates the pointer to an <b>Image</b> object at the application layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -138,12 +140,11 @@ int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* nativ
 int32_t OH_Image_Receiver_ReadLatestImage(const ImageReceiverNative* native, napi_value* image);
 
 /**
- * @brief Read the next image from native {@link ImageReceiverNative} value at least one image ready.
+ * @brief Obtains the next image through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param image Indicates the pointer to JavaScript Native API <b>Image</b> object by reading.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param image Indicates the pointer to an <b>Image</b> object at the application layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -151,13 +152,13 @@ int32_t OH_Image_Receiver_ReadLatestImage(const ImageReceiverNative* native, nap
 int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_value* image);
 
 /**
- * @brief Register an {@link OH_Image_Receiver_On_Callback} event callback. The callback function will be
- * called when image ready everytime.
+ * @brief Registers an {@link OH_Image_Receiver_On_Callback} callback event.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param callback Indicates the callback function to {@link OH_Image_Receiver_On_Callback} event.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * This callback event is triggered whenever a new image is received.
+ *
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param callback Indicates the {@link OH_Image_Receiver_On_Callback} callback event to register.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -165,12 +166,11 @@ int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_
 int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receiver_On_Callback callback);
 
 /**
- * @brief Get recevier size from native {@link ImageReceiverNative} value.
+ * @brief Obtains the size of the image receiver through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param size Indicates the pointer to {@link OhosImageSize} value as result.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param size Indicates the pointer to the {@link OhosImageSize} object obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative, OH_Image_Receiver_On_Callback
  * @since 10
  * @version 2.0
@@ -178,12 +178,11 @@ int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receive
 int32_t OH_Image_Receiver_GetSize(const ImageReceiverNative* native, struct OhosImageSize* size);
 
 /**
- * @brief Get recevier capacity from native {@link ImageReceiverNative} value.
+ * @brief Obtains the capacity of the image receiver through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param capacity Indicates the pointer to capacity value as result.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param capacity Indicates the pointer to the capacity obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative, OhosImageSize
  * @since 10
  * @version 2.0
@@ -191,26 +190,25 @@ int32_t OH_Image_Receiver_GetSize(const ImageReceiverNative* native, struct Ohos
 int32_t OH_Image_Receiver_GetCapacity(const ImageReceiverNative* native, int32_t* capacity);
 
 /**
- * @brief Get recevier format from native {@link ImageReceiverNative} value.
+ * @brief Obtains the format of the image receiver through an {@link ImageReceiverNative} object.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @param format Indicates the pointer to format value as result.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @param format Indicates the pointer to the format obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
+
  * @since 10
  * @version 2.0
  */
 int32_t OH_Image_Receiver_GetFormat(const ImageReceiverNative* native, int32_t* format);
 
 /**
- * @brief Release native {@link ImageReceiverNative} object.
- * Note: This function could not release JavaScript Native API <b>ImageReceiver</b> object but the
- * native {@link ImageReceiverNative} object unwrap by <b>OH_Image_Receiver_InitImageReceiverNative</b>.
+ * @brief Releases an {@link ImageReceiverNative} object at the native layer.
  *
- * @param native Indicates the pointer to native {@link ImageReceiverNative} value.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * This API is not used to release an <b>ImageReceiver</b> object at the application layer.
+ *
+ * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0

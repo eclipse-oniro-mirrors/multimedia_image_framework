@@ -17,7 +17,7 @@
  * @addtogroup image
  * @{
  *
- * @brief Provides access image functions.
+ * @brief Provides APIs for access to the image interface.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -27,7 +27,7 @@
 /**
  * @file image_mdk_common.h
  *
- * @brief Declares common enumerates and structure for image.
+ * @brief Declares the common enums and structs used by the image interface.
  *
  * @since 10
  * @version 2.0
@@ -42,20 +42,20 @@ extern "C" {
 #endif
 
 /**
- * @brief Enumerates the result codes that may be returned by a function.
+ * @brief Enumerates the return values that may be used by the interface.
  *
- * @since 8
- * @version 1.0
+ * @since 10
+ * @version 2.0
  */
 enum {
-    /** Success result */
+    /** Operation success. */
     OHOS_IMAGE_RESULT_SUCCESS = 0,
-    /** Invalid parameters */
+    /** Invalid parameter. */
     OHOS_IMAGE_RESULT_BAD_PARAMETER = -1,
 };
 
 /**
- * @brief Defines image size.
+ * @brief Defines the image size.
  *
  * @since 10
  * @version 2.0
