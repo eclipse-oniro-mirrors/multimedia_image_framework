@@ -1765,28 +1765,6 @@ napi_value PixelMapNapi::Crop(napi_env env, napi_callback_info info)
     return nVal.result;
 }
 
-static void GetColorSpaceComplete(napi_env env, napi_status status, PixelMapAsyncContext *context)
-{
-    HiLog::Debug(LABEL, "[PixelMap]GetColorSpaceComplete IN");
-    napi_value result = nullptr;
-    napi_get_undefined(env, &result);
-    context->status = ERROR;
-
-#ifdef IMAGE_COLORSPACE_FLAG
-    if (context->rPixelMap != nullptr) {
-        auto grCS = context->rPixelMap->InnerGetGrColorSpacePtr();
-        if (grCS != nullptr) {
-            auto engine = reinterpret_cast<NativeEngine*>(env);
-            auto resultValue = ColorManager::CreateJsColorSpaceObject(*engine, grCS);
-            result = reinterpret_cast<napi_value>(resultValue);
-            context->status = SUCCESS;
-        }
-    }
-#endif
-    HiLog::Debug(LABEL, "[PixelMap]GetColorSpaceComplete OUT");
-    CommonCallbackRoutine(env, context, result);
-}
-
 napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
@@ -1807,21 +1785,22 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
         napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
     }
 
-    if (nVal.context->callbackRef == nullptr) {
-        napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
-    }
-    napi_value _resource = nullptr;
-    napi_create_string_utf8(env, "GetColorSpaceExec", NAPI_AUTO_LENGTH, &_resource);
-    nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data) {},
-        reinterpret_cast<napi_async_complete_callback>(GetColorSpaceComplete),
-        static_cast<void*>(nVal.context.get()), &(nVal.context->work));
+    napi_get_undefined(env, &nVal.result);
+    nVal.context->status = ERROR;
 
-    if (nVal.status == napi_ok) {
-        nVal.status = napi_queue_async_work(env, nVal.context->work);
-        if (nVal.status == napi_ok) {
-            nVal.context.release();
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nVal.context->rPixelMap != nullptr) {
+        auto grCS = nVal.context->rPixelMap->InnerGetGrColorSpacePtr();
+        if (grCS != nullptr) {
+            auto engine = reinterpret_cast<NativeEngine*>(env);
+            auto resultValue = ColorManager::CreateJsColorSpaceObject(*engine, grCS);
+            nVal.result = reinterpret_cast<napi_value>(resultValue);
+            nVal.context->status = SUCCESS;
         }
+    }
+#endif
+    if (nVal.context->status != SUCCESS) {
+        napi_create_int32(env, nVal.context->status, &nVal.result);
     }
     return nVal.result;
 }
@@ -1837,17 +1816,7 @@ static void ParseColorSpaceObject(NapiValues &nVal)
     }
 #endif
 }
-static void SetColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
-{
-#ifdef IMAGE_COLORSPACE_FLAG
-    if (context->colorSpace != nullptr) {
-        context->rPixelMap->InnerSetColorSpace(*(context->colorSpace));
-        context->status = SUCCESS;
-    }
-#else
-    context->status = ERR_IMAGE_DATA_UNSUPPORT;
-#endif
-}
+
 napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
@@ -1866,27 +1835,15 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     } else {
         ParseColorSpaceObject(nVal);
     }
-    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
-        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (nVal.context->colorSpace != nullptr) {
+        nVal.context->rPixelMap->InnerSetColorSpace(*(nVal.context->colorSpace));
+        nVal.context->status = SUCCESS;
     }
-
-    if (nVal.context->callbackRef == nullptr) {
-        napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
-    }
-    napi_value _resource = nullptr;
-    napi_create_string_utf8(env, "SetColorSpaceExec", NAPI_AUTO_LENGTH, &_resource);
-    nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data) {
-            auto context = static_cast<PixelMapAsyncContext*>(data);
-            SetColorSpaceExec(env, context);
-        }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
-
-    if (nVal.status == napi_ok) {
-        nVal.status = napi_queue_async_work(env, nVal.context->work);
-        if (nVal.status == napi_ok) {
-            nVal.context.release();
-        }
-    }
+#else
+    nVal.context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+    napi_create_int32(env, nVal.context->status, &nVal.result);
     return nVal.result;
 }
 
