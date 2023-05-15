@@ -60,7 +60,6 @@ ohos_static_library("utils_mock_static") {
     "//foundation/multimedia/image_framework/mock/native/src/parcel.cpp",
     "//foundation/multimedia/image_framework/mock/native/src/refbase.cpp",
     "//foundation/multimedia/image_framework/mock/native/src/rwlock.cpp",
-    "//foundation/multimedia/image_framework/mock/native/src/string_ex.cpp",
   ]
   deps = [ ":log_mock_static" ]
   subsystem_name = "multimedia"
