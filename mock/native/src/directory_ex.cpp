@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,38 +22,6 @@
 
 using namespace std;
 namespace OHOS {
-string ExtractFilePath(const string& fileFullName)
-{
-    return string(fileFullName).substr(0, fileFullName.rfind("/") + 1);
-}
-
-std::string ExtractFileName(const std::string& fileFullName)
-{
-    return string(fileFullName).substr(fileFullName.rfind("/") + 1, fileFullName.size());
-}
-
-bool ForceCreateDirectory(const string& path)
-{
-    string::size_type index = 0;
-    do {
-        string subPath;
-        index = path.find('/', index + 1);
-        if (index == string::npos) {
-            subPath = path;
-        } else {
-            subPath = path.substr(0, index);
-        }
-
-        if (access(subPath.c_str(), F_OK) != 0) {
-            if (mkdir(subPath.c_str(), (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)) != 0 && errno != EEXIST) {
-                return false;
-            }
-        }
-    } while (index != string::npos);
-
-    return access(path.c_str(), F_OK) == 0;
-}
-
 string ExtractFileExt(const string& fileName)
 {
     string::size_type pos = fileName.rfind(".");
