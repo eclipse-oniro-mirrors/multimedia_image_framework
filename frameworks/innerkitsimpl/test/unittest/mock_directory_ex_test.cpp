@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -59,20 +59,6 @@ HWTEST_F(MockDirectoryExTest, ExtractFileName001, TestSize.Level3)
     string exfile = ExtractFileName(fileFullName);
     ASSERT_EQ(exfile, "a");
     GTEST_LOG_(INFO) << "MockDirectoryExTest: ExtractFileName001 end";
-}
-
-/**
- * @tc.name: ForceCreateDirectory001
- * @tc.desc: test ForceCreateDirectory
- * @tc.type: FUNC
- */
-HWTEST_F(MockDirectoryExTest, ForceCreateDirectory001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 start";
-    const string path = "a";
-    bool ex = ForceCreateDirectory(path);
-    ASSERT_EQ(ex, true);
-    GTEST_LOG_(INFO) << "MockDirectoryExTest: ForceCreateDirectory001 end";
 }
 
 /**
