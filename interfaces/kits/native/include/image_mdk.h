@@ -17,7 +17,7 @@
  * @addtogroup image
  * @{
  *
- * @brief Provides access image functions.
+ * @brief Provides APIs for access to the image interface.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -27,7 +27,7 @@
 /**
  * @file image_mdk.h
  *
- * @brief Declares function to access image clip rect, size, format and component data.
+ * @brief Declares functions that access the image rectangle, size, format, and component data.
  *
  * @since 10
  * @version 2.0
@@ -47,7 +47,7 @@ extern "C" {
 struct ImageNative_;
 
 /**
- * @brief Defines native image object for image functions.
+ * @brief Defines an image object at the native layer for the image interface.
  *
  * @since 10
  * @version 2.0
@@ -55,78 +55,78 @@ struct ImageNative_;
 typedef struct ImageNative_ ImageNative;
 
 /**
- * @brief Enumerates for image formats.
+ * @brief Enumerates the image formats.
  *
  * @since 10
  * @version 2.0
  */
 enum {
-    /** YCBCR422 semi-planar format.*/
+    /** YCbCr422 semi-planar format. */
     OHOS_IMAGE_FORMAT_YCBCR_422_SP = 1000,
-    /** JPEG encoding format.*/
+    /** JPEG encoding format. */
     OHOS_IMAGE_FORMAT_JPEG = 2000
 };
 
 /**
- * @brief Enumerates for the component type of image.
+ * @brief Enumerates the image components.
  *
  * @since 10
  * @version 2.0
  */
 enum {
-    /** Luma info.*/
+    /** Luminance component. */
     OHOS_IMAGE_COMPONENT_FORMAT_YUV_Y = 1,
-    /** Chrominance info.*/
+    /** Chrominance component - blue projection. */
     OHOS_IMAGE_COMPONENT_FORMAT_YUV_U = 2,
-    /** Chroma info.*/
+    /** Chrominance component - red projection. */
     OHOS_IMAGE_COMPONENT_FORMAT_YUV_V = 3,
-    /** Jpeg type.*/
+    /** JPEG format. */
     OHOS_IMAGE_COMPONENT_FORMAT_JPEG = 4,
 };
 
 /**
- * @brief Defines image rect infomations.
+ * @brief Defines the information about an image rectangle.
  *
  * @since 10
  * @version 2.0
  */
 struct OhosImageRect {
-    /** Rect x coordinate */
+    /** X coordinate of the rectangle. */
     int32_t x;
-    /** Rect y coordinate */
+    /** Y coordinate of the rectangle. */
     int32_t y;
-    /** Rect width size */
+    /** Width of the rectangle, in pixels. */
     int32_t width;
-    /** Rect height size */
+    /** Height of the rectangle, in pixels. */
     int32_t height;
 };
 
 /**
- * @brief Defines image component infomations.
+ * @brief Defines the image composition information.
  *
  * @since 10
  * @version 2.0
  */
 struct OhosImageComponent {
-    /** Component pixel data address */
+    /** Buffer that stores the pixel data. */
     uint8_t* byteBuffer;
-    /** Component pixel data size in memory */
+    /** Size of the pixel data in the memory. */
     size_t size;
-    /** Component type of pixel data */
+    /** Type of the pixel data. */
     int32_t componentType;
-    /** Component row stride of pixel data */
+    /** Row stride of the pixel data. */
     int32_t rowStride;
-    /** Component pixel size of pixel data */
+    /** Pixel stride of the pixel data */
     int32_t pixelStride;
 };
 
 /**
- * @brief Unwrap native {@link ImageNative} object from input JavaScript Native API <b>Image</b> object.
+ * @brief Parses an {@link ImageNative} object at the native layer from a JavaScript native API <b>image </b> object.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param source Indicates the JavaScript Native API <b>Image</b> object.
- * @return Returns {@link ImageNative} pointer if the operation is successful; returns nullptr if the
- * operation fails.
+ * @param env Indicates the pointer to the Java Native Interface (JNI) environment.
+ * @param source Indicates a JavaScript native API <b>image </b> object.
+ * @return Returns an {@link ImageNative} pointer object if the operation is successful;
+ * returns a null pointer otherwise.
  * @see ImageNative, OH_Image_Release
  * @since 10
  * @version 2.0
@@ -134,12 +134,11 @@ struct OhosImageComponent {
 ImageNative* OH_Image_InitImageNative(napi_env env, napi_value source);
 
 /**
- * @brief Get {@link OhosImageRect} infomation of native {@link ImageNative} object.
+ * @brief Obtains {@link OhosImageRect} of an {@link ImageNative} at the native layer.
  *
- * @param native Indicates the pointer to {@link ImageNative} native object.
- * @param rect Indicates the pointer of {@link OhosImageRect} object as result.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates the pointer to an {@link ImageNative} object at the native layer.
+ * @param rect Indicates the pointer to the {@link OhosImageRect} object obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageNative, OhosImageRect
  * @since 10
  * @version 2.0
@@ -147,12 +146,12 @@ ImageNative* OH_Image_InitImageNative(napi_env env, napi_value source);
 int32_t OH_Image_ClipRect(const ImageNative* native, struct OhosImageRect* rect);
 
 /**
- * @brief Get {@link OhosImageSize} infomation of native {@link ImageNative} object.
+ * @brief Obtains {@link OhosImageSize} of an {@link ImageNative} object at the native layer.
  *
- * @param native Indicates the pointer to {@link ImageNative} native object.
- * @param size Indicates the pointer of {@link OhosImageSize} object as result.
+ * @param native Indicates the pointer to an {@link ImageNative} object at the native layer.
+ * @param size Indicates the pointer to the {@link OhosImageSize} object obtained.
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * returns an error code otherwise.
  * @see ImageNative, OhosImageSize
  * @since 10
  * @version 2.0
@@ -160,12 +159,12 @@ int32_t OH_Image_ClipRect(const ImageNative* native, struct OhosImageRect* rect)
 int32_t OH_Image_Size(const ImageNative* native, struct OhosImageSize* size);
 
 /**
- * @brief Get image format of native {@link ImageNative} object.
+ * @brief Obtains the image format of an {@link ImageNative} object at the native layer.
  *
- * @param native Indicates the pointer to {@link ImageNative} native object.
- * @param format Indicates the pointer of format object as result.
+ * @param native Indicates the pointer to an {@link ImageNative} object at the native layer.
+ * @param format Indicates the pointer to the image format obtained.
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * returns an error code otherwise.
  * @see ImageNative
  * @since 10
  * @version 2.0
@@ -173,13 +172,13 @@ int32_t OH_Image_Size(const ImageNative* native, struct OhosImageSize* size);
 int32_t OH_Image_Format(const ImageNative* native, int32_t* format);
 
 /**
- * @brief Get {@link OhosImageComponent} from native {@link ImageNative} object.
+ * @brief Obtains {@link OhosImageComponent} of an {@link ImageNative} object at the native layer.
  *
- * @param native Indicates the pointer to {@link ImageNative} native object.
- * @param componentType Indicates the component type of component wanted.
- * @param componentNative Indicates the pointer of result {@link OhosImageComponent} object.
+ * @param native Indicates the pointer to an {@link ImageNative} object at the native layer.
+ * @param componentType Indicates the type of the required component.
+ * @param componentNative Indicates the pointer to the {@link OhosImageComponent} object obtained.
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * returns an error code otherwise.
  * @see ImageNative, OhosImageComponent
  * @since 10
  * @version 2.0
@@ -188,13 +187,14 @@ int32_t OH_Image_GetComponent(const ImageNative* native,
     int32_t componentType, struct OhosImageComponent* componentNative);
 
 /**
- * @brief Release {@link ImageNative} native object.
- * Note: This function could not release JavaScript Native API <b>Image</b> object but
- * the {@link ImageNative} native object unwrap by {@link OH_Image_InitImageNative}.
+ * @brief Releases an {@link ImageNative} object at the native layer.
+ * Note: This API is not used to release a JavaScript native API <b>Image</b> object.
+ * It is used to release the object {@link ImageNative} at the native layer
+ * parsed by calling {@link OH_Image_InitImageNative}.
  *
- * @param native Indicates the pointer to {@link ImageNative} native object.
+ * @param native Indicates the pointer to an {@link ImageNative} object at the native layer.
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * returns an error code otherwise.
  * @see ImageNative, OH_Image_InitImageNative
  * @since 10
  * @version 2.0
