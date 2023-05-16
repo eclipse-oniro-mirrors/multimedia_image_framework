@@ -233,11 +233,6 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
     }
 
     auto crossPlugin = std::make_shared<Plugin>();
-    if (crossPlugin == nullptr) {
-        HiLog::Error(LABEL, "failed to create Plugin.");
-        return ERR_INTERNAL;
-    }
-
     weak_ptr<Plugin> weakPtr = crossPlugin;
     auto regRet = crossPlugin->Register(metadata, std::move(libraryPath), weakPtr);
     if (regRet != SUCCESS) {
