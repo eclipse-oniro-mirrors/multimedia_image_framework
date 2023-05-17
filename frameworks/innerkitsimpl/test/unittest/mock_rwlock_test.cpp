@@ -38,6 +38,7 @@ HWTEST_F(MockRwlockTest, LockRead001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRwlockTest: LockRead001 start";
     RWLock rw;
     rw.LockRead();
+    ASSERT_EQ(&rw, nullptr);
     GTEST_LOG_(INFO) << "MockRwlockTest: LockRead001 end";
 }
 
@@ -51,6 +52,7 @@ HWTEST_F(MockRwlockTest, UnLockRead001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRwlockTest: UnLockRead001 start";
     RWLock rw;
     rw.UnLockRead();
+    ASSERT_EQ(&rw, nullptr);
     GTEST_LOG_(INFO) << "MockRwlockTest: UnLockRead001 end";
 }
 
@@ -64,6 +66,7 @@ HWTEST_F(MockRwlockTest, LockWrite001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRwlockTest: LockWrite001 start";
     RWLock rw;
     rw.LockWrite();
+    ASSERT_EQ(&rw, nullptr);
     GTEST_LOG_(INFO) << "MockRwlockTest: LockWrite001 end";
 }
 
@@ -77,6 +80,7 @@ HWTEST_F(MockRwlockTest, UnLockWrite001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRwlockTest: UnLockWrite001 start";
     RWLock rw;
     rw.UnLockWrite();
+    ASSERT_EQ(&rw, nullptr);
     GTEST_LOG_(INFO) << "MockRwlockTest: UnLockWrite001 end";
 }
 } // namespace Multimedia
