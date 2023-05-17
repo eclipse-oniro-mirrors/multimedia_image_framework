@@ -380,7 +380,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
             context.allocatorType = opts_.allocatorType;
         } else {
-            context.allocatorType = AllocatorType::HEAP_ALLOC;
+            context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
 
@@ -1151,7 +1151,7 @@ void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions
     procOpts.sampleSize = opts.sampleSize;
     procOpts.desiredPixelFormat = opts.desiredPixelFormat;
     if (opts.allocatorType == AllocatorType::DEFAULT) {
-        procOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+        procOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     } else {
         procOpts.allocatorType = opts.allocatorType;
     }

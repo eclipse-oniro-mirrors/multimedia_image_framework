@@ -45,10 +45,6 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
     pixelMap.GetImageInfo(srcImageInfo);
     ImageInfo dstImageInfo;
     GetDstImageInfo(opts, pixelMap, srcImageInfo, dstImageInfo);
-    if (finalOutputStep == FinalOutputStep::ROTATE_CHANGE || finalOutputStep == FinalOutputStep::SIZE_CHANGE ||
-        finalOutputStep == FinalOutputStep::DENSITY_CHANGE) {
-        decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
-    }
     uint32_t errorCode = ConvertProc(opts.CropRect, dstImageInfo, pixelMap, srcImageInfo);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[PostProc]crop pixel map failed, errcode:%{public}u", errorCode);
@@ -57,9 +53,6 @@ uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap,
     decodeOpts_.allocatorType = opts.allocatorType;
     bool isNeedRotate = !ImageUtils::FloatCompareZero(opts.rotateDegrees);
     if (isNeedRotate) {
-        if (finalOutputStep == FinalOutputStep::SIZE_CHANGE || finalOutputStep == FinalOutputStep::DENSITY_CHANGE) {
-            decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
-        }
         if (!RotatePixelMap(opts.rotateDegrees, pixelMap)) {
             IMAGE_LOGE("[PostProc]rotate:transform pixel map failed");
             return ERR_IMAGE_TRANSFORM;
@@ -147,6 +140,32 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
     return CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
 }
 
+bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& dstSize,
+                          const int32_t srcWidth, const int32_t srcHeight)
+{
+    int32_t targetWidth = dstSize.width;
+    int32_t targetHeight = dstSize.height;
+    int32_t left = max(0, srcWidth - targetWidth) / HALF;
+    int32_t top = max(0, srcHeight - targetHeight) / HALF;
+    int32_t pixelBytes = pixelMap.GetPixelBytes();
+    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + (top * srcWidth + left) * pixelBytes;
+    uint8_t *dstStartPixel = nullptr;
+    uint8_t *srcStartPixel = nullptr;
+    uint32_t targetRowBytes = targetWidth * pixelBytes;
+    uint32_t srcRowBytes = srcWidth * pixelBytes;
+    uint32_t copyRowBytes = std::min(srcWidth, targetWidth) * pixelBytes;
+    for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
+        dstStartPixel = dstPixels + scanLine * targetRowBytes;
+        srcStartPixel = srcPixels + scanLine * srcRowBytes;
+        errno_t errRet = memcpy_s(dstStartPixel, targetRowBytes, srcStartPixel, copyRowBytes);
+        if (errRet != EOK) {
+            IMAGE_LOGE("[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHeight, int32_t targetWidth,
                              int32_t targetHeight)
 {
@@ -158,41 +177,58 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
         IMAGE_LOGE("update ImageInfo failed");
         return false;
     }
-
-    int32_t left = max(0, srcWidth - targetWidth) / HALF;
-    int32_t top = max(0, srcHeight - targetHeight) / HALF;
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
-    if (!AllocHeapBuffer(bufferSize, &dstPixels)) {
-        return false;
-    }
-    int32_t copyHeight = srcHeight;
-    if (srcHeight > targetHeight) {
-        copyHeight = targetHeight;
-    }
-    int32_t copyWidth = srcWidth;
-    if (srcWidth > targetWidth) {
-        copyWidth = targetWidth;
-    }
-    int32_t pixelBytes = pixelMap.GetPixelBytes();
-    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + (top * srcWidth + left) * pixelBytes;
-    uint8_t *dstStartPixel = nullptr;
-    uint8_t *srcStartPixel = nullptr;
-    uint32_t targetRowBytes = targetWidth * pixelBytes;
-    uint32_t srcRowBytes = srcWidth * pixelBytes;
-    uint32_t copyRowBytes = copyWidth * pixelBytes;
-    for (int32_t scanLine = 0; scanLine < copyHeight; scanLine++) {
-        dstStartPixel = dstPixels + scanLine * targetRowBytes;
-        srcStartPixel = srcPixels + scanLine * srcRowBytes;
-        errno_t errRet = memcpy_s(dstStartPixel, targetRowBytes, srcStartPixel, copyRowBytes);
-        if (errRet != 0) {
-            IMAGE_LOGE("[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
-            free(dstPixels);
-            dstPixels = nullptr;
+    int fd = 0;
+    if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
+        if (!AllocHeapBuffer(bufferSize, &dstPixels)) {
+            return false;
+        }
+    } else {
+        dstPixels = AllocSharedMemory(dstImageInfo.size, bufferSize, fd);
+        if (dstPixels == nullptr) {
+            IMAGE_LOGE("[PostProc]CenterDisplay AllocSharedMemory failed");
             return false;
         }
     }
-    pixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    if (!CopyPixels(pixelMap, dstPixels, dstImageInfo.size, srcWidth, srcHeight)) {
+        IMAGE_LOGE("[PostProc]CopyPixels failed");
+        ReleaseBuffer(pixelMap.GetAllocatorType(), fd, bufferSize, &dstPixels);
+        return false;
+    }
+    void *fdBuffer = nullptr;
+    if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
+        pixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    } else {
+        fdBuffer = new int32_t();
+        *static_cast<int32_t *>(fdBuffer) = fd;
+        pixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    }
+    return true;
+}
+
+bool PostProc::ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
+                                     uint8_t *resultData, uint32_t rowBytes)
+{
+    auto srcData = pixelMap.GetPixels();
+    int32_t scanLine = 0;
+    while (scanLine < pixelMap.GetHeight()) {
+        FilterRowType filterRow = scanlineFilter.GetFilterRowType(scanLine);
+        if (filterRow == FilterRowType::NON_REFERENCE_ROW) {
+            scanLine++;
+            continue;
+        }
+        if (filterRow == FilterRowType::LAST_REFERENCE_ROW) {
+            break;
+        }
+        uint32_t ret = scanlineFilter.FilterLine(resultData + ((scanLine - cropRect.top) * rowBytes), rowBytes,
+                                                 srcData + (scanLine * pixelMap.GetRowBytes()));
+        if (ret != SUCCESS) {
+            IMAGE_LOGE("[PostProc]scan line failed, ret:%{public}u", ret);
+            return false;
+        }
+        scanLine++;
+    }
     return true;
 }
 
@@ -213,8 +249,6 @@ uint32_t PostProc::CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImage
             return ERR_IMAGE_CROP;
         }
     }
-    auto srcData = pixelMap.GetPixels();
-    int32_t scanLine = 0;
     if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, pixelBytes)) {
         IMAGE_LOGE("[PostProc]size.width:%{public}d, is too large",
             dstImageInfo.size.width);
@@ -222,30 +256,24 @@ uint32_t PostProc::CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImage
         return ERR_IMAGE_CROP;
     }
     uint32_t rowBytes = pixelBytes * dstImageInfo.size.width;
-    while (scanLine < pixelMap.GetHeight()) {
-        FilterRowType filterRow = scanlineFilter.GetFilterRowType(scanLine);
-        if (filterRow == FilterRowType::NON_REFERENCE_ROW) {
-            scanLine++;
-            continue;
-        }
-        if (filterRow == FilterRowType::LAST_REFERENCE_ROW) {
-            break;
-        }
-        uint32_t ret = scanlineFilter.FilterLine(resultData + ((scanLine - cropRect.top) * rowBytes), rowBytes,
-                                                 srcData + (scanLine * pixelMap.GetRowBytes()));
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("[PostProc]scan line failed, ret:%{public}u", ret);
-            ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
-            return ret;
-        }
-        scanLine++;
+    if (!ProcessScanlineFilter(scanlineFilter, cropRect, pixelMap, resultData, rowBytes)) {
+        IMAGE_LOGE("[PostProc]ProcessScanlineFilter failed");
+        ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
+        return ERR_IMAGE_CROP;
     }
     uint32_t result = pixelMap.SetImageInfo(dstImageInfo);
     if (result != SUCCESS) {
         ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
         return result;
     }
-    pixelMap.SetPixelsAddr(resultData, nullptr, bufferSize, decodeOpts_.allocatorType, nullptr);
+
+    if (decodeOpts_.allocatorType == AllocatorType::HEAP_ALLOC) {
+        pixelMap.SetPixelsAddr(resultData, nullptr, bufferSize, decodeOpts_.allocatorType, nullptr);
+        return result;
+    }
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    pixelMap.SetPixelsAddr(resultData, fdBuffer, bufferSize, decodeOpts_.allocatorType, nullptr);
     return result;
 }
 
@@ -306,7 +334,15 @@ uint32_t PostProc::PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap,
         ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
         return ret;
     }
-    pixelMap.SetPixelsAddr(resultData, nullptr, bufferSize, decodeOpts_.allocatorType, nullptr);
+
+    if (decodeOpts_.allocatorType == AllocatorType::HEAP_ALLOC) {
+        pixelMap.SetPixelsAddr(resultData, nullptr, bufferSize, decodeOpts_.allocatorType, nullptr);
+        return ret;
+    }
+
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    pixelMap.SetPixelsAddr(resultData, fdBuffer, bufferSize, decodeOpts_.allocatorType, nullptr);
     return ret;
 }
 

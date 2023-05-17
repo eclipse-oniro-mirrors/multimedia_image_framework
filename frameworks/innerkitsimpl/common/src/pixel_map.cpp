@@ -172,27 +172,75 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
     uint32_t bufferSize = dstPixelMap->GetByteCount();
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "malloc parameter is zero");
+        HiLog::Error(LABEL, "AllocSharedMemory parameter is zero");
         return nullptr;
     }
-    void *dstPixels = malloc(bufferSize);
+    int fd = 0;
+    void *dstPixels = AllocSharedMemory(bufferSize, fd);
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
         return nullptr;
     }
+
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
 
     Position dstPosition;
     if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
         static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
         dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
-        free(dstPixels);
+        ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
         dstPixels = nullptr;
         return nullptr;
     }
     dstPixelMap->SetEditable(opts.editable);
-    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     return dstPixelMap;
+}
+
+void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        if (*buffer != nullptr) {
+            ::munmap(*buffer, dataSize);
+            ::close(fd);
+        }
+        return;
+    }
+#endif
+
+    if (allocatorType == AllocatorType::HEAP_ALLOC) {
+        if (*buffer != nullptr) {
+            free(*buffer);
+            *buffer = nullptr;
+        }
+        return;
+    }
+}
+
+void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd)
+{
+    fd = AshmemCreate("PixelMap RawData", bufferSize);
+    if (fd < 0) {
+        HiLog::Error(LABEL, "AllocSharedMemory fd error");
+        return nullptr;
+    }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        HiLog::Error(LABEL, "AshmemSetProt error");
+        ::close(fd);
+        return nullptr;
+    }
+    void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED) {
+        HiLog::Error(LABEL, "mmap error, errno: %{public}s, fd %{public}d, bufferSize %{public}lld",
+            strerror(errno), fd, (long long)bufferSize);
+        ::close(fd);
+        return nullptr;
+    }
+    return ptr;
 }
 
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
@@ -347,12 +395,18 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
 {
     uint32_t bufferSize = dstPixelMap.GetByteCount();
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        HiLog::Error(LABEL, "AllocSharedMemory  parameter bufferSize:[%{public}d] error.", bufferSize);
         return false;
     }
-    void *dstPixels = malloc(bufferSize);
+    int fd = 0;
+    void *dstPixels = nullptr;
+    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+        dstPixels = AllocSharedMemory(bufferSize, fd);
+    } else {
+        dstPixels = malloc(bufferSize);
+    }
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
+        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
 
@@ -363,11 +417,17 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowBytes(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
-        free(dstPixels);
-        dstPixels = nullptr;
+        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
         return false;
     }
-    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+
+    if (fd <= 0) {
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+        return true;
+    }
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     return true;
 }
 
@@ -418,22 +478,34 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
         return false;
     }
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
         return false;
     }
-    uint8_t *dstPixels = static_cast<uint8_t *>(malloc(bufferSize));
+    int fd = 0;
+    void *dstPixels = nullptr;
+    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+        dstPixels = AllocSharedMemory(bufferSize, fd);
+    } else {
+        dstPixels = malloc(bufferSize);
+    }
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
+        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-    errno_t errRet = memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize);
-    if (errRet != 0) {
-        HiLog::Error(LABEL, "copy source memory size %{public}u fail, errorCode = %{public}d", bufferSize, errRet);
-        free(dstPixels);
-        dstPixels = nullptr;
+
+    if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
+        HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
         return false;
     }
-    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+
+    if (fd <= 0) {
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+        return true;
+    }
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     return true;
 }
 

@@ -199,6 +199,8 @@ private:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
                           const uint32_t &stride, const Rect &region);
     void ReleaseSharedMemory(void *addr, void *context, uint32_t size);
+    static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
+    static void *AllocSharedMemory(const uint64_t bufferSize, int &fd);
     void SetEditable(bool editable)
     {
         editable_ = editable;
@@ -244,7 +246,7 @@ private:
     void *context_ = nullptr;
     CustomFreePixelMap custFreePixelMap_ = nullptr;
     CustomFreePixelMap freePixelMapProc_ = nullptr;
-    AllocatorType allocatorType_ = AllocatorType::HEAP_ALLOC;
+    AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
     bool editable_ = false;
     bool useSourceAsResponse_ = false;
