@@ -33,7 +33,7 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "ipc_file_descriptor.h"
@@ -201,7 +201,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
 void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(_IOS) &&!defined(_ANDROID)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (*buffer != nullptr) {
             ::munmap(*buffer, dataSize);
@@ -222,6 +222,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     fd = AshmemCreate("PixelMap RawData", bufferSize);
     if (fd < 0) {
         HiLog::Error(LABEL, "AllocSharedMemory fd error");
@@ -241,6 +242,7 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd)
         return nullptr;
     }
     return ptr;
+#endif
 }
 
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
