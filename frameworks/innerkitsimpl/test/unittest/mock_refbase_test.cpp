@@ -37,7 +37,8 @@ HWTEST_F(MockRefbaseTest, GetRefPtr001, TestSize.Level3)
     RefCounter *base = nullptr;
     void *cookie = nullptr;
     WeakRefCounter ref(base, cookie);
-    ref.GetRefPtr();
+    cookie = ref.GetRefPtr();
+    ASSERT_EQ(cookie, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: GetRefPtr001 end";
 }
 
@@ -53,7 +54,8 @@ HWTEST_F(MockRefbaseTest, DecWeakRefCount001, TestSize.Level3)
     RefCounter *base = nullptr;
     void *cookie = nullptr;
     WeakRefCounter ref(base, cookie);
-    ref.DecWeakRefCount(objectId);
+    int curCount = ref.DecWeakRefCount(objectId);
+    ASSERT_EQ(curCount, 0);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecWeakRefCount001 end";
 }
 
@@ -81,6 +83,7 @@ HWTEST_F(MockRefbaseTest, IncRefCount001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: IncRefCount001 start";
     RefCounter refs;
     refs.IncRefCount();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: IncRefCount001 end";
 }
 
@@ -94,6 +97,7 @@ HWTEST_F(MockRefbaseTest, DecRefCount001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecRefCount001 start";
     RefCounter refs;
     refs.DecRefCount();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecRefCount001 end";
 }
 
@@ -108,6 +112,7 @@ HWTEST_F(MockRefbaseTest, SetCallback001, TestSize.Level3)
     RefCounter refs;
     const RefCounter::RefPtrCallback callback = nullptr;
     refs.SetCallback(callback);
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: SetCallback001 end";
 }
 
@@ -121,6 +126,7 @@ HWTEST_F(MockRefbaseTest, RemoveCallback001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: RemoveCallback001 start";
     RefCounter refs;
     refs.RemoveCallback();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: RemoveCallback001 end";
 }
 
@@ -176,6 +182,7 @@ HWTEST_F(MockRefbaseTest, SetAttemptAcquire002, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire002 start";
     RefCounter refs;
     refs.SetAttemptAcquire();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: SetAttemptAcquire002 end";
 }
 
@@ -203,6 +210,7 @@ HWTEST_F(MockRefbaseTest, ClearAttemptAcquire001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: ClearAttemptAcquire001 start";
     RefCounter refs;
     refs.ClearAttemptAcquire();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: ClearAttemptAcquire001 end";
 }
 
@@ -216,6 +224,7 @@ HWTEST_F(MockRefbaseTest, ExtendObjectLifetime001, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: ExtendObjectLifetime001 start";
     RefCounter refs;
     refs.ExtendObjectLifetime();
+    ASSERT_EQ(&refs, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: ExtendObjectLifetime001 end";
 }
 
@@ -259,6 +268,7 @@ HWTEST_F(MockRefbaseTest, ExtendObjectLifetime002, TestSize.Level3)
     GTEST_LOG_(INFO) << "MockRefbaseTest: ExtendObjectLifetime002 start";
     RefBase refb;
     refb.ExtendObjectLifetime();
+    ASSERT_EQ(&refb, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: ExtendObjectLifetime002 end";
 }
 
@@ -273,6 +283,7 @@ HWTEST_F(MockRefbaseTest, IncStrongRef001, TestSize.Level3)
     const void *objectId;
     RefBase refb;
     refb.IncStrongRef(objectId);
+    ASSERT_EQ(&refb, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: IncStrongRef001 end";
 }
 
@@ -287,6 +298,7 @@ HWTEST_F(MockRefbaseTest, DecStrongRef001, TestSize.Level3)
     const void *objectId;
     RefBase refb;
     refb.DecStrongRef(objectId);
+    ASSERT_EQ(&refb, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecStrongRef001 end";
 }
 
@@ -359,6 +371,7 @@ HWTEST_F(MockRefbaseTest, IncWeakRef001, TestSize.Level3)
     const void *objectId;
     RefBase refb;
     refb.IncWeakRef(objectId);
+    ASSERT_EQ(&refb, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: IncWeakRef001 end";
 }
 
@@ -373,6 +386,7 @@ HWTEST_F(MockRefbaseTest, DecWeakRef001, TestSize.Level3)
     const void *objectId;
     RefBase refb;
     refb.DecWeakRef(objectId);
+    ASSERT_EQ(&refb, nullptr);
     GTEST_LOG_(INFO) << "MockRefbaseTest: DecWeakRef001 end";
 }
 

@@ -100,6 +100,7 @@ HWTEST_F(MockDirectoryExTest, GetDirFiles001, TestSize.Level3)
     const string canonicalPath = "a";
     vector<string> strFiles;
     GetDirFiles(canonicalPath, strFiles);
+    ASSERT_EQ(strFiles.empty(), true);
     GTEST_LOG_(INFO) << "MockDirectoryExTest: GetDirFiles001 end";
 }
 
