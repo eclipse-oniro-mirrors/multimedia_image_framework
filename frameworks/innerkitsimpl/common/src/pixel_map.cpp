@@ -118,10 +118,10 @@ void PixelMap::SetFreePixelMapProc(CustomFreePixelMap func)
     freePixelMapProc_ = func;
 }
 
-void PixelMap::SetTrtansformered(bool isTrtansformered)
+void PixelMap::SetTransformered(bool isTransformered)
 {
     std::unique_lock<std::mutex> lock(*transformMutex_);
-    isTrtansformered_ = isTrtansformered;
+    isTransformered_ = isTransformered;
 }
 
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
@@ -1441,6 +1441,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     int32_t bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     if (bytesPerPixel == 0) {
+        delete pixelMap;
         HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
         return nullptr;
     }
@@ -1452,6 +1453,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         rowDataSize = bytesPerPixel * imgInfo.size.width;
     }
     if (bufferSize != rowDataSize * imgInfo.size.height) {
+        delete pixelMap;
         HiLog::Error(LABEL, "unmarshalling bufferSize parcelling error");
         return nullptr;
     }

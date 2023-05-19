@@ -533,7 +533,7 @@ bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, Pixel
         IMAGE_LOGE("[PostProc]Transform pixelmap is transforming");
         return false;
     }
-    pixelMap.SetTrtansformered(true);
+    pixelMap.SetTransformered(true);
     PixmapInfo output(false);
     uint32_t ret;
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
@@ -553,7 +553,7 @@ bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, Pixel
         return false;
     }
     pixelMap.SetPixelsAddr(output.data, output.context, output.bufferSize, decodeOpts_.allocatorType, nullptr);
-    pixelMap.SetTrtansformered(false);
+    pixelMap.SetTransformered(false);
     return true;
 }
 
