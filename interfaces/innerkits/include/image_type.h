@@ -167,7 +167,7 @@ struct DecodeOptions {
     AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
     ColorSpace desiredColorSpace = ColorSpace::SRGB;
     bool allowPartialImage = true;
-    bool editable = false;
+    bool editable = true;
     MemoryUsagePreference preference = MemoryUsagePreference::DEFAULT;
 };
 

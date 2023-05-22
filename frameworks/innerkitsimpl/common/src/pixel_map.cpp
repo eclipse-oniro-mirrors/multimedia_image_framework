@@ -1376,6 +1376,11 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
+    if (!parcel.WriteBool(editable_)) {
+        HiLog::Error(LABEL, "write pixel map editable to parcel failed.");
+        return false;
+    }
+
     if (!parcel.WriteInt32(static_cast<int32_t>(allocatorType_))) {
         HiLog::Error(LABEL, "write pixel map allocator type:[%{public}d] to parcel failed.",
                      allocatorType_);
@@ -1437,6 +1442,9 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         return nullptr;
     }
 
+    bool isEditable = parcel.ReadBool();
+    pixelMap->SetEditable(isEditable);
+    
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
     int32_t bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
@@ -1849,6 +1857,10 @@ static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
 
 uint32_t PixelMap::SetAlpha(const float percent)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to set alpha, when editable is false");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
     auto alphaType = GetAlphaType();
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
         alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
@@ -1923,6 +1935,10 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 }
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to crop, when editable is false");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
     PostProc postProc;
     auto cropValue = PostProc::GetCropValue(rect, imageInfo_.size);
     if (cropValue == CropValue::NOCROP) {
