@@ -1709,6 +1709,11 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         HiLog::Error(LABEL, "pixel map tlv decode fail: set image info error[%{public}d]", ret);
         return nullptr;
     }
+    if (dataSize != pixelMap->GetByteCount()) {
+        delete pixelMap;
+        HiLog::Error(LABEL, "pixel map tlv decode fail: dataSize not match");
+        return nullptr;
+    }
     pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
     return pixelMap;
 }
