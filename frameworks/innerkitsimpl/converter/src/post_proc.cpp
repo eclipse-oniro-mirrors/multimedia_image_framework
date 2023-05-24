@@ -529,6 +529,10 @@ bool PostProc::TranslatePixelMap(float tX, float tY, PixelMap &pixelMap)
 
 bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, PixelMap &pixelMap)
 {
+    if (!pixelMap.IsEditable()) {
+        IMAGE_LOGE("[PostProc]pixelmap is not allowed to transform, when editable is false");
+        return false;
+    }
     if (pixelMap.IsTransformered()) {
         IMAGE_LOGE("[PostProc]Transform pixelmap is transforming");
         return false;
