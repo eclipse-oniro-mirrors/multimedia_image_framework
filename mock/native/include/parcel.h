@@ -31,7 +31,7 @@ public:
 
     Parcelable();
     explicit Parcelable(bool asRemote);
-}
+};
 
 class Parcel {
 public:
