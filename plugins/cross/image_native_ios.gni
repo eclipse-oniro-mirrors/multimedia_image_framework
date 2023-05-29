@@ -211,9 +211,6 @@ image_native_ios_include_dirs = [
 ]
 
 image_native_ios_deps = [
-  # common
-  "$image_subsystem/mock/native:utils_mock_static",
-
   # image_native
   "//foundation/arkui/napi:ace_napi",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
@@ -236,6 +233,9 @@ image_native_ios_deps += skia_skcms
 image_native_ios_deps += skia_platform
 
 image_native_ios_external_deps = [
+  # common
+  "c_utils:utilsbase",
+
   # png
   "//third_party/zlib:shared_libz",
 ]
