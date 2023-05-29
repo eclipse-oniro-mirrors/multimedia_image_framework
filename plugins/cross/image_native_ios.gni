@@ -144,13 +144,9 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
   "//foundation/multimedia/image_framework/mock/native/include/log",
   "//commonlibrary/c_utils/base/include",
-  "//foundation/multimedia/image_framework/mock/native/include",
   "//foundation/multimedia/image_framework/mock/native/include/secure",
   "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   "//third_party/flutter/skia/third_party/skcms",
-  "//commonlibrary/c_utils/base/include",
-  "$image_subsystem/mock/native/include/log",
-  "//foundation/multimedia/image_framework/mock/native/include/secure",
 
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
@@ -173,7 +169,6 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
   "//third_party/skia",
-  "//foundation/multimedia/image_framework/mock/native/include",
 
   # png
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
@@ -216,9 +211,6 @@ image_native_ios_include_dirs = [
 ]
 
 image_native_ios_deps = [
-  # common
-  "$image_subsystem/mock/native:utils_mock_static",
-
   # image_native
   "//foundation/arkui/napi:ace_napi",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
