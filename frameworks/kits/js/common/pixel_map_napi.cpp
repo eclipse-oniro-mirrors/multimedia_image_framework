@@ -130,7 +130,6 @@ static bool parseInitializationOptions(napi_env env, napi_value root, Initializa
     }
 
     if (!GET_BOOL_BY_NAME(root, "editable", opts->editable)) {
-        HiLog::Info(LABEL, "no editable in initialization options");
         opts->editable = true;
     }
 
@@ -457,7 +456,6 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
     HiLog::Debug(LABEL, "GetImageInfo, w=%{public}u, h=%{public}u, r=%{public}u, f=%{public}d",
         info->width, info->height, info->rowSize, info->pixelFormat);
 
-    HiLog::Debug(LABEL, "GetImageInfo OUT");
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
@@ -514,7 +512,6 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
 
     pixmapNapi->UnlockPixelMap();
 
-    HiLog::Debug(LABEL, "UnAccessPixels OUT");
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
@@ -1154,7 +1151,6 @@ napi_value PixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info info)
 
 static void CreateAlphaPixelmapComplete(napi_env env, napi_status status, void *data)
 {
-    HiLog::Debug(LABEL, "[PixelMap]CreateAlphaPixelmapComplete IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -1165,7 +1161,6 @@ static void CreateAlphaPixelmapComplete(napi_env env, napi_status status, void *
     } else {
         context->status = ERROR;
     }
-    HiLog::Debug(LABEL, "[PixelMap]CreateAlphaPixelmapComplete OUT");
     CommonCallbackRoutine(env, context, result);
 }
 

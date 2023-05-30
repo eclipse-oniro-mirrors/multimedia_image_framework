@@ -261,7 +261,6 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
             IMAGE_ERR("New instance could not be obtained");
         }
     }
-    IMAGE_ERR("Failed to get reference of constructor");
     return result;
 }
 

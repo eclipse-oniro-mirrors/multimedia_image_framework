@@ -83,7 +83,6 @@ ImagePackerNapi::~ImagePackerNapi()
 
 static void CommonCallbackRoutine(napi_env env, ImagePackerAsyncContext* &connect, const napi_value &valueParam)
 {
-    HiLog::Debug(LABEL, "CommonCallbackRoutine enter");
     napi_value result[NUM_2] = {0};
     napi_value retVal;
     napi_value callback = nullptr;
@@ -116,7 +115,6 @@ static void CommonCallbackRoutine(napi_env env, ImagePackerAsyncContext* &connec
 
     delete connect;
     connect = nullptr;
-    HiLog::Debug(LABEL, "CommonCallbackRoutine exit");
 }
 
 static void BuildMsgOnError(napi_env env,
@@ -137,7 +135,6 @@ static void BuildMsgOnError(napi_env env,
 
 STATIC_EXEC_FUNC(Packing)
 {
-    HiLog::Debug(LABEL, "PackingExec enter");
     int64_t packedSize = 0;
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     HiLog::Debug(LABEL, "image packer get supported format");
@@ -179,23 +176,19 @@ STATIC_EXEC_FUNC(Packing)
         context->status = ERROR;
         HiLog::Error(LABEL, "Packing failed, packedSize outside size.");
     }
-    HiLog::Debug(LABEL, "PackingExec exit");
 }
 
 STATIC_COMPLETE_FUNC(PackingError)
 {
-    HiLog::Debug(LABEL, "PackingErrorComplete IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     context->status = ERROR;
-    HiLog::Debug(LABEL, "PackingErrorComplete OUT");
     CommonCallbackRoutine(env, context, result);
 }
 
 STATIC_COMPLETE_FUNC(Packing)
 {
-    HiLog::Debug(LABEL, "PackingComplete enter");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<ImagePackerAsyncContext*>(data);
@@ -210,7 +203,6 @@ STATIC_COMPLETE_FUNC(Packing)
     }
     context->resultBuffer = nullptr;
     context->resultBufferSize = 0;
-    HiLog::Debug(LABEL, "PackingComplete exit");
     CommonCallbackRoutine(env, context, result);
 }
 
@@ -263,7 +255,6 @@ napi_value ImagePackerNapi::Constructor(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value thisVar = nullptr;
 
-    HiLog::Debug(LABEL, "Constructor in");
     status = napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
     if (status == napi_ok && thisVar != nullptr) {
         std::unique_ptr<ImagePackerNapi> pImgPackerNapi = std::make_unique<ImagePackerNapi>();
@@ -291,7 +282,6 @@ napi_value ImagePackerNapi::CreateImagePacker(napi_env env, napi_callback_info i
     napi_value result = nullptr;
     napi_status status;
 
-    HiLog::Debug(LABEL, "CreateImagePacker IN");
     std::shared_ptr<ImagePacker> imagePacker = std::make_shared<ImagePacker>();
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
@@ -332,7 +322,6 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
     napi_value tmpValue = nullptr;
     uint32_t tmpNumber = 0;
 
-    HiLog::Debug(LABEL, "parsePackOptions IN");
     if (!GET_NODE_BY_NAME(root, "format", tmpValue)) {
         HiLog::Error(LABEL, "No format in pack option");
         return false;
@@ -386,7 +375,6 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
     } else {
         opts->quality = static_cast<uint8_t>(tmpNumber & 0xff);
     }
-    HiLog::Debug(LABEL, "parsePackOptions OUT");
     return true;
 }
 
@@ -477,7 +465,6 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
     napi_value argv[ARGS_THREE] = {0};
     napi_value thisVar = nullptr;
 
-    HiLog::Debug(LABEL, "Packing IN");
     napi_get_undefined(env, &result);
 
     IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
@@ -517,7 +504,6 @@ napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info
     napi_status status;
     napi_value thisVar = nullptr;
     size_t argCount = 0;
-    HiLog::Debug(LABEL, "GetSupportedFormats IN");
 
     IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
 
@@ -547,7 +533,6 @@ napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info
 
 static void ReleaseComplete(napi_env env, napi_status status, void *data)
 {
-    HiLog::Debug(LABEL, "ReleaseComplete IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -556,14 +541,12 @@ static void ReleaseComplete(napi_env env, napi_status status, void *data)
         delete context->constructor_;
         context->constructor_ = nullptr;
     }
-    HiLog::Debug(LABEL, "ReleaseComplete OUT");
     CommonCallbackRoutine(env, context, result);
 }
 
 napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
 {
     StartTrace(HITRACE_TAG_ZIMAGE, "Release");
-    HiLog::Debug(LABEL, "Release enter");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -593,7 +576,6 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
         [](napi_env env, void *data) {}, ReleaseComplete, context, context->work);
-    HiLog::Debug(LABEL, "Release exit");
     FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }

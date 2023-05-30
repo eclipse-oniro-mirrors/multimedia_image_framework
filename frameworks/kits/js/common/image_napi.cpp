@@ -111,8 +111,6 @@ std::shared_ptr<NativeImage> ImageNapi::GetNativeImage(napi_env env, napi_value 
         IMAGE_ERR("GetImage napi unwrap failed");
         return nullptr;
     }
-    IMAGE_INFO("get nativeImage");
-
     return napi->native_;
 }
 
