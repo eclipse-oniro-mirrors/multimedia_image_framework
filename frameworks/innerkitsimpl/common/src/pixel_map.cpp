@@ -182,9 +182,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         return nullptr;
     }
 
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
-
     Position dstPosition;
     if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
         static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
@@ -194,6 +191,9 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         dstPixels = nullptr;
         return nullptr;
     }
+
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
     dstPixelMap->SetEditable(opts.editable);
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     return dstPixelMap;
