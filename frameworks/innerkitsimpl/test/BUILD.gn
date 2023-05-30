@@ -853,6 +853,7 @@ ohos_unittest("ndktest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/kits/js/common/ndk/include",
     "/utils/include",
     "/interfaces/innerkits/include",
     "//third_party/googletest/googletest/include",
@@ -860,9 +861,14 @@ ohos_unittest("ndktest") {
     "../../../../../arkui/napi/interfaces/kits",
     "//third_party/node/src",
   ]
-  sources = [ "unittest/ndk_test.cpp" ]
+  sources = [
+    "unittest/image_ndk_test.cpp",
+    "unittest/ndk_test.cpp",
+  ]
 
   deps = [
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_receiver_ndk",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",

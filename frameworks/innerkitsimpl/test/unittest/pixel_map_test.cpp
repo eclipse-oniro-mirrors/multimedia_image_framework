@@ -1205,6 +1205,30 @@ HWTEST_F(PixelMapTest, PixelMapTest030, TestSize.Level3)
     ASSERT_NE(&outColorSpace, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace end";
 }
+
+/**
+* @tc.name: InnerGetGrColorSpacePtrTest
+* @tc.desc: test InnerGetGrColorSpacePtr
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(PixelMapTest, InnerGetGrColorSpacePtrTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: InnerGetGrColorSpacePtrTest InnerSetColorSpace start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    OHOS::ColorManager::ColorSpace grColorSpace =
+        OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::SRGB);
+    pixelMap.InnerSetColorSpace(grColorSpace);
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> outColorSpace = pixelMap.InnerGetGrColorSpacePtr();
+    ASSERT_NE(outColorSpace, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: InnerGetGrColorSpacePtrTest InnerSetColorSpace end";
+}
 #endif
 }
 }
