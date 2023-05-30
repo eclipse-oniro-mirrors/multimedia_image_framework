@@ -1025,7 +1025,6 @@ static bool ParsePropertyOptions(napi_env env, napi_value root, ImageSourceAsync
 
 static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
 {
-
     if (context == nullptr) {
         HiLog::Error(LABEL, "context is nullptr");
         return;
