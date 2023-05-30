@@ -694,6 +694,7 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         napi_create_reference(env, argValue, refCount, &arrayRef);
         status = napi_get_arraybuffer_info(env, argValue, &(context->sourceBuffer), &(context->sourceBufferSize));
         if (status != napi_ok) {
+            napi_delete_reference(env, arrayRef);
             HiLog::Error(LABEL, "fail to get arraybufferinfo");
             return nullptr;
         }
