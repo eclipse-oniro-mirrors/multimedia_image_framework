@@ -433,7 +433,6 @@ napi_value ImageSourceNapi::GetSupportedFormats(napi_env env, napi_callback_info
 
 STATIC_COMPLETE_FUNC(GetImageInfo)
 {
-    HiLog::Debug(LABEL, "[ImageSource]GetImageInfoComplete IN");
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context->status == SUCCESS) {
@@ -475,7 +474,6 @@ STATIC_COMPLETE_FUNC(GetImageInfo)
         napi_get_undefined(env, &result);
     }
 
-    HiLog::Debug(LABEL, "[ImageSource]GetImageInfoComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
@@ -1027,8 +1025,6 @@ static bool ParsePropertyOptions(napi_env env, napi_value root, ImageSourceAsync
 
 static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "ModifyPropertyComplete IN");
-
     if (context == nullptr) {
         HiLog::Error(LABEL, "context is nullptr");
         return;
@@ -1071,13 +1067,10 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
 
     delete context;
     context = nullptr;
-    HiLog::Debug(LABEL, "ModifyPropertyComplete OUT");
 }
 
 static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
 {
-    HiLog::Debug(LABEL, "GetImagePropertyComplete IN");
-
     if (context == nullptr) {
         HiLog::Error(LABEL, "context is nullptr");
         return;
@@ -1114,7 +1107,6 @@ static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSour
     napi_delete_async_work(env, context->work);
     delete context;
     context = nullptr;
-    HiLog::Debug(LABEL, "GetImagePropertyComplete OUT");
 }
 
 static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi_callback_info info)
@@ -1124,7 +1116,6 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_3] = {0};
     size_t argCount = NUM_3;
-    HiLog::Debug(LABEL, "GetImageProperty UnwrapContext");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     HiLog::Debug(LABEL, "GetImageProperty argCount is [%{public}zu]", argCount);
 
@@ -1285,7 +1276,6 @@ napi_value ImageSourceNapi::ModifyImageProperty(napi_env env, napi_callback_info
     napi_get_undefined(env, &result);
 
     napi_status status;
-    HiLog::Debug(LABEL, "ModifyImageProperty IN");
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
@@ -1337,7 +1327,6 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
     napi_get_undefined(env, &result);
 
     napi_status status;
-    HiLog::Debug(LABEL, "GetImageProperty IN");
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContext(env, info);
     if (asyncContext == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
@@ -1399,14 +1388,12 @@ static void UpdateDataExecute(napi_env env, void *data)
 
 static void UpdateDataComplete(napi_env env, napi_status status, void *data)
 {
-    HiLog::Debug(LABEL, "UpdateDataComplete IN");
     napi_value result = nullptr;
     napi_create_object(env, &result);
 
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
     napi_get_boolean(env, context->isSuccess, &result);
-    HiLog::Debug(LABEL, "UpdateDataComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
@@ -1428,7 +1415,6 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
     napi_value thisVar = nullptr;
     napi_value argValue[NUM_5] = {0};
     size_t argCount = 5;
-    HiLog::Debug(LABEL, "UpdateData IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     HiLog::Debug(LABEL, "UpdateData argCount is [%{public}zu]", argCount);
 
@@ -1501,14 +1487,12 @@ napi_value ImageSourceNapi::UpdateData(napi_env env, napi_callback_info info)
 
 static void ReleaseComplete(napi_env env, napi_status status, void *data)
 {
-    HiLog::Debug(LABEL, "ReleaseComplete IN");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     delete context->constructor_;
     context->constructor_ = nullptr;
-    HiLog::Debug(LABEL, "ReleaseComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
@@ -1561,8 +1545,6 @@ void ImageSourceNapi::release()
 
 static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "UnwrapContextForList IN");
-
     int32_t refCount = 1;
     napi_status status;
     napi_value thisVar = nullptr;
@@ -1605,7 +1587,6 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForList(napi_env en
         }
     }
 
-    HiLog::Debug(LABEL, "UnwrapContextForList OUT");
     return context;
 }
 
@@ -1634,8 +1615,6 @@ static ImageSourceAsyncContext* CheckAsyncContext(ImageSourceAsyncContext* conte
 
 STATIC_EXEC_FUNC(CreatePixelMapList)
 {
-    HiLog::Debug(LABEL, "CreatePixelMapListExec IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1660,14 +1639,10 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
         context->errMsg = "Create PixelMap List error";
         context->status = ERROR;
     }
-
-    HiLog::Debug(LABEL, "CreatePixelMapListExec OUT");
 }
 
 STATIC_COMPLETE_FUNC(CreatePixelMapList)
 {
-    HiLog::Debug(LABEL, "CreatePixelMapListComplete IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1697,13 +1672,11 @@ STATIC_COMPLETE_FUNC(CreatePixelMapList)
     HiLog::Debug(LABEL, "CreatePixelMapListComplete set to nullptr");
     context->pixelMaps = nullptr;
 
-    HiLog::Debug(LABEL, "CreatePixelMapListComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
 napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "CreatePixelMapList IN");
     StartTrace(HITRACE_TAG_ZIMAGE, "CreatePixelMapList");
 
     auto asyncContext = UnwrapContextForList(env, info);
@@ -1728,14 +1701,11 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
     FinishTrace(HITRACE_TAG_ZIMAGE);
-    HiLog::Debug(LABEL, "CreatePixelMapList OUT");
     return result;
 }
 
 STATIC_EXEC_FUNC(GetDelayTime)
 {
-    HiLog::Debug(LABEL, "GetDelayTimeExec IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1756,14 +1726,10 @@ STATIC_EXEC_FUNC(GetDelayTime)
         context->errMsg = "Get DelayTime error";
         context->status = ERROR;
     }
-
-    HiLog::Debug(LABEL, "GetDelayTimeExec OUT");
 }
 
 STATIC_COMPLETE_FUNC(GetDelayTime)
 {
-    HiLog::Debug(LABEL, "GetDelayTimeComplete IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1793,14 +1759,11 @@ STATIC_COMPLETE_FUNC(GetDelayTime)
 
     HiLog::Debug(LABEL, "GetDelayTimeComplete set to nullptr");
     context->delayTimes = nullptr;
-
-    HiLog::Debug(LABEL, "GetDelayTimeComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
 napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "GetDelayTime IN");
     StartTrace(HITRACE_TAG_ZIMAGE, "GetDelayTime");
 
     auto asyncContext = UnwrapContextForList(env, info);
@@ -1823,14 +1786,11 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
     FinishTrace(HITRACE_TAG_ZIMAGE);
-    HiLog::Debug(LABEL, "GetDelayTime OUT");
     return result;
 }
 
 STATIC_EXEC_FUNC(GetFrameCount)
 {
-    HiLog::Debug(LABEL, "GetFrameCountExec IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1852,14 +1812,10 @@ STATIC_EXEC_FUNC(GetFrameCount)
         context->errMsg = "Get FrameCount error";
         context->status = ERROR;
     }
-
-    HiLog::Debug(LABEL, "GetFrameCountExec OUT");
 }
 
 STATIC_COMPLETE_FUNC(GetFrameCount)
 {
-    HiLog::Debug(LABEL, "GetFrameCountComplete IN");
-
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
         return;
@@ -1881,14 +1837,11 @@ STATIC_COMPLETE_FUNC(GetFrameCount)
     }
 
     context->frameCount = 0;
-
-    HiLog::Debug(LABEL, "GetFrameCountComplete OUT");
     ImageSourceCallbackRoutine(env, context, result);
 }
 
 napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "GetFrameCount IN");
     StartTrace(HITRACE_TAG_ZIMAGE, "GetFrameCount");
 
     auto asyncContext = UnwrapContextForList(env, info);
@@ -1911,7 +1864,6 @@ napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
     FinishTrace(HITRACE_TAG_ZIMAGE);
-    HiLog::Debug(LABEL, "GetFrameCount OUT");
     return result;
 }
 }  // namespace Media
