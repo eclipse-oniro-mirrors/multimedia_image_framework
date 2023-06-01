@@ -535,7 +535,7 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest018, TestSize.Level3)
     position.y = 200;
     uint32_t color = 9;
     uint32_t ret = pixelMap.WritePixel(position, color);
-    EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY);
+    EXPECT_EQ(ret, ERR_IMAGE_WRITE_PIXELMAP_FAILED);
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest018 end";
 }
 
