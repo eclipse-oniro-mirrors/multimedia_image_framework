@@ -498,6 +498,137 @@ void GifDecoder::ParseBgColor()
     }
 }
 
+constexpr size_t SIZE_ZERO = 0;
+
+static uint32_t HeapMemoryCreate(PlImageBuffer &plBuffer)
+{
+    HiLog::Debug(LABEL, "HeapMemoryCreate IN");
+    if (plBuffer.buffer != nullptr) {
+        HiLog::Debug(LABEL, "HeapMemoryCreate has created");
+        return SUCCESS;
+    }
+    if (plBuffer.bufferSize == SIZE_ZERO) {
+        HiLog::Error(LABEL, "HeapMemoryCreate size is 0");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    auto dataPtr = std::make_unique<uint8_t[]>(plBuffer.bufferSize);
+    if (dataPtr == nullptr) {
+        HiLog::Error(LABEL, "HeapMemoryCreate alloc failed");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    plBuffer.buffer = dataPtr.release();
+    plBuffer.dataSize = plBuffer.bufferSize;
+    return SUCCESS;
+}
+
+static uint32_t HeapMemoryRelease(PlImageBuffer &plBuffer)
+{
+    HiLog::Debug(LABEL, "HeapMemoryRelease IN");
+    if (plBuffer.buffer == nullptr) {
+        HiLog::Error(LABEL, "HeapMemory::Release nullptr data");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    free(plBuffer.buffer);
+    plBuffer.buffer = nullptr;
+    return SUCCESS;
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
+{
+    if (ptr != nullptr && ptr != MAP_FAILED) {
+        ::munmap(ptr, size);
+    }
+    if (fdPtr != nullptr) {
+        ::close(*fdPtr);
+    }
+}
+
+static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
+{
+    HiLog::Debug(LABEL, "SharedMemoryCreate IN data size %{public}zu", plBuffer.bufferSize);
+    if (plBuffer.bufferSize == SIZE_ZERO) {
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    auto fdPtr = std::make_unique<int>();
+    if (fdPtr == nullptr) {
+        HiLog::Error(LABEL, "SharedMemoryCreate fd alloc failed");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    *fdPtr = AshmemCreate("GIF RawData", plBuffer.bufferSize);
+    if (*fdPtr < 0) {
+        HiLog::Error(LABEL, "SharedMemoryCreate AshmemCreate fd:[%{public}d].", *fdPtr);
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    if (AshmemSetProt(*fdPtr, PROT_READ | PROT_WRITE) < 0) {
+        HiLog::Error(LABEL, "SharedMemoryCreate AshmemSetProt errno %{public}d.", errno);
+        ReleaseSharedMemory(fdPtr.get());
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    plBuffer.buffer = ::mmap(nullptr, plBuffer.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, *fdPtr, 0);
+    if (plBuffer.buffer == MAP_FAILED) {
+        HiLog::Error(LABEL, "SharedMemoryCreate mmap failed, errno:%{public}d", errno);
+        ReleaseSharedMemory(fdPtr.get(), static_cast<uint8_t*>(plBuffer.buffer), plBuffer.bufferSize);
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    plBuffer.context = fdPtr.release();
+    plBuffer.dataSize = plBuffer.bufferSize;
+    return SUCCESS;
+}
+
+static uint32_t SharedMemoryRelease(PlImageBuffer &plBuffer)
+{
+    HiLog::Debug(LABEL, "SharedMemoryRelease IN");
+    std::unique_ptr<int> fdPtr = std::unique_ptr<int>(static_cast<int*>(plBuffer.context));
+    ReleaseSharedMemory(fdPtr.get(), static_cast<uint8_t*>(plBuffer.buffer), plBuffer.bufferSize);
+    plBuffer.buffer = nullptr;
+    plBuffer.bufferSize = SIZE_ZERO;
+    plBuffer.dataSize = SIZE_ZERO;
+    return SUCCESS;
+}
+
+#else
+static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
+{
+    return ERR_IMAGE_DATA_UNSUPPORT;
+}
+static uint32_t SharedMemoryRelease(PlImageBuffer &plBuffer)
+{
+    return ERR_IMAGE_DATA_UNSUPPORT;
+}
+#endif
+
+static uint32_t AllocMemory(DecodeContext &context)
+{
+    if (context.pixelsBuffer.buffer != nullptr) {
+        HiLog::Debug(LABEL, "AllocMemory has created");
+        return SUCCESS;
+    }
+
+    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+        return SharedMemoryCreate(context.pixelsBuffer);
+    } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {
+        return HeapMemoryCreate(context.pixelsBuffer);
+    }
+    // Current Defalut alloc function
+    return SharedMemoryCreate(context.pixelsBuffer);
+}
+
+static uint32_t FreeMemory(DecodeContext &context)
+{
+    if (context.pixelsBuffer.buffer == nullptr) {
+        HiLog::Debug(LABEL, "FreeMemory has freed");
+        return SUCCESS;
+    }
+
+    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+        return SharedMemoryRelease(context.pixelsBuffer);
+    } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {
+        return HeapMemoryRelease(context.pixelsBuffer);
+    }
+    return ERR_IMAGE_DATA_UNSUPPORT;
+}
+
 uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
 {
     if (localPixelMapBuffer_ == nullptr) {
@@ -507,68 +638,20 @@ uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
     int32_t bgWidth = gifPtr_->SWidth;
     int32_t bgHeight = gifPtr_->SHeight;
     uint64_t imageBufferSize = static_cast<uint64_t>(bgWidth * bgHeight * sizeof(uint32_t));
-
-    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+    uint32_t allocRes = SUCCESS;
+    if (context.pixelsBuffer.buffer == nullptr) {
+        context.pixelsBuffer.bufferSize = imageBufferSize;
+        allocRes = AllocMemory(context);
         if (context.pixelsBuffer.buffer == nullptr) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-            int fd = AshmemCreate("GIF RawData", imageBufferSize);
-            if (fd < 0) {
-                return ERR_SHAMEM_DATA_ABNORMAL;
-            }
-            int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-            if (result < 0) {
-                ::close(fd);
-                return ERR_SHAMEM_DATA_ABNORMAL;
-            }
-            void* ptr = ::mmap(nullptr, imageBufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (ptr == MAP_FAILED) {
-                ::close(fd);
-                return ERR_SHAMEM_DATA_ABNORMAL;
-            }
-            context.pixelsBuffer.buffer = ptr;
-            void *fdBuffer = new int32_t();
-            if (fdBuffer == nullptr) {
-                HiLog::Error(LABEL, "new fdBuffer fail");
-                ::munmap(ptr, imageBufferSize);
-                ::close(fd);
-                context.pixelsBuffer.buffer = nullptr;
-                return ERR_SHAMEM_DATA_ABNORMAL;
-            }
-            *static_cast<int32_t *>(fdBuffer) = fd;
-            context.pixelsBuffer.context = fdBuffer;
-            context.pixelsBuffer.bufferSize = imageBufferSize;
-            context.pixelsBuffer.dataSize = imageBufferSize;
-            context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            context.freeFunc = nullptr;
-#endif
+            return (allocRes != SUCCESS) ? allocRes : ERR_IMAGE_DATA_ABNORMAL;
         }
-    } else {
-        bool isPluginAllocateMemory = false;
-        if (context.pixelsBuffer.buffer == nullptr) {
-            // outer manage the buffer.
-            void *outputBuffer = malloc(imageBufferSize);
-            if (outputBuffer == nullptr) {
-                HiLog::Error(LABEL, "[RedirectOutputBuffer]alloc output buffer size %{public}llu failed",
-                             static_cast<unsigned long long>(imageBufferSize));
-                return ERR_IMAGE_MALLOC_ABNORMAL;
-            }
-            context.pixelsBuffer.buffer = outputBuffer;
-            context.pixelsBuffer.bufferSize = imageBufferSize;
-            isPluginAllocateMemory = true;
-        }
-        if (memcpy_s(context.pixelsBuffer.buffer, context.pixelsBuffer.bufferSize,
-            localPixelMapBuffer_, imageBufferSize) != 0) {
-            HiLog::Error(LABEL, "[RedirectOutputBuffer]memory copy size %{public}llu failed",
-                         static_cast<unsigned long long>(imageBufferSize));
-            if (isPluginAllocateMemory) {
-                context.pixelsBuffer.bufferSize = 0;
-                free(context.pixelsBuffer.buffer);
-                context.pixelsBuffer.buffer = nullptr;
-            }
-            return ERR_IMAGE_DECODE_ABNORMAL;
-        }
-        context.pixelsBuffer.dataSize = imageBufferSize;
-        context.allocatorType = AllocatorType::HEAP_ALLOC;
+    }
+    if (memcpy_s(context.pixelsBuffer.buffer, context.pixelsBuffer.bufferSize,
+        localPixelMapBuffer_, imageBufferSize) != 0) {
+        HiLog::Error(LABEL, "[RedirectOutputBuffer]memory copy size %{public}llu failed",
+            static_cast<unsigned long long>(imageBufferSize));
+        FreeMemory(context);
+        return ERR_IMAGE_DECODE_ABNORMAL;
     }
     return SUCCESS;
 }

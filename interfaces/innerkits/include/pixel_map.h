@@ -36,7 +36,7 @@ struct InitializationOptions {
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
-    bool editable = false;
+    bool editable = true;
     bool useSourceIfMatch = false;
 };
 
