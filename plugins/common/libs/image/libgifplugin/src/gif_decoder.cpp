@@ -546,7 +546,7 @@ static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_
 
 static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
 {
-    HiLog::Debug(LABEL, "SharedMemoryCreate IN data size %{public}zu", plBuffer.bufferSize);
+    HiLog::Debug(LABEL, "SharedMemoryCreate IN data size %{public}u", plBuffer.bufferSize);
     if (plBuffer.bufferSize == SIZE_ZERO) {
         return ERR_IMAGE_DATA_ABNORMAL;
     }
