@@ -28,20 +28,17 @@
  * @file image_receiver_mdk.h
  *
  * @brief Declares the APIs for obtaining image data from the native layer.
- *
+ * Need link <b>libimage_ndk.z.so</b> and <b>libimage_receiver_ndk.z.so</b>
  * @since 10
  * @version 2.0
  */
 
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
-#include <cstdint>
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
 #include "image_mdk.h"
 
-namespace OHOS {
-namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -218,6 +215,5 @@ int32_t OH_Image_Receiver_Release(ImageReceiverNative* native);
 };
 #endif
 /** @} */
-} // namespace Media
-} // namespace OHOS
+
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_

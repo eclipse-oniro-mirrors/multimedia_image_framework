@@ -35,8 +35,8 @@
 
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_COMMON_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_COMMON_H_
-namespace OHOS {
-namespace Media {
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,6 +71,5 @@ struct OhosImageSize {
 };
 #endif
 /** @} */
-} // namespace Media
-} // namespace OHOS
+
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_COMMON_H_

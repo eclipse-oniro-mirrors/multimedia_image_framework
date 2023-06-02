@@ -18,8 +18,7 @@
 #include "common_utils.h"
 #include "image_receiver_mdk_kits.h"
 
-namespace OHOS {
-namespace Media {
+using namespace OHOS::Media;
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -145,5 +144,3 @@ int32_t OH_Image_Receiver_Release(ImageReceiverNative* native)
 #ifdef __cplusplus
 };
 #endif
-}  // namespace Media
-}  // namespace OHOS
