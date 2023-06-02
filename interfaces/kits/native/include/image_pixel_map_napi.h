@@ -28,7 +28,7 @@
  * @file image_pixel_map_napi.h
  *
  * @brief Declares the APIs that can lock, access, and unlock a pixel map.
- * Need link <b>libpixelmap_ndk.z.so</b>
+ * Need link <b>libpixelmapndk.z.so</b>
  *
  * @since 8
  * @version 1.0
@@ -221,7 +221,7 @@ int32_t OH_GetImageInfo(napi_env env, napi_value value, struct OhosPixelMapInfo 
  * @since 8
  * @version 1.0
  */
-int32_t OH_AccessPixels(napi_env env, napi_value value, void** addrPtr);
+int32_t OH_AccessPixels(napi_env env, napi_value value, uint8_t** addrPtr);
 
 /**
  * @brief Unlocks the memory of a <b>PixelMap</b> object. This function is used with {@link OH_AccessPixels} in pairs.
@@ -249,7 +249,7 @@ int32_t OH_UnAccessPixels(napi_env env, napi_value value);
  * @version 2.0
  */
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, struct OhosPixelMapCreateOps info,
-    void* buf, size_t len, napi_value* res);
+    uint8_t* buf, size_t len, napi_value* res);
 
 /**
  * @brief Creates a <b>PixelMap</b> object that contains only alpha channel information.
@@ -451,7 +451,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, struct OhosPixelM
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr);
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, uint8_t** addr);
 
 /**
  * @brief Unlocks the memory of the <b>NativePixelMap</b> object data.

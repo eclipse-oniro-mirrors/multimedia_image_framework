@@ -28,7 +28,7 @@
  * @file image_receiver_mdk.h
  *
  * @brief Declares the APIs for obtaining image data from the native layer.
- * Need link <b>libimage_ndk.z.so</b> and <b>libimage_receiver_ndk.z.so</b>
+ * Need link <b>libimagendk.z.so</b> and <b>libimage_receiverndk.z.so</b>
  * @since 10
  * @version 2.0
  */
@@ -65,7 +65,7 @@ typedef struct ImageReceiverNative_ ImageReceiverNative;
  * @since 10
  * @version 2.0
  */
-typedef void (*OH_Image_Receiver_On_Callback)();
+typedef void (*OH_Image_Receiver_On_Callback)(void);
 
 /**
  * @brief Defines the information about an image receiver.

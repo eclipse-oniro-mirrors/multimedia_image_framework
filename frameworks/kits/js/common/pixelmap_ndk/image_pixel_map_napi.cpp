@@ -34,9 +34,9 @@ extern "C" __attribute__((visibility("default"))) int32_t OH_GetImageInfo(napi_e
 }
 
 extern "C" __attribute__((visibility("default"))) int32_t OH_AccessPixels(napi_env env, napi_value value,
-                                                                          void** addrPtr)
+                                                                          uint8_t** addrPtr)
 {
-    int32_t ret = OHOS_MEDIA_AccessPixels(env, value, reinterpret_cast<uint8_t**>(addrPtr));
+    int32_t ret = OHOS_MEDIA_AccessPixels(env, value, addrPtr);
     if (ret != OHOS_IMAGE_RESULT_SUCCESS) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }

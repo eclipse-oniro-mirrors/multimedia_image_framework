@@ -28,7 +28,7 @@
  * @file image_mdk.h
  *
  * @brief Declares functions that access the image rectangle, size, format, and component data.
- * Need link <b>libimage_ndk.z.so</b>
+ * Need link <b>libimagendk.z.so</b>
  *
  * @since 10
  * @version 2.0
