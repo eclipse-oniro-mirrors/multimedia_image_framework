@@ -25,6 +25,10 @@
 #endif
 #include "image_type.h"
 #include "parcel.h"
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_mem_base.h"
+#include "purgeable_mem_builder.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -161,6 +165,23 @@ public:
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    NATIVEEXPORT bool IsPurgeable() const
+    {
+        return purgeableMemPtr_ != nullptr;
+    }
+
+    NATIVEEXPORT std::shared_ptr<PurgeableMem::PurgeableMemBase> GetPurgeableMemPtr() const
+    {
+        return purgeableMemPtr_;
+    }
+
+    NATIVEEXPORT void SetPurgeableMemPtr(std::shared_ptr<PurgeableMem::PurgeableMemBase> pmPtr)
+    {
+        purgeableMemPtr_ = pmPtr;
+    }
+#endif
+
 private:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
@@ -260,6 +281,10 @@ private:
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
 #else
     std::shared_ptr<uint8_t> grColorSpace_ = nullptr;
+#endif
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> purgeableMemPtr_ = nullptr;
 #endif
 };
 } // namespace Media

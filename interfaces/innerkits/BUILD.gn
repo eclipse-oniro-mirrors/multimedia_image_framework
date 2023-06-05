@@ -13,6 +13,7 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
+import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("$image_subsystem/plugins/cross/image_native_android.gni")
 import("$image_subsystem/plugins/cross/image_native_ios.gni")
@@ -218,6 +219,11 @@ if (use_clang_android) {
         "hitrace_native:hitrace_meter",
         "ipc:ipc_core",
       ]
+    }
+
+    if (purgeable_ashmem_enable) {
+      defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
+      external_deps += [ "memory_utils:libpurgeablemem" ]
     }
 
     #  relative_install_dir = "module/multimedia"

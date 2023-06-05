@@ -1595,5 +1595,11 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 
     return frameCount;
 }
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+size_t ImageSource::GetSourceSize() const
+{
+    return sourceStreamPtr_ ? sourceStreamPtr_->GetStreamSize() : 0;
+}
+#endif
 } // namespace Media
 } // namespace OHOS

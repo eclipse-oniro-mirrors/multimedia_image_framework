@@ -33,6 +33,10 @@
 #include "memory.h"
 #endif
 
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+#include "purgeable_resource_manager.h"
+#endif
+
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
@@ -59,6 +63,14 @@ constexpr uint8_t ALIGN_NUMBER = 4;
 
 PixelMap::~PixelMap()
 {
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+    if (purgeableMemPtr_) {
+        PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
+        purgeableMemPtr_.reset();
+        purgeableMemPtr_ = nullptr;
+        return;
+    }
+#endif
     FreePixelMap();
 }
 
