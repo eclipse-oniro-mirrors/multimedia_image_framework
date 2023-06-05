@@ -35,6 +35,7 @@ ohos_unittest("commontest") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/native_image_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_map_parcel_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_map_test.cpp",
   ]
