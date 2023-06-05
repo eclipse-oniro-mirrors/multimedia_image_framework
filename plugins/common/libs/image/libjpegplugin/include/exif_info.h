@@ -72,9 +72,33 @@ public:
     std::string isoSpeedRatings_;
     std::string sceneType_;
     std::string compressedBitsPerPixel_;
+    std::string dateTime_;
+    std::string gpsTimeStamp_;
+    std::string gpsDateStamp_;
+    std::string imageDescription_;
+    std::string make_;
+    std::string model_;
+    std::string photoMode_;
+    std::string sensitivityType_;
+    std::string standardOutputSensitivity_;
+    std::string recommendedExposureIndex_;
+    std::string apertureValue_;
+    std::string exposureBiasValue_;
+    std::string meteringMode_;
+    std::string lightSource_;
+    std::string flash_;
+    std::string focalLength_;
+    std::string userComment_;
+    std::string pixelXDimension_;
+    std::string pixelYDimension_;
+    std::string whiteBalance_;
+    std::string focalLengthIn35mmFilm_;
+    std::string hwMnoteCaptureMode_;
+    std::string hwMnotePhysicalAperture_;
 
 private:
     void SetExifTagValues(const ExifTag &tag, const std::string &value);
+    void SetExifTagValuesEx(const ExifTag &tag, const std::string &value);
     ExifEntry* InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag);
     ExifEntry* CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag, size_t len, ExifFormat format);
     unsigned long GetFileSize(FILE *fp);
@@ -88,6 +112,7 @@ private:
         unsigned char *buf, FILE *fp);
     void UpdateCacheExifData(FILE *fp);
     bool CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag);
+    bool CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag);
     void GetAreaFromExifEntries(const int &privacyType,
                                 const std::vector<DirectoryEntry> &entryArray,
                                 std::vector<std::pair<uint32_t, uint32_t>> &ranges);

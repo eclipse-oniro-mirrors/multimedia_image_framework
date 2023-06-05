@@ -21,6 +21,7 @@
 #include "media_errors.h"
 #include "string_ex.h"
 #include "securec.h"
+#include "exif_maker_note.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -49,6 +50,9 @@ namespace {
     static constexpr unsigned long MAX_FILE_SIZE = 1000 * 1000 * 1000;
     static constexpr uint32_t ERROR_PARSE_EXIF_FAILED = 1;
     static constexpr uint32_t ERROR_NO_EXIF_TAGS = 2;
+    static constexpr ExifTag TAG_SENSITIVITY_TYPE = static_cast<ExifTag>(0x8830);
+    static constexpr ExifTag TAG_STANDARD_OUTPUT_SENSITIVITY = static_cast<ExifTag>(0x8831);
+    static constexpr ExifTag TAG_RECOMMENDED_EXPOSURE_INDEX = static_cast<ExifTag>(0x8832);
 
     /* raw EXIF header data */
     static const unsigned char exifHeader[] = {
@@ -171,6 +175,9 @@ namespace {
         {EXIF_TAG_OECF, "OECF", 0x8828},
         /* Not in EXIF 2.2 */
         {EXIF_TAG_TIME_ZONE_OFFSET, "TimeZoneOffset", 0x882a},
+        {TAG_SENSITIVITY_TYPE, "SensitivityType", 0x8830},
+        {TAG_STANDARD_OUTPUT_SENSITIVITY, "StandardOutputSensitivity", 0x8831},
+        {TAG_RECOMMENDED_EXPOSURE_INDEX, "RecommendedExposureIndex", 0x8832},
         {EXIF_TAG_EXIF_VERSION, "ExifVersion", 0x9000},
         {EXIF_TAG_DATE_TIME_ORIGINAL, "DateTimeOriginal", 0x9003},
         {EXIF_TAG_DATE_TIME_DIGITIZED, "DateTimeDigitized", 0x9004},
@@ -278,6 +285,29 @@ EXIFInfo::EXIFInfo()
       isoSpeedRatings_(DEFAULT_EXIF_VALUE),
       sceneType_(DEFAULT_EXIF_VALUE),
       compressedBitsPerPixel_(DEFAULT_EXIF_VALUE),
+      dateTime_(DEFAULT_EXIF_VALUE),
+      gpsTimeStamp_(DEFAULT_EXIF_VALUE),
+      gpsDateStamp_(DEFAULT_EXIF_VALUE),
+      imageDescription_(DEFAULT_EXIF_VALUE),
+      make_(DEFAULT_EXIF_VALUE),
+      model_(DEFAULT_EXIF_VALUE),
+      photoMode_(DEFAULT_EXIF_VALUE),
+      sensitivityType_(DEFAULT_EXIF_VALUE),
+      standardOutputSensitivity_(DEFAULT_EXIF_VALUE),
+      recommendedExposureIndex_(DEFAULT_EXIF_VALUE),
+      apertureValue_(DEFAULT_EXIF_VALUE),
+      exposureBiasValue_(DEFAULT_EXIF_VALUE),
+      meteringMode_(DEFAULT_EXIF_VALUE),
+      lightSource_(DEFAULT_EXIF_VALUE),
+      flash_(DEFAULT_EXIF_VALUE),
+      focalLength_(DEFAULT_EXIF_VALUE),
+      userComment_(DEFAULT_EXIF_VALUE),
+      pixelXDimension_(DEFAULT_EXIF_VALUE),
+      pixelYDimension_(DEFAULT_EXIF_VALUE),
+      whiteBalance_(DEFAULT_EXIF_VALUE),
+      focalLengthIn35mmFilm_(DEFAULT_EXIF_VALUE),
+      hwMnoteCaptureMode_(DEFAULT_EXIF_VALUE),
+      hwMnotePhysicalAperture_(DEFAULT_EXIF_VALUE),
       imageFileDirectory_(EXIF_IFD_COUNT),
       exifData_(nullptr),
       isExifDataParsed_(false)
@@ -295,10 +325,13 @@ EXIFInfo::~EXIFInfo()
 int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
 {
     HiLog::Debug(LABEL, "ParseExifData ENTER");
-    exifData_ = exif_data_new_from_data(buf, len);
+    exifData_ = exif_data_new ();
     if (!exifData_) {
         return PARSE_EXIF_DATA_ERROR;
     }
+    exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
+    exif_data_load_data (exifData_, buf, len);
+
     exif_data_foreach_content(exifData_,
         [](ExifContent *ec, void *userData) {
             ExifIfd ifd = exif_content_get_ifd(ec);
@@ -324,6 +357,13 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (imageFileDirectory_ == EXIF_IFD_COUNT) {
         return PARSE_EXIF_IFD_ERROR;
     }
+
+    ExifMakerNote exifMakerNote;
+    if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
+        hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
+        hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
+    }
+
     isExifDataParsed_ = true;
     return PARSE_EXIF_SUCCESS;
 }
@@ -368,6 +408,55 @@ void EXIFInfo::SetExifTagValues(const ExifTag &tag, const std::string &value)
         sceneType_ = value;
     } else if (tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
         compressedBitsPerPixel_ = value;
+    } else {
+        SetExifTagValuesEx(tag, value);
+    }
+}
+
+void EXIFInfo::SetExifTagValuesEx(const ExifTag &tag, const std::string &value)
+{
+    if (tag == EXIF_TAG_DATE_TIME) {
+        dateTime_ = value;
+    } else if (tag == EXIF_TAG_GPS_TIME_STAMP) {
+        gpsTimeStamp_ = value;
+    } else if (tag == EXIF_TAG_GPS_DATE_STAMP) {
+        gpsDateStamp_ = value;
+    } else if (tag == EXIF_TAG_IMAGE_DESCRIPTION) {
+        imageDescription_ = value;
+    } else if (tag == EXIF_TAG_MAKE) {
+        make_ = value;
+    } else if (tag == EXIF_TAG_MODEL) {
+        model_ = value;
+    } else if (tag == EXIF_TAG_JPEG_PROC) {
+        photoMode_ = value;
+    } else if (tag == TAG_SENSITIVITY_TYPE) {
+        sensitivityType_ = value;
+    } else if (tag == TAG_STANDARD_OUTPUT_SENSITIVITY) {
+        standardOutputSensitivity_ = value;
+    } else if (tag == TAG_RECOMMENDED_EXPOSURE_INDEX) {
+        recommendedExposureIndex_ = value;
+    } else if (tag == EXIF_TAG_APERTURE_VALUE) {
+        apertureValue_ = value;
+    } else if (tag == EXIF_TAG_EXPOSURE_BIAS_VALUE) {
+        exposureBiasValue_ = value;
+    } else if (tag == EXIF_TAG_METERING_MODE) {
+        meteringMode_ = value;
+    } else if (tag == EXIF_TAG_LIGHT_SOURCE) {
+        lightSource_ = value;
+    } else if (tag == EXIF_TAG_FLASH) {
+        flash_ = value;
+    } else if (tag == EXIF_TAG_FOCAL_LENGTH) {
+        focalLength_ = value;
+    } else if (tag == EXIF_TAG_USER_COMMENT) {
+        userComment_ = value;
+    } else if (tag == EXIF_TAG_PIXEL_X_DIMENSION) {
+        pixelXDimension_ = value;
+    } else if (tag == EXIF_TAG_PIXEL_Y_DIMENSION) {
+        pixelYDimension_ = value;
+    } else if (tag == EXIF_TAG_WHITE_BALANCE) {
+        whiteBalance_ = value;
+    } else if (tag == EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM) {
+        focalLengthIn35mmFilm_ = value;
     } else {
         HiLog::Error(LABEL, "No match tag name!");
     }
@@ -1503,6 +1592,57 @@ bool EXIFInfo::CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag)
         default:
             break;
     }
+
+    if (!ret) {
+        ret = CheckExifEntryValidEx(ifd, tag);
+    }
+
+    return ret;
+}
+
+bool EXIFInfo::CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag)
+{
+    bool ret = false;
+    switch (ifd) {
+        case EXIF_IFD_0: {
+            if (tag == EXIF_TAG_DATE_TIME ||
+                tag == EXIF_TAG_IMAGE_DESCRIPTION ||
+                tag == EXIF_TAG_MAKE ||
+                tag == EXIF_TAG_MODEL) {
+                ret = true;
+            }
+            break;
+        }
+        case EXIF_IFD_EXIF: {
+            if (tag == TAG_SENSITIVITY_TYPE ||
+                tag == TAG_STANDARD_OUTPUT_SENSITIVITY ||
+                tag == TAG_RECOMMENDED_EXPOSURE_INDEX ||
+                tag == EXIF_TAG_APERTURE_VALUE ||
+                tag == EXIF_TAG_EXPOSURE_BIAS_VALUE ||
+                tag == EXIF_TAG_METERING_MODE ||
+                tag == EXIF_TAG_LIGHT_SOURCE ||
+                tag == EXIF_TAG_FLASH ||
+                tag == EXIF_TAG_FOCAL_LENGTH ||
+                tag == EXIF_TAG_USER_COMMENT ||
+                tag == EXIF_TAG_PIXEL_X_DIMENSION ||
+                tag == EXIF_TAG_PIXEL_Y_DIMENSION ||
+                tag == EXIF_TAG_WHITE_BALANCE ||
+                tag == EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM) {
+                ret = true;
+            }
+            break;
+        }
+        case EXIF_IFD_GPS: {
+            if (tag == EXIF_TAG_GPS_TIME_STAMP ||
+                tag == EXIF_TAG_GPS_DATE_STAMP) {
+                ret = true;
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
     return ret;
 }
 } // namespace ImagePlugin
