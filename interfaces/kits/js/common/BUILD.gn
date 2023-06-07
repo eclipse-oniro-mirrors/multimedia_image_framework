@@ -242,7 +242,7 @@ if (use_clang_ios) {
 
     external_deps = [
       "c_utils:utils",
-      "hichecker_native:libhichecker",
+      "hichecker:libhichecker",
       "hitrace_native:hitrace_meter",
     ]
     output_name = "libimage_napi"
@@ -276,7 +276,7 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
-        "hichecker_native:libhichecker",
+        "hichecker:libhichecker",
         "hitrace_native:hitrace_meter",
       ]
       relative_install_dir = "module/multimedia"
