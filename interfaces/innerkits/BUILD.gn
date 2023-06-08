@@ -106,6 +106,7 @@ if (use_clang_android) {
     include_dirs = image_native_android_include_dirs
     deps = image_native_android_deps
     subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk" ]
     part_name = "multimedia_image_framework"
   }
 } else if (use_clang_ios) {
@@ -118,6 +119,7 @@ if (use_clang_android) {
     deps = image_native_ios_deps
     external_deps = image_native_ios_external_deps
     subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk" ]
     part_name = "multimedia_image_framework"
   }
 } else {
@@ -228,6 +230,7 @@ if (use_clang_android) {
 
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk" ]
     part_name = "multimedia_image_framework"
     version_script = "libimage_native.versionscript"
   }
