@@ -309,14 +309,18 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         HiLog::Error(LABEL, "calloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
-    uint8_t *dstPixels = static_cast<uint8_t *>(calloc(bufferSize, 1));
+    int fd = 0;
+    void *dstPixels = AllocSharedMemory(bufferSize, fd);
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
         return nullptr;
     }
     // update alpha opaque
-    UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat, dstPixels, *dstPixelMap.get());
-    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
+                      static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
     dstPixelMap->SetEditable(opts.editable);
     return dstPixelMap;
 }
