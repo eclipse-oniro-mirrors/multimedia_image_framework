@@ -285,6 +285,8 @@ private:
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     std::shared_ptr<PurgeableMem::PurgeableMemBase> purgeableMemPtr_ = nullptr;
+#else
+    std::shared_ptr<uint8_t> purgeableMemPtr_ = nullptr;
 #endif
 };
 } // namespace Media

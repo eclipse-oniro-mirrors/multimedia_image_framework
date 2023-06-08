@@ -68,7 +68,6 @@ PixelMap::~PixelMap()
         PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
         purgeableMemPtr_.reset();
         purgeableMemPtr_ = nullptr;
-        return;
     }
 #endif
     FreePixelMap();
