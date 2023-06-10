@@ -47,6 +47,8 @@ struct NinePatchContext {
 struct DecodeContext {
     // In: input the image head info.
     PlImageInfo info;
+    // In: input the pixelmap uniqueId.
+    uint32_t pixelmapUniqueId_;
     // InOut: input the buffer and bufferSize, output pixels data and dataSize.
     PlImageBuffer pixelsBuffer;
     // In: whether the source data is completed.

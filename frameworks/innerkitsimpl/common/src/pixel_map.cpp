@@ -187,7 +187,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         return nullptr;
     }
     int fd = 0;
-    void *dstPixels = AllocSharedMemory(bufferSize, fd);
+    void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
         return nullptr;
@@ -231,10 +231,11 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     }
 }
 
-void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd)
+void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    fd = AshmemCreate("PixelMap RawData", bufferSize);
+    std::string name = "PixelMap RawData, uniqueId: " + std::to_string(uniqueId);
+    fd = AshmemCreate(name.c_str(), bufferSize);
     if (fd < 0) {
         HiLog::Error(LABEL, "AllocSharedMemory fd error");
         return nullptr;
@@ -309,7 +310,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         return nullptr;
     }
     int fd = 0;
-    void *dstPixels = AllocSharedMemory(bufferSize, fd);
+    void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
         return nullptr;
@@ -418,7 +419,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     int fd = 0;
     void *dstPixels = nullptr;
     if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(bufferSize, fd);
+        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
     } else {
         dstPixels = malloc(bufferSize);
     }
@@ -501,7 +502,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     int fd = 0;
     void *dstPixels = nullptr;
     if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(bufferSize, fd);
+        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
     } else {
         dstPixels = malloc(bufferSize);
     }
@@ -1211,7 +1212,9 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
         return parcel.WriteUnpadBuffer(data, size);
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    int fd = AshmemCreate("Parcel ImageData", size);
+    uint32_t id = GetUniqueId();
+    std::string name = "Parcel ImageData, uniqueId: " + std::to_string(id);
+    int fd = AshmemCreate(name.c_str(), size);
     HiLog::Info(LABEL, "AshmemCreate:[%{public}d].", fd);
     if (fd < 0) {
         return false;

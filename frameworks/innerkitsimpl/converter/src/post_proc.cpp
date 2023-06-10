@@ -185,7 +185,7 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
             return false;
         }
     } else {
-        dstPixels = AllocSharedMemory(dstImageInfo.size, bufferSize, fd);
+        dstPixels = AllocSharedMemory(dstImageInfo.size, bufferSize, fd, pixelMap.GetUniqueId());
         if (dstPixels == nullptr) {
             IMAGE_LOGE("[PostProc]CenterDisplay AllocSharedMemory failed");
             return false;
@@ -239,7 +239,7 @@ uint32_t PostProc::CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImage
     uint8_t *resultData = nullptr;
     int fd = 0;
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        resultData = AllocSharedMemory(dstImageInfo.size, bufferSize, fd);
+        resultData = AllocSharedMemory(dstImageInfo.size, bufferSize, fd, pixelMap.GetUniqueId());
         if (resultData == nullptr) {
             IMAGE_LOGE("[PostProc]AllocSharedMemory failed");
             return ERR_IMAGE_CROP;
@@ -319,7 +319,7 @@ uint32_t PostProc::PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap,
 
     // as no crop, the size is same as src
     dstImageInfo.size = srcImageInfo.size;
-    if (AllocBuffer(dstImageInfo, &resultData, bufferSize, fd) != SUCCESS) {
+    if (AllocBuffer(dstImageInfo, &resultData, bufferSize, fd, pixelMap.GetUniqueId()) != SUCCESS) {
         ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
         return ERR_IMAGE_CROP;
     }
@@ -346,7 +346,7 @@ uint32_t PostProc::PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap,
     return ret;
 }
 
-uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &bufferSize, int &fd)
+uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &bufferSize, int &fd, uint32_t id)
 {
     int32_t pixelBytes = ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
     if (pixelBytes == 0) {
@@ -361,7 +361,7 @@ uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64
     IMAGE_LOGD("[PostProc]size.width:%{public}d, size.height:%{public}d, bufferSize:%{public}lld",
                imageInfo.size.width, imageInfo.size.height, static_cast<long long>(bufferSize));
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        *resultData = AllocSharedMemory(imageInfo.size, bufferSize, fd);
+        *resultData = AllocSharedMemory(imageInfo.size, bufferSize, fd, id);
         if (*resultData == nullptr) {
             IMAGE_LOGE("[PostProc]AllocSharedMemory failed");
             return ERR_IMAGE_CROP;
@@ -405,12 +405,13 @@ bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
 #endif
 }
 
-uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd)
+uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(A_PLATFORM)
         return nullptr;
 #else
-    fd = AshmemCreate("Parcel RawData", bufferSize);
+    std::string name = "Parcel RawData, uniqueId: " + std::to_string(uniqueId);
+    fd = AshmemCreate(name.c_str(), bufferSize);
     if (fd < 0) {
         IMAGE_LOGE("[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld", static_cast<long long>(bufferSize));
         return nullptr;
@@ -539,9 +540,10 @@ bool PostProc::Transform(BasicTransformer &trans, const PixmapInfo &input, Pixel
     }
     pixelMap.SetTransformered(true);
     PixmapInfo output(false);
+    output.uniqueId = pixelMap.GetUniqueId();
     uint32_t ret;
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        typedef uint8_t *(*AllocMemory)(const Size &size, const uint64_t bufferSize, int &fd);
+        typedef uint8_t *(*AllocMemory)(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
         AllocMemory allcFunc = AllocSharedMemory;
         ret = trans.TransformPixmap(input, output, allcFunc);
     } else {

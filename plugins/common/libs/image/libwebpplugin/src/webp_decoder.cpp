@@ -387,7 +387,9 @@ bool WebpDecoder::AllocHeapBuffer(DecodeContext &context, bool isIncremental)
         uint64_t byteCount = static_cast<uint64_t>(webpSize_.width * webpSize_.height * bytesPerPixel_);
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-            int fd = AshmemCreate("WEBP RawData", byteCount);
+            uint32_t id = context.pixelmapUniqueId_;
+            std::string name = "WEBP RawData, uniqueId: " + std::to_string(id);
+            int fd = AshmemCreate(name.c_str(), byteCount);
             if (fd < 0) {
                 return false;
             }

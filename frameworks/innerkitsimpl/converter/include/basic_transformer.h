@@ -70,6 +70,7 @@ struct PixmapInfo {
     uint32_t bufferSize = 0;
     bool isAutoDestruct = true;
     int32_t *context = nullptr;
+    uint32_t uniqueId = -1;
     PixmapInfo(){}
 
     ~PixmapInfo()
@@ -117,7 +118,7 @@ struct PixmapInfo {
 
 class BasicTransformer {
 public:
-    using AllocateMem = uint8_t *(*)(const Size &size, const uint64_t bufferSize, int &fd);
+    using AllocateMem = uint8_t *(*)(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
 
     BasicTransformer()
     {
