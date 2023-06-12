@@ -30,6 +30,7 @@ ohos_shared_library("jpegplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_utils.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/plugin_export.cpp",
+    "src/exif_maker_note.cpp",
   ]
 
   cflags = [

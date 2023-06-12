@@ -73,6 +73,30 @@ const std::string F_NUMBER = "FNumber";
 const std::string ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const std::string SCENE_TYPE = "SceneType";
 const std::string COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPixel";
+const std::string DATE_TIME = "DateTime";
+const std::string GPS_TIME_STAMP = "GPSTimeStamp";
+const std::string GPS_DATE_STAMP = "GPSDateStamp";
+const std::string IMAGE_DESCRIPTION = "ImageDescription";
+const std::string MAKE = "Make";
+const std::string MODEL = "Model";
+const std::string PHOTO_MODE = "PhotoMode";
+const std::string SENSITIVITY_TYPE = "SensitivityType";
+const std::string STANDARD_OUTPUT_SENSITIVITY = "StandardOutputSensitivity";
+const std::string RECOMMENDED_EXPOSURE_INDEX = "RecommendedExposureIndex";
+const std::string ISO_SPEED = "ISOSpeedRatings";
+const std::string APERTURE_VALUE = "ApertureValue";
+const std::string EXPOSURE_BIAS_VALUE = "ExposureBiasValue";
+const std::string METERING_MODE = "MeteringMode";
+const std::string LIGHT_SOURCE = "LightSource";
+const std::string FLASH = "Flash";
+const std::string FOCAL_LENGTH = "FocalLength";
+const std::string USER_COMMENT = "UserComment";
+const std::string PIXEL_X_DIMENSION = "PixelXDimension";
+const std::string PIXEL_Y_DIMENSION = "PixelYDimension";
+const std::string WHITE_BALANCE = "WhiteBalance";
+const std::string FOCAL_LENGTH_IN_35_MM_FILM = "FocalLengthIn35mmFilm";
+const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
+const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
 static const std::map<std::string, uint32_t> PROPERTY_INT = {
     {"Top-left", 0},
     {"Bottom-right", 180},
@@ -723,7 +747,21 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
         value = exifInfo_.dateTimeOriginal_;
     } else if (IsSameTextStr(key, DATE_TIME_ORIGINAL_MEDIA)) {
         FormatTimeStamp(value, exifInfo_.dateTimeOriginal_);
-    } else if (IsSameTextStr(key, EXPOSURE_TIME)) {
+    } else if (GetImagePropertyString(key, value) != Media::SUCCESS) {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+
+    if (IsSameTextStr(value, EXIFInfo::DEFAULT_EXIF_VALUE)) {
+        HiLog::Error(LABEL, "[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
+        return Media::ERR_MEDIA_VALUE_INVALID;
+    }
+    HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
+    return Media::SUCCESS;
+}
+
+uint32_t JpegDecoder::GetImagePropertyString(const std::string &key, std::string &value)
+{
+    if (IsSameTextStr(key, EXPOSURE_TIME)) {
         value = exifInfo_.exposureTime_;
     } else if (IsSameTextStr(key, F_NUMBER)) {
         value = exifInfo_.fNumber_;
@@ -733,15 +771,66 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
         value = exifInfo_.sceneType_;
     } else if (IsSameTextStr(key, COMPRESSED_BITS_PER_PIXEL)) {
         value = exifInfo_.compressedBitsPerPixel_;
+    } else if (IsSameTextStr(key, DATE_TIME)) {
+        value = exifInfo_.dateTime_;
+    } else if (IsSameTextStr(key, GPS_TIME_STAMP)) {
+        value = exifInfo_.gpsTimeStamp_;
+    } else if (IsSameTextStr(key, GPS_DATE_STAMP)) {
+        value = exifInfo_.gpsDateStamp_;
+    } else if (IsSameTextStr(key, IMAGE_DESCRIPTION)) {
+        value = exifInfo_.imageDescription_;
+    } else if (IsSameTextStr(key, MAKE)) {
+        value = exifInfo_.make_;
+    } else if (IsSameTextStr(key, MODEL)) {
+        value = exifInfo_.model_;
+    } else if (IsSameTextStr(key, PHOTO_MODE)) {
+        value = exifInfo_.photoMode_;
+    } else if (IsSameTextStr(key, SENSITIVITY_TYPE)) {
+        value = exifInfo_.sensitivityType_;
+    } else if (IsSameTextStr(key, STANDARD_OUTPUT_SENSITIVITY)) {
+        value = exifInfo_.standardOutputSensitivity_;
+    } else if (IsSameTextStr(key, RECOMMENDED_EXPOSURE_INDEX)) {
+        value = exifInfo_.recommendedExposureIndex_;
+    } else if (IsSameTextStr(key, ISO_SPEED)) {
+        value = exifInfo_.isoSpeedRatings_;
+    } else if (IsSameTextStr(key, APERTURE_VALUE)) {
+        value = exifInfo_.apertureValue_;
+    } else if (IsSameTextStr(key, EXPOSURE_BIAS_VALUE)) {
+        value = exifInfo_.exposureBiasValue_;
+    } else if (IsSameTextStr(key, METERING_MODE)) {
+        value = exifInfo_.meteringMode_;
+    } else if (IsSameTextStr(key, LIGHT_SOURCE)) {
+        value = exifInfo_.lightSource_;
+    } else if (IsSameTextStr(key, FLASH)) {
+        value = exifInfo_.flash_;
+    } else if (IsSameTextStr(key, FOCAL_LENGTH)) {
+        value = exifInfo_.focalLength_;
+    } else {
+        return GetImagePropertyStringEx(key, value);
+    }
+
+    return Media::SUCCESS;
+}
+
+uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::string &value)
+{
+    if (IsSameTextStr(key, USER_COMMENT)) {
+        value = exifInfo_.userComment_;
+    } else if (IsSameTextStr(key, PIXEL_X_DIMENSION)) {
+        value = exifInfo_.pixelXDimension_;
+    } else if (IsSameTextStr(key, PIXEL_Y_DIMENSION)) {
+        value = exifInfo_.pixelYDimension_;
+    } else if (IsSameTextStr(key, WHITE_BALANCE)) {
+        value = exifInfo_.whiteBalance_;
+    } else if (IsSameTextStr(key, FOCAL_LENGTH_IN_35_MM_FILM)) {
+        value = exifInfo_.focalLengthIn35mmFilm_;
+    } else if (IsSameTextStr(key, HW_MNOTE_CAPTURE_MODE)) {
+        value = exifInfo_.hwMnoteCaptureMode_;
+    } else if (IsSameTextStr(key, HW_MNOTE_PHYSICAL_APERTURE)) {
+        value = exifInfo_.hwMnotePhysicalAperture_;
     } else {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-
-    if (IsSameTextStr(value, EXIFInfo::DEFAULT_EXIF_VALUE)) {
-        HiLog::Error(LABEL, "[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
-        return Media::ERR_MEDIA_VALUE_INVALID;
-    }
-    HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return Media::SUCCESS;
 }
 
