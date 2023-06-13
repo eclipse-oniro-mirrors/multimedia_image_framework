@@ -128,7 +128,9 @@ bool HeifDecoder::AllocHeapBuffer(DecodeContext &context)
         }
         uint64_t byteCount = static_cast<uint64_t>(heifSize_.width) * heifSize_.height * bytesPerPixel_;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-            int fd = AshmemCreate("HEIF RawData", byteCount);
+            uint32_t id = context.pixelmapUniqueId_;
+            std::string name = "HEIF RawData, uniqueId: " + std::to_string(id);
+            int fd = AshmemCreate(name.c_str(), byteCount);
             if (fd < 0) {
                 return false;
             }

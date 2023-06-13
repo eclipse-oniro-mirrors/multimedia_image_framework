@@ -117,7 +117,7 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
     if (allocate == nullptr) {
         outPixmap.data = static_cast<uint8_t *>(malloc(bufferSize));
     } else {
-        outPixmap.data = allocate(dstSize, bufferSize, fd);
+        outPixmap.data = allocate(dstSize, bufferSize, fd, outPixmap.uniqueId);
         auto tmp = std::make_unique<int32_t>();
         *tmp = fd;
         outPixmap.context = tmp.release();

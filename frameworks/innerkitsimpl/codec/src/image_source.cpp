@@ -371,6 +371,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
     DecodeContext context;
     FinalOutputStep finalOutputStep = FinalOutputStep::NO_CHANGE;
+    context.pixelmapUniqueId_ = pixelMap->GetUniqueId();
     if (!useSkia) {
         bool hasNinePatch = mainDecoder_->HasProperty(NINE_PATCH);
         finalOutputStep = GetFinalOutputStep(opts_, *(pixelMap.get()), hasNinePatch);

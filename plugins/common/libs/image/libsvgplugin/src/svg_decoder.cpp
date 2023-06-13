@@ -43,7 +43,9 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
         return false;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-    int fd = AshmemCreate("SVG RawData", byteCount);
+    uint32_t id = context.pixelmapUniqueId_;
+    std::string name = "SVG RawData, uniqueId: " + std::to_string(id);
+    int fd = AshmemCreate(name.c_str(), byteCount);
     if (fd < 0) {
         HiLog::Error(LABEL, "[AllocShareBuffer] create fail");
         return false;

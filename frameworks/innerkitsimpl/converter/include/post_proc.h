@@ -42,12 +42,12 @@ public:
     static CropValue ValidCropValue(Rect &rect, const Size &size);
 
 private:
-    static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd);
+    static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     uint32_t NeedScanlineFilter(const Rect &cropRect, const Size &srcSize, const bool &hasPixelConvert);
     void GetDstImageInfo(const DecodeOptions &opts, PixelMap &pixelMap,
                          ImageInfo srcImageInfo, ImageInfo &dstImageInfo);
     uint32_t PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap, ImageInfo &srcImageInfo);
-    uint32_t AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &dataSize, int &fd);
+    uint32_t AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &dataSize, int &fd, uint32_t uniqueId);
     bool AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer);
     void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, uint8_t **buffer);
     bool Transform(BasicTransformer &trans, const PixmapInfo &input, PixelMap &pixelMap);
