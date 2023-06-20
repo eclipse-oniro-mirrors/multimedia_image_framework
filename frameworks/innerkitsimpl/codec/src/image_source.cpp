@@ -439,7 +439,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 #if !defined(_WIN32) && !defined(_APPLE)
     FinishTrace(HITRACE_TAG_ZIMAGE);
 #endif
-    pixelMap->SetEditable(opts.editable);
     return pixelMap;
 }
 
@@ -1110,6 +1109,8 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
 uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin::PlImageInfo &plInfo,
                                          PixelMap &pixelMap)
 {
+    pixelMap.SetEditable(opts.editable);
+
     ImageInfo info;
     info.baseDensity = sourceInfo_.baseDensity;
     info.size.width = plInfo.size.width;
