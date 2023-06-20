@@ -269,7 +269,7 @@ private:
     CustomFreePixelMap freePixelMapProc_ = nullptr;
     AllocatorType allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
     uint32_t pixelsSize_ = 0;
-    bool editable_ = true;
+    bool editable_ = false;
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();

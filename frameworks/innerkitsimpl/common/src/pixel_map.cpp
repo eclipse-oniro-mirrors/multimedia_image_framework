@@ -1932,6 +1932,10 @@ uint32_t PixelMap::SetAlpha(const float percent)
 
 void PixelMap::scale(float xAxis, float yAxis)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to scale, when editable is false");
+        return;
+    }
     PostProc postProc;
     if (!postProc.ScalePixelMap(xAxis, yAxis, *this)) {
         HiLog::Error(LABEL, "scale fail");
@@ -1939,6 +1943,10 @@ void PixelMap::scale(float xAxis, float yAxis)
 }
 void PixelMap::translate(float xAxis, float yAxis)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to translate, when editable is false");
+        return;
+    }
     PostProc postProc;
     if (!postProc.TranslatePixelMap(xAxis, yAxis, *this)) {
         HiLog::Error(LABEL, "translate fail");
@@ -1946,6 +1954,10 @@ void PixelMap::translate(float xAxis, float yAxis)
 }
 void PixelMap::rotate(float degrees)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to rotate, when editable is false");
+        return;
+    }
     PostProc postProc;
     if (!postProc.RotatePixelMap(degrees, *this)) {
         HiLog::Error(LABEL, "rotate fail");
@@ -1953,6 +1965,10 @@ void PixelMap::rotate(float degrees)
 }
 void PixelMap::flip(bool xAxis, bool yAxis)
 {
+    if (!IsEditable()) {
+        HiLog::Error(LABEL, "pixelmap is not allowed to flip, when editable is false");
+        return;
+    }
     if (xAxis == false && yAxis == false) {
         return;
     }
