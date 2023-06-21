@@ -87,6 +87,7 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/src/bmp_stream.cpp",
 
   # gif
+  "${image_subsystem}/plugins/common/libs/image/libjpegplugin/src/exif_maker_note.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",

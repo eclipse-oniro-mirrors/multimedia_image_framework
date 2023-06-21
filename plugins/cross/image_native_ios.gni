@@ -89,6 +89,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
 
   # jpeg
+  "${image_subsystem}/plugins/common/libs/image/libjpegplugin/src/exif_maker_note.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
