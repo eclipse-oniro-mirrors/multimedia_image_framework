@@ -18,12 +18,13 @@
 #include "common_utils.h"
 #include "image_pixel_map_napi_kits.h"
 
-using namespace OHOS::Media;
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct NativePixelMap_ {
+struct NativePixelMap {
     PixelMapNapi* napi = nullptr;
 };
 
@@ -41,7 +42,7 @@ NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
 
 MIDK_EXPORT
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
-    uint8_t* buf, size_t len, napi_value* res)
+    void* buf, size_t len, napi_value* res)
 {
     PixelMapNapiArgs args;
     args.createOptions.width = info.width;
@@ -216,7 +217,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo 
 }
 
 MIDK_EXPORT
-int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, uint8_t** addr)
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
 {
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
@@ -239,3 +240,5 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
 #ifdef __cplusplus
 };
 #endif
+}  // namespace Media
+}  // namespace OHOS

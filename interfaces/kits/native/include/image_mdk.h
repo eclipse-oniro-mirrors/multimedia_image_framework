@@ -28,7 +28,6 @@
  * @file image_mdk.h
  *
  * @brief Declares functions that access the image rectangle, size, format, and component data.
- * Need link <b>libimagendk.z.so</b>
  *
  * @since 10
  * @version 2.0
@@ -36,9 +35,11 @@
 
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_
+#include <cstdint>
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
-
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -203,4 +204,6 @@ int32_t OH_Image_Release(ImageNative* native);
 };
 #endif
 /** @} */
+} // namespace Media
+} // namespace OHOS
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_MDK_H_
