@@ -27,6 +27,10 @@ public:
     ~NdkTest() {}
 };
 
+struct NativePixelMap {
+    PixelMapNapi* napi = nullptr;
+};
+
 /**
  * @tc.name: NdkTest001
  * @tc.desc: OH_PixelMap_GetBytesNumberPerRow
@@ -37,7 +41,7 @@ HWTEST_F(NdkTest, NdkTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest001 start";
     const NativePixelMap *p = nullptr;
     int* num = nullptr;
-    int32_t res = OH_PixelMap_GetBytesNumberPerRow(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_GetBytesNumberPerRow(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest001 end";
@@ -53,7 +57,7 @@ HWTEST_F(NdkTest, NdkTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest002 start";
     const NativePixelMap *p = nullptr;
     int* num = nullptr;
-    int32_t res = OH_PixelMap_GetIsEditable(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_GetIsEditable(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest002 end";
@@ -69,7 +73,7 @@ HWTEST_F(NdkTest, NdkTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest003 start";
     const NativePixelMap *p = nullptr;
     int* num = nullptr;
-    int32_t res = OH_PixelMap_IsSupportAlpha(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_IsSupportAlpha(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest003 end";
@@ -85,7 +89,7 @@ HWTEST_F(NdkTest, NdkTest004, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest004 start";
     const NativePixelMap *p = nullptr;
     int num = 0;
-    int32_t res = OH_PixelMap_SetAlphaAble(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_SetAlphaAble(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest004 end";
@@ -101,7 +105,7 @@ HWTEST_F(NdkTest, NdkTest005, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest005 start";
     const NativePixelMap *p = nullptr;
     int* num = nullptr;
-    int32_t res = OH_PixelMap_GetDensity(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_GetDensity(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest005 end";
@@ -117,7 +121,7 @@ HWTEST_F(NdkTest, NdkTest006, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest006 start";
     const NativePixelMap *p = nullptr;
     int num = 0;
-    int32_t res = OH_PixelMap_SetDensity(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_SetDensity(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest006 end";
@@ -133,7 +137,7 @@ HWTEST_F(NdkTest, NdkTest007, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest007 start";
     const NativePixelMap *p = nullptr;
     float num = 0.5;
-    int32_t res = OH_PixelMap_SetOpacity(p, num);
+    int32_t res = OHOS::Media::OH_PixelMap_SetOpacity(p, num);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest007 end";
@@ -150,7 +154,7 @@ HWTEST_F(NdkTest, NdkTest008, TestSize.Level3)
     const NativePixelMap *p = nullptr;
     float x = 0.5;
     float y = 0.5;
-    int32_t res = OH_PixelMap_Scale(p, x, y);
+    int32_t res = OHOS::Media::OH_PixelMap_Scale(p, x, y);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest008 end";
@@ -167,7 +171,7 @@ HWTEST_F(NdkTest, NdkTest009, TestSize.Level3)
     const NativePixelMap *p = nullptr;
     float x = 0.5;
     float y = 0.5;
-    int32_t res = OH_PixelMap_Translate(p, x, y);
+    int32_t res = OHOS::Media::OH_PixelMap_Translate(p, x, y);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest009 end";
@@ -183,7 +187,7 @@ HWTEST_F(NdkTest, NdkTest0010, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0010 start";
     const NativePixelMap *p = nullptr;
     float x = 0.5;
-    int32_t res = OH_PixelMap_Rotate(p, x);
+    int32_t res = OHOS::Media::OH_PixelMap_Rotate(p, x);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0010 end";
@@ -200,7 +204,7 @@ HWTEST_F(NdkTest, NdkTest0011, TestSize.Level3)
     const NativePixelMap *p = nullptr;
     int32_t x = 0;
     int32_t y = 0;
-    int32_t res = OH_PixelMap_Flip(p, x, y);
+    int32_t res = OHOS::Media::OH_PixelMap_Flip(p, x, y);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0011 end";
@@ -219,7 +223,7 @@ HWTEST_F(NdkTest, NdkTest0012, TestSize.Level3)
     int32_t y = 0;
     int32_t width = 0;
     int32_t height = 0;
-    int32_t res = OH_PixelMap_Crop(p, x, y, width, height);
+    int32_t res = OHOS::Media::OH_PixelMap_Crop(p, x, y, width, height);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0012 end";
@@ -235,7 +239,7 @@ HWTEST_F(NdkTest, NdkTest0013, TestSize.Level3)
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0013 start";
     const NativePixelMap *p = nullptr;
     OhosPixelMapInfo *info = nullptr;
-    int32_t res = OH_PixelMap_GetImageInfo(p, info);
+    int32_t res = OHOS::Media::OH_PixelMap_GetImageInfo(p, info);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0013 end";
@@ -250,8 +254,8 @@ HWTEST_F(NdkTest, NdkTest0014, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0014 start";
     const NativePixelMap *p = nullptr;
-    uint8_t **info = nullptr;
-    int32_t res = OH_PixelMap_AccessPixels(p, info);
+    void **info = nullptr;
+    int32_t res = OHOS::Media::OH_PixelMap_AccessPixels(p, info);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0014 end";
@@ -266,7 +270,7 @@ HWTEST_F(NdkTest, NdkTest0015, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0015 start";
     const NativePixelMap *p = nullptr;
-    int32_t res = OH_PixelMap_UnAccessPixels(p);
+    int32_t res = OHOS::Media::OH_PixelMap_UnAccessPixels(p);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0015 end";

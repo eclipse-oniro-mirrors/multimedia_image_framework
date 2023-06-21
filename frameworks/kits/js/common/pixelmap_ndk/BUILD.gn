@@ -37,7 +37,6 @@ ohos_shared_library("pixelmap_ndk") {
 
   deps = [ "$SUBSYSTEM_DIR/interfaces/kits/js/common:image" ]
 
-  innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"
 }

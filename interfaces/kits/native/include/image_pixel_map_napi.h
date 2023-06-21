@@ -28,7 +28,6 @@
  * @file image_pixel_map_napi.h
  *
  * @brief Declares the APIs that can lock, access, and unlock a pixel map.
- * Need link <b>libpixelmapndk.z.so</b>
  *
  * @since 8
  * @version 1.0
@@ -36,9 +35,10 @@
 
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
-#include <stdint.h>
+#include <cstdint>
 #include "napi/native_api.h"
-
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -101,14 +101,14 @@ struct OhosPixelMapInfo {
  * @since 9
  * @version 2.0
  */
-struct NativePixelMap_;
+struct NativePixelMap;
 
 /**
  * @brief Defines the data type name of the native pixel map.
  * @since 9
  * @version 2.0
  */
-typedef struct NativePixelMap_ NativePixelMap;
+typedef struct NativePixelMap NativePixelMap;
 
 /**
  * @brief Enumerates the pixel map alpha types.
@@ -192,18 +192,18 @@ struct OhosPixelMapCreateOps {
 
 /**
  * @brief Obtains the information about a <b>PixelMap</b> object
- * and stores the information to the {@link struct OhosPixelMapInfo} struct.
+ * and stores the information to the {@link OhosPixelMapInfo} struct.
  *
  * @param env Indicates the NAPI environment pointer.
  * @param value Indicates the <b>PixelMap</b> object at the application layer.
  * @param info Indicates the pointer to the object that stores the information obtained.
- * For details, see {@link struct OhosPixelMapInfo}.
+ * For details, see {@link OhosPixelMapInfo}.
  * @return Returns <b>0</b> if the information is obtained and stored successfully; returns an error code otherwise.
- * @see struct OhosPixelMapInfo
+ * @see OhosPixelMapInfo
  * @since 8
  * @version 1.0
  */
-int32_t OH_GetImageInfo(napi_env env, napi_value value, struct OhosPixelMapInfo *info);
+int32_t OH_GetImageInfo(napi_env env, napi_value value, OhosPixelMapInfo *info);
 
 /**
  * @brief Obtains the memory address of a <b>PixelMap</b> object and locks the memory.
@@ -221,7 +221,7 @@ int32_t OH_GetImageInfo(napi_env env, napi_value value, struct OhosPixelMapInfo 
  * @since 8
  * @version 1.0
  */
-int32_t OH_AccessPixels(napi_env env, napi_value value, uint8_t** addrPtr);
+int32_t OH_AccessPixels(napi_env env, napi_value value, void** addrPtr);
 
 /**
  * @brief Unlocks the memory of a <b>PixelMap</b> object. This function is used with {@link OH_AccessPixels} in pairs.
@@ -248,8 +248,8 @@ int32_t OH_UnAccessPixels(napi_env env, napi_value value);
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_CreatePixelMap(napi_env env, struct OhosPixelMapCreateOps info,
-    uint8_t* buf, size_t len, napi_value* res);
+int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, napi_value* res);
 
 /**
  * @brief Creates a <b>PixelMap</b> object that contains only alpha channel information.
@@ -435,11 +435,11 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
  * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
  * @param info Indicates the pointer to the image information.
  * @return Returns <b>0</b> if the operation is successful; returns an error code otherwise.
- * @see struct OhosPixelMapInfo
+ * @see OhosPixelMapInfo
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, struct OhosPixelMapInfo *info);
+int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info);
 
 /**
  * @brief Obtains the memory address of a <b>NativePixelMap</b> object and locks the memory.
@@ -451,7 +451,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, struct OhosPixelM
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, uint8_t** addr);
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr);
 
 /**
  * @brief Unlocks the memory of the <b>NativePixelMap</b> object data.
@@ -469,5 +469,6 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native);
 };
 #endif
 /** @} */
-
+} // namespace Media
+} // namespace OHOS
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
