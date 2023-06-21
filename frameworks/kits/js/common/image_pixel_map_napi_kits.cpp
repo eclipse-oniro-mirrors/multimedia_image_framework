@@ -100,8 +100,9 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     info.scaleMode = ParseScaleMode(args->createOptions.scaleMode);
     info.size.height = args->createOptions.height;
     info.size.width = args->createOptions.width;
+    auto tmp = static_cast<void*>(args->inBuffer);
 
-    auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer), args->bufferLen, info);
+    auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(tmp), args->bufferLen, info);
     if (pixelmap == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
@@ -320,7 +321,7 @@ static int32_t PixelMapNapiAccessPixels(PixelMapNapi* native, PixelMapNapiArgs* 
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     native->LockPixelMap();
-    *(args->outAddr) = png_constcast(uint8_t*, pixelmap->GetPixels());
+    *(args->outAddr) = static_cast<uint8_t*>(pixelmap->GetWritablePixels());
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
