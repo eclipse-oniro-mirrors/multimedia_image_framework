@@ -28,7 +28,8 @@
  * @file image_source_mdk.h
  *
  * @brief Declares function to decoding image source to pixel map.
- *
+ * 
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -49,6 +50,7 @@ struct ImageSourceNative_;
 /**
  * @brief Defines native image source object for image source functions.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -58,6 +60,7 @@ typedef struct ImageSourceNative_ ImageSourceNative;
  * @brief Defines image property key of bits per sample
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -67,6 +70,7 @@ const char* OHOS_IMAGE_PROPERTY_BITS_PER_SAMPLE = "BitsPerSample";
  * @brief Defines image property key of orientation
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -76,6 +80,7 @@ const char* OHOS_IMAGE_PROPERTY_ORIENTATION = "Orientation";
  * @brief Defines image property key of image length
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -85,6 +90,7 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_LENGTH = "ImageLength";
  * @brief Defines image property key of image width
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -94,6 +100,7 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_WIDTH = "ImageWidth";
  * @brief Defines image property key of GPS latitude
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -103,6 +110,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE = "GPSLatitude";
  * @brief Defines image property key of GPS longitude
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -112,6 +120,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE = "GPSLongitude";
  * @brief Defines image property key of GPS latitude ref
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -121,6 +130,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE_REF = "GPSLatitudeRef";
  * @brief Defines image property key of GPS longitude ref
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -130,6 +140,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE_REF = "GPSLongitudeRef";
  * @brief Defines image property key of date time original
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -139,6 +150,7 @@ const char* OHOS_IMAGE_PROPERTY_DATE_TIME_ORIGINAL = "DateTimeOriginal";
  * @brief Defines image property key of exposure time
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -148,6 +160,7 @@ const char* OHOS_IMAGE_PROPERTY_EXPOSURE_TIME = "ExposureTime";
  * @brief Defines image property key of scene type
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -157,6 +170,7 @@ const char* OHOS_IMAGE_PROPERTY_SCENE_TYPE = "SceneType";
  * @brief Defines image property key of ISO speed ratings
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -166,6 +180,7 @@ const char* OHOS_IMAGE_PROPERTY_ISO_SPEED_RATINGS = "ISOSpeedRatings";
  * @brief Defines image property key of F number
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -175,6 +190,7 @@ const char* OHOS_IMAGE_PROPERTY_F_NUMBER = "FNumber";
  * @brief Defines image property key of compressed bits per pixel
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -185,6 +201,7 @@ const char* OHOS_IMAGE_PROPERTY_COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPi
  * {@link OhosImageDecodingOps}, {@link OH_ImageSource_CreatePixelMap} and
  * {@link OH_ImageSource_CreatePixelMapList}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -203,6 +220,7 @@ struct OhosImageRegion {
  * @brief Defines image source options infomation
  * {@link OH_ImageSource_Create} and {@link OH_ImageSource_CreateIncremental}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -219,6 +237,7 @@ struct OhosImageSourceOps {
  * @brief Defines image source decoding options {@link OH_ImageSource_CreatePixelMap} and
  * {@link OH_ImageSource_CreatePixelMapList}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -244,6 +263,7 @@ struct OhosImageDecodingOps {
 /**
  * @brief Defines image source information {@link OH_ImageSource_GetImageInfo}.
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -263,6 +283,7 @@ struct OhosImageSourceInfo {
 /**
  * @brief Defines image source input resource, accept one type once only. {@link OH_ImageSource_Create}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -282,6 +303,7 @@ struct OhosImageSource {
 /**
  * @brief Defines image source delay time list. {@link OH_ImageSource_GetDelayTime}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -296,6 +318,7 @@ struct OhosImageSourceDelayTimeList {
  * @brief Defines image source supported format string.
  * {@link OhosImageSourceSupportedFormatList} and {@link OH_ImageSource_GetSupportedFormats}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -309,6 +332,7 @@ struct OhosImageSourceSupportedFormat {
 /**
  * @brief Defines image source supported format string list. {@link OH_ImageSource_GetSupportedFormats}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -318,10 +342,12 @@ struct OhosImageSourceSupportedFormatList {
     /** Image source supported format string list size.*/
     size_t size = 0;
 };
+
 /**
  * @brief Defines image source property key and value string.
  * {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -335,6 +361,7 @@ struct OhosImageSourceProperty {
 /**
  * @brief Defines image source update data options. {@link OH_ImageSource_UpdateData}
  *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -362,6 +389,8 @@ struct OhosImageSourceUpdateData {
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -381,6 +410,8 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -398,10 +429,13 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSourceSupportedFormatList}, {@link OhosImageSourceSupportedFormat}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
 int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormatList* res);
+
 /**
  * @brief Unwrap native {@link ImageSourceNative} value from input JavaScript Native API
  * <b>ImageSource</b> object.
@@ -411,6 +445,8 @@ int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormat
  * @return Returns {@link ImageSourceNative} pointer if the operation is successful;
  * returns nullptr result if the operation fails.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Release}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -426,6 +462,8 @@ ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -442,6 +480,8 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -459,6 +499,8 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceDelayTimeList}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -473,6 +515,8 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -487,6 +531,8 @@ int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceInfo}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -505,6 +551,8 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -520,6 +568,8 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -534,6 +584,8 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceUpdateData}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
@@ -547,6 +599,8 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosIm
  * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Create}, {@link OH_ImageSource_CreateIncremental}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
  * @since 11
  * @version 4.0
  */
