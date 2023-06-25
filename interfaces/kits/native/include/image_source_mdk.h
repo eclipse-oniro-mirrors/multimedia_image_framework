@@ -20,7 +20,7 @@
  * @brief Provides access image functions.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 
@@ -30,7 +30,7 @@
  * @brief Declares function to decoding image source to pixel map.
  * 
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 
@@ -51,7 +51,7 @@ struct ImageSourceNative_;
  * @brief Defines native image source object for image source functions.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 typedef struct ImageSourceNative_ ImageSourceNative;
@@ -61,7 +61,7 @@ typedef struct ImageSourceNative_ ImageSourceNative;
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_BITS_PER_SAMPLE = "BitsPerSample";
@@ -71,7 +71,7 @@ const char* OHOS_IMAGE_PROPERTY_BITS_PER_SAMPLE = "BitsPerSample";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_ORIENTATION = "Orientation";
@@ -81,7 +81,7 @@ const char* OHOS_IMAGE_PROPERTY_ORIENTATION = "Orientation";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_IMAGE_LENGTH = "ImageLength";
@@ -91,7 +91,7 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_LENGTH = "ImageLength";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_IMAGE_WIDTH = "ImageWidth";
@@ -101,7 +101,7 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_WIDTH = "ImageWidth";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE = "GPSLatitude";
@@ -111,7 +111,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE = "GPSLatitude";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE = "GPSLongitude";
@@ -121,7 +121,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE = "GPSLongitude";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE_REF = "GPSLatitudeRef";
@@ -131,7 +131,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE_REF = "GPSLatitudeRef";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE_REF = "GPSLongitudeRef";
@@ -141,7 +141,7 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE_REF = "GPSLongitudeRef";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_DATE_TIME_ORIGINAL = "DateTimeOriginal";
@@ -151,7 +151,7 @@ const char* OHOS_IMAGE_PROPERTY_DATE_TIME_ORIGINAL = "DateTimeOriginal";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_EXPOSURE_TIME = "ExposureTime";
@@ -161,7 +161,7 @@ const char* OHOS_IMAGE_PROPERTY_EXPOSURE_TIME = "ExposureTime";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_SCENE_TYPE = "SceneType";
@@ -171,7 +171,7 @@ const char* OHOS_IMAGE_PROPERTY_SCENE_TYPE = "SceneType";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_ISO_SPEED_RATINGS = "ISOSpeedRatings";
@@ -181,7 +181,7 @@ const char* OHOS_IMAGE_PROPERTY_ISO_SPEED_RATINGS = "ISOSpeedRatings";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_F_NUMBER = "FNumber";
@@ -191,7 +191,7 @@ const char* OHOS_IMAGE_PROPERTY_F_NUMBER = "FNumber";
  * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 const char* OHOS_IMAGE_PROPERTY_COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPixel";
@@ -202,7 +202,7 @@ const char* OHOS_IMAGE_PROPERTY_COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPi
  * {@link OH_ImageSource_CreatePixelMapList}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageRegion {
@@ -221,7 +221,7 @@ struct OhosImageRegion {
  * {@link OH_ImageSource_Create} and {@link OH_ImageSource_CreateIncremental}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceOps {
@@ -238,7 +238,7 @@ struct OhosImageSourceOps {
  * {@link OH_ImageSource_CreatePixelMapList}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageDecodingOps {
@@ -264,7 +264,7 @@ struct OhosImageDecodingOps {
  * @brief Defines image source information {@link OH_ImageSource_GetImageInfo}.
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceInfo {
@@ -284,7 +284,7 @@ struct OhosImageSourceInfo {
  * @brief Defines image source input resource, accept one type once only. {@link OH_ImageSource_Create}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSource {
@@ -304,7 +304,7 @@ struct OhosImageSource {
  * @brief Defines image source delay time list. {@link OH_ImageSource_GetDelayTime}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceDelayTimeList {
@@ -319,7 +319,7 @@ struct OhosImageSourceDelayTimeList {
  * {@link OhosImageSourceSupportedFormatList} and {@link OH_ImageSource_GetSupportedFormats}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceSupportedFormat {
@@ -333,7 +333,7 @@ struct OhosImageSourceSupportedFormat {
  * @brief Defines image source supported format string list. {@link OH_ImageSource_GetSupportedFormats}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceSupportedFormatList {
@@ -348,7 +348,7 @@ struct OhosImageSourceSupportedFormatList {
  * {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceProperty {
@@ -362,7 +362,7 @@ struct OhosImageSourceProperty {
  * @brief Defines image source update data options. {@link OH_ImageSource_UpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 struct OhosImageSourceUpdateData {
@@ -391,7 +391,7 @@ struct OhosImageSourceUpdateData {
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
@@ -412,7 +412,7 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* source,
@@ -431,7 +431,7 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
  * @see {@link OhosImageSourceSupportedFormatList}, {@link OhosImageSourceSupportedFormat}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormatList* res);
@@ -447,7 +447,7 @@ int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormat
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Release}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
@@ -464,7 +464,7 @@ ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
@@ -482,7 +482,7 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
@@ -501,7 +501,7 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
  * @see {@link ImageSourceNative}, {@link OhosImageSourceDelayTimeList}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
@@ -517,7 +517,7 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
  * @see {@link ImageSourceNative}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *res);
@@ -533,7 +533,7 @@ int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *
  * @see {@link ImageSourceNative}, {@link OhosImageSourceInfo}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t index,
@@ -553,7 +553,7 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
@@ -570,7 +570,7 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
@@ -586,7 +586,7 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
  * @see {@link ImageSourceNative}, {@link OhosImageSourceUpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosImageSourceUpdateData* data);
@@ -601,7 +601,7 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosIm
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Create}, {@link OH_ImageSource_CreateIncremental}
  *
  * @Syscap SystemCapability.Multimedia.Image
- * @since 11
+ * @since 10
  * @version 4.0
  */
 int32_t OH_ImageSource_Release(ImageSourceNative* native);
