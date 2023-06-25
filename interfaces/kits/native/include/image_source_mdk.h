@@ -45,6 +45,13 @@ namespace Media {
 extern "C" {
 #endif
 
+/**
+ * @brief Defines native image source object for image source functions.
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 10
+ * @version 4.0
+ */
 struct ImageSourceNative_;
 
 /**
