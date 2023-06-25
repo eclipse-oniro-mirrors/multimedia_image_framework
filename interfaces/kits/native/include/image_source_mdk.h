@@ -28,7 +28,7 @@
  * @file image_source_mdk.h
  *
  * @brief Declares function to decoding image source to pixel map.
- * 
+ *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
