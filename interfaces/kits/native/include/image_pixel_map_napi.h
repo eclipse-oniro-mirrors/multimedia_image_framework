@@ -96,6 +96,8 @@ struct OhosPixelMapInfo {
     int32_t pixelFormat;
 };
 
+typedef struct OhosPixelMapInfo OhosPixelMapInfo;
+
 /**
  * @brief Defines the native pixel map information.
  * @since 9
@@ -192,18 +194,18 @@ struct OhosPixelMapCreateOps {
 
 /**
  * @brief Obtains the information about a <b>PixelMap</b> object
- * and stores the information to the {@link struct OhosPixelMapInfo} struct.
+ * and stores the information to the {@link OhosPixelMapInfo} struct.
  *
  * @param env Indicates the NAPI environment pointer.
  * @param value Indicates the <b>PixelMap</b> object at the application layer.
  * @param info Indicates the pointer to the object that stores the information obtained.
- * For details, see {@link struct OhosPixelMapInfo}.
+ * For details, see {@link OhosPixelMapInfo}.
  * @return Returns <b>0</b> if the information is obtained and stored successfully; returns an error code otherwise.
- * @see struct OhosPixelMapInfo
+ * @see OhosPixelMapInfo
  * @since 8
  * @version 1.0
  */
-int32_t OH_GetImageInfo(napi_env env, napi_value value, struct OhosPixelMapInfo *info);
+int32_t OH_GetImageInfo(napi_env env, napi_value value, OhosPixelMapInfo *info);
 
 /**
  * @brief Obtains the memory address of a <b>PixelMap</b> object and locks the memory.
@@ -221,7 +223,7 @@ int32_t OH_GetImageInfo(napi_env env, napi_value value, struct OhosPixelMapInfo 
  * @since 8
  * @version 1.0
  */
-int32_t OH_AccessPixels(napi_env env, napi_value value, uint8_t** addrPtr);
+int32_t OH_AccessPixels(napi_env env, napi_value value, void** addrPtr);
 
 /**
  * @brief Unlocks the memory of a <b>PixelMap</b> object. This function is used with {@link OH_AccessPixels} in pairs.
@@ -248,8 +250,8 @@ int32_t OH_UnAccessPixels(napi_env env, napi_value value);
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_CreatePixelMap(napi_env env, struct OhosPixelMapCreateOps info,
-    uint8_t* buf, size_t len, napi_value* res);
+int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, napi_value* res);
 
 /**
  * @brief Creates a <b>PixelMap</b> object that contains only alpha channel information.
@@ -435,11 +437,11 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
  * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
  * @param info Indicates the pointer to the image information.
  * @return Returns <b>0</b> if the operation is successful; returns an error code otherwise.
- * @see struct OhosPixelMapInfo
+ * @see OhosPixelMapInfo
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, struct OhosPixelMapInfo *info);
+int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo *info);
 
 /**
  * @brief Obtains the memory address of a <b>NativePixelMap</b> object and locks the memory.
@@ -451,7 +453,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, struct OhosPixelM
  * @since 10
  * @version 2.0
  */
-int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, uint8_t** addr);
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr);
 
 /**
  * @brief Unlocks the memory of the <b>NativePixelMap</b> object data.
