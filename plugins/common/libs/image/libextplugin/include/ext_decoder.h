@@ -58,7 +58,7 @@ public:
 
 private:
     bool CheckCodec();
-    bool CheckIndexVailed(uint32_t index);
+    bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
     bool IsSupportScaleOnDecode();
     bool GetScaledSize(int &dWidth, int &dHeight, float &scale);
