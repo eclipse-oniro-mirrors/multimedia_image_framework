@@ -36,6 +36,9 @@ using namespace OHOS::HiviewDFX;
 
 static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "LibExtPlugin" };
 
+#define PLUGIN_LOG_D(...) HiLog::Debug(LABEL, __VA_ARGS__)
+#define PLUGIN_LOG_E(...) HiLog::Error(LABEL, __VA_ARGS__)
+
 // define the external interface of this plugin.
 PLUGIN_EXPORT_DEFAULT_EXTERNAL_START()
 PLUGIN_EXPORT_DEFAULT_EXTERNAL_STOP()
