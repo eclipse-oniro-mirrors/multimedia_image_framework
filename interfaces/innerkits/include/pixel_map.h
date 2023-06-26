@@ -43,6 +43,7 @@ struct InitializationOptions {
     bool editable = false;
     bool useSourceIfMatch = false;
 };
+struct TransInfos;
 
 // Build ARGB_8888 pixel value
 constexpr uint8_t ARGB_MASK = 0xFF;
@@ -257,6 +258,7 @@ private:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
+    void DoTranslation(TransInfos &infos);
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

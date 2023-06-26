@@ -48,7 +48,7 @@ config("image_external_config") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+    "$skia_root/skia/third_party/externals/libjpeg-turbo",
   ]
 
   include_dirs += [
@@ -59,9 +59,8 @@ config("image_external_config") {
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/skcms",
+    "$skia_root/skia/third_party/libjpeg-turbo",
+    "$skia_root/skia/third_party/skcms",
     "//third_party/libexif",
     "//third_party/zlib",
   ]
