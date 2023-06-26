@@ -104,7 +104,7 @@ uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &contex
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
     uint32_t id = context.pixelmapUniqueId_;
-    std::string name = "BMP RawData, uniqueId: " + std::to_string(id);
+    std::string name = "BMP RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), byteCount);
     if (fd < 0) {
         return ERR_SHAMEM_DATA_ABNORMAL;

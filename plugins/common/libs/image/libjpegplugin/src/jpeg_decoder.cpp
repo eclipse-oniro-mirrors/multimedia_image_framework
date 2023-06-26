@@ -338,7 +338,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
             uint32_t id = context.pixelmapUniqueId_;
-            std::string name = "JPEG RawData, uniqueId: " + std::to_string(id);
+            std::string name = "JPEG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
             int fd = AshmemCreate(name.c_str(), byteCount);
             if (fd < 0) {
                 return ERR_SHAMEM_DATA_ABNORMAL;

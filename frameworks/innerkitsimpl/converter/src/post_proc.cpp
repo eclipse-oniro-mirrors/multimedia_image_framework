@@ -410,7 +410,7 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(A_PLATFORM)
         return nullptr;
 #else
-    std::string name = "Parcel RawData, uniqueId: " + std::to_string(uniqueId);
+    std::string name = "Parcel RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(uniqueId);
     fd = AshmemCreate(name.c_str(), bufferSize);
     if (fd < 0) {
         IMAGE_LOGE("[PostProc]AllocSharedMemory fd error, bufferSize %{public}lld", static_cast<long long>(bufferSize));

@@ -205,7 +205,7 @@ uint8_t *PngDecoder::AllocOutputHeapBuffer(DecodeContext &context)
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
             uint32_t id = context.pixelmapUniqueId_;
-            std::string name = "PNG RawData, uniqueId: " + std::to_string(id);
+            std::string name = "PNG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
             int fd = AshmemCreate(name.c_str(), byteCount);
             if (fd < 0) {
                 return nullptr;
