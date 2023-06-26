@@ -34,8 +34,6 @@ using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImagePacker" };
 static constexpr uint8_t QUALITY_MAX = 100;
-const static std::string EXTENDED_ENCODER = "image/extended";
-static constexpr size_t SIZE_ZERO = 0;
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
 
@@ -78,9 +76,7 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
     }
     PlEncodeOptions plOpts;
     CopyOptionsToPlugin(option, plOpts);
-    return DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {
-        return encoder->StartEncode(*packerStream_.get(), plOpts);
-    });
+    return encoder_->StartEncode(*packerStream_.get(), plOpts);
 }
 
 uint32_t ImagePacker::StartPacking(uint8_t *outputData, uint32_t maxSize, const PackOption &option)
@@ -173,9 +169,11 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
 
 uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
 {
-    return DoEncodingFunc([this, &pixelMap](ImagePlugin::AbsImageEncoder* encoder) {
-        return encoder->AddImage(pixelMap);
-    });
+    if (encoder_ == nullptr) {
+        HiLog::Error(LABEL, "AddImage get encoder plugin failed.");
+        return ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+    return encoder_->AddImage(pixelMap);
 }
 
 uint32_t ImagePacker::AddImage(ImageSource &source)
@@ -218,13 +216,11 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 
 uint32_t ImagePacker::FinalizePacking()
 {
-    return DoEncodingFunc([](ImagePlugin::AbsImageEncoder* encoder) {
-        auto res = encoder->FinalizeEncode();
-        if (res != SUCCESS) {
-            HiLog::Error(LABEL, "FinalizePacking failed %{public}d.", res);
-        }
-        return res;
-        }, false);
+    if (encoder_ == nullptr) {
+        HiLog::Error(LABEL, "FinalizePacking get encoder plugin failed.");
+        return ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+    return encoder_->FinalizeEncode();
 }
 
 uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
@@ -234,37 +230,22 @@ uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
     return ret;
 }
 
-static ImagePlugin::AbsImageEncoder* GetEncoder(PluginServer &pluginServer, std::string format)
-{
-    std::map<std::string, AttrData> capabilities;
-    capabilities.insert(std::map<std::string, AttrData>::value_type(IMAGE_ENCODE_FORMAT, AttrData(format)));
-    return pluginServer.CreateObject<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, capabilities);
-}
-
 bool ImagePacker::GetEncoderPlugin(const PackOption &option)
 {
-    encoders_.clear();
-    HiLog::Debug(LABEL, "GetEncoderPlugin current encoder plugin size %{public}zu.", encoders_.size());
-    auto encoder = GetEncoder(pluginServer_, EXTENDED_ENCODER);
-    if (encoder != nullptr) {
-        encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
-    } else {
-        HiLog::Error(LABEL, "GetEncoderPlugin get exencoder plugin failed.");
+    std::map<std::string, AttrData> capabilities;
+    capabilities.insert(std::map<std::string, AttrData>::value_type(IMAGE_ENCODE_FORMAT, AttrData(option.format)));
+    if (encoder_ != nullptr) {
+        encoder_.reset();
     }
-    encoder = GetEncoder(pluginServer_, option.format);
-    if (encoder != nullptr) {
-        encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
-    } else {
-        HiLog::Error(LABEL, "GetEncoderPlugin get %{publci}s plugin failed.", option.format.c_str());
-    }
-    return encoders_.size() != SIZE_ZERO;
+    encoder_ = std::unique_ptr<ImagePlugin::AbsImageEncoder>(
+        pluginServer_.CreateObject<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, capabilities));
+    return (encoder_ != nullptr);
 }
 
 void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &plOpts)
 {
     plOpts.numberHint = opts.numberHint;
     plOpts.quality = opts.quality;
-    plOpts.format = opts.format;
 }
 
 void ImagePacker::FreeOldPackerStream()
@@ -277,36 +258,6 @@ void ImagePacker::FreeOldPackerStream()
 bool ImagePacker::IsPackOptionValid(const PackOption &option)
 {
     return !(option.quality > QUALITY_MAX || option.format.empty());
-}
-
-uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImageEncoder*)> func, bool forAll)
-{
-    if (encoders_.size() == SIZE_ZERO) {
-        HiLog::Error(LABEL, "DoEncodingFunc encoders is empty.");
-        return ERR_IMAGE_DECODE_ABNORMAL;
-    }
-    std::vector<uint32_t> rets;
-    rets.resize(SIZE_ZERO);
-    bool isSuccessOnce = false;
-    for (size_t i = SIZE_ZERO; i < encoders_.size(); i++) {
-        if (!forAll && isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc encoding successed, reset other encoder %{public}d.", i);
-            encoders_.at(i).reset();
-            continue;
-        }
-        auto iterRes = func(encoders_.at(i).get());
-        rets.emplace_back(iterRes);
-        if (iterRes == SUCCESS) {
-            isSuccessOnce = true;
-        }
-        if (!forAll && !isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc %{public}d failed with %{public}u.", i, rets.back());
-        }
-    }
-    if (isSuccessOnce) {
-        return SUCCESS;
-    }
-    return (rets.size() == SIZE_ZERO)?ERR_IMAGE_DECODE_ABNORMAL:rets.front();
 }
 
 // class reference need explicit constructor and destructor, otherwise unique_ptr<T> use unnormal
