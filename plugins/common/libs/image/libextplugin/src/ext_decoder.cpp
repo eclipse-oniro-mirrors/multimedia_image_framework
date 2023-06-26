@@ -39,6 +39,7 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
 using namespace OHOS::HiviewDFX;
+using namespace std;
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
