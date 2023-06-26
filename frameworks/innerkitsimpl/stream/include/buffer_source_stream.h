@@ -36,7 +36,6 @@ public:
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
     uint32_t GetStreamType() override;
-    ImagePlugin::OutputDataStream* ToOutputDataStream() override;
 
 private:
     BufferSourceStream(uint8_t *data, uint32_t size, uint32_t offset);
