@@ -28,7 +28,7 @@ extern "C" {
 #endif
 struct PixelMapNapiArgs {
     OhosPixelMapCreateOps createOptions;
-    uint8_t* inBuffer;
+    void* inBuffer;
     size_t bufferLen;
     napi_value inValue;
     int32_t inNum0;
@@ -40,7 +40,7 @@ struct PixelMapNapiArgs {
     napi_value* outValue;
     int32_t* outNum;
     OhosPixelMapInfo *outInfo;
-    uint8_t** outAddr;
+    void** outAddr;
 };
 
 using PixelMapNapiArgs = struct PixelMapNapiArgs;

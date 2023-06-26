@@ -250,7 +250,7 @@ HWTEST_F(NdkTest, NdkTest0014, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NdkTest: NdkTest0014 start";
     const NativePixelMap *p = nullptr;
-    uint8_t **info = nullptr;
+    void **info = nullptr;
     int32_t res = OH_PixelMap_AccessPixels(p, info);
     ASSERT_EQ(res, OHOS_IMAGE_RESULT_BAD_PARAMETER);
 

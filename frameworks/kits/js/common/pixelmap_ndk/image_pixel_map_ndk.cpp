@@ -41,7 +41,7 @@ NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
 
 MIDK_EXPORT
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
-    uint8_t* buf, size_t len, napi_value* res)
+    void* buf, size_t len, napi_value* res)
 {
     PixelMapNapiArgs args;
     args.createOptions.width = info.width;
@@ -216,7 +216,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfo 
 }
 
 MIDK_EXPORT
-int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, uint8_t** addr)
+int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
 {
     if (native == nullptr || native->napi == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
