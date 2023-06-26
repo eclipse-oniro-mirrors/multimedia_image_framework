@@ -172,10 +172,6 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, ExifEntry *exifEntry,
     exifEntry->size = item.data.size();
 
     auto tmpbuf = std::make_unique<char[]>(TEMP_BUFFER_SIZE);
-    if (tmpbuf == nullptr) {
-        HiLog::Error(LABEL, "GetValue, buffer is null.");
-        return false;
-    }
 
     exif_entry_get_value(exifEntry, tmpbuf.get(), TEMP_BUFFER_SIZE);
     value.assign(tmpbuf.get());
