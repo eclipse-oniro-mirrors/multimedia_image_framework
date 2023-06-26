@@ -39,7 +39,6 @@ public:
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
     uint32_t GetStreamType() override;
-    ImagePlugin::OutputDataStream* ToOutputDataStream() override;
 
 private:
     DISALLOW_COPY_AND_MOVE(FileSourceStream);
@@ -52,7 +51,6 @@ private:
     size_t fileOffset_ = 0;
     size_t fileOriginalOffset_ = 0;
     uint8_t *readBuffer_ = nullptr;
-    uint8_t *fileData_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include "nocopyable.h"
-#include "output_data_stream.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -81,11 +80,6 @@ public:
     virtual size_t GetStreamSize()
     {
         return 0;
-    }
-
-    virtual OutputDataStream* ToOutputDataStream()
-    {
-        return nullptr;
     }
 
     virtual ~InputDataStream() {}
