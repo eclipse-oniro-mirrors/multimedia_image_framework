@@ -1882,10 +1882,6 @@ static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
 
 uint32_t PixelMap::SetAlpha(const float percent)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to set alpha, when editable is false");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
-    }
     auto alphaType = GetAlphaType();
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
         alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
@@ -1932,10 +1928,6 @@ uint32_t PixelMap::SetAlpha(const float percent)
 
 void PixelMap::scale(float xAxis, float yAxis)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to scale, when editable is false");
-        return;
-    }
     PostProc postProc;
     if (!postProc.ScalePixelMap(xAxis, yAxis, *this)) {
         HiLog::Error(LABEL, "scale fail");
@@ -1943,10 +1935,6 @@ void PixelMap::scale(float xAxis, float yAxis)
 }
 void PixelMap::translate(float xAxis, float yAxis)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to translate, when editable is false");
-        return;
-    }
     PostProc postProc;
     if (!postProc.TranslatePixelMap(xAxis, yAxis, *this)) {
         HiLog::Error(LABEL, "translate fail");
@@ -1954,10 +1942,6 @@ void PixelMap::translate(float xAxis, float yAxis)
 }
 void PixelMap::rotate(float degrees)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to rotate, when editable is false");
-        return;
-    }
     PostProc postProc;
     if (!postProc.RotatePixelMap(degrees, *this)) {
         HiLog::Error(LABEL, "rotate fail");
@@ -1965,10 +1949,6 @@ void PixelMap::rotate(float degrees)
 }
 void PixelMap::flip(bool xAxis, bool yAxis)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to flip, when editable is false");
-        return;
-    }
     if (xAxis == false && yAxis == false) {
         return;
     }
@@ -1976,10 +1956,6 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 }
 uint32_t PixelMap::crop(const Rect &rect)
 {
-    if (!IsEditable()) {
-        HiLog::Error(LABEL, "pixelmap is not allowed to crop, when editable is false");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
-    }
     PostProc postProc;
     auto cropValue = PostProc::GetCropValue(rect, imageInfo_.size);
     if (cropValue == CropValue::NOCROP) {
