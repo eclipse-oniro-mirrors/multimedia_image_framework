@@ -52,5 +52,11 @@ int64_t BufferPackerStream::BytesWritten()
 {
     return offset_;
 }
+
+bool BufferPackerStream::GetCapicity(size_t &size)
+{
+    size = maxSize_;
+    return true;
+}
 } // namespace Media
 } // namespace OHOS

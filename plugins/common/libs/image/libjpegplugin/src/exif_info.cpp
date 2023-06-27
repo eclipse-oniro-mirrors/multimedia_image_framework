@@ -53,6 +53,7 @@ namespace {
     static constexpr ExifTag TAG_SENSITIVITY_TYPE = static_cast<ExifTag>(0x8830);
     static constexpr ExifTag TAG_STANDARD_OUTPUT_SENSITIVITY = static_cast<ExifTag>(0x8831);
     static constexpr ExifTag TAG_RECOMMENDED_EXPOSURE_INDEX = static_cast<ExifTag>(0x8832);
+    static constexpr size_t SIZE_ONE = 1;
 
     /* raw EXIF header data */
     static const unsigned char exifHeader[] = {
@@ -270,6 +271,57 @@ namespace {
 
 const std::string EXIFInfo::DEFAULT_EXIF_VALUE = "default_exif_value";
 
+const std::string DATE_TIME_ORIGINAL = "DateTimeOriginal";
+const std::string DATE_TIME_ORIGINAL_MEDIA = "DateTimeOriginalForMedia";
+const std::string TAG_ORIENTATION_STRING = "Orientation";
+const std::string TAG_ORIENTATION_INT = "OrientationInt";
+const std::map<ExifTag, std::string> TAG_MAP = {
+    {ExifTag::EXIF_TAG_BITS_PER_SAMPLE, "BitsPerSample"},
+    {ExifTag::EXIF_TAG_ORIENTATION, TAG_ORIENTATION_STRING},
+    {ExifTag::EXIF_TAG_IMAGE_LENGTH, "ImageLength"},
+    {ExifTag::EXIF_TAG_IMAGE_WIDTH, "ImageWidth"},
+    {ExifTag::EXIF_TAG_GPS_LATITUDE, "GPSLatitude"},
+    {ExifTag::EXIF_TAG_GPS_LONGITUDE, "GPSLongitude"},
+    {ExifTag::EXIF_TAG_GPS_LATITUDE_REF, "GPSLatitudeRef"},
+    {ExifTag::EXIF_TAG_GPS_LONGITUDE_REF, "GPSLongitudeRef"},
+    {ExifTag::EXIF_TAG_DATE_TIME_ORIGINAL, DATE_TIME_ORIGINAL},
+    {ExifTag::EXIF_TAG_EXPOSURE_TIME, "ExposureTime"},
+    {ExifTag::EXIF_TAG_FNUMBER, "FNumber"},
+    {ExifTag::EXIF_TAG_ISO_SPEED_RATINGS, "ISOSpeedRatings"},
+    {ExifTag::EXIF_TAG_SCENE_TYPE, "SceneType"},
+    {ExifTag::EXIF_TAG_COMPRESSED_BITS_PER_PIXEL, "CompressedBitsPerPixel"},
+    {ExifTag::EXIF_TAG_DATE_TIME, "DateTime"},
+    {ExifTag::EXIF_TAG_GPS_TIME_STAMP, "GPSTimeStamp"},
+    {ExifTag::EXIF_TAG_GPS_DATE_STAMP, "GPSDateStamp"},
+    {ExifTag::EXIF_TAG_IMAGE_DESCRIPTION, "ImageDescription"},
+    {ExifTag::EXIF_TAG_MAKE, "Make"},
+    {ExifTag::EXIF_TAG_MODEL, "Model"},
+    {ExifTag::EXIF_TAG_JPEG_PROC, "PhotoMode"},
+    {ExifTag::EXIF_TAG_SENSITIVITY_TYPE, "SensitivityType"},
+    {ExifTag::EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY, "StandardOutputSensitivity"},
+    {ExifTag::EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX, "RecommendedExposureIndex"},
+    {ExifTag::EXIF_TAG_ISO_SPEED, "ISOSpeedRatings"},
+    {ExifTag::EXIF_TAG_APERTURE_VALUE, "ApertureValue"},
+    {ExifTag::EXIF_TAG_EXPOSURE_BIAS_VALUE, "ExposureBiasValue"},
+    {ExifTag::EXIF_TAG_METERING_MODE, "MeteringMode"},
+    {ExifTag::EXIF_TAG_LIGHT_SOURCE, "LightSource"},
+    {ExifTag::EXIF_TAG_FLASH, "Flash"},
+    {ExifTag::EXIF_TAG_FOCAL_LENGTH, "FocalLength"},
+    {ExifTag::EXIF_TAG_USER_COMMENT, "UserComment"},
+    {ExifTag::EXIF_TAG_PIXEL_X_DIMENSION, "PixelXDimension"},
+    {ExifTag::EXIF_TAG_PIXEL_Y_DIMENSION, "PixelYDimension"},
+    {ExifTag::EXIF_TAG_WHITE_BALANCE, "WhiteBalance"},
+    {ExifTag::EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, "FocalLengthIn35mmFilm"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE), "HwMnoteCaptureMode"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE), "HwMnotePhysicalAperture"},
+};
+static const std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
+    {"Top-left", 0},
+    {"Bottom-right", 180},
+    {"Right-top", 90},
+    {"Left-bottom", 270},
+};
+
 EXIFInfo::EXIFInfo()
     : bitsPerSample_(DEFAULT_EXIF_VALUE),
       orientation_(DEFAULT_EXIF_VALUE),
@@ -312,6 +364,9 @@ EXIFInfo::EXIFInfo()
       exifData_(nullptr),
       isExifDataParsed_(false)
 {
+    for (auto i = TAG_MAP.begin(); i != TAG_MAP.end(); i++) {
+        exifTags_[i->first] = DEFAULT_EXIF_VALUE;
+    }
 }
 
 EXIFInfo::~EXIFInfo()
@@ -319,6 +374,20 @@ EXIFInfo::~EXIFInfo()
     if (exifData_ != nullptr) {
         exif_data_unref(exifData_);
         exifData_ = nullptr;
+    }
+    exifTags_.clear();
+}
+
+static void inline DumpTagsMap(std::map<ExifTag, std::string> &tags)
+{
+    for (auto i = tags.begin(); i != tags.end(); i++) {
+        if (TAG_MAP.count(i->first) == 0) {
+            HiLog::Debug(LABEL, "DumpTagsMap %{public}d -> %{public}s.", i->first, i->second.c_str());
+            continue;
+        }
+        std::string name = TAG_MAP.at(i->first);
+        HiLog::Debug(LABEL,
+            "DumpTagsMap %{public}s(%{public}d) -> %{public}s.", name.c_str(), i->first, i->second.c_str());
     }
 }
 
@@ -362,9 +431,14 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
         hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
         hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
+        SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
+            exifMakerNote.hwCaptureMode);
+        SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
+            exifMakerNote.hwPhysicalAperture);
     }
 
     isExifDataParsed_ = true;
+    DumpTagsMap(exifTags_);
     return PARSE_EXIF_SUCCESS;
 }
 
@@ -380,6 +454,7 @@ bool EXIFInfo::IsExifDataParsed()
 
 void EXIFInfo::SetExifTagValues(const ExifTag &tag, const std::string &value)
 {
+    exifTags_[tag] = value;
     if (tag == EXIF_TAG_BITS_PER_SAMPLE) {
         bitsPerSample_ = value;
     } else if (tag == EXIF_TAG_ORIENTATION) {
@@ -1644,6 +1719,153 @@ bool EXIFInfo::CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag)
     }
 
     return ret;
+}
+
+static void NumSplit(std::string &src, std::vector<std::string> &out)
+{
+    if (src.size() == 0) {
+        return;
+    }
+    std::vector<std::string> res;
+    size_t last = 0;
+    for (size_t i = 0; i < src.size(); i++) {
+        if (!std::isdigit(src[i])) {
+            size_t splitSize = i - last;
+            if (splitSize != 0) {
+                res.push_back(src.substr(last, splitSize));
+            }
+            last = i + SIZE_ONE;
+        }
+    }
+    if (last <= (src.size() - SIZE_ONE)) {
+        res.push_back(src.substr(last));
+    }
+    for (size_t i = 0; i < res.size() && i < out.size(); i++) {
+        out[i] = res[i];
+    }
+}
+
+static std::string JoinStr(std::vector<std::string> &in, const std::string delim)
+{
+    std::string res = "";
+    for (size_t i = 0; i < (in.size() - SIZE_ONE); i++) {
+        res.append(in[i]).append(delim);
+    }
+    res.append(in.back());
+    return res;
+}
+
+static void FormatTimeStamp(std::string &src, std::string &value)
+{
+    std::string date = src;
+    std::string time = "";
+    std::string::size_type position = src.find(" ");
+    if (position != src.npos) {
+        // Date and time
+        date = src.substr(0, position);
+        time = src.substr(position);
+    }
+    std::vector<std::string> dateVector = {"1970", "01", "01"};
+    std::vector<std::string> timeVector = {"00", "00", "00"};
+    NumSplit(date, dateVector);
+    NumSplit(time, timeVector);
+    value = JoinStr(dateVector, "-") + " " + JoinStr(timeVector, ":");
+}
+
+static uint32_t SpecialExifData(EXIFInfo* info, const std::string name, std::string &value)
+{
+    if (IsSameTextStr(DATE_TIME_ORIGINAL_MEDIA, name)) {
+        std::string orgValue;
+        auto res = info->GetExifData(DATE_TIME_ORIGINAL, orgValue);
+        if (res == Media::SUCCESS) {
+            FormatTimeStamp(orgValue, value);
+        }
+        return res;
+    } else if (IsSameTextStr(TAG_ORIENTATION_INT, name)) {
+        std::string orgValue;
+        auto res = info->GetExifData(DATE_TIME_ORIGINAL, orgValue);
+        if (res != Media::SUCCESS) {
+            return res;
+        }
+        if (ORIENTATION_INT_MAP.count(orgValue) == 0) {
+            HiLog::Debug(LABEL, "SpecialExifData %{public}s not found %{public}s.",
+                name.c_str(), orgValue.c_str());
+            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        }
+        value = std::to_string(ORIENTATION_INT_MAP.at(orgValue));
+        return res;
+    }
+    return Media::ERR_MEDIA_STATUS_ABNORMAL;
+}
+
+static bool GetExifTagByName(const std::string name, ExifTag &tag)
+{
+    auto find_item = std::find_if(TAG_MAP.begin(), TAG_MAP.end(),
+        [name](const std::map<ExifTag, std::string>::value_type item) {
+        return IsSameTextStr(item.second, name);
+    });
+    if (find_item == TAG_MAP.end()) {
+        return false;
+    }
+    tag = find_item->first;
+    return true;
+}
+
+uint32_t EXIFInfo::GetExifData(const std::string name, std::string &value)
+{
+    auto res = SpecialExifData(this, name, value);
+    if (res == Media::SUCCESS || res != Media::ERR_MEDIA_STATUS_ABNORMAL) {
+        HiLog::Debug(LABEL, "GetExifData %{public}s special result with %{public}d.", name.c_str(), res);
+        return res;
+    }
+    ExifTag tag;
+    if (!GetExifTagByName(name, tag)) {
+        HiLog::Error(LABEL, "GetExifData %{public}s not in the TAGs map.", name.c_str());
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    DumpTagsMap(exifTags_);
+    if (exifTags_.count(tag) == 0) {
+        HiLog::Error(LABEL, "GetExifData has no tag %{public}s[%{public}d], tags Size: %{public}zu.",
+            name.c_str(), tag, exifTags_.size());
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    value = exifTags_.at(tag);
+    if (IsSameTextStr(value, DEFAULT_EXIF_VALUE)) {
+        HiLog::Error(LABEL, "GetExifData %{public}s[%{public}d] value is DEFAULT_EXIF_VALUE.",
+            name.c_str(), tag);
+        return Media::ERR_MEDIA_VALUE_INVALID;
+    }
+    return Media::SUCCESS;
+}
+
+uint32_t EXIFInfo::ModifyExifData(const std::string name, const std::string &value, const std::string &path)
+{
+    ExifTag tag;
+    if (!GetExifTagByName(name, tag)) {
+        HiLog::Error(LABEL, "ModifyExifData %{public}s not in the TAGs map.", name.c_str());
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return ModifyExifData(tag, value, path);
+}
+
+uint32_t EXIFInfo::ModifyExifData(const std::string name, const std::string &value, const int fd)
+{
+    ExifTag tag;
+    if (!GetExifTagByName(name, tag)) {
+        HiLog::Error(LABEL, "ModifyExifData %{public}s not in the TAGs map.", name.c_str());
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return ModifyExifData(tag, value, fd);
+}
+
+uint32_t EXIFInfo::ModifyExifData(const std::string name, const std::string &value, unsigned char *data, uint32_t size)
+{
+    ExifTag tag;
+    if (!GetExifTagByName(name, tag)) {
+        HiLog::Error(LABEL, "ModifyExifData %{public}s not in the TAGs map.", name.c_str());
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return ModifyExifData(tag, value, data, size);
 }
 } // namespace ImagePlugin
 } // namespace OHOS

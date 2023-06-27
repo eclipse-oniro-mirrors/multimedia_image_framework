@@ -49,7 +49,6 @@ config("image_external_config") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
   ]
 
   include_dirs += [
@@ -57,12 +56,11 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/skcms",
+    "$skia_root/skia/include/codec",
+    "$skia_root/skia/third_party/externals/libjpeg-turbo",
+    "$skia_root/skia/third_party/skcms",
     "//third_party/libexif",
   ]
 
@@ -136,6 +134,7 @@ if (use_clang_android) {
     ]
 
     sources = [
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
