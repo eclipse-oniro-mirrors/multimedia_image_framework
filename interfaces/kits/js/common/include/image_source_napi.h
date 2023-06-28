@@ -23,6 +23,7 @@
 #include "napi/native_node_api.h"
 #include "pixel_map_napi.h"
 #include "incremental_pixel_map.h"
+#include "image_resource_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -42,6 +43,11 @@ public:
     static int fileDescriptor_;
     static void* fileBuffer_;
     static size_t fileBufferSize_;
+    static int32_t CreateImageSourceNapi(napi_env env, napi_value* result);
+    void SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap);
+    void SetNativeImageSource(std::shared_ptr<ImageSource> imageSource);
+    void SetImageResource(ImageResource resource);
+    ImageResource GetImageResource();
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -80,6 +86,7 @@ private:
 
     napi_env env_ = nullptr;
     bool isRelease = false;
+    ImageResource resource_;
 };
 } // namespace Media
 } // namespace OHOS

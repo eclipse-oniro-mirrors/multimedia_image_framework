@@ -48,3 +48,14 @@ ohos_ndk_headers("image_receiver_ndk_header") {
   dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
   sources = [ "./include/image_receiver_mdk.h" ]
 }
+
+ohos_ndk_library("libimage_source_ndk") {
+  ndk_description_file = "./libimage_source_ndk.ndk.json"
+  min_compact_version = "1"
+  output_name = "image_source_ndk"
+}
+
+ohos_ndk_headers("image_source_ndk_header") {
+  dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
+  sources = [ "./include/image_source_mdk.h" ]
+}

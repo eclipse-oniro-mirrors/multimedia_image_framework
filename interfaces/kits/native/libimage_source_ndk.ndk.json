@@ -1,0 +1,42 @@
+[
+    {
+        "first_introduced": "1",
+        "name": "OH_ImageSource_Create"
+    },
+    {
+        "name": "OH_ImageSource_CreateIncremental"
+    },
+    {
+        "name": "OH_ImageSource_InitNative"
+    },
+    {
+        "name": "OH_ImageSource_CreatePixelMap"
+    },
+    {
+        "name": "OH_ImageSource_CreatePixelMapList"
+    },
+    {
+        "name": "OH_ImageSource_GetDelayTime"
+    },
+    {
+        "name": "OH_ImageSource_GetFrameCount"
+    },
+    {
+        "name": "OH_ImageSource_GetSupportedFormats"
+    },
+    {
+        "name": "OH_ImageSource_GetImageInfo"
+    },
+    {
+        "name": "OH_ImageSource_GetImageProperty"
+    },
+    {
+        "name": "OH_ImageSource_ModifyImageProperty"
+    },
+    {
+        "name": "OH_ImageSource_UpdateData"
+    },
+    {
+        "name": "OH_ImageSource_Release"
+    }
+]
