@@ -17,6 +17,7 @@
 #define INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H_
 
 #include <set>
+#include <vector>
 #include "image_source.h"
 #include "image_type.h"
 #include "nocopyable.h"
@@ -78,12 +79,15 @@ private:
     DISALLOW_COPY_AND_MOVE(ImagePacker);
     static void CopyOptionsToPlugin(const PackOption &opts, ImagePlugin::PlEncodeOptions &plOpts);
     uint32_t StartPackingImpl(const PackOption &option);
+    uint32_t DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImageEncoder*)> func, bool forAll = true);
     bool GetEncoderPlugin(const PackOption &option);
     void FreeOldPackerStream();
     bool IsPackOptionValid(const PackOption &option);
     static MultimediaPlugin::PluginServer &pluginServer_;
     std::unique_ptr<PackerStream> packerStream_;
+    std::vector<std::unique_ptr<ImagePlugin::AbsImageEncoder>> encoders_;
     std::unique_ptr<ImagePlugin::AbsImageEncoder> encoder_;
+    std::unique_ptr<ImagePlugin::AbsImageEncoder> exEncoder_;
     std::unique_ptr<PixelMap> pixelMap_;  // inner imagesource create, our manage the lifecycle
 };
 } // namespace Media
