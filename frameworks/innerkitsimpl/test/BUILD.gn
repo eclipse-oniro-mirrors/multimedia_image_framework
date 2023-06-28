@@ -22,6 +22,7 @@ ohos_unittest("commontest") {
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
+    "-DIMAGE_PURGEABLE_PIXELMAP",
   ]
 
   include_dirs = [
@@ -32,6 +33,8 @@ ohos_unittest("commontest") {
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
+    "$comlibmemory_subsystem/libpurgeablemem/cpp/include",
+    "$comlibmemory_subsystem/libpurgeablemem/common/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
@@ -902,6 +905,27 @@ ohos_unittest("ndktest") {
   ]
 }
 
+ohos_unittest("napitest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/kits/js/common/include",
+    "/utils/include",
+    "/interfaces/innerkits/include",
+    "//third_party/googletest/googletest/include",
+    "../../../../../arkui/napi/interfaces/inner_api",
+    "../../../../../arkui/napi/interfaces/kits",
+    "//third_party/node/src",
+  ]
+  sources = [ "unittest/napi_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/interfaces/kits/js/common:image",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -922,6 +946,7 @@ group("unittest") {
     ":imageutilstest",
     ":interfacetest",
     ":jpegdecoderextest",
+    ":napitest",
     ":ndktest",
     ":pixelconvertadaptertest",
     ":pluginlibjpegtest",
