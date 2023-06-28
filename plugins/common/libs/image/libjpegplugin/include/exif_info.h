@@ -55,6 +55,10 @@ public:
                               const int &privacyType,
                               std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     bool IsExifDataParsed();
+    uint32_t GetExifData(const std::string name, std::string &value);
+    uint32_t ModifyExifData(const std::string name, const std::string &value, const std::string &path);
+    uint32_t ModifyExifData(const std::string name, const std::string &value, const int fd);
+    uint32_t ModifyExifData(const std::string name, const std::string &value, unsigned char *data, uint32_t size);
 
 public:
     static const std::string DEFAULT_EXIF_VALUE;
@@ -121,6 +125,7 @@ private:
     ExifIfd imageFileDirectory_;
     ExifData* exifData_;
     bool isExifDataParsed_;
+    std::map<ExifTag, std::string> exifTags_;
 };
 
 class ByteOrderedBuffer {

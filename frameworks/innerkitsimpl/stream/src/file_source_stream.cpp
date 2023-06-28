@@ -18,7 +18,13 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "directory_ex.h"
+#include "file_packer_stream.h"
 #include "file_source_stream.h"
+
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#include <sys/mman.h>
+#define SUPPORT_MMAP
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -243,9 +249,39 @@ size_t FileSourceStream::GetStreamSize()
     return fileSize_;
 }
 
+static bool DupFd(FILE *f, int &res)
+{
+    res = fileno(f);
+    if (res < 0) {
+        IMAGE_LOGE("[FileSourceStream]Fail to fileno fd.");
+        return false;
+    }
+    res = dup(res);
+    if (res < 0) {
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
+        return false;
+    }
+    return true;
+}
+
 uint8_t *FileSourceStream::GetDataPtr()
 {
-    return nullptr;
+    if (fileData_ != nullptr) {
+        return fileData_;
+    }
+#ifdef SUPPORT_MMAP
+    int dupFd = -1;
+    if (!DupFd(filePtr_, dupFd)) {
+        return nullptr;
+    }
+    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, MAP_SHARED, dupFd, 0);
+    if (mmptr == MAP_FAILED) {
+        HiLog::Error(LABEL, "[FileSourceStream] mmap failed, errno:%{public}d", errno);
+        return nullptr;
+    }
+    fileData_ = static_cast<uint8_t*>(mmptr);
+#endif
+    return fileData_;
 }
 
 uint32_t FileSourceStream::GetStreamType()
@@ -259,6 +295,22 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
+    if (fileData_ != nullptr) {
+#ifdef SUPPORT_MMAP
+        ::munmap(fileData_, fileSize_);
+        fileData_ = nullptr;
+#endif
+    }
+}
+
+OutputDataStream* FileSourceStream::ToOutputDataStream()
+{
+    int dupFd = -1;
+    if (DupFd(filePtr_, dupFd)) {
+        HiLog::Error(LABEL, "[FileSourceStream] ToOutputDataStream fd failed");
+        return nullptr;
+    }
+    return new (std::nothrow) FilePackerStream(dupFd);
 }
 } // namespace Media
 } // namespace OHOS
