@@ -28,7 +28,6 @@
  * @file image_pixel_map_napi.h
  *
  * @brief Declares the APIs that can lock, access, and unlock a pixel map.
- * Need link <b>libpixelmapndk.z.so</b>
  *
  * @since 8
  * @version 1.0
@@ -36,9 +35,10 @@
 
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
-#include <stdint.h>
+#include <cstdint>
 #include "napi/native_api.h"
-
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -96,21 +96,19 @@ struct OhosPixelMapInfo {
     int32_t pixelFormat;
 };
 
-typedef struct OhosPixelMapInfo OhosPixelMapInfo;
-
 /**
  * @brief Defines the native pixel map information.
  * @since 9
  * @version 2.0
  */
-struct NativePixelMap_;
+struct NativePixelMap;
 
 /**
  * @brief Defines the data type name of the native pixel map.
  * @since 9
  * @version 2.0
  */
-typedef struct NativePixelMap_ NativePixelMap;
+typedef struct NativePixelMap NativePixelMap;
 
 /**
  * @brief Enumerates the pixel map alpha types.
@@ -471,5 +469,6 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native);
 };
 #endif
 /** @} */
-
+} // namespace Media
+} // namespace OHOS
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_

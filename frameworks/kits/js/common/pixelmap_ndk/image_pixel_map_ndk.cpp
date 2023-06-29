@@ -18,12 +18,13 @@
 #include "common_utils.h"
 #include "image_pixel_map_napi_kits.h"
 
-using namespace OHOS::Media;
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct NativePixelMap_ {
+struct NativePixelMap {
     PixelMapNapi* napi = nullptr;
 };
 
@@ -239,3 +240,5 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
 #ifdef __cplusplus
 };
 #endif
+}  // namespace Media
+}  // namespace OHOS
