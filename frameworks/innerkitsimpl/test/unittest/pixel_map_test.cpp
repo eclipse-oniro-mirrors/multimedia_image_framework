@@ -1182,11 +1182,11 @@ HWTEST_F(PixelMapTest, PixelMapTest029, TestSize.Level3)
 
 #ifdef IMAGE_COLORSPACE_FLAG
 /**
-* @tc.name: ImagePixelMap030
-* @tc.desc: test InnerSetColorSpace
-* @tc.type: FUNC
-* @tc.require: AR000FTAMO
-*/
+ * @tc.name: ImagePixelMap030
+ * @tc.desc: test InnerSetColorSpace
+ * @tc.type: FUNC
+ * @tc.require: AR000FTAMO
+ */
 HWTEST_F(PixelMapTest, PixelMapTest030, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap039 InnerSetColorSpace start";
@@ -1207,11 +1207,11 @@ HWTEST_F(PixelMapTest, PixelMapTest030, TestSize.Level3)
 }
 
 /**
-* @tc.name: InnerGetGrColorSpacePtrTest
-* @tc.desc: test InnerGetGrColorSpacePtr
-* @tc.type: FUNC
-* @tc.require: AR000FTAMO
-*/
+ * @tc.name: InnerGetGrColorSpacePtrTest
+ * @tc.desc: test InnerGetGrColorSpacePtr
+ * @tc.type: FUNC
+ * @tc.require: AR000FTAMO
+ */
 HWTEST_F(PixelMapTest, InnerGetGrColorSpacePtrTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: InnerGetGrColorSpacePtrTest InnerSetColorSpace start";
@@ -1228,6 +1228,71 @@ HWTEST_F(PixelMapTest, InnerGetGrColorSpacePtrTest, TestSize.Level3)
     std::shared_ptr<OHOS::ColorManager::ColorSpace> outColorSpace = pixelMap.InnerGetGrColorSpacePtr();
     ASSERT_NE(outColorSpace, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: InnerGetGrColorSpacePtrTest InnerSetColorSpace end";
+}
+#endif
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+/**
+ * @tc.name: IsPurgeable
+ * @tc.desc: test IsPurgeable
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsPurgeableTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: IsPurgeableTest IsPurgeable start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    bool res = pixelMap.IsPurgeable();
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: IsPurgeableTest IsPurgeable end";
+}
+
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: test GetPurgeableMemPtr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPurgeableMemPtrTest GetPurgeableMemPtr start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> res = pixelMap.GetPurgeableMemPtr();
+    ASSERT_EQ(res, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPurgeableMemPtrTest GetPurgeableMemPtr end";
+}
+
+/**
+ * @tc.name: SetPurgeableMemPtr
+ * @tc.desc: test SetPurgeableMemPtr
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetPurgeableMemPtrTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetPurgeableMemPtrTest SetPurgeableMemPtr start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> res = pixelMap.GetPurgeableMemPtr();
+    ASSERT_EQ(res, nullptr);
+    pixelMap.SetPurgeableMemPtr(res);
+    std::shared_ptr<PurgeableMem::PurgeableMemBase> ptr = pixelMap.GetPurgeableMemPtr();
+    ASSERT_EQ(ptr, nullptr);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetPurgeableMemPtrTest SetPurgeableMemPtr end";
 }
 #endif
 }

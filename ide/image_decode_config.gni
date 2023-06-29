@@ -45,6 +45,9 @@ comlib_ommonlibrary = "ommonlibrary"
 commonlibrary_c_utils = "c_utils"
 commonlibrary_subsystem =
     "/$comlib_sep_c$comlib_ommonlibrary/$commonlibrary_c_utils"
+commonlibrary_memory_utils = "memory_utils"
+comlibmemory_subsystem =
+    "/$comlib_sep_c$comlib_ommonlibrary/$commonlibrary_memory_utils"
 
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia

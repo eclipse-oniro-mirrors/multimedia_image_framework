@@ -254,6 +254,22 @@ HWTEST_F(ImageNdkTest, OH_Image_Receiver_ReleaseTest, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_Receiver_ReleaseTest end";
 }
+
+/**
+ * @tc.name: OH_Image_InitImageNativeTest
+ * @tc.desc: OH_Image_InitImageNative
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_Image_InitImageNativeTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_InitImageNativeTest start";
+    napi_env env = nullptr;
+    napi_value source = nullptr;
+    ImageNative* res = OH_Image_InitImageNative(env, source);
+    ASSERT_EQ(res, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_InitImageNativeTest end";
+}
 }
 }
 
