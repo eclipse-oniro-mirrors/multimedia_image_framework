@@ -290,7 +290,7 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
     bool isSuccessOnce = false;
     for (size_t i = SIZE_ZERO; i < encoders_.size(); i++) {
         if (!forAll && isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc encoding successed, reset other encoder %{public}d.", i);
+            HiLog::Debug(LABEL, "DoEncodingFunc encoding successed, reset other encoder.");
             encoders_.at(i).reset();
             continue;
         }
@@ -300,7 +300,7 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
             isSuccessOnce = true;
         }
         if (!forAll && !isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc %{public}d failed with %{public}u.", i, rets.back());
+            HiLog::Debug(LABEL, "DoEncodingFunc failed.");
         }
     }
     if (isSuccessOnce) {

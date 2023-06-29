@@ -49,7 +49,7 @@ static size_t Skip(InputDataStream *stream, size_t size)
     uint32_t cur = stream->Tell();
     uint32_t seek = cur + static_cast<uint32_t>(size);
     if (!stream->Seek(seek)) {
-        HiLog::Error(LABEL, "skip failed, curpositon=%{public}u, skip size=%{public}u", cur, size);
+        HiLog::Error(LABEL, "skip failed, curpositon, skip size.");
         return SIZE_ZERO;
     }
     return size;
