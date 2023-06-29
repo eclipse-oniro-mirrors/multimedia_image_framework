@@ -512,10 +512,6 @@ static uint32_t HeapMemoryCreate(PlImageBuffer &plBuffer)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto dataPtr = std::make_unique<uint8_t[]>(plBuffer.bufferSize);
-    if (dataPtr == nullptr) {
-        HiLog::Error(LABEL, "HeapMemoryCreate alloc failed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
     plBuffer.buffer = dataPtr.release();
     plBuffer.dataSize = plBuffer.bufferSize;
     return SUCCESS;
@@ -551,10 +547,6 @@ static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto fdPtr = std::make_unique<int>();
-    if (fdPtr == nullptr) {
-        HiLog::Error(LABEL, "SharedMemoryCreate fd alloc failed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
     *fdPtr = AshmemCreate("GIF RawData", plBuffer.bufferSize);
     if (*fdPtr < 0) {
         HiLog::Error(LABEL, "SharedMemoryCreate AshmemCreate fd:[%{public}d].", *fdPtr);

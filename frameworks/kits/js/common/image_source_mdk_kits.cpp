@@ -371,10 +371,6 @@ static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attri
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto outDelayTimes = args->outDelayTimes;
-    if (outDelayTimes == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime out delay times is nullptr");
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
-    }
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     auto delayTimes = native->GetDelayTime(errorCode);
     if (delayTimes == nullptr) {
