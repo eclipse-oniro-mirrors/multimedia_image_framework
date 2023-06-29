@@ -2021,7 +2021,12 @@ void PixelMap::DoTranslation(TransInfos &infos)
     GetImageInfo(imageInfo);
 
     TransMemoryInfo dstMemory;
-    dstMemory.allocType = allocatorType_;
+    if (allocatorType_ == AllocatorType::CUSTOM_ALLOC) {
+        // We dont know how custom alloc memory
+        dstMemory.allocType = AllocatorType::DEFAULT;
+    } else {
+        dstMemory.allocType = allocatorType_;
+    }
 
     SkTransInfo src;
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
