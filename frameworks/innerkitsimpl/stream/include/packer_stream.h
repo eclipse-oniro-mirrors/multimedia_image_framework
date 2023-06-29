@@ -23,11 +23,6 @@ namespace Media {
 class PackerStream : public ImagePlugin::OutputDataStream {
 public:
     virtual int64_t BytesWritten() = 0;
-    bool GetCurrentSize(size_t &size) override
-    {
-        size = BytesWritten();
-        return true;
-    }
 };
 } // namespace Media
 } // namespace OHOS

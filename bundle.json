@@ -46,7 +46,6 @@
           "giflib",
           "bounds_checking_function",
           "expat",
-          "third_party_skia",
           "json"
         ]
       },

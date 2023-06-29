@@ -22,7 +22,6 @@
 #else
 #include "memory.h"
 #endif
-#include "buffer_packer_stream.h"
 
 namespace OHOS {
 namespace Media {
@@ -159,11 +158,6 @@ uint8_t *BufferSourceStream::GetDataPtr()
 uint32_t BufferSourceStream::GetStreamType()
 {
     return ImagePlugin::BUFFER_SOURCE_TYPE;
-}
-
-OutputDataStream* BufferSourceStream::ToOutputDataStream()
-{
-    return new (std::nothrow) BufferPackerStream(inputBuffer_, dataSize_);
 }
 }  // namespace Media
 }  // namespace OHOS

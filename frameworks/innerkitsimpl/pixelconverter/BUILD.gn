@@ -30,7 +30,7 @@ config("pixelconvertadapter_public_config") {
     "$skia_root/skia/src/ports",
     "$skia_root/skia/src/images",
     "$skia_root/skia/src/ports/skia_ohos",
-    "$skia_root/skia/third_party/externals/freetype/include/freetype",
+    "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
     "$skia_root/skia/include/private",
     "//third_party/bounds_checking_function/include",
   ]
@@ -47,7 +47,7 @@ config("pixelconvertadapter_public_config") {
       "$skia_root/skia/src/ports",
       "$skia_root/skia/src/images",
       "$skia_root/skia/src/ports/skia_ohos",
-      "$skia_root/skia/third_party/externals/freetype/include/freetype",
+      "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
   } else if (use_clang_mac) {
@@ -61,7 +61,7 @@ config("pixelconvertadapter_public_config") {
       "$skia_root/skia/src/ports",
       "$skia_root/skia/src/images",
       "$skia_root/skia/src/ports/skia_ohos",
-      "$skia_root/skia/third_party/externals/freetype/include/freetype",
+      "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
   } else if (use_clang_ios) {
@@ -77,7 +77,7 @@ config("pixelconvertadapter_public_config") {
       "$skia_root/skia/src/images",
       "//third_party/expat/lib",
       "$skia_root/skia/include/private",
-      "$skia_root/skia/third_party/externals/freetype/include/freetype",
+      "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
     ]
@@ -94,7 +94,7 @@ config("pixelconvertadapter_public_config") {
       "$skia_root/skia/src/images",
       "//third_party/expat/lib",
       "$skia_root/skia/include/private",
-      "$skia_root/skia/third_party/externals/freetype/include/freetype",
+      "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
       "$image_subsystem/mock/native/include/log",
     ]
@@ -111,7 +111,7 @@ config("pixelconvertadapter_public_config") {
       "$skia_root/skia/src/images",
       "//third_party/expat/lib",
       "$skia_root/skia/include/private",
-      "$skia_root/skia/third_party/externals/freetype/include/freetype",
+      "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
       "//third_party/bounds_checking_function/include",
     ]
   }
