@@ -24,7 +24,6 @@
 namespace OHOS {
 namespace ImagePlugin {
 struct PlEncodeOptions {
-    std::string format;
     uint8_t quality = 100;
     uint32_t numberHint = 1;
 };
