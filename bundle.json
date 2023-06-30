@@ -122,6 +122,15 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
+              "header_files": [
+                "image_source_mdk.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source_ndk"          
           }
         ],
         "test": [

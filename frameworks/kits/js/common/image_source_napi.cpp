@@ -1890,5 +1890,48 @@ napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
     FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }
+
+int32_t ImageSourceNapi::CreateImageSourceNapi(napi_env env, napi_value* result)
+{
+    napi_value constructor = nullptr;
+    napi_status status = napi_ok;
+    PrepareNapiEnv(env);
+
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (status == napi_ok && constructor != nullptr) {
+        status = napi_new_instance(env, constructor, NUM_0, nullptr, result);
+    }
+
+    if (status != napi_ok || result == nullptr) {
+        HiLog::Error(LABEL, "CreateImageSourceNapi new instance failed");
+        napi_get_undefined(env, result);
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    return SUCCESS;
+}
+
+void ImageSourceNapi::SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap)
+{
+    navIncPixelMap_ = incrementalPixelMap;
+}
+
+void ImageSourceNapi::SetNativeImageSource(std::shared_ptr<ImageSource> imageSource)
+{
+    nativeImgSrc = imageSource;
+}
+
+void ImageSourceNapi::SetImageResource(ImageResource resource)
+{
+    resource_.type = resource.type;
+    resource_.fd = resource.fd;
+    resource_.path = resource.path;
+    resource_.buffer = resource.buffer;
+    resource_.bufferSize = resource.bufferSize;
+}
+
+ImageResource ImageSourceNapi::GetImageResource()
+{
+    return resource_;
+}
 }  // namespace Media
 }  // namespace OHOS

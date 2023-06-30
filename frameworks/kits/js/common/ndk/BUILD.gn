@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 SEPARATOR = "/"
 BASE_DIR = "$SEPARATOR/foundation"
@@ -53,6 +54,20 @@ ohos_shared_library("image_receiver_ndk") {
   external_deps = [ "multimedia_image_framework:image" ]
 
   innerapi_tags = [ "ndk" ]
+  subsystem_name = "multimedia"
+  part_name = "multimedia_image_framework"
+}
+
+ohos_shared_library("image_source_ndk") {
+  sanitize = {
+    cfi = true
+    debug = false
+  }
+
+  sources = [ "image_source_mdk.cpp" ]
+  public_configs = [ ":native_public_config" ]
+  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
+
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"
 }
