@@ -1065,6 +1065,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         format = sourceInfo_.encodedFormat;
         return SUCCESS;
     }
+    auto pngtype = sourceStreamPtr_->Tell();
     uint32_t errorCode = ERR_IMAGE_DECODE_ABNORMAL;
     auto codec = DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *sourceStreamPtr_,
         errorCode);
@@ -1082,6 +1083,11 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]Extended get format failed %{public}d.", errorCode);
+        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    }
+    if (format == "image/png") {
+        IMAGE_LOGE("[ImageSource]Extended limit png decode");
+        sourceStreamPtr_->Seek(pngtype);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
     mainDecoder_ = std::move(decoderPtr);
