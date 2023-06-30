@@ -15,6 +15,7 @@
 
 import type { AsyncCallback } from './@ohos.base';
 import type colorSpaceManager from './@ohos.graphics.colorSpaceManager.d.ts';
+import type rpc from './@ohos.rpc';
 
 /**
  * @name image
@@ -1220,6 +1221,32 @@ declare namespace image {
      * @since 10
      */
     getColorSpace(): colorSpaceManager.ColorSpaceManager;
+
+    /**
+         * Marshalling pixelmap and write into MessageSequence.
+         *
+         * @param { rpc.MessageSequence } sequence rpc.MessageSequence parameter.
+         * @syscap SystemCapability.Multimedia.Image.Core
+         * @throws { BusinessError } 62980115 - If the input parameter invalid.
+         * @throws { BusinessError } 62980097 - If the ipc error.
+         * @since 10
+         */
+    marshalling(sequence: rpc.MessageSequence): void;
+
+    /**
+     * Creates a PixelMap object based on MessageSequence parameter. This method uses a callback to
+     * return the object.
+     *
+     * @param { rpc.MessageSequence } sequence rpc.MessageSequence parameter.
+     * @param { AsyncCallback<PixelMap> } callback Callback used to return the PixelMap object.
+     * @syscap SystemCapability.Multimedia.Image.Core
+     * @throws { BusinessError } 62980115 - If the input parameter invalid.
+     * @throws { BusinessError } 62980097 - If the ipc error.
+     * @throws { BusinessError } 62980096 - If fail to create async work.
+     * @since 10
+     */
+    unmarshalling(sequence: rpc.MessageSequence, callback: AsyncCallback<PixelMap>): void;
+
 
     /**
      * Set color space of pixel map.
