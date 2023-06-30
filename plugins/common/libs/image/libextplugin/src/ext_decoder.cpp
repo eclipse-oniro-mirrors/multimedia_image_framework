@@ -374,14 +374,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         auto tmpBuffer = make_unique<uint8_t[]>(byteCount);
         if (tmpBuffer == nullptr) {
-            HiLog::Debug(LABEL, "Decode tmp alloc byte count %{public}llu.", byteCount);
+            HiLog::Debug(LABEL, "Decode tmp alloc byte count");
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        HiLog::Debug(LABEL, "Decode alloc byte count %{public}llu.", byteCount);
+        HiLog::Debug(LABEL, "Decode alloc byte count.");
         uint32_t res = SetContextPixelsBuffer(byteCount, context);
         if (res != SUCCESS) {
             return res;
@@ -723,7 +723,7 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
     constexpr size_t U8_SHIFT = 8;
     return ProcessWithStreamData(stream_, [this, &privacyType, &ranges](uint8_t* buffer, size_t size) {
         size_t appSize = (static_cast<size_t>(buffer[APP1_SIZE_H_OFF]) << U8_SHIFT) | buffer[APP1_SIZE_L_OFF];
-        HiLog::Debug(LABEL, "[GetFilterArea]: get app1 area size %{public}d", appSize);
+        HiLog::Debug(LABEL, "[GetFilterArea]: get app1 area size");
         appSize += APP1_SIZE_H_OFF;
         auto ret = exifInfo_.GetFilterArea(buffer, (appSize < size) ? appSize : size, privacyType, ranges);
         if (ret != Media::SUCCESS) {
