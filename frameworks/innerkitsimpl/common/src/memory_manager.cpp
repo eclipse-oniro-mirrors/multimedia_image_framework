@@ -168,7 +168,9 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     res->extend.size = extend.size;
     res->extend.tag = extend.tag;
     if (res->data.data == nullptr) {
-        res->Create();
+        if (res->Create() != SUCCESS) {
+            return nullptr;
+        }
     }
     return res;
 }

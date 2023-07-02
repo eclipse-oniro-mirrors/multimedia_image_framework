@@ -423,6 +423,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     PixelMapAddrInfos addrInfos;
     ContextToAddrInfos(context, addrInfos);
     auto pixelMap = CreatePixelMapByInfos(plInfo, addrInfos, errorCode);
+    if (pixelMap == nullptr) {
+        return nullptr;
+    }
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
@@ -494,7 +497,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         opts_.desiredSize.width != pixelMap->GetWidth()) {
         float xScale = static_cast<float>(opts_.desiredSize.width)/pixelMap->GetWidth();
         float yScale = static_cast<float>(opts_.desiredSize.height)/pixelMap->GetHeight();
-        pixelMap->scale(xScale, yScale);
+        if (!pixelMap->resize(xScale, yScale)) {
+            return nullptr;
+        }
     }
     pixelMap->SetEditable(saveEditable);
     return pixelMap;
