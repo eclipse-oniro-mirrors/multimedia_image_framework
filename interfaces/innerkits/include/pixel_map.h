@@ -86,6 +86,7 @@ public:
     NATIVEEXPORT int32_t GetHeight();
     NATIVEEXPORT int32_t GetBaseDensity();
     NATIVEEXPORT void scale(float xAxis, float yAxis);
+    NATIVEEXPORT bool resize(float xAxis, float yAxis);
     NATIVEEXPORT void translate(float xAxis, float yAxis);
     NATIVEEXPORT void rotate(float degrees);
     NATIVEEXPORT void flip(bool xAxis, bool yAxis);
@@ -258,7 +259,7 @@ private:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
-    void DoTranslation(TransInfos &infos);
+    bool DoTranslation(TransInfos &infos);
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

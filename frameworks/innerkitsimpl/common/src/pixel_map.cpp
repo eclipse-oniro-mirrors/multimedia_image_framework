@@ -1995,7 +1995,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t*
     srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
 }
 
-static void GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
+static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
     TransMemoryInfo &memoryInfo)
 {
     dstInfo.r = matrix.mapRect(srcInfo.r);
@@ -2007,15 +2007,21 @@ static void GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
-    memoryInfo.memory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
+    if (dstMemory == nullptr) {
+        HiLog::Error(LABEL, "CreateMemory falied");
+        return false;
+    }
+    memoryInfo.memory = std::move(dstMemory);
     dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, dstInfo.info.minRowBytes());
+    return true;
 }
 
 struct TransInfos {
     SkMatrix matrix;
 };
 
-void PixelMap::DoTranslation(TransInfos &infos)
+bool PixelMap::DoTranslation(TransInfos &infos)
 {
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -2032,7 +2038,11 @@ void PixelMap::DoTranslation(TransInfos &infos)
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 
     SkTransInfo dst;
-    GendstTransInfo(src, dst, infos.matrix, dstMemory);
+    if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
+        HiLog::Error(LABEL, "GendstTransInfo dstMemory falied");
+        return false;
+    }
+    
     SkCanvas canvas(dst.bitmap);
     if (!infos.matrix.isTranslate()) {
         if (!EQUAL_TO_ZERO(dst.r.fLeft) || !EQUAL_TO_ZERO(dst.r.fTop)) {
@@ -2052,27 +2062,45 @@ void PixelMap::DoTranslation(TransInfos &infos)
 #endif
     auto m = dstMemory.memory.get();
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
+    return true;
 }
 
 void PixelMap::scale(float xAxis, float yAxis)
 {
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
-    DoTranslation(infos);
+    if (!DoTranslation(infos)) {
+        HiLog::Error(LABEL, "scale falied");
+    }
+}
+
+bool PixelMap::resize(float xAxis, float yAxis)
+{
+    TransInfos infos;
+    infos.matrix.setScale(xAxis, yAxis);
+    if (!DoTranslation(infos)) {
+        HiLog::Error(LABEL, "resize falied");
+        return false;
+    }
+    return true;
 }
 
 void PixelMap::translate(float xAxis, float yAxis)
 {
     TransInfos infos;
     infos.matrix.setTranslate(xAxis, yAxis);
-    DoTranslation(infos);
+    if (!DoTranslation(infos)) {
+        HiLog::Error(LABEL, "translate falied");
+    }
 }
 
 void PixelMap::rotate(float degrees)
 {
     TransInfos infos;
     infos.matrix.setRotate(degrees);
-    DoTranslation(infos);
+    if (!DoTranslation(infos)) {
+        HiLog::Error(LABEL, "rotate falied");
+    }
 }
 
 void PixelMap::flip(bool xAxis, bool yAxis)
@@ -2104,6 +2132,10 @@ uint32_t PixelMap::crop(const Rect &rect)
     dst.info = src.info.makeWH(dstIRect.width(), dstIRect.height());
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData"};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
+    if (m == nullptr) {
+        HiLog::Error(LABEL, "crop CreateMemory failed");
+        return ERR_IMAGE_CROP;
+    }
     if (!src.bitmap.readPixels(dst.info, m->data.data, dst.info.minRowBytes(),
         dstIRect.fLeft, dstIRect.fTop)) {
         HiLog::Error(LABEL, "ReadPixels failed");
