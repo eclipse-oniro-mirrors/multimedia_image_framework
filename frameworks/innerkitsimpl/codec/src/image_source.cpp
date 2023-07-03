@@ -345,17 +345,35 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
-static inline void FreeContextBuffer(Media::CustomFreePixelMap &func, PlImageBuffer &buffer)
+static void FreeContextBuffer(Media::CustomFreePixelMap &func,
+    AllocatorType allocType, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
         func(buffer.buffer, buffer.context, buffer.dataSize);
         return;
     }
-    if (buffer.buffer != nullptr) {
-        free(buffer.buffer);
-        buffer.buffer = nullptr;
+
+    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+        int *fd = static_cast<int *>(buffer.context);
+        if (buffer.buffer != nullptr) {
+            ::munmap(buffer.buffer, buffer.dataSize);
+        }
+        if (fd != nullptr) {
+            ::close(*fd);
+        }
+#endif
+        return;
+    }
+
+    if (allocType == AllocatorType::HEAP_ALLOC) {
+        if (buffer.buffer != nullptr) {
+            free(buffer.buffer);
+            buffer.buffer = nullptr;
+        }
     }
 }
+
 
 #define BEGIN_TRACE true
 #define FINISH_TRACE false
@@ -417,7 +435,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
-        FreeContextBuffer(context.freeFunc, context.pixelsBuffer);
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
     PixelMapAddrInfos addrInfos;
