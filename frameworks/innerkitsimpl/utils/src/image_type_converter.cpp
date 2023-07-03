@@ -32,7 +32,7 @@ struct AlphaTypePair {
     string alphaTypeName;
 };
 
-static PixelFormatPair PixelFormatPairs[] = {
+static PixelFormatPair g_pixelFormatPairs[] = {
     {SkColorType::kUnknown_SkColorType, PixelFormat::UNKNOWN,
         "kUnknown_SkColorType", "PixelFormat::UNKNOWN"},
     {SkColorType::kRGBA_8888_SkColorType, PixelFormat::ARGB_8888,
@@ -51,7 +51,7 @@ static PixelFormatPair PixelFormatPairs[] = {
         "kRGB_888x_SkColorType", "PixelFormat::RGB_888"},
 };
 
-static AlphaTypePair AlphaTypePairs[] = {
+static AlphaTypePair g_alphaTypePairs[] = {
     {SkAlphaType::kUnknown_SkAlphaType, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
         "kUnknown_SkAlphaType", "AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN"},
     {SkAlphaType::kOpaque_SkAlphaType, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE,
@@ -63,7 +63,7 @@ static AlphaTypePair AlphaTypePairs[] = {
 };
 
 template<typename T, typename C, unsigned L>
-static T find(T (&infos)[L], C compare)
+static T Find(T (&infos)[L], C compare)
 {
     for (T iter : infos) {
         if (compare(iter)) {
@@ -75,7 +75,7 @@ static T find(T (&infos)[L], C compare)
 
 SkColorType ImageTypeConverter::ToSkColorType(const PixelFormat pixelFormat)
 {
-    auto res = find(PixelFormatPairs, [pixelFormat](PixelFormatPair iter) {
+    auto res = Find(g_pixelFormatPairs, [pixelFormat](PixelFormatPair iter) {
         return (iter.pixelFormat == pixelFormat);
     });
     return res.skColorType;
@@ -83,7 +83,7 @@ SkColorType ImageTypeConverter::ToSkColorType(const PixelFormat pixelFormat)
 
 SkAlphaType ImageTypeConverter::ToSkAlphaType(const AlphaType alphaType)
 {
-    auto res = find(AlphaTypePairs, [alphaType](AlphaTypePair iter) {
+    auto res = Find(g_alphaTypePairs, [alphaType](AlphaTypePair iter) {
         return (iter.alphaType == alphaType);
     });
     return res.skAlphaType;
@@ -91,7 +91,7 @@ SkAlphaType ImageTypeConverter::ToSkAlphaType(const AlphaType alphaType)
 
 PixelFormat ImageTypeConverter::ToPixelFormat(const SkColorType type)
 {
-    auto res = find(PixelFormatPairs, [type](PixelFormatPair iter) {
+    auto res = Find(g_pixelFormatPairs, [type](PixelFormatPair iter) {
         return (iter.skColorType == type);
     });
     return res.pixelFormat;
@@ -99,7 +99,7 @@ PixelFormat ImageTypeConverter::ToPixelFormat(const SkColorType type)
 
 AlphaType ImageTypeConverter::ToAlphaType(const SkAlphaType type)
 {
-    auto res = find(AlphaTypePairs, [type](AlphaTypePair iter) {
+    auto res = Find(g_alphaTypePairs, [type](AlphaTypePair iter) {
         return (iter.skAlphaType == type);
     });
     return res.alphaType;
@@ -107,7 +107,7 @@ AlphaType ImageTypeConverter::ToAlphaType(const SkAlphaType type)
 
 const string ImageTypeConverter::ToName(const PixelFormat pixelFormat)
 {
-    auto res = find(PixelFormatPairs, [pixelFormat](PixelFormatPair iter) {
+    auto res = Find(g_pixelFormatPairs, [pixelFormat](PixelFormatPair iter) {
         return (iter.pixelFormat == pixelFormat);
     });
     return res.pixelFormatName;
@@ -115,7 +115,7 @@ const string ImageTypeConverter::ToName(const PixelFormat pixelFormat)
 
 const string ImageTypeConverter::ToName(const AlphaType alphaType)
 {
-    auto res = find(AlphaTypePairs, [alphaType](AlphaTypePair iter) {
+    auto res = Find(g_alphaTypePairs, [alphaType](AlphaTypePair iter) {
         return (iter.alphaType == alphaType);
     });
     return res.alphaTypeName;
@@ -123,7 +123,7 @@ const string ImageTypeConverter::ToName(const AlphaType alphaType)
 
 const string ImageTypeConverter::ToName(const SkColorType type)
 {
-    auto res = find(PixelFormatPairs, [type](PixelFormatPair iter) {
+    auto res = Find(g_pixelFormatPairs, [type](PixelFormatPair iter) {
         return (iter.skColorType == type);
     });
     return res.skColorTypeName;
@@ -131,7 +131,7 @@ const string ImageTypeConverter::ToName(const SkColorType type)
 
 const string ImageTypeConverter::ToName(const SkAlphaType type)
 {
-    auto res = find(AlphaTypePairs, [type](AlphaTypePair iter) {
+    auto res = Find(g_alphaTypePairs, [type](AlphaTypePair iter) {
         return (iter.skAlphaType == type);
     });
     return res.skAlphaTypeName;

@@ -2042,7 +2042,7 @@ bool PixelMap::DoTranslation(TransInfos &infos)
         HiLog::Error(LABEL, "GendstTransInfo dstMemory falied");
         return false;
     }
-    
+
     SkCanvas canvas(dst.bitmap);
     if (!infos.matrix.isTranslate()) {
         if (!EQUAL_TO_ZERO(dst.r.fLeft) || !EQUAL_TO_ZERO(dst.r.fTop)) {
