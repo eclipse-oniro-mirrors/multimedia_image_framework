@@ -534,7 +534,7 @@ static inline bool IsYUVComponent(const int32_t& type)
 static inline bool IsYUV422SPImage(int32_t format)
 {
     return (IsEqual(format, ImageFormat::YCBCR_422_SP) ||
-        (format == int32_t(PIXEL_FMT_YCBCR_422_SP)));
+        (format == int32_t(GRAPHIC_PIXEL_FMT_YCBCR_422_SP)));
 }
 static inline bool CheckComponentType(const int32_t& type, int32_t format)
 {
