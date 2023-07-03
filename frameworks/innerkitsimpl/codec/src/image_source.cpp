@@ -345,17 +345,19 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
-static inline void FreeContextBuffer(Media::CustomFreePixelMap &func, PlImageBuffer &buffer)
+using PixelMapFreeMemory = void (*)(AllocatorType allocType, void *addr, void *context, uint32_t size);
+static inline void FreeContextBuffer(Media::CustomFreePixelMap &func, PixelMapFreeMemory freeFunc,
+    AllocatorType type, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
         func(buffer.buffer, buffer.context, buffer.dataSize);
         return;
     }
-    if (buffer.buffer != nullptr) {
-        free(buffer.buffer);
-        buffer.buffer = nullptr;
+    if (freeFunc != nullptr) {
+        freeFunc(type, buffer.buffer, buffer.context, buffer.dataSize);
     }
 }
+
 
 #define BEGIN_TRACE true
 #define FINISH_TRACE false
@@ -417,7 +419,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
-        FreeContextBuffer(context.freeFunc, context.pixelsBuffer);
+        FreeContextBuffer(context.freeFunc, PixelMap::ReleaseMemory,
+            context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
     PixelMapAddrInfos addrInfos;
