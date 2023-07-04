@@ -1247,7 +1247,6 @@ declare namespace image {
      */
     unmarshalling(sequence: rpc.MessageSequence, callback: AsyncCallback<PixelMap>): void;
 
-
     /**
      * Set color space of pixel map.
      *

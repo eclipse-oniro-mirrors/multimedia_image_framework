@@ -740,7 +740,6 @@ napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
     napi_value funcArgv[1] = { imageInfo };
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
-    
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1960,7 +1959,6 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
-    
     NAPI_MessageSequence *napiSequence = nullptr;
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
