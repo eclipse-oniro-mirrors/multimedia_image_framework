@@ -24,6 +24,8 @@
 #include "js_runtime_utils.h"
 #endif
 #include "hitrace_meter.h"
+#include "pixel_map.h"
+#include "napi_message_sequence.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
@@ -41,6 +43,7 @@ namespace Media {
 static const std::string CLASS_NAME = "PixelMap";
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 std::shared_ptr<PixelMap> PixelMapNapi::sPixelMap_ = nullptr;
+NAPI_MessageSequence* napi_messageSequence = nullptr;
 
 struct PositionArea {
     void* pixels;
@@ -337,12 +340,14 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("crop", Crop),
         DECLARE_NAPI_FUNCTION("getColorSpace", GetColorSpace),
         DECLARE_NAPI_FUNCTION("setColorSpace", SetColorSpace),
+        DECLARE_NAPI_FUNCTION("marshalling", Marshalling),
 
         DECLARE_NAPI_GETTER("isEditable", GetIsEditable),
     };
 
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMap", CreatePixelMap),
+        DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
     };
 
     napi_value constructor = nullptr;
@@ -680,6 +685,102 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
         napi_get_undefined(env, &result);
     }
 
+    return result;
+}
+
+STATIC_EXEC_FUNC(Unmarshalling)
+{
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+
+    auto messageParcel = napi_messageSequence->GetMessageParcel();
+    auto pixelmap = PixelMap::Unmarshalling(*messageParcel);
+    std::unique_ptr<OHOS::Media::PixelMap> pixelmap_ptr(pixelmap);
+
+    context->rPixelMap = std::move(pixelmap_ptr);
+
+    if (IMG_NOT_NULL(context->rPixelMap)) {
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+    }
+}
+
+void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void *data)
+{
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+
+    HiLog::Debug(LABEL, "UnmarshallingComplete IN");
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+        sPixelMap_ = context->rPixelMap;
+        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+    }
+
+    if (!IMG_IS_OK(status)) {
+        context->status = ERROR;
+        HiLog::Error(LABEL, "New instance could not be obtained");
+        napi_get_undefined(env, &result);
+    }
+
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
+{
+    napi_value globalValue;
+    napi_get_global(env, &globalValue);
+    napi_value func;
+    napi_get_named_property(env, globalValue, "requireNapi", &func);
+
+    napi_value imageInfo;
+    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
+    napi_value funcArgv[1] = { imageInfo };
+    napi_value returnValue;
+    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+    
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    int32_t refCount = 1;
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_4] = {0};
+    size_t argCount = NUM_4;
+    HiLog::Debug(LABEL, "Unmarshalling IN");
+
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+
+    // we are static method!
+    // thisVar is nullptr here
+    if (!IMG_IS_OK(status)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to napi_get_cb_info");
+    }
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+
+    if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
+        napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
+    }
+
+    napi_unwrap(env, argValue[NUM_0], (void **)&napi_messageSequence);
+
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Unmarshalling",
+        UnmarshallingExec, UnmarshallingComplete, asyncContext, asyncContext->work);
+
+    if (!IMG_IS_OK(status)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERROR, "Fail to create async work");
+    }
     return result;
 }
 
@@ -1839,6 +1940,36 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     nVal.context->status = ERR_IMAGE_DATA_UNSUPPORT;
 #endif
     napi_create_int32(env, nVal.context->status, &nVal.result);
+    return nVal.result;
+}
+
+napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    nVal.argc = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    nVal.argv = argValue;
+    HiLog::Debug(LABEL, "Marshalling IN");
+
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
+    }
+    
+    NAPI_MessageSequence *napiSequence = nullptr;
+    napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
+    napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
+    auto messageParcel = napiSequence->GetMessageParcel();
+    bool st = nVal.context->rPixelMap->Marshalling(*messageParcel);
+    if (!st) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IPC, "marshalling pixel map to parcel failed.");
+    }
     return nVal.result;
 }
 

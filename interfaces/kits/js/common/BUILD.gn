@@ -49,6 +49,7 @@ config("image_external_config") {
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
     "$skia_root/skia/third_party/externals/libjpeg-turbo",
+    "$ipc_subsystem/communication/ipc/ipc/native/src/napi_common/include",
   ]
 
   include_dirs += [
@@ -232,6 +233,7 @@ if (use_clang_ios) {
       ]
     } else {
       deps = [
+        "$ipc_subsystem/communication/ipc/interfaces/innerkits/ipc_napi_common:ipc_napi",
         "//foundation/arkui/napi:ace_napi",
         "//foundation/graphic/graphic_2d:libsurface",
         "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager:color_space_object_convertor",

@@ -48,6 +48,8 @@ private:
     // static mothod
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
     static void CreatePixelMapComplete(napi_env env, napi_status status, void *data);
+    static napi_value Unmarshalling(napi_env env, napi_callback_info info);
+    static void UnmarshallingComplete(napi_env env, napi_status status, void *data);
 
     // methods
     static napi_value ReadPixelsToBuffer(napi_env env, napi_callback_info info);
@@ -74,6 +76,7 @@ private:
 
     static napi_value GetColorSpace(napi_env env, napi_callback_info info);
     static napi_value SetColorSpace(napi_env env, napi_callback_info info);
+    static napi_value Marshalling(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;
