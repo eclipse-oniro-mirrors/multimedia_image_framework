@@ -29,6 +29,7 @@ if (use_clang_ios) {
     sources = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+      "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
     ]
 
@@ -67,6 +68,7 @@ if (use_clang_ios) {
     sources = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
+      "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
     ]
 
@@ -112,6 +114,12 @@ if (use_clang_ios) {
         "hitrace_native:hitrace_meter",
         "hiviewdfx_hilog_native:libhilog",
       ]
+
+      if (is_standard_system) {
+        external_deps += [ "init:libbegetutil" ]
+      } else {
+        external_deps += [ "startup:syspara" ]
+      }
     }
 
     #relative_install_dir = "module/multimedia"
@@ -177,6 +185,12 @@ ohos_static_library("image_utils_static") {
       "hitrace_native:hitrace_meter",
       "hiviewdfx_hilog_native:libhilog",
     ]
+
+    if (is_standard_system) {
+      external_deps += [ "init:libbegetutil" ]
+    } else {
+      external_deps += [ "startup:syspara" ]
+    }
   }
   subsystem_name = "multimedia"
   part_name = "multimedia_image_framework"

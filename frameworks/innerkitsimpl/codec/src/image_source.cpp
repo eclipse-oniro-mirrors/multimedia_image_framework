@@ -27,6 +27,7 @@
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
 #include "image_log.h"
+#include "image_system_properties.h"
 #include "image_utils.h"
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
@@ -1108,10 +1109,20 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         IMAGE_LOGE("[ImageSource]Extended get format failed %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
-    if (format == "image/png") {
-        IMAGE_LOGE("[ImageSource]Extended limit png decode");
-        sourceStreamPtr_->Seek(pngtype);
-        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    
+    if (!ImageSystemProperties::GetSkiaEnabled()) {
+        IMAGE_LOGD("[ImageSource]Extended close SK decode");
+        if (format != "image/gif") {
+            sourceStreamPtr_->Seek(pngtype);
+            return ERR_MEDIA_DATA_UNSUPPORT;
+        }
+    } else {
+        IMAGE_LOGD("[ImageSource]Extended open SK decode");
+        if (format == "image/png") {
+            IMAGE_LOGD("[ImageSource]Extended SK decode limit png");
+            sourceStreamPtr_->Seek(pngtype);
+            return ERR_MEDIA_DATA_UNSUPPORT;
+        }
     }
     mainDecoder_ = std::move(decoderPtr);
     return errorCode;
