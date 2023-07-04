@@ -46,10 +46,6 @@ uint32_t HeapMemory::Create()
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto dataPtr = std::make_unique<uint8_t[]>(data.size);
-    if (dataPtr == nullptr) {
-        HiLog::Error(LABEL, "HeapMemory::Create alloc failed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
     data.data = dataPtr.release();
     return SUCCESS;
 }
@@ -87,10 +83,6 @@ uint32_t SharedMemory::Create()
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto fdPtr = std::make_unique<int>();
-    if (fdPtr == nullptr) {
-        HiLog::Error(LABEL, "SharedMemory::Create fd alloc failed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
     *fdPtr = AshmemCreate(data.tag, data.size);
     if (*fdPtr < 0) {
         HiLog::Error(LABEL, "SharedMemory::Create AshmemCreate fd:[%{public}d].", *fdPtr);

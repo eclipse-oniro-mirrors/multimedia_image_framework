@@ -290,12 +290,12 @@ static bool IsExtendedCodec(AbsImageDecoder* decoder)
     return false;
 }
 
-static inline bool IsSizeVailed(Size &size)
+static inline bool IsSizeVailed(const Size &size)
 {
     return (size.width != INT_ZERO && size.height != INT_ZERO);
 }
 
-static inline void CopySize(Size &src, Size &dst)
+static inline void CopySize(const Size &src, Size &dst)
 {
     dst.width = src.width;
     dst.height = src.height;
@@ -345,7 +345,7 @@ static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent even
     }
 }
 
-static void FreeContextBuffer(Media::CustomFreePixelMap &func,
+static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
     AllocatorType allocType, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
