@@ -101,10 +101,6 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     auto fd = make_unique<int32_t>();
-    if (fd == nullptr) {
-        HiLog::Error(LABEL, "Alloc Ashmem fd buffer failed");
-        return ERR_SHAMEM_DATA_ABNORMAL;
-    }
     *fd = AshmemCreate(EXT_SHAREMEM_NAME.c_str(), count);
     if (*fd < 0) {
         HiLog::Error(LABEL, "AshmemCreate failed");
@@ -131,11 +127,6 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
 {
     auto out = make_unique<uint8_t[]>(count);
-    if (out == nullptr) {
-        HiLog::Error(LABEL,
-            "Heap memory alloc failed with size %{public}llu", static_cast<unsigned long long>(count));
-        return ERR_IMAGE_MALLOC_ABNORMAL;
-    }
 #ifdef _WIN32
     if (memset_s(out, ZERO, count) != EOK) {
 #else
@@ -373,10 +364,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     uint8_t *dstBuffer = nullptr;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         auto tmpBuffer = make_unique<uint8_t[]>(byteCount);
-        if (tmpBuffer == nullptr) {
-            HiLog::Debug(LABEL, "Decode tmp alloc byte count");
-            return ERR_IMAGE_MALLOC_ABNORMAL;
-        }
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
     }
@@ -558,7 +545,7 @@ static uint32_t ProcessWithStreamData(InputDataStream *input,
     std::function<uint32_t(uint8_t*, size_t)> process)
 {
     size_t inputSize = input->GetStreamSize();
-    if (inputSize <= SIZE_ZERO) {
+    if (inputSize == SIZE_ZERO) {
         return Media::ERR_MEDIA_INVALID_VALUE;
     }
     uint8_t* buffer = nullptr;
