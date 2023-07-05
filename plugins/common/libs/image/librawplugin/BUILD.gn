@@ -72,7 +72,7 @@ ohos_shared_library("rawplugin") {
     if (DUAL_ADAPTER) {
     }
 
-    external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+    external_deps = [ "hilog:libhilog" ]
   }
 
   part_name = "multimedia_image_framework"
