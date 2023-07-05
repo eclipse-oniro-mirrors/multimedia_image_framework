@@ -179,6 +179,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap002, TestSize.Level3)
     info.colorSpace = ColorSpace::SRGB;
     pixelMap.SetImageInfo(info);
     uint32_t bufferSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap002 start" << bufferSize;
     void *buffer = malloc(bufferSize);
     EXPECT_NE(buffer, nullptr);
     pixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);

@@ -24,8 +24,16 @@ using namespace OHOS::HiviewDFX;
 
 FilePackerStream::FilePackerStream(const std::string &filePath)
 {
-    std::string dirPath = ExtractFilePath(filePath);
-    std::string fileName = ExtractFileName(filePath);
+    int lastSlash = filePath.rfind("/");
+    std::string dirPath;
+    std::string fileName;
+    if (lastSlash >= 0) {
+        dirPath = ExtractFilePath(filePath);
+        fileName = ExtractFileName(filePath);
+    } else {
+        dirPath = "";
+        fileName = filePath;
+    }
     std::string realPath;
     if (!ImageUtils::PathToRealPath(dirPath, realPath)) {
         file_ = nullptr;

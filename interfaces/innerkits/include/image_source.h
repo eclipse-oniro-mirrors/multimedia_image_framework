@@ -268,6 +268,7 @@ private:
     std::mutex decodingMutex_;
     bool isIncrementalSource_ = false;
     bool isIncrementalCompleted_ = false;
+    bool hasDesiredSizeOptions = false;
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
 };
 } // namespace Media

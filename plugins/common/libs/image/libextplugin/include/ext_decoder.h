@@ -68,9 +68,12 @@ private:
     bool ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);
     SkAlphaType ConvertToAlphaType(PlAlphaType desiredType, PlAlphaType &outputType);
+    uint32_t PreDecodeCheck(uint32_t index);
+    bool ResetCodec();
     SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
     ImagePlugin::InputDataStream *stream_ = nullptr;
+    uint32_t streamOff_ = 0;
     std::unique_ptr<SkCodec> codec_;
     SkImageInfo info_;
     SkImageInfo dstInfo_;

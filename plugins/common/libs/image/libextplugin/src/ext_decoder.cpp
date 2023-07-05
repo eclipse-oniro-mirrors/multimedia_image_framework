@@ -146,6 +146,10 @@ ExtDecoder::ExtDecoder() : codec_(nullptr), frameCount_(ZERO)
 void ExtDecoder::SetSource(InputDataStream &sourceStream)
 {
     stream_ = &sourceStream;
+    streamOff_ = sourceStream.Tell();
+    if (streamOff_ >= sourceStream.GetStreamSize()) {
+        streamOff_ = ZERO;
+    }
 }
 
 void ExtDecoder::Reset()
@@ -206,8 +210,9 @@ bool ExtDecoder::IsSupportCropOnDecode(SkIRect &target)
         return false;
     }
     SkIRect orgbounds = info_.bounds();
+    SkIRect source = target;
     if (orgbounds.contains(target) && codec_->getValidSubset(&target)) {
-        return true;
+        return source == target;
     }
     return false;
 }
@@ -346,7 +351,7 @@ static uint32_t RGBxToRGB(uint8_t* srcBuffer, size_t srsSize,
     return res;
 }
 
-uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
+uint32_t ExtDecoder::PreDecodeCheck(uint32_t index)
 {
     if (!CheckIndexValied(index)) {
         HiLog::Error(LABEL, "Decode failed, invalid index:%{public}u, range:%{public}d", index, frameCount_);
@@ -360,6 +365,22 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         HiLog::Error(LABEL, "Decode failed, dst info is empty");
         return ERR_IMAGE_DECODE_FAILED;
     }
+        return SUCCESS;
+}
+
+bool ExtDecoder::ResetCodec()
+{
+    codec_ = nullptr;
+    stream_->Seek(streamOff_);
+    return ExtDecoder::CheckCodec();
+}
+
+uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
+{
+    uint32_t res = PreDecodeCheck(index);
+    if (res != SUCCESS) {
+        return res;
+    }
     uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
     uint8_t *dstBuffer = nullptr;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
@@ -369,7 +390,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     if (context.pixelsBuffer.buffer == nullptr) {
         HiLog::Debug(LABEL, "Decode alloc byte count.");
-        uint32_t res = SetContextPixelsBuffer(byteCount, context);
+        res = SetContextPixelsBuffer(byteCount, context);
         if (res != SUCCESS) {
             return res;
         }
@@ -380,6 +401,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     dstOptions_.fFrameIndex = index;
     DebugInfo(info_, dstInfo_, dstOptions_);
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, dstInfo_.minRowBytes64(), &dstOptions_);
+    if (ret != SkCodec::kSuccess && ResetCodec()) {
+        // Try again
+        ret = codec_->getPixels(dstInfo_, dstBuffer, dstInfo_.minRowBytes64(), &dstOptions_);
+    }
     if (ret != SkCodec::kSuccess) {
         HiLog::Error(LABEL, "Decode failed, get pixels failed, ret=%{public}d", ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -548,19 +573,17 @@ static uint32_t ProcessWithStreamData(InputDataStream *input,
     if (inputSize == SIZE_ZERO) {
         return Media::ERR_MEDIA_INVALID_VALUE;
     }
-    uint8_t* buffer = nullptr;
-    if (input->GetDataPtr() != nullptr) {
-        buffer = input->GetDataPtr();
-    } else {
+
+    if (input->GetDataPtr() == nullptr) {
         auto tmpBuffer = std::make_unique<uint8_t[]>(inputSize);
-        buffer = tmpBuffer.get();
         auto savePos = input->Tell();
         input->Seek(SIZE_ZERO);
         uint32_t readSize = 0;
-        input->Read(inputSize, buffer, inputSize, readSize);
+        input->Read(inputSize, tmpBuffer.get(), inputSize, readSize);
         input->Seek(savePos);
+        return process(tmpBuffer.get(), inputSize);
     }
-    return process(buffer, inputSize);
+    return process(input->GetDataPtr(), inputSize);
 }
 
 static bool ParseExifData(InputDataStream *input, EXIFInfo &info)

@@ -37,7 +37,9 @@
           "bytrace_core",
           "multimedia",
           "napi",
-          "zlib"
+          "zlib",
+          "init",
+          "startup"
         ],
         "third_party": [
           "flutter",

@@ -27,6 +27,7 @@
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
 #include "image_log.h"
+#include "image_system_properties.h"
 #include "image_utils.h"
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
@@ -194,6 +195,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
 
     if (data == nullptr || size == 0) {
         IMAGE_LOGE("[ImageSource]parameter error.");
+        errorCode = ERR_MEDIA_INVALID_PARAM;
         return nullptr;
     }
     return DoImageSourceCreate([&data, &size]() {
@@ -414,6 +416,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         return nullptr;
     }
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    hasDesiredSizeOptions = IsSizeVailed(opts_.desiredSize);
     TransformSizeWithDensity(info.size, sourceInfo_.baseDensity, opts_.desiredSize, opts_.fitDensity,
         opts_.desiredSize);
     ImagePlugin::PlImageInfo plInfo;
@@ -468,6 +471,19 @@ static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, 
     }
 }
 
+static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t wantDensity, Size &dstSize)
+{
+    ImageInfo info;
+    pixelmap.GetImageInfo(info);
+    if (!IsDensityChange(srcDensity, wantDensity)) {
+        dstSize.width = info.size.width;
+        dstSize.height = info.size.height;
+    } else {
+        dstSize.width = GetScalePropByDensity(info.size.width, srcDensity, wantDensity);
+        dstSize.height = GetScalePropByDensity(info.size.height, srcDensity, wantDensity);
+    }
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
     PixelMapAddrInfos &addrInfos, uint32_t &errorCode)
 {
@@ -503,6 +519,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
             return nullptr;
+        }
+        if (!hasDesiredSizeOptions) {
+            ResizeCropPixelmap(*pixelMap, sourceInfo_.baseDensity, opts_.fitDensity, opts_.desiredSize);
         }
     }
     // rotateDegrees and rotateNewDegrees
@@ -1108,10 +1127,20 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         IMAGE_LOGE("[ImageSource]Extended get format failed %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
-    if (format == "image/png") {
-        IMAGE_LOGE("[ImageSource]Extended limit png decode");
-        sourceStreamPtr_->Seek(pngtype);
-        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    
+    if (!ImageSystemProperties::GetSkiaEnabled()) {
+        IMAGE_LOGD("[ImageSource]Extended close SK decode");
+        if (format != "image/gif") {
+            sourceStreamPtr_->Seek(pngtype);
+            return ERR_MEDIA_DATA_UNSUPPORT;
+        }
+    } else {
+        IMAGE_LOGD("[ImageSource]Extended open SK decode");
+        if (format == "image/png") {
+            IMAGE_LOGD("[ImageSource]Extended SK decode limit png");
+            sourceStreamPtr_->Seek(pngtype);
+            return ERR_MEDIA_DATA_UNSUPPORT;
+        }
     }
     mainDecoder_ = std::move(decoderPtr);
     return errorCode;
