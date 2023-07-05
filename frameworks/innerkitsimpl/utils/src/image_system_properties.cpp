@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Media {
     bool ImageSystemProperties::GetSkiaEnabled()
     {
-        return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", false);
+        return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", true);
     }
     bool ImageSystemProperties::GetSurfaceBufferEnabled()
     {

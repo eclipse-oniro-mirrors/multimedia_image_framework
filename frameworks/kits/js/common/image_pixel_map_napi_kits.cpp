@@ -83,7 +83,7 @@ static ScaleMode ParseScaleMode(int32_t val)
 
 static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
 {
-    if (args == nullptr) {
+    if (args == nullptr || args->outValue == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_value undefinedValue = nullptr;
@@ -112,7 +112,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
 
 static int32_t PixelMapNapiCreateAlpha(napi_env env, PixelMapNapiArgs* args)
 {
-    if (args == nullptr) {
+    if (args == nullptr || args->outValue == nullptr) {
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_value undefinedValue = nullptr;
