@@ -111,8 +111,8 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
-        "hitrace_native:hitrace_meter",
-        "hiviewdfx_hilog_native:libhilog",
+        "hilog:libhilog",
+        "hitrace:hitrace_meter",
       ]
 
       if (is_standard_system) {
@@ -182,8 +182,8 @@ ohos_static_library("image_utils_static") {
 
     external_deps = [
       "c_utils:utils",
-      "hitrace_native:hitrace_meter",
-      "hiviewdfx_hilog_native:libhilog",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
     ]
 
     if (is_standard_system) {

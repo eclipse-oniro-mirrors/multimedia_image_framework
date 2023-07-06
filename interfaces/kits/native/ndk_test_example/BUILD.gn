@@ -48,7 +48,7 @@ ohos_shared_library("mypixelmap") {
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
   ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [ "hilog:libhilog" ]
 
   relative_install_dir = "module"
 

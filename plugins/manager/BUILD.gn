@@ -142,7 +142,7 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
-        "hiviewdfx_hilog_native:libhilog",
+        "hilog:libhilog",
       ]
     }
 
@@ -224,7 +224,7 @@ ohos_static_library("pluginmanager_static") {
 
     external_deps = [
       "c_utils:utils",
-      "hiviewdfx_hilog_native:libhilog",
+      "hilog:libhilog",
     ]
   }
   subsystem_name = "multimedia"
