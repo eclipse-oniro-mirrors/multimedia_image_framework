@@ -18,6 +18,7 @@ SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
 ohos_shared_library("pixelmap_ndk") {
   sanitize = {
     cfi = true
+    cfi_cross_dso = true
     debug = false
   }
   include_dirs = [

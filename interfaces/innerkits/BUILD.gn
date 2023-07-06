@@ -123,6 +123,7 @@ if (use_clang_android) {
     if (!use_clang_android) {
       sanitize = {
         cfi = true
+        cfi_cross_dso = true
         debug = false
       }
     }

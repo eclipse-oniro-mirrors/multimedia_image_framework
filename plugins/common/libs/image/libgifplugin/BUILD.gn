@@ -18,6 +18,7 @@ ohos_shared_library("gifplugin") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
       cfi = true
+      cfi_cross_dso = true
       debug = false
     }
   }

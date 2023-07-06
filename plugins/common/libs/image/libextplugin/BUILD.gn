@@ -23,6 +23,7 @@ ohos_static_library("exifhelper") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
       cfi = true
+      cfi_cross_dso = true
       debug = false
     }
   }
@@ -97,6 +98,7 @@ ohos_shared_library("extplugin") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
       cfi = true
+      cfi_cross_dso = true
       debug = false
     }
   }
