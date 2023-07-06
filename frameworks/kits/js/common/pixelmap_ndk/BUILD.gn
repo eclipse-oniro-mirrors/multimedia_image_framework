@@ -39,5 +39,5 @@ ohos_shared_library("pixelmap_ndk") {
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }

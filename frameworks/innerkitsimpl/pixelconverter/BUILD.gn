@@ -132,7 +132,7 @@ if (use_clang_ios) {
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
-    part_name = "multimedia_image_framework"
+    part_name = "image_framework"
   }
 } else {
   ohos_shared_library("pixelconvertadapter") {
@@ -175,7 +175,7 @@ if (use_clang_ios) {
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
-    part_name = "multimedia_image_framework"
+    part_name = "image_framework"
   }
 }
 
@@ -220,5 +220,5 @@ ohos_static_library("pixelconvertadapter_static") {
     ]
   }
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }
