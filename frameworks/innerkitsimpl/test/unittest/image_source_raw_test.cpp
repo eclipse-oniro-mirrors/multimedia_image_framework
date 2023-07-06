@@ -29,6 +29,8 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 
+namespace OHOS {
+namespace Multimedia {
 static const std::string IMAGE_INPUT_DNG_PATH = "/data/local/tmp/image/test.dng";
 static const std::string IMAGE_OUTPUT_DNG_FILE_PATH = "/data/test/test_raw_file.jpg";
 
@@ -386,3 +388,5 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode010, TestSize.Level3)
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(pixelMap.get(), nullptr);
 }
+} // namespace Multimedia
+} // namespace OHOS
