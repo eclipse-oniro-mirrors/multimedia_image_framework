@@ -610,7 +610,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
     napi_value funcArgv[1] = { imageInfo };
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
-    
+
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1585,7 +1585,7 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
 
     if (nVal.status == napi_ok) {
-        nVal.status = napi_queue_async_work(env, nVal.context->work);
+        nVal.status = napi_queue_async_work_with_qos(env, nVal.context->work, napi_qos_user_initiated);
         if (nVal.status == napi_ok) {
             nVal.context.release();
         }
