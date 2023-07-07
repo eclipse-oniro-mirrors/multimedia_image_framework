@@ -56,7 +56,7 @@ static inline void DataSwap(uint8_t* a, uint8_t* b, bool flip)
 static inline bool IsYUV422SPFormat(int32_t format)
 {
     if (format == int32_t(ImageFormat::YCBCR_422_SP) ||
-        format == int32_t(PIXEL_FMT_YCBCR_422_SP)) {
+        format == int32_t(GRAPHIC_PIXEL_FMT_YCBCR_422_SP)) {
         return true;
     }
     return false;
@@ -146,7 +146,7 @@ int32_t NativeImage::SplitSurfaceToComponent()
     }
     switch (format) {
         case int32_t(ImageFormat::YCBCR_422_SP):
-        case int32_t(PIXEL_FMT_YCBCR_422_SP):
+        case int32_t(GRAPHIC_PIXEL_FMT_YCBCR_422_SP):
             return SplitYUV422SPComponent();
         case int32_t(ImageFormat::JPEG):
             if (CreateCombineComponent(int32_t(ComponentType::JPEG)) != nullptr) {
