@@ -160,6 +160,7 @@ if (use_clang_ios) {
     if (!use_clang_android && !use_clang_ios) {
       sanitize = {
         cfi = true
+        cfi_cross_dso = true
         debug = false
       }
     }
@@ -189,6 +190,7 @@ if (use_clang_ios) {
     if (!use_clang_android && !use_clang_ios) {
       sanitize = {
         cfi = true
+        cfi_cross_dso = true
         debug = false
       }
     }
