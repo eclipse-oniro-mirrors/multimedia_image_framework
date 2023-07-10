@@ -35,6 +35,7 @@ ohos_shared_library("gifplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "//third_party/giflib",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "$skia_root/skia/include/codec",
@@ -75,6 +76,7 @@ ohos_shared_library("gifplugin") {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "graphic_standard:surface",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

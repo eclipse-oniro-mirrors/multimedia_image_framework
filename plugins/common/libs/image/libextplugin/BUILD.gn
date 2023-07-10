@@ -41,6 +41,7 @@ ohos_static_library("exifhelper") {
     "c_utils:utils",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "graphic_standard:surface",
   ]
   part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"
@@ -119,6 +120,7 @@ ohos_shared_library("extplugin") {
     "include",
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
   ]
   if (use_mingw_win) {
     configs += [ ":win_config" ]

@@ -14,9 +14,12 @@
  */
 
 #include "webp_decoder.h"
+
+#include "image_utils.h"
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -358,7 +361,7 @@ bool WebpDecoder::PreDecodeProc(DecodeContext &context, WebPDecoderConfig &confi
         HiLog::Error(LABEL, "init config failed.");
         return false;
     }
-    if (!AllocHeapBuffer(context, isIncremental)) {
+    if (!AllocOutputBuffer(context, isIncremental)) {
         HiLog::Error(LABEL, "get pixels memory failed.");
         return false;
     }
@@ -374,7 +377,7 @@ void WebpDecoder::Reset()
     webpSize_ = { 0, 0 };
 }
 
-bool WebpDecoder::AllocHeapBuffer(DecodeContext &context, bool isIncremental)
+bool WebpDecoder::AllocOutputBuffer(DecodeContext &context, bool isIncremental)
 {
     if (isIncremental) {
         if (context.pixelsBuffer.buffer != nullptr && context.allocatorType == AllocatorType::HEAP_ALLOC) {
@@ -417,6 +420,40 @@ bool WebpDecoder::AllocHeapBuffer(DecodeContext &context, bool isIncremental)
             context.pixelsBuffer.bufferSize = byteCount;
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
             context.freeFunc = nullptr;
+#endif
+        } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+            HiLog::Error(LABEL, "Unsupport dma mem alloc");
+            return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+            sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+            BufferRequestConfig requestConfig = {
+                .width = webpSize_.width;
+                .height = webpSize_.height;
+                .strideAlignment = 0x8; // set 0x8 as default value to alloc SurfaceBufferImpl
+                .format = GRAPHIC_PIXEL_FMT_RGBA_8888; // PixelFormat
+                .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA;
+                .timeout = 0;
+                .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB;
+                .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE;
+            };
+            GsError ret = sb->Alloc(requestConfig);
+            if (ret != GSERROR_OK) {
+                HiLog::Error(LABEL, "Surface Buffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+                return ERR_DMA_NOT_EXIST;
+            }
+            void* nativeBuffer = sb.GetRefPtr();
+            int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+            if (err != OHOS::GSERROR_OK) {
+                HiLog::Error(LABEL, "NativeBufferReference failed");
+                return ERR_DMA_DATA_ABNORMAL;
+            }
+
+            context.pixelsBuffer.buffer = sb->GetVirAddr();
+            context.pixelsBuffer.context = nativeBuffer;
+            context.pixelsBuffer.bufferSize = byteCount;
+            context.allocatorType = AllocatorType::DMA_ALLOC;
+            context.freeFunc = nullptr;.
 #endif
         } else {
             void *outputBuffer = malloc(byteCount);

@@ -49,7 +49,7 @@ ohos_shared_library("jpegplugin") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
@@ -106,6 +106,7 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/libexif:libexif",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     ]
     deps += skia_skcms
     deps += skia_platform
@@ -126,6 +127,7 @@ ohos_shared_library("jpegplugin") {
       "c_utils:utils",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "graphic_standard:surface",
     ]
   }
 

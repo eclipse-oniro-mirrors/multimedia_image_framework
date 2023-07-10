@@ -36,6 +36,7 @@ ohos_shared_library("bmpplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/core",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
@@ -93,6 +94,7 @@ ohos_shared_library("bmpplugin") {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "graphic_standard:surface",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

@@ -36,6 +36,7 @@ ohos_shared_library("svgplugin") {
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia",
   ]
 
@@ -48,6 +49,7 @@ ohos_shared_library("svgplugin") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "graphic_standard:surface",
   ]
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

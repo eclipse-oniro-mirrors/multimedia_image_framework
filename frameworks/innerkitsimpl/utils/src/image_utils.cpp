@@ -312,5 +312,27 @@ void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
 {
     ReversePixels(srcPixels, dstPixels, byteCount);
 }
+
+int32_t ImageUtils::SurfaceBuffer_Reference(void* buff)
+{
+    if (buffer == nullptr) {
+        HiLog::Error(LABEL, "parameter error, please check input parameter");
+        return OHOS::GSERROR_INVALID_ARGUMENTS;
+    }
+    OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
+    ref->IncStrongRef(ref);
+    return OHOS::GSERROR_OK;
+}
+
+int32_t ImageUtils::SurfaceBuffer_Unreference(void* buff)
+{
+    if (buffer == nullptr) {
+        HiLog::Error(LABEL, "parameter error, please check input parameter");
+        return OHOS::GSERROR_INVALID_ARGUMENTS;
+    }
+    OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
+    ref->DecStrongRef(ref);
+    return OHOS::GSERROR_OK;
+}
 } // namespace Media
 } // namespace OHOS

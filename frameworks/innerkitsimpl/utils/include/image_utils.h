@@ -43,6 +43,8 @@ public:
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
     static void BGRAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
+    static int32_t SurfaceBuffer_Reference(void* buffer);
+    static int32_t SurfaceBuffer_Unreference(void* buffer);
 
 private:
     static uint32_t RegisterPluginServer();

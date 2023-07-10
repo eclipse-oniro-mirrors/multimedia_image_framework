@@ -40,6 +40,7 @@ ohos_shared_library("pngplugin") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
@@ -93,6 +94,7 @@ ohos_shared_library("pngplugin") {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "graphic_standard:surface",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

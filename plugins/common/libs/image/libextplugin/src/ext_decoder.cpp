@@ -24,6 +24,7 @@
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+#include "surface_buffer.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtDecoder"};
@@ -85,7 +86,7 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
 };
 
 static void SetDecodeContextBuffer(DecodeContext &context,
-    AllocatorType type, uint8_t* ptr, uint64_t count, int32_t* fd)
+    AllocatorType type, uint8_t* ptr, uint64_t count, void* fd)
 {
     context.allocatorType = type;
     context.freeFunc = nullptr;
@@ -120,6 +121,41 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
     }
     SetDecodeContextBuffer(context,
         AllocatorType::SHARE_MEM_ALLOC, static_cast<uint8_t*>(ptr), count, fd.release());
+    return SUCCESS;
+#endif
+}
+
+static uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = dstInfo.width();
+        .height = dstInfo.height();
+        .strideAlignment = 0x8; // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888; // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA;
+        .timeout = 0;
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB;
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE;
+    };
+    GsError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "Surface Buffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+
+    SetDecodeContextBuffer(context,
+        AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(virAddr), count, nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -321,6 +357,8 @@ uint32_t ExtDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
     }
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
         return ShareMemAlloc(context, byteCount);
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        return DmaMemAlloc(context, byteCount, dstInfo_);
     }
     return HeapMemAlloc(context, byteCount);
 }
