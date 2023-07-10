@@ -39,8 +39,6 @@
 #include <cstdint>
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
-namespace OHOS {
-namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -393,7 +391,7 @@ struct OhosImageSourceUpdateData {
  * @param src Indicates infomations of creating a image source. For details, see {@link OhosImageSource}.
  * @param ops Indicates options for creating a image source. See {@link OhosImageSourceOps}.
  * @param res Indicates the pointer to JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}
  *
@@ -414,7 +412,7 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
  * For details, see {@link OhosImageSource}.
  * @param ops Indicates options for creating a image source. See {@link OhosImageSourceOps}.
  * @param res Indicates the pointer to JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
  *
@@ -433,7 +431,7 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
  * supported formats size by <b>size</b> in res.
  * For getting all format tags, it needs enough space larger than result size in <b>supportedFormatList</b>,
  * and alse enough space for every <b>format</b> in {@link OhosImageSourceSupportedFormat} item.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link OhosImageSourceSupportedFormatList}, {@link OhosImageSourceSupportedFormat}
  *
@@ -466,7 +464,7 @@ ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param ops Indicates options for decoding the image source. See {@link OhosImageDecodingOps}.
  * @param res Indicates the pointer to JavaScript Native API <b>PixelMap</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
@@ -484,7 +482,7 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param ops Indicates options for decoding the image source. See {@link OhosImageDecodingOps}.
  * @param res Indicates the pointer to JavaScript Native API <b>PixelMap</b> list object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
@@ -503,7 +501,7 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
  * when the <b>delayTimeList</b> is nullptr and <b>size</b> is 0 in res as input, it will return the
  * delay time list size by <b>size</b> in res.
  * For getting delay times, it needs enough space larger than result size in <b>delayTimeList</b>.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceDelayTimeList}
  *
@@ -519,7 +517,7 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
  *
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param res Indicates the pointer to frame count.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}
  *
@@ -535,7 +533,7 @@ int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param index Indicates the frame index.
  * @param res Indicates the pointer to image source infomation {@link OhosImageSourceInfo}.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceInfo}
  *
@@ -555,7 +553,7 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
  * when the <b>value</b> is nullptr and <b>size</b> is 0 in value as input, it will return the
  * property value size by <b>size</b> in value.
  * For getting property value, it needs enough space larger than result size in <b>value</b>.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
@@ -572,7 +570,7 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param key Indicates the pointer to property key {@link OhosImageSourceProperty}
  * @param value Indicates the pointer to property value {@link OhosImageSourceProperty} for modify.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
@@ -588,7 +586,7 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
  *
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
  * @param data Indicates the pointer to update data informations {@link OhosImageSourceUpdateData}
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceUpdateData}
  *
@@ -603,7 +601,7 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosIm
  * @brief Release native image source <b>ImageSourceNative</b>
  *
  * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
  * returns other result codes if the operation fails.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Create}, {@link OH_ImageSource_CreateIncremental}
  *
@@ -615,7 +613,4 @@ int32_t OH_ImageSource_Release(ImageSourceNative* native);
 #ifdef __cplusplus
 };
 #endif
-/** @} */
-} // namespace Media
-} // namespace OHOS
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_SOURCE_MDK_H_

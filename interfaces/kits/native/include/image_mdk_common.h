@@ -49,9 +49,9 @@ extern "C" {
  */
 enum {
     /** Operation success. */
-    OHOS_IMAGE_RESULT_SUCCESS = 0,
+    IMAGE_RESULT_SUCCESS = 0,
     /** Invalid parameter. */
-    OHOS_IMAGE_RESULT_BAD_PARAMETER = -1,
+    IMAGE_RESULT_BAD_PARAMETER = -1,
 };
 
 /**

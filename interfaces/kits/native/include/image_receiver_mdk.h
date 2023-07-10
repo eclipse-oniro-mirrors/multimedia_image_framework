@@ -90,7 +90,7 @@ struct OhosImageReceiverInfo {
  * @param env Indicates the NAPI environment pointer.
  * @param info Indicates the options for setting the <b>ImageReceiver</b> object.
  * @param res Indicates the pointer to the <b>ImageReceiver</b> object obtained.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see OhosImageReceiverInfo
  * @since 10
  * @version 2.0
@@ -117,7 +117,7 @@ ImageReceiverNative* OH_Image_Receiver_InitImageReceiverNative(napi_env env, nap
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param id Indicates the pointer to the buffer that stores the ID string obtained.
  * @param len Indicates the size of the buffer.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -129,7 +129,7 @@ int32_t OH_Image_Receiver_GetReceivingSurfaceId(const ImageReceiverNative* nativ
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param image Indicates the pointer to an <b>Image</b> object at the application layer.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -141,7 +141,7 @@ int32_t OH_Image_Receiver_ReadLatestImage(const ImageReceiverNative* native, nap
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param image Indicates the pointer to an <b>Image</b> object at the application layer.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -155,7 +155,7 @@ int32_t OH_Image_Receiver_ReadNextImage(const ImageReceiverNative* native, napi_
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param callback Indicates the {@link OH_Image_Receiver_On_Callback} callback event to register.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0
@@ -167,7 +167,7 @@ int32_t OH_Image_Receiver_On(const ImageReceiverNative* native, OH_Image_Receive
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param size Indicates the pointer to the {@link OhosImageSize} object obtained.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative, OH_Image_Receiver_On_Callback
  * @since 10
  * @version 2.0
@@ -179,7 +179,7 @@ int32_t OH_Image_Receiver_GetSize(const ImageReceiverNative* native, struct Ohos
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param capacity Indicates the pointer to the capacity obtained.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative, OhosImageSize
  * @since 10
  * @version 2.0
@@ -191,7 +191,7 @@ int32_t OH_Image_Receiver_GetCapacity(const ImageReceiverNative* native, int32_t
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
  * @param format Indicates the pointer to the format obtained.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
 
  * @since 10
@@ -205,7 +205,7 @@ int32_t OH_Image_Receiver_GetFormat(const ImageReceiverNative* native, int32_t* 
  * This API is not used to release an <b>ImageReceiver</b> object at the application layer.
  *
  * @param native Indicates the pointer to an {@link ImageReceiverNative} object at the native layer.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
+ * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see ImageReceiverNative
  * @since 10
  * @version 2.0

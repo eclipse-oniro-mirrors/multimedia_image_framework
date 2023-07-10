@@ -45,7 +45,7 @@ static ImageReceiver* CheckAndGetReceiver(ImageReceiverNapi* native, const struc
 static int32_t ImageReceiverNapiCreate(napi_env env, struct ImageReceiverArgs* args)
 {
     if (args == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
 
     ImageReceiverCreateArgs createArgs;
@@ -55,94 +55,94 @@ static int32_t ImageReceiverNapiCreate(napi_env env, struct ImageReceiverArgs* a
     createArgs.capicity = args->inNum3;
     *(args->outValue) = ImageReceiverNapi::CreateImageReceiverJsObject(env, createArgs);
     if (*(args->outValue) == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr || args->id == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto sId = receiver->iraContext_->GetReceiverKey();
     if (sId.empty() || sId.c_str() == nullptr || args->inLen < sId.size()) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     memcpy_s(args->id, args->inLen, sId.c_str(), sId.size());
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiReadLatestImage(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->inEnv == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto image = receiver->LastNativeImage();
     if (image == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outValue) = ImageNapi::Create(args->inEnv, image);
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiReadNextImage(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->inEnv == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto image = receiver->NextNativeImage();
     if (image == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outValue) = ImageNapi::Create(args->inEnv, image);
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiOn(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->callback == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     std::shared_ptr<ImageReceiverNapiListener> listener = std::make_shared<ImageReceiverNapiListener>();
     listener->callBack = args->callback;
     receiver->RegisterBufferAvaliableListener(listener);
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiGetSize(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr || args->outSize == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     args->outSize->width = receiver->iraContext_->GetWidth();
     args->outSize->height = receiver->iraContext_->GetHeight();
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiGetCapacity(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outNum0) = receiver->iraContext_->GetCapicity();
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiGetFormat(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outNum0) = receiver->iraContext_->GetFormat();
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 static const std::map<int32_t, ImageReceiverNapiEnvFunc> g_EnvFunctions = {
     {ENV_FUNC_IMAGE_RECEIVER_CREATE, ImageReceiverNapiCreate},
@@ -162,7 +162,7 @@ int32_t ImageReceiverNativeEnvCall(int32_t mode, napi_env env, struct ImageRecei
 {
     auto funcSearch = g_EnvFunctions.find(mode);
     if (funcSearch == g_EnvFunctions.end()) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     return funcSearch->second(env, args);
 }
@@ -172,7 +172,7 @@ int32_t ImageReceiverNativeCtxCall(int32_t mode, ImageReceiverNapi* native, stru
 {
     auto funcSearch = g_CtxFunctions.find(mode);
     if (funcSearch == g_CtxFunctions.end()) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     return funcSearch->second(native, args);
 }
