@@ -22,10 +22,10 @@
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "color_space_object_convertor.h"
 #include "js_runtime_utils.h"
+#include "napi_message_sequence.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
-#include "napi_message_sequence.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
@@ -43,7 +43,9 @@ namespace Media {
 static const std::string CLASS_NAME = "PixelMap";
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 std::shared_ptr<PixelMap> PixelMapNapi::sPixelMap_ = nullptr;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
+#endif
 
 struct PositionArea {
     void* pixels;
@@ -690,6 +692,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
 
 STATIC_EXEC_FUNC(Unmarshalling)
 {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
     auto messageParcel = napi_messageSequence->GetMessageParcel();
@@ -703,6 +706,7 @@ STATIC_EXEC_FUNC(Unmarshalling)
     } else {
         context->status = ERROR;
     }
+#endif
 }
 
 void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void *data)
@@ -730,6 +734,7 @@ void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void 
 
 napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
 {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     napi_value globalValue;
     napi_get_global(env, &globalValue);
     napi_value func;
@@ -781,6 +786,7 @@ napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
             env, ERROR, "Fail to create async work");
     }
     return result;
+#endif
 }
 
 napi_value PixelMapNapi::GetIsEditable(napi_env env, napi_callback_info info)
@@ -1944,6 +1950,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 
 napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
 {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     NapiValues nVal;
     nVal.argc = NUM_1;
     napi_value argValue[NUM_1] = {0};
@@ -1969,6 +1976,7 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IPC, "marshalling pixel map to parcel failed.");
     }
     return nVal.result;
+#endif
 }
 
 void PixelMapNapi::release()
