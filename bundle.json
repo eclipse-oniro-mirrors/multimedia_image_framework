@@ -59,6 +59,16 @@
         ],
         "inner_kits": [
           {
+            "header":{
+              "header_files":[
+                "pixel_convert_adapter.h",
+                "pixel_map_jni_utils.h"
+              ],
+              "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include"
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter"
+          },
+          {
             "header": {
               "header_files": [
                 "pixel_map.h",
