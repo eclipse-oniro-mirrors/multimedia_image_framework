@@ -45,8 +45,11 @@ uint32_t HeapMemory::Create()
         HiLog::Error(LABEL, "HeapMemory::Create size is 0");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    auto dataPtr = std::make_unique<uint8_t[]>(data.size);
-    data.data = dataPtr.release();
+    data.data = static_cast<uint8_t *>(malloc(data.size));
+    if (data.data == nullptr) {
+        HiLog::Error(LABEL, "HeapMemory::Create malloc buffer failed");
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
     return SUCCESS;
 }
 

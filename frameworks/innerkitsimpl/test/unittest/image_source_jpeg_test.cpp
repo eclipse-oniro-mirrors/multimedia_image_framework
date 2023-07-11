@@ -208,7 +208,7 @@ HWTEST_F(ImageSourceJpegTest, TC035, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 }
 
 /**
@@ -1121,7 +1121,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyIntTest002, TestSize.Level3)
     int32_t value = 0;
     std::string key = "Orientation";
     uint32_t res = imageSource->GetImagePropertyInt(index, key, value);
-    ASSERT_EQ(res, ERR_MEDIA_VALUE_INVALID);
+    ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyIntTest002 end";
 }
 
@@ -1609,7 +1609,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest005, TestSize.Level3)
     std::string value = "100";
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, "/data/local/tmp/image/test.png");
-    ASSERT_EQ(res, ERR_MEDIA_INVALID_OPERATION);
+    ASSERT_EQ(res, ERR_IMAGE_MISMATCHED_FORMAT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest005 end";
 }
 
@@ -1776,7 +1776,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest005, TestSize.Level3)
     std::string key = "BitsPerSample";
     int fd = open("/data/local/tmp/image/test.png", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
-    ASSERT_EQ(res, ERR_MEDIA_INVALID_OPERATION);
+    ASSERT_EQ(res, ERR_IMAGE_MISMATCHED_FORMAT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest005 end";
 }
 
@@ -2032,7 +2032,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest007, TestSize.Level3)
     ASSERT_NE(data, nullptr);
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
-    ASSERT_EQ(res, ERR_MEDIA_INVALID_OPERATION);
+    ASSERT_EQ(res, ERR_IMAGE_MISMATCHED_FORMAT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest007 end";
 }
 

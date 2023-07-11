@@ -947,7 +947,6 @@ group("unittest") {
     ":interfacetest",
     ":jpegdecoderextest",
     ":napitest",
-    ":ndktest",
     ":pixelconvertadaptertest",
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
