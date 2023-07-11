@@ -113,9 +113,9 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
+        "graphic_2d:surface",
         "hilog:libhilog",
         "hitrace:hitrace_meter",
-        "graphic_standard:surface"
       ]
 
       if (is_standard_system) {

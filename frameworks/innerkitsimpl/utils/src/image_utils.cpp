@@ -34,6 +34,7 @@
 #include "vector"
 #include "image_trace.h"
 #include "hitrace_meter.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace Media {
@@ -313,26 +314,26 @@ void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
     ReversePixels(srcPixels, dstPixels, byteCount);
 }
 
-int32_t ImageUtils::SurfaceBuffer_Reference(void* buff)
+int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 {
     if (buffer == nullptr) {
         HiLog::Error(LABEL, "parameter error, please check input parameter");
-        return OHOS::GSERROR_INVALID_ARGUMENTS;
+        return ERR_SURFACEBUFFER_REFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
     ref->IncStrongRef(ref);
-    return OHOS::GSERROR_OK;
+    return SUCCESS;
 }
 
-int32_t ImageUtils::SurfaceBuffer_Unreference(void* buff)
+int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 {
     if (buffer == nullptr) {
         HiLog::Error(LABEL, "parameter error, please check input parameter");
-        return OHOS::GSERROR_INVALID_ARGUMENTS;
+        return ERR_SURFACEBUFFER_UNREFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
     ref->DecStrongRef(ref);
-    return OHOS::GSERROR_OK;
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

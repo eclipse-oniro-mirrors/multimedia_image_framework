@@ -378,18 +378,18 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 #else
             sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
             BufferRequestConfig requestConfig = {
-                .width = decodeInfo_.output_width;
-                .height = decodeInfo_.output_height;
-                .strideAlignment = 0x8; // set 0x8 as default value to alloc SurfaceBufferImpl
-                .format = GRAPHIC_PIXEL_FMT_RGBA_8888; // PixelFormat
-                .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA;
-                .timeout = 0;
-                .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB;
-                .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE;
+                .width = decodeInfo_.output_width,
+                .height = decodeInfo_.output_height,
+                .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+                .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+                .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+                .timeout = 0,
+                .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+                .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
             };
-            GsError ret = sb->Alloc(requestConfig);
+            GSError ret = sb->Alloc(requestConfig);
             if (ret != GSERROR_OK) {
-                HiLog::Error(LABEL, "Surface Buffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+                HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
                 return ERR_DMA_NOT_EXIST;
             }
             void* nativeBuffer = sb.GetRefPtr();
@@ -403,7 +403,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.pixelsBuffer.context = nativeBuffer;
             context.pixelsBuffer.bufferSize = byteCount;
             context.allocatorType = AllocatorType::DMA_ALLOC;
-            context.freeFunc = nullptr;.
+            context.freeFunc = nullptr;
 #endif
         } else {
             void *outputBuffer = malloc(byteCount);
@@ -426,6 +426,10 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     }
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+        rowStride = sbBuffer->GetStride();
+    }
     while (decodeInfo_.output_scanline < decodeInfo_.output_height) {
         buffer = base + rowStride * decodeInfo_.output_scanline;
         uint32_t readLineNum = jpeg_read_scanlines(&decodeInfo_, &buffer, RW_LINE_NUM);

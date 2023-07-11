@@ -93,8 +93,8 @@ ohos_shared_library("bmpplugin") {
 
     external_deps = [
       "c_utils:utils",
+      "graphic_2d:surface",
       "hilog:libhilog",
-      "graphic_standard:surface",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

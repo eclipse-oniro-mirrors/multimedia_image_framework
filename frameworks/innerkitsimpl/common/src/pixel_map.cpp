@@ -1209,7 +1209,7 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
     } else if (allocType == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
-#endif  
+#endif
     }
 }
 
@@ -1446,7 +1446,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel>(parcel));
+        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
 #endif
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
@@ -1542,10 +1542,12 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 #endif
     } else if (allocType == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel>(parcel));
-        uint8_t* virAddr = static_cast<uint8_t*>surfaceBuffer->GetVirAddr();
+        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+        uint8_t* virAddr = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        void* nativeBuffer = surfaceBuffer.GetRefPtr();
+        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
         base = virAddr;
-        context = surfaceBuffer->SurfaceBufferToNativeBuffer();
+        context = nativeBuffer;
     } else {
         base = ReadImageData(parcel, bufferSize);
         if (base == nullptr) {

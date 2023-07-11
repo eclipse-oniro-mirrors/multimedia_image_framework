@@ -39,9 +39,9 @@ ohos_static_library("exifhelper") {
   deps = [ "${third_party_root}/libexif:libexif" ]
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
-    "graphic_standard:surface",
   ]
   part_name = "multimedia_image_framework"
   subsystem_name = "multimedia"

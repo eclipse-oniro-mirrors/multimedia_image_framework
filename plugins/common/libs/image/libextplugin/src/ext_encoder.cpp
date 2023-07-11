@@ -28,6 +28,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "string_ex.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -122,7 +123,12 @@ static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
         skInfo = skInfo.makeColorType(SkColorType::kRGBA_8888_SkColorType);
     }
 
-    if (!bitmap.installPixels(skInfo, pixels, skInfo.minRowBytes())) {
+    uint64_t rowStride = skInfo.minRowBytes64();
+    if (pixelMap->GetAllocatorType() == Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
+        rowStride = sbBuffer->GetStride();
+    }
+    if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
         HiLog::Error(LABEL, "ExtEncoder::BuildSkBitmap to skbitmap failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
