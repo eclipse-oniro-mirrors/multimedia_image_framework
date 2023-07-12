@@ -27,7 +27,7 @@
         "components": [
           "common",
           "c_utils",
-          "graphic_standard",
+          "graphic_2d",
           "hichecker",
           "hitrace",
           "hilog",

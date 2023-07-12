@@ -150,7 +150,7 @@ ohos_shared_library("extplugin") {
 
     external_deps = [
       "c_utils:utils",
-      "graphic_standard:color_manager",
+      "graphic_2d:color_manager",
       "hilog:libhilog",
     ]
   }
