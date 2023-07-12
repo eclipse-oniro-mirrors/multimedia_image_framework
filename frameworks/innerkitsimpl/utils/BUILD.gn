@@ -137,6 +137,7 @@ ohos_static_library("image_utils_static") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//commonlibrary/c_utils/base/include",
+    "$skia_root/skia",
   ]
 
   sources = [

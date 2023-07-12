@@ -44,6 +44,7 @@ image_native_android_sources = [
   "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
 
   # image_native
+  "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/native_image.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",

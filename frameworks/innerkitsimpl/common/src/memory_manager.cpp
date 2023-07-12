@@ -52,6 +52,7 @@ uint32_t HeapMemory::Create()
 
 uint32_t HeapMemory::Release()
 {
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     HiLog::Debug(LABEL, "HeapMemory::Release IN");
     if (data.data == nullptr) {
         HiLog::Error(LABEL, "HeapMemory::Release nullptr data");
@@ -60,6 +61,7 @@ uint32_t HeapMemory::Release()
     free(data.data);
     data.data = nullptr;
     return SUCCESS;
+#endif
 }
 
 static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
