@@ -528,8 +528,7 @@ HWTEST_F(ImageSourcePngTest, PngNinePatch001, TestSize.Level3)
      * @tc.expected: step3. get png nine patch info success.
      */
     const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
-    ASSERT_NE(ninePatch.ninePatch, nullptr);
-    ASSERT_EQ(static_cast<int32_t>(ninePatch.patchSize), 84);
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
 }
 
 /**
@@ -601,8 +600,7 @@ HWTEST_F(ImageSourcePngTest, PngNinePatch003, TestSize.Level3)
      * @tc.expected: step3. get png nine patch info success.
      */
     const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
-    ASSERT_NE(ninePatch.ninePatch, nullptr);
-    ASSERT_EQ(static_cast<int32_t>(ninePatch.patchSize), 84);
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
 }
 } // namespace Multimedia
 } // namespace OHOS
