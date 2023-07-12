@@ -341,7 +341,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
-        DECLARE_NAPI_FUNCTION("getDelayTime", GetDelayTime),
+        DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
@@ -1641,12 +1641,16 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "data is nullptr");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "check async context fail");
         return;
     }
 
@@ -1661,7 +1665,9 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     } else {
         HiLog::Error(LABEL, "Create PixelMap List error, error=%{public}u", errorCode);
         context->errMsg = "Create PixelMap List error";
-        context->status = ERROR;
+        context->status = errorCode;
+        ImageNapiUtils::ThrowExceptionError(env, errorCode,
+            "Create PixelMap List error");
     }
 }
 
@@ -1669,12 +1675,16 @@ STATIC_COMPLETE_FUNC(CreatePixelMapList)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "data is nullptr");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "check async context fail");
         return;
     }
 
@@ -1691,6 +1701,8 @@ STATIC_COMPLETE_FUNC(CreatePixelMapList)
     } else {
         HiLog::Debug(LABEL, "CreatePixelMapListComplete undefined");
         napi_get_undefined(env, &result);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "CreatePixelMapListComplete undefined");
     }
 
     HiLog::Debug(LABEL, "CreatePixelMapListComplete set to nullptr");
@@ -1705,7 +1717,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
     }
 
@@ -1732,12 +1744,16 @@ STATIC_EXEC_FUNC(GetDelayTime)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "data is nullptr");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "check async context fail");
         return;
     }
 
@@ -1748,7 +1764,9 @@ STATIC_EXEC_FUNC(GetDelayTime)
     } else {
         HiLog::Error(LABEL, "Get DelayTime error, error=%{public}u", errorCode);
         context->errMsg = "Get DelayTime error";
-        context->status = ERROR;
+        context->status = errorCode;
+        ImageNapiUtils::ThrowExceptionError(env, errorCode,
+            "check async context fail");
     }
 }
 
@@ -1756,12 +1774,16 @@ STATIC_COMPLETE_FUNC(GetDelayTime)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "async context unwrap failed");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "async context unwrap failed");
         return;
     }
 
@@ -1779,6 +1801,8 @@ STATIC_COMPLETE_FUNC(GetDelayTime)
     } else {
         HiLog::Debug(LABEL, "GetDelayTimeComplete undefined");
         napi_get_undefined(env, &result);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "GetDelayTimeComplete undefined");
     }
 
     HiLog::Debug(LABEL, "GetDelayTimeComplete set to nullptr");
@@ -1792,7 +1816,7 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
     }
 
@@ -1817,12 +1841,16 @@ STATIC_EXEC_FUNC(GetFrameCount)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "data is nullptr");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "check async context fail");
         return;
     }
 
@@ -1834,7 +1862,7 @@ STATIC_EXEC_FUNC(GetFrameCount)
     } else {
         HiLog::Error(LABEL, "Get FrameCount error, error=%{public}u", errorCode);
         context->errMsg = "Get FrameCount error";
-        context->status = ERROR;
+        context->status = errorCode;
     }
 }
 
@@ -1842,12 +1870,16 @@ STATIC_COMPLETE_FUNC(GetFrameCount)
 {
     if (data == nullptr) {
         HiLog::Error(LABEL, "data is nullptr");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "data is nullptr");
         return;
     }
 
     auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
     if (context == nullptr) {
         HiLog::Error(LABEL, "check async context fail");
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "check async context fail");
         return;
     }
 
@@ -1858,6 +1890,8 @@ STATIC_COMPLETE_FUNC(GetFrameCount)
     } else {
         HiLog::Debug(LABEL, "GetFrameCountComplete undefined");
         napi_get_undefined(env, &result);
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "GetFrameCountComplete undefined");
     }
 
     context->frameCount = 0;
@@ -1870,7 +1904,7 @@ napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
     }
 
