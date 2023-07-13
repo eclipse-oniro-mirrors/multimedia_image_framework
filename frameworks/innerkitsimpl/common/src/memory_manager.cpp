@@ -69,12 +69,14 @@ uint32_t HeapMemory::Release()
 
 static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
 {
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     if (ptr != nullptr && ptr != MAP_FAILED) {
         ::munmap(ptr, size);
     }
     if (fdPtr != nullptr) {
         ::close(*fdPtr);
     }
+#endif
 }
 
 uint32_t SharedMemory::Create()
