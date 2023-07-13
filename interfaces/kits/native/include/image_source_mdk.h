@@ -17,7 +17,7 @@
  * @addtogroup image
  * @{
  *
- * @brief Provides access image functions.
+ * @brief Provides native APIs for image sources.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -27,7 +27,7 @@
 /**
  * @file image_source_mdk.h
  *
- * @brief Declares function to decoding image source to pixel map.
+ * @brief Declares APIs for decoding an image source into a pixel map.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -46,7 +46,7 @@ extern "C" {
 #endif
 
 /**
- * @brief Defines native image source object for image source functions.
+ * @brief Defines a native image source object for the image source APIs.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -55,7 +55,7 @@ extern "C" {
 struct ImageSourceNative_;
 
 /**
- * @brief Defines native image source object for image source functions.
+ * @brief Defines a native image source object for the image source APIs.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -64,8 +64,8 @@ struct ImageSourceNative_;
 typedef struct ImageSourceNative_ ImageSourceNative;
 
 /**
- * @brief Defines image property key of bits per sample
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to bits per sample, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -74,8 +74,8 @@ typedef struct ImageSourceNative_ ImageSourceNative;
 const char* OHOS_IMAGE_PROPERTY_BITS_PER_SAMPLE = "BitsPerSample";
 
 /**
- * @brief Defines image property key of orientation
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the orientation, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -84,8 +84,8 @@ const char* OHOS_IMAGE_PROPERTY_BITS_PER_SAMPLE = "BitsPerSample";
 const char* OHOS_IMAGE_PROPERTY_ORIENTATION = "Orientation";
 
 /**
- * @brief Defines image property key of image length
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the image length, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -94,8 +94,8 @@ const char* OHOS_IMAGE_PROPERTY_ORIENTATION = "Orientation";
 const char* OHOS_IMAGE_PROPERTY_IMAGE_LENGTH = "ImageLength";
 
 /**
- * @brief Defines image property key of image width
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the image width, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -104,8 +104,8 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_LENGTH = "ImageLength";
 const char* OHOS_IMAGE_PROPERTY_IMAGE_WIDTH = "ImageWidth";
 
 /**
- * @brief Defines image property key of GPS latitude
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the GPS latitude, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -114,8 +114,8 @@ const char* OHOS_IMAGE_PROPERTY_IMAGE_WIDTH = "ImageWidth";
 const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE = "GPSLatitude";
 
 /**
- * @brief Defines image property key of GPS longitude
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the GPS longitude, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -124,8 +124,8 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE = "GPSLatitude";
 const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE = "GPSLongitude";
 
 /**
- * @brief Defines image property key of GPS latitude ref
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the GPS latitude reference information, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -134,8 +134,8 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE = "GPSLongitude";
 const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE_REF = "GPSLatitudeRef";
 
 /**
- * @brief Defines image property key of GPS longitude ref
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the GPS longitude reference information, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -144,8 +144,8 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LATITUDE_REF = "GPSLatitudeRef";
 const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE_REF = "GPSLongitudeRef";
 
 /**
- * @brief Defines image property key of date time original
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the created date and time, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -154,8 +154,8 @@ const char* OHOS_IMAGE_PROPERTY_GPS_LONGITUDE_REF = "GPSLongitudeRef";
 const char* OHOS_IMAGE_PROPERTY_DATE_TIME_ORIGINAL = "DateTimeOriginal";
 
 /**
- * @brief Defines image property key of exposure time
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the exposure time, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -164,8 +164,8 @@ const char* OHOS_IMAGE_PROPERTY_DATE_TIME_ORIGINAL = "DateTimeOriginal";
 const char* OHOS_IMAGE_PROPERTY_EXPOSURE_TIME = "ExposureTime";
 
 /**
- * @brief Defines image property key of scene type
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the scene type, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -174,8 +174,8 @@ const char* OHOS_IMAGE_PROPERTY_EXPOSURE_TIME = "ExposureTime";
 const char* OHOS_IMAGE_PROPERTY_SCENE_TYPE = "SceneType";
 
 /**
- * @brief Defines image property key of ISO speed ratings
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the ISO speed ratings, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -184,8 +184,8 @@ const char* OHOS_IMAGE_PROPERTY_SCENE_TYPE = "SceneType";
 const char* OHOS_IMAGE_PROPERTY_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 
 /**
- * @brief Defines image property key of F number
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the f-number of the image, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -194,8 +194,8 @@ const char* OHOS_IMAGE_PROPERTY_ISO_SPEED_RATINGS = "ISOSpeedRatings";
 const char* OHOS_IMAGE_PROPERTY_F_NUMBER = "FNumber";
 
 /**
- * @brief Defines image property key of compressed bits per pixel
- * for {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
+ * @brief Defines a pointer to the compressed bits per pixel, one of the image properties.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -204,8 +204,8 @@ const char* OHOS_IMAGE_PROPERTY_F_NUMBER = "FNumber";
 const char* OHOS_IMAGE_PROPERTY_COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPixel";
 
 /**
- * @brief Defines image source decoding region options
- * {@link OhosImageDecodingOps}, {@link OH_ImageSource_CreatePixelMap} and
+ * @brief Defines the region of the image source to decode.
+ * It is used in {@link OhosImageDecodingOps}, {@link OH_ImageSource_CreatePixelMap}, and
  * {@link OH_ImageSource_CreatePixelMapList}.
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -213,13 +213,13 @@ const char* OHOS_IMAGE_PROPERTY_COMPRESSED_BITS_PER_PIXEL = "CompressedBitsPerPi
  * @version 4.0
  */
 struct OhosImageRegion {
-    /** Start point x, in pixels. */
+    /** X coordinate of the start point, in pixels. */
     int32_t x;
-    /** Start point y, in pixels. */
+    /** Y coordinate of the start point, in pixels. */
     int32_t y;
-    /** Region width, in pixels. */
+    /** Width of the region, in pixels. */
     int32_t width;
-    /** Region height, in pixels. */
+    /** Height of the region, in pixels. */
     int32_t height;
 };
 
@@ -232,7 +232,7 @@ struct OhosImageRegion {
  * @version 4.0
  */
 struct OhosImageSourceOps {
-    /** Image source pixel density. */
+    /** Pixel density of the image source. */
     int32_t density;
     /** Image source pixel format, used to describe YUV buffer usually. */
     int32_t pixelFormat;
@@ -241,8 +241,8 @@ struct OhosImageSourceOps {
 };
 
 /**
- * @brief Defines image source decoding options {@link OH_ImageSource_CreatePixelMap} and
- * {@link OH_ImageSource_CreatePixelMapList}.
+ * @brief Defines the options for decoding the image source.
+ * It is used in {@link OH_ImageSource_CreatePixelMap} and {@link OH_ImageSource_CreatePixelMapList}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -268,56 +268,58 @@ struct OhosImageDecodingOps {
 };
 
 /**
- * @brief Defines image source information {@link OH_ImageSource_GetImageInfo}.
+ * @brief Defines the image source information, which is obtained by calling {@link OH_ImageSource_GetImageInfo}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
  */
 struct OhosImageSourceInfo {
-    /** Image source pixel format, set by {@link OH_ImageSource_Create}.*/
+    /** Pixel format of the image source. It is set in {@link OH_ImageSource_Create}. */
     int32_t pixelFormat;
-    /** Image source color space.*/
+    /** Color space of the image source. */
     int32_t colorSpace;
-    /** Image source alpha type.*/
+    /** Alpha type of the image source. */
     int32_t alphaType;
-    /** Image source density, set by {@link OH_ImageSource_Create}.*/
+    /** Image density of the image source. It is set in {@link OH_ImageSource_Create}. */
     int32_t density;
-    /** Image source pixel size of width and height.*/
+    /** Pixel width and height of the image source. */
     struct OhosImageSize size;
 };
 
 /**
- * @brief Defines image source input resource, accept one type once only. {@link OH_ImageSource_Create}
+ * @brief Defines the input resource of the image source. It is obtained by calling {@link OH_ImageSource_Create}.
+ * Only one type of resource is accepted at a time.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
  */
 struct OhosImageSource {
-    /** Image source uri resource, accept file uri or base64 uri.*/
+    /** Pointer to the image source URI. Only a file URI or Base64 URI is accepted. */
     char* uri = nullptr;
-    /** Image source uri resource length.*/
+    /** Length of the image source URI. */
     size_t uriSize = 0;
-    /** Image source file descriptor resource.*/
+    /** Descriptor of the image source. */
     int32_t fd = -1;
-    /** Image source buffer resource, accept formatted package buffer or base64 buffer.*/
+    /** Pointer to the image source buffer. Only a formatted packet buffer or Base64 buffer is accepted. */
     uint8_t* buffer = nullptr;
-    /** Image source buffer resource.*/
+    /** Size of the image source buffer. */
     size_t bufferSize = 0;
 };
 
 /**
- * @brief Defines image source delay time list. {@link OH_ImageSource_GetDelayTime}
+ * @brief Defines the delay time list of the image source. It is obtained by calling
+ * {@link OH_ImageSource_GetDelayTime}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
  */
 struct OhosImageSourceDelayTimeList {
-    /** Image source delay time list head.*/
+    /** Pointer to the head of the image source delay time list. */
     int32_t* delayTimeList;
-    /** Image source delay time list size.*/
+    /** Size of the image source delay time list. */
     size_t size = 0;
 };
 
@@ -337,7 +339,8 @@ struct OhosImageSourceSupportedFormat {
 };
 
 /**
- * @brief Defines image source supported format string list. {@link OH_ImageSource_GetSupportedFormats}
+ * @brief Defines the format string list supported by the image source.
+ * It is obtained by calling {@link OH_ImageSource_GetSupportedFormats}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -351,8 +354,8 @@ struct OhosImageSourceSupportedFormatList {
 };
 
 /**
- * @brief Defines image source property key and value string.
- * {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}
+ * @brief Defines the property string (in key-value format) of the image source.
+ * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -366,7 +369,7 @@ struct OhosImageSourceProperty {
 };
 
 /**
- * @brief Defines image source update data options. {@link OH_ImageSource_UpdateData}
+ * @brief Defines the update data of the image source. It is obtained by calling {@link OH_ImageSource_UpdateData}.
  *
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
@@ -386,15 +389,15 @@ struct OhosImageSourceUpdateData {
 };
 
 /**
- * @brief Obtains JavaScript Native API <b>ImageSource</b> object by a given infomations
- * {@link OhosImageSource} and {@link OhosImageSourceOps} structure.
+ * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * {@link OhosImageSource} and {@link OhosImageSourceOps} structs.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param src Indicates infomations of creating a image source. For details, see {@link OhosImageSource}.
- * @param ops Indicates options for creating a image source. See {@link OhosImageSourceOps}.
- * @param res Indicates the pointer to JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param src Indicates a pointer to the input resource of the image source. For details, see {@link OhosImageSource}.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -405,17 +408,17 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
     struct OhosImageSourceOps* ops, napi_value *res);
 
 /**
- * @brief Obtains JavaScript Native API <b>ImageSource</b> object for incremental type
- * by a given infomations {@link OhosImageSource} and {@link OhosImageSourceOps} structure, the
- * image data should updated by {@link OH_ImageSource_UpdateData}.
+ * @brief Creates an incremental <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * {@link OhosImageSource} and {@link OhosImageSourceOps} structs.
+ * The image source data will be updated through {@link OH_ImageSource_UpdateData}.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param src Indicates infomations of creating a image source, there only accept buffer type.
+ * @param env Indicates a pointer to the JNI environment.
+ * @param src Indicates a pointer to the input resource of the image source. Only the buffer type is accepted.
  * For details, see {@link OhosImageSource}.
- * @param ops Indicates options for creating a image source. See {@link OhosImageSourceOps}.
- * @param res Indicates the pointer to JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -426,15 +429,14 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
     struct OhosImageSourceOps* ops, napi_value *res);
 
 /**
- * @brief Get all the supported decoding format meta tags.
+ * @brief Obtains all supported decoding formats.
  *
- * @param res Indicates the pointer of list to <b>OhosImageSourceSupportedFormatList</b> structure.
- * when the <b>supportedFormatList</b> is nullptr and <b>size</b> is 0 in res as input, it will return the
- * supported formats size by <b>size</b> in res.
- * For getting all format tags, it needs enough space larger than result size in <b>supportedFormatList</b>,
- * and alse enough space for every <b>format</b> in {@link OhosImageSourceSupportedFormat} item.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param res Indicates a pointer to the <b>OhosImageSourceSupportedFormatList</b> struct.
+ * When the input <b>supportedFormatList</b> is a null pointer and <b>size</b> is 0, the size of the supported formats
+ * is returned through <b>size</b> in <b>res</b>.
+ * To obtain all formats, a space larger than <b>size</b> is required.
+ * In addition, sufficient space must be reserved for each format supported.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSourceSupportedFormatList}, {@link OhosImageSourceSupportedFormat}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -444,13 +446,13 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
 int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormatList* res);
 
 /**
- * @brief Unwrap native {@link ImageSourceNative} value from input JavaScript Native API
- * <b>ImageSource</b> object.
+ * @brief Converts an {@link ImageSource} object at the JavaScript native layer to an <b>ImageSourceNative</b> object
+ * at the C++ native layer.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param source Indicates JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link ImageSourceNative} pointer if the operation is successful;
- * returns nullptr result if the operation fails.
+ * @param env Indicates a pointer to the JNI environment.
+ * @param source Indicates a pointer to the <b>ImageSource</b> object at the JavaScript native layer.
+ * @return Returns a pointer to the {@link ImageSourceNative} object if the operation is successful;
+ * returns a null pointer otherwise.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Release}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -460,14 +462,14 @@ int32_t OH_ImageSource_GetSupportedFormats(struct OhosImageSourceSupportedFormat
 ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
 
 /**
- * @brief Decoding the JavaScript Native API <b>PixelMap</b> object from <b>ImageSource</b>
- * by a given options {@link OhosImageDecodingOps}structure.
+ * @brief Decodes an <b>ImageSource</b> object to obtain a <b>PixelMap</b> object at the JavaScript native layer
+ * based on the specified {@link OhosImageDecodingOps} struct.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param ops Indicates options for decoding the image source. See {@link OhosImageDecodingOps}.
- * @param res Indicates the pointer to JavaScript Native API <b>PixelMap</b> object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param ops Indicates a pointer to the options for decoding the image source.
+ * For details, see {@link OhosImageDecodingOps}.
+ * @param res Indicates a pointer to the <b>PixelMap</b> object obtained at the JavaScript native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -478,14 +480,14 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
     struct OhosImageDecodingOps* ops, napi_value *res);
 
 /**
- * @brief Decoding all the JavaScript Native API <b>PixelMap</b> object list from <b>ImageSource</b>
- * by a given options {@link OhosImageDecodingOps}structure.
+ * @brief Decodes an <b>ImageSource</b> to obtain all the <b>PixelMap</b> objects at the JavaScript native layer
+ * based on the specified {@link OhosImageDecodingOps} struct.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param ops Indicates options for decoding the image source. See {@link OhosImageDecodingOps}.
- * @param res Indicates the pointer to JavaScript Native API <b>PixelMap</b> list object.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param ops Indicates a pointer to the options for decoding the image source.
+ * For details, see {@link OhosImageDecodingOps}.
+ * @param res Indicates a pointer to the <b>PixelMap</b> objects obtained at the JavaScript native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -496,15 +498,14 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
     struct OhosImageDecodingOps* ops, napi_value *res);
 
 /**
- * @brief Get the delay time list from some <b>ImageSource</b> such as GIF image source
+ * @brief Obtains the delay time list from some <b>ImageSource</b> objects (such as GIF image sources).
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param res Indicates the pointer to delay time list {@link OhosImageSourceDelayTimeList}.
- * when the <b>delayTimeList</b> is nullptr and <b>size</b> is 0 in res as input, it will return the
- * delay time list size by <b>size</b> in res.
- * For getting delay times, it needs enough space larger than result size in <b>delayTimeList</b>.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param res Indicates a pointer to the delay time list obtained.
+ * For details, see {@link OhosImageSourceDelayTimeList}. When the input <b>delayTimeList</b> is a null pointer and
+ * <b>size</b> is <b>0</b>, the size of the delay time list is returned through <b>size</b> in <b>res</b>.
+ * To obtain the complete delay time list, a space greater than <b>size</b> is required.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceDelayTimeList}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -515,12 +516,11 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
     struct OhosImageSourceDelayTimeList* res);
 
 /**
- * @brief Get the frame count from <b>ImageSource</b>
+ * @brief Obtains the number of frames from an <b>ImageSource</b> object.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param res Indicates the pointer to frame count.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param res Indicates a pointer to the number of frames obtained.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -530,13 +530,13 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
 int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *res);
 
 /**
- * @brief Get the image source informations by index from <b>ImageSource</b>
+ * @brief Obtains image source information from an <b>ImageSource</b> object by index.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param index Indicates the frame index.
- * @param res Indicates the pointer to image source infomation {@link OhosImageSourceInfo}.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param index Indicates the index of the frame.
+ * @param info Indicates a pointer to the image source information obtained.
+ * For details, see {@link OhosImageSourceInfo}.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceInfo}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -547,16 +547,15 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
     struct OhosImageSourceInfo* info);
 
 /**
- * @brief Get the image source property by key from <b>ImageSource</b>
+ * @brief Obtains the value of an image property from an <b>ImageSource</b> object.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param key Indicates the pointer to property key {@link OhosImageSourceProperty}
- * @param value Indicates the pointer to property value {@link OhosImageSourceProperty} as result.
- * when the <b>value</b> is nullptr and <b>size</b> is 0 in value as input, it will return the
- * property value size by <b>size</b> in value.
- * For getting property value, it needs enough space larger than result size in <b>value</b>.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param key Indicates a pointer to the property. For details, see {@link OhosImageSourceProperty}.
+ * @param value Indicates a pointer to the property value obtained.
+ * If the input <b>value</b> is a null pointer and <b>size</b> is <b>0</b>, the size of the property value is returned
+ * through <b>size</b> in <b>value</b>.
+ * To obtain the complete property value, a space greater than <b>size</b> is required.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -567,13 +566,12 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
     struct OhosImageSourceProperty* key, struct OhosImageSourceProperty* value);
 
 /**
- * @brief Modify the image source property by key for <b>ImageSource</b>
+ * @brief Modifies the value of an image property of an <b>ImageSource</b> object.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param key Indicates the pointer to property key {@link OhosImageSourceProperty}
- * @param value Indicates the pointer to property value {@link OhosImageSourceProperty} for modify.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param key Indicates a pointer to the property. For details, see {@link OhosImageSourceProperty}.
+ * @param value Indicates a pointer to the new value of the property.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -584,12 +582,11 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
     struct OhosImageSourceProperty* key, struct OhosImageSourceProperty* value);
 
 /**
- * @brief Update source data for incremental type <b>ImageSource</b>
+ * @brief Updates the data of an <b>ImageSource</b> object.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @param data Indicates the pointer to update data informations {@link OhosImageSourceUpdateData}
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @param data Indicates a pointer to the update data. For details, see {@link OhosImageSourceUpdateData}.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceUpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -600,11 +597,10 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosIm
 
 
 /**
- * @brief Release native image source <b>ImageSourceNative</b>
+ * @brief Releases an <b>ImageSourceNative</b> object.
  *
- * @param native Indicates the pointer to native {@link ImageSourceNative} value.
- * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
+ * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Create}, {@link OH_ImageSource_CreateIncremental}
  *
  * @Syscap SystemCapability.Multimedia.Image
