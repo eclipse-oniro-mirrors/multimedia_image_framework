@@ -390,12 +390,6 @@ struct OhosImageSourceUpdateData {
  * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
  * {@link OhosImageSource} and {@link OhosImageSourceOps} structs.
  *
- * @param env Indicates the pointer to the JNI environment.
- * @param src Indicates infomations of creating a image source. For details, see {@link OhosImageSource}.
- * @param ops Indicates options for creating a image source. See {@link OhosImageSourceOps}.
- * @param res Indicates the pointer to JavaScript Native API <b>ImageSource</b> object.
- * @return Returns {@link IMAGE_RESULT_SUCCESS} if the operation is successful;
- * returns other result codes if the operation fails.
  * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
  * @param src Indicates a pointer to the input resource of the image source. For details, see {@link OhosImageSource}.
  * @param ops Indicates a pointer to the options for creating the image source.
