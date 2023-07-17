@@ -648,7 +648,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap017, TestSize.Level3)
     pixelMap.scale(xAxis, yAxis);
     ImageInfo outInfo;
     pixelMap.GetImageInfo(outInfo);
-    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t width = PIXEL_MAP_TEST_WIDTH * 2;
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);

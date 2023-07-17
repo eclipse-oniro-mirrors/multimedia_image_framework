@@ -23,6 +23,7 @@ ohos_static_library("exifhelper") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
       cfi = true
+      cfi_cross_dso = true
       debug = false
     }
   }
@@ -97,6 +98,7 @@ ohos_shared_library("extplugin") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
       cfi = true
+      cfi_cross_dso = true
       debug = false
     }
   }
@@ -148,7 +150,7 @@ ohos_shared_library("extplugin") {
 
     external_deps = [
       "c_utils:utils",
-      "graphic_standard:color_manager",
+      "graphic_2d:color_manager",
       "hilog:libhilog",
     ]
   }

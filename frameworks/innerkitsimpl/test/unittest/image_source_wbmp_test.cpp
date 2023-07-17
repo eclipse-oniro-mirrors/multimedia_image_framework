@@ -29,6 +29,8 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 
+namespace OHOS {
+namespace Multimedia {
 static const std::string IMAGE_INPUT_WBMP_PATH = "/data/local/tmp/image/test.wbmp";
 
 class ImageSourceWbmpTest : public testing::Test {
@@ -339,3 +341,5 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode010, TestSize.Level3)
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(pixelMap.get(), nullptr);
 }
+} // namespace Multimedia
+} // namespace OHOS

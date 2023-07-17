@@ -27,7 +27,7 @@
         "components": [
           "common",
           "c_utils",
-          "graphic_standard",
+          "graphic_2d",
           "hichecker",
           "hitrace",
           "hilog",
@@ -48,7 +48,7 @@
           "giflib",
           "bounds_checking_function",
           "expat",
-          "third_party_skia",
+          "skia",
           "json"
         ]
       },
@@ -58,6 +58,16 @@
           "//foundation/multimedia/image_framework:plugins"
         ],
         "inner_kits": [
+          {
+            "header":{
+              "header_files":[
+                "pixel_convert_adapter.h",
+                "pixel_map_jni_utils.h"
+              ],
+              "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include"
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter"
+          },
           {
             "header": {
               "header_files": [

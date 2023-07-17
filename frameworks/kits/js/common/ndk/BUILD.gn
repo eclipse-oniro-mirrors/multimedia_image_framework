@@ -31,6 +31,7 @@ config("native_public_config") {
 ohos_shared_library("image_ndk") {
   sanitize = {
     cfi = true
+    cfi_cross_dso = true
     debug = false
   }
 
@@ -46,6 +47,7 @@ ohos_shared_library("image_ndk") {
 ohos_shared_library("image_receiver_ndk") {
   sanitize = {
     cfi = true
+    cfi_cross_dso = true
     debug = false
   }
 
@@ -61,6 +63,7 @@ ohos_shared_library("image_receiver_ndk") {
 ohos_shared_library("image_source_ndk") {
   sanitize = {
     cfi = true
+    cfi_cross_dso = true
     debug = false
   }
 

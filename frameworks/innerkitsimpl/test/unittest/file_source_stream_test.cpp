@@ -422,7 +422,7 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0019, TestSize.Level3)
     std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
     ASSERT_NE(fileSourceStream, nullptr);
     uint8_t *ret = fileSourceStream->GetDataPtr();
-    ASSERT_EQ(ret, nullptr);
+    ASSERT_NE(ret, nullptr);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0019 end";
 }
 

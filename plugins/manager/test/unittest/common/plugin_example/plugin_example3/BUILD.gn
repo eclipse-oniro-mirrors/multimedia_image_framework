@@ -16,6 +16,7 @@ import("//build/ohos.gni")
 ohos_shared_library("pluginexample3") {
   sanitize = {
     cfi = true
+    cfi_cross_dso = true
     debug = false
   }
   sources = [

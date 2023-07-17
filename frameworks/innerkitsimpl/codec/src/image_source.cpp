@@ -1107,7 +1107,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         format = sourceInfo_.encodedFormat;
         return SUCCESS;
     }
-    auto pngtype = sourceStreamPtr_->Tell();
+    auto imageType = sourceStreamPtr_->Tell();
     uint32_t errorCode = ERR_IMAGE_DECODE_ABNORMAL;
     auto codec = DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *sourceStreamPtr_,
         errorCode);
@@ -1131,14 +1131,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     if (!ImageSystemProperties::GetSkiaEnabled()) {
         IMAGE_LOGD("[ImageSource]Extended close SK decode");
         if (format != "image/gif") {
-            sourceStreamPtr_->Seek(pngtype);
-            return ERR_MEDIA_DATA_UNSUPPORT;
-        }
-    } else {
-        IMAGE_LOGD("[ImageSource]Extended open SK decode");
-        if (format == "image/png") {
-            IMAGE_LOGD("[ImageSource]Extended SK decode limit png");
-            sourceStreamPtr_->Seek(pngtype);
+            sourceStreamPtr_->Seek(imageType);
             return ERR_MEDIA_DATA_UNSUPPORT;
         }
     }
@@ -1372,6 +1365,7 @@ static void GetDefaultPixelFormat(const PixelFormat desired, PlPixelFormat& out,
         auto formatPair = PIXEL_FORMAT_MAP.find(desired);
         if (formatPair != PIXEL_FORMAT_MAP.end() && formatPair->second != PlPixelFormat::UNKNOWN) {
             out = formatPair->second;
+            return;
         }
     }
     out = (preference == MemoryUsagePreference::LOW_RAM)?PlPixelFormat::RGB_565:PlPixelFormat::RGBA_8888;
