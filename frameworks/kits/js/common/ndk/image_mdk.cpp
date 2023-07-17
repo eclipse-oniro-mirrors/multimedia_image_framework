@@ -54,7 +54,7 @@ MIDK_EXPORT
 int32_t OH_Image_Size(const ImageNative* native, struct OhosImageSize* size)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     ImageNapiArgs args;
     args.outSize = size;
@@ -66,7 +66,7 @@ MIDK_EXPORT
 int32_t OH_Image_Format(const ImageNative* native, int32_t* format)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     ImageNapiArgs args;
     args.outNum0 = format;
@@ -79,7 +79,7 @@ int32_t OH_Image_GetComponent(const ImageNative* native, int32_t componentType,
     struct OhosImageComponent* componentNative)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     ImageNapiArgs args;
     args.inNum0 = componentType;

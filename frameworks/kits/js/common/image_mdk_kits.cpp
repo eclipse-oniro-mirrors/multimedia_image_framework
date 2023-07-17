@@ -49,11 +49,11 @@ static int32_t ImageNapiClipRect(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     if (nativeImage->GetSize(args->outRect->width, args->outRect->height) != NUM_0) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     args->outRect->x = NUM_0;
@@ -92,7 +92,7 @@ static int32_t ImageNapiGetComponent(ImageNapi* native, struct ImageNapiArgs* ar
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr || args->outComponent == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     auto nativeComponent = nativeImage->GetComponent(args->inNum0);

@@ -45,7 +45,7 @@ static ImageReceiver* CheckAndGetReceiver(ImageReceiverNapi* native, const struc
 static int32_t ImageReceiverNapiCreate(napi_env env, struct ImageReceiverArgs* args)
 {
     if (args == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     ImageReceiverCreateArgs createArgs;
@@ -78,7 +78,7 @@ static int32_t ImageReceiverNapiReadLatestImage(ImageReceiverNapi* native, struc
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->inEnv == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     auto image = receiver->LastNativeImage();
     if (image == nullptr) {
@@ -92,7 +92,7 @@ static int32_t ImageReceiverNapiReadNextImage(ImageReceiverNapi* native, struct 
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->inEnv == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     auto image = receiver->NextNativeImage();
     if (image == nullptr) {
@@ -106,7 +106,7 @@ static int32_t ImageReceiverNapiOn(ImageReceiverNapi* native, struct ImageReceiv
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || args->callback == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     std::shared_ptr<ImageReceiverNapiListener> listener = std::make_shared<ImageReceiverNapiListener>();
     listener->callBack = args->callback;
@@ -118,7 +118,7 @@ static int32_t ImageReceiverNapiGetSize(ImageReceiverNapi* native, struct ImageR
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr || args->outSize == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     args->outSize->width = receiver->iraContext_->GetWidth();
     args->outSize->height = receiver->iraContext_->GetHeight();
@@ -129,7 +129,7 @@ static int32_t ImageReceiverNapiGetCapacity(ImageReceiverNapi* native, struct Im
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     *(args->outNum0) = receiver->iraContext_->GetCapicity();
     return IMAGE_RESULT_SUCCESS;
@@ -139,7 +139,7 @@ static int32_t ImageReceiverNapiGetFormat(ImageReceiverNapi* native, struct Imag
 {
     auto receiver = CheckAndGetReceiver(native, args);
     if (receiver == nullptr || receiver->iraContext_ == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
     *(args->outNum0) = receiver->iraContext_->GetFormat();
     return IMAGE_RESULT_SUCCESS;
