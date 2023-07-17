@@ -40,7 +40,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define BASE_MEDIA_ERR_OFFSET 62980096
 
 /**
  * @brief Enumerates the return values that may be used by the interface.
