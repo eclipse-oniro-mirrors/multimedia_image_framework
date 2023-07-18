@@ -131,7 +131,6 @@ if (use_clang_ios) {
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
-    innerapi_tags = [ "platformsdk" ]
     part_name = "multimedia_image_framework"
   }
 } else {
