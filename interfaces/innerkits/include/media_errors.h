@@ -109,6 +109,10 @@ const int32_t ERR_MEDIA_NUMBER_OVERFLOW = BASE_MEDIA_ERR_OFFSET + 73;           
 const int32_t ERR_MEDIA_DIS_PLAYER_UNSUPPORTED = BASE_MEDIA_ERR_OFFSET + 74;  // media distribute player unsupporteded
 const uint32_t ERR_IMAGE_DENCODE_ICC_FAILED = BASE_MEDIA_ERR_OFFSET + 75;          // image dencode ICC fail
 const uint32_t ERR_IMAGE_ENCODE_ICC_FAILED = BASE_MEDIA_ERR_OFFSET + 76;           // image encode ICC fail
+const int32_t ERR_DMA_NOT_EXIST = BASE_MEDIA_ERR_OFFSET + 77;
+const int32_t ERR_DMA_DATA_ABNORMAL = BASE_MEDIA_ERR_OFFSET + 78;
+const int32_t ERR_SURFACEBUFFER_REFERENCE_FAILED = BASE_MEDIA_ERR_OFFSET + 79;
+const int32_t ERR_SURFACEBUFFER_UNREFERENCE_FAILED = BASE_MEDIA_ERR_OFFSET + 80;
 
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
 }  // namespace Media

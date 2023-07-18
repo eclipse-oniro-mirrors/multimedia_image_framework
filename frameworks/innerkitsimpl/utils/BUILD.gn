@@ -64,6 +64,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/media_utils_lite/interfaces/kits",
       "//foundation/communication/ipc/utils/include",
       "$skia_root/skia",
+      "${graphic_subsystem}/interfaces/inner_api/surface",
     ]
 
     sources = [
@@ -112,6 +113,7 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
+        "graphic_2d:surface",
         "hilog:libhilog",
         "hitrace:hitrace_meter",
       ]

@@ -36,17 +36,20 @@ ohos_shared_library("svgplugin") {
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia",
   ]
 
   deps = [
     "$graphic_subsystem/utils/color_manager:color_manager",
     "$image_subsystem/plugins/manager:pluginmanager",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
   deps += skia_platform
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:surface",
     "hilog:libhilog",
   ]
 

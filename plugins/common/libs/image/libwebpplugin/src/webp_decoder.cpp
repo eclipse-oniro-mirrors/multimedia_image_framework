@@ -14,9 +14,12 @@
  */
 
 #include "webp_decoder.h"
+
+#include "image_utils.h"
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -358,7 +361,7 @@ bool WebpDecoder::PreDecodeProc(DecodeContext &context, WebPDecoderConfig &confi
         HiLog::Error(LABEL, "init config failed.");
         return false;
     }
-    if (!AllocHeapBuffer(context, isIncremental)) {
+    if (!AllocOutputBuffer(context, isIncremental)) {
         HiLog::Error(LABEL, "get pixels memory failed.");
         return false;
     }
@@ -374,7 +377,121 @@ void WebpDecoder::Reset()
     webpSize_ = { 0, 0 };
 }
 
-bool WebpDecoder::AllocHeapBuffer(DecodeContext &context, bool isIncremental)
+static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return false;
+#else
+    uint32_t id = context.pixelmapUniqueId_;
+    std::string name = "WEBP RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
+    int fd = AshmemCreate(name.c_str(), byteCount);
+    if (fd < 0) {
+        return false;
+    }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        ::close(fd);
+        return false;
+    }
+    void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED) {
+        ::close(fd);
+        return false;
+    }
+    context.pixelsBuffer.buffer = ptr;
+    void *fdBuffer = new int32_t();
+    if (fdBuffer == nullptr) {
+        HiLog::Error(LABEL, "malloc fdBuffer fail");
+        ::munmap(ptr, byteCount);
+        ::close(fd);
+        context.pixelsBuffer.buffer = nullptr;
+        return false;
+    }
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    context.pixelsBuffer.context = fdBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+#endif
+}
+
+static bool HeapMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
+{
+    if (byteCount == 0 || byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "Invalid value of byteCount");
+        return false;
+    }
+    void *outputBuffer = malloc(byteCount);
+    if (outputBuffer == nullptr) {
+        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
+            static_cast<unsigned long long>(byteCount));
+        return false;
+    }
+#ifdef _WIN32
+    errno_t backRet = memset_s(outputBuffer, 0, byteCount);
+    if (backRet != EOK) {
+        HiLog::Error(LABEL, "memset buffer failed.", backRet);
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
+#else
+    if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
+        HiLog::Error(LABEL, "memset buffer failed.");
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
+#endif
+    context.pixelsBuffer.buffer = outputBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.pixelsBuffer.context = nullptr;
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+}
+
+static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, const PlSize &webpSize)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return false;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = webpSize.width,
+        .height = webpSize.height,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return false;
+    }
+
+    context.pixelsBuffer.buffer = sb->GetVirAddr();
+    context.pixelsBuffer.context = nativeBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+#endif
+}
+
+bool WebpDecoder::AllocOutputBuffer(DecodeContext &context, bool isIncremental)
 {
     if (isIncremental) {
         if (context.pixelsBuffer.buffer != nullptr && context.allocatorType == AllocatorType::HEAP_ALLOC) {
@@ -382,71 +499,17 @@ bool WebpDecoder::AllocHeapBuffer(DecodeContext &context, bool isIncremental)
             context.pixelsBuffer.buffer = nullptr;
         }
     }
-
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(webpSize_.width * webpSize_.height * bytesPerPixel_);
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-            uint32_t id = context.pixelmapUniqueId_;
-            std::string name = "WEBP RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
-            int fd = AshmemCreate(name.c_str(), byteCount);
-            if (fd < 0) {
-                return false;
-            }
-            int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-            if (result < 0) {
-                ::close(fd);
-                return false;
-            }
-            void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (ptr == MAP_FAILED) {
-                ::close(fd);
-                return false;
-            }
-            context.pixelsBuffer.buffer = ptr;
-            void *fdBuffer = new int32_t();
-            if (fdBuffer == nullptr) {
-                HiLog::Error(LABEL, "malloc fdBuffer fail");
-                ::munmap(ptr, byteCount);
-                ::close(fd);
-                context.pixelsBuffer.buffer = nullptr;
-                return false;
-            }
-            *static_cast<int32_t *>(fdBuffer) = fd;
-            context.pixelsBuffer.context = fdBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            context.freeFunc = nullptr;
-#endif
-        } else {
-            void *outputBuffer = malloc(byteCount);
-            if (outputBuffer == nullptr) {
-                HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                             static_cast<unsigned long long>(byteCount));
-                return false;
-            }
-#ifdef _WIN32
-            errno_t backRet = memset_s(outputBuffer, 0, byteCount);
-            if (backRet != EOK) {
-                HiLog::Error(LABEL, "memset buffer failed.", backRet);
-                free(outputBuffer);
-                outputBuffer = nullptr;
-                return false;
-            }
-#else
-            if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-                HiLog::Error(LABEL, "memset buffer failed.");
-                free(outputBuffer);
-                outputBuffer = nullptr;
-                return false;
-            }
-#endif
-            context.pixelsBuffer.buffer = outputBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.pixelsBuffer.context = nullptr;
-            context.allocatorType = AllocatorType::HEAP_ALLOC;
-            context.freeFunc = nullptr;
+            return SharedMemoryCreate(context, byteCount);
+        } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {
+            return HeapMemoryCreate(context, byteCount);
+        } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+            return DmaMemoryCreate(context, byteCount, webpSize_);
         }
+        // Current Defalut alloc function
+        return SharedMemoryCreate(context, byteCount);
     }
     return true;
 }

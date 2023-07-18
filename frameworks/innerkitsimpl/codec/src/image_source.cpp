@@ -36,6 +36,7 @@
 #include "plugin_server.h"
 #include "post_proc.h"
 #include "source_stream.h"
+#include "surface_buffer.h"
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #endif
@@ -109,6 +110,7 @@ static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
+static const int DMA_SIZE = 512;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -366,9 +368,14 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
         }
 #endif
         return;
+    } else if (allocType == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    if (buffer.buffer != nullptr) {
+        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(buffer.context));
+        buffer.context = nullptr;
     }
-
-    if (allocType == AllocatorType::HEAP_ALLOC) {
+#endif
+    } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (buffer.buffer != nullptr) {
             free(buffer.buffer);
             buffer.buffer = nullptr;
@@ -402,6 +409,19 @@ static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrIn
     addrInfos.func =context.freeFunc;
 }
 
+static bool IsSupportDma(PlImageInfo &plInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return false;
+#else
+    if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
+            plInfo.size.width >= DMA_SIZE && plInfo.size.height >= DMA_SIZE) {
+        return true;
+    }
+    return false;
+#endif
+}
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     const DecodeOptions &opts, uint32_t &errorCode)
 {
@@ -428,7 +448,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     }
     NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_HEADER_DECODE, &guard);
     DecodeContext context;
-    context.allocatorType = opts_.allocatorType;
+    if (IsSupportDma(plInfo)) {
+        IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
+        context.allocatorType = AllocatorType::DMA_ALLOC;
+    } else {
+        context.allocatorType = opts_.allocatorType;
+    }
+    
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
@@ -559,10 +585,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         IMAGE_LOGE("[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
         return nullptr;
     }
-    if (IsExtendedCodec(mainDecoder_.get())) {
-        guard.unlock();
-        return CreatePixelMapExtended(index, opts, errorCode);
+    if (ImageSystemProperties::GetSkiaEnabled()) {
+        if (IsExtendedCodec(mainDecoder_.get())) {
+            guard.unlock();
+            return CreatePixelMapExtended(index, opts, errorCode);
+        }
     }
+
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
@@ -614,6 +643,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
+    }
+
+    if (IsSupportDma(plInfo)) {
+        IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
+        context.allocatorType = AllocatorType::DMA_ALLOC;
     }
 
     errorCode = mainDecoder_->Decode(index, context);

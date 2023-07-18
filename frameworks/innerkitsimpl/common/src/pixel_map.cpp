@@ -17,6 +17,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "buffer_handle_parcel.h"
 #include "image_utils.h"
 #include "image_trace.h"
 #include "image_type_converter.h"
@@ -33,6 +34,7 @@
 #include "post_proc.h"
 #include "parcel.h"
 #include "pubdef.h"
+#include "surface_buffer.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -69,6 +71,7 @@ constexpr uint8_t ALIGN_NUMBER = 4;
 
 PixelMap::~PixelMap()
 {
+    HiLog::Info(LABEL, "PixelMap destory");
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     if (purgeableMemPtr_) {
         PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
@@ -105,6 +108,12 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
         }
         case AllocatorType::SHARE_MEM_ALLOC: {
             ReleaseSharedMemory(data_, context_, pixelsSize_);
+            data_ = nullptr;
+            context_ = nullptr;
+            break;
+        }
+        case AllocatorType::DMA_ALLOC: {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context_));
             data_ = nullptr;
             context_ = nullptr;
             break;
@@ -1197,6 +1206,10 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
             free(addr);
             addr = nullptr;
         }
+    } else if (allocType == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
+#endif
     }
 }
 
@@ -1427,6 +1440,14 @@ bool PixelMap::Marshalling(Parcel &parcel) const
             return false;
         }
 #endif
+    } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+        if (!parcel.WriteInt32(bufferSize)) {
+            return false;
+        }
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
+        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+#endif
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             HiLog::Error(LABEL, "write pixel map buffer to parcel failed.");
@@ -1519,6 +1540,14 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         *static_cast<int32_t *>(context) = fd;
         base = static_cast<uint8_t *>(ptr);
 #endif
+    } else if (allocType == AllocatorType::DMA_ALLOC) {
+        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+        uint8_t* virAddr = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+        void* nativeBuffer = surfaceBuffer.GetRefPtr();
+        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+        base = virAddr;
+        context = nativeBuffer;
     } else {
         base = ReadImageData(parcel, bufferSize);
         if (base == nullptr) {

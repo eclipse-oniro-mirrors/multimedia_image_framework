@@ -48,6 +48,7 @@ ohos_shared_library("webpplugin") {
     "$skia_root/skia/include/private",
     "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
   ]
   if (use_mingw_win) {
     defines = image_decode_windows_defines
@@ -64,6 +65,7 @@ ohos_shared_library("webpplugin") {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
 
     deps = [
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
@@ -74,7 +76,10 @@ ohos_shared_library("webpplugin") {
     if (DUAL_ADAPTER) {
     }
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "graphic_2d:surface",
+    ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   part_name = "multimedia_image_framework"

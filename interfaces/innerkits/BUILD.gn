@@ -216,6 +216,7 @@ if (use_clang_android) {
       }
       external_deps = [
         "c_utils:utils",
+        "graphic_2d:surface",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
       ]

@@ -14,9 +14,13 @@
  */
 
 #include "png_decoder.h"
+
+#include "image_utils.h"
 #include "media_errors.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
+#include "surface_buffer.h"
+
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -198,7 +202,7 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     return ret;
 }
 
-uint8_t *PngDecoder::AllocOutputHeapBuffer(DecodeContext &context)
+uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
@@ -233,6 +237,40 @@ uint8_t *PngDecoder::AllocOutputHeapBuffer(DecodeContext &context)
             context.pixelsBuffer.context = fdBuffer;
             context.pixelsBuffer.bufferSize = byteCount;
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+            context.freeFunc = nullptr;
+#endif
+        } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+            HiLog::Error(LABEL, "Unsupport dma mem alloc");
+            return nullptr;
+#else
+            sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+            BufferRequestConfig requestConfig = {
+                .width = pngImageInfo_.width,
+                .height = pngImageInfo_.height,
+                .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+                .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+                .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+                .timeout = 0,
+                .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+                .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+            };
+            GSError ret = sb->Alloc(requestConfig);
+            if (ret != GSERROR_OK) {
+                HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+                return nullptr;
+            }
+            void* nativeBuffer = sb.GetRefPtr();
+            int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+            if (err != OHOS::GSERROR_OK) {
+                HiLog::Error(LABEL, "NativeBufferReference failed");
+                return nullptr;
+            }
+
+            context.pixelsBuffer.buffer = sb->GetVirAddr();
+            context.pixelsBuffer.context = nativeBuffer;
+            context.pixelsBuffer.bufferSize = byteCount;
+            context.allocatorType = AllocatorType::DMA_ALLOC;
             context.freeFunc = nullptr;
 #endif
         } else {
@@ -285,7 +323,7 @@ uint32_t PngDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
         return ERR_MEDIA_INVALID_OPERATION;
     }
 
-    pixelsData_ = AllocOutputHeapBuffer(context.decodeContext);
+    pixelsData_ = AllocOutputBuffer(context.decodeContext);
     if (pixelsData_ == nullptr) {
         HiLog::Error(LABEL, "get pixels memory fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
@@ -946,7 +984,7 @@ uint32_t PngDecoder::DoOneTimeDecode(DecodeContext &context)
         HiLog::Error(LABEL, "decode the image fail.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
-    pixelsData_ = AllocOutputHeapBuffer(context);
+    pixelsData_ = AllocOutputBuffer(context);
     if (pixelsData_ == nullptr) {
         HiLog::Error(LABEL, "get pixels memory fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;

@@ -87,7 +87,7 @@ private:
     uint32_t ProcessData(png_structp pngPtr, png_infop infoPtr, InputDataStream *sourceStream,
                          DataStreamBuffer streamData, size_t bufferSize, size_t totalSize);
     bool ConvertOriginalFormat(png_byte source, png_byte &destination);
-    uint8_t *AllocOutputHeapBuffer(DecodeContext &context);
+    uint8_t *AllocOutputBuffer(DecodeContext &context);
     uint32_t IncrementalRead(InputDataStream *stream, uint32_t desiredSize, DataStreamBuffer &outData);
     uint32_t DecodeHeader();
     uint32_t ConfigInfo(const PixelDecodeOptions &opts);

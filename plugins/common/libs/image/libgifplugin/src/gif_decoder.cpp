@@ -15,6 +15,8 @@
 
 #include "gif_decoder.h"
 
+#include "image_utils.h"
+#include "surface_buffer.h"
 namespace OHOS {
 namespace ImagePlugin {
 using namespace OHOS::HiviewDFX;
@@ -507,12 +509,16 @@ static uint32_t HeapMemoryCreate(PlImageBuffer &plBuffer)
         HiLog::Debug(LABEL, "HeapMemoryCreate has created");
         return SUCCESS;
     }
-    if (plBuffer.bufferSize == SIZE_ZERO) {
-        HiLog::Error(LABEL, "HeapMemoryCreate size is 0");
+    if (plBuffer.bufferSize == 0 || plBuffer.bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "HeapMemoryCreate Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    auto dataPtr = std::make_unique<uint8_t[]>(plBuffer.bufferSize);
-    plBuffer.buffer = dataPtr.release();
+    auto dataPtr = static_cast<uint8_t *>(malloc(plBuffer.bufferSize));
+    if (dataPtr == nullptr) {
+        HiLog::Error(LABEL, "alloc buffer error");
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
+    plBuffer.buffer = dataPtr;
     plBuffer.dataSize = plBuffer.bufferSize;
     return SUCCESS;
 }
@@ -527,6 +533,60 @@ static uint32_t HeapMemoryRelease(PlImageBuffer &plBuffer)
     free(plBuffer.buffer);
     plBuffer.buffer = nullptr;
     return SUCCESS;
+}
+
+static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = gifPtr->SWidth,
+        .height = gifPtr->SHeight,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    plBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
+    plBuffer.dataSize = plBuffer.bufferSize;
+    plBuffer.context = nativeBuffer;
+    return SUCCESS;
+#endif
+}
+
+static uint32_t DmaMemoryRelease(PlImageBuffer &plBuffer)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    if (plBuffer.context != nullptr) {
+        int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(plBuffer.context));
+        if (err != OHOS::GSERROR_OK) {
+            HiLog::Error(LABEL, "NativeBufferReference failed");
+            return ERR_DMA_DATA_ABNORMAL;
+        }
+        plBuffer.buffer = nullptr;
+        plBuffer.context = nullptr;
+    }
+    return SUCCESS;
+#endif
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
@@ -590,7 +650,7 @@ static uint32_t SharedMemoryRelease(PlImageBuffer &plBuffer)
 }
 #endif
 
-static uint32_t AllocMemory(DecodeContext &context)
+static uint32_t AllocMemory(DecodeContext &context, GifFileType *gifPtr)
 {
     if (context.pixelsBuffer.buffer != nullptr) {
         HiLog::Debug(LABEL, "AllocMemory has created");
@@ -601,6 +661,8 @@ static uint32_t AllocMemory(DecodeContext &context)
         return SharedMemoryCreate(context.pixelsBuffer);
     } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {
         return HeapMemoryCreate(context.pixelsBuffer);
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        return DmaMemoryCreate(context.pixelsBuffer, gifPtr);
     }
     // Current Defalut alloc function
     return SharedMemoryCreate(context.pixelsBuffer);
@@ -617,6 +679,8 @@ static uint32_t FreeMemory(DecodeContext &context)
         return SharedMemoryRelease(context.pixelsBuffer);
     } else if (context.allocatorType == Media::AllocatorType::HEAP_ALLOC) {
         return HeapMemoryRelease(context.pixelsBuffer);
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        return DmaMemoryRelease(context.pixelsBuffer);
     }
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
@@ -633,7 +697,7 @@ uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
     uint32_t allocRes = SUCCESS;
     if (context.pixelsBuffer.buffer == nullptr) {
         context.pixelsBuffer.bufferSize = imageBufferSize;
-        allocRes = AllocMemory(context);
+        allocRes = AllocMemory(context, gifPtr_);
         if (context.pixelsBuffer.buffer == nullptr) {
             return (allocRes != SUCCESS) ? allocRes : ERR_IMAGE_DATA_ABNORMAL;
         }

@@ -24,6 +24,7 @@
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+#include "surface_buffer.h"
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtDecoder"};
@@ -85,7 +86,7 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
 };
 
 static void SetDecodeContextBuffer(DecodeContext &context,
-    AllocatorType type, uint8_t* ptr, uint64_t count, int32_t* fd)
+    AllocatorType type, uint8_t* ptr, uint64_t count, void* fd)
 {
     context.allocatorType = type;
     context.freeFunc = nullptr;
@@ -124,18 +125,57 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 #endif
 }
 
+static uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = dstInfo.width(),
+        .height = dstInfo.height(),
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+
+    SetDecodeContextBuffer(context,
+        AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
+    return SUCCESS;
+#endif
+}
+
 static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
 {
-    auto out = make_unique<uint8_t[]>(count);
+    if (count == 0 || count > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "HeapMemAlloc Invalid value of bufferSize");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    auto out = static_cast<uint8_t *>(malloc(count));
 #ifdef _WIN32
     if (memset_s(out, ZERO, count) != EOK) {
 #else
-    if (memset_s(out.get(), count, ZERO, count) != EOK) {
+    if (memset_s(out, count, ZERO, count) != EOK) {
 #endif
         HiLog::Error(LABEL, "Decode failed, memset buffer failed");
         return ERR_IMAGE_DECODE_FAILED;
     }
-    SetDecodeContextBuffer(context, AllocatorType::HEAP_ALLOC, out.release(), count, nullptr);
+    SetDecodeContextBuffer(context, AllocatorType::HEAP_ALLOC, out, count, nullptr);
     return SUCCESS;
 }
 
@@ -321,6 +361,8 @@ uint32_t ExtDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
     }
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
         return ShareMemAlloc(context, byteCount);
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        return DmaMemAlloc(context, byteCount, dstInfo_);
     }
     return HeapMemAlloc(context, byteCount);
 }
@@ -400,10 +442,15 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     dstOptions_.fFrameIndex = index;
     DebugInfo(info_, dstInfo_, dstOptions_);
-    SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, dstInfo_.minRowBytes64(), &dstOptions_);
+    uint64_t rowStride = dstInfo_.minRowBytes64();
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
+        rowStride = sbBuffer->GetStride();
+    }
+    SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     if (ret != SkCodec::kSuccess && ResetCodec()) {
         // Try again
-        ret = codec_->getPixels(dstInfo_, dstBuffer, dstInfo_.minRowBytes64(), &dstOptions_);
+        ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     }
     if (ret != SkCodec::kSuccess) {
         HiLog::Error(LABEL, "Decode failed, get pixels failed, ret=%{public}d", ret);

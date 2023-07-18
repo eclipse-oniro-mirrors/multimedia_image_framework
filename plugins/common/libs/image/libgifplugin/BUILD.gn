@@ -35,6 +35,7 @@ ohos_shared_library("gifplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "//third_party/giflib",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "$skia_root/skia/include/codec",
@@ -67,6 +68,7 @@ ohos_shared_library("gifplugin") {
   } else {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/giflib:libgif",
@@ -74,6 +76,7 @@ ohos_shared_library("gifplugin") {
 
     external_deps = [
       "c_utils:utils",
+      "graphic_2d:surface",
       "hilog:libhilog",
     ]
   }

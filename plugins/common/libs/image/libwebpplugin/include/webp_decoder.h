@@ -60,7 +60,7 @@ private:
     WEBP_CSP_MODE GetWebpDecodeMode(const PlPixelFormat &pixelFormat, bool premul);
     uint32_t ReadIncrementalHead();
     uint32_t DecodeHeader();
-    bool AllocHeapBuffer(DecodeContext &context, bool isIncremental);
+    bool AllocOutputBuffer(DecodeContext &context, bool isIncremental);
     void InitWebpOutput(const DecodeContext &context, WebPDecBuffer &output);
     bool PreDecodeProc(DecodeContext &context, WebPDecoderConfig &config, bool isIncremental);
     uint32_t DoCommonDecode(DecodeContext &context);

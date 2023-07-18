@@ -17,6 +17,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "securec.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -136,11 +137,58 @@ uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &contex
     return SUCCESS;
 }
 
-uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context)
+static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo &dstInfo)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = dstInfo.width(),
+        .height = dstInfo.height(),
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
+    context.pixelsBuffer.bufferSize = count;
+    context.pixelsBuffer.context = nativeBuffer;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.freeFunc = nullptr;
+    return SUCCESS;
+#endif
+}
+
+uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo)
 {
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE)
         uint32_t res = SetShareMemBuffer(byteCount, context);
+        if (res != SUCCESS) {
+            return res;
+        }
+#endif
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+        HiLog::Error(LABEL, "Unsupport dma mem alloc");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+        uint32_t res = DmaMemAlloc(byteCount, context, dstInfo);
         if (res != SUCCESS) {
             return res;
         }
@@ -157,8 +205,7 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #ifdef _WIN32
-        errno_t backRet = memset_s(outputBuffer, 0, byteCount);
-        if (backRet != EOK) {
+        if (memset_s(outputBuffer, 0, byteCount) != EOK) {
             HiLog::Error(LABEL, "Decode failed, memset buffer failed", backRet);
             free(outputBuffer);
             outputBuffer = nullptr;
@@ -204,7 +251,7 @@ uint32_t BmpDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(dstInfo.height()) * dstInfo.width() * dstInfo.bytesPerPixel();
-        uint32_t res = SetContextPixelsBuffer(byteCount, context);
+        uint32_t res = SetContextPixelsBuffer(byteCount, context, dstInfo);
         if (res != SUCCESS) {
             return res;
         }

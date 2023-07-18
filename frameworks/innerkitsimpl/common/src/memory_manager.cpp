@@ -34,6 +34,9 @@ using namespace OHOS::HiviewDFX;
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "MemoryManager" };
 static const size_t SIZE_ZERO = 0;
 static const int LINUX_SUCCESS = 0;
+// Define pixel map malloc max size 600MB
+constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
+
 uint32_t HeapMemory::Create()
 {
     HiLog::Debug(LABEL, "HeapMemory::Create IN");
@@ -41,8 +44,8 @@ uint32_t HeapMemory::Create()
         HiLog::Debug(LABEL, "HeapMemory::Create has created");
         return SUCCESS;
     }
-    if (data.size == SIZE_ZERO) {
-        HiLog::Error(LABEL, "HeapMemory::Create size is 0");
+    if (data.size == 0 || data.size > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "HeapMemory::Create Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     data.data = static_cast<uint8_t *>(malloc(data.size));

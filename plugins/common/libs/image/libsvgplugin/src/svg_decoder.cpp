@@ -14,13 +14,16 @@
  */
 
 #include "svg_decoder.h"
+
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImageInfo.h"
-#include "securec.h"
 #include "hilog/log.h"
+#include "image_utils.h"
 #include "log_tags.h"
 #include "media_errors.h"
+#include "securec.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -85,6 +88,54 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
     return true;
 #else
     HiLog::Error(LABEL, "[AllocShareBuffer] Not support Ashmem!");
+    return false;
+#endif
+}
+
+bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
+{
+    HiLog::Debug(LABEL, "[AllocDmaBuffer] IN byteCount=%{public}llu",
+        static_cast<unsigned long long>(byteCount));
+
+    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "[AllocDmaBuffer] pixelmap buffer size %{public}llu out of max size",
+            static_cast<unsigned long long>(byteCount));
+        return false;
+    }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = svgSize.width(),
+        .height = svgSize.height(),
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return false;
+    }
+
+    context.pixelsBuffer.buffer = sb->GetVirAddr();
+    context.pixelsBuffer.context = nativeBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.freeFunc = nullptr;
+
+    HiLog::Debug(LABEL, "[AllocDmaBuffer] OUT");
+    return true;
+#else
+    HiLog::Error(LABEL, "[AllocDmaBuffer] Not support dma!");
     return false;
 #endif
 }
@@ -336,6 +387,8 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
         uint64_t byteCount = static_cast<uint64_t>(width) * height * SVG_BYTES_PER_PIXEL;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             ret = AllocShareBuffer(context, byteCount);
+        } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+            ret = AllocDmaBuffer(context, byteCount, svgSize);
         } else {
             ret = AllocHeapBuffer(context, byteCount);
         }
