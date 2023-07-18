@@ -28,7 +28,7 @@ struct MemoryData {
     void* data;
     size_t size;
     const char* tag;
-    // std::string tag;
+    Size desiredSize;
 };
 
 class AbsMemory {
@@ -60,6 +60,17 @@ public:
         return AllocatorType::SHARE_MEM_ALLOC;
     }
 };
+class DmaMemory : public AbsMemory {
+public:
+    ~DmaMemory() = default;
+    uint32_t Create() override;
+    uint32_t Release() override;
+    AllocatorType GetType() override
+    {
+        return AllocatorType::DMA_ALLOC;
+    }
+};
+
 class MemoryManager {
 public:
     static std::unique_ptr<AbsMemory> CreateMemory(AllocatorType type, MemoryData &data);

@@ -2016,12 +2016,20 @@ static inline int FloatToInt(float a)
     return static_cast<int>(a + HALF);
 }
 
-static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t* pixels,
+static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap* pixelmap,
     sk_sp<SkColorSpace> colorSpace)
 {
     srcInfo.r = SkRect::MakeIWH(imageInfo.size.width, imageInfo.size.height);
     srcInfo.info = ToSkImageInfo(imageInfo, colorSpace);
-    srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
+    uint64_t rowStride = srcInfo.info.minRowBytes();
+    if (pixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        if (pixelmap->GetFd() == nullptr) {
+            HiLog::Error(LABEL, "GenSrcTransInfo get surfacebuffer failed");
+        }
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd());
+        rowStride = sbBuffer->GetStride();
+    }
+    srcInfo.bitmap.installPixels(srcInfo.info, static_cast<uint8_t *>(pixelmap->GetWritablePixels()), rowStride);
 }
 
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
@@ -2035,14 +2043,23 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         height += dstInfo.r.fTop;
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
-    MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
+    Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
+    MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize};
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
     if (dstMemory == nullptr) {
         HiLog::Error(LABEL, "CreateMemory falied");
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
-    dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, dstInfo.info.minRowBytes());
+    uint64_t rowStride = dstInfo.info.minRowBytes();
+    if (memoryInfo.allocType == AllocatorType::DMA_ALLOC) {
+        if (memoryInfo.memory->extend.data == nullptr) {
+            HiLog::Error(LABEL, "GendstTransInfo get surfacebuffer failed");
+        }
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(memoryInfo.memory->extend.data);
+        rowStride = sbBuffer->GetStride();
+    }
+    dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, rowStride);
     return true;
 }
 
@@ -2064,7 +2081,7 @@ bool PixelMap::DoTranslation(TransInfos &infos)
     }
 
     SkTransInfo src;
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
@@ -2145,7 +2162,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     GetImageInfo(imageInfo);
 
     SkTransInfo src;
-    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+    GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);

@@ -573,13 +573,13 @@ static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
 static uint32_t DmaMemoryRelease(PlImageBuffer &plBuffer)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    HiLog::Error(LABEL, "Unsupport dma mem release");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     if (plBuffer.context != nullptr) {
         int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(plBuffer.context));
         if (err != OHOS::GSERROR_OK) {
-            HiLog::Error(LABEL, "NativeBufferReference failed");
+            HiLog::Error(LABEL, "NativeBufferUnReference failed");
             return ERR_DMA_DATA_ABNORMAL;
         }
         plBuffer.buffer = nullptr;
