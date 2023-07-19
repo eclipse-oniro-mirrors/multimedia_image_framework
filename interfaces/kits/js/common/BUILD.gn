@@ -115,7 +115,7 @@ config("image_external_config") {
 }
 
 js_declaration("image_js") {
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
   sources = [ "//foundation/multimedia/image_framework/interfaces/kits/js/@ohos.multimedia.image.d.ts" ]
 }
 
@@ -153,7 +153,7 @@ if (use_clang_ios) {
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
-    part_name = "multimedia_image_framework"
+    part_name = "image_framework"
   }
 } else {
   ohos_shared_library("image_napi") {
@@ -183,7 +183,7 @@ if (use_clang_ios) {
     output_name = "libimage"
     relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
-    part_name = "multimedia_image_framework"
+    part_name = "image_framework"
   }
 
   ohos_shared_library("image") {
@@ -253,7 +253,7 @@ if (use_clang_ios) {
     output_name = "libimage_napi"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
-    part_name = "multimedia_image_framework"
+    part_name = "image_framework"
   }
 
   if (use_clang_android) {
@@ -287,7 +287,7 @@ if (use_clang_ios) {
       ]
       relative_install_dir = "module/multimedia"
       subsystem_name = "multimedia"
-      part_name = "multimedia_image_framework"
+      part_name = "image_framework"
     }
   }
 }

@@ -99,12 +99,12 @@ ohos_shared_library("bmpplugin") {
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }
 
 ohos_prebuilt_etc("bmppluginmetadata") {
   source = "bmpplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }

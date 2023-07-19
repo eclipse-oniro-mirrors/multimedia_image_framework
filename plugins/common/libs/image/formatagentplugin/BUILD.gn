@@ -74,7 +74,7 @@ ohos_shared_library("imageformatagent") {
     ]
   }
 
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 
   subsystem_name = "multimedia"
 }
@@ -83,5 +83,5 @@ ohos_prebuilt_etc("formatagentmetadata") {
   source = "imageformatagent.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }
