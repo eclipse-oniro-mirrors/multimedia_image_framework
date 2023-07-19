@@ -55,7 +55,7 @@ ohos_shared_library("svgplugin") {
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
 
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
   subsystem_name = "multimedia"
 }
 
@@ -63,5 +63,5 @@ ohos_prebuilt_etc("svgpluginmetadata") {
   source = "svgplugin.pluginmeta"
   relative_install_dir = "multimediaplugin/image"
   subsystem_name = "multimedia"
-  part_name = "multimedia_image_framework"
+  part_name = "image_framework"
 }

@@ -10,7 +10,7 @@
     "dirs": {},
     "scripts": {},
     "component": {
-      "name": "multimedia_image_framework",
+      "name": "image_framework",
       "subsystem": "multimedia",
       "syscap": [
         "SystemCapability.Multimedia.Image.Core",
