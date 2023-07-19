@@ -1393,6 +1393,12 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
     HiLog::Debug(LABEL, "Release IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
 
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        return nullptr;
+    }
+
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to napi_get_cb_info"));
 
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
@@ -1431,6 +1437,7 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
+    napi_close_handle_scope(env, scope);
     return result;
 }
 

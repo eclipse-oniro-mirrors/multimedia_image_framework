@@ -18,9 +18,11 @@
 #include <cerrno>
 #include <unistd.h>
 #include "hilog/log.h"
+#include "image_utils.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
+#include "surface_buffer.h"
 
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
 #include <sys/mman.h>
@@ -137,6 +139,62 @@ uint32_t SharedMemory::Release()
 #endif
 }
 
+uint32_t DmaMemory::Create()
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = data.desiredSize.width,
+        .height = data.desiredSize.height,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    data.data = static_cast<uint8_t*>(sb->GetVirAddr());
+    extend.size = data.size;
+    extend.data = nativeBuffer;
+    return SUCCESS;
+#endif
+}
+
+uint32_t DmaMemory::Release()
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    HiLog::Error(LABEL, "Unsupport dma mem release");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    data.data = nullptr;
+    data.size = SIZE_ZERO;
+    if (extend.data != nullptr) {
+        int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(extend.data));
+        if (err != OHOS::GSERROR_OK) {
+            HiLog::Error(LABEL, "NativeBufferReference failed");
+            return ERR_DMA_DATA_ABNORMAL;
+        }
+        extend.data = nullptr;
+        extend.size = SIZE_ZERO;
+    }
+    return SUCCESS;
+#endif
+}
+
 std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, MemoryData &data)
 {
     MemoryData extend;
@@ -149,6 +207,9 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     switch (type) {
         case AllocatorType::SHARE_MEM_ALLOC:
             res = std::make_unique<SharedMemory>();
+            break;
+        case AllocatorType::DMA_ALLOC:
+            res = std::make_unique<DmaMemory>();
             break;
         case AllocatorType::CUSTOM_ALLOC:
             HiLog::Error(LABEL, "MemoryManager::CreateMemory unsupported CUSTOM_ALLOC now");
@@ -166,9 +227,11 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     res->data.data = data.data;
     res->data.size = data.size;
     res->data.tag = data.tag;
+    res->data.desiredSize = data.desiredSize;
     res->extend.data = extend.data;
     res->extend.size = extend.size;
     res->extend.tag = extend.tag;
+    res->extend.desiredSize = extend.desiredSize;
     if (res->data.data == nullptr) {
         if (res->Create() != SUCCESS) {
             return nullptr;
