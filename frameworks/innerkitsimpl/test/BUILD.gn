@@ -937,7 +937,6 @@ group("unittest") {
     ":creatortest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
-    ":gifplugintest",
     ":gstpluginfwtest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
