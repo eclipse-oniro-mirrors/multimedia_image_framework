@@ -142,6 +142,7 @@ ohos_static_library("image_utils_static") {
   ]
 
   sources = [
+    "src/image_system_properties.cpp",
     "src/image_type_converter.cpp",
     "src/image_utils.cpp",
   ]
