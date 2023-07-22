@@ -83,7 +83,6 @@ ohos_shared_library("pngplugin") {
     ]
     deps += [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       "//third_party/libpng:png_static",
     ]
@@ -94,6 +93,7 @@ ohos_shared_library("pngplugin") {
     }
     external_deps = [
       "c_utils:utils",
+      "graphic_2d:color_manager",
       "graphic_2d:surface",
       "hilog:libhilog",
     ]

@@ -201,9 +201,6 @@ if (use_clang_android) {
       DUAL_ADAPTER = true
 
       deps = [
-        "//foundation/arkui/napi:ace_napi",
-        "//foundation/graphic/graphic_2d:libsurface",
-        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
@@ -216,9 +213,11 @@ if (use_clang_android) {
       }
       external_deps = [
         "c_utils:utils",
+        "graphic_2d:color_manager",
         "graphic_2d:surface",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
+        "napi:ace_napi",
       ]
     }
 
@@ -336,7 +335,6 @@ ohos_static_library("image_static") {
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
       "//foundation/arkui/napi:ace_napi",
       "//foundation/graphic/graphic_2d:libsurface",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
@@ -345,7 +343,10 @@ ohos_static_library("image_static") {
     } else {
       deps += [ "//third_party/libpng:libpng" ]
     }
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "c_utils:utils",
+      "graphic_2d:color_manager",
+    ]
   }
   subsystem_name = "multimedia"
   part_name = "image_framework"
