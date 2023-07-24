@@ -15,21 +15,28 @@
 
 #include "image_system_properties.h"
 
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
 #include <parameter.h>
 #include <parameters.h>
+#endif
 
 #include "hilog/log_cpp.h"
 #include "image_log.h"
 
 namespace OHOS {
 namespace Media {
-    bool ImageSystemProperties::GetSkiaEnabled()
-    {
-        return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", true);
-    }
-    bool ImageSystemProperties::GetSurfaceBufferEnabled()
-    {
-        return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
-    }
+bool ImageSystemProperties::GetSkiaEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", true);
+#endif
+}
+
+bool ImageSystemProperties::GetSurfaceBufferEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
+#endif
+}
 } // namespace Media
 } // namespace OHOS
