@@ -43,7 +43,6 @@ if (use_clang_ios) {
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
-    innerapi_tags = [ "platformsdk_indirect" ]
     part_name = "multimedia_image_framework"
   }
 } else {
@@ -143,6 +142,7 @@ ohos_static_library("image_utils_static") {
   ]
 
   sources = [
+    "src/image_system_properties.cpp",
     "src/image_type_converter.cpp",
     "src/image_utils.cpp",
   ]
