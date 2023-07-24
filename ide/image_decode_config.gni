@@ -66,7 +66,11 @@ if (image_use_new_skia) {
 }
 
 if (use_clang_android) {
-  skia_platform = [ "$skia_deps_root/skia:ace_skia_android" ]
+  if (image_use_new_skia) {
+    skia_platform = [ "$skia_deps_root/skia:skia_android" ]
+  } else {
+    skia_platform = [ "$skia_deps_root/skia:ace_skia_android" ]
+  }
 } else if (use_clang_ios) {
   if (image_use_new_skia) {
     skia_platform = [ "$skia_deps_root/skia:skia_ios" ]

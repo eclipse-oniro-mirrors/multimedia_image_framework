@@ -241,5 +241,18 @@ image_native_android_deps = [
   # formatagent
   # png
 ]
+
+if (image_use_new_skia) {
+  image_native_android_deps -= [
+    "//third_party/flutter/build/libjpeg:ace_libjpeg",
+    "//third_party/flutter/build/libpng:ace_libpng",
+  ]
+
+  image_native_android_deps += [
+    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
+    "//third_party/skia/third_party/libpng:libpng",
+  ]
+}
+
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform
