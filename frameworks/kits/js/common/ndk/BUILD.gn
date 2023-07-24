@@ -37,7 +37,7 @@ ohos_shared_library("image_ndk") {
 
   sources = [ "image_mdk.cpp" ]
   public_configs = [ ":native_public_config" ]
-  external_deps = [ "image_framework:image" ]
+  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
@@ -53,7 +53,7 @@ ohos_shared_library("image_receiver_ndk") {
 
   sources = [ "image_receiver_mdk.cpp" ]
   public_configs = [ ":native_public_config" ]
-  external_deps = [ "image_framework:image" ]
+  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"

@@ -72,7 +72,6 @@ ohos_shared_library("gifplugin") {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
 
       #"//third_party/giflib:libgif",
@@ -80,6 +79,7 @@ ohos_shared_library("gifplugin") {
 
     external_deps = [
       "c_utils:utils",
+      "graphic_2d:color_manager",
       "graphic_2d:surface",
       "hilog:libhilog",
     ]

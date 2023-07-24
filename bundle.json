@@ -39,7 +39,9 @@
           "napi",
           "zlib",
           "init",
-          "startup"
+          "startup",
+          "memory_utils",
+          "napi"
         ],
         "third_party": [
           "flutter",
@@ -48,8 +50,11 @@
           "giflib",
           "bounds_checking_function",
           "expat",
+          "json",
           "skia",
-          "json"
+          "libjpeg",
+          "piex",
+          "zlib"
         ]
       },
       "build": {
