@@ -1398,7 +1398,7 @@ bool PixelMap::WriteImageInfo(Parcel &parcel) const
     return true;
 }
 
-bool WriteInfoToParcel(Parcel &parcel)
+bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
 {
     if (!WriteImageInfo(parcel)) {
         HiLog::Error(LABEL, "write image info to parcel failed.");
