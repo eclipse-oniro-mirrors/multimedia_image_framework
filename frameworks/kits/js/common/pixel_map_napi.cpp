@@ -1979,7 +1979,7 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IPC, "marshalling pixel map to parcel failed.");
     }
     return nVal.result;
-#else 
+#else
     napi_value result = nullptr;
     return result;
 #endif
