@@ -34,6 +34,7 @@ namespace {
     constexpr static int32_t OFFSET = 1;
     constexpr static size_t SIZE_ZERO = 0;
     constexpr static uint32_t DEFAULT_SAMPLE_SIZE = 1;
+    constexpr static uint32_t NO_EXIF_TAG = 1;
 }
 
 namespace OHOS {
@@ -769,11 +770,11 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
     HiLog::Debug(LABEL, "[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (!CheckCodec()) {
         HiLog::Error(LABEL, "Check codec failed");
-        return Media::ERR_MEDIA_INVALID_OPERATION;;
+        return NO_EXIF_TAG;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();
     if (format != SkEncodedImageFormat::kJPEG) {
-        return Media::ERR_MEDIA_INVALID_OPERATION;;
+        return NO_EXIF_TAG;
     }
     constexpr size_t APP1_SIZE_H_OFF = 4;
     constexpr size_t APP1_SIZE_L_OFF = 5;
