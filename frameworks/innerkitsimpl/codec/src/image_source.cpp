@@ -36,9 +36,10 @@
 #include "plugin_server.h"
 #include "post_proc.h"
 #include "source_stream.h"
-#include "surface_buffer.h"
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
+#else
+#include "surface_buffer.h"
 #endif
 #include "include/utils/SkBase64.h"
 #if defined(NEW_SKIA)

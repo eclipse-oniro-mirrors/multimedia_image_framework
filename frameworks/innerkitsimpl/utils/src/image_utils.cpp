@@ -34,7 +34,11 @@
 #include "vector"
 #include "image_trace.h"
 #include "hitrace_meter.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
+#else
+#include "refbase.h"
+#endif
 
 namespace OHOS {
 namespace Media {

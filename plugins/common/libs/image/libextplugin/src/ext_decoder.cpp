@@ -24,7 +24,9 @@
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
+#endif
 
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtDecoder"};
