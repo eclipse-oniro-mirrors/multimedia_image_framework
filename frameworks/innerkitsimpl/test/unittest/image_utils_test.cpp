@@ -292,5 +292,23 @@ HWTEST_F(ImageUtilsTest, BGRAToARGB001, TestSize.Level3)
     ImageUtils::BGRAToARGB(src3, dst, LENGTH);
     GTEST_LOG_(INFO) << "ImageUtilsTest: BGRAToARGB001 end";
 }
+
+/**
+ * @tc.name: SurfaceBuffer_Reference001
+ * @tc.desc: SurfaceBuffer_Reference
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 start";
+    void* buffer = nullptr;
+    int32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
+    ASSERT_NE(res, SUCCESS);
+
+    int32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
+    ASSERT_NE(ret, SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 end";
+}
 }
 }
