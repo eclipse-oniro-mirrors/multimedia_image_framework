@@ -273,7 +273,7 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
     }
     return ptr;
 #else
-    return malloc(bufferSize); 
+    return malloc(bufferSize);
 #endif
 }
 
