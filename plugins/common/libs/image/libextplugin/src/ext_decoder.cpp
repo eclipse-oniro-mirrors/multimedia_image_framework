@@ -769,11 +769,11 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
     HiLog::Debug(LABEL, "[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (!CheckCodec()) {
         HiLog::Error(LABEL, "Check codec failed");
-        return Media::ERR_MEDIA_INVALID_OPERATION;;
+        return OHOS::ImagePlugin::ERROR_PARSE_EXIF_FAILED;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();
     if (format != SkEncodedImageFormat::kJPEG) {
-        return Media::ERR_MEDIA_INVALID_OPERATION;;
+        return OHOS::ImagePlugin::ERROR_PARSE_EXIF_FAILED;
     }
     constexpr size_t APP1_SIZE_H_OFF = 4;
     constexpr size_t APP1_SIZE_L_OFF = 5;
