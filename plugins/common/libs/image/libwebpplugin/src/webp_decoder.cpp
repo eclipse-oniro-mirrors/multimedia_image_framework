@@ -19,7 +19,9 @@
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
+#endif
 
 namespace OHOS {
 namespace ImagePlugin {
