@@ -21,7 +21,9 @@
 #include "jerror.h"
 #include "media_errors.h"
 #include "string_ex.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
+#endif
 
 #ifndef _WIN32
 #include "securec.h"
@@ -427,8 +429,10 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
+#endif
     }
     while (decodeInfo_.output_scanline < decodeInfo_.output_height) {
         buffer = base + rowStride * decodeInfo_.output_scanline;

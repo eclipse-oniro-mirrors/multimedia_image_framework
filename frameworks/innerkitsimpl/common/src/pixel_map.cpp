@@ -17,7 +17,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "buffer_handle_parcel.h"
 #include "image_utils.h"
 #include "image_trace.h"
 #include "image_type_converter.h"
@@ -34,7 +33,7 @@
 #include "post_proc.h"
 #include "parcel.h"
 #include "pubdef.h"
-#include "surface_buffer.h"
+
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -48,7 +47,9 @@
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
+#include "buffer_handle_parcel.h"
 #include "ipc_file_descriptor.h"
+#include "surface_buffer.h"
 #endif
 
 namespace OHOS {
@@ -113,9 +114,11 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             break;
         }
         case AllocatorType::DMA_ALLOC: {
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
             ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context_));
             data_ = nullptr;
             context_ = nullptr;
+#endif
             break;
         }
         default: {
@@ -269,6 +272,8 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
         return nullptr;
     }
     return ptr;
+#else
+    return malloc(bufferSize);
 #endif
 }
 
@@ -1351,6 +1356,8 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
     }
     sptr<IPCFileDescriptor> descriptor = new IPCFileDescriptor(dupFd);
     return parcel.WriteObject<IPCFileDescriptor>(descriptor);
+#else
+    return false;
 #endif
 }
 
@@ -1366,6 +1373,8 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
         return -1;
     }
     return dup(fd);
+#else
+    return -1;
 #endif
 }
 
@@ -1541,6 +1550,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         base = static_cast<uint8_t *>(ptr);
 #endif
     } else if (allocType == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
         uint8_t* virAddr = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
@@ -1548,6 +1558,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
         base = virAddr;
         context = nativeBuffer;
+#endif
     } else {
         base = ReadImageData(parcel, bufferSize);
         if (base == nullptr) {

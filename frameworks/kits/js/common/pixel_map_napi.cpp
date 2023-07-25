@@ -786,6 +786,9 @@ napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
             env, ERROR, "Fail to create async work");
     }
     return result;
+#else
+    napi_value result = nullptr;
+    return result;
 #endif
 }
 
@@ -1976,6 +1979,9 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IPC, "marshalling pixel map to parcel failed.");
     }
     return nVal.result;
+#else
+    napi_value result = nullptr;
+    return result;
 #endif
 }
 

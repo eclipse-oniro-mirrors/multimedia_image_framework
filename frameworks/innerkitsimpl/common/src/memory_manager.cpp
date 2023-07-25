@@ -22,11 +22,11 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
-#include "surface_buffer.h"
 
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
+#include "surface_buffer.h"
 #define SUPPORT_SHARED_MEMORY
 #endif
 
@@ -68,8 +68,8 @@ uint32_t HeapMemory::Release()
     }
     free(data.data);
     data.data = nullptr;
-    return SUCCESS;
 #endif
+    return SUCCESS;
 }
 
 static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
