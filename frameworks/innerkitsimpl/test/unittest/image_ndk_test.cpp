@@ -20,6 +20,8 @@
 #include "image_mdk_kits.h"
 #include "image_receiver_mdk.h"
 #include "image_receiver_mdk_kits.h"
+#include "image_source_mdk.h"
+#include "image_source_mdk_kits.h"
 
 using namespace testing::ext;
 namespace OHOS {
@@ -269,6 +271,220 @@ HWTEST_F(ImageNdkTest, OH_Image_InitImageNativeTest, TestSize.Level3)
     ASSERT_EQ(res, nullptr);
 
     GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_InitImageNativeTest end";
+}
+/**
+ * @tc.name: OH_ImageSource_CreateTest
+ * @tc.desc: OH_ImageSource_Create
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    OhosImageSource* src = nullptr;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_Create(env, src, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreateIncrementalTest
+ * @tc.desc: OH_ImageSource_CreateIncremental
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateIncrementalTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateIncrementalTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    OhosImageSource* src = nullptr;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateIncremental(env, src, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateIncrementalTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_GetSupportedFormatsTest
+ * @tc.desc: OH_ImageSource_GetSupportedFormats
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_GetSupportedFormatsTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetSupportedFormatsTest start";
+    OhosImageSourceSupportedFormatList* res = nullptr;
+    int32_t ret = OH_ImageSource_GetSupportedFormats(res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetSupportedFormatsTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreatePixelMapTest
+ * @tc.desc: OH_ImageSource_CreatePixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreatePixelMapTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreatePixelMapTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageDecodingOps* ops = nullptr;
+    napi_value *res = nullptr;
+    int32_t ret = OH_ImageSource_CreatePixelMap(native, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreatePixelMapTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreatePixelMapListTest
+ * @tc.desc: OH_ImageSource_CreatePixelMapList
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreatePixelMapListTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreatePixelMapListTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageDecodingOps* ops = nullptr;
+    napi_value *res = nullptr;
+    int32_t ret = OH_ImageSource_CreatePixelMapList(native, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreatePixelMapListTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_GetDelayTimeTest
+ * @tc.desc: OH_ImageSource_GetDelayTime
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_GetDelayTimeTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetDelayTimeTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageSourceDelayTimeList* res = nullptr;
+    int32_t ret = OH_ImageSource_GetDelayTime(native, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetDelayTimeTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_GetFrameCountTest
+ * @tc.desc: OH_ImageSource_GetFrameCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_GetFrameCountTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetFrameCountTest start";
+    ImageSourceNative* native = nullptr;
+    uint32_t *res = nullptr;
+    int32_t ret = OH_ImageSource_GetFrameCount(native, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetFrameCountTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_GetImageInfoTest
+ * @tc.desc: OH_ImageSource_GetImageInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_GetImageInfoTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetImageInfoTest start";
+    ImageSourceNative* native = nullptr;
+    int32_t index = 0;
+    OhosImageSourceInfo* info = nullptr;
+    int32_t ret = OH_ImageSource_GetImageInfo(native, index, info);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetImageInfoTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_GetImagePropertyTest
+ * @tc.desc: OH_ImageSource_GetImageProperty
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_GetImagePropertyTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetImagePropertyTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageSourceProperty* key = nullptr;
+    OhosImageSourceProperty* value = nullptr;
+    int32_t ret = OH_ImageSource_GetImageProperty(native, key, value);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_GetImagePropertyTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_ModifyImagePropertyTest
+ * @tc.desc: OH_ImageSource_ModifyImageProperty
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_ModifyImagePropertyTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_ModifyImagePropertyTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageSourceProperty* key = nullptr;
+    OhosImageSourceProperty* value = nullptr;
+    int32_t ret = OH_ImageSource_ModifyImageProperty(native, key, value);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_ModifyImagePropertyTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_UpdateDataTest
+ * @tc.desc: OH_ImageSource_UpdateData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_UpdateDataTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_UpdateDataTest start";
+    ImageSourceNative* native = nullptr;
+    OhosImageSourceUpdateData* data = nullptr;
+    int32_t ret = OH_ImageSource_UpdateData(native, data);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_UpdateDataTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_ReleaseTest
+ * @tc.desc: OH_ImageSource_Release
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_ReleaseTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_ReleaseTest start";
+    ImageSourceNative* native = nullptr;
+    int32_t ret = OH_ImageSource_Release(native);
+    ASSERT_EQ(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_ReleaseTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_InitNativeTest
+ * @tc.desc: OH_ImageSource_InitNative
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_InitNativeTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_InitNativeTest start";
+    napi_env env = nullptr;
+    napi_value source = nullptr;
+    ImageSourceNative*  ret = OH_ImageSource_InitNative(env, source);
+    ASSERT_EQ(ret, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_InitNativeTest end";
 }
 }
 }

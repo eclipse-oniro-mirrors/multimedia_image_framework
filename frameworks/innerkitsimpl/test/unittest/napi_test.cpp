@@ -204,6 +204,65 @@ HWTEST_F(NapiTest, NapiTest0011, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "NapiTest: NapiTest0011 end";
 }
+
+/**
+ * @tc.name: NapiTest0012
+ * @tc.desc: SetIncrementalPixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiTest0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0012 start";
+    ImageSourceNapi napi;
+    std::shared_ptr<IncrementalPixelMap> incrementalPixelMap = nullptr;
+    napi.SetIncrementalPixelMap(incrementalPixelMap);
+
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0012 end";
+}
+
+/**
+ * @tc.name: NapiTest0013
+ * @tc.desc: GetIncrementalPixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiTest0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0013 start";
+    ImageSourceNapi napi;
+    std::shared_ptr<ImageSource> imageSource = nullptr;
+    napi.SetNativeImageSource(imageSource);
+
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0013 end";
+}
+
+/**
+ * @tc.name: NapiTest0014
+ * @tc.desc: OH_PixelMap_SetOpacity
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiTest0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0014 start";
+    ImageSourceNapi napi;
+    ImageResource resource;
+    napi.SetImageResource(resource);
+
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0014 end";
+}
+/**
+ * @tc.name: NapiTest0015
+ * @tc.desc: OH_PixelMap_SetOpacity
+ * @tc.type: FUNC
+ */
+HWTEST_F(NapiTest, NapiTest0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 start";
+    ImageSourceNapi napi;
+    ImageResource resource = napi.GetImageResource();
+    ASSERT_EQ(resource.buffer, nullptr);
+
+    GTEST_LOG_(INFO) << "NapiTest: NapiTest0015 end";
+}
 }
 }
 
