@@ -19,7 +19,9 @@
 #include "media_errors.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
+#endif
 
 #ifndef _WIN32
 #include "securec.h"
