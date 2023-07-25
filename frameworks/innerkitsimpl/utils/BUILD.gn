@@ -43,7 +43,7 @@ if (use_clang_ios) {
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
-    part_name = "image_framework"
+    part_name = "multimedia_image_framework"
   }
 } else {
   ohos_shared_library("image_utils") {
