@@ -37,7 +37,6 @@ namespace Multimedia {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
     LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceGifTest"
 };
-static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
 
 class ImageSourceGifTest : public testing::Test {
 public:
