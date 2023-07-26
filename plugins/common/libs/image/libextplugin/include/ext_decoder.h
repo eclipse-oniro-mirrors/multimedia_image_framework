@@ -31,9 +31,10 @@ namespace ImagePlugin {
 class ExtDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase, NoCopyable {
 public:
     ExtDecoder();
-    virtual ~ExtDecoder() override {};
+    ~ExtDecoder() override;
     bool HasProperty(std::string key) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
+    uint32_t GifDecode(uint32_t index, DecodeContext &context, const uint64_t rowStride);
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
@@ -81,6 +82,7 @@ private:
     SkIRect dstSubset_;
     int32_t frameCount_ = 0;
     EXIFInfo exifInfo_;
+    uint8_t *gifCache_ = nullptr;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
