@@ -429,7 +429,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
 #endif
