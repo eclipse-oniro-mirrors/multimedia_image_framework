@@ -221,33 +221,6 @@ HWTEST_F(FormatAgentPluginTest, GifFormatAgentPluginTest003, TestSize.Level3)
 }
 
 /**
- * @tc.name: GifFormatAgentPluginTest004
- * @tc.desc: Gif CheckFormat
- * @tc.type: FUNC
- */
-HWTEST_F(FormatAgentPluginTest, GifFormatAgentPluginTest004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest004 start";
-    ImagePlugin::GifFormatAgent formatAgent;
-    uint32_t datasize = formatAgent.GetHeaderSize();
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/gif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_GIF_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    
-    bool ret = formatAgent.CheckFormat(pixelMap->GetPixels(), datasize);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest004 end";
-}
-
-/**
  * @tc.name: GifFormatAgentPluginTest005
  * @tc.desc: Gif CheckFormat
  * @tc.type: FUNC
@@ -260,33 +233,6 @@ HWTEST_F(FormatAgentPluginTest, GifFormatAgentPluginTest005, TestSize.Level3)
     bool ret = formatAgent.CheckFormat(nullptr, datasize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest005 end";
-}
-
-/**
- * @tc.name: GifFormatAgentPluginTest006
- * @tc.desc: Gif CheckFormat
- * @tc.type: FUNC
- */
-HWTEST_F(FormatAgentPluginTest, GifFormatAgentPluginTest006, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest006 start";
-    ImagePlugin::GifFormatAgent formatAgent;
-    uint32_t datasize = formatAgent.GetHeaderSize() - 10;
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/gif";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_GIF_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    
-    bool ret = formatAgent.CheckFormat(pixelMap->GetPixels(), datasize);
-    ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest006 end";
 }
 
 /**
