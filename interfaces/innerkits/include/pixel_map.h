@@ -224,6 +224,7 @@ private:
     void ReleaseSharedMemory(void *addr, void *context, uint32_t size);
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
+    bool WriteInfoToParcel(Parcel &parcel) const;
     void SetEditable(bool editable)
     {
         editable_ = editable;

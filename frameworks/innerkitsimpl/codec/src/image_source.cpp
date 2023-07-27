@@ -427,7 +427,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     const DecodeOptions &opts, uint32_t &errorCode)
 {
     trace(BEGIN_TRACE, "CreatePixelMapExtended");
-    IMAGE_LOGD("[ImageSource]CreatePixelMapExtended IN");
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
@@ -442,7 +441,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         opts_.desiredSize);
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
-    IMAGE_LOGD("[ImageSource]GetValidImageStatus SetDecodeOptions finished");
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         return nullptr;
@@ -477,7 +475,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    IMAGE_LOGD("[ImageSource]CreatePixelMapExtended OUT");
     trace(FINISH_TRACE);
     return pixelMap;
 }

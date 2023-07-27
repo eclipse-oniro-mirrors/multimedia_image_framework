@@ -1407,16 +1407,8 @@ bool PixelMap::WriteImageInfo(Parcel &parcel) const
     return true;
 }
 
-bool PixelMap::Marshalling(Parcel &parcel) const
+bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
 {
-    int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
-    int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
-    if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
-        static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
-        !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
-        HiLog::Error(LABEL, "set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
-        return false;
-    }
     if (!WriteImageInfo(parcel)) {
         HiLog::Error(LABEL, "write image info to parcel failed.");
         return false;
@@ -1430,6 +1422,23 @@ bool PixelMap::Marshalling(Parcel &parcel) const
     if (!parcel.WriteInt32(static_cast<int32_t>(allocatorType_))) {
         HiLog::Error(LABEL, "write pixel map allocator type:[%{public}d] to parcel failed.",
                      allocatorType_);
+        return false;
+    }
+    return true;
+}
+
+bool PixelMap::Marshalling(Parcel &parcel) const
+{
+    int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
+    int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
+    if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
+        static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
+        !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
+        HiLog::Error(LABEL, "set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
+        return false;
+    }
+    if (!WriteInfoToParcel(parcel)) {
+        HiLog::Error(LABEL, "write info to parcel failed.");
         return false;
     }
     if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {

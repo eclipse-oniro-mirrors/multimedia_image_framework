@@ -204,42 +204,51 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     return ret;
 }
 
+bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
+{
+    uint32_t id = context.pixelmapUniqueId_;
+    std::string name = "PNG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
+    int fd = AshmemCreate(name.c_str(), byteCount);
+    if (fd < 0) {
+        return false;
+    }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        ::close(fd);
+        return false;
+    }
+    void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED) {
+        ::close(fd);
+        return false;
+    }
+    context.pixelsBuffer.buffer = ptr;
+    void *fdBuffer = new int32_t();
+    if (fdBuffer == nullptr) {
+        HiLog::Error(LABEL, "new fdBuffer fail");
+        ::munmap(ptr, byteCount);
+        ::close(fd);
+        context.pixelsBuffer.buffer = nullptr;
+        return false;
+    }
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    context.pixelsBuffer.context = fdBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+}
+
 uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-            uint32_t id = context.pixelmapUniqueId_;
-            std::string name = "PNG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
-            int fd = AshmemCreate(name.c_str(), byteCount);
-            if (fd < 0) {
+            if (!AllocBufferForShareType(context, byteCount)) {
+                HiLog::Error(LABEL, "alloc output buffer for SHARE_MEM_ALLOC error.");
                 return nullptr;
             }
-            int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-            if (result < 0) {
-                ::close(fd);
-                return nullptr;
-            }
-            void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (ptr == MAP_FAILED) {
-                ::close(fd);
-                return nullptr;
-            }
-            context.pixelsBuffer.buffer = ptr;
-            void *fdBuffer = new int32_t();
-            if (fdBuffer == nullptr) {
-                HiLog::Error(LABEL, "new fdBuffer fail");
-                ::munmap(ptr, byteCount);
-                ::close(fd);
-                context.pixelsBuffer.buffer = nullptr;
-                return nullptr;
-            }
-            *static_cast<int32_t *>(fdBuffer) = fd;
-            context.pixelsBuffer.context = fdBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            context.freeFunc = nullptr;
 #endif
         } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
