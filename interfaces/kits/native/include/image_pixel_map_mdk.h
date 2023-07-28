@@ -101,23 +101,6 @@ enum {
 };
 
 /**
- * @brief Enumerates the pixel map scale modes.
- *
- * @since 10
- * @version 1.0
- */
-enum {
-    /**
-     * Adaptation to the target image size.
-     */
-    OHOS_PIXEL_MAP_SCALE_MODE_FIT_TARGET_SIZE = 0,
-    /**
-     * Cropping the center portion of an image to the target size.
-     */
-    OHOS_PIXEL_MAP_SCALE_MODE_CENTER_CROP = 1,
-};
-
-/**
  * @brief Enumerates the pixel map editing types.
  *
  * @since 10
