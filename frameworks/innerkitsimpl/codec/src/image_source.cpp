@@ -453,7 +453,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     } else {
         context.allocatorType = opts_.allocatorType;
     }
-    
+
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
