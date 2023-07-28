@@ -169,6 +169,14 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     custFreePixelMap_ = func;
 }
 
+bool CheckConvertParmas(ImageInfo &src, ImageInfo &dst)
+{
+    return src.pixelFormat == dst.pixelFormat &&
+        src.size.width == dst.size.width &&
+        src.size.height == dst.size.height &&
+        src.alphaType == dst.alphaType;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
     HiLog::Info(LABEL, "PixelMap::Create1 enter");
@@ -212,7 +220,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     Position dstPosition;
-    if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
+    if (!CheckConvertParmas(srcImageInfo, dstImageInfo) &&
+        !PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
         static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
         dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
