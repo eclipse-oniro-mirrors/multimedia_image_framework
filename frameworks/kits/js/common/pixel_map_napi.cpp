@@ -1870,82 +1870,68 @@ napi_value PixelMapNapi::Crop(napi_env env, napi_callback_info info)
 napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
-    nVal.argc = NUM_1;
-    napi_value argValue[NUM_1] = {0};
-    nVal.argv = argValue;
+    nVal.argc = NUM_0;
     HiLog::Debug(LABEL, "GetColorSpace IN");
-    if (!prepareNapiEnv(env, info, &nVal)) {
-        return nVal.result;
-    }
-    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
-
-    if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
-        HiLog::Error(LABEL, "Invalid args count");
-        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
-        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
-    }
-
     napi_get_undefined(env, &nVal.result);
-    nVal.context->status = ERROR;
-
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
+    }
+    if (nVal.argc != NUM_0) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
+    }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (nVal.context->rPixelMap != nullptr) {
-        auto grCS = nVal.context->rPixelMap->InnerGetGrColorSpacePtr();
-        if (grCS != nullptr) {
-            auto engine = reinterpret_cast<NativeEngine*>(env);
-            auto resultValue = ColorManager::CreateJsColorSpaceObject(*engine, grCS);
-            nVal.result = reinterpret_cast<napi_value>(resultValue);
-            nVal.context->status = SUCCESS;
-        }
+    if (nVal.context->nConstructor->nativePixelMap_ == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_DATA_ABNORMAL, "Invalid native pixelmap");
     }
+    auto grCS = nVal.context->nConstructor->nativePixelMap_->InnerGetGrColorSpacePtr();
+    if (grCS == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_DATA_UNSUPPORT, "No colorspace in pixelmap");
+    }
+    auto engine = reinterpret_cast<NativeEngine*>(env);
+    auto resultValue = ColorManager::CreateJsColorSpaceObject(*engine, grCS);
+    nVal.result = reinterpret_cast<napi_value>(resultValue);
+#else
+    return ImageNapiUtils::ThrowExceptionError(
+        env, ERR_INVALID_OPERATION, "Unsupported operation");
 #endif
-    if (nVal.context->status != SUCCESS) {
-        napi_create_int32(env, nVal.context->status, &nVal.result);
-    }
     return nVal.result;
-}
-static void ParseColorSpaceObject(NapiValues &nVal)
-{
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    auto csNativeValue = reinterpret_cast<NativeValue*>(nVal.argv[NUM_0]);
-    auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<NativeObject>(csNativeValue);
-    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
-    if (nVal.context->colorSpace == nullptr) {
-        HiLog::Error(LABEL, "ColorSpace mismatch");
-        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
-    }
-#endif
 }
 
 napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
-    nVal.argc = NUM_2;
-    napi_value argValue[NUM_2] = {0};
+    nVal.argc = NUM_1;
+    napi_value argValue[NUM_1] = {0};
     nVal.argv = argValue;
     HiLog::Debug(LABEL, "SetColorSpace IN");
+    napi_get_undefined(env, &nVal.result);
     if (!prepareNapiEnv(env, info, &nVal)) {
-        return nVal.result;
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
     }
-    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
-
-    if (nVal.argc != NUM_1 && nVal.argc != NUM_2) {
-        HiLog::Error(LABEL, "Invalid args count");
-        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
-    } else {
-        ParseColorSpaceObject(nVal);
+    if (nVal.argc != NUM_1) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (nVal.context->colorSpace != nullptr) {
-        nVal.context->rPixelMap->InnerSetColorSpace(*(nVal.context->colorSpace));
-        nVal.context->status = SUCCESS;
-    }
-#else
-    nVal.context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    auto csNativeValue = reinterpret_cast<NativeValue*>(nVal.argv[NUM_0]);
+    auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<NativeObject>(csNativeValue);
+    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
 #endif
-    napi_create_int32(env, nVal.context->status, &nVal.result);
+    if (nVal.context->colorSpace == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
+    }
+    nVal.context->nConstructor->nativePixelMap_->InnerSetColorSpace(*(nVal.context->colorSpace));
+#else
+    return ImageNapiUtils::ThrowExceptionError(
+        env, ERR_INVALID_OPERATION, "Unsupported operation");
+#endif
     return nVal.result;
 }
 
