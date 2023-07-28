@@ -103,7 +103,7 @@ struct OhosPixelMapInfo {
  * @brief Enumerates the pixel map scale modes.
  *
  * @since 10
- * @version 1.0
+ * @version 2.0
  */
 enum {
     /**
