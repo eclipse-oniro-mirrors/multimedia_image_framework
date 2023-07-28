@@ -1661,7 +1661,7 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     } else {
         HiLog::Error(LABEL, "Create PixelMap List error, error=%{public}u", errorCode);
         context->errMsg = "Create PixelMap List error";
-        context->status = errorCode;
+        context->status = ERROR;
     }
 }
 
@@ -1705,7 +1705,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "async context unwrap failed");
     }
 
