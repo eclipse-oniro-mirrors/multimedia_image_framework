@@ -252,7 +252,7 @@ HWTEST_F(ImageNdkTest, OH_Image_Receiver_ReleaseTest, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_Receiver_ReleaseTest start";
     ImageReceiverNative *p = nullptr;
     int32_t res = OH_Image_Receiver_Release(p);
-    ASSERT_EQ(res, OHOS_IMAGE_RESULT_SUCCESS);
+    ASSERT_EQ(res, IMAGE_RESULT_SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageNdkTest: OH_Image_Receiver_ReleaseTest end";
 }
@@ -488,4 +488,3 @@ HWTEST_F(ImageNdkTest, OH_ImageSource_InitNativeTest, TestSize.Level3)
 }
 }
 }
-
