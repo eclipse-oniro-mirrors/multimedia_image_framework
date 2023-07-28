@@ -49,55 +49,55 @@ static int32_t ImageNapiClipRect(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     if (nativeImage->GetSize(args->outRect->width, args->outRect->height) != NUM_0) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     args->outRect->x = NUM_0;
     args->outRect->y = NUM_0;
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageNapiSize(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
 
     if (nativeImage->GetSize(args->outSize->width, args->outSize->height) != NUM_0) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageNapiFormat(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     int32_t format;
     if (nativeImage->GetFormat(format) != NUM_0) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outNum0) = format;
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageNapiGetComponent(ImageNapi* native, struct ImageNapiArgs* args)
 {
     auto nativeImage = CheckAndGetImage(native, args);
     if (nativeImage == nullptr || args->outComponent == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_JNI_ENV_ABNORMAL;
     }
 
     auto nativeComponent = nativeImage->GetComponent(args->inNum0);
     if (nativeComponent == nullptr || nativeComponent->size == NUM_0) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
 
     if (nativeComponent->virAddr != nullptr) {
@@ -107,13 +107,13 @@ static int32_t ImageNapiGetComponent(ImageNapi* native, struct ImageNapiArgs* ar
     }
 
     if (args->outComponent->byteBuffer == nullptr) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     args->outComponent->size = nativeComponent->size;
     args->outComponent->componentType = args->inNum0;
     args->outComponent->pixelStride = nativeComponent->pixelStride;
     args->outComponent->rowStride = nativeComponent->rowStride;
-    return OHOS_IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static const std::map<int32_t, ImageNapiCtxFunc> g_CtxFunctions = {
@@ -128,7 +128,7 @@ int32_t ImageNapiNativeCtxCall(int32_t mode, ImageNapi* native, struct ImageNapi
 {
     auto funcSearch = g_CtxFunctions.find(mode);
     if (funcSearch == g_CtxFunctions.end()) {
-        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     return funcSearch->second(native, args);
 }
