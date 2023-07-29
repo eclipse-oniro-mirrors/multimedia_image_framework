@@ -1783,7 +1783,7 @@ static uint32_t SpecialExifData(EXIFInfo* info, const std::string name, std::str
         return res;
     } else if (IsSameTextStr(TAG_ORIENTATION_INT, name)) {
         std::string orgValue;
-        auto res = info->GetExifData(DATE_TIME_ORIGINAL, orgValue);
+        auto res = info->GetExifData(TAG_ORIENTATION_STRING, orgValue);
         if (res != Media::SUCCESS) {
             return res;
         }
