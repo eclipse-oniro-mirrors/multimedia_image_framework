@@ -66,6 +66,8 @@ public:
                                                          const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
                                                          int32_t stride, const InitializationOptions &opts);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
+        int32_t stride, const InitializationOptions &opts, bool useCustomFormat);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
