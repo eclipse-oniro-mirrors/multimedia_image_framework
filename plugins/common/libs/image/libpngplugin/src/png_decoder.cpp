@@ -204,6 +204,7 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     return ret;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
 bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
 {
     uint32_t id = context.pixelmapUniqueId_;
@@ -238,6 +239,7 @@ bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
     context.freeFunc = nullptr;
     return true;
 }
+#endif
 
 uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {

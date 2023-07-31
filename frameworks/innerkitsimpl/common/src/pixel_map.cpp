@@ -2045,6 +2045,7 @@ static inline int FloatToInt(float a)
     return static_cast<int>(a + HALF);
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap* pixelmap,
     sk_sp<SkColorSpace> colorSpace)
 {
@@ -2060,6 +2061,15 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap
     }
     srcInfo.bitmap.installPixels(srcInfo.info, static_cast<uint8_t *>(pixelmap->GetWritablePixels()), rowStride);
 }
+#else
+static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, uint8_t* pixels,
+    sk_sp<SkColorSpace> colorSpace)
+{
+    srcInfo.r = SkRect::MakeIWH(imageInfo.size.width, imageInfo.size.height);
+    srcInfo.info = ToSkImageInfo(imageInfo, colorSpace);
+    srcInfo.bitmap.installPixels(srcInfo.info, pixels, srcInfo.info.minRowBytes());
+}
+#endif
 
 static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix &matrix,
     TransMemoryInfo &memoryInfo)
@@ -2072,14 +2082,19 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         height += dstInfo.r.fTop;
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize};
+#else
+    MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
+#endif
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
     if (dstMemory == nullptr) {
         HiLog::Error(LABEL, "CreateMemory falied");
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     uint64_t rowStride = dstInfo.info.minRowBytes();
     if (memoryInfo.allocType == AllocatorType::DMA_ALLOC) {
         if (memoryInfo.memory->extend.data == nullptr) {
@@ -2089,6 +2104,9 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         rowStride = sbBuffer->GetStride();
     }
     dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, rowStride);
+#else
+    dstInfo.bitmap.installPixels(dstInfo.info, memoryInfo.memory->data.data, dstInfo.info.minRowBytes());
+#endif
     return true;
 }
 
@@ -2110,7 +2128,11 @@ bool PixelMap::DoTranslation(TransInfos &infos)
     }
 
     SkTransInfo src;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+#else
+    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+#endif
 
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
@@ -2191,7 +2213,11 @@ uint32_t PixelMap::crop(const Rect &rect)
     GetImageInfo(imageInfo);
 
     SkTransInfo src;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
+#else
+    GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
+#endif
 
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);
