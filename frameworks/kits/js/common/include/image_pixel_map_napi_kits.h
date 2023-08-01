@@ -19,7 +19,7 @@
 #include "common_utils.h"
 #include "pixel_map.h"
 #include "pixel_map_napi.h"
-#include "image_pixel_map_mdk.h"
+#include "image_pixel_map_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,7 +39,7 @@ struct PixelMapNapiArgs {
     float inFloat1;
     napi_value* outValue;
     int32_t* outNum;
-    OhosPixelMapInfos *outInfo;
+    OhosPixelMapInfo *outInfo;
     void** outAddr;
 };
 
