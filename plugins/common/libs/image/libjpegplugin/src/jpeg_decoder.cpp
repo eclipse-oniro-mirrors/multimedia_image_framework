@@ -340,8 +340,8 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     uint32_t rowStride = GetRowBytes();
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(rowStride) * decodeInfo_.output_height;
-        if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+        if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             uint32_t id = context.pixelmapUniqueId_;
             std::string name = "JPEG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
             int fd = AshmemCreate(name.c_str(), byteCount);
@@ -372,12 +372,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.pixelsBuffer.bufferSize = byteCount;
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
             context.freeFunc = nullptr;
-#endif
         } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-            HiLog::Error(LABEL, "Unsupport dma mem alloc");
-            return ERR_IMAGE_DATA_UNSUPPORT;
-#else
             sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
             BufferRequestConfig requestConfig = {
                 .width = decodeInfo_.output_width,
@@ -406,7 +401,6 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.pixelsBuffer.bufferSize = byteCount;
             context.allocatorType = AllocatorType::DMA_ALLOC;
             context.freeFunc = nullptr;
-#endif
         } else {
             void *outputBuffer = malloc(byteCount);
             if (outputBuffer == nullptr) {
@@ -420,6 +414,19 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.allocatorType = AllocatorType::HEAP_ALLOC;
             context.freeFunc = nullptr;
         }
+#else
+        void *outputBuffer = malloc(byteCount);
+        if (outputBuffer == nullptr) {
+            HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
+                         static_cast<unsigned long long>(byteCount));
+            return ERR_IMAGE_MALLOC_ABNORMAL;
+        }
+        context.pixelsBuffer.buffer = outputBuffer;
+        context.pixelsBuffer.context = nullptr;
+        context.pixelsBuffer.bufferSize = byteCount;
+        context.allocatorType = AllocatorType::HEAP_ALLOC;
+        context.freeFunc = nullptr;
+#endif
     }
     uint8_t *base = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     if (base == nullptr) {
@@ -428,12 +435,12 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     }
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
-    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
 #if !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+    if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
-#endif
     }
+#endif
     while (decodeInfo_.output_scanline < decodeInfo_.output_height) {
         buffer = base + rowStride * decodeInfo_.output_scanline;
         uint32_t readLineNum = jpeg_read_scanlines(&decodeInfo_, &buffer, RW_LINE_NUM);
