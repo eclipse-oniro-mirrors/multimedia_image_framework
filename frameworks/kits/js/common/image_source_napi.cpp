@@ -341,7 +341,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
-        DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
+        DECLARE_NAPI_FUNCTION("getDelayTime", GetDelayTime),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
@@ -1748,7 +1748,7 @@ STATIC_EXEC_FUNC(GetDelayTime)
     } else {
         HiLog::Error(LABEL, "Get DelayTime error, error=%{public}u", errorCode);
         context->errMsg = "Get DelayTime error";
-        context->status = errorCode;
+        context->status = ERROR;
     }
 }
 
@@ -1792,7 +1792,7 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "async context unwrap failed");
     }
 
@@ -1834,7 +1834,7 @@ STATIC_EXEC_FUNC(GetFrameCount)
     } else {
         HiLog::Error(LABEL, "Get FrameCount error, error=%{public}u", errorCode);
         context->errMsg = "Get FrameCount error";
-        context->status = errorCode;
+        context->status = ERROR;
     }
 }
 
@@ -1870,7 +1870,7 @@ napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
             "async context unwrap failed");
     }
 

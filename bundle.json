@@ -101,8 +101,7 @@
             "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
-                "image_pixel_map_napi.h",
-                "image_pixel_map_mdk.h"
+                "image_pixel_map_napi.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk"
