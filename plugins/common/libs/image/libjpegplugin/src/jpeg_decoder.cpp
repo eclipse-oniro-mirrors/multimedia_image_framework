@@ -415,7 +415,6 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.freeFunc = nullptr;
         }
 #else
-        HiLog::Error(LABEL, "44444444444");
         void *outputBuffer = malloc(byteCount);
         if (outputBuffer == nullptr) {
             HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
