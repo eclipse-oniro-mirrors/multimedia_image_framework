@@ -234,7 +234,6 @@ if (use_clang_ios) {
       ]
     } else {
       deps = [
-        "$ipc_subsystem/communication/ipc/interfaces/innerkits/ipc_napi_common:ipc_napi",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       ]
@@ -248,7 +247,7 @@ if (use_clang_ios) {
       "hichecker:libhichecker",
       "hitrace:hitrace_meter",
 
-      #"ipc:ipc_napi",
+      "ipc:ipc_napi",
       "napi:ace_napi",
     ]
     output_name = "libimage_napi"
