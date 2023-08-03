@@ -178,23 +178,17 @@ static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo 
 
 uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
         uint32_t res = SetShareMemBuffer(byteCount, context);
         if (res != SUCCESS) {
             return res;
         }
-#endif
     } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-        HiLog::Error(LABEL, "Unsupport dma mem alloc");
-        return ERR_IMAGE_DATA_UNSUPPORT;
-#else
         uint32_t res = DmaMemAlloc(byteCount, context, dstInfo);
         if (res != SUCCESS) {
             return res;
         }
-#endif
     } else {
         if (byteCount <= 0) {
             HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
@@ -227,6 +221,38 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
         context.allocatorType = AllocatorType::HEAP_ALLOC;
         context.freeFunc = nullptr;
     }
+#else
+    if (byteCount <= 0) {
+        HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
+        return ERR_MEDIA_INVALID_VALUE;
+    }
+    void *outputBuffer = malloc(byteCount);
+    if (outputBuffer == nullptr) {
+        HiLog::Error(LABEL, "Decode failed, alloc output buffer size:[%{public}llu] error",
+                     static_cast<unsigned long long>(byteCount));
+        return ERR_IMAGE_MALLOC_ABNORMAL;
+    }
+#ifdef _WIN32
+    if (memset_s(outputBuffer, 0, byteCount) != EOK) {
+        HiLog::Error(LABEL, "Decode failed, memset buffer failed", backRet);
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return ERR_IMAGE_DECODE_FAILED;
+    }
+#else
+    if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
+        HiLog::Error(LABEL, "Decode failed, memset buffer failed");
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return ERR_IMAGE_DECODE_FAILED;
+    }
+#endif
+    context.pixelsBuffer.buffer = outputBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.pixelsBuffer.context = nullptr;
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
+    context.freeFunc = nullptr;
+#endif
     return SUCCESS;
 }
 
