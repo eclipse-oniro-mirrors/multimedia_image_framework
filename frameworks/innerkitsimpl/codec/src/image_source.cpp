@@ -369,10 +369,10 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
         }
         return;
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-    if (buffer.buffer != nullptr) {
-        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(buffer.context));
-        buffer.context = nullptr;
-    }
+        if (buffer.buffer != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(buffer.context));
+            buffer.context = nullptr;
+        }
     } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (buffer.buffer != nullptr) {
             free(buffer.buffer);
