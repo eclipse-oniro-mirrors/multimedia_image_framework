@@ -18,6 +18,11 @@
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
 #include <parameter.h>
 #include <parameters.h>
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
 #endif
 
 #include "hilog/log_cpp.h"
@@ -25,6 +30,27 @@
 
 namespace OHOS {
 namespace Media {
+std::string getCurrentProcessName()
+{
+    std::string processName;
+
+    std::ifstream cmdlineFile("/proc/self/cmdline");
+    if (cmdlineFile.is_open()) {
+        std::ostringstream oss;
+        oss << cmdlineFile.rdbuf();
+        cmdlineFile.close();
+
+        // Extract process name from the command line
+        std::string cmdline = oss.str();
+        size_t pos = cmdline.find_first_of('\0');
+        if (pos != std::string::npos) {
+            processName = cmdline.substr(0, pos);
+        }
+    }
+
+    return processName;
+}
+
 bool ImageSystemProperties::GetSkiaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
@@ -35,7 +61,15 @@ bool ImageSystemProperties::GetSkiaEnabled()
 bool ImageSystemProperties::GetSurfaceBufferEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
+    static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
+    bool isOpen = false;
+    if (isPhone) {
+        std::string processName = getCurrentProcessName();
+        if (processName == "com.huawei.hmos.photos" ||
+            processName == "com.example.myapplication")
+        isOpen = true;
+    }
+    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", true) && isOpen;
 #endif
 }
 } // namespace Media
