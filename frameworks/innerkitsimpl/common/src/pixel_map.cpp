@@ -177,6 +177,20 @@ bool CheckConvertParmas(ImageInfo &src, ImageInfo &dst)
         src.alphaType == dst.alphaType;
 }
 
+bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
+{
+    if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
+        HiLog::Error(LABEL, "set image info fail");
+        return false;
+    }
+    uint32_t bufferSize = pixelMap->GetByteCount();
+    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "AllocSharedMemory parameter is zero");
+        return false;
+    }
+    return true;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
     HiLog::Info(LABEL, "PixelMap::Create1 enter");
@@ -187,6 +201,13 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
                                       const InitializationOptions &opts)
 {
     HiLog::Info(LABEL, "PixelMap::Create2 enter");
+    return Create(colors, colorLength, 0, opts.size.width, opts, false);
+}
+
+unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
+                                      const InitializationOptions &opts, bool useCustomFormat)
+{
+    HiLog::Info(LABEL, "PixelMap::Create useCustomFormat enter");
     if (!CheckParams(colors, colorLength, offset, stride, opts)) {
         return nullptr;
     }
@@ -196,23 +217,23 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         return nullptr;
     }
 
+    PixelFormat format = PixelFormat::BGRA_8888;
+    if (useCustomFormat) {
+        format = ((opts.pixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.pixelFormat);
+    }
     ImageInfo srcImageInfo =
-        MakeImageInfo(stride, opts.size.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        MakeImageInfo(stride, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
     AlphaType dstAlphaType =
         (opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
-    if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
-        HiLog::Error(LABEL, "set image info fail");
-        return nullptr;
-    }
-    uint32_t bufferSize = dstPixelMap->GetByteCount();
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "AllocSharedMemory parameter is zero");
+    if (CheckPixelmap(dstPixelMap, dstImageInfo)) {
+        HiLog::Error(LABEL, "check pixelMap pointer fail");
         return nullptr;
     }
     int fd = 0;
+    uint32_t bufferSize = dstPixelMap->GetByteCount();
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
