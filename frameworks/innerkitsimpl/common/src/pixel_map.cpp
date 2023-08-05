@@ -224,7 +224,11 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
     dstPixelMap->SetEditable(opts.editable);
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
     return dstPixelMap;
 }
 
@@ -340,7 +344,11 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
                       static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
     dstPixelMap->SetEditable(opts.editable);
     return dstPixelMap;
 }
@@ -465,7 +473,11 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     }
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
     return true;
 }
 
@@ -543,7 +555,11 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     }
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
     return true;
 }
 
@@ -1196,8 +1212,8 @@ void *PixelMap::GetFd() const
 
 void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
 {
-    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int *>(context);
         if (addr != nullptr) {
             ::munmap(addr, size);
@@ -1205,17 +1221,20 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
         if (fd != nullptr) {
             ::close(*fd);
         }
-#endif
     } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (addr != nullptr) {
             free(addr);
             addr = nullptr;
         }
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
-#endif
     }
+#else
+    if (addr != nullptr) {
+        free(addr);
+        addr = nullptr;
+    }
+#endif
 }
 
 bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
@@ -1282,6 +1301,7 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
 uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     if (static_cast<unsigned int>(bufferSize) <= MIN_IMAGEDATA_SIZE) {
         if (bufferSize <= 0) {
             HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
@@ -1306,7 +1326,6 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
             return nullptr;
         }
     } else {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         int fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
             HiLog::Error(LABEL, "read fd :[%{public}d] error", fd);
@@ -1339,8 +1358,31 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
         }
 
         ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
-#endif
     }
+#else
+    if (bufferSize <= 0) {
+        HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        return nullptr;
+    }
+
+    const uint8_t *ptr = parcel.ReadUnpadBuffer(bufferSize);
+    if (ptr == nullptr) {
+        HiLog::Error(LABEL, "read buffer from parcel failed, read buffer addr is null");
+        return nullptr;
+    }
+
+    base = static_cast<uint8_t *>(malloc(bufferSize));
+    if (base == nullptr) {
+        HiLog::Error(LABEL, "alloc output pixel memory size:[%{public}d] error.", bufferSize);
+        return nullptr;
+    }
+    if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
+        free(base);
+        base = nullptr;
+        HiLog::Error(LABEL, "memcpy pixel data size:[%{public}d] error.", bufferSize);
+        return nullptr;
+    }
+#endif
     return base;
 }
 
@@ -1432,8 +1474,8 @@ bool PixelMap::Marshalling(Parcel &parcel) const
                      allocatorType_);
         return false;
     }
-    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
         if (!parcel.WriteInt32(bufferSize)) {
             return false;
         }
@@ -1448,21 +1490,24 @@ bool PixelMap::Marshalling(Parcel &parcel) const
             HiLog::Error(LABEL, "write pixel map fd:[%{public}d] to parcel failed.", *fd);
             return false;
         }
-#endif
     } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         if (!parcel.WriteInt32(bufferSize)) {
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
         sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
-#endif
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             HiLog::Error(LABEL, "write pixel map buffer to parcel failed.");
             return false;
         }
     }
+#else
+    if (!WriteImageData(parcel, bufferSize)) {
+        HiLog::Error(LABEL, "write pixel map buffer to parcel failed.");
+        return false;
+    }
+#endif
     return true;
 }
 
@@ -1521,8 +1566,8 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     }
     uint8_t *base = nullptr;
     void *context = nullptr;
-    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
             HiLog::Error(LABEL, "fd < 0");
@@ -1548,9 +1593,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         }
         *static_cast<int32_t *>(context) = fd;
         base = static_cast<uint8_t *>(ptr);
-#endif
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
         surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
         uint8_t* virAddr = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
@@ -1558,7 +1601,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
         base = virAddr;
         context = nativeBuffer;
-#endif
     } else {
         base = ReadImageData(parcel, bufferSize);
         if (base == nullptr) {
@@ -1567,6 +1609,14 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
             return nullptr;
         }
     }
+#else
+    base = ReadImageData(parcel, bufferSize);
+    if (base == nullptr) {
+        HiLog::Error(LABEL, "get pixel memory size:[%{public}d] error.", bufferSize);
+        delete pixelMap;
+        return nullptr;
+    }
+#endif
 
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {

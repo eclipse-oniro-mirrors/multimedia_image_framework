@@ -357,9 +357,8 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
         func(buffer.buffer, buffer.context, buffer.dataSize);
         return;
     }
-
-    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int *>(buffer.context);
         if (buffer.buffer != nullptr) {
             ::munmap(buffer.buffer, buffer.dataSize);
@@ -367,21 +366,24 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
         if (fd != nullptr) {
             ::close(*fd);
         }
-#endif
         return;
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    if (buffer.buffer != nullptr) {
-        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(buffer.context));
-        buffer.context = nullptr;
-    }
-#endif
+        if (buffer.buffer != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(buffer.context));
+            buffer.context = nullptr;
+        }
     } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (buffer.buffer != nullptr) {
             free(buffer.buffer);
             buffer.buffer = nullptr;
         }
     }
+#else
+    if (buffer.buffer != nullptr) {
+        free(buffer.buffer);
+        buffer.buffer = nullptr;
+    }
+#endif
 }
 
 
@@ -1192,9 +1194,11 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             IMAGE_LOGE("[ImageSource]image source data error ERR_IMAGE_SOURCE_DATA_INCOMPLETE.");
         }
     }
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (GetFormatExtended(format) == SUCCESS) {
         return SUCCESS;
     }
+#endif
     for (auto iter = formatAgentMap_.begin(); iter != formatAgentMap_.end(); ++iter) {
         string curFormat = iter->first;
         if (iter == hintIter || curFormat == InnerFormat::RAW_FORMAT) {
