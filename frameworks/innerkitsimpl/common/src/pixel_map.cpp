@@ -680,9 +680,18 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
         HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
     } else {
-        rowDataSize_ = pixelBytes_ * info.size.width;
+        if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+            if (context_ == nullptr) {
+                HiLog::Error(LABEL, "set imageInfo context_ null");
+                return ERR_IMAGE_DATA_ABNORMAL;
+            }
+            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
+            rowDataSize_ = sbBuffer->GetStride();
+        } else {
+            rowDataSize_ = pixelBytes_ * info.size.width;
+        }
     }
-    if (info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
+    if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "pixel map byte count out of range.");
         return ERR_IMAGE_TOO_LARGE;
@@ -2200,7 +2209,6 @@ bool PixelMap::DoTranslation(TransInfos &infos)
     canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO);
 
     ToImageInfo(imageInfo, dst.info);
-    SetImageInfo(imageInfo);
 #ifdef IMAGE_COLORSPACE_FLAG
     if (dst.bitmap.refColorSpace() != nullptr) {
         grColorSpace_ = make_shared<OHOS::ColorManager::ColorSpace>(dst.bitmap.refColorSpace());
@@ -2208,6 +2216,7 @@ bool PixelMap::DoTranslation(TransInfos &infos)
 #endif
     auto m = dstMemory.memory.get();
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
+    SetImageInfo(imageInfo, true);
     return true;
 }
 
@@ -2276,25 +2285,34 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     dst.info = src.info.makeWH(dstIRect.width(), dstIRect.height());
-    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData"};
+    Size desiredSize = {dst.info.width(), dst.info.height()};
+    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         HiLog::Error(LABEL, "crop CreateMemory failed");
         return ERR_IMAGE_CROP;
     }
-    if (!src.bitmap.readPixels(dst.info, m->data.data, dst.info.minRowBytes(),
+    uint64_t rowStride = dst.info.minRowBytes();
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        if (m->extend.data == nullptr) {
+            HiLog::Error(LABEL, "GendstTransInfo get surfacebuffer failed");
+        }
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
+        rowStride = sbBuffer->GetStride();
+    }
+    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride,
         dstIRect.fLeft, dstIRect.fTop)) {
         HiLog::Error(LABEL, "ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
-    SetImageInfo(imageInfo);
 #ifdef IMAGE_COLORSPACE_FLAG
     if (dst.info.refColorSpace() != nullptr) {
         grColorSpace_ = make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace());
     }
 #endif
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
+    SetImageInfo(imageInfo, true);
     return SUCCESS;
 }
 
