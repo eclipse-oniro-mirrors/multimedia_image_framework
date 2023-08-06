@@ -228,7 +228,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         (opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
-    if (CheckPixelmap(dstPixelMap, dstImageInfo)) {
+    if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
         HiLog::Error(LABEL, "check pixelMap pointer fail");
         return nullptr;
     }
