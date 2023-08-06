@@ -167,7 +167,7 @@ struct DecodeOptions {
     PixelFormat desiredPixelFormat = PixelFormat::UNKNOWN;
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
     AllocatorType allocatorType = AllocatorType::HEAP_ALLOC;
-#else 
+#else
     AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
 #endif
     ColorSpace desiredColorSpace = ColorSpace::SRGB;
