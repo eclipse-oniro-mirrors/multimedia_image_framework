@@ -680,6 +680,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
         HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
     } else {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
                 HiLog::Error(LABEL, "set imageInfo context_ null");
@@ -690,6 +691,9 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         } else {
             rowDataSize_ = pixelBytes_ * info.size.width;
         }
+#else
+        rowDataSize_ = pixelBytes_ * info.size.width;
+#endif
     }
     if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
@@ -2319,6 +2323,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             HiLog::Error(LABEL, "GendstTransInfo get surfacebuffer failed");
@@ -2326,6 +2331,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
         rowStride = sbBuffer->GetStride();
     }
+#endif
     if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride,
         dstIRect.fLeft, dstIRect.fTop)) {
         HiLog::Error(LABEL, "ReadPixels failed");
