@@ -39,6 +39,8 @@
 #include <cstdint>
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -395,24 +397,7 @@ struct OhosImageSourceUpdateData {
  * @param ops Indicates a pointer to the options for creating the image source.
  * For details, see {@link OhosImageSourceOps}.
  * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SOURCE_DATA_INCOMPLETE - if image source data incomplete.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SOURCE_DATA - if image source data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_TOO_LARGE - if image data too large.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FILE_DAMAGED - if file damaged.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FILE_FD_ERROR - if file fd is bad.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_STREAM_SIZE_ERROR - if stream bad.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SEEK_FAILED - if seek file failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PEEK_FAILED - if peek file failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FREAD_FAILED - if read file failed.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -433,24 +418,7 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
  * @param ops Indicates a pointer to the options for creating the image source.
  * For details, see {@link OhosImageSourceOps}.
  * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SOURCE_DATA_INCOMPLETE - if image source data incomplete.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SOURCE_DATA - if image source data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_TOO_LARGE - if image data too large.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FILE_DAMAGED - if file damaged.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FILE_FD_ERROR - if file fd is bad.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_STREAM_SIZE_ERROR - if stream bad.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_SEEK_FAILED - if seek file failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PEEK_FAILED - if peek file failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_FREAD_FAILED - if read file failed.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSource}, {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -468,12 +436,7 @@ int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* s
  * is returned through <b>size</b> in <b>res</b>.
  * To obtain all formats, a space larger than <b>size</b> is required.
  * In addition, sufficient space must be reserved for each format supported.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if decode fail.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link OhosImageSourceSupportedFormatList}, {@link OhosImageSourceSupportedFormat}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -506,35 +469,7 @@ ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source);
  * @param ops Indicates a pointer to the options for decoding the image source.
  * For details, see {@link OhosImageDecodingOps}.
  * @param res Indicates a pointer to the <b>PixelMap</b> object obtained at the JavaScript native layer.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_ENCODER_FAILED - if create encoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST - if sharememory error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INIT_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CROP - if crop error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ENCODE_FAILED - if image add pixel map fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_UNSUPPORT - if image hardware decode unsupported.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_FAILED - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_IPC - if ipc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -552,37 +487,7 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
  * @param ops Indicates a pointer to the options for decoding the image source.
  * For details, see {@link OhosImageDecodingOps}.
  * @param res Indicates a pointer to the <b>PixelMap</b> objects obtained at the JavaScript native layer.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_ENCODER_FAILED - if create encoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST - if sharememory error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INIT_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CROP - if crop error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ENCODE_FAILED - if image add pixel map fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_UNSUPPORT - if image hardware decode unsupported.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_FAILED - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_IPC - if ipc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageDecodingOps}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -600,24 +505,7 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
  * For details, see {@link OhosImageSourceDelayTimeList}. When the input <b>delayTimeList</b> is a null pointer and
  * <b>size</b> is <b>0</b>, the size of the delay time list is returned through <b>size</b> in <b>res</b>.
  * To obtain the complete delay time list, a space greater than <b>size</b> is required.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceDelayTimeList}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -632,24 +520,7 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
  *
  * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
  * @param res Indicates a pointer to the number of frames obtained.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -665,24 +536,7 @@ int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *
  * @param index Indicates the index of the frame.
  * @param info Indicates a pointer to the image source information obtained.
  * For details, see {@link OhosImageSourceInfo}.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceInfo}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -701,24 +555,7 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
  * If the input <b>value</b> is a null pointer and <b>size</b> is <b>0</b>, the size of the property value is returned
  * through <b>size</b> in <b>value</b>.
  * To obtain the complete property value, a space greater than <b>size</b> is required.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -734,24 +571,7 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
  * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
  * @param key Indicates a pointer to the property. For details, see {@link OhosImageSourceProperty}.
  * @param value Indicates a pointer to the new value of the property.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_EXIF_UNSUPPORT - if image decode exif unsupport.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PROPERTY_NOT_EXIST - if image property not exist.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceProperty}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -766,35 +586,7 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
  *
  * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
  * @param data Indicates a pointer to the update data. For details, see {@link OhosImageSourceUpdateData}.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_HEAD_ABNORMAL - if image decode head error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_DECODER_FAILED - if create decoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CREATE_ENCODER_FAILED - if create encoder failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST - if sharememory error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_ABNORMAL - if image decode error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INIT_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CROP - if crop error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ENCODE_FAILED - image add pixel map fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_UNSUPPORT - if image hardware decode unsupported.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_HW_DECODE_FAILED - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_IPC - if ipc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OhosImageSourceUpdateData}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -808,12 +600,7 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native, struct OhosIm
  * @brief Releases an <b>ImageSourceNative</b> object.
  *
  * @param native Indicates a pointer to the {@link ImageSourceNative} object at the C++ native layer.
- * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
+ * @return Returns {@link OHOS_IMAGE_RESULT_SUCCESS} if the operation is successful; returns an error code otherwise.
  * @see {@link ImageSourceNative}, {@link OH_ImageSource_Create}, {@link OH_ImageSource_CreateIncremental}
  *
  * @Syscap SystemCapability.Multimedia.Image
@@ -824,4 +611,7 @@ int32_t OH_ImageSource_Release(ImageSourceNative* native);
 #ifdef __cplusplus
 };
 #endif
+/** @} */
+} // namespace Media
+} // namespace OHOS
 #endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_SOURCE_MDK_H_
