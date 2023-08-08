@@ -17,8 +17,9 @@
 
 #include "common_utils.h"
 #include "image_source_mdk_kits.h"
-using namespace OHOS::Media;
 
+namespace OHOS {
+namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,7 +36,7 @@ ImageSourceNative* OH_ImageSource_InitNative(napi_env env, napi_value source)
     args.inEnv = env;
     args.inVal = source;
     auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_UNWRAP, &args);
-    if (ret != IMAGE_RESULT_SUCCESS || args.napi == nullptr) {
+    if (ret != OHOS_IMAGE_RESULT_SUCCESS || args.napi == nullptr) {
         return nullptr;
     }
     std::unique_ptr<ImageSourceNative> result = std::make_unique<ImageSourceNative>();
@@ -84,7 +85,7 @@ int32_t OH_ImageSource_CreatePixelMap(const ImageSourceNative* native,
     struct OhosImageDecodingOps* ops, napi_value *res)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -100,7 +101,7 @@ int32_t OH_ImageSource_CreatePixelMapList(const ImageSourceNative* native,
     struct OhosImageDecodingOps* ops, napi_value* res)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -116,7 +117,7 @@ int32_t OH_ImageSource_GetDelayTime(const ImageSourceNative* native,
     struct OhosImageSourceDelayTimeList* res)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -129,7 +130,7 @@ MIDK_EXPORT
 int32_t OH_ImageSource_GetFrameCount(const ImageSourceNative* native, uint32_t *res)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -143,7 +144,7 @@ int32_t OH_ImageSource_GetImageInfo(const ImageSourceNative* native, int32_t ind
     struct OhosImageSourceInfo* info)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -158,7 +159,7 @@ int32_t OH_ImageSource_GetImageProperty(const ImageSourceNative* native,
     struct OhosImageSourceProperty* key, struct OhosImageSourceProperty* value)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -173,7 +174,7 @@ int32_t OH_ImageSource_ModifyImageProperty(const ImageSourceNative* native,
     struct OhosImageSourceProperty* key, struct OhosImageSourceProperty* value)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -188,7 +189,7 @@ int32_t OH_ImageSource_UpdateData(const ImageSourceNative* native,
     struct OhosImageSourceUpdateData* data)
 {
     if (native == nullptr || native->napi == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageSourceArgs args;
     args.napi = native->napi;
@@ -203,9 +204,11 @@ int32_t OH_ImageSource_Release(ImageSourceNative* native)
     if (native != nullptr) {
         delete native;
     }
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 #ifdef __cplusplus
 };
 #endif
+}  // namespace Media
+}  // namespace OHOS

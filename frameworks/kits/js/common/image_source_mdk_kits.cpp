@@ -113,7 +113,7 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
 {
     if (source == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNativeCreate source nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     SourceOptions opts;
@@ -145,10 +145,10 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
     if (nativeImageSource != nullptr) {
         result = std::move(nativeImageSource);
         HiLog::Debug(LABEL, "ImageSourceNativeCreate success");
-        return IMAGE_RESULT_SUCCESS;
+        return OHOS_IMAGE_RESULT_SUCCESS;
     }
     HiLog::Error(LABEL, "ImageSourceNativeCreate no match source");
-    return IMAGE_RESULT_BAD_PARAMETER;
+    return OHOS_IMAGE_RESULT_BAD_PARAMETER;
 }
 
 static int32_t ImageSourceCreateNapi(napi_env env, napi_value* res,
@@ -157,12 +157,12 @@ static int32_t ImageSourceCreateNapi(napi_env env, napi_value* res,
 {
     if (ImageSourceNapi::CreateImageSourceNapi(env, res) != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceCreateNapi napi create failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto napi = UnwrapNativeObject(env, *(res));
     if (napi == nullptr) {
         HiLog::Error(LABEL, "ImageSourceCreateNapi napi unwrap check failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
     if (imageSource != nullptr) {
@@ -175,35 +175,35 @@ static int32_t ImageSourceCreateNapi(napi_env env, napi_value* res,
         napi->SetImageResource(*resource);
     }
     HiLog::Debug(LABEL, "ImageSourceCreateNapi success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiCreate(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     std::shared_ptr<ImageSource> imageSource = nullptr;
     ImageResource resource;
     ImageSourceNativeCreate(args->source, args->sourceOps, imageSource, resource);
     if (imageSource == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreate native create failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiCreate napi create failed");
         args->outVal = nullptr;
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiCreate success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental args or env is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     IncrementalSourceOptions incOpts;
     if (args->sourceOps != nullptr) {
@@ -215,7 +215,7 @@ static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     if (imageSource == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental native imagesource failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     DecodeOptions decodeOpts;
     uint32_t index = DEFAULT_INDEX;
@@ -227,41 +227,41 @@ static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
         index, decodeOpts, errorCode);
     if (incPixelMap == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental native incremental pixelmap failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal,
         std::move(imageSource), std::move(incPixelMap), nullptr) != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental napi create failed");
         args->outVal = nullptr;
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiCreateIncremental success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
 {
     if (args == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats args is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto formats = args->outFormats;
     if (formats == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats args or napi is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     std::set<std::string> formatSet;
     uint32_t errorCode = ImageSource::GetSupportedFormats(formatSet);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
     size_t formatCount = formatSet.size();
     if (formats->supportedFormatList == nullptr) {
         formats->size = formatCount;
         HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats get count only Success");
-        return IMAGE_RESULT_SUCCESS;
+        return OHOS_IMAGE_RESULT_SUCCESS;
     } else {
         formatCount = formats->size;
     }
@@ -274,7 +274,7 @@ static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
         }
         if (formatList[i] == nullptr || formatList[i]->format == nullptr) {
             HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats nullptr format out buffer");
-            return IMAGE_RESULT_BAD_PARAMETER;
+            return OHOS_IMAGE_RESULT_BAD_PARAMETER;
         }
         memcpy_s(formatList[i]->format, formatList[i]->size, formatStr.c_str(), formatStr.size());
         if (formatList[i]->size > formatStr.size()) {
@@ -283,21 +283,21 @@ static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
         i++;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiUnwrap(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr || args->inVal == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiUnwrap args or env is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     args->napi = UnwrapNativeObject(args->inEnv, args->inVal);
     if (args->napi == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiUnwrap UnwrapNativeObject failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
@@ -305,7 +305,7 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->inEnv == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap args or napi is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     std::shared_ptr<PixelMap> nativePixelMap = args->napi->GetIncrementalPixelMap();
     if (nativePixelMap == nullptr) {
@@ -324,15 +324,15 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
     }
     if (nativePixelMap == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outVal) = PixelMapNapi::CreatePixelMap(args->inEnv, nativePixelMap);
     if (*(args->outVal) == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap create pixelmap failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiCreatePixelmap Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
@@ -340,7 +340,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->inEnv == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmapList args or napi is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     DecodeOptions decOps;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
@@ -350,7 +350,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
     auto pixelMapList = native->CreatePixelMapList(decOps, errorCode);
     if (pixelMapList == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmapList CreatePixelMapList failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_create_array(args->inEnv, args->outVal);
     size_t i = DEFAULT_INDEX;
@@ -360,7 +360,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
         i++;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiCreatePixelmapList Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attribute__((no_sanitize("cfi")))
@@ -368,20 +368,20 @@ static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attri
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->outDelayTimes == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime native image or out is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto outDelayTimes = args->outDelayTimes;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     auto delayTimes = native->GetDelayTime(errorCode);
     if (delayTimes == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     size_t actCount = (*delayTimes).size();
     if (outDelayTimes->delayTimeList == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime get times count only");
         outDelayTimes->size = actCount;
-        return IMAGE_RESULT_SUCCESS;
+        return OHOS_IMAGE_RESULT_SUCCESS;
     }
     if (actCount > outDelayTimes->size) {
         actCount = outDelayTimes->size;
@@ -390,7 +390,7 @@ static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attri
         outDelayTimes->delayTimeList[i] = (*delayTimes)[i];
     }
     HiLog::Debug(LABEL, "ImageSourceNapiGetDelayTime Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetFrameCount(struct ImageSourceArgs* args)
@@ -398,16 +398,16 @@ static int32_t ImageSourceNapiGetFrameCount(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->outUint32 == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetFrameCount native image or out is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     *(args->outUint32) = native->GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiGetFrameCount native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     HiLog::Debug(LABEL, "ImageSourceNapiGetFrameCount Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetImageInfo(struct ImageSourceArgs* args)
@@ -415,22 +415,22 @@ static int32_t ImageSourceNapiGetImageInfo(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo native image is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto imageSourceInfo = args->outInfo;
     if (imageSourceInfo == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo image info is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageInfo imageInfo;
     uint32_t errorCode = native->GetImageInfo(args->inInt32, imageInfo);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     ParseImageSourceInfo(imageSourceInfo, imageInfo);
     HiLog::Debug(LABEL, "ImageSourceNapiGetImageInfo Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetImageProperty(
@@ -439,36 +439,36 @@ static int32_t ImageSourceNapiGetImageProperty(
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty native image is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto propertyKey = args->inPropertyKey;
     auto propertyVal = args->propertyVal;
     if (propertyKey == nullptr || propertyKey->value == nullptr || propertyKey->size == SIZE_ZERO) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty key is empty");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty out val is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     std::string key(propertyKey->value, propertyKey->size);
     std::string val;
     uint32_t errorCode = native->GetImagePropertyString(DEFAULT_INDEX, key, val);
     if (errorCode != SUCCESS || val.empty()) {
         HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal->value == nullptr) {
         HiLog::Debug(LABEL, "ImageSourceNapiGetImageProperty return size only");
         propertyVal->size = val.size();
-        return IMAGE_RESULT_SUCCESS;
+        return OHOS_IMAGE_RESULT_SUCCESS;
     }
     memcpy_s(propertyVal->value, propertyVal->size, val.c_str(), val.size());
     if (propertyVal->size > val.size()) {
         propertyVal->size = val.size();
     }
     HiLog::Debug(LABEL, "ImageSourceNapiGetImageProperty Success");
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static uint32_t NativePropertyModify(ImageSource* native, ImageResource &imageResource,
@@ -478,7 +478,7 @@ static uint32_t NativePropertyModify(ImageSource* native, ImageResource &imageRe
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     if (type == ImageResourceType::IMAGE_RESOURCE_INVAILD) {
         HiLog::Error(LABEL, "NativePropertyModify resource is invaild");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     } else if (type == ImageResourceType::IMAGE_RESOURCE_FD && imageResource.fd != INVALID_FD) {
         HiLog::Debug(LABEL, "NativePropertyModify fd resource");
         errorCode = native->ModifyImageProperty(DEFAULT_INDEX, key, val, imageResource.fd);
@@ -492,14 +492,14 @@ static uint32_t NativePropertyModify(ImageSource* native, ImageResource &imageRe
             imageResource.buffer, imageResource.bufferSize);
     } else {
         HiLog::Error(LABEL, "NativePropertyModify %{public}d resource error", type);
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (errorCode == SUCCESS) {
         HiLog::Debug(LABEL, "NativePropertyModify Success");
-        return IMAGE_RESULT_SUCCESS;
+        return OHOS_IMAGE_RESULT_SUCCESS;
     }
     HiLog::Error(LABEL, "NativePropertyModify native failed");
-    return IMAGE_RESULT_BAD_PARAMETER;
+    return OHOS_IMAGE_RESULT_BAD_PARAMETER;
 }
 
 static int32_t ImageSourceNapiModifyImageProperty(struct ImageSourceArgs* args)
@@ -507,17 +507,17 @@ static int32_t ImageSourceNapiModifyImageProperty(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty native image is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto propertyKey = args->inPropertyKey;
     auto propertyVal = args->propertyVal;
     if (propertyKey == nullptr || propertyKey->value == nullptr || propertyKey->size == SIZE_ZERO) {
         HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty key is empty");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal == nullptr || propertyVal->value == nullptr || propertyVal->size == SIZE_ZERO) {
         HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty val is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     std::string key(propertyKey->value, propertyKey->size);
     std::string val(propertyVal->value, propertyVal->size);
@@ -531,7 +531,7 @@ static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool com
     auto incPixelMap = args->napi->GetIncrementalPixelMap();
     if (incPixelMap == nullptr) {
         HiLog::Error(LABEL, "ProcessIncrementalPixelMap incremental pixelmap is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     uint8_t tmpProgress = 0;
     uint32_t errCode = incPixelMap->PromoteDecoding(tmpProgress);
@@ -540,9 +540,9 @@ static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool com
     }
     if (errCode != SUCCESS || (errCode == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !completed)) {
         HiLog::Error(LABEL, "ProcessIncrementalPixelMap promote decoding failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
-    return IMAGE_RESULT_SUCCESS;
+    return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
 static uint32_t MathMin(uint32_t a, uint32_t b)
@@ -558,20 +558,20 @@ static int32_t ImageSourceNapiUpdateData(struct ImageSourceArgs* args)
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiUpdateData native image is nullptr");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     auto data = args->inUpdateData;
     if (data == nullptr || data->buffer == nullptr || data->bufferSize == SIZE_ZERO ||
         data->offset >= data->bufferSize) {
         HiLog::Error(LABEL, "ImageSourceNapiUpdateData update data is empty");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t actSize = MathMin((data->bufferSize - data->offset), data->updateLength);
     bool completed = data->isCompleted == INT8_TRUE;
     uint32_t errCode = native->UpdateData((data->buffer + data->offset), actSize, completed);
     if (errCode != SUCCESS) {
         HiLog::Error(LABEL, "ImageSourceNapiUpdateData update native failed");
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     return ProcessIncrementalPixelMap(args, completed);
 }
@@ -596,7 +596,7 @@ int32_t ImageSourceNativeCall(int32_t mode, struct ImageSourceArgs* args)
 {
     auto funcSearch = g_Functions.find(mode);
     if (funcSearch == g_Functions.end()) {
-        return IMAGE_RESULT_BAD_PARAMETER;
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
     return funcSearch->second(args);
 }
