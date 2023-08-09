@@ -1479,6 +1479,14 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
     plOpts.desiredColorSpace = (colorSearch != COLOR_SPACE_MAP.end()) ? colorSearch->second : PlColorSpace::UNKNOWN;
     plOpts.allowPartialImage = opts.allowPartialImage;
     plOpts.editable = opts.editable;
+    if (opts.fillColor.isValidColor) {
+        plOpts.plFillColor.isValidColor = opts.fillColor.isValidColor;
+        plOpts.plFillColor.color = opts.fillColor.color;
+    }
+    if (opts.SVGResize.isValidPercentage) {
+        plOpts.plSVGResize.isValidPercentage = opts.SVGResize.isValidPercentage;
+        plOpts.plSVGResize.resizePercentage = opts.SVGResize.resizePercentage;
+    }
 }
 
 void ImageSource::CopyOptionsToProcOpts(const DecodeOptions &opts, DecodeOptions &procOpts, PixelMap &pixelMap)
