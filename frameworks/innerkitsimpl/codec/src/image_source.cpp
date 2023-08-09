@@ -515,11 +515,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     PixelMapAddrInfos &addrInfos, uint32_t &errorCode)
 {
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
-    errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()), opts_.fitDensity);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
-        return nullptr;
-    }
 #ifdef IMAGE_COLORSPACE_FLAG
     // add graphic colorspace object to pixelMap.
     bool isSupportICCProfile = mainDecoder_->IsSupportICCProfile();
@@ -529,6 +524,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     }
 #endif
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
+    errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()), opts_.fitDensity, true);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        return nullptr;
+    }
     auto saveEditable = pixelMap->IsEditable();
     pixelMap->SetEditable(true);
     // Need check pixel change:
@@ -1446,7 +1446,7 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
     return UpdatePixelMapInfo(opts, plInfo, pixelMap, INT_ZERO);
 }
 uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin::PlImageInfo &plInfo,
-                                         PixelMap &pixelMap, int32_t fitDensity)
+                                         PixelMap &pixelMap, int32_t fitDensity, bool isReUsed)
 {
     pixelMap.SetEditable(opts.editable);
 
@@ -1459,7 +1459,7 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
     info.size.height = plInfo.size.height;
     info.pixelFormat = static_cast<PixelFormat>(plInfo.pixelFormat);
     info.alphaType = static_cast<AlphaType>(plInfo.alphaType);
-    return pixelMap.SetImageInfo(info);
+    return pixelMap.SetImageInfo(info, isReUsed);
 }
 
 void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOptions &plOpts)

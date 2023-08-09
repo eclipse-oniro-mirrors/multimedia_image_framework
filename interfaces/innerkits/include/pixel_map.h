@@ -122,6 +122,11 @@ public:
     NATIVEEXPORT void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT void SetTransformered(bool isTransformered);
 
+    NATIVEEXPORT void SetRowStride(uint32_t stride);
+    NATIVEEXPORT uint32_t GetRowStride()
+    {
+        return rowStride_;
+    }
     NATIVEEXPORT uint32_t GetCapacity()
     {
         return pixelsSize_;
@@ -268,6 +273,7 @@ private:
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;
     int32_t rowDataSize_ = 0;
+    int32_t rowStride_ = 0;
     int32_t pixelBytes_ = 0;
     TransColorProc colorProc_ = nullptr;
     void *context_ = nullptr;
