@@ -54,6 +54,9 @@ uint32_t HeapMemory::Create()
         HiLog::Error(LABEL, "HeapMemory::Create malloc buffer failed");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
+#if defined(IOS_PLATFORM) || defined(A_PLATFORM)
+    memset_s(data.data, data.size, 0, data.size);
+#endif
     return SUCCESS;
 }
 
