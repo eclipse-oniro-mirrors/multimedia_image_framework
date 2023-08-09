@@ -165,6 +165,13 @@ struct SVGResize {
     uint32_t resizePercentage = 100;
 };
 
+struct SVGDecodeOptions
+{
+    FillColor fillColor;
+    SVGResize SVGResize;
+};
+
+
 struct DecodeOptions {
     int32_t fitDensity = 0;
     Rect CropRect;
@@ -184,8 +191,7 @@ struct DecodeOptions {
     bool allowPartialImage = true;
     bool editable = false;
     MemoryUsagePreference preference = MemoryUsagePreference::DEFAULT;
-    FillColor fillColor;
-    SVGResize SVGResize;
+    SVGDecodeOptions SVGOpts;
 };
 
 enum class ScaleMode : int32_t {

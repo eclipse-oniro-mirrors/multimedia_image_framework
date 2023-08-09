@@ -467,10 +467,6 @@ bool SvgDecoder::BuildDom()
         return false;
     }
 
-    if (opts_.plSVGResize.isValidPercentage) {
-        svgDom_->setResizePercentage(opts_.plSVGResize.resizePercentage);
-    }
-
     svgSize_ = svgDom_->containerSize();
     if (svgSize_.isEmpty()) {
         HiLog::Error(LABEL, "[BuildDom] size is empty.");
@@ -512,6 +508,10 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
     }
 
     opts_ = opts;
+
+    if (opts_.plSVGResize.isValidPercentage) {
+        svgDom_->setResizePercentage(opts_.plSVGResize.resizePercentage);
+    }
 
     auto svgSize = svgDom_->containerSize();
     if (svgSize.isEmpty()) {
@@ -569,7 +569,7 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     if (opts_.plFillColor.isValidColor) {
         SetSVGFillColor(svgDom_->getRoot(), opts_.plFillColor.color);
     }
-    
+
     if (!AllocBuffer(context)) {
         HiLog::Error(LABEL, "[DoDecode] alloc buffer failed.");
         return Media::ERR_IMAGE_MALLOC_ABNORMAL;
