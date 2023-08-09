@@ -650,6 +650,11 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
     return true;
 }
 
+void PixelMap::SetRowStride(uint32_t stride)
+{
+    rowStride_ = stride;
+}
+
 uint32_t PixelMap::SetImageInfo(ImageInfo &info)
 {
     return SetImageInfo(info, false);
@@ -688,6 +693,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
             }
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
             rowDataSize_ = sbBuffer->GetStride();
+            SetRowStride(rowDataSize_);
         } else {
             rowDataSize_ = pixelBytes_ * info.size.width;
         }
@@ -1526,6 +1532,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         HiLog::Error(LABEL, "write info to parcel failed.");
         return false;
     }
+    if (!parcel.WriteInt32(static_cast<int32_t>(rowDataSize_))) {
+        HiLog::Error(LABEL, "write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
+        return false;
+    }
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
         if (!parcel.WriteInt32(bufferSize)) {
@@ -1597,19 +1607,13 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     pixelMap->SetEditable(isEditable);
     
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
+    int32_t rowDataSize = parcel.ReadInt32();
     int32_t bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     if (bytesPerPixel == 0) {
         delete pixelMap;
         HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
         return nullptr;
-    }
-    int32_t rowDataSize = 0;
-    if (imgInfo.pixelFormat == PixelFormat::ALPHA_8) {
-        rowDataSize = bytesPerPixel * ((imgInfo.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize);
-    } else {
-        rowDataSize = bytesPerPixel * imgInfo.size.width;
     }
     if (bufferSize != rowDataSize * imgInfo.size.height) {
         delete pixelMap;
