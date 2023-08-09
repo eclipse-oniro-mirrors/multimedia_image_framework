@@ -176,6 +176,7 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
     if (memset_s(out, count, ZERO, count) != EOK) {
 #endif
         HiLog::Error(LABEL, "Decode failed, memset buffer failed");
+        free(out);
         return ERR_IMAGE_DECODE_FAILED;
     }
     SetDecodeContextBuffer(context, AllocatorType::HEAP_ALLOC, out, count, nullptr);

@@ -207,6 +207,10 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
 bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
 {
+    if (byteCount == 0) {
+        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        return false;
+    }
     uint32_t id = context.pixelmapUniqueId_;
     std::string name = "PNG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), byteCount);
@@ -239,7 +243,112 @@ bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
     context.freeFunc = nullptr;
     return true;
 }
+
+bool AllocBufferForDmaType(DecodeContext &context, uint64_t byteCount, PngImageInfo pngImageInfo)
+{
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = pngImageInfo.width,
+        .height = pngImageInfo.height,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        HiLog::Error(LABEL, "NativeBufferReference failed");
+        return false;
+    }
+
+    context.pixelsBuffer.buffer = sb->GetVirAddr();
+    context.pixelsBuffer.context = nativeBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+}
+
+bool AllocOutBuffer(DecodeContext &context, uint64_t byteCount)
+{
+    if (byteCount == 0) {
+        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        return false;
+    }
+    void *outputBuffer = malloc(byteCount);
+    if (outputBuffer == nullptr) {
+        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
+                     static_cast<unsigned long long>(byteCount));
+        return false;
+    }
+#ifdef _WIN32
+    errno_t backRet = memset_s(outputBuffer, 0, byteCount);
+    if (backRet != EOK) {
+        HiLog::Error(LABEL, "init output buffer fail.", backRet);
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
+#else
+    if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
+        HiLog::Error(LABEL, "init output buffer fail.");
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
 #endif
+    context.pixelsBuffer.buffer = outputBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.pixelsBuffer.context = nullptr;
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+}
+#endif
+
+bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
+{
+    if (byteCount == 0) {
+        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        return false;
+    }
+    void *outputBuffer = malloc(byteCount);
+    if (outputBuffer == nullptr) {
+        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
+                     static_cast<unsigned long long>(byteCount));
+        return false;
+    }
+#ifdef _WIN32
+    errno_t backRet = memset_s(outputBuffer, 0, byteCount);
+    if (backRet != EOK) {
+        HiLog::Error(LABEL, "init output buffer fail.", backRet);
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
+#else
+    if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
+        HiLog::Error(LABEL, "init output buffer fail.");
+        free(outputBuffer);
+        outputBuffer = nullptr;
+        return false;
+    }
+#endif
+    context.pixelsBuffer.buffer = outputBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.pixelsBuffer.context = nullptr;
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
+    context.freeFunc = nullptr;
+    return true;
+}
 
 uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
@@ -252,91 +361,21 @@ uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
                 return nullptr;
             }
         } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-            sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-            BufferRequestConfig requestConfig = {
-                .width = pngImageInfo_.width,
-                .height = pngImageInfo_.height,
-                .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
-                .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
-                .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
-                .timeout = 0,
-                .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
-                .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
-            };
-            GSError ret = sb->Alloc(requestConfig);
-            if (ret != GSERROR_OK) {
-                HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+            if (!AllocBufferForDmaType(context, byteCount, pngImageInfo_)) {
+                HiLog::Error(LABEL, "alloc output buffer for DMA_ALLOC error.");
                 return nullptr;
             }
-            void* nativeBuffer = sb.GetRefPtr();
-            int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-            if (err != OHOS::GSERROR_OK) {
-                HiLog::Error(LABEL, "NativeBufferReference failed");
-                return nullptr;
-            }
-
-            context.pixelsBuffer.buffer = sb->GetVirAddr();
-            context.pixelsBuffer.context = nativeBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.allocatorType = AllocatorType::DMA_ALLOC;
-            context.freeFunc = nullptr;
         } else {
-            void *outputBuffer = malloc(byteCount);
-            if (outputBuffer == nullptr) {
-                HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                             static_cast<unsigned long long>(byteCount));
+            if (!AllocOutBuffer(context, byteCount)) {
+                HiLog::Error(LABEL, "alloc output buffer for DMA_ALLOC error.");
                 return nullptr;
             }
-#ifdef _WIN32
-            errno_t backRet = memset_s(outputBuffer, 0, byteCount);
-            if (backRet != EOK) {
-                HiLog::Error(LABEL, "init output buffer fail.", backRet);
-                free(outputBuffer);
-                outputBuffer = nullptr;
-                return nullptr;
-            }
-#else
-            if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-                HiLog::Error(LABEL, "init output buffer fail.");
-                free(outputBuffer);
-                outputBuffer = nullptr;
-                return nullptr;
-            }
-#endif
-            context.pixelsBuffer.buffer = outputBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.pixelsBuffer.context = nullptr;
-            context.allocatorType = AllocatorType::HEAP_ALLOC;
-            context.freeFunc = nullptr;
         }
 #else
-        void *outputBuffer = malloc(byteCount);
-        if (outputBuffer == nullptr) {
-            HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                         static_cast<unsigned long long>(byteCount));
-            return nullptr;
-            }
-#ifdef _WIN32
-        errno_t backRet = memset_s(outputBuffer, 0, byteCount);
-        if (backRet != EOK) {
-            HiLog::Error(LABEL, "init output buffer fail.", backRet);
-            free(outputBuffer);
-            outputBuffer = nullptr;
+        if (!AllocBufferForPlatform(context, byteCount)) {
+            HiLog::Error(LABEL, "alloc output buffer for SHARE_MEM_ALLOC error.");
             return nullptr;
         }
-#else
-        if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-            HiLog::Error(LABEL, "init output buffer fail.");
-            free(outputBuffer);
-            outputBuffer = nullptr;
-            return nullptr;
-        }
-#endif
-        context.pixelsBuffer.buffer = outputBuffer;
-        context.pixelsBuffer.bufferSize = byteCount;
-        context.pixelsBuffer.context = nullptr;
-        context.allocatorType = AllocatorType::HEAP_ALLOC;
-        context.freeFunc = nullptr;
 #endif
     }
     return static_cast<uint8_t *>(context.pixelsBuffer.buffer);

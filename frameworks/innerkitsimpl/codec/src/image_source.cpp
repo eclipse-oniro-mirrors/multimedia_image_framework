@@ -319,7 +319,7 @@ static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, in
     return prop;
 }
 
-static void TransformSizeWithDensity(Size &srcSize, int32_t srcDensity, Size &wantSize,
+static void TransformSizeWithDensity(const Size &srcSize, int32_t srcDensity, const Size &wantSize,
     int32_t wantDensity, Size &dstSize)
 {
     if (IsSizeVailed(wantSize)) {
@@ -413,7 +413,7 @@ static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrIn
     addrInfos.func =context.freeFunc;
 }
 
-static bool IsSupportDma(PlImageInfo &plInfo)
+static bool IsSupportDma(const PlImageInfo &plInfo)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");

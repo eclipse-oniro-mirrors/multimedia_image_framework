@@ -1745,7 +1745,7 @@ static void NumSplit(std::string &src, std::vector<std::string> &out)
     }
 }
 
-static std::string JoinStr(std::vector<std::string> &in, const std::string delim)
+static std::string JoinStr(std::vector<std::string> &in, const std::string &delim)
 {
     std::string res = "";
     for (size_t i = 0; i < (in.size() - SIZE_ONE); i++) {
@@ -1772,7 +1772,7 @@ static void FormatTimeStamp(std::string &src, std::string &value)
     value = JoinStr(dateVector, "-") + " " + JoinStr(timeVector, ":");
 }
 
-static uint32_t SpecialExifData(EXIFInfo* info, const std::string name, std::string &value)
+static uint32_t SpecialExifData(EXIFInfo* info, const std::string &name, std::string &value)
 {
     if (IsSameTextStr(DATE_TIME_ORIGINAL_MEDIA, name)) {
         std::string orgValue;
@@ -1798,7 +1798,7 @@ static uint32_t SpecialExifData(EXIFInfo* info, const std::string name, std::str
     return Media::ERR_MEDIA_STATUS_ABNORMAL;
 }
 
-static bool GetExifTagByName(const std::string name, ExifTag &tag)
+static bool GetExifTagByName(const std::string &name, ExifTag &tag)
 {
     auto find_item = std::find_if(TAG_MAP.begin(), TAG_MAP.end(),
         [name](const std::map<ExifTag, std::string>::value_type item) {
