@@ -134,6 +134,9 @@ uint32_t GifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
 uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+    context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
+#endif
     PlSize imageSize;
     uint32_t errorCode = GetImageSize(index, imageSize);
     if (errorCode != SUCCESS) {
