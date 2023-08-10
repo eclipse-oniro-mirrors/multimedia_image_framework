@@ -126,7 +126,7 @@ HWTEST_F(ImageSourceSvgTest, SvgCreateImageSource, TestSize.Level3)
  * @tc.desc: Decode svg image from file source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
+HWTEST_F(ImageSourceSvgTest, SvgImageDecodeWithFillColorChange, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode start";
 
@@ -163,7 +163,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
     auto packSize = PackImage(outName, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
 
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode end";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecodeWithFillColorChange end";
 }
 
 /**
@@ -171,7 +171,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
  * @tc.desc: Decode svg image from file source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
+HWTEST_F(ImageSourceSvgTest, SvgImageDecodeWithResizePercentage, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode start";
 
@@ -208,7 +208,7 @@ HWTEST_F(ImageSourceSvgTest, SvgImageDecode, TestSize.Level3)
     auto packSize = PackImage(outName, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
 
-    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecode end";
+    GTEST_LOG_(INFO) << "ImageSourceSvgTest: SvgImageDecodeWithResizePercentage end";
 }
 } // namespace Multimedia
 } // namespace OHOS
