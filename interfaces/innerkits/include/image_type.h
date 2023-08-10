@@ -165,8 +165,7 @@ struct SVGResize {
     uint32_t resizePercentage = 100;
 };
 
-struct SVGDecodeOptions
-{
+struct SVGDecodeOptions {
     FillColor fillColor;
     SVGResize SVGResize;
 };
