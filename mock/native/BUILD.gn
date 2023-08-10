@@ -32,6 +32,7 @@ ohos_static_library("log_mock_static") {
     deps = [ "$graphic_subsystem/rosen/modules/platform:hilog" ]
   }
   subsystem_name = "multimedia"
+  part_name = "image_framework"
 }
 
 config("utils_mock_config") {
@@ -63,4 +64,5 @@ ohos_static_library("utils_mock_static") {
   ]
   deps = [ ":log_mock_static" ]
   subsystem_name = "multimedia"
+  part_name = "image_framework"
 }
