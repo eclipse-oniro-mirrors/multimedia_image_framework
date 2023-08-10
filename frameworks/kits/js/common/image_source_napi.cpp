@@ -588,16 +588,16 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
         HiLog::Debug(LABEL, "no fitDensity");
     }
 
-    if (GET_UINT32_BY_NAME(root, "fillColor", opts->SVGDecodeOptions.fillColor.color)) {
-        opts->SVGDecodeOptions.fillColor.isValidColor = true;
-        HiLog::Debug(LABEL, "fillColor %{public}x", opts->SVGDecodeOptions.fillColor.color);
+    if (GET_UINT32_BY_NAME(root, "fillColor", opts->SVGOpts.fillColor.color)) {
+        opts->SVGOpts.fillColor.isValidColor = true;
+        HiLog::Debug(LABEL, "fillColor %{public}x", opts->SVGOpts.fillColor.color);
     } else {
         HiLog::Debug(LABEL, "no fillColor");
     }
 
-    if (GET_UINT32_BY_NAME(root, "SVGResize", opts->SVGDecodeOptions.SVGResize.resizePercentage)) {
-        opts->SVGDecodeOptions.SVGResize.isValidPercentage = true;
-        HiLog::Debug(LABEL, "SVGResize percentage %{public}x", opts->SVGDecodeOptions.SVGResize.resizePercentage);
+    if (GET_UINT32_BY_NAME(root, "SVGResize", opts->SVGOpts.SVGResize.resizePercentage)) {
+        opts->SVGOpts.SVGResize.isValidPercentage = true;
+        HiLog::Debug(LABEL, "SVGResize percentage %{public}x", opts->SVGOpts.SVGResize.resizePercentage);
     } else {
         HiLog::Debug(LABEL, "no SVGResize percentage");
     }

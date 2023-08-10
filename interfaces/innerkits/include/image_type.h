@@ -171,7 +171,6 @@ struct SVGDecodeOptions
     SVGResize SVGResize;
 };
 
-
 struct DecodeOptions {
     int32_t fitDensity = 0;
     Rect CropRect;
