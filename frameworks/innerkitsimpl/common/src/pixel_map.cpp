@@ -169,7 +169,7 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     custFreePixelMap_ = func;
 }
 
-bool CheckConvertParmas(ImageInfo &src, ImageInfo &dst)
+bool CheckConvertParmas(const ImageInfo &src, const ImageInfo &dst)
 {
     return src.pixelFormat == dst.pixelFormat &&
         src.size.width == dst.size.width &&

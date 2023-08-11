@@ -176,20 +176,9 @@ static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo 
 #endif
 }
 
-uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo)
+uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-        uint32_t res = SetShareMemBuffer(byteCount, context);
-        if (res != SUCCESS) {
-            return res;
-        }
-    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
-        uint32_t res = DmaMemAlloc(byteCount, context, dstInfo);
-        if (res != SUCCESS) {
-            return res;
-        }
-    } else {
         if (byteCount <= 0) {
             HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
             return ERR_MEDIA_INVALID_VALUE;
@@ -200,7 +189,7 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
                          static_cast<unsigned long long>(byteCount));
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
-#ifdef _WIN32
+#ifdef  _WIN32
         if (memset_s(outputBuffer, 0, byteCount) != EOK) {
             HiLog::Error(LABEL, "Decode failed, memset buffer failed", backRet);
             free(outputBuffer);
@@ -220,8 +209,13 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
         context.pixelsBuffer.context = nullptr;
         context.allocatorType = AllocatorType::HEAP_ALLOC;
         context.freeFunc = nullptr;
-    }
-#else
+    context.freeFunc = nullptr;
+#endif
+    return SUCCESS;
+}
+
+uint32_t SetBufferForPlatform(uint64_t byteCount, DecodeContext &context)
+{
     if (byteCount <= 0) {
         HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
         return ERR_MEDIA_INVALID_VALUE;
@@ -252,6 +246,33 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
     context.pixelsBuffer.context = nullptr;
     context.allocatorType = AllocatorType::HEAP_ALLOC;
     context.freeFunc = nullptr;
+    return SUCCESS;
+}
+
+uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+    if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
+        uint32_t res = SetShareMemBuffer(byteCount, context);
+        if (res != SUCCESS) {
+            return res;
+        }
+    } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
+        uint32_t res = DmaMemAlloc(byteCount, context, dstInfo);
+        if (res != SUCCESS) {
+            return res;
+        }
+    } else {
+        uint32_t res = SetBuffer(byteCount, context);
+        if (res != SUCCESS) {
+            return res;
+        }
+    }
+#else
+    uint32_t res = SetBufferForPlatform(byteCount, context);
+    if (res != SUCCESS) {
+        return res;
+    }
 #endif
     return SUCCESS;
 }
