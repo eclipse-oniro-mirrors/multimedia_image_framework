@@ -155,6 +155,21 @@ struct ImageInfo {
     int32_t baseDensity = 0;
 };
 
+struct FillColor {
+    bool isValidColor = false;
+    uint32_t color = 0;
+};
+
+struct SVGResize {
+    bool isValidPercentage = false;
+    uint32_t resizePercentage = 100;
+};
+
+struct SVGDecodeOptions {
+    FillColor fillColor;
+    SVGResize SVGResize;
+};
+
 struct DecodeOptions {
     int32_t fitDensity = 0;
     Rect CropRect;
@@ -174,6 +189,7 @@ struct DecodeOptions {
     bool allowPartialImage = true;
     bool editable = false;
     MemoryUsagePreference preference = MemoryUsagePreference::DEFAULT;
+    SVGDecodeOptions SVGOpts;
 };
 
 enum class ScaleMode : int32_t {

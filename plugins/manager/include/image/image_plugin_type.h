@@ -119,6 +119,16 @@ struct PlSize {
     uint32_t height = 0;
 };
 
+struct PlFillColor {
+    bool isValidColor = false;
+    uint32_t color = 0;
+};
+
+struct PlSVGResize {
+    bool isValidPercentage = false;
+    uint32_t resizePercentage = 100;
+};
+
 struct PlImageInfo {
     PlSize size;
     PlPixelFormat pixelFormat = PlPixelFormat::UNKNOWN;

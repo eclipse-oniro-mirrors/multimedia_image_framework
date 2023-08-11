@@ -23,6 +23,8 @@
 
 #if defined(USE_NEWSVG_IN_NEWSKIA_FLAG) || defined(NEW_SKIA)
 #include "modules/svg/include/SkSVGDOM.h"
+#include "modules/svg/include/SkSVGSVG.h"
+#include "modules/svg/include/SkSVGNode.h"
 #else
 #include "experimental/svg/model/SkSVGDOM.h"
 #endif
