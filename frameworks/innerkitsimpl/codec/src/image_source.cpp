@@ -571,9 +571,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-#if !defined(_WIN32) && !defined(_APPLE)
-    StartTrace(HITRACE_TAG_ZIMAGE, "CreatePixelMap");
-#endif
     std::unique_lock<std::mutex> guard(decodingMutex_);
     opts_ = opts;
     bool useSkia = opts_.sampleSize != 1;
@@ -702,9 +699,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             listener->OnEvent((int)DecodeEvent::EVENT_COMPLETE_DECODE);
         }
     }
-#if !defined(_WIN32) && !defined(_APPLE)
-    FinishTrace(HITRACE_TAG_ZIMAGE);
-#endif
     return pixelMap;
 }
 

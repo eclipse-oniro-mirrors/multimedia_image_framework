@@ -183,8 +183,9 @@ static std::string GetStringArgument(napi_env env, napi_value value)
         status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
         if (status == napi_ok) {
             HiLog::Debug(LABEL, "Get Success");
-            strValue = buffer;
-        } else {
+            strValue.assign(buffer, 0, bufLength + NUM_1);
+        }
+        if (buffer != nullptr) {
             free(buffer);
             buffer = nullptr;
         }
@@ -400,7 +401,7 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
             pImgSrcNapi->nativeImgSrc = sImgSrc_;
             pImgSrcNapi->navIncPixelMap_ = sIncPixelMap_;
             sIncPixelMap_ = nullptr;
-
+            sImgSrc_ = nullptr;
             status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pImgSrcNapi.get()),
                                ImageSourceNapi::Destructor, nullptr, nullptr);
             if (status == napi_ok) {
