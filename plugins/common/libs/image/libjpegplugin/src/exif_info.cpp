@@ -394,7 +394,11 @@ static void inline DumpTagsMap(std::map<ExifTag, std::string> &tags)
 int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
 {
     HiLog::Debug(LABEL, "ParseExifData ENTER");
-    exifData_ = exif_data_new ();
+    if (exifData_ != nullptr) {
+        exif_data_unref(exifData_);
+        exifData_ = nullptr;
+    }
+    exifData_ = exif_data_new();
     if (!exifData_) {
         return PARSE_EXIF_DATA_ERROR;
     }
@@ -685,6 +689,14 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value, 
     return Media::SUCCESS;
 }
 
+void ReleaseExifDataBuffer(unsigned char* exifDataBuf)
+{
+    if (exifDataBuf != nullptr) {
+        free(exifDataBuf);
+        exifDataBuf = nullptr;
+    }
+}
+
 uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     unsigned char *data, uint32_t size)
 {
@@ -735,12 +747,14 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     if (size == 0 || size > MAX_FILE_SIZE) {
         HiLog::Error(LABEL, "Buffer size is out of range.");
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     unsigned char *tempBuf = static_cast<unsigned char *>(malloc(size));
     if (tempBuf == nullptr) {
         HiLog::Error(LABEL, "Allocate temp buffer ailed.");
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_IMAGE_MALLOC_ABNORMAL;
     }
 
@@ -751,6 +765,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         free(tempBuf);
         tempBuf = nullptr;
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
 
@@ -766,6 +781,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         free(tempBuf);
         tempBuf = nullptr;
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
     tempBuf[index] = highBit;
@@ -777,6 +793,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         free(tempBuf);
         tempBuf = nullptr;
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
     tempBuf[index] = lowBit;
@@ -788,6 +805,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         free(tempBuf);
         tempBuf = nullptr;
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
     for (unsigned int i = 0; i < exifDataBufLength; i++) {
@@ -801,6 +819,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         free(tempBuf);
         tempBuf = nullptr;
         exif_data_unref(ptrExifData);
+        ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
     for (unsigned int i = 0; i < (size - orginExifDataLength - sizeof(exifHeader)); i++) {
@@ -816,6 +835,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     free(tempBuf);
     tempBuf = nullptr;
     exif_data_unref(ptrExifData);
+    ReleaseExifDataBuffer(exifDataBuf);
     return Media::SUCCESS;
 }
 
@@ -1193,33 +1213,39 @@ bool EXIFInfo::WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLen
     // Write EXIF header
     if (fwrite(exifHeader, sizeof(exifHeader), 1, fp) != 1) {
         HiLog::Error(LABEL, "Error writing EXIF header to file!");
+        ReleaseExifDataBuffer(exifDataBuf);
         return false;
     }
 
     // Write EXIF block length in big-endian order
     if (fputc((exifDataBufLength + LENGTH_OFFSET_2) >> MOVE_OFFSET_8, fp) < 0) {
         HiLog::Error(LABEL, "Error writing EXIF block length to file!");
+        ReleaseExifDataBuffer(exifDataBuf);
         return false;
     }
 
     if (fputc((exifDataBufLength + LENGTH_OFFSET_2) & 0xff, fp) < 0) {
         HiLog::Error(LABEL, "Error writing EXIF block length to file!");
+        ReleaseExifDataBuffer(exifDataBuf);
         return false;
     }
 
     // Write EXIF data block
     if (fwrite(exifDataBuf, exifDataBufLength, 1, fp) != 1) {
         HiLog::Error(LABEL, "Error writing EXIF data block to file!");
+        ReleaseExifDataBuffer(exifDataBuf);
         return false;
     }
     // Write JPEG image data, skipping the non-EXIF header
     unsigned int dataOffset = orginExifDataLength + sizeof(exifHeader);
     if (fwrite(buf + dataOffset, fileLength - dataOffset, 1, fp) != 1) {
         HiLog::Error(LABEL, "Error writing JPEG image data to file!");
+        ReleaseExifDataBuffer(exifDataBuf);
         return false;
     }
 
     UpdateCacheExifData(fp);
+    ReleaseExifDataBuffer(exifDataBuf);
     return true;
 }
 
