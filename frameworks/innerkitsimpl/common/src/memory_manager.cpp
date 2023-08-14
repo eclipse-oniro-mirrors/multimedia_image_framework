@@ -154,7 +154,7 @@ uint32_t DmaMemory::Create()
         .height = data.desiredSize.height,
         .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
         .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
-        .usage = BUFFER_USAGE_CPU_READ || BUFFER_USAGE_CPU_WRITE || BUFFER_USAGE_MEM_DMA,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
         .timeout = 0,
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,

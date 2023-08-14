@@ -2295,6 +2295,7 @@ void PixelMap::flip(bool xAxis, bool yAxis)
     }
     scale(xAxis ? -1 : 1, yAxis ? -1 : 1);
 }
+
 uint32_t PixelMap::crop(const Rect &rect)
 {
     ImageInfo imageInfo;
