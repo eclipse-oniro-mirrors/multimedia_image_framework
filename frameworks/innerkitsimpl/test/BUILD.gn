@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/test.gni")
+import("//commonlibrary/memory_utils/purgeable_mem_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 module_output_path = "multimedia_image/image_framework"
@@ -57,6 +58,10 @@ ohos_unittest("commontest") {
     "ipc:ipc_core",
     "memory_utils:libpurgeablemem",
   ]
+
+  if (purgeable_ashmem_enable) {
+    defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+  }
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
@@ -165,6 +170,11 @@ ohos_unittest("imagesourcetest") {
     "c_utils:utils",
     "hilog:libhilog",
   ]
+
+  if (purgeable_ashmem_enable) {
+    defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    external_deps = [ "memory_utils:libpurgeablemem" ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
