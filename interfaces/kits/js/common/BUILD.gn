@@ -247,7 +247,7 @@ if (use_clang_ios) {
       "hichecker:libhichecker",
       "hitrace:hitrace_meter",
 
-      "ipc:ipc_napi",
+      "ipc:ipc_napi_common",
       "napi:ace_napi",
     ]
     output_name = "libimage_napi"
