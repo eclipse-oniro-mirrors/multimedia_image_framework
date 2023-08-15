@@ -25,21 +25,15 @@
       "ram": "10000KB",
       "deps": {
         "components": [
-          "common",
           "c_utils",
           "graphic_2d",
           "hichecker",
           "hitrace",
           "hilog",
           "ipc",
-          "ipc_core",
-          "libhilog",
-          "bytrace_core",
-          "multimedia",
           "napi",
           "zlib",
           "init",
-          "startup",
           "memory_utils",
           "napi"
         ],
@@ -52,8 +46,6 @@
           "expat",
           "json",
           "skia",
-          "libjpeg",
-          "piex",
           "zlib"
         ]
       },
