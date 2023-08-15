@@ -1180,6 +1180,29 @@ HWTEST_F(PixelMapTest, PixelMapTest029, TestSize.Level3)
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest029 end";
 }
 
+/**
+ * @tc.name: SetRowStride and GetRowStride
+ * @tc.desc: test SetRowStride and GetRowStride
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetAndGetRowStride, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAndGetRowStride start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+
+    uint32_t stride = 1;
+    pixelMap.SetRowStride(stride);
+    uint32_t res = pixelMap.GetRowStride();
+    ASSERT_EQ(res, 1);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAndGetRowStride end";
+}
+
 #ifdef IMAGE_COLORSPACE_FLAG
 /**
  * @tc.name: ImagePixelMap030
