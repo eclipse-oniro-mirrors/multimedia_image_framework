@@ -906,5 +906,24 @@ HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
     ASSERT_EQ(imageSource.get(), nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0011 end";
 }
+
+#ifdef IMAGE_PURGEABLE_PIXELMAP
+/**
+ * @tc.name: CreateImageSource0011
+ * @tc.desc: test GetSourceSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+
+    size_t ret = imageSource->GetSourceSize();
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
+}
+#endif
 } // namespace Multimedia
 } // namespace OHOS
