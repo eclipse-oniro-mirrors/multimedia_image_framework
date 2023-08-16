@@ -40,6 +40,7 @@ constexpr uint32_t SVG_BYTES_PER_PIXEL = 4;
 constexpr uint32_t SVG_FILL_COLOR_ATTR_WIDTH = 6;
 constexpr uint32_t SVG_FILL_COLOR_MASK = 0xFFFFFF;
 const std::string SVG_FILL_COLOR_ATTR = "fill";
+static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
 
 bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 {
@@ -519,8 +520,20 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         return Media::ERROR;
     }
 
-    opts_.desiredSize.width = static_cast<uint32_t>(svgSize.width());
-    opts_.desiredSize.height = static_cast<uint32_t>(svgSize.height());
+    float scaleFitDesired = 1.0;
+    if (opts_.desiredSize.width && opts_.desiredSize.height) {
+        scaleFitDesired = std::min(static_cast<float>(opts_.desiredSize.width / svgSize.width()),
+            static_cast<float>(opts_.desiredSize.height / svgSize.height()));
+    }
+
+    if (opts_.plSVGResize.isValidPercentage) {
+        svgDom_->setResizePercentage(static_cast<uint32_t>(opts_.plSVGResize.resizePercentage * scaleFitDesired));
+    } else {
+        svgDom_->setResizePercentage(static_cast<uint32_t>(DEFAULT_RESIZE_PERCENTAGE * scaleFitDesired));
+    }
+
+    opts_.desiredSize.width = static_cast<uint32_t>(svgDom_->containerSize().width());
+    opts_.desiredSize.height = static_cast<uint32_t>(svgDom_->containerSize().height());
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
