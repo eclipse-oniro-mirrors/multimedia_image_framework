@@ -84,7 +84,7 @@ private:
 };
 class ImageReceiverSurfaceListener : public IBufferConsumerListener {
 public:
-    std::shared_ptr<ImageReceiver> ir_;
+    std::weak_ptr<ImageReceiver> ir_;
     void OnBufferAvailable() override;
 };
 } // namespace Media

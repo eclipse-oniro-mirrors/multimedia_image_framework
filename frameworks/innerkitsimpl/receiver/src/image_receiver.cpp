@@ -157,8 +157,9 @@ namespace OHOS {
         void ImageReceiverSurfaceListener ::OnBufferAvailable()
         {
             HiLog::Debug(LABEL, "OnBufferAvailable");
-            if (ir_->surfaceBufferAvaliableListener_ != nullptr) {
-                ir_->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
+            auto ir = ir_.lock();
+            if (ir && ir->surfaceBufferAvaliableListener_ != nullptr) {
+                ir->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
             }
         }
 

@@ -260,6 +260,10 @@ napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)
 
 void ImageReceiverNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+    if (nativeObject != nullptr) {
+        delete reinterpret_cast<ImageReceiverNapi*>(nativeObject);
+        nativeObject = nullptr;
+    }
 }
 
 static bool checkFormat(int32_t format)
