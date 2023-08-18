@@ -34,7 +34,7 @@
           "napi",
           "zlib",
           "init",
-          "memory_utils",
+          "memory_utils"
         ],
         "third_party": [
           "flutter",
