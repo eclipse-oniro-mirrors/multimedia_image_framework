@@ -34,14 +34,12 @@
           "napi",
           "zlib",
           "init",
-          "memory_utils",
-          "napi"
+          "memory_utils"
         ],
         "third_party": [
           "flutter",
           "libpng",
           "libexif",
-          "giflib",
           "bounds_checking_function",
           "expat",
           "json",

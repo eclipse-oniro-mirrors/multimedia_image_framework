@@ -179,7 +179,7 @@ static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo 
 uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
-        if (byteCount <= 0) {
+        if (byteCount == 0) {
             HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
             return ERR_MEDIA_INVALID_VALUE;
         }
@@ -216,7 +216,7 @@ uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 
 uint32_t SetBufferForPlatform(uint64_t byteCount, DecodeContext &context)
 {
-    if (byteCount <= 0) {
+    if (byteCount == 0) {
         HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
         return ERR_MEDIA_INVALID_VALUE;
     }
