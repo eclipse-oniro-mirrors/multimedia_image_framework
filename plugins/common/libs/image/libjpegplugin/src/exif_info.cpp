@@ -415,7 +415,7 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
             }
             exif_content_foreach_entry(ec,
                 [](ExifEntry *ee, void* userData) {
-                    if (ee == nullptr || userData == nullptr) {
+                    if (ee == nullptr) {
                         return;
                     }
                     char tagValueChar[1024];
