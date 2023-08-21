@@ -34,6 +34,8 @@ bool ImageSystemProperties::GetSkiaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", true);
+#else
+    return false;
 #endif
 }
 
@@ -49,6 +51,8 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
         }
     }
     return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", true) && isFeatureSupported;
+#else
+    return false;
 #endif
 }
 } // namespace Media
