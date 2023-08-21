@@ -133,6 +133,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
 
     json root;
     metadata >> root;
+    metadata.close();
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
         HiLog::Error(LABEL, "read libraryPath failed.");
         return false;
