@@ -268,6 +268,7 @@ private:
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos);
+    void UpdateImageInfo();
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

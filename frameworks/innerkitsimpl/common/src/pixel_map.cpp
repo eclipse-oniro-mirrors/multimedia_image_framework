@@ -167,6 +167,9 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     pixelsSize_ = size;
     allocatorType_ = type;
     custFreePixelMap_ = func;
+    if (type == AllocatorType::DMA_ALLOC && rowDataSize_ != 0) {
+        UpdateImageInfo();
+    }
 }
 
 bool CheckConvertParmas(const ImageInfo &src, const ImageInfo &dst)
@@ -653,6 +656,11 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
 void PixelMap::SetRowStride(uint32_t stride)
 {
     rowStride_ = stride;
+}
+
+void PixelMap::UpdateImageInfo()
+{
+    SetImageInfo(imageInfo_, true);
 }
 
 uint32_t PixelMap::SetImageInfo(ImageInfo &info)
