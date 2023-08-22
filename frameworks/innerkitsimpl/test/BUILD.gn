@@ -17,7 +17,7 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 module_output_path = "multimedia_image/image_framework"
 
-ohos_unittest("commontest") {
+ohos_unittest("pixelmaptest") {
   module_out_path = module_output_path
 
   cflags = [
@@ -968,6 +968,7 @@ group("unittest") {
     ":jpegdecoderextest",
     ":napitest",
     ":pixelconvertadaptertest",
+    ":pixelmaptest",
     ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
     ":pngtest",
