@@ -954,6 +954,7 @@ group("unittest") {
     ":attrdatatest",
     ":bmpplugintest",
     ":colorconvertertest",
+    ":commontest",
     ":convertertest",
     ":creatortest",
     ":format_agent_plugin_src_test",
