@@ -761,7 +761,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
             return res;
         }
         value = atoi(strValue.c_str());
-        return value;
+        return res;
     }
     HiLog::Error(LABEL, "[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
     return Media::ERR_MEDIA_VALUE_INVALID;
