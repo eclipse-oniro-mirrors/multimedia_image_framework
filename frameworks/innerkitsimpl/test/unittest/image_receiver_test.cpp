@@ -167,6 +167,23 @@ HWTEST_F(ImageReceiverTest, ImageReceiver006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OnBufferAvailable002
+ * @tc.desc: test OnBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferAvailable002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<ImageCreatorSurfaceListener> listener = new ImageCreatorSurfaceListener();
+    listener->ic_ = creator;
+    listener->ic_->RegisterBufferAvaliableListener(listener->ic_->surfaceBufferAvaliableListener_);
+    listener->OnBufferAvailable();
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable002 end";
+}
+
+/**
  * @tc.name: ImageReceiver007
  * @tc.desc: test ReleaseBuffer surfaceBuffer1 is nullptr
  * @tc.type: FUNC
@@ -274,6 +291,61 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0013, TestSize.Level3)
     OHOS::sptr<OHOS::SurfaceBuffer> surfacebuffer = imageReceiver->ReadLastImage();
     ASSERT_EQ(surfacebuffer, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0013 end";
+}
+
+/**
+ * @tc.name: ImageReceiver0014
+ * @tc.desc: test ReleaseBuffer listenerConsumerSurface is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ImageReceiver0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0014 start";
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
+    ASSERT_NE(imageReceiver1->iraContext_, nullptr);
+    auto listenerConsumerSurface = imageReceiver1->iraContext_->GetReceiverBufferConsumer();
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver1->ReadLastImage();
+    imageReceiver1->ReleaseBuffer(surfaceBuffer1);
+    ASSERT_EQ(surfaceBuffer1, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0014 end";
+}
+
+/**
+ * @tc.name: ImageReceiver0015
+ * @tc.desc: test ReleaseBuffer iraContext_ is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ImageReceiver0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0015 start";
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
+    imageReceiver1->iraContext_ = ImageReceiverContext::CreateImageReceiverContext();
+    ASSERT_NE(imageReceiver1->iraContext_, nullptr);
+    auto listenerConsumerSurface = imageReceiver1->iraContext_->GetReceiverBufferConsumer();
+    listenerConsumerSurface = nullptr;
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver1->ReadLastImage();
+    imageReceiver1->ReleaseBuffer(surfaceBuffer1);
+    ASSERT_EQ(surfaceBuffer1, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0015 end";
+}
+
+/**
+ * @tc.name: ImageReceiver0016
+ * @tc.desc: test ReleaseBuffer iraContext_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ImageReceiver0016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0016 start";
+    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
+    std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = imageReceiver1->ReadLastImage();
+    imageReceiver1->iraContext_ = nullptr;
+    imageReceiver1->ReleaseBuffer(surfaceBuffer1);
+    ASSERT_EQ(surfaceBuffer1, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0016 end";
 }
 }
 }

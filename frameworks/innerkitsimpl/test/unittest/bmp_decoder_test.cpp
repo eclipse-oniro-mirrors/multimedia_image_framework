@@ -228,6 +228,25 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetImageSizeTest007
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, GetImageSizeTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest007 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    bmpDecoder->SetSource(*mock.get());
+    ImagePlugin::PlSize plSize;
+    bmpDecoder->GetImageSize(0, plSize);
+    bool result = (bmpDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest007 end";
+}
+
+/**
  * @tc.name: SetDecodeOptionsTest001
  * @tc.desc: Test of SetDecodeOptions
  * @tc.type: FUNC
@@ -312,6 +331,48 @@ HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SetDecodeOptionsTest005
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest005 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(1);
+    mock->SetReturn(true);
+    bmpDecoder->SetSource(*mock.get());
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    bmpDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (bmpDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest005 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest006
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest006 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(2);
+    mock->SetReturn(true);
+    bmpDecoder->SetSource(*mock.get());
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    bmpDecoder->SetDecodeOptions(0, opts, info);
+    bool result = (bmpDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest006 end";
+}
+
+/**
  * @tc.name: DecodeTest001
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
@@ -349,6 +410,50 @@ HWTEST_F(BmpDecoderTest, DecodeTest002, TestSize.Level3)
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest002 end";
+}
+
+/**
+ * @tc.name: DecodeTest003
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, DecodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest003 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    DecodeContext context;
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(1);
+    mock->SetReturn(true);
+    bmpDecoder->SetSource(*mock.get());
+    bmpDecoder->Decode(0, context);
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    bool result = (bmpDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest003 end";
+}
+
+/**
+ * @tc.name: DecodeTest004
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, DecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest004 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    DecodeContext context;
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(2);
+    mock->SetReturn(true);
+    bmpDecoder->SetSource(*mock.get());
+    bmpDecoder->Decode(0, context);
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    bool result = (bmpDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest004 end";
 }
 
 /**
