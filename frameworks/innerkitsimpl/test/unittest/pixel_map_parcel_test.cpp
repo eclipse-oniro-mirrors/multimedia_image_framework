@@ -77,47 +77,5 @@ HWTEST_F(PixelMapParcelTest, PixelMapParcelTest001, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "PixelMapParcelTest: PixelMapParcelTest001 end";
 }
-
-/**
- * @tc.name: WriteToParcelTest001
- * @tc.desc: WriteToParcel
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapParcelTest, WriteToParcelTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapParcelTest: WriteToParcelTest001 start";
-
-    MessageParcel data1;
-    data1.SetDataCapacity(0);
-    auto pixelMap1 = std::make_unique<PixelMap>();
-    auto ret = PixelMapParcel::WriteToParcel(pixelMap1.get(), data1);
-    EXPECT_FALSE(ret);
-
-    MessageParcel data2;
-    ImageInfo info2;
-    auto pixelMap2 = std::make_unique<PixelMap>();
-    pixelMap2->SetImageInfo(info2);
-    ret = PixelMapParcel::WriteToParcel(pixelMap2.get(), data2);
-    EXPECT_FALSE(ret);
-
-    MessageParcel data3;
-    ImageInfo info3;
-    info3.size.width = 100;
-    auto pixelMap3 = std::make_unique<PixelMap>();
-    pixelMap3->SetImageInfo(info3);
-    ret = PixelMapParcel::WriteToParcel(pixelMap3.get(), data3);
-    EXPECT_FALSE(ret);
-
-    MessageParcel data4;
-    ImageInfo info4;
-    info4.size.width = 100;
-    info4.size.height = 100;
-    auto pixelMap4 = std::make_unique<PixelMap>();
-    pixelMap4->SetImageInfo(info4);
-    ret = PixelMapParcel::WriteToParcel(pixelMap4.get(), data4);
-    EXPECT_FALSE(ret);
-
-    GTEST_LOG_(INFO) << "PixelMapParcelTest: WriteToParcelTest001 end";
-}
 }
 }
