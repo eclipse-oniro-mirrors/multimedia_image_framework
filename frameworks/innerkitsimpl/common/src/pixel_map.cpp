@@ -17,9 +17,10 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "image_utils.h"
+#include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_type_converter.h"
+#include "image_utils.h"
 #include "memory_manager.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
@@ -70,6 +71,7 @@ constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+constexpr uint32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
     HiLog::Info(LABEL, "PixelMap destory");
@@ -2210,6 +2212,12 @@ struct TransInfos {
     SkMatrix matrix;
 };
 
+bool IsSupportAntiAliasing(const ImageInfo& imageInfo)
+{
+    return imageInfo.size.width <= AntiAliasingSize &&
+            imageInfo.size.height <= AntiAliasingSize;
+}
+
 bool PixelMap::DoTranslation(TransInfos &infos)
 {
     ImageInfo imageInfo;
@@ -2244,7 +2252,12 @@ bool PixelMap::DoTranslation(TransInfos &infos)
     }
     canvas.concat(infos.matrix);
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
-    canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO);
+    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo)) {
+        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO,
+            SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear));
+    } else {
+        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO);
+    }
 
     ToImageInfo(imageInfo, dst.info);
 #ifdef IMAGE_COLORSPACE_FLAG

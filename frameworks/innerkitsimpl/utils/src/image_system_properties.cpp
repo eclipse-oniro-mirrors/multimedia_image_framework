@@ -42,7 +42,7 @@ bool ImageSystemProperties::GetSkiaEnabled()
 bool ImageSystemProperties::GetSurfaceBufferEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
+    static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
     bool isFeatureSupported = false;
     if (isPhone) {
         if (strncmp(__progname, "mos.photo", strlen("mos.photo")) == 0 ||
@@ -51,6 +51,18 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
         }
     }
     return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false) && isFeatureSupported;
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetAntiAliasingEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    static bool isDeviceSupportsAA =
+        system::GetParameter("const.product.devicetype", "pc") == "pc" ||
+        system::GetParameter("const.product.devicetype", "pc") == "tablet";
+    return isDeviceSupportsAA && system::GetBoolParameter("persist.multimedia.image.AntiAliasing.enabled", true);
 #else
     return false;
 #endif

@@ -21,6 +21,7 @@ class ImageSystemProperties {
 public:
     static bool GetSkiaEnabled();
     static bool GetSurfaceBufferEnabled();
+    static bool GetAntiAliasingEnabled();
 private:
     ImageSystemProperties() = default;
 };
