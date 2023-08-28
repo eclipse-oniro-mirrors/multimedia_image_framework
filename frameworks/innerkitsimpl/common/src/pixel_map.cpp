@@ -71,7 +71,7 @@ constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
-constexpr uint32_t AntiAliasingSize = 350;
+constexpr int32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
     HiLog::Info(LABEL, "PixelMap destory");
