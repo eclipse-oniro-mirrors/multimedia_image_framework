@@ -279,6 +279,7 @@ uint8_t *FileSourceStream::GetDataPtr()
         HiLog::Error(LABEL, "[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;
     }
+    close(dupFd);
     fileData_ = static_cast<uint8_t*>(mmptr);
 #endif
     return fileData_;

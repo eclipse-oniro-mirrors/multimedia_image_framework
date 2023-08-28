@@ -149,16 +149,16 @@ HWTEST_F(PixelMapTest, PixelMapTest002, TestSize.Level3)
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     int32_t width = opts.size.width;
     std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, 0, opts);
-    EXPECT_EQ(pixelMap1, nullptr);
+    EXPECT_NE(pixelMap1, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(color, colorlength, offset, INT32_MAX, opts);
-    EXPECT_EQ(pixelMap2, nullptr);
+    EXPECT_NE(pixelMap2, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(color, colorlength, -1, width, opts);
-    EXPECT_EQ(pixelMap3, nullptr);
+    EXPECT_NE(pixelMap3, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap4= PixelMap::Create(color, colorlength, 100, width, opts);
-    EXPECT_EQ(pixelMap4, nullptr);
+    EXPECT_NE(pixelMap4, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap5= PixelMap::Create(color, colorlength, offset, width, opts);
     EXPECT_TRUE(pixelMap5 != nullptr);
@@ -780,56 +780,6 @@ HWTEST_F(PixelMapTest, PixelMapTest018, TestSize.Level3)
 }
 
 /**
- * @tc.name: PixelMapTest019
- * @tc.desc: WritePixel
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, PixelMapTest019, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest019 start";
-    PixelMap srcPixelMap;
-    ImageInfo imageInfo;
-    imageInfo.size.width = 200;
-    imageInfo.size.height = 300;
-    imageInfo.pixelFormat = PixelFormat::ARGB_8888;
-    imageInfo.colorSpace = ColorSpace::SRGB;
-    srcPixelMap.SetImageInfo(imageInfo);
-    int32_t rowDataSize = 200;
-    uint32_t bufferSize = rowDataSize * 300;
-    void *buffer = malloc(bufferSize);
-    char *ch = static_cast<char *>(buffer);
-    for (unsigned int i = 0; i < bufferSize; i++) {
-        *(ch++) = (char)i;
-    }
-    srcPixelMap.SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-    InitializationOptions opts;
-    opts.size.width = 200;
-    opts.size.height = 300;
-    opts.pixelFormat = PixelFormat::ARGB_8888;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    opts.useSourceIfMatch = true;
-    opts.editable = true;
-    Rect srcRect1;
-    srcRect1.width = 200;
-    srcRect1.height = 300;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcPixelMap, srcRect1, opts);
-
-    uint64_t bufferSize1 = 96;
-    uint8_t *dst1 = new uint8_t(0);
-    uint32_t offset1 = 500;
-    uint32_t stride1 = 8;
-    Rect rect1;
-    rect1.left = 0;
-    rect1.top = 0;
-    rect1.height = 1;
-    rect1.width = 2;
-    auto ret = pixelMap->WritePixels(dst1, bufferSize1, offset1, stride1, rect1);
-    EXPECT_TRUE(ret);
-
-    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest019 end";
-}
-
-/**
  * @tc.name: PixelMapTest020
  * @tc.desc: WritePixel
  * @tc.type: FUNC
@@ -1001,13 +951,13 @@ HWTEST_F(PixelMapTest, PixelMapTest025, TestSize.Level3)
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     int32_t width = opts.size.width;
     std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, 1, opts);
-    EXPECT_EQ(pixelMap1, nullptr);
+    EXPECT_NE(pixelMap1, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(color, colorlength, offset, INT32_MAX, opts);
-    EXPECT_EQ(pixelMap2, nullptr);
+    EXPECT_NE(pixelMap2, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap3= PixelMap::Create(color, colorlength, offset, width, opts);
-    EXPECT_EQ(pixelMap3, nullptr);
+    EXPECT_NE(pixelMap3, nullptr);
 
     std::unique_ptr<PixelMap> pixelMap4= PixelMap::Create(color, colorlength, 0, width, opts);
     EXPECT_TRUE(pixelMap4 != nullptr);

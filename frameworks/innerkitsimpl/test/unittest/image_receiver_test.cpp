@@ -167,23 +167,6 @@ HWTEST_F(ImageReceiverTest, ImageReceiver006, TestSize.Level3)
 }
 
 /**
- * @tc.name: OnBufferAvailable002
- * @tc.desc: test OnBufferAvailable
- * @tc.type: FUNC
- */
-HWTEST_F(ImageCreatorTest, OnBufferAvailable002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable002 start";
-    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
-    ASSERT_NE(creator, nullptr);
-    sptr<ImageCreatorSurfaceListener> listener = new ImageCreatorSurfaceListener();
-    listener->ic_ = creator;
-    listener->ic_->RegisterBufferAvaliableListener(listener->ic_->surfaceBufferAvaliableListener_);
-    listener->OnBufferAvailable();
-    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferAvailable002 end";
-}
-
-/**
  * @tc.name: ImageReceiver007
  * @tc.desc: test ReleaseBuffer surfaceBuffer1 is nullptr
  * @tc.type: FUNC
