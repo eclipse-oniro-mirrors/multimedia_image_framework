@@ -921,7 +921,7 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
 
     size_t ret = imageSource->GetSourceSize();
-    ASSERT_EQ(ret, 0);
+    ASSERT_NE(ret, 0);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
 }
 #endif
