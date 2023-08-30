@@ -459,7 +459,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
     }
-    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kGIF) {
+    SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
+    HiLog::Debug(LABEL, "decode format %{public}d", skEncodeFormat);
+    if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
         return GifDecode(index, context, rowStride);
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
