@@ -42,7 +42,8 @@
           "bounds_checking_function",
           "expat",
           "json",
-          "skia"
+          "skia",
+          "zlib"
         ]
       },
       "build": {
