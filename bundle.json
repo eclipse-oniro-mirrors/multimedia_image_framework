@@ -32,7 +32,6 @@
           "hilog",
           "ipc",
           "napi",
-          "zlib",
           "init",
           "memory_utils"
         ],
