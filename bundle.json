@@ -32,7 +32,6 @@
           "hilog",
           "ipc",
           "napi",
-          "zlib",
           "init",
           "memory_utils"
         ],
@@ -43,8 +42,7 @@
           "bounds_checking_function",
           "expat",
           "json",
-          "skia",
-          "zlib"
+          "skia"
         ]
       },
       "build": {
