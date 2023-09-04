@@ -101,7 +101,8 @@ if (use_clang_android) {
 declare_args() {
   enable_jpeg_hw_decode = true
 
-  if (defined(global_parts_info) && !defined(global_parts_info.hdf_derivers_interface_display)) {
+  if (defined(global_parts_info) &&
+      !defined(global_parts_info.hdf_derivers_interface_display)) {
     enable_jpeg_hw_decode = false
   }
 }
