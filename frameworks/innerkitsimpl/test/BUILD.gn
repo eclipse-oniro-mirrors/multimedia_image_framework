@@ -1,4 +1,4 @@
-# Copyright (C) 2021 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -947,6 +947,53 @@ ohos_unittest("napitest") {
   ]
 }
 
+ohos_unittest("jpeg_hw_decoder_test") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/jpeg_hw_decoder.cpp",
+    "unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
+    "unittest/jpeg_hw_decode/unittest/jpeg_hw_decoder_test.cpp",
+  ]
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/manager/include/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/../../../drivers/peripheral/base/",
+    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
+    "${image_subsystem}/../../../third_party/skia/",
+    "${image_subsystem}/../../../third_party/skia/include/codec/",
+    "${image_subsystem}/../../../third_party/skia/include/core/",
+    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
+  ]
+
+  deps = [
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/googletest:gtest_main",
+    "//third_party/skia:skia_ohos",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:image_idl_headers",
+    "drivers_interface_codec:libimage_proxy_1.0",
+    "drivers_interface_display:display_buffer_idl_headers",
+    "drivers_interface_display:display_composer_idl_headers",
+    "drivers_interface_display:libdisplay_buffer_hdi_impl",
+    "drivers_interface_display:libdisplay_composer_hdi_impl",
+    "graphic_chipsetsdk:buffer_handle",
+    "hdf_core:libhdf_utils",
+    "hdf_core:libhdi",
+    "hilog:libhilog",
+    "ipc:ipc_single",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -978,5 +1025,9 @@ group("unittest") {
     ":transformtest",
     ":webpplugintest",
   ]
+
+  if (enable_jpeg_hw_decode) {
+    deps += [ ":jpeg_hw_decoder_test" ]
+  }
 }
 ################################################

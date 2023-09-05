@@ -32,8 +32,13 @@
           "hilog",
           "ipc",
           "napi",
+          "zlib",
           "init",
-          "memory_utils"
+          "memory_utils",
+          "drivers_interface_codec",
+          "drivers_interface_display",
+          "graphic_chipsetsdk",
+          "hdf_core"
         ],
         "third_party": [
           "flutter",
