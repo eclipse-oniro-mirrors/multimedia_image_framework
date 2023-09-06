@@ -159,7 +159,7 @@ HWTEST_F(JpegDecoderTest, SetDecodeOptionsTest001, TestSize.Level3)
     jpegDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
     PlImageInfo info;
-    uint32_t result = jpegDecoder->SetDecodeOptions(1, opts, info);
+    uint32_t result = jpegDecoder->SetDecodeOptions(0, opts, info);
     ASSERT_EQ(result, Media::SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: SetDecodeOptionsTest001 end";
 }
@@ -353,6 +353,45 @@ HWTEST_F(JpegDecoderTest, DecodeTest002, TestSize.Level3)
     ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest002 end";
 }
+
+/**
+ * @tc.name: DecodeTest003
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    DecodeContext context;
+    uint32_t result = jpegDecoder->Decode(2, context);
+    ASSERT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest003 end";
+}
+
+/**
+ * @tc.name: DecodeTest004
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DecodeTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest004 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    DecodeContext context;
+    uint32_t ret = jpegDecoder->Decode(context);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DecodeTest004 end";
+}
+
 /**
  * @tc.name: PromoteIncrementalDecodeTest001
  * @tc.desc: Test of PromoteIncrementalDecode
@@ -446,6 +485,26 @@ HWTEST_F(JpegDecoderTest, GetImagePropertyIntTest002, TestSize.Level3)
     uint32_t result = jpegDecoder->GetImagePropertyInt(0, key, value);
     ASSERT_EQ(result, Media::SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyIntTest002 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyIntTest003
+ * @tc.desc: Test of GetImagePropertyInt
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyIntTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyIntTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = ACTUAL_IMAGE_ENCODED_FORMAT;
+    int32_t value = 0;
+    uint32_t result = jpegDecoder->GetImagePropertyInt(0, key, value);
+    ASSERT_EQ(result, Media::ERR_MEDIA_VALUE_INVALID);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyIntTest003 end";
 }
 
 /**
@@ -764,6 +823,194 @@ HWTEST_F(JpegDecoderTest, GetImagePropertyStringTest015, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetImagePropertyStringTest016
+ * @tc.desc: Test of GetImagePropertyString
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringTest016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest016 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = ACTUAL_IMAGE_ENCODED_FORMAT;
+    std::string value = "";
+    int32_t result = jpegDecoder->GetImagePropertyString(0, key, value);
+    ASSERT_EQ(result, Media::ERR_MEDIA_VALUE_INVALID);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringTest016 end";
+}
+
+
+/**
+ * @tc.name: GetImagePropertyStringExTest01
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest01, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest01 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = "";
+    std::string value = "";
+    int32_t result = jpegDecoder->GetImagePropertyStringEx(key, value);
+    ASSERT_EQ(result, Media::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest01 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest002
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = USER_COMMENT;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.userComment_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest002 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest003
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = PIXEL_X_DIMENSION;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.pixelXDimension_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest003 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest004
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest004 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = PIXEL_Y_DIMENSION;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.pixelYDimension_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest004 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest005
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = WHITE_BALANC;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.whiteBalance_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest005 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest006
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest006 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = FOCAL_LENGTH_IN_35_MM_FILM;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.focalLengthIn35mmFilm_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest006 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest007
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest007 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = HW_MNOTE_CAPTURE_MODE;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.hwMnoteCaptureMode_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest007 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringExTest008
+ * @tc.desc: Test of GetImagePropertyStringEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImagePropertyStringExTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest008 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = HW_MNOTE_PHYSICAL_APERTURE;
+    std::string value = "";
+    EXIFInfo exifInfo_;
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, exifInfo_.hwMnotePhysicalAperture_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImagePropertyStringExTest008 end";
+}
+
+/**
  * @tc.name: ModifyImagePropertyTest001
  * @tc.desc: Test of ModifyImageProperty
  * @tc.type: FUNC
@@ -871,6 +1118,28 @@ HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest005, TestSize.Level3)
 }
 
 /**
+ * @tc.name: ModifyImagePropertyTest006
+ * @tc.desc: Test of ModifyImageProperty
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = "";
+    std::string path = "";
+    std::string value = 0;
+    uint32_t size = 0;
+    int32_t result = jpegDecoder->ModifyImageProperty(0, key, value, size);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest005 end";
+}
+
+/**
  * @tc.name: GetRedactionAreaTest001
  * @tc.desc: Test of GetRedactionArea
  * @tc.type: FUNC
@@ -890,6 +1159,52 @@ HWTEST_F(JpegDecoderTest, GetRedactionAreaTest001, TestSize.Level3)
     int32_t result = jpegDecoder->GetRedactionArea(fd, redactionType, ranges);
     ASSERT_EQ(result, Media::SUCCESS);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetRedactionAreaTest001 end";
+}
+
+/**
+ * @tc.name: IsMarkerTest001
+ * @tc.desc: Test of IsMarker
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, IsMarkerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    uint8_t rawMarkerPrefix = JPG_MARKER_PREFIX;
+    uint8_t rawMarkderCode = JPG_MARKER_RST0;
+    uint8_t markerCode = JPG_MARKER_RST;
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    ranges.push_back(std::make_pair(0, 0));
+    int32_t result = jpegDecoder->IsMarker(rawMarkerPrefix, rawMarkderCode, markerCode);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest001 end";
+}
+
+/**
+ * @tc.name: IsMarkerTest002
+ * @tc.desc: Test of IsMarker
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, IsMarkerTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest002 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    uint8_t rawMarkerPrefix = JPG_MARKER_PREFIX;
+    uint8_t rawMarkderCode = JPG_MARKER_APP0;
+    uint8_t markerCode = JPG_MARKER_APP;
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    ranges.push_back(std::make_pair(0, 0));
+    int32_t result = jpegDecoder->IsMarker(rawMarkerPrefix, rawMarkderCode, markerCode);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest002 end";
 }
 }
 }
