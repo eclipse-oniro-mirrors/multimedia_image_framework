@@ -50,7 +50,7 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
             isFeatureSupported = true;
         }
     }
-    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false) && isFeatureSupported;
+    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
 #else
     return false;
 #endif

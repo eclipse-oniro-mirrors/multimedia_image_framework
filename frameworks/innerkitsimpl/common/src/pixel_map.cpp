@@ -495,8 +495,8 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         HiLog::Error(LABEL, "dstPixels memset_s failed.");
     }
     Position srcPosition { srcRect.left, srcRect.top };
-    if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowBytes(), srcImageInfo,
-        dstPixels, dstPixelMap.GetRowBytes(), dstImageInfo)) {
+    if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
+        dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
         ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
         return false;
@@ -702,14 +702,12 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
                 return ERR_IMAGE_DATA_ABNORMAL;
             }
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
-            rowDataSize_ = sbBuffer->GetStride();
-            SetRowStride(rowDataSize_);
+            SetRowStride(sbBuffer->GetStride());
         } else {
-            rowDataSize_ = pixelBytes_ * info.size.width;
+            SetRowStride(pixelBytes_ * info.size.width);
         }
-#else
-        rowDataSize_ = pixelBytes_ * info.size.width;
 #endif
+        rowDataSize_ = pixelBytes_ * info.size.width;
     }
     if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
@@ -979,10 +977,15 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
                      static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    errno_t ret = memcpy_s(dst, bufferSize, data_, pixelsSize_);
-    if (ret != 0) {
-        HiLog::Error(LABEL, "read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+
+    // Copy the actual pixel data without padding bytes
+    for (int i = 0; i < imageInfo_.size.height; ++i) {
+        errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
+        if (ret != 0) {
+            HiLog::Error(LABEL, "read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        }
+        dst += rowDataSize_; // Move the destination buffer pointer to the next row
     }
     FinishTrace(HITRACE_TAG_ZIMAGE);
     return SUCCESS;
@@ -1060,7 +1063,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     ImageInfo dstImageInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     Position srcPosition { region.left, region.top };
-    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, dst + offset, stride,
+    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixels by rect call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -1082,7 +1085,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t dstRowBytes = BGRA_BYTES;
     Position srcPosition { pos.x, pos.y };
-    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowDataSize_, imageInfo_, &dst, dstRowBytes,
+    if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, &dst, dstRowBytes,
         dstImageInfo)) {
         HiLog::Error(LABEL, "read pixel by pos call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
