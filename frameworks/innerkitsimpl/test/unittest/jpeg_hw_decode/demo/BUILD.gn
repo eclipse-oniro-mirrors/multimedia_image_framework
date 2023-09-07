@@ -1,0 +1,58 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_executable("jpeg_hw_decoder_demo") {
+  install_enable = false
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/command_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/jpeg_hw_decoder.cpp",
+    "jpeg_hw_decoder_demo.cpp",
+  ]
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/manager/include/",
+    "${image_subsystem}/frameworks/innerkitsimpl/stream/include/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/../../../drivers/peripheral/base/",
+    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
+    "${image_subsystem}/../../../third_party/skia/",
+    "${image_subsystem}/../../../third_party/skia/include/codec/",
+    "${image_subsystem}/../../../third_party/skia/include/core/",
+    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
+  ]
+  deps = [
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/skia:skia_ohos",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:image_idl_headers",
+    "drivers_interface_codec:libimage_proxy_1.0",
+    "drivers_interface_display:display_buffer_idl_headers",
+    "drivers_interface_display:display_composer_idl_headers",
+    "drivers_interface_display:libdisplay_buffer_hdi_impl",
+    "drivers_interface_display:libdisplay_composer_hdi_impl",
+    "graphic_chipsetsdk:buffer_handle",
+    "hdf_core:libhdf_utils",
+    "hdf_core:libhdi",
+    "ipc:ipc_single",
+  ]
+}
