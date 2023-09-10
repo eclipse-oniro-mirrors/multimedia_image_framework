@@ -693,6 +693,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
     }
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
         rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        SetRowStride(rowDataSize_);
         HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
     } else {
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
@@ -1167,7 +1168,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         MakeImageInfo(PER_PIXEL_LEN, PER_PIXEL_LEN, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     uint32_t srcRowBytes = BGRA_BYTES;
     Position dstPosition { pos.x, pos.y };  // source is per pixel.
-    if (!PixelConvertAdapter::WritePixelsConvert(&color, srcRowBytes, srcImageInfo, data_, dstPosition, rowDataSize_,
+    if (!PixelConvertAdapter::WritePixelsConvert(&color, srcRowBytes, srcImageInfo, data_, dstPosition, rowStride_,
         imageInfo_)) {
         HiLog::Error(LABEL, "write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
@@ -1202,7 +1203,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     Position dstPosition { region.left, region.top };
     ImageInfo srcInfo =
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowDataSize_,
+    if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowStride_,
         imageInfo_)) {
         HiLog::Error(LABEL, "write pixel by rect call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
@@ -1230,10 +1231,14 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         HiLog::Error(LABEL, "write pixels by buffer current pixelmap data is nullptr.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    errno_t ret = memcpy_s(data_, pixelsSize_, source, pixelsSize_);
-    if (ret != 0) {
-        HiLog::Error(LABEL, "write pixels by buffer memcpy to pixelmap data from source fail, error:%{public}d", ret);
-        return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+
+    for (int i = 0; i < imageInfo_.size.height; ++i) {
+        const uint8_t* sourceRow = source + i * rowDataSize_;
+        errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
+        if (ret != 0) {
+            HiLog::Error(LABEL, "write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
     }
     FinishTrace(HITRACE_TAG_ZIMAGE);
     return SUCCESS;
@@ -1255,7 +1260,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
     }
     ImageInfo srcInfo =
         MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, imageInfo_.alphaType);
-    if (!PixelConvertAdapter::EraseBitmap(data_, rowDataSize_, srcInfo, color)) {
+    if (!PixelConvertAdapter::EraseBitmap(data_, rowStride_, srcInfo, color)) {
         HiLog::Error(LABEL, "erase pixels by color call EraseBitmap fail.");
         return false;
     }
