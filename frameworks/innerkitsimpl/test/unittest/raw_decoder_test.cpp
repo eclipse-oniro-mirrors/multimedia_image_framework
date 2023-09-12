@@ -485,6 +485,48 @@ HWTEST_F(RawDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: SetDecodeOptionsTest007
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptionsTest007 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->SetDecodeOptions(5, opts, info);
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    rawDecoder->SetSource(*streamPtr.release());
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptionsTest002 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest008
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptionsTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptionsTest008 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetStreamSize(0);
+    mock->SetReturn(true);
+    rawDecoder->SetSource(*mock.get());
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->SetDecodeOptions(2, opts, info);
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptionsTest008 end";
+}
+
+/**
  * @tc.name: DecodeTest001
  * @tc.desc: Test of Decode
  * @tc.type: FUNC
@@ -522,6 +564,116 @@ HWTEST_F(RawDecoderTest, DecodeTest002, TestSize.Level3)
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "RawDecoderTest: DecodeTest002 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex001
+ * @tc.desc: Test of DoDecodeHeaderByPiex
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex001 start";
+    std::unique_ptr<RawStream> rawStream_;
+    piex::PreviewImageData imageData;
+    piex::Error error = piex::GetPreviewImageData(rawStream_.get(), &imageData);
+    error = piex::Error::kFail;
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->DoDecodeHeaderByPiex();
+    imageData.preview.format = piex::Image::kJpegCompressed;
+    imageData.preview.length = 1;
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex001 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex002
+ * @tc.desc: Test of DoDecodeHeaderByPiex
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex002 start";
+    std::unique_ptr<RawStream> rawStream_;
+    piex::PreviewImageData imageData;
+    piex::Error error = piex::GetPreviewImageData(rawStream_.get(), &imageData);
+    error = piex::Error::kOk;
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    imageData.preview.format = piex::Image::kJpegCompressed;
+    imageData.preview.length = 1;
+    rawDecoder->DoDecodeHeaderByPiex();
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex002 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex003
+ * @tc.desc: Test of DoDecodeHeaderByPiex
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex003 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->DoDecodeHeaderByPiex();
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex003 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptions
+ * @tc.desc: Test of DoSetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoSetDecodeOptions, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptions001 start";
+    uint32_t index = 1;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->DoSetDecodeOptions(index, opts, info);
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptions001 end";
+}
+
+/**
+ * @tc.name: DoGetImageSize
+ * @tc.desc: Test of DoGetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoGetImageSize, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize start";
+    uint32_t index = 1;
+    PlSize size;
+    std::unique_ptr<AbsImageDecoder> jpegDecoder_;
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->DoGetImageSize(index, size);
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize end";
+}
+
+/**
+ * @tc.name: DoDecode
+ * @tc.desc: Test of DoDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecode, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecode start";
+    uint32_t index = 1;
+    DecodeContext context;
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->DoDecode(index, context);
+    bool result = (rawDecoder != nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecode end";
 }
 }
 }
