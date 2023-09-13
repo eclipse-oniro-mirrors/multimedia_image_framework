@@ -457,7 +457,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
     (*pixelMap)->GetImageInfo(imageInfo);
     info->width = imageInfo.size.width;
     info->height = imageInfo.size.height;
-    info->rowSize = (*pixelMap)->GetRowBytes();
+    info->rowSize = (*pixelMap)->GetRowStride();
     info->pixelFormat = static_cast<int32_t>(imageInfo.pixelFormat);
 
     HiLog::Debug(LABEL, "GetImageInfo, w=%{public}u, h=%{public}u, r=%{public}u, f=%{public}d",
