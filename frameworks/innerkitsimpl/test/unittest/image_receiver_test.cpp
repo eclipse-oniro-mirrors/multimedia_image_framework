@@ -310,5 +310,28 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0016, TestSize.Level3)
     ASSERT_EQ(surfaceBuffer1, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0016 end";
 }
+
+/**
+ * @tc.name: SaveBufferAsImage
+ * @tc.desc: test SaveBufferAsImage return
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SaveBufferAsImage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SaveBufferAsImage001 start";
+    InitializationOptions opts;
+    opts.size.width = RECEIVER_TEST_WIDTH;
+    opts.size.height = RECEIVER_TEST_HEIGHT;
+    opts.editable = true;
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = imageReceiver->ReadLastImage();
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, 0);
+    int32_t res = imageReceiver->SaveBufferAsImage(fd, buffer, opts);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SaveBufferAsImage001 end";
+}
 }
 }
