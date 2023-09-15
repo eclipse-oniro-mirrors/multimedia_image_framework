@@ -115,7 +115,7 @@ HWTEST_F(JpegHwDecoderUnitTest, Decode001, TestSize.Level1)
     uint32_t sampleSize = 0;
     CodecImageBuffer outputBuffer;
     OHOS::sptr<OHOS::HDI::Codec::Image::V1_0::ICodecImage> hwDecoder_ = nullptr;
-    uint32_t result = testObj.Decode(codec,srcStream, srcImgSize, sampleSize, outputBuffer);
+    uint32_t result = testObj.Decode(codec, srcStream, srcImgSize, sampleSize, outputBuffer);
     ASSERT_NE(result, Media::ERR_IMAGE_DECODE_ABNORMAL);
 }
 
@@ -160,7 +160,7 @@ HWTEST_F(JpegHwDecoderUnitTest, AssembleHuffmanTable, TestSize.Level1)
     CodecJpegHuffTable acTbl;
     testObj.AssembleHuffmanTable(jpegCompressInfo);
     int i = 1;
-    bool ret = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i],dcTbl);
+    bool ret = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i], dcTbl);
     ASSERT_FALSE(ret);
     bool ret1 = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i], acTbl);
     ASSERT_FALSE(ret1);
