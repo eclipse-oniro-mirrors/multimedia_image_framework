@@ -115,8 +115,8 @@ HWTEST_F(JpegHwDecoderUnitTest, Decode001, TestSize.Level1)
     uint32_t sampleSize = 0;
     CodecImageBuffer outputBuffer;
     OHOS::sptr<OHOS::HDI::Codec::Image::V1_0::ICodecImage> hwDecoder_ = nullptr;
-    uint32_t result = testObj.Decode(codec,srcStream,srcImgSize,sampleSize,outputBuffer);
-    ASSERT_NE(result,Media::ERR_IMAGE_DECODE_ABNORMAL);
+    uint32_t result = testObj.Decode(codec,srcStream, srcImgSize, sampleSize, outputBuffer);
+    ASSERT_NE(result, Media::ERR_IMAGE_DECODE_ABNORMAL);
 }
 
 HWTEST_F(JpegHwDecoderUnitTest, Decode002, TestSize.Level1)
@@ -128,10 +128,10 @@ HWTEST_F(JpegHwDecoderUnitTest, Decode002, TestSize.Level1)
     uint32_t sampleSize = 0;
     CodecImageBuffer outputBuffer;
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
-    bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT_DESC,srcImgSize);
-    ASSERT_NE(ret,true);
-    uint32_t result = testObj.Decode(codec,srcStream,srcImgSize,sampleSize,outputBuffer);
-    ASSERT_EQ(result,Media::ERR_IMAGE_DATA_UNSUPPORT);
+    bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT_DESC, srcImgSize);
+    ASSERT_NE(ret, true);
+    uint32_t result = testObj.Decode(codec, srcStream, srcImgSize, sampleSize, outputBuffer);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_UNSUPPORT);
 }
 
 HWTEST_F(JpegHwDecoderUnitTest, AssembleComponentInfo, TestSize.Level1)
@@ -148,7 +148,7 @@ HWTEST_F(JpegHwDecoderUnitTest, HuffmanTblTransform, TestSize.Level1)
     JpegHardwareDecoder testObj;
     JHUFF_TBL* huffTbl = nullptr;
     CodecJpegHuffTable tbl;
-    bool ret = testObj.HuffmanTblTransform(huffTbl,tbl);
+    bool ret = testObj.HuffmanTblTransform(huffTbl, tbl);
     ASSERT_FALSE(ret);
 }
 
@@ -162,7 +162,7 @@ HWTEST_F(JpegHwDecoderUnitTest, AssembleHuffmanTable, TestSize.Level1)
     int i = 1;
     bool ret = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i],dcTbl);
     ASSERT_FALSE(ret);
-    bool ret1 = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i],acTbl);
+    bool ret1 = testObj.HuffmanTblTransform(jpegCompressInfo->dc_huff_tbl_ptrs[i], acTbl);
     ASSERT_FALSE(ret1);
 }
 
@@ -174,7 +174,6 @@ HWTEST_F(JpegHwDecoderUnitTest, AssembleJpegImgHeader001, TestSize.Level1)
     ASSERT_FALSE(ret);
     bool ret1 = testObj.AssembleJpegImgHeader(jpegCompressInfo);
     ASSERT_FALSE(ret1);
-
 }
 
 HWTEST_F(JpegHwDecoderUnitTest, AssembleJpegImgHeader002, TestSize.Level1)
@@ -183,7 +182,6 @@ HWTEST_F(JpegHwDecoderUnitTest, AssembleJpegImgHeader002, TestSize.Level1)
     jpeg_decompress_struct* jpegCompressInfo = new jpeg_decompress_struct();
     bool ret = testObj.AssembleJpegImgHeader(jpegCompressInfo);
     ASSERT_FALSE(ret);
-
 }
 
 HWTEST_F(JpegHwDecoderUnitTest, IsStandAloneJpegMarker, TestSize.Level1)
