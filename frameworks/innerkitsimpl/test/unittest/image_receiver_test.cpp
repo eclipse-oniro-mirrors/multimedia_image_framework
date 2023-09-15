@@ -324,7 +324,8 @@ HWTEST_F(ImageReceiverTest, SaveBufferAsImage001, TestSize.Level3)
     opts.size.height = RECEIVER_TEST_HEIGHT;
     opts.editable = true;
     std::shared_ptr<ImageReceiver> imageReceiver;
-    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH,RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ASSERT_NE(imageReceiver, nullptr);
     OHOS::sptr<OHOS::SurfaceBuffer> buffer = imageReceiver->ReadLastImage();
     int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
