@@ -435,7 +435,7 @@ bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSiz
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
-    if (ImageSystemProperties::GetSurfaceBufferEnabled() && isFormatSupported(opts.desiredPixelFormat)){
+    if (ImageSystemProperties::GetSurfaceBufferEnabled() && isFormatSupported(opts.desiredPixelFormat)) {
         return isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             isWidthAligned(opts.desiredSize.width);
     }
