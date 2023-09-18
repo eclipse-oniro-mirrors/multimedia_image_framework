@@ -486,22 +486,24 @@ uint32_t ExtDecoder::GifDecode(uint32_t index, DecodeContext &context, const uin
     int dstHeight = dstInfo_.height();
     int rowBytes = dstInfo_.minRowBytes64();
     uint64_t byteCount = rowStride * dstHeight;
-    if (gifCache_ == nullptr) {
-        HiLog::Debug(LABEL, "malloc Gif cacahe memory");
-        gifCache_ = static_cast<uint8_t *>(malloc(byteCount));
-    }
     SkCodec::FrameInfo info {};
     codec_->getFrameInfo(index, &info);
-    if (info.fRequiredFrame != SkCodec::kNoFrame) {
+    if (info.fRequiredFrame != SkCodec::kNoFrame && index == gifCacheIndex_ + 1 && gifCache_ != nullptr) {
         // frame requires a previous frame as background layer
         dstOptions_.fPriorFrame = info.fRequiredFrame;
+    }
+    if (gifCache_ == nullptr) {
+        HiLog::Debug(LABEL, "malloc Gif cacahe memory");
+        gifCache_ = static_cast<uint8_t *>(calloc(byteCount, 1));
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, gifCache_, rowStride, &dstOptions_);
     if (ret != SkCodec::kSuccess && ResetCodec()) {
         // Try again
         ret = codec_->getPixels(dstInfo_, gifCache_, rowStride, &dstOptions_);
     }
-
+    if (ret == SkCodec::kSuccess) {
+        gifCacheIndex_ = index;
+    }
     for (int i = 0; i < dstHeight; i++) {
         uint8_t* srcRow = gifCache_ + i * rowStride;
         uint8_t* dstRow = static_cast<uint8_t *>(context.pixelsBuffer.buffer) + i * rowStride;
