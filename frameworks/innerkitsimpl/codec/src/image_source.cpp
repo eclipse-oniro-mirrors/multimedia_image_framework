@@ -111,6 +111,7 @@ static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
+static const uint8_t NUM_4 = 4;
 static const int DMA_SIZE = 512;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -413,19 +414,35 @@ static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrIn
     addrInfos.func =context.freeFunc;
 }
 
-static bool IsSupportDma(const PlImageInfo &plInfo)
+bool isFormatSupported(const PixelFormat &format)
+{
+    return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
+}
+
+bool isSizeSupported(const Size &size)
+{
+    return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
+}
+
+bool isWidthAligned(const int32_t &width)
+{
+    return ((width * NUM_4) & 255) == 0;
+}
+
+bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
-    if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
-            plInfo.size.width >= DMA_SIZE && plInfo.size.height >= DMA_SIZE) {
-        return true;
+    if (ImageSystemProperties::GetSurfaceBufferEnabled() && isFormatSupported(opts.desiredPixelFormat)){
+        return isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
+            isWidthAligned(opts.desiredSize.width);
     }
     return false;
 #endif
 }
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     const DecodeOptions &opts, uint32_t &errorCode)
 {
@@ -450,7 +467,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     }
     NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_HEADER_DECODE, &guard);
     DecodeContext context;
-    if (IsSupportDma(plInfo)) {
+    if (preference_ == MemoryUsagePreference::DEFAULT && IsSupportDma(opts_, info, hasDesiredSizeOptions)) {
         IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
         context.allocatorType = AllocatorType::DMA_ALLOC;
     } else {
@@ -641,11 +658,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
-    }
-
-    if (IsSupportDma(plInfo)) {
-        IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
-        context.allocatorType = AllocatorType::DMA_ALLOC;
     }
 
     errorCode = mainDecoder_->Decode(index, context);
