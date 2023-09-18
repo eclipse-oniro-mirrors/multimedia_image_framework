@@ -578,10 +578,27 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
         return false;
     }
 
-    if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
-        HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
-        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
-        return false;
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        ImageInfo imageInfo;
+        source.GetImageInfo(imageInfo);
+        for (int i = 0; i < imageInfo.size.height; ++i) {
+            errno_t ret = memcpy_s(dstPixels, source.GetRowBytes(),
+                                   source.GetPixels() + i * source.GetRowStride(), source.GetRowBytes());
+            if (ret != 0) {
+                HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+                ReleaseBuffer(AllocatorType::DMA_ALLOC, fd, bufferSize, &dstPixels);
+                return false;
+            }
+            // Move the destination buffer pointer to the next row
+            dstPixels = reinterpret_cast<uint8_t *>(dstPixels) + source.GetRowBytes();
+        }
+    } else {
+        if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
+            HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+            ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
+                          fd, bufferSize, &dstPixels);
+            return false;
+        }
     }
 
     if (fd <= 0) {
