@@ -1891,8 +1891,7 @@ napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_DATA_UNSUPPORT, "No colorspace in pixelmap");
     }
-    auto engine = reinterpret_cast<napi_env*>(env);
-    auto resultValue = ColorManager::CreateJsColorSpaceObject(*engine, grCS);
+    auto resultValue = ColorManager::CreateJsColorSpaceObject(env, grCS);
     nVal.result = reinterpret_cast<napi_value>(resultValue);
 #else
     return ImageNapiUtils::ThrowExceptionError(
@@ -1920,8 +1919,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 #ifdef IMAGE_COLORSPACE_FLAG
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     auto csNativeValue = reinterpret_cast<napi_value*>(nVal.argv[NUM_0]);
-    auto csNativeObject = OHOS::AbilityRuntime::ConvertNativeValueTo<napi_value>(csNativeValue);
-    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeObject);
+    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeValue);
 #endif
     if (nVal.context->colorSpace == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
