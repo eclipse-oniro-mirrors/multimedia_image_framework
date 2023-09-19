@@ -35,7 +35,6 @@ ohos_shared_library("pngplugin") {
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
     "//third_party/zlib",
-    "//third_party/libpng",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/flutter/skia/third_party/libjpeg-turbo",
@@ -46,7 +45,10 @@ ohos_shared_library("pngplugin") {
     "$skia_root/skia/include/core",
     "//third_party/flutter/skia/third_party/skcms",
   ]
-  deps = [ "//third_party/zlib:shared_libz" ]
+  deps = [
+    "//third_party/libpng:png_static",
+    "//third_party/zlib:shared_libz",
+  ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
@@ -65,7 +67,6 @@ ohos_shared_library("pngplugin") {
     defines = image_decode_mac_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/libpng",
       "//third_party/bounds_checking_function/include",
     ]
     deps += [
@@ -89,7 +90,6 @@ ohos_shared_library("pngplugin") {
     if (DUAL_ADAPTER) {
     } else {
       deps += [ "//third_party/libpng:libpng" ]
-      include_dirs += [ "//third_party/libpng" ]
     }
     external_deps = [
       "c_utils:utils",

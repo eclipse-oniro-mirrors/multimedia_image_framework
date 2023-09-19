@@ -77,7 +77,6 @@ config("image_external_config") {
   } else {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//third_party/libpng",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
   }
