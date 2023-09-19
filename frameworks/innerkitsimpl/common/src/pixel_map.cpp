@@ -555,29 +555,8 @@ void PixelMap::InitDstImageInfo(const InitializationOptions &opts, const ImageIn
     }
 }
 
-bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
+bool PixelMap::CpPixMapFunc(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize)
 {
-    uint32_t bufferSize = source.GetByteCount();
-    if (source.GetPixels() == nullptr) {
-        HiLog::Error(LABEL, "source pixelMap data invalid");
-        return false;
-    }
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
-        return false;
-    }
-    int fd = 0;
-    void *dstPixels = nullptr;
-    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
-    } else {
-        dstPixels = malloc(bufferSize);
-    }
-    if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
-        return false;
-    }
-
     if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         ImageInfo imageInfo;
         source.GetImageInfo(imageInfo);
@@ -600,7 +579,34 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
             return false;
         }
     }
+    return true;
+}
 
+bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
+{
+    uint32_t bufferSize = source.GetByteCount();
+    if (source.GetPixels() == nullptr) {
+        HiLog::Error(LABEL, "source pixelMap data invalid");
+        return false;
+    }
+    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
+        return false;
+    }
+    int fd = 0;
+    void *dstPixels = nullptr;
+    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
+    } else {
+        dstPixels = malloc(bufferSize);
+    }
+    if (dstPixels == nullptr) {
+        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        return false;
+    }
+    if (!CpPixMapFunc(source, dstPixels, fd, bufferSize)) {
+        return false;
+    }
     if (fd <= 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
