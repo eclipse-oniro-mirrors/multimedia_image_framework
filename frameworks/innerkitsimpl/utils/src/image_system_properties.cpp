@@ -42,6 +42,15 @@ bool ImageSystemProperties::GetSkiaEnabled()
 bool ImageSystemProperties::GetSurfaceBufferEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetDmaEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
     bool isFeatureSupported = false;
     if (isPhone) {
@@ -50,7 +59,7 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
             isFeatureSupported = true;
         }
     }
-    return system::GetBoolParameter("persist.multimedia.image.surfacebuffer.enabled", false);
+    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", false);
 #else
     return false;
 #endif

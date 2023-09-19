@@ -106,6 +106,7 @@ static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string BASE64_URL_PREFIX = ";base64,";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
+static const int INT_255 = 255;
 static const size_t SIZE_ZERO = 0;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -424,9 +425,9 @@ bool isSizeSupported(const Size &size)
     return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
 }
 
-bool isWidthAligned(const int32_t &width)
+bool IsWidthAligned(const int32_t &width)
 {
-    return ((width * NUM_4) & 255) == 0;
+    return ((width * NUM_4) & INT_255) == INT_ZERO;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSizeOptions)
@@ -435,9 +436,14 @@ bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSiz
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
-    if (ImageSystemProperties::GetSurfaceBufferEnabled() && isFormatSupported(opts.desiredPixelFormat)) {
+    if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
+        isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
+        return true;
+    }
+
+    if (ImageSystemProperties::GetDmaEnabled() && isFormatSupported(opts.desiredPixelFormat)) {
         return isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
-            isWidthAligned(opts.desiredSize.width);
+            IsWidthAligned(opts.desiredSize.width);
     }
     return false;
 #endif
