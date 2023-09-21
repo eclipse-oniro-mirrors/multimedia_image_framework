@@ -34,8 +34,6 @@ ohos_unittest("pixelmaptest") {
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "$comlibmemory_subsystem/libpurgeablemem/cpp/include",
-    "$comlibmemory_subsystem/libpurgeablemem/common/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
@@ -56,8 +54,14 @@ ohos_unittest("pixelmaptest") {
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_core",
-    "memory_utils:libpurgeablemem",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
+    external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
+  } else {
+    external_deps += [ "memory_utils:libpurgeablemem" ]
+  }
 
   if (purgeable_ashmem_enable) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
@@ -173,7 +177,12 @@ ohos_unittest("imagesourcetest") {
 
   if (purgeable_ashmem_enable) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    external_deps += [ "memory_utils:libpurgeablemem" ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
+      external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
+    } else {
+      external_deps += [ "memory_utils:libpurgeablemem" ]
+    }
   }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
