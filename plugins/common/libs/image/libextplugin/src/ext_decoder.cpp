@@ -491,6 +491,8 @@ uint32_t ExtDecoder::GifDecode(uint32_t index, DecodeContext &context, const uin
     if (info.fRequiredFrame != SkCodec::kNoFrame && index == gifCacheIndex_ + 1 && gifCache_ != nullptr) {
         // frame requires a previous frame as background layer
         dstOptions_.fPriorFrame = info.fRequiredFrame;
+    } else {
+        dstOptions_.fPriorFrame = SkCodec::kNoFrame;
     }
     if (gifCache_ == nullptr) {
         HiLog::Debug(LABEL, "malloc Gif cacahe memory");
