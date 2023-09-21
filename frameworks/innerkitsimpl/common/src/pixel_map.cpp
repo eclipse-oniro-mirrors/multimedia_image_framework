@@ -555,7 +555,7 @@ void PixelMap::InitDstImageInfo(const InitializationOptions &opts, const ImageIn
     }
 }
 
-bool PixelMap::CpPixMapFunc(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize)
+bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize)
 {
     if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         ImageInfo imageInfo;
@@ -604,7 +604,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
         HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-    if (!CpPixMapFunc(source, dstPixels, fd, bufferSize)) {
+    if (!CopyPixMapToDst(source, dstPixels, fd, bufferSize)) {
         return false;
     }
     if (fd <= 0) {
