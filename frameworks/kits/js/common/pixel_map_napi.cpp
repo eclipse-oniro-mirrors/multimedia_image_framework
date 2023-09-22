@@ -1918,8 +1918,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     }
 #ifdef IMAGE_COLORSPACE_FLAG
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    auto csNativeValue = reinterpret_cast<napi_value*>(nVal.argv[NUM_0]);
-    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(csNativeValue);
+    nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, nVal.argv[NUM_0]);
 #endif
     if (nVal.context->colorSpace == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
