@@ -39,6 +39,7 @@ bool ImageSystemProperties::GetSkiaEnabled()
 #endif
 }
 
+// surfacebuffer tmp switch, only used for test
 bool ImageSystemProperties::GetSurfaceBufferEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
@@ -59,7 +60,7 @@ bool ImageSystemProperties::GetDmaEnabled()
             isFeatureSupported = true;
         }
     }
-    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", false);
+    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", true) && isPhone;
 #else
     return false;
 #endif
