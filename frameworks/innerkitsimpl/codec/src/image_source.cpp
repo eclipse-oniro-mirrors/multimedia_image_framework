@@ -436,6 +436,7 @@ bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSiz
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
+    // used for test surfacebuffer
     if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
         isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
         return true;
