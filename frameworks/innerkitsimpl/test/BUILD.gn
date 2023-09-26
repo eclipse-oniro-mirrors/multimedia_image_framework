@@ -559,7 +559,6 @@ ohos_unittest("pngtest") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//third_party/libpng",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
   ]
