@@ -44,7 +44,7 @@ static const std::string MARSHALLING = "marshalling";
 static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
     {CREATE_PIXEL_MAP_FROM_PARCEL, {62980096, 62980105, 62980115, 62980097,
         62980177, 62980178, 62980179, 62980180, 62980246}},
-    {MARSHALLING, {62980115, 62980097}}
+    {MARSHALLING, {62980115, 62980097, 62980096}}
 };
 static const std::string CLASS_NAME = "PixelMap";
 
@@ -812,8 +812,13 @@ napi_value PixelMapNapi::ThrowExceptionError(napi_env env,
 }
 
 napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_info info)
+#if defined(IOS_PLATFORM) || defined(A_PLATFORM)
 {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    napi_value result = nullptr;
+    return result;
+}
+#else
+{
     napi_value globalValue;
     napi_get_global(env, &globalValue);
     napi_value func;
@@ -861,11 +866,8 @@ napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_in
             CREATE_PIXEL_MAP_FROM_PARCEL, ERR_IMAGE_NAPI_ERROR, "New instance could not be obtained");
     }
     return result;
-#else
-    napi_value result = nullptr;
-    return result;
-#endif
 }
+#endif
 
 napi_value PixelMapNapi::GetIsEditable(napi_env env, napi_callback_info info)
 {
