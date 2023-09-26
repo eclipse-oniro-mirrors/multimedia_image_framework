@@ -808,7 +808,7 @@ napi_value PixelMapNapi::ThrowExceptionError(napi_env env,
         errNode->second.find(code) != errNode->second.end()) {
         return ImageNapiUtils::ThrowExceptionError(env, code, info);
     }
-    return ImageNapiUtils::ThrowExceptionError(env, ERROR, "Fail to unmarshalling");
+    return ImageNapiUtils::ThrowExceptionError(env, ERROR, "Operation failed");
 }
 
 napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_info info)
