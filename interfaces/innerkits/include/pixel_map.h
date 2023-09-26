@@ -219,7 +219,7 @@ private:
                                   PixelMap dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
                                  ImageInfo &dstImageInfo);
-    static bool CpPixMapFunc(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
+    static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap);
     static bool SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
                                      const Rect &srcRect, PixelMap &dstPixelMap);

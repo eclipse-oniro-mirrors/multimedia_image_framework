@@ -415,19 +415,19 @@ static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrIn
     addrInfos.func =context.freeFunc;
 }
 
-bool isFormatSupported(const PixelFormat &format)
+bool IsSupportFormat(const PixelFormat &format)
 {
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
 }
 
-bool isSizeSupported(const Size &size)
+bool IsSupportSize(const Size &size)
 {
     return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
 }
 
 bool IsWidthAligned(const int32_t &width)
 {
-    return ((width * NUM_4) & INT_255) == INT_ZERO;
+    return ((width * NUM_4) & INT_255) == 0;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSizeOptions)
@@ -438,12 +438,12 @@ bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSiz
 #else
     // used for test surfacebuffer
     if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
-        isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
+        IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
         return true;
     }
 
-    if (ImageSystemProperties::GetDmaEnabled() && isFormatSupported(opts.desiredPixelFormat)) {
-        return isSizeSupported(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
+    if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
+        return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             IsWidthAligned(opts.desiredSize.width);
     }
     return false;
