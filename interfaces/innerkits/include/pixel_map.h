@@ -37,6 +37,7 @@ using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
 struct InitializationOptions {
     Size size;
+    PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;

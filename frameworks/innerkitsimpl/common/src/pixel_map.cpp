@@ -224,7 +224,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     PixelFormat format = PixelFormat::BGRA_8888;
     if (useCustomFormat) {
-        format = ((opts.pixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.pixelFormat);
+        format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
     }
     ImageInfo srcImageInfo =
         MakeImageInfo(stride, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
