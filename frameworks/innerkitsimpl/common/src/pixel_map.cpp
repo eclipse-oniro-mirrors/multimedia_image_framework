@@ -87,6 +87,7 @@ PixelMap::~PixelMap()
 
 void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
 {
+    std::unique_lock<std::mutex> lock(*releaseMutex_);
     if (data_ == nullptr) {
         return;
     }
