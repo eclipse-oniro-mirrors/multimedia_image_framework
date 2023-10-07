@@ -23,7 +23,6 @@ ohos_unittest("pixelmaptest") {
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
-    "-DIMAGE_PURGEABLE_PIXELMAP",
   ]
 
   include_dirs = [
@@ -56,15 +55,10 @@ ohos_unittest("pixelmaptest") {
     "ipc:ipc_core",
   ]
 
-  if (defined(global_parts_info) &&
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-    external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
-  } else {
-    external_deps += [ "memory_utils:libpurgeablemem" ]
-  }
-
-  if (purgeable_ashmem_enable) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
   }
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -175,14 +169,10 @@ ohos_unittest("imagesourcetest") {
     "hilog:libhilog",
   ]
 
-  if (purgeable_ashmem_enable) {
+  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+      defined(global_parts_info.resourceschedule_memmgr_plugin)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
-      external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
-    } else {
-      external_deps += [ "memory_utils:libpurgeablemem" ]
-    }
+    external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
   }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
