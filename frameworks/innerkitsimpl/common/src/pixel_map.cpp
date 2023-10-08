@@ -176,8 +176,7 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
 
 bool CheckConvertParmas(const ImageInfo &src, const ImageInfo &dst)
 {
-    return src.pixelFormat == dst.pixelFormat &&
-        src.size.width == dst.size.width &&
+    return src.size.width == dst.size.width &&
         src.size.height == dst.size.height &&
         src.alphaType == dst.alphaType;
 }
