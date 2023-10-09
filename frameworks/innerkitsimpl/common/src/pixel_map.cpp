@@ -74,7 +74,6 @@ constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
-    HiLog::Info(LABEL, "PixelMap destory");
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     if (purgeableMemPtr_) {
         PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
