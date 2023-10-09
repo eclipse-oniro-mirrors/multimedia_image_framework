@@ -418,6 +418,8 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
 
 void ImageSourceNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+    reinterpret_cast<ImageSourceNapi *>(nativeObject)->nativeImgSrc = nullptr;
+    HiLog::Info(LABEL, "ImageSourceNapi::Destructor");
 }
 
 napi_value ImageSourceNapi::GetSupportedFormats(napi_env env, napi_callback_info info)
