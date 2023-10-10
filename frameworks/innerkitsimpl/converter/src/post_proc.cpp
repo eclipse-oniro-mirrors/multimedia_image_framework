@@ -511,12 +511,7 @@ bool PostProc::ScalePixelMap(float scaleX, float scaleY, PixelMap &pixelMap)
     if ((fabs(scaleX - 1.0f) < EPSILON) && (fabs(scaleY - 1.0f) < EPSILON)) {
         return true;
     }
-    BasicTransformer trans;
-    PixmapInfo input(false);
-    ConvertPixelMapToPixmapInfo(pixelMap, input);
-
-    trans.SetScaleParam(scaleX, scaleY);
-    return Transform(trans, input, pixelMap);
+    return pixelMap.resize(scaleX, scaleY);
 }
 bool PostProc::TranslatePixelMap(float tX, float tY, PixelMap &pixelMap)
 {
