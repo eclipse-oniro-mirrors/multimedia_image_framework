@@ -602,7 +602,8 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
         HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-    if (!CopyPixMapToDst(source, dstPixels, fd, bufferSize)) {
+    void* tmpDstPixels = dstPixels;
+    if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
         return false;
     }
     if (fd <= 0) {
@@ -750,7 +751,11 @@ const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
                      pixelBytes_);
         return nullptr;
     }
-    return (data_ + y * rowDataSize_ + x);
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return (data_ + y * rowStride_ + x);
+#else
+    return (data_ + y * rowDataSize_  + x);
+#endif
 }
 
 const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
@@ -761,7 +766,11 @@ const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint16_t*
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return reinterpret_cast<uint16_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
+#else
     return reinterpret_cast<uint16_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
+#endif
 }
 
 const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
@@ -772,7 +781,11 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint32_t*
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return reinterpret_cast<uint32_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
+#else
     return reinterpret_cast<uint32_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
+#endif
 }
 
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
@@ -781,7 +794,11 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
         HiLog::Error(LABEL, "input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
     }
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return (data_ + y * rowStride_ + (static_cast<uint32_t>(x) * pixelBytes_));
+#else
     return (data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) * pixelBytes_));
+#endif
 }
 
 bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
