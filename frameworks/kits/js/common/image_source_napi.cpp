@@ -1039,8 +1039,8 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
     }
 
     ImageNapiUtils::HicheckerReport();
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMap", CreatePixelMapExecute,
-        CreatePixelMapComplete, asyncContext, asyncContext->work);
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreatePixelMap", CreatePixelMapExecute,
+        CreatePixelMapComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
@@ -1737,8 +1737,8 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
     ImageNapiUtils::HicheckerReport();
 
     napi_status status;
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMapList", CreatePixelMapListExec,
-        CreatePixelMapListComplete, asyncContext, asyncContext->work);
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreatePixelMapList", CreatePixelMapListExec,
+        CreatePixelMapListComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to create async work"));
 
     FinishTrace(HITRACE_TAG_ZIMAGE);
