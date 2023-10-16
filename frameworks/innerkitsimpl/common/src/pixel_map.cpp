@@ -74,6 +74,12 @@ constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
+    FreePixelMap();
+}
+
+void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
+{
+    // remove PixelMap from purgeable LRU if it is purgeable PixelMap
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     if (purgeableMemPtr_) {
         PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
@@ -81,11 +87,7 @@ PixelMap::~PixelMap()
         purgeableMemPtr_ = nullptr;
     }
 #endif
-    FreePixelMap();
-}
 
-void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
-{
     if (data_ == nullptr) {
         return;
     }
