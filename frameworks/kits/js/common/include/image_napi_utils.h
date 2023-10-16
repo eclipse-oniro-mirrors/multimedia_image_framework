@@ -69,6 +69,21 @@ do \
     } \
 } while (0)
 
+#define IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, workName, exec, complete, aContext, work, qos) \
+do \
+{ \
+    napi_value _resource = nullptr; \
+    napi_create_string_utf8((env), (workName), NAPI_AUTO_LENGTH, &_resource); \
+    (status) = napi_create_async_work(env, nullptr, _resource, (exec), \
+            (complete), static_cast<void*>((aContext).get()), &(work)); \
+    if ((status) == napi_ok) { \
+        (status) = napi_queue_async_work_with_qos((env), (work), (qos)); \
+        if ((status) == napi_ok) { \
+            (aContext).release(); \
+        } \
+    } \
+} while (0)
+
 #define IMG_ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 
 #define GET_BUFFER_BY_NAME(root, name, res, len) ImageNapiUtils::GetBufferByName(env, (root), (name), &(res), &(len))
