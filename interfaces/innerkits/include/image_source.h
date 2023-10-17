@@ -129,6 +129,11 @@ struct PixelMapAddrInfos {
     CustomFreePixelMap func;
 };
 
+struct ASTCInfo {
+    Size size;
+    Size blockFootprint;
+};
+
 class SourceStream;
 
 class ImageSource {
@@ -145,6 +150,9 @@ public:
                                                        uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
                                                                                   uint32_t &errorCode);
+    NATIVEEXPORT static bool IsASTC(const uint8_t *fileData);
+
+    NATIVEEXPORT static ASTCInfo GetASTCInfo(const uint8_t *fileData);
 
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
@@ -235,8 +243,10 @@ private:
     static std::unique_ptr<SourceStream> DecodeBase64(const uint8_t *data, uint32_t size);
     static std::unique_ptr<SourceStream> DecodeBase64(const std::string &data);
     bool IsSpecialYUV();
+    ImageInfo GetImageInfoForASTC();
     bool ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSupportOdd, bool isAddUV, uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForYUV(uint32_t &errorCode);
+    std::unique_ptr<PixelMap> CreatePixelMapForASTC(uint32_t &errorCode);
     uint32_t GetFormatExtended(std::string &format);
     static std::unique_ptr<ImageSource> DoImageSourceCreate(
         std::function<std::unique_ptr<SourceStream>(void)> stream,

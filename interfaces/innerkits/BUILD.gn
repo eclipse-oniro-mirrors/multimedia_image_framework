@@ -136,6 +136,7 @@ if (use_clang_android) {
     sources = [
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -238,6 +239,7 @@ ohos_static_library("image_static") {
   public_configs = [ ":image_external_config" ]
 
   sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",

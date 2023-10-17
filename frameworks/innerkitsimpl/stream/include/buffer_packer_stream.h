@@ -32,6 +32,15 @@ public:
     int64_t BytesWritten() override;
     bool GetCapicity(size_t &size) override;
 
+    uint8_t* GetAddr() const override
+    {
+        return outputData_;
+    }
+
+    void SetOffset(uint32_t offset) override
+    {
+        offset_ = offset;
+    }
 private:
     DISALLOW_COPY(BufferPackerStream);
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
