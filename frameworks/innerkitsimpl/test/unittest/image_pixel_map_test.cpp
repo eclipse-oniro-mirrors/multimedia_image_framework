@@ -515,8 +515,10 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap011, TestSize.Level3)
     EXPECT_EQ(pixelmap1->GetPixelFormat(), pixelmap2->GetPixelFormat());
     EXPECT_EQ(pixelmap1->GetColorSpace(), pixelmap2->GetColorSpace());
 
+    Parcel data2;
+    pixelmap2.get()->Marshalling(data2);
     PIXEL_MAP_ERR err;
-    PixelMap *pixelmap3 = PixelMap::Unmarshalling(data, err);
+    PixelMap *pixelmap3 = PixelMap::Unmarshalling(data2, err);
     EXPECT_EQ(pixelmap2->GetHeight(), pixelmap3->GetHeight());
     EXPECT_EQ(pixelmap2->GetWidth(), pixelmap3->GetWidth());
     EXPECT_EQ(pixelmap2->GetPixelFormat(), pixelmap3->GetPixelFormat());
