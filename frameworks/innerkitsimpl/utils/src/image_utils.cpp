@@ -52,6 +52,7 @@ constexpr int32_t RGB888_BYTES = 3;
 constexpr int32_t ARGB8888_BYTES = 4;
 constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
+constexpr int32_t ASTC_4x4_BYTES = 1;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
@@ -132,6 +133,11 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
         case PixelFormat::NV21:
         case PixelFormat::NV12:
             pixelBytes = NV21_BYTES;  // perl pixel 1.5 Bytes but return int so return 2
+            break;
+        case PixelFormat::ASTC_4x4:
+        case PixelFormat::ASTC_6x6:
+        case PixelFormat::ASTC_8x8:
+            pixelBytes = ASTC_4x4_BYTES;
             break;
         default:
             IMAGE_LOGE("[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.", static_cast<int32_t>(pixelFormat));

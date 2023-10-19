@@ -71,6 +71,12 @@ constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+static const uint8_t NUM_2 = 2;
+static const uint8_t NUM_3 = 3;
+static const uint8_t NUM_5 = 5;
+static const uint8_t NUM_6 = 6;
+static const uint8_t NUM_7 = 7;
+
 constexpr int32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
@@ -671,6 +677,11 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
         case PixelFormat::RGBA_F16:
             pixelBytes_ = BGRA_F16_BYTES;
             break;
+        case PixelFormat::ASTC_4x4:
+        case PixelFormat::ASTC_6x6:
+        case PixelFormat::ASTC_8x8:
+            pixelBytes_ = ASTC_4x4_BYTES;
+            break;
         default: {
             HiLog::Error(LABEL, "pixel format:[%{public}d] not supported.", format);
             return false;
@@ -694,6 +705,36 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info)
     return SetImageInfo(info, false);
 }
 
+uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
+{
+    if (info.pixelFormat == PixelFormat::ALPHA_8) {
+        rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        SetRowStride(rowDataSize_);
+        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
+    } else if (info.pixelFormat == PixelFormat::ASTC_4x4) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_3) >> NUM_2) << NUM_2);
+    } else if (info.pixelFormat == PixelFormat::ASTC_6x6) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_5) / NUM_6) * NUM_6);
+    } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_7) >> NUM_3) << NUM_3);
+    } else {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+        if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+            if (context_ == nullptr) {
+                HiLog::Error(LABEL, "set imageInfo context_ null");
+                return ERR_IMAGE_DATA_ABNORMAL;
+            }
+            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
+            SetRowStride(sbBuffer->GetStride());
+        } else {
+            SetRowStride(pixelBytes_ * info.size.width);
+        }
+#endif
+        rowDataSize_ = pixelBytes_ * info.size.width;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
@@ -715,25 +756,12 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         HiLog::Error(LABEL, "image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
     }
-    if (info.pixelFormat == PixelFormat::ALPHA_8) {
-        rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        SetRowStride(rowDataSize_);
-        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
-    } else {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-        if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-            if (context_ == nullptr) {
-                HiLog::Error(LABEL, "set imageInfo context_ null");
-                return ERR_IMAGE_DATA_ABNORMAL;
-            }
-            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
-            SetRowStride(sbBuffer->GetStride());
-        } else {
-            SetRowStride(pixelBytes_ * info.size.width);
-        }
-#endif
-        rowDataSize_ = pixelBytes_ * info.size.width;
+
+    if (SetRowDataSizeForImageInfo(info) != SUCCESS) {
+        HiLog::Error(LABEL, "pixel map set rowDataSize error.");
+        return ERR_IMAGE_DATA_ABNORMAL;
     }
+
     if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "pixel map byte count out of range.");
@@ -1568,6 +1596,11 @@ bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
         return false;
     }
 
+    if (!parcel.WriteBool(isAstc_)) {
+        HiLog::Error(LABEL, "write pixel map isAstc_ to parcel failed.");
+        return false;
+    }
+
     if (!parcel.WriteInt32(static_cast<int32_t>(allocatorType_))) {
         HiLog::Error(LABEL, "write pixel map allocator type:[%{public}d] to parcel failed.",
                      allocatorType_);
@@ -1580,6 +1613,9 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
+    if (isAstc_) {
+        bufferSize = pixelsSize_;
+    }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
         static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
@@ -1663,7 +1699,10 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
     bool isEditable = parcel.ReadBool();
     pixelMap->SetEditable(isEditable);
-    
+
+    bool isAstc = parcel.ReadBool();
+    pixelMap->SetAstc(isAstc);
+
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
     int32_t rowDataSize = parcel.ReadInt32();
     int32_t bufferSize = parcel.ReadInt32();
@@ -1673,7 +1712,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
         HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
         return nullptr;
     }
-    if (bufferSize != rowDataSize * imgInfo.size.height) {
+    if ((!isAstc) && bufferSize != rowDataSize * imgInfo.size.height) {
         delete pixelMap;
         HiLog::Error(LABEL, "unmarshalling bufferSize parcelling error");
         return nullptr;
@@ -1990,6 +2029,12 @@ static const string GetNamedPixelFormat(const PixelFormat pixelFormat)
             return "Pixel Format BGRA_8888";
         case PixelFormat::RGBA_F16:
             return "Pixel Format RGBA_F16";
+        case PixelFormat::ASTC_4x4:
+            return "Pixel Format ASTC_4x4";
+        case PixelFormat::ASTC_6x6:
+            return "Pixel Format ASTC_6x6";
+        case PixelFormat::ASTC_8x8:
+            return "Pixel Format ASTC_8x8";
         default:
             return "Pixel Format UNKNOWN";
     }

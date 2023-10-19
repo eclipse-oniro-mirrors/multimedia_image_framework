@@ -270,16 +270,14 @@ uint8_t *FileSourceStream::GetDataPtr()
         return fileData_;
     }
 #ifdef SUPPORT_MMAP
-    int dupFd = -1;
-    if (!DupFd(filePtr_, dupFd)) {
+    if (!DupFd(filePtr_, mmapFd_)) {
         return nullptr;
     }
-    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, MAP_SHARED, dupFd, 0);
+    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, MAP_SHARED, mmapFd_, 0);
     if (mmptr == MAP_FAILED) {
         HiLog::Error(LABEL, "[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;
     }
-    close(dupFd);
     fileData_ = static_cast<uint8_t*>(mmptr);
 #endif
     return fileData_;
@@ -296,12 +294,13 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_);
-        fileData_ = nullptr;
+        close(mmapFd_);
 #endif
     }
+    fileData_ = nullptr;
 }
 
 OutputDataStream* FileSourceStream::ToOutputDataStream()
@@ -312,6 +311,12 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
         return nullptr;
     }
     return new (std::nothrow) FilePackerStream(dupFd);
+}
+
+int FileSourceStream::GetMMapFd()
+{
+    mmapFdPassedOn_ = true;
+    return mmapFd_;
 }
 } // namespace Media
 } // namespace OHOS

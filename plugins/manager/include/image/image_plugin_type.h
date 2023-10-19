@@ -93,6 +93,9 @@ enum class PlPixelFormat {
     NV21 = 8,
     NV12 = 9,
     CMYK = 10,
+    ASTC_4X4 = 11,
+    ASTC_6X6 = 12,
+    ASTC_8X8 = 13,
 };
 
 enum class PlAlphaType : int32_t {
