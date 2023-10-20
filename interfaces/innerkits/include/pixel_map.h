@@ -55,7 +55,12 @@ constexpr uint8_t ARGB_B_SHIFT = 0;
 // Define pixel map malloc max size 600MB
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 
-class PixelMap : public Parcelable {
+typedef struct PixelMapError {
+    uint32_t errorCode = 0;
+    std::string errorInfo = "";
+} PIXEL_MAP_ERR;
+
+class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
     PixelMap()
     {
@@ -122,6 +127,17 @@ public:
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
+    NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
+    {
+        errorCode = code;
+        errorInfo = info;
+    }
+
+    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, std::string info)
+    {
+        err.errorCode = code;
+        err.errorInfo = info;
+    }
 
     NATIVEEXPORT virtual void SetRowStride(uint32_t stride);
     NATIVEEXPORT virtual int32_t GetRowStride()
@@ -161,6 +177,7 @@ public:
 
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
 

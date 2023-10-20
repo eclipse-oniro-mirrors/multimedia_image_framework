@@ -476,6 +476,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap009, TestSize.Level3)
     EXPECT_EQ(newPixelMap, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap009 end";
 }
+
 /**
 * @tc.name: ImagePixelMap010
 * @tc.desc: test WriteToParcel
@@ -513,8 +514,24 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap011, TestSize.Level3)
     EXPECT_EQ(pixelmap1->GetWidth(), pixelmap2->GetWidth());
     EXPECT_EQ(pixelmap1->GetPixelFormat(), pixelmap2->GetPixelFormat());
     EXPECT_EQ(pixelmap1->GetColorSpace(), pixelmap2->GetColorSpace());
+
+    Parcel data2;
+    pixelmap2->Marshalling(data2);
+    PIXEL_MAP_ERR err;
+    PixelMap *pixelmap3 = PixelMap::Unmarshalling(data2, err);
+    EXPECT_EQ(pixelmap2->GetHeight(), pixelmap3->GetHeight());
+    EXPECT_EQ(pixelmap2->GetWidth(), pixelmap3->GetWidth());
+    EXPECT_EQ(pixelmap2->GetPixelFormat(), pixelmap3->GetPixelFormat());
+    EXPECT_EQ(pixelmap2->GetColorSpace(), pixelmap3->GetColorSpace());
+
+    uint32_t code = 10; // test num.
+    pixelmap3->SetPixelMapError(code, "error");
+    EXPECT_EQ(code, pixelmap3->errorCode);
+    EXPECT_EQ("error", pixelmap3->errorInfo);
+
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap011 end";
 }
+
 /**
  * @tc.name: ImagePixelMap012
  * @tc.desc: create pixelmap with color,colorlength,offset,width and initialization options

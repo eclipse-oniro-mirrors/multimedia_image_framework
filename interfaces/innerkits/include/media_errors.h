@@ -56,11 +56,6 @@ const uint32_t ERR_IMAGE_HW_DECODE_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 25;     /
 const uint32_t ERR_IMAGE_DECODE_HEAD_ABNORMAL = BASE_MEDIA_ERR_OFFSET + 26;    // image decode head error
 const uint32_t ERR_IMAGE_DECODE_EXIF_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 27;   // image decode exif unsupport
 const uint32_t ERR_IMAGE_PROPERTY_NOT_EXIST = BASE_MEDIA_ERR_OFFSET + 28;     // image property not exist
-// The error code is occupied by media, the image starts from 150
-const uint32_t ERR_IMAGE_READ_PIXELMAP_FAILED = BASE_MEDIA_ERR_OFFSET + 150;       // read pixelmap failed
-const uint32_t ERR_IMAGE_WRITE_PIXELMAP_FAILED = BASE_MEDIA_ERR_OFFSET + 151;      // write pixelmap failed
-const uint32_t ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY = BASE_MEDIA_ERR_OFFSET + 152;  // pixelmap not allow modify
-const uint32_t ERR_IMAGE_CONFIG_FAILED = BASE_MEDIA_ERR_OFFSET + 153;              // config error
 
 const int32_t ERR_MEDIA_DATA_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 30;               // media type unsupported
 const int32_t ERR_MEDIA_TOO_LARGE = BASE_MEDIA_ERR_OFFSET + 31;                    // media data too large
@@ -113,6 +108,40 @@ const int32_t ERR_DMA_NOT_EXIST = BASE_MEDIA_ERR_OFFSET + 77;
 const int32_t ERR_DMA_DATA_ABNORMAL = BASE_MEDIA_ERR_OFFSET + 78;
 const int32_t ERR_SURFACEBUFFER_REFERENCE_FAILED = BASE_MEDIA_ERR_OFFSET + 79;
 const int32_t ERR_SURFACEBUFFER_UNREFERENCE_FAILED = BASE_MEDIA_ERR_OFFSET + 80;
+const uint32_t ERR_IMAGE_NAPI_ERROR = BASE_MEDIA_ERR_OFFSET + 81; // napi environmental abnormality
+const uint32_t ERR_IMAGE_PIXELMAP_CREATE_FAILED = BASE_MEDIA_ERR_OFFSET + 82; // pixelmap create failed
+// unmarshalling bufferSize parcelling error
+const uint32_t ERR_IMAGE_BUFFER_SIZE_PARCEL_ERROR = BASE_MEDIA_ERR_OFFSET + 83;
+const uint32_t ERR_IMAGE_GET_FD_BAD = BASE_MEDIA_ERR_OFFSET + 84; // fd acquisition failed
+
+const uint32_t ERR_IMAGE_READ_PIXELMAP_FAILED = BASE_MEDIA_ERR_OFFSET + 150; // read pixelmap failed
+const uint32_t ERR_IMAGE_WRITE_PIXELMAP_FAILED = BASE_MEDIA_ERR_OFFSET + 151; // write pixelmap failed
+const uint32_t ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY = BASE_MEDIA_ERR_OFFSET + 152; // pixelmap not allow modify
+const uint32_t ERR_IMAGE_CONFIG_FAILED = BASE_MEDIA_ERR_OFFSET + 153; // config error
+const uint32_t IMAGE_RESULT_JNI_ENV_ABNORMAL = BASE_MEDIA_ERR_OFFSET + 154; // Abnormal JNI environment
+const uint32_t IMAGE_RESULT_SURFAC_GRALLOC_BUFFER_FAILED = BASE_MEDIA_ERR_OFFSET + 155; // gralloc buffer failed
+const uint32_t IMAGE_RESULT_CREATE_SURFAC_FAILED = BASE_MEDIA_ERR_OFFSET + 156; // create graphicsurface failed
+// Failed to obtain parameters for graphicsurface
+const uint32_t IMAGE_RESULT_SURFAC_GET_PARAMETER_FAILED = BASE_MEDIA_ERR_OFFSET + 157;
+const uint32_t IMAGE_RESULT_GET_SURFAC_FAILED = BASE_MEDIA_ERR_OFFSET + 158; // get graphicsurface failed
+const uint32_t IMAGE_RESULT_SURFAC_ACQUIRE_BUFFER_FAILED = BASE_MEDIA_ERR_OFFSET + 159; // Acquire Buffer failed
+const uint32_t IMAGE_RESULT_SURFAC_REQUEST_BUFFER_FAILED = BASE_MEDIA_ERR_OFFSET + 160; // request Buffer failed
+const uint32_t IMAGE_RESULT_REGISTER_LISTENER_FAILED = BASE_MEDIA_ERR_OFFSET + 161; // Failed to register listener
+const uint32_t IMAGE_RESULT_REGISTER_BUFFER_FAILED = BASE_MEDIA_ERR_OFFSET + 162; // Failed to register buffer
+const uint32_t IMAGE_RESULT_FREAD_FAILED = BASE_MEDIA_ERR_OFFSET + 163; // read file failed
+const uint32_t IMAGE_RESULT_PEEK_FAILED = BASE_MEDIA_ERR_OFFSET + 164; // peek file failed
+const uint32_t IMAGE_RESULT_SEEK_FAILED = BASE_MEDIA_ERR_OFFSET + 165; // seek file failed
+const uint32_t IMAGE_RESULT_STREAM_SIZE_ERROR = BASE_MEDIA_ERR_OFFSET + 166; // stream bad
+const uint32_t IMAGE_RESULT_FILE_FD_ERROR = BASE_MEDIA_ERR_OFFSET + 167; // file fd is bad
+const uint32_t IMAGE_RESULT_FILE_DAMAGED = BASE_MEDIA_ERR_OFFSET + 168; // file damaged
+const uint32_t IMAGE_RESULT_CREATE_DECODER_FAILED = BASE_MEDIA_ERR_OFFSET + 169; // create decoder failed
+const uint32_t IMAGE_RESULT_CREATE_ENCODER_FAILED = BASE_MEDIA_ERR_OFFSET + 170; // create encoder failed
+const uint32_t IMAGE_RESULT_CHECK_FORMAT_ERROR = BASE_MEDIA_ERR_OFFSET + 171; // check format failed
+const uint32_t IMAGE_RESULT_THIRDPART_THIRDPARTSKIA_ERROR = BASE_MEDIA_ERR_OFFSET + 172; // thirdpartskia error
+const uint32_t IMAGE_RESULT_HW_DECODE_FAILED = BASE_MEDIA_ERR_OFFSET + 173; // hard decode failed
+const uint32_t IMAGE_RESULT_ALLOCATER_TYPE_ERROR = BASE_MEDIA_ERR_OFFSET + 174; // hard decode failed
+const uint32_t IMAGE_RESULT_ALPHA_TYPE_ERROR = BASE_MEDIA_ERR_OFFSET + 175; // hard decode failed
+const uint32_t IMAGE_RESULT_INDEX_INVALID = BASE_MEDIA_ERR_OFFSET + 176; // invalid index
 
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
 }  // namespace Media
