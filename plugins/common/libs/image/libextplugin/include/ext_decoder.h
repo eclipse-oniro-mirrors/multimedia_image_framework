@@ -83,6 +83,7 @@ private:
     int32_t frameCount_ = 0;
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
+    uint32_t gifCacheIndex_ = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

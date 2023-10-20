@@ -77,7 +77,6 @@ config("image_external_config") {
   } else {
     include_dirs += [
       "//commonlibrary/c_utils/base/include",
-      "//third_party/libpng",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
   }
@@ -137,6 +136,7 @@ if (use_clang_android) {
     sources = [
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -221,9 +221,10 @@ if (use_clang_android) {
       ]
     }
 
-    if (purgeable_ashmem_enable) {
+    if (purgeable_ashmem_enable && defined(global_parts_info) &&
+        defined(global_parts_info.resourceschedule_memmgr_plugin)) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
-      external_deps += [ "memory_utils:libpurgeablemem" ]
+      external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
     }
 
     #  relative_install_dir = "module/multimedia"
@@ -238,6 +239,7 @@ ohos_static_library("image_static") {
   public_configs = [ ":image_external_config" ]
 
   sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",

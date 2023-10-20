@@ -37,6 +37,7 @@ using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
 struct InitializationOptions {
     Size size;
+    PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
@@ -77,55 +78,55 @@ public:
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
                                                          const InitializationOptions &opts);
-    NATIVEEXPORT uint32_t SetImageInfo(ImageInfo &info);
-    NATIVEEXPORT uint32_t SetImageInfo(ImageInfo &info, bool isReused);
-    NATIVEEXPORT const uint8_t *GetPixel(int32_t x, int32_t y);
-    NATIVEEXPORT const uint8_t *GetPixel8(int32_t x, int32_t y);
-    NATIVEEXPORT const uint16_t *GetPixel16(int32_t x, int32_t y);
-    NATIVEEXPORT const uint32_t *GetPixel32(int32_t x, int32_t y);
-    NATIVEEXPORT bool GetARGB32Color(int32_t x, int32_t y, uint32_t &color);
-    NATIVEEXPORT void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
+    NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info);
+    NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info, bool isReused);
+    NATIVEEXPORT virtual const uint8_t *GetPixel(int32_t x, int32_t y);
+    NATIVEEXPORT virtual const uint8_t *GetPixel8(int32_t x, int32_t y);
+    NATIVEEXPORT virtual const uint16_t *GetPixel16(int32_t x, int32_t y);
+    NATIVEEXPORT virtual const uint32_t *GetPixel32(int32_t x, int32_t y);
+    NATIVEEXPORT virtual bool GetARGB32Color(int32_t x, int32_t y, uint32_t &color);
+    NATIVEEXPORT virtual void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
                                     CustomFreePixelMap func);
-    NATIVEEXPORT int32_t GetPixelBytes();
-    NATIVEEXPORT int32_t GetRowBytes();
-    NATIVEEXPORT int32_t GetByteCount();
-    NATIVEEXPORT int32_t GetWidth();
-    NATIVEEXPORT int32_t GetHeight();
-    NATIVEEXPORT int32_t GetBaseDensity();
-    NATIVEEXPORT void scale(float xAxis, float yAxis);
-    NATIVEEXPORT bool resize(float xAxis, float yAxis);
-    NATIVEEXPORT void translate(float xAxis, float yAxis);
-    NATIVEEXPORT void rotate(float degrees);
-    NATIVEEXPORT void flip(bool xAxis, bool yAxis);
-    NATIVEEXPORT uint32_t crop(const Rect &rect);
-    NATIVEEXPORT void GetImageInfo(ImageInfo &imageInfo);
-    NATIVEEXPORT PixelFormat GetPixelFormat();
-    NATIVEEXPORT ColorSpace GetColorSpace();
-    NATIVEEXPORT AlphaType GetAlphaType();
-    NATIVEEXPORT uint32_t SetAlpha(const float percent);
-    NATIVEEXPORT const uint8_t *GetPixels();
-    NATIVEEXPORT uint8_t GetARGB32ColorA(uint32_t color);
-    NATIVEEXPORT uint8_t GetARGB32ColorR(uint32_t color);
-    NATIVEEXPORT uint8_t GetARGB32ColorG(uint32_t color);
-    NATIVEEXPORT uint8_t GetARGB32ColorB(uint32_t color);
+    NATIVEEXPORT virtual int32_t GetPixelBytes();
+    NATIVEEXPORT virtual int32_t GetRowBytes();
+    NATIVEEXPORT virtual int32_t GetByteCount();
+    NATIVEEXPORT virtual int32_t GetWidth();
+    NATIVEEXPORT virtual int32_t GetHeight();
+    NATIVEEXPORT virtual int32_t GetBaseDensity();
+    NATIVEEXPORT virtual void scale(float xAxis, float yAxis);
+    NATIVEEXPORT virtual bool resize(float xAxis, float yAxis);
+    NATIVEEXPORT virtual void translate(float xAxis, float yAxis);
+    NATIVEEXPORT virtual void rotate(float degrees);
+    NATIVEEXPORT virtual void flip(bool xAxis, bool yAxis);
+    NATIVEEXPORT virtual uint32_t crop(const Rect &rect);
+    NATIVEEXPORT virtual void GetImageInfo(ImageInfo &imageInfo);
+    NATIVEEXPORT virtual PixelFormat GetPixelFormat();
+    NATIVEEXPORT virtual ColorSpace GetColorSpace();
+    NATIVEEXPORT virtual AlphaType GetAlphaType();
+    NATIVEEXPORT virtual uint32_t SetAlpha(const float percent);
+    NATIVEEXPORT virtual const uint8_t *GetPixels();
+    NATIVEEXPORT virtual uint8_t GetARGB32ColorA(uint32_t color);
+    NATIVEEXPORT virtual uint8_t GetARGB32ColorR(uint32_t color);
+    NATIVEEXPORT virtual uint8_t GetARGB32ColorG(uint32_t color);
+    NATIVEEXPORT virtual uint8_t GetARGB32ColorB(uint32_t color);
     // Config the pixel map parameter
-    NATIVEEXPORT bool IsSameImage(const PixelMap &other);
-    NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
+    NATIVEEXPORT virtual bool IsSameImage(const PixelMap &other);
+    NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst);
-    NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
-    NATIVEEXPORT uint32_t ReadPixel(const Position &pos, uint32_t &dst);
-    NATIVEEXPORT uint32_t ResetConfig(const Size &size, const PixelFormat &format);
-    NATIVEEXPORT bool SetAlphaType(const AlphaType &alphaType);
-    NATIVEEXPORT uint32_t WritePixel(const Position &pos, const uint32_t &color);
-    NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
+    NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
+    NATIVEEXPORT virtual uint32_t ReadPixel(const Position &pos, uint32_t &dst);
+    NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
+    NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);
+    NATIVEEXPORT virtual uint32_t WritePixel(const Position &pos, const uint32_t &color);
+    NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                          const uint32_t &stride, const Rect &region);
-    NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
-    NATIVEEXPORT bool WritePixels(const uint32_t &color);
-    NATIVEEXPORT void FreePixelMap();
-    NATIVEEXPORT AllocatorType GetAllocatorType();
-    NATIVEEXPORT void *GetFd() const;
-    NATIVEEXPORT void SetFreePixelMapProc(CustomFreePixelMap func);
-    NATIVEEXPORT void SetTransformered(bool isTransformered);
+    NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
+    NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
+    NATIVEEXPORT virtual void FreePixelMap();
+    NATIVEEXPORT virtual AllocatorType GetAllocatorType();
+    NATIVEEXPORT virtual void *GetFd() const;
+    NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
+    NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
 
     NATIVEEXPORT void SetRowStride(uint32_t stride);
 
@@ -142,36 +143,38 @@ public:
     }
 
     NATIVEEXPORT uint32_t GetRowStride()
+    NATIVEEXPORT virtual void SetRowStride(uint32_t stride);
+    NATIVEEXPORT virtual int32_t GetRowStride()
     {
         return rowStride_;
     }
-    NATIVEEXPORT uint32_t GetCapacity()
+    NATIVEEXPORT virtual uint32_t GetCapacity()
     {
         return pixelsSize_;
     }
 
-    NATIVEEXPORT bool IsEditable()
+    NATIVEEXPORT virtual bool IsEditable()
     {
         return editable_;
     }
 
-    NATIVEEXPORT bool IsTransformered()
+    NATIVEEXPORT virtual bool IsTransformered()
     {
         return isTransformered_;
     }
 
     // judgement whether create pixelmap use source as result
-    NATIVEEXPORT bool IsSourceAsResponse()
+    NATIVEEXPORT virtual bool IsSourceAsResponse()
     {
         return useSourceAsResponse_;
     }
 
-    NATIVEEXPORT void *GetWritablePixels() const
+    NATIVEEXPORT virtual void *GetWritablePixels() const
     {
         return static_cast<void *>(data_);
     }
 
-    NATIVEEXPORT uint32_t GetUniqueId() const
+    NATIVEEXPORT virtual uint32_t GetUniqueId() const
     {
         return uniqueId_;
     }
@@ -180,6 +183,9 @@ public:
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel);
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
     NATIVEEXPORT bool EncodeTlv(std::vector<uint8_t> &buff) const;
+    NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
+    NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
 
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -210,6 +216,16 @@ public:
     }
 #endif
 
+    NATIVEEXPORT bool IsAstc()
+    {
+        return isAstc_;
+    }
+
+    NATIVEEXPORT void SetAstc(bool isAstc)
+    {
+        isAstc_ = isAstc;
+    }
+
 private:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
@@ -238,6 +254,7 @@ private:
                                   PixelMap dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
                                  ImageInfo &dstImageInfo);
+    static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap);
     static bool SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
                                      const Rect &srcRect, PixelMap &dstPixelMap);
@@ -251,6 +268,7 @@ private:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WriteInfoToParcel(Parcel &parcel) const;
+    uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
     void SetEditable(bool editable)
     {
         editable_ = editable;
@@ -308,6 +326,7 @@ private:
 
     // only used by rosen backend
     uint32_t uniqueId_ = 0;
+    bool isAstc_ = false;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;

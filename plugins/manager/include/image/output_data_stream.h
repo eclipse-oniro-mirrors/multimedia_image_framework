@@ -34,6 +34,13 @@ public:
     {
         return false;
     }
+
+    virtual uint8_t* GetAddr() const
+    {
+        return nullptr;
+    }
+
+    virtual void SetOffset(uint32_t offset) {}
 };
 } // namespace ImagePlugin
 } // namespace OHOS

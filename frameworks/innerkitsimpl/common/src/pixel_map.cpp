@@ -71,10 +71,21 @@ constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+static const uint8_t NUM_2 = 2;
+static const uint8_t NUM_3 = 3;
+static const uint8_t NUM_5 = 5;
+static const uint8_t NUM_6 = 6;
+static const uint8_t NUM_7 = 7;
+
 constexpr int32_t AntiAliasingSize = 350;
 PixelMap::~PixelMap()
 {
-    HiLog::Info(LABEL, "PixelMap destory");
+    FreePixelMap();
+}
+
+void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
+{
+    // remove PixelMap from purgeable LRU if it is purgeable PixelMap
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     if (purgeableMemPtr_) {
         PurgeableMem::PurgeableResourceManager::GetInstance().RemoveResource(purgeableMemPtr_);
@@ -82,11 +93,7 @@ PixelMap::~PixelMap()
         purgeableMemPtr_ = nullptr;
     }
 #endif
-    FreePixelMap();
-}
 
-void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
-{
     if (data_ == nullptr) {
         return;
     }
@@ -176,8 +183,7 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
 
 bool CheckConvertParmas(const ImageInfo &src, const ImageInfo &dst)
 {
-    return src.pixelFormat == dst.pixelFormat &&
-        src.size.width == dst.size.width &&
+    return src.size.width == dst.size.width &&
         src.size.height == dst.size.height &&
         src.alphaType == dst.alphaType;
 }
@@ -224,7 +230,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     PixelFormat format = PixelFormat::BGRA_8888;
     if (useCustomFormat) {
-        format = ((opts.pixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.pixelFormat);
+        format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
     }
     ImageInfo srcImageInfo =
         MakeImageInfo(stride, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
@@ -555,6 +561,33 @@ void PixelMap::InitDstImageInfo(const InitializationOptions &opts, const ImageIn
     }
 }
 
+bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize)
+{
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        ImageInfo imageInfo;
+        source.GetImageInfo(imageInfo);
+        for (int i = 0; i < imageInfo.size.height; ++i) {
+            errno_t ret = memcpy_s(dstPixels, source.GetRowBytes(),
+                                   source.GetPixels() + i * source.GetRowStride(), source.GetRowBytes());
+            if (ret != 0) {
+                HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+                ReleaseBuffer(AllocatorType::DMA_ALLOC, fd, bufferSize, &dstPixels);
+                return false;
+            }
+            // Move the destination buffer pointer to the next row
+            dstPixels = reinterpret_cast<uint8_t *>(dstPixels) + source.GetRowBytes();
+        }
+    } else {
+        if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
+            HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+            ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
+                          fd, bufferSize, &dstPixels);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 {
     uint32_t bufferSize = source.GetByteCount();
@@ -577,13 +610,10 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
         HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-
-    if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
-        HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
-        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
+    void* tmpDstPixels = dstPixels;
+    if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
         return false;
     }
-
     if (fd <= 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
@@ -647,6 +677,11 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
         case PixelFormat::RGBA_F16:
             pixelBytes_ = BGRA_F16_BYTES;
             break;
+        case PixelFormat::ASTC_4x4:
+        case PixelFormat::ASTC_6x6:
+        case PixelFormat::ASTC_8x8:
+            pixelBytes_ = ASTC_4x4_BYTES;
+            break;
         default: {
             HiLog::Error(LABEL, "pixel format:[%{public}d] not supported.", format);
             return false;
@@ -670,6 +705,36 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info)
     return SetImageInfo(info, false);
 }
 
+uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
+{
+    if (info.pixelFormat == PixelFormat::ALPHA_8) {
+        rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        SetRowStride(rowDataSize_);
+        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
+    } else if (info.pixelFormat == PixelFormat::ASTC_4x4) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_3) >> NUM_2) << NUM_2);
+    } else if (info.pixelFormat == PixelFormat::ASTC_6x6) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_5) / NUM_6) * NUM_6);
+    } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
+        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_7) >> NUM_3) << NUM_3);
+    } else {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+        if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+            if (context_ == nullptr) {
+                HiLog::Error(LABEL, "set imageInfo context_ null");
+                return ERR_IMAGE_DATA_ABNORMAL;
+            }
+            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
+            SetRowStride(sbBuffer->GetStride());
+        } else {
+            SetRowStride(pixelBytes_ * info.size.width);
+        }
+#endif
+        rowDataSize_ = pixelBytes_ * info.size.width;
+    }
+    return SUCCESS;
+}
+
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
@@ -691,25 +756,12 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         HiLog::Error(LABEL, "image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
     }
-    if (info.pixelFormat == PixelFormat::ALPHA_8) {
-        rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        SetRowStride(rowDataSize_);
-        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
-    } else {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-        if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-            if (context_ == nullptr) {
-                HiLog::Error(LABEL, "set imageInfo context_ null");
-                return ERR_IMAGE_DATA_ABNORMAL;
-            }
-            SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
-            SetRowStride(sbBuffer->GetStride());
-        } else {
-            SetRowStride(pixelBytes_ * info.size.width);
-        }
-#endif
-        rowDataSize_ = pixelBytes_ * info.size.width;
+
+    if (SetRowDataSizeForImageInfo(info) != SUCCESS) {
+        HiLog::Error(LABEL, "pixel map set rowDataSize error.");
+        return ERR_IMAGE_DATA_ABNORMAL;
     }
+
     if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "pixel map byte count out of range.");
@@ -729,7 +781,11 @@ const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
                      pixelBytes_);
         return nullptr;
     }
-    return (data_ + y * rowDataSize_ + x);
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return (data_ + y * rowStride_ + x);
+#else
+    return (data_ + y * rowDataSize_  + x);
+#endif
 }
 
 const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
@@ -740,7 +796,11 @@ const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint16_t*
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return reinterpret_cast<uint16_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
+#else
     return reinterpret_cast<uint16_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
+#endif
 }
 
 const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
@@ -751,7 +811,11 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint32_t*
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return reinterpret_cast<uint32_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
+#else
     return reinterpret_cast<uint32_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
+#endif
 }
 
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
@@ -760,7 +824,11 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
         HiLog::Error(LABEL, "input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
     }
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return (data_ + y * rowStride_ + (static_cast<uint32_t>(x) * pixelBytes_));
+#else
     return (data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) * pixelBytes_));
+#endif
 }
 
 bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
@@ -1528,6 +1596,11 @@ bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
         return false;
     }
 
+    if (!parcel.WriteBool(isAstc_)) {
+        HiLog::Error(LABEL, "write pixel map isAstc_ to parcel failed.");
+        return false;
+    }
+
     if (!parcel.WriteInt32(static_cast<int32_t>(allocatorType_))) {
         HiLog::Error(LABEL, "write pixel map allocator type:[%{public}d] to parcel failed.",
                      allocatorType_);
@@ -1540,6 +1613,9 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
+    if (isAstc_) {
+        bufferSize = pixelsSize_;
+    }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
         static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
@@ -1636,7 +1712,10 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 
     bool isEditable = parcel.ReadBool();
     pixelMap->SetEditable(isEditable);
-    
+
+    bool isAstc = parcel.ReadBool();
+    pixelMap->SetAstc(isAstc);
+
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
     int32_t rowDataSize = parcel.ReadInt32();
     int32_t bufferSize = parcel.ReadInt32();
@@ -1646,7 +1725,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
         return nullptr;
     }
-    if (bufferSize != rowDataSize * imgInfo.size.height) {
+    if ((!isAstc) && bufferSize != rowDataSize * imgInfo.size.height) {
         delete pixelMap;
         HiLog::Error(LABEL, "unmarshalling bufferSize parcelling error");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_BUFFER_SIZE_PARCEL_ERROR,
@@ -1968,6 +2047,12 @@ static const string GetNamedPixelFormat(const PixelFormat pixelFormat)
             return "Pixel Format BGRA_8888";
         case PixelFormat::RGBA_F16:
             return "Pixel Format RGBA_F16";
+        case PixelFormat::ASTC_4x4:
+            return "Pixel Format ASTC_4x4";
+        case PixelFormat::ASTC_6x6:
+            return "Pixel Format ASTC_6x6";
+        case PixelFormat::ASTC_8x8:
+            return "Pixel Format ASTC_8x8";
         default:
             return "Pixel Format UNKNOWN";
     }
