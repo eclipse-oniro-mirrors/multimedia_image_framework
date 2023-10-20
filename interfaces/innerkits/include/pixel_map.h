@@ -127,9 +127,6 @@ public:
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
-
-    NATIVEEXPORT void SetRowStride(uint32_t stride);
-
     NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
     {
         errorCode = code;
@@ -142,7 +139,6 @@ public:
         err.errorInfo = info;
     }
 
-    NATIVEEXPORT uint32_t GetRowStride()
     NATIVEEXPORT virtual void SetRowStride(uint32_t stride);
     NATIVEEXPORT virtual int32_t GetRowStride()
     {
@@ -179,12 +175,9 @@ public:
         return uniqueId_;
     }
 
-    NATIVEEXPORT bool Marshalling(Parcel &parcel) const override;
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel);
-    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
-    NATIVEEXPORT bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT virtual bool Marshalling(Parcel &data) const override;
     NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &data);
+    NATIVEEXPORT static PixelMap *Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error);
     NATIVEEXPORT virtual bool EncodeTlv(std::vector<uint8_t> &buff) const;
     NATIVEEXPORT static PixelMap *DecodeTlv(std::vector<uint8_t> &buff);
 
