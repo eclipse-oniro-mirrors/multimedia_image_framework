@@ -120,7 +120,7 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const int DMA_SIZE = 512;
-static const uint32_t ASTC_MAGIC_ID = 0x5CA1A813;
+static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
