@@ -286,7 +286,7 @@ void ImageSource::Reset()
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]CreatePixelMapEx srcPixelFormat:%{public}d, srcSize:(%{public}d, %{public}d)",
-        opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
+        sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
 
     if (IsASTC(sourceStreamPtr_->GetDataPtr())) {
         return CreatePixelMapForASTC(errorCode);
