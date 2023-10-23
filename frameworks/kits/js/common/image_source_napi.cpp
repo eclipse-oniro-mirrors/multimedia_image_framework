@@ -1200,7 +1200,7 @@ static bool CheckExifDataValue(const std::string &key, const std::string &value,
     if (IsSameTextStr(key, "BitsPerSample")) {
         std::vector<std::string> bitsVec;
         SplitStr(value, ",", bitsVec);
-        if (bitsVec.size() > NUM_2) {
+        if (bitsVec.size() > NUM_3) {
             errorInfo = "BitsPerSample has invalid exif value: ";
             errorInfo.append(value);
             return false;
