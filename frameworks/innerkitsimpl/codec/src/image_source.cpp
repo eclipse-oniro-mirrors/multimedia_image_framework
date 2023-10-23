@@ -1051,9 +1051,7 @@ bool ImageSource::IsStreamCompleted()
 ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions &opts)
     : sourceStreamPtr_(stream.release())
 {
-    sourceInfo_.encodedFormat = opts.formatHint;
     sourceInfo_.baseDensity = opts.baseDensity;
-    sourceOptions_.formatHint = opts.formatHint;
     sourceOptions_.baseDensity = opts.baseDensity;
     sourceOptions_.pixelFormat = opts.pixelFormat;
     sourceOptions_.size.width = opts.size.width;
