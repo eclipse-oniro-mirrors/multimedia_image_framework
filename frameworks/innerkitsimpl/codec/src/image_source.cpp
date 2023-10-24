@@ -1922,6 +1922,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 
 bool ImageSource::IsASTC(const uint8_t *fileData)
 {
+    if (fileData == nullptr) {
+        return false;
+    }
     unsigned int magicVal = static_cast<unsigned int>(fileData[0]) + (static_cast<unsigned int>(fileData[1]) << 8) +
         (static_cast<unsigned int>(fileData[2]) << 16) + (static_cast<unsigned int>(fileData[3]) << 24);
     return magicVal == ASTC_MAGIC_ID;
