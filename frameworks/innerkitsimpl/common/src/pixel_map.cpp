@@ -77,7 +77,7 @@ static const uint8_t NUM_5 = 5;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_7 = 7;
 
-constexpr int32_t AntiAliasingSize = 350;
+constexpr int32_t ANTIALIASING_SIZE = 350;
 PixelMap::~PixelMap()
 {
     FreePixelMap();
@@ -1905,13 +1905,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
     WriteVarint(buff, imageInfo_.baseDensity);
     WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
-    AllocatorType tmpAllocatorType = allocatorType_;
-    if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
-        tmpAllocatorType = AllocatorType::HEAP_ALLOC;
-        HiLog::Info(LABEL, "pixel map tlv encode unsupport SHARE_MEM_ALLOC, use HEAP_ALLOC."\
-                    "width: %{piblic}d, height: %{public}d",
-                    imageInfo_.size.width, imageInfo_.size.height);
-    }
+    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
     WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
     WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     WriteUint8(buff, TLV_IMAGE_DATA);
@@ -1959,6 +1953,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_ALLOCATORTYPE:
                 type = ReadVarint(buff, cursor);
+                HiLog::Info(LABEL, "pixel alloctype: %{public}d", type);
                 break;
             case TLV_IMAGE_DATA:
                 size = len;
@@ -2325,8 +2320,8 @@ struct TransInfos {
 
 bool IsSupportAntiAliasing(const ImageInfo& imageInfo)
 {
-    return imageInfo.size.width <= AntiAliasingSize &&
-            imageInfo.size.height <= AntiAliasingSize;
+    return imageInfo.size.width <= ANTIALIASING_SIZE &&
+            imageInfo.size.height <= ANTIALIASING_SIZE;
 }
 
 bool PixelMap::DoTranslation(TransInfos &infos)
