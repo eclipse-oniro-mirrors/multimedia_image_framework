@@ -37,6 +37,14 @@ public:
     bool IsLockPixelMap();
     bool LockPixelMap();
     void UnlockPixelMap();
+    void SetPixelNapiEditable(bool isEditable)
+    {
+        isPixelNapiEditable = isEditable;
+    }
+    bool GetPixelNapiEditable()
+    {
+        return isPixelNapiEditable;
+    }
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -90,6 +98,7 @@ private:
     std::shared_ptr<PixelMap> nativeInner_;
     int32_t lockCount = 0;
     bool isRelease = false;
+    bool isPixelNapiEditable = true;
 };
 } // namespace Media
 } // namespace OHOS

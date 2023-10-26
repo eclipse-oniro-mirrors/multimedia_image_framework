@@ -26,10 +26,12 @@
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
+#include "log_tags.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "PixelMapNapi"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE,
+        LOG_TAG_DOMAIN_ID_PIXEL_MAP_NAPI, "PixelMapNapi"};
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
@@ -49,6 +51,7 @@ static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
 static const std::string CLASS_NAME = "PixelMap";
 
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
+std::unique_ptr<PixelMapNapi> sPixelMapNapi_ = nullptr;
 std::shared_ptr<PixelMap> PixelMapNapi::sPixelMap_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
@@ -530,6 +533,41 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
+inline void *DetachPixelMapFunc(napi_env env, void *value, void *hint)
+{
+    HiLog::Debug(LABEL, "DetachPixelMapFunc in");
+    auto ptr = reinterpret_cast<std::weak_ptr<PixelMapNapi> *>(value)->lock();
+    ptr->SetPixelNapiEditable(false);
+    return value;
+}
+
+napi_value AttachPixelMapFunc(napi_env env, void *value, void *hint)
+{
+    HiLog::Debug(LABEL, "AttachPixelMapFunc in");
+    if (value == nullptr) {
+        HiLog::Error(LABEL, "attach value is nullptr");
+        return nullptr;
+    }
+    (void)hint;
+    sPixelMapNapi_ =
+        std::make_unique<PixelMapNapi>(*(reinterpret_cast<PixelMapNapi *>(value)));
+    IMG_NAPI_CHECK_RET(IMG_NOT_NULL(sPixelMapNapi_), nullptr);
+
+    napi_value global = nullptr;
+    napi_status status = napi_get_global(env, &global);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_global error"));
+
+    napi_value constructor = nullptr;
+    status = napi_get_named_property(env, global, CLASS_NAME.c_str(), &constructor);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
+
+    napi_value result = nullptr;
+    status = napi_new_instance(env, constructor, 0, nullptr, &result);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_new_instance error"));
+
+    return result;
+}
+
 napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 {
     napi_value undefineVar = nullptr;
@@ -541,15 +579,23 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 
     HiLog::Debug(LABEL, "Constructor IN");
     IMG_JS_NO_ARGS(env, info, status, thisVar);
-
     IMG_NAPI_CHECK_RET(IMG_IS_READY(status, thisVar), undefineVar);
+
     std::unique_ptr<PixelMapNapi> pPixelMapNapi = std::make_unique<PixelMapNapi>();
-
     IMG_NAPI_CHECK_RET(IMG_NOT_NULL(pPixelMapNapi), undefineVar);
-
     pPixelMapNapi->env_ = env;
-    pPixelMapNapi->nativePixelMap_ = sPixelMap_;
-    pPixelMapNapi->nativeInner_ = sPixelMap_;
+
+    if (sPixelMapNapi_ == nullptr) {
+        pPixelMapNapi->nativePixelMap_ = sPixelMap_;
+        pPixelMapNapi->nativeInner_ = sPixelMap_;
+    } else {
+        HiLog::Debug(LABEL, "Constructor from attack");
+        pPixelMapNapi->nativePixelMap_ = sPixelMapNapi_->nativePixelMap_;
+        pPixelMapNapi->nativeInner_ = sPixelMapNapi_->nativeInner_;
+    }
+
+    napi_coerce_to_native_binding_object(
+        env, thisVar, DetachPixelMapFunc, AttachPixelMapFunc, pPixelMapNapi.get(), nullptr);
 
     status = napi_wrap(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
         PixelMapNapi::Destructor, nullptr, nullptr);
@@ -563,6 +609,7 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
 
 void PixelMapNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
+    HiLog::Debug(LABEL, "Destructor IN");
     if (nativeObject != nullptr) {
         delete reinterpret_cast<PixelMapNapi*>(nativeObject);
         nativeObject = nullptr;
@@ -589,7 +636,6 @@ void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void
     napi_value constructor = nullptr;
     napi_value result = nullptr;
 
-    HiLog::Debug(LABEL, "CreatePixelMapComplete IN");
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
@@ -1033,6 +1079,9 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, HiLog::Error(LABEL, "fail to unwrap context"));
 
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "WritePixels isPixelNapiEditable is false"));
+
     asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
@@ -1088,6 +1137,8 @@ napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info in
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, HiLog::Error(LABEL, "fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "WriteBufferToPixels isPixelNapiEditable is false"));
 
     asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
 
@@ -1157,7 +1208,6 @@ STATIC_COMPLETE_FUNC(GetImageInfo)
     } else {
         context->status = SUCCESS;
     }
-    HiLog::Debug(LABEL, "[PixelMap]GetImageInfoComplete OUT");
     CommonCallbackRoutine(env, context, result);
 }
 napi_value PixelMapNapi::GetImageInfo(napi_env env, napi_callback_info info)
@@ -1320,6 +1370,8 @@ napi_value PixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, HiLog::Error(LABEL, "fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "SetAlphaAble isPixelNapiEditable is false"));
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         AlphaType alphaType = pixelMapNapi->nativePixelMap_->GetAlphaType();
@@ -1360,12 +1412,16 @@ napi_value PixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback_info in
     napi_value argValue[NUM_1] = {0};
     size_t argCount = 1;
     HiLog::Debug(LABEL, "CreateAlphaPixelmap IN");
+
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to napi_get_cb_info"));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, HiLog::Error(LABEL, "fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "CreateAlphaPixelmap isPixelNapiEditable is false"));
+
     asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, HiLog::Error(LABEL, "empty native pixelmap"));
@@ -1445,8 +1501,10 @@ napi_value PixelMapNapi::SetDensity(napi_env env, napi_callback_info info)
 
     std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
-
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, HiLog::Error(LABEL, "fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "CreateAlphaPixelmap isPixelNapiEditable is false"));
+
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         ImageInfo imageinfo;
         pixelMapNapi->nativePixelMap_->GetImageInfo(imageinfo);
@@ -1571,6 +1629,8 @@ napi_value PixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
         return nVal.result;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "SetAlpha isPixelNapiEditable is false"));
 
     if (nVal.argc != NUM_1 && nVal.argc != NUM_2) {
         HiLog::Error(LABEL, "Invalid args count %{public}zu", nVal.argc);
@@ -1638,6 +1698,8 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
         return nVal.result;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "Scale isPixelNapiEditable is false"));
 
     if (nVal.argc != NUM_2 && nVal.argc != NUM_3) {
         HiLog::Error(LABEL, "Invalid args count %{public}zu", nVal.argc);
@@ -1776,6 +1838,8 @@ napi_value PixelMapNapi::Rotate(napi_env env, napi_callback_info info)
         return nVal.result;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "Rotate isPixelNapiEditable is false"));
 
     if (nVal.argc != NUM_1 && nVal.argc != NUM_2) {
         HiLog::Error(LABEL, "Invalid args count");
@@ -1841,6 +1905,8 @@ napi_value PixelMapNapi::Flip(napi_env env, napi_callback_info info)
         return nVal.result;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "Flip isPixelNapiEditable is false"));
 
     if (nVal.argc != NUM_2 && nVal.argc != NUM_3) {
         HiLog::Error(LABEL, "Invalid args count");
@@ -1909,6 +1975,8 @@ napi_value PixelMapNapi::Crop(napi_env env, napi_callback_info info)
         return nVal.result;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "Crop isPixelNapiEditable is false"));
 
     if (nVal.argc != NUM_1 && nVal.argc != NUM_2) {
         HiLog::Error(LABEL, "Invalid args count");
@@ -1985,6 +2053,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
     nVal.argv = argValue;
     HiLog::Debug(LABEL, "SetColorSpace IN");
     napi_get_undefined(env, &nVal.result);
+
     if (!prepareNapiEnv(env, info, &nVal)) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
@@ -1993,6 +2062,8 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->isPixelNapiEditable,
+        nullptr, HiLog::Error(LABEL, "SetColorSpace isPixelNapiEditable is false"));
 #ifdef IMAGE_COLORSPACE_FLAG
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, nVal.argv[NUM_0]);
