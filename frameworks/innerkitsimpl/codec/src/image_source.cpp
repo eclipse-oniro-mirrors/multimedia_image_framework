@@ -288,9 +288,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
     IMAGE_LOGD("[ImageSource]CreatePixelMapEx srcPixelFormat:%{public}d, srcSize:(%{public}d, %{public}d)",
         opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
+#if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
     if (IsASTC(sourceStreamPtr_->GetDataPtr())) {
         return CreatePixelMapForASTC(errorCode);
     }
+#endif
 
     if (IsSpecialYUV()) {
         return CreatePixelMapForYUV(errorCode);
@@ -1956,6 +1958,12 @@ ImageInfo ImageSource::GetImageInfoForASTC()
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
+#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+{
+    errorCode = ERROR;
+    return nullptr;
+}
+#else
 {
     trace(BEGIN_TRACE, "CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
@@ -2006,6 +2014,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
     trace(FINISH_TRACE);
     return pixelAstc;
 }
+#endif
 
 ASTCInfo ImageSource::GetASTCInfo(const uint8_t *fileData)
 {

@@ -354,7 +354,7 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
 
 unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 {
-    HiLog::Info(LABEL, "PixelMap::Create3 enter");
+    HiLog::Debug(LABEL, "PixelMap::Create3 enter");
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
         HiLog::Error(LABEL, "create pixelMap pointer fail");
