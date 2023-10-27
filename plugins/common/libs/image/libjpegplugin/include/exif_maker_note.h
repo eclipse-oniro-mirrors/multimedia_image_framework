@@ -26,6 +26,20 @@ public:
 
     std::string hwCaptureMode;
     std::string hwPhysicalAperture;
+    std::string hwMnoteRollAngle;
+    std::string hwMnotePitchAngle;
+    std::string hwMnoteSceneFoodConf;
+    std::string hwMnoteSceneStageConf;
+    std::string hwMnoteSceneBlueSkyConf;
+    std::string hwMnoteSceneGreenPlantConf;
+    std::string hwMnoteSceneBeachConf;
+    std::string hwMnoteSceneSnowConf;
+    std::string hwMnoteSceneSunsetConf;
+    std::string hwMnoteSceneFlowersConf;
+    std::string hwMnoteSceneNightConf;
+    std::string hwMnoteSceneTextConf;
+    std::string hwMnoteFaceCount;
+    std::string hwMnoteFocusMode;
 
     static const uint16_t HW_MNOTE_TAG_SCENE_INFO_OFFSET = 0x0000;
     static const uint16_t HW_MNOTE_TAG_FACE_INFO_OFFSET = 0x0100;
@@ -36,6 +50,21 @@ public:
     static const uint16_t HW_MNOTE_IFD_SCENE_INFO_OFFSET = HW_MNOTE_TAG_SCENE_INFO_OFFSET;
     static const uint16_t HW_MNOTE_IFD_FACE_INFO_OFFSET = HW_MNOTE_TAG_FACE_INFO_OFFSET;
     static const uint16_t HW_MNOTE_IFD_DEFAULT = 0xffff;
+    static const uint16_t HW_MNOTE_TAG_ROLL_ANGLE= 0x0203;
+    static const uint16_t HW_MNOTE_TAG_PITCH_ANGLE= 0x0204;
+    static const uint16_t HW_MNOTE_TAG_SCENE_FOOD_CONF= 0x0002;
+    static const uint16_t HW_MNOTE_TAG_SCENE_STAGE_CONF= 0x0003;
+    static const uint16_t HW_MNOTE_TAG_SCENE_BLUESKY_CONF= 0x0004 ;
+    static const uint16_t HW_MNOTE_TAG_SCENE_GREENPLANT_CONF= 0x0005;
+    static const uint16_t HW_MNOTE_TAG_SCENE_BEACH_CONF= 0x0006;
+    static const uint16_t HW_MNOTE_TAG_SCENE_SNOW_CONF= 0x0007;
+    static const uint16_t HW_MNOTE_TAG_SCENE_SUNSET_CONF= 0x0008;
+    static const uint16_t HW_MNOTE_TAG_SCENE_FLOWERS_CONF= 0x0009;
+    static const uint16_t HW_MNOTE_TAG_SCENE_NIGHT_CONF= 0x000A;
+    static const uint16_t HW_MNOTE_TAG_SCENE_TEXT_CONF= 0x000B;
+    static const uint16_t HW_MNOTE_TAG_FACE_COUNT= 0x0102;
+    static const uint16_t HW_MNOTE_TAG_FOCUS_MODE= 0x020D;
+
 
     uint32_t Parser(ExifData *exif, const unsigned char *data, uint32_t size);
     [[nodiscard]] bool IsParsed() const;

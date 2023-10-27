@@ -99,6 +99,20 @@ public:
     std::string focalLengthIn35mmFilm_;
     std::string hwMnoteCaptureMode_;
     std::string hwMnotePhysicalAperture_;
+    std::string hwMnoteRollAngle_;
+    std::string hwMnotePitchAngle_;
+    std::string hwMnoteSceneFoodConf_;
+    std::string hwMnoteSceneStageConf_;
+    std::string hwMnoteSceneBlueSkyConf_;
+    std::string hwMnoteSceneGreenPlantConf_;
+    std::string hwMnoteSceneBeachConf_;
+    std::string hwMnoteSceneSnowConf_;
+    std::string hwMnoteSceneSunsetConf_;
+    std::string hwMnoteSceneFlowersConf_;
+    std::string hwMnoteSceneNightConf_;
+    std::string hwMnoteSceneTextConf_;
+    std::string hwMnoteFaceCount_;
+    std::string hwMnoteFocusMode_;
 
 private:
     void SetExifTagValues(const ExifTag &tag, const std::string &value);

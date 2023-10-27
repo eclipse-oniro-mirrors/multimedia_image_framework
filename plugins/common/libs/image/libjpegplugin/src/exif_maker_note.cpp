@@ -564,6 +564,62 @@ bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
         return true;
     }
 
+    if (entry.tag == HW_MNOTE_TAG_ROLL_ANGLE) {
+        hwMnoteRollAngle = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_PITCH_ANGLE)
+    {hwMnotePitchAngle = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_FOOD_CONF) {
+        hwMnoteSceneFoodConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_STAGE_CONF) {
+        hwMnoteSceneStageConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_BLUESKY_CONF) {
+        hwMnoteSceneBlueSkyConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_GREENPLANT_CONF) {
+        hwMnoteSceneGreenPlantConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_BEACH_CONF) {
+        hwMnoteSceneBeachConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_SNOW_CONF) {
+        hwMnoteSceneSnowConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_SUNSET_CONF) {
+        hwMnoteSceneSunsetConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_FLOWERS_CONF) {
+        hwMnoteSceneFlowersConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_NIGHT_CONF) {
+        hwMnoteSceneNightConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_SCENE_TEXT_CONF) {
+        hwMnoteSceneTextConf = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_FACE_COUNT) {
+        hwMnoteFaceCount = value;
+        return true;
+    }
+    if (entry.tag == HW_MNOTE_TAG_FOCUS_MODE) {
+        hwMnoteFocusMode = value;
+        return true;
+    }
     return false;
 }
 

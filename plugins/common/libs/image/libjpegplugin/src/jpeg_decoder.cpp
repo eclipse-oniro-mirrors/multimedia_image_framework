@@ -102,6 +102,21 @@ const std::string WHITE_BALANCE = "WhiteBalance";
 const std::string FOCAL_LENGTH_IN_35_MM_FILM = "FocalLengthIn35mmFilm";
 const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
+const std::string HW_MNOTE_TAG_ROLL_ANGLE= "HwMnoteRollAngle";
+const std::string HW_MNOTE_TAG_PITCH_ANGLE= "HwMnotePitchAngle";
+const std::string HW_MNOTE_TAG_SCENE_FOOD_CONF= "HwMnoteSceneFoodConf";
+const std::string HW_MNOTE_TAG_SCENE_STAGE_CONF= "HwMnoteSceneStageConf";
+const std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF= "HwMnoteSceneBlueSkyConf";
+const std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF= "HwMnoteSceneGreenPlantConf";
+const std::string HW_MNOTE_TAG_SCENE_BEACH_CONF= "HwMnoteSceneBeachConf";
+const std::string HW_MNOTE_TAG_SCENE_SNOW_CONF= "HwMnoteSceneSnowConf";
+const std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF= "HwMnoteSceneSunsetConf";
+const std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF= "HwMnoteSceneFlowersConf";
+const std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF= "HwMnoteSceneNightConf";
+const std::string HW_MNOTE_TAG_SCENE_TEXT_CONF= "HwMnoteSceneTextConf";
+const std::string HW_MNOTE_TAG_FACE_COUNT= "HwMnoteFaceCount";
+const std::string HW_MNOTE_TAG_FOCUS_MODE= "HwMnoteFocusMode";
+
 static const std::map<std::string, uint32_t> PROPERTY_INT = {
     {"Top-left", 0},
     {"Bottom-right", 180},
@@ -801,6 +816,7 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
         value = exifInfo_.dateTimeOriginal_;
     } else if (IsSameTextStr(key, DATE_TIME_ORIGINAL_MEDIA)) {
         FormatTimeStamp(value, exifInfo_.dateTimeOriginal_);
+
     } else if (GetImagePropertyString(key, value) != Media::SUCCESS) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
@@ -882,6 +898,34 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
         value = exifInfo_.hwMnoteCaptureMode_;
     } else if (IsSameTextStr(key, HW_MNOTE_PHYSICAL_APERTURE)) {
         value = exifInfo_.hwMnotePhysicalAperture_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_ROLL_ANGLE)) {
+        value = exifInfo_.hwMnoteRollAngle_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_PITCH_ANGLE)) {
+        value = exifInfo_.hwMnotePitchAngle_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FOOD_CONF)) {
+        value = exifInfo_.hwMnoteSceneFoodConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_STAGE_CONF)) {
+        value = exifInfo_.hwMnoteSceneStageConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF)) {
+        value = exifInfo_.hwMnoteSceneBlueSkyConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF)) {
+        value = exifInfo_.hwMnoteSceneGreenPlantConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BEACH_CONF)) {
+        value = exifInfo_.hwMnoteSceneBeachConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SNOW_CONF)) {
+        value = exifInfo_.hwMnoteSceneSnowConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SUNSET_CONF)) {
+        value = exifInfo_.hwMnoteSceneSunsetConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FLOWERS_CONF)) {
+        value = exifInfo_.hwMnoteSceneFlowersConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_NIGHT_CONF)) {
+        value = exifInfo_.hwMnoteSceneNightConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_TEXT_CONF)) {
+        value = exifInfo_.hwMnoteSceneTextConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FACE_COUNT)) {
+        value = exifInfo_.hwMnoteFaceCount_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FOCUS_MODE)) {
+        value = exifInfo_.hwMnoteFocusMode_;
     } else {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
