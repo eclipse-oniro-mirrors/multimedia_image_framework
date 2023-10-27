@@ -443,7 +443,7 @@ bool IsWidthAligned(const int32_t &width)
     return ((width * NUM_4) & INT_255) == 0;
 }
 
-bool IsSupportDma(const DecodeOptions &opts, ImageInfo &info, bool hasDesiredSizeOptions)
+bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
@@ -1967,11 +1967,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 {
     trace(BEGIN_TRACE, "CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
-    if (pixelAstc == nullptr) {
-        IMAGE_LOGE("[ImageSource]create the pixelmap unique_ptr fail.");
-        errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
-        return nullptr;
-    }
 
     ImageInfo info = GetImageInfoForASTC();
     errorCode = pixelAstc->SetImageInfo(info);
