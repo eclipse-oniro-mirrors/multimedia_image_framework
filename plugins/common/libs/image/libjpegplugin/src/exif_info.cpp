@@ -467,20 +467,20 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
         hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
         hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
-        hwMnoteRollAngle_ = exifMakerNote. hwMnoteRollAngle;
-        hwMnotePitchAngle_ = exifMakerNote. hwMnotePitchAngle;
-        hwMnoteSceneFoodConf_ = exifMakerNote. hwMnoteSceneFoodConf;
-        hwMnoteSceneStageConf_ = exifMakerNote. hwMnoteSceneStageConf;
-        hwMnoteSceneBlueSkyConf_ = exifMakerNote. hwMnoteSceneBlueSkyConf;
-        hwMnoteSceneGreenPlantConf_ = exifMakerNote. hwMnoteSceneGreenPlantConf;
-        hwMnoteSceneBeachConf_ = exifMakerNote. hwMnoteSceneBeachConf;
-        hwMnoteSceneSnowConf_ = exifMakerNote. hwMnoteSceneSnowConf;
-        hwMnoteSceneSunsetConf_ = exifMakerNote. hwMnoteSceneSunsetConf;
-        hwMnoteSceneFlowersConf_ = exifMakerNote. hwMnoteSceneFlowersConf;
-        hwMnoteSceneNightConf_ = exifMakerNote. hwMnoteSceneNightConf;
-        hwMnoteSceneTextConf_ = exifMakerNote. hwMnoteSceneTextConf;
-        hwMnoteFaceCount_ = exifMakerNote. hwMnoteFaceCount;
-        hwMnoteFocusMode_ = exifMakerNote. hwMnoteFocusMode;
+        hwMnoteRollAngle_ = exifMakerNote.hwMnoteRollAngle;
+        hwMnotePitchAngle_ = exifMakerNote.hwMnotePitchAngle;
+        hwMnoteSceneFoodConf_ = exifMakerNote.hwMnoteSceneFoodConf;
+        hwMnoteSceneStageConf_ = exifMakerNote.hwMnoteSceneStageConf;
+        hwMnoteSceneBlueSkyConf_ = exifMakerNote.hwMnoteSceneBlueSkyConf;
+        hwMnoteSceneGreenPlantConf_ = exifMakerNote.hwMnoteSceneGreenPlantConf;
+        hwMnoteSceneBeachConf_ = exifMakerNote.hwMnoteSceneBeachConf;
+        hwMnoteSceneSnowConf_ = exifMakerNote.hwMnoteSceneSnowConf;
+        hwMnoteSceneSunsetConf_ = exifMakerNote.hwMnoteSceneSunsetConf;
+        hwMnoteSceneFlowersConf_ = exifMakerNote.hwMnoteSceneFlowersConf;
+        hwMnoteSceneNightConf_ = exifMakerNote.hwMnoteSceneNightConf;
+        hwMnoteSceneTextConf_ = exifMakerNote.hwMnoteSceneTextConf;
+        hwMnoteFaceCount_ = exifMakerNote.hwMnoteFaceCount;
+        hwMnoteFocusMode_ = exifMakerNote.hwMnoteFocusMode;
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
             exifMakerNote.hwCaptureMode);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
