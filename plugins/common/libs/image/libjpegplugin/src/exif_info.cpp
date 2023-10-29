@@ -1471,12 +1471,15 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         }
 
         case EXIF_TAG_MAKE : {
-            *ptrEntry = InitExifTag(data, EXIF_IFD_0, EXIF_TAG_MAKE);
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_MAKE,
+                                      value.length(), EXIF_FORMAT_ASCII);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get maker exif entry failed.");
                 return false;
             }
-            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "maker memcpy error");
+            }
             break;
         }
 
