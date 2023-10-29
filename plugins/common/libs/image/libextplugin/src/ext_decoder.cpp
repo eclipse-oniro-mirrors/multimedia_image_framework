@@ -52,6 +52,7 @@ const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
 const std::string HW_MNOTE_TAG_ROLL_ANGLE= "HwMnoteRollAngle";
@@ -810,7 +811,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         return res;
     }
     // Need exif property following
-    if(key.find("HwMnote") != std::string::npos) {
+    if(key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
         res = GetMakerImagePropertyString(key,value);
         if(value.length() == 0) {
             res = Media::ERR_MEDIA_VALUE_INVALID;
