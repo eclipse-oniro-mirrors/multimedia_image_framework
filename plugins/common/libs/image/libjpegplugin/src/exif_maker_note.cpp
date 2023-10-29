@@ -580,11 +580,11 @@ bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
         hwMnoteSceneStageConf = value;
         return true;
     }
-    if (entry.tag == HW_MNOTE_TAG_SCENE_BLUESKY_CONF) {
+    if (entry.tag == HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF) {
         hwMnoteSceneBlueSkyConf = value;
         return true;
     }
-    if (entry.tag == HW_MNOTE_TAG_SCENE_GREENPLANT_CONF) {
+    if (entry.tag == HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF) {
         hwMnoteSceneGreenPlantConf = value;
         return true;
     }
