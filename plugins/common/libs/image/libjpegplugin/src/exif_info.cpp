@@ -1409,9 +1409,9 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get GPS time stamp exif entry failed.");
                 return false;
             }
-            exif_set_rational((*ptrEntry)->data, order,static_cast<ExifSLong>(atoi(longVec[0].c_str())));
-            exif_set_rational((*ptrEntry)->data + MOVE_OFFSET_8, order,static_cast<ExifSLong>(atoi(longVec[1].c_str())));
-            exif_set_rational((*ptrEntry)->data + MOVE_OFFSET_16, order,static_cast<ExifSLong>(atoi(longVec[2].c_str())));
+            exif_set_long((*ptrEntry)->data, order,static_cast<ExifSLong>(atoi(longVec[0].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,static_cast<ExifSLong>(atoi(longVec[1].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,static_cast<ExifSLong>(atoi(longVec[2].c_str())));
             break;
         }
 
