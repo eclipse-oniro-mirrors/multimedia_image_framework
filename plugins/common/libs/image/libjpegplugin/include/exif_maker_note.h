@@ -54,8 +54,8 @@ public:
     static const uint16_t HW_MNOTE_TAG_PITCH_ANGLE= 0x0204;
     static const uint16_t HW_MNOTE_TAG_SCENE_FOOD_CONF= 0x0002;
     static const uint16_t HW_MNOTE_TAG_SCENE_STAGE_CONF= 0x0003;
-    static const uint16_t HW_MNOTE_TAG_SCENE_BLUESKY_CONF= 0x0004 ;
-    static const uint16_t HW_MNOTE_TAG_SCENE_GREENPLANT_CONF= 0x0005;
+    static const uint16_t HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF= 0x0004 ;
+    static const uint16_t HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF= 0x0005;
     static const uint16_t HW_MNOTE_TAG_SCENE_BEACH_CONF= 0x0006;
     static const uint16_t HW_MNOTE_TAG_SCENE_SNOW_CONF= 0x0007;
     static const uint16_t HW_MNOTE_TAG_SCENE_SUNSET_CONF= 0x0008;
