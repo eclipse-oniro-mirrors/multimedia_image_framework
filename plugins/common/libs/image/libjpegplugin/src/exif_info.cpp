@@ -1507,28 +1507,22 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         }
 
         case EXIF_TAG_PIXEL_X_DIMENSION : {
-            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION,
-                                      value.length(), EXIF_FORMAT_ASCII);
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
             if ((*ptrEntry) == nullptr) {
-                HiLog::Error(LABEL, "Get pixel X-dimension  exif entry failed.");
+                HiLog::Error(LABEL, "Get pixel X-dimension exif entry failed.");
                 return false;
             }
-            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
-                HiLog::Error(LABEL, "Pixel X-dimension memcpy error");
-            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
 
         case EXIF_TAG_PIXEL_Y_DIMENSION : {
-            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION,
-                                      value.length(), EXIF_FORMAT_ASCII);
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get pixel Y-dimension exif entry failed.");
                 return false;
             }
-            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
-                HiLog::Error(LABEL, "pixel Y-dimension memcpy error");
-            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
 
