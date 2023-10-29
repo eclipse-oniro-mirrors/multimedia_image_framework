@@ -84,6 +84,7 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     uint32_t gifCacheIndex_ = 0;
+    uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
 };
 } // namespace ImagePlugin
 } // namespace OHOS

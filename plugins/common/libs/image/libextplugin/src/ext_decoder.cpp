@@ -52,6 +52,22 @@ const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
+const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
+const std::string HW_MNOTE_TAG_ROLL_ANGLE= "HwMnoteRollAngle";
+const std::string HW_MNOTE_TAG_PITCH_ANGLE= "HwMnotePitchAngle";
+const std::string HW_MNOTE_TAG_SCENE_FOOD_CONF= "HwMnoteSceneFoodConf";
+const std::string HW_MNOTE_TAG_SCENE_STAGE_CONF= "HwMnoteSceneStageConf";
+const std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF= "HwMnoteSceneBlueSkyConf";
+const std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF= "HwMnoteSceneGreenPlantConf";
+const std::string HW_MNOTE_TAG_SCENE_BEACH_CONF= "HwMnoteSceneBeachConf";
+const std::string HW_MNOTE_TAG_SCENE_SNOW_CONF= "HwMnoteSceneSnowConf";
+const std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF= "HwMnoteSceneSunsetConf";
+const std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF= "HwMnoteSceneFlowersConf";
+const std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF= "HwMnoteSceneNightConf";
+const std::string HW_MNOTE_TAG_SCENE_TEXT_CONF= "HwMnoteSceneTextConf";
+const std::string HW_MNOTE_TAG_FACE_COUNT= "HwMnoteFaceCount";
+const std::string HW_MNOTE_TAG_FOCUS_MODE= "HwMnoteFocusMode";
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -794,9 +810,56 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         return res;
     }
     // Need exif property following
+    if(key.find("HwMnote") != std::string::npos) {
+        res = GetMakerImagePropertyString(key,value);
+        if(value.length() == 0) {
+            res = Media::ERR_MEDIA_VALUE_INVALID;
+            HiLog::Error(LABEL, "[GetImagePropertyString]The image does not contain the %{public}s  tag ", key.c_str());
+        }
+        return res;
+    }
     res = exifInfo_.GetExifData(key, value);
     HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return res;
+}
+uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
+{
+    if (IsSameTextStr(key, HW_MNOTE_CAPTURE_MODE)) {
+        value = exifInfo_.hwMnoteCaptureMode_;
+    } else if (IsSameTextStr(key, HW_MNOTE_PHYSICAL_APERTURE)) {
+        value = exifInfo_.hwMnotePhysicalAperture_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_ROLL_ANGLE)) {
+        value = exifInfo_.hwMnoteRollAngle_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_PITCH_ANGLE)) {
+        value = exifInfo_.hwMnotePitchAngle_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FOOD_CONF)) {
+        value = exifInfo_.hwMnoteSceneFoodConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_STAGE_CONF)) {
+        value = exifInfo_.hwMnoteSceneStageConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF)) {
+        value = exifInfo_.hwMnoteSceneBlueSkyConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF)) {
+        value = exifInfo_.hwMnoteSceneGreenPlantConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BEACH_CONF)) {
+        value = exifInfo_.hwMnoteSceneBeachConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SNOW_CONF)) {
+        value = exifInfo_.hwMnoteSceneSnowConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SUNSET_CONF)) {
+        value = exifInfo_.hwMnoteSceneSunsetConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FLOWERS_CONF)) {
+        value = exifInfo_.hwMnoteSceneFlowersConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_NIGHT_CONF)) {
+        value = exifInfo_.hwMnoteSceneNightConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_TEXT_CONF)) {
+        value = exifInfo_.hwMnoteSceneTextConf_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FACE_COUNT)) {
+        value = exifInfo_.hwMnoteFaceCount_;
+    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FOCUS_MODE)) {
+        value = exifInfo_.hwMnoteFocusMode_;
+    } else {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    return Media::SUCCESS;
 }
 
 uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
