@@ -140,7 +140,6 @@ namespace {
         /* Not in EXIF 2.2 */
         {EXIF_TAG_TRANSFER_RANGE, "TransferRange", 0x0156},
         /* Not in EXIF 2.2 */
-        {EXIF_TAG_JPEG_PROC, "JPEGProc", 0x0200},
         {EXIF_TAG_JPEG_INTERCHANGE_FORMAT, "JPEGInterchangeFormat", 0x0201},
         {EXIF_TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, "JPEGInterchangeFormatLength", 0x0202},
         {EXIF_TAG_YCBCR_COEFFICIENTS, "YCbCrCoefficients", 0x0211},
