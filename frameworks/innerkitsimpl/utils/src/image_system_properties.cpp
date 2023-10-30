@@ -53,13 +53,6 @@ bool ImageSystemProperties::GetDmaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
-    bool isFeatureSupported = false;
-    if (isPhone) {
-        if (strncmp(__progname, "mos.photo", strlen("mos.photo")) == 0 ||
-            strncmp(__progname, "myapplication", strlen("myapplication")) == 0) {
-            isFeatureSupported = true;
-        }
-    }
     return system::GetBoolParameter("persist.multimedia.image.dma.enabled", true) && isPhone;
 #else
     return false;

@@ -148,7 +148,8 @@ static uint8_t GetColorComp(uint32_t color, uint8_t shift)
 
 static uint32_t GetColorARGB(uint8_t a, uint8_t r, uint8_t g, uint8_t b)
 {
-    return ((a << ARGB_A_SHIFT) | (r << ARGB_R_SHIFT) | (g << ARGB_G_SHIFT) | (b << ARGB_B_SHIFT));
+    return ((uint32_t)(a << ARGB_A_SHIFT) | (uint32_t)(r << ARGB_R_SHIFT)
+        | (uint32_t)(g << ARGB_G_SHIFT) | (uint32_t)(b << ARGB_B_SHIFT));
 }
 
 static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType at, ColorSpace cs = ColorSpace::SRGB)
