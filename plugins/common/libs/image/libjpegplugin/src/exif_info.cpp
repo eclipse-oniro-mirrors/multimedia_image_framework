@@ -438,7 +438,6 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     }
     exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
     exif_data_load_data (exifData_, buf, len);
-
     exif_data_foreach_content(exifData_,
         [](ExifContent *ec, void *userData) {
             ExifIfd ifd = exif_content_get_ifd(ec);
@@ -464,34 +463,36 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (imageFileDirectory_ == EXIF_IFD_COUNT) {
         return PARSE_EXIF_IFD_ERROR;
     }
-
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
-        hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
-        hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
-        hwMnoteRollAngle_ = exifMakerNote.hwMnoteRollAngle;
-        hwMnotePitchAngle_ = exifMakerNote.hwMnotePitchAngle;
-        hwMnoteSceneFoodConf_ = exifMakerNote.hwMnoteSceneFoodConf;
-        hwMnoteSceneStageConf_ = exifMakerNote.hwMnoteSceneStageConf;
-        hwMnoteSceneBlueSkyConf_ = exifMakerNote.hwMnoteSceneBlueSkyConf;
-        hwMnoteSceneGreenPlantConf_ = exifMakerNote.hwMnoteSceneGreenPlantConf;
-        hwMnoteSceneBeachConf_ = exifMakerNote.hwMnoteSceneBeachConf;
-        hwMnoteSceneSnowConf_ = exifMakerNote.hwMnoteSceneSnowConf;
-        hwMnoteSceneSunsetConf_ = exifMakerNote.hwMnoteSceneSunsetConf;
-        hwMnoteSceneFlowersConf_ = exifMakerNote.hwMnoteSceneFlowersConf;
-        hwMnoteSceneNightConf_ = exifMakerNote.hwMnoteSceneNightConf;
-        hwMnoteSceneTextConf_ = exifMakerNote.hwMnoteSceneTextConf;
-        hwMnoteFaceCount_ = exifMakerNote.hwMnoteFaceCount;
-        hwMnoteFocusMode_ = exifMakerNote.hwMnoteFocusMode;
+        SetMakerExifTagValues(exifMakerNote);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
             exifMakerNote.hwCaptureMode);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
             exifMakerNote.hwPhysicalAperture);
     }
-
     isExifDataParsed_ = true;
     DumpTagsMap(exifTags_);
     return PARSE_EXIF_SUCCESS;
+}
+
+void EXIFInfo::SetMakerExifTagValues(const ExifMakerNote &exifMakerNote){
+    hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
+    hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
+    hwMnoteRollAngle_ = exifMakerNote.hwMnoteRollAngle;
+    hwMnotePitchAngle_ = exifMakerNote.hwMnotePitchAngle;
+    hwMnoteSceneFoodConf_ = exifMakerNote.hwMnoteSceneFoodConf;
+    hwMnoteSceneStageConf_ = exifMakerNote.hwMnoteSceneStageConf;
+    hwMnoteSceneBlueSkyConf_ = exifMakerNote.hwMnoteSceneBlueSkyConf;
+    hwMnoteSceneGreenPlantConf_ = exifMakerNote.hwMnoteSceneGreenPlantConf;
+    hwMnoteSceneBeachConf_ = exifMakerNote.hwMnoteSceneBeachConf;
+    hwMnoteSceneSnowConf_ = exifMakerNote.hwMnoteSceneSnowConf;
+    hwMnoteSceneSunsetConf_ = exifMakerNote.hwMnoteSceneSunsetConf;
+    hwMnoteSceneFlowersConf_ = exifMakerNote.hwMnoteSceneFlowersConf;
+    hwMnoteSceneNightConf_ = exifMakerNote.hwMnoteSceneNightConf;
+    hwMnoteSceneTextConf_ = exifMakerNote.hwMnoteSceneTextConf;
+    hwMnoteFaceCount_ = exifMakerNote.hwMnoteFaceCount;
+    hwMnoteFocusMode_ = exifMakerNote.hwMnoteFocusMode;
 }
 
 int EXIFInfo::ParseExifData(const std::string &data)
@@ -1412,8 +1413,10 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 return false;
             }
             exif_set_long((*ptrEntry)->data, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,
+                          static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,
+                          static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
             break;
         }
 
