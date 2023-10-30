@@ -476,7 +476,8 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     return PARSE_EXIF_SUCCESS;
 }
 
-void EXIFInfo::SetMakerExifTagValues(const ExifMakerNote &exifMakerNote) {
+void EXIFInfo::SetMakerExifTagValues(const ExifMakerNote &exifMakerNote)
+{
     hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
     hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
     hwMnoteRollAngle_ = exifMakerNote.hwMnoteRollAngle;

@@ -73,6 +73,7 @@ private:
     bool ResetCodec();
     SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
+    uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
     std::unique_ptr<SkCodec> codec_;
@@ -84,7 +85,6 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     uint32_t gifCacheIndex_ = 0;
-    uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
 };
 } // namespace ImagePlugin
 } // namespace OHOS
