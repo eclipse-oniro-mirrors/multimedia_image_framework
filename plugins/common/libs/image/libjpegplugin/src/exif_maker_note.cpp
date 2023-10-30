@@ -560,7 +560,7 @@ bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
     } else if (entry.tag == HW_MNOTE_TAG_PHYSICAL_APERTURE) {
         hwPhysicalAperture = value;
         return true;
-    }else if (entry.tag == HW_MNOTE_TAG_ROLL_ANGLE) {
+    } else if (entry.tag == HW_MNOTE_TAG_ROLL_ANGLE) {
         hwMnoteRollAngle = value;
         return true;
     } else if (entry.tag == HW_MNOTE_TAG_PITCH_ANGLE) {
