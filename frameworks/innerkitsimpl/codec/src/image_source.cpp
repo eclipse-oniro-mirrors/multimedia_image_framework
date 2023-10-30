@@ -1843,8 +1843,8 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size,
     const size_t uvwidth = (isSupportOdd && isAddUV) ? (width + (width & 1)) : width;
     const uint8_t *yuvPlane = sourceStreamPtr_->GetDataPtr();
     const size_t yuvSize = sourceStreamPtr_->GetStreamSize();
-    const size_t ubase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV21) ? 0 : 1);
-    const size_t vbase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV21) ? 1 : 0);
+    const size_t ubase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV12) ? 0 : 1);
+    const size_t vbase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV12) ? 1 : 0);
     IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA uvbase:(%{public}zu, %{public}zu), width:(%{public}zu, %{public}zu)",
         ubase, vbase, width, uvwidth);
 
