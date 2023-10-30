@@ -150,9 +150,9 @@ public:
                                                        uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
                                                                                   uint32_t &errorCode);
-    NATIVEEXPORT static bool IsASTC(const uint8_t *fileData);
+    NATIVEEXPORT static bool IsASTC(const uint8_t *fileData, size_t fileSize);
 
-    NATIVEEXPORT static ASTCInfo GetASTCInfo(const uint8_t *fileData);
+    NATIVEEXPORT static bool GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo& astcInfo);
 
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
@@ -243,7 +243,7 @@ private:
     static std::unique_ptr<SourceStream> DecodeBase64(const uint8_t *data, uint32_t size);
     static std::unique_ptr<SourceStream> DecodeBase64(const std::string &data);
     bool IsSpecialYUV();
-    ImageInfo GetImageInfoForASTC();
+    bool GetImageInfoForASTC(ImageInfo& imageInfo);
     bool ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSupportOdd, bool isAddUV, uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForYUV(uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForASTC(uint32_t &errorCode);
