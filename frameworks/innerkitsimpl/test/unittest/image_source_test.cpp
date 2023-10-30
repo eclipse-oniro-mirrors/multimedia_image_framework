@@ -909,7 +909,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0012
- * @tc.desc: test CreateImageSource
+ * @tc.desc: test CreateImageSource correct fd, file offset and size
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
@@ -928,7 +928,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0013
- * @tc.desc: test CreateImageSource
+ * @tc.desc: test CreateImageSource correct fd and file size is 0
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
@@ -945,7 +945,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0014
- * @tc.desc: test CreateImageSource
+ * @tc.desc: test CreateImageSource correct fd and file offset is -1
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
@@ -965,7 +965,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test CreateImageSource
+ * @tc.desc: test CreateImageSource correct fd and file size is 100
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
@@ -983,7 +983,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0016
- * @tc.desc: test CreateImageSource
+ * @tc.desc: test CreateImageSource fd is -1
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
