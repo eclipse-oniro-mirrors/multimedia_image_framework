@@ -64,6 +64,7 @@ public:
     static const uint16_t HW_MNOTE_TAG_SCENE_TEXT_CONF = 0x000B;
     static const uint16_t HW_MNOTE_TAG_FACE_COUNT = 0x0102;
     static const uint16_t HW_MNOTE_TAG_FOCUS_MODE = 0x020D;
+
     uint32_t Parser(ExifData *exif, const unsigned char *data, uint32_t size);
     [[nodiscard]] bool IsParsed() const;
 

@@ -556,54 +556,40 @@ bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
     if (entry.tag == HW_MNOTE_TAG_CAPTURE_MODE) {
         hwCaptureMode = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_PHYSICAL_APERTURE) {
         hwPhysicalAperture = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_ROLL_ANGLE) {
         hwMnoteRollAngle = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_PITCH_ANGLE) {
         hwMnotePitchAngle = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_FOOD_CONF) {
         hwMnoteSceneFoodConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_STAGE_CONF) {
         hwMnoteSceneStageConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF) {
         hwMnoteSceneBlueSkyConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF) {
         hwMnoteSceneGreenPlantConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_BEACH_CONF) {
         hwMnoteSceneBeachConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_SNOW_CONF) {
         hwMnoteSceneSnowConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_SUNSET_CONF) {
         hwMnoteSceneSunsetConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_FLOWERS_CONF) {
         hwMnoteSceneFlowersConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_NIGHT_CONF) {
         hwMnoteSceneNightConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_SCENE_TEXT_CONF) {
         hwMnoteSceneTextConf = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_FACE_COUNT) {
         hwMnoteFaceCount = value;
-        return true;
     } else if (entry.tag == HW_MNOTE_TAG_FOCUS_MODE) {
         hwMnoteFocusMode = value;
-        return true;
+    } else {
+        return false;
     }
-    return false;
+    return true;
 }
 
 bool ExifMakerNote::GetUInt16AndMove(uint32_t &offset, uint16_t &value)

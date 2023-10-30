@@ -788,14 +788,12 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
             "[GetImagePropertyString] this key is used to check the original format of raw image!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
-
     if (!exifInfo_.IsExifDataParsed()) {
         if (!ParseExifData()) {
             HiLog::Error(LABEL, "[GetImagePropertyString] Parse exif data failed!");
             return Media::ERROR;
         }
     }
-
     if (IsSameTextStr(key, BITS_PER_SAMPLE)) {
         value = exifInfo_.bitsPerSample_;
     } else if (IsSameTextStr(key, ORIENTATION)) {
@@ -819,7 +817,6 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
     } else if (GetImagePropertyString(key, value) != Media::SUCCESS) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-
     if (IsSameTextStr(value, EXIFInfo::DEFAULT_EXIF_VALUE)) {
         HiLog::Error(LABEL, "[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
         return Media::ERR_MEDIA_VALUE_INVALID;
@@ -897,7 +894,15 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
         value = exifInfo_.hwMnoteCaptureMode_;
     } else if (IsSameTextStr(key, HW_MNOTE_PHYSICAL_APERTURE)) {
         value = exifInfo_.hwMnotePhysicalAperture_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_ROLL_ANGLE)) {
+    } else {
+        return GetMakerImagePropertyString(key, value);
+    }
+    return Media::SUCCESS;
+}
+
+uint32_t JpegDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
+{
+    if (IsSameTextStr(key, HW_MNOTE_TAG_ROLL_ANGLE)) {
         value = exifInfo_.hwMnoteRollAngle_;
     } else if (IsSameTextStr(key, HW_MNOTE_TAG_PITCH_ANGLE)) {
         value = exifInfo_.hwMnotePitchAngle_;
@@ -930,6 +935,8 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
     }
     return Media::SUCCESS;
 }
+
+
 
 void InitOriginalTimes(std::string &dataTime)
 {
