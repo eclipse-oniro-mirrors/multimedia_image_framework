@@ -444,7 +444,7 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0020, TestSize.Level3)
 
 /**
  * @tc.name: FileSourceStreamTest0021
- * @tc.desc: CreateSourceStream fd 
+ * @tc.desc: CreateSourceStream fd
  * @tc.type: FUNC
  */
 HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0021, TestSize.Level3)
