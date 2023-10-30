@@ -23,7 +23,8 @@ enum class ImageResourceType : int32_t {
     IMAGE_RESOURCE_INVAILD = 0,
     IMAGE_RESOURCE_FD = 1,
     IMAGE_RESOURCE_PATH = 2,
-    IMAGE_RESOURCE_BUFFER = 3
+    IMAGE_RESOURCE_BUFFER = 3,
+    IMAGE_RESOURCE_RAW_FILE = 4
 };
 
 struct ImageResource {
@@ -32,6 +33,8 @@ struct ImageResource {
     std::string path;
     uint8_t* buffer = nullptr;
     size_t bufferSize = 0;
+    long fileStart = 0;
+    long fileLength = 0;
 };
 } // namespace Media
 } // namespace OHOS

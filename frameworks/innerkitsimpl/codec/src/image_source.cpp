@@ -2111,5 +2111,18 @@ size_t ImageSource::GetSourceSize() const
     return sourceStreamPtr_ ? sourceStreamPtr_->GetStreamSize() : 0;
 }
 #endif
+
+unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t offset,
+    int32_t length, const SourceOptions &opts, uint32_t &errorCode)
+{
+    IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
+    return DoImageSourceCreate([&fd, offset, length]() {
+        auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
+        if (streamPtr == nullptr) {
+            IMAGE_LOGE("[ImageSource]failed to create file fd source stream.");
+        }
+        return streamPtr;
+        }, opts, errorCode, "CreateImageSource by fd offset and length");
+}
 } // namespace Media
 } // namespace OHOS

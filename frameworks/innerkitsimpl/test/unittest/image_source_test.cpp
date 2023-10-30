@@ -907,6 +907,96 @@ HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0011 end";
 }
 
+/**
+ * @tc.name: CreateImageSource0012
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0012 start";
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    off_t fSize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
+    ASSERT_NE(filePtr, nullptr);
+    close(fd);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0012 end";
+}
+
+/**
+ * @tc.name: CreateImageSource0013
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0013 start";
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    auto filePtr = ImageSource::CreateImageSource(fd, 0, 0, opts, errorCode);
+    ASSERT_NE(filePtr, nullptr);
+    close(fd);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0013 end";
+}
+
+/**
+ * @tc.name: CreateImageSource0014
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0014 start";
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    off_t fSize = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    const int offset = -1;
+    auto filePtr = ImageSource::CreateImageSource(fd, offset, fSize, opts, errorCode);
+    ASSERT_EQ(filePtr, nullptr);
+    close(fd);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0014 end";
+}
+
+/**
+ * @tc.name: CreateImageSource0015
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0015 start";
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    const int fSize = 100;
+    auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
+    ASSERT_NE(filePtr, nullptr);
+    close(fd);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0015 end";
+}
+
+/**
+ * @tc.name: CreateImageSource0016
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0016 start";
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const int fd = -1;
+    auto filePtr = ImageSource::CreateImageSource(fd, 0, 100, opts, errorCode);
+    ASSERT_EQ(filePtr, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0016 end";
+}
+
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 /**
  * @tc.name: CreateImageSource0011
