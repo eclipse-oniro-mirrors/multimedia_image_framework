@@ -1989,8 +1989,6 @@ ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0032 end";
 }
 
-
-
 /**
  * @tc.name: GetImagePropertyStringTest0033
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2148,8 +2146,6 @@ uint32_t res = imageSource->GetImagePropertyString(index, key, value);
 ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0038 end";
 }
-
-
 
 /**
  * @tc.name: GetImagePropertyStringTest0039
@@ -2515,8 +2511,6 @@ uint32_t res = imageSource->GetImagePropertyString(index, key, value);
 ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0052 end";
 }
-
-
 
 /**
  * @tc.name: ModifyImagePropertyPathTest001
