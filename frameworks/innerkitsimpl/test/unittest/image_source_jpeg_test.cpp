@@ -2735,33 +2735,6 @@ GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest008 end";
 }
 
 /**
- * @tc.name: ModifyImagePropertyPathTest008
- * @tc.desc: Test ModifyImageProperty width path
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest008, TestSize.Level3)
-{
-/**
- * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
- * @tc.expected: step1. create image source success.
- */
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest008 start";
-uint32_t errorCode = 0;
-SourceOptions opts;
-std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
-ASSERT_EQ(errorCode, SUCCESS);
-ASSERT_NE(imageSource.get(), nullptr);
-
-uint32_t index = 0;
-std::string value = "2222";
-std::string key = "ImageLength";
-uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-ASSERT_EQ(res, SUCCESS);
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest008 end";
-}
-
-/**
  * @tc.name: ModifyImagePropertyPathTest009
  * @tc.desc: Test ModifyImageProperty width path
  * @tc.type: FUNC
@@ -2867,33 +2840,6 @@ std::string key = "ISOSpeedRatings";
 uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
 ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0012 end";
-}
-
-/**
- * @tc.name: ModifyImagePropertyPathTest0013
- * @tc.desc: Test ModifyImageProperty width path
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0013, TestSize.Level3)
-{
-/**
- * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
- * @tc.expected: step1. create image source success.
- */
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0013 start";
-uint32_t errorCode = 0;
-SourceOptions opts;
-std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
-ASSERT_EQ(errorCode, SUCCESS);
-ASSERT_NE(imageSource.get(), nullptr);
-
-uint32_t index = 0;
-std::string value = "1/2";
-std::string key = "FNumber";
-uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-ASSERT_EQ(res, SUCCESS);
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0013 end";
 }
 
 /**
@@ -3188,33 +3134,6 @@ ASSERT_NE(imageSource.get(), nullptr);
 uint32_t index = 0;
 std::string value = "2";
 std::string key = "StandardOutputSensitivity";
-uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-ASSERT_EQ(res, SUCCESS);
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 end";
-}
-
-/**
- * @tc.name: ModifyImagePropertyPathTest0023
- * @tc.desc: Test ModifyImageProperty width path
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0023, TestSize.Level3)
-{
-/**
- * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
- * @tc.expected: step1. create image source success.
- */
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 start";
-uint32_t errorCode = 0;
-SourceOptions opts;
-std::unique_ptr<ImageSource> imageSource =
-        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
-ASSERT_EQ(errorCode, SUCCESS);
-ASSERT_NE(imageSource.get(), nullptr);
-
-uint32_t index = 0;
-std::string value = "300";
-std::string key = "RecommendedExposureIndex";
 uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
 ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 end";
@@ -3567,6 +3486,33 @@ ASSERT_EQ(res, SUCCESS);
 GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0036 end";
 }
 
+
+/**
+ * @tc.name: ModifyImagePropertyPathTest0037
+ * @tc.desc: Test ModifyImageProperty width path
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0037, TestSize.Level3)
+{
+/**
+ * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
+ * @tc.expected: step1. create image source success.
+ */
+GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0037 start";
+uint32_t errorCode = 0;
+SourceOptions opts;
+std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_EXIF_JPEG_PATH, opts, errorCode);
+ASSERT_EQ(errorCode, SUCCESS);
+ASSERT_NE(imageSource.get(), nullptr);
+
+uint32_t index = 0;
+std::string value = "300";
+std::string key = "RecommendedExposureIndex";
+uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
+ASSERT_EQ(res, SUCCESS);
+GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0037 end";
+}
 
 /**
  * @tc.name: ModifyImagePropertyFdTest001
