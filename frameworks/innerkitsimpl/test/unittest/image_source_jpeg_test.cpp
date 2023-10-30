@@ -2072,7 +2072,7 @@ GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0035 end";
  * @tc.desc: Test GetImagePropertyString(index, key, value)
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0031, TestSize.Level3)
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0036, TestSize.Level3)
 {
 /**
  * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.

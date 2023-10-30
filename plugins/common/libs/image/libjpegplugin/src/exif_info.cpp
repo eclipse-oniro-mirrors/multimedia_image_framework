@@ -44,6 +44,8 @@ namespace {
     static constexpr int MOVE_OFFSET_8 = 8;
     static constexpr int MOVE_OFFSET_16 = 16;
     static constexpr int MOVE_OFFSET_24 = 24;
+    static constexpr int CONSTANT_0 = 0;
+    static constexpr int CONSTANT_1 = 1;
     static constexpr int CONSTANT_2 = 2;
     static constexpr int CONSTANT_3 = 3;
     static constexpr int CONSTANT_4 = 4;
@@ -1409,9 +1411,9 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get GPS time stamp exif entry failed.");
                 return false;
             }
-            exif_set_long((*ptrEntry)->data, order,static_cast<ExifSLong>(atoi(longVec[0].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,static_cast<ExifSLong>(atoi(longVec[1].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,static_cast<ExifSLong>(atoi(longVec[2].c_str())));
+            exif_set_long((*ptrEntry)->data, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
             break;
         }
 
