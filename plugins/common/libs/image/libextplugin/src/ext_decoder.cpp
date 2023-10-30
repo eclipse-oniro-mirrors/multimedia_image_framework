@@ -55,20 +55,20 @@ const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
 const std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
-const std::string HW_MNOTE_TAG_ROLL_ANGLE= "HwMnoteRollAngle";
-const std::string HW_MNOTE_TAG_PITCH_ANGLE= "HwMnotePitchAngle";
-const std::string HW_MNOTE_TAG_SCENE_FOOD_CONF= "HwMnoteSceneFoodConf";
-const std::string HW_MNOTE_TAG_SCENE_STAGE_CONF= "HwMnoteSceneStageConf";
-const std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF= "HwMnoteSceneBlueSkyConf";
-const std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF= "HwMnoteSceneGreenPlantConf";
-const std::string HW_MNOTE_TAG_SCENE_BEACH_CONF= "HwMnoteSceneBeachConf";
-const std::string HW_MNOTE_TAG_SCENE_SNOW_CONF= "HwMnoteSceneSnowConf";
-const std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF= "HwMnoteSceneSunsetConf";
-const std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF= "HwMnoteSceneFlowersConf";
-const std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF= "HwMnoteSceneNightConf";
-const std::string HW_MNOTE_TAG_SCENE_TEXT_CONF= "HwMnoteSceneTextConf";
-const std::string HW_MNOTE_TAG_FACE_COUNT= "HwMnoteFaceCount";
-const std::string HW_MNOTE_TAG_FOCUS_MODE= "HwMnoteFocusMode";
+const std::string HW_MNOTE_TAG_ROLL_ANGLE = "HwMnoteRollAngle";
+const std::string HW_MNOTE_TAG_PITCH_ANGLE = "HwMnotePitchAngle";
+const std::string HW_MNOTE_TAG_SCENE_FOOD_CONF = "HwMnoteSceneFoodConf";
+const std::string HW_MNOTE_TAG_SCENE_STAGE_CONF = "HwMnoteSceneStageConf";
+const std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF = "HwMnoteSceneBlueSkyConf";
+const std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF = "HwMnoteSceneGreenPlantConf";
+const std::string HW_MNOTE_TAG_SCENE_BEACH_CONF = "HwMnoteSceneBeachConf";
+const std::string HW_MNOTE_TAG_SCENE_SNOW_CONF = "HwMnoteSceneSnowConf";
+const std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF = "HwMnoteSceneSunsetConf";
+const std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF = "HwMnoteSceneFlowersConf";
+const std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF = "HwMnoteSceneNightConf";
+const std::string HW_MNOTE_TAG_SCENE_TEXT_CONF = "HwMnoteSceneTextConf";
+const std::string HW_MNOTE_TAG_FACE_COUNT = "HwMnoteFaceCount";
+const std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -811,9 +811,9 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         return res;
     }
     // Need exif property following
-    if(key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
-        res = GetMakerImagePropertyString(key,value);
-        if(value.length() == 0) {
+    if (key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
+        res = GetMakerImagePropertyString(key, value);
+        if (value.length() == 0) {
             res = Media::ERR_MEDIA_VALUE_INVALID;
             HiLog::Error(LABEL, "[GetImagePropertyString]The image does not contain the %{public}s  tag ", key.c_str());
         }

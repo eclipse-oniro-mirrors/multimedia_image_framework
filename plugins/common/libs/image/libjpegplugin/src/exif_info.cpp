@@ -319,20 +319,20 @@ const std::map<ExifTag, std::string> TAG_MAP = {
 };
 
 const std::map<ExifTag, std::string> TAG_MAKER_NOTE_MAP = {
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE),"HwMnoteRollAngle"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE),"HwMnotePitchAngle"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF),"HwMnoteSceneFoodConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF),"HwMnoteSceneStageConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF),"HwMnoteSceneBlueSkyConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF),"HwMnoteSceneGreenPlantConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF),"HwMnoteSceneBeachConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF),"HwMnoteSceneSnowConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SUNSET_CONF),"HwMnoteSceneSunsetConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FLOWERS_CONF),"HwMnoteSceneFlowersConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_NIGHT_CONF),"HwMnoteSceneNightConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_TEXT_CONF),"HwMnoteSceneTextConf"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FACE_COUNT),"HwMnoteFaceCount"},
-    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FOCUS_MODE),"HwMnoteFocusMode"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE), "HwMnoteRollAngle"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE), "HwMnotePitchAngle"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF), "HwMnoteSceneFoodConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF), "HwMnoteSceneStageConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF), "HwMnoteSceneBlueSkyConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF), "HwMnoteSceneGreenPlantConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF), "HwMnoteSceneBeachConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF), "HwMnoteSceneSnowConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SUNSET_CONF), "HwMnoteSceneSunsetConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FLOWERS_CONF), "HwMnoteSceneFlowersConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_NIGHT_CONF), "HwMnoteSceneNightConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_TEXT_CONF), "HwMnoteSceneTextConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FACE_COUNT), "HwMnoteFaceCount"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FOCUS_MODE), "HwMnoteFocusMode"},
 };
 
 static const std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
@@ -1411,9 +1411,9 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "Get GPS time stamp exif entry failed.");
                 return false;
             }
-            exif_set_long((*ptrEntry)->data, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
-            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
+            exif_set_long((*ptrEntry)->data, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
             break;
         }
 
@@ -2222,7 +2222,7 @@ static bool GetExifTagByName(const std::string &name, ExifTag &tag)
     });
     auto find_maker_item = std::find_if(TAG_MAKER_NOTE_MAP.begin(), TAG_MAKER_NOTE_MAP.end(),
         [name](const std::map<ExifTag, std::string>::value_type item) {
-       return IsSameTextStr(item.second, name);
+        return IsSameTextStr(item.second, name);
     });
     if (find_item == TAG_MAP.end() && find_maker_item == TAG_MAKER_NOTE_MAP.end()) {
         return false;
