@@ -87,7 +87,6 @@ private:
 
     napi_env env_ = nullptr;
     std::shared_ptr<PixelMap> nativePixelMap_;
-    std::shared_ptr<PixelMap> nativeInner_;
     int32_t lockCount = 0;
     bool isRelease = false;
 };
