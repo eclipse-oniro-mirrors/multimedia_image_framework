@@ -814,8 +814,8 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     // Need exif property following
     if (key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
         res = GetMakerImagePropertyString(key, value);
-        if (value.length() == 0 || value == DEFAULT_EXIF_VALUE) {
-            res = Media::ERR_MEDIA_VALUE_INVALID;
+        if (value.length() == 0) {
+            value = DEFAULT_EXIF_VALUE;
             HiLog::Error(LABEL, "[GetImagePropertyString]The image does not contain the %{public}s  tag ", key.c_str());
         }
         return res;
