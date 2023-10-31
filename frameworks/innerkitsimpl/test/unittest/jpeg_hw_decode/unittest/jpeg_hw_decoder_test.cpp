@@ -188,4 +188,16 @@ HWTEST_F(JpegHwDecoderUnitTest, PrepareInputData, TestSize.Level1)
     auto ret = testObj.PrepareInputData(codec, srcStream);
     ASSERT_FALSE(ret);
 }
+
+HWTEST_F(JpegHwDecoderUnitTest, decode_ok, TestSize.Level1)
+{
+    CommandOpt opt;
+    opt.width = 3456;
+    opt.height = 4608;
+    opt.sampleSize = 1;
+    opt.inputFile = TEST_JPEG_IMG;
+    JpegHwDecoderFlow demo;
+    bool ret = demo.Run(opt, false);
+    ASSERT_TRUE(ret);
+}
 } // namespace OHOS::Media
