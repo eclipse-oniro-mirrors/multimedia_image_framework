@@ -1493,8 +1493,7 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
     if (asyncContext->nConstructor->IsLockPixelMap()) {
         asyncContext->status = ERROR;
     } else {
-        if (asyncContext->nConstructor->nativePixelMap_ != nullptr
-        {
+        if (asyncContext->nConstructor->nativePixelMap_ != nullptr) {
             asyncContext->nConstructor->nativePixelMap_.reset();
         }
         asyncContext->status = SUCCESS;
