@@ -119,8 +119,14 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
+static const uint8_t NUM_16 = 16;
 static const int DMA_SIZE = 512;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+static const size_t ASTC_HEADER_SIZE = 16;
+static const uint8_t ASTC_HEADER_BLOCK_X = 4;
+static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
+static const uint8_t ASTC_HEADER_DIM_X = 7;
+static const uint8_t ASTC_HEADER_DIM_Y = 10;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -289,7 +295,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
 #if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
-    if (IsASTC(sourceStreamPtr_->GetDataPtr())) {
+    if (IsASTC(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize())) {
         return CreatePixelMapForASTC(errorCode);
     }
 #endif
@@ -1291,7 +1297,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
 uint32_t ImageSource::OnSourceUnresolved()
 {
     string formatResult;
-    if (IsASTC(sourceStreamPtr_->GetDataPtr())) {
+    if (IsASTC(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize())) {
         formatResult = InnerFormat::ASTC_FORMAT;
     } else {
         auto ret = GetEncodedFormat(sourceInfo_.encodedFormat, formatResult);
@@ -1388,14 +1394,18 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         return ret;
     }
     if (sourceInfo_.encodedFormat == InnerFormat::ASTC_FORMAT) {
-        ASTCInfo astcInfo = GetASTCInfo(sourceStreamPtr_->GetDataPtr());
-        ImageDecodingStatus imageStatus;
-        imageStatus.imageInfo.size.width = astcInfo.size.width;
-        imageStatus.imageInfo.size.height = astcInfo.size.height;
-        imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
-        auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
-        iter = result.first;
-        return SUCCESS;
+        ASTCInfo astcInfo;
+        if (GetASTCInfo(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(), astcInfo)) {
+            ImageDecodingStatus imageStatus;
+            imageStatus.imageInfo.size = astcInfo.size;
+            imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
+            auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
+            iter = result.first;
+            return SUCCESS;
+        } else {
+            IMAGE_LOGE("[ImageSource] decode astc image info failed.");
+            return ERR_IMAGE_DECODE_FAILED;
+        }
     }
     if (mainDecoder_ == nullptr) {
         IMAGE_LOGE("[ImageSource]get image size, image decode plugin is null.");
@@ -1922,9 +1932,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     return pixelMap;
 }
 
-bool ImageSource::IsASTC(const uint8_t *fileData)
+bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
 {
-    if (fileData == nullptr) {
+    if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
+        IMAGE_LOGE("[ImageSource]IsASTC fileData incorrect.");
         return false;
     }
     unsigned int magicVal = static_cast<unsigned int>(fileData[0]) + (static_cast<unsigned int>(fileData[1]) << 8) +
@@ -1932,29 +1943,32 @@ bool ImageSource::IsASTC(const uint8_t *fileData)
     return magicVal == ASTC_MAGIC_ID;
 }
 
-ImageInfo ImageSource::GetImageInfoForASTC()
+bool ImageSource::GetImageInfoForASTC(ImageInfo& imageInfo)
 {
-    ImageInfo info;
-    ASTCInfo astcInfo = GetASTCInfo(sourceStreamPtr_->GetDataPtr());
-    info.size.width = astcInfo.size.width;
-    info.size.height = astcInfo.size.height;
+    ASTCInfo astcInfo;
+    if (!GetASTCInfo(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(), astcInfo)) {
+        IMAGE_LOGE("[ImageSource] get astc image info failed.");
+        return false;
+    }
+    imageInfo.size = astcInfo.size;
     switch (astcInfo.blockFootprint.width) {
         case NUM_4: {
-            info.pixelFormat = PixelFormat::ASTC_4x4;
+            imageInfo.pixelFormat = PixelFormat::ASTC_4x4;
             break;
         }
         case NUM_6: {
-            info.pixelFormat = PixelFormat::ASTC_6x6;
+            imageInfo.pixelFormat = PixelFormat::ASTC_6x6;
             break;
         }
         case NUM_8: {
-            info.pixelFormat = PixelFormat::ASTC_8x8;
+            imageInfo.pixelFormat = PixelFormat::ASTC_8x8;
             break;
         }
         default:
-            info.pixelFormat = PixelFormat::UNKNOWN;
+            IMAGE_LOGE("[ImageSource]GetImageInfoForASTC pixelFormat is unknown.");
+            imageInfo.pixelFormat = PixelFormat::UNKNOWN;
     }
-    return info;
+    return true;
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
@@ -1968,7 +1982,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
     trace(BEGIN_TRACE, "CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
 
-    ImageInfo info = GetImageInfoForASTC();
+    ImageInfo info;
+    if (!GetImageInfoForASTC(info)) {
+        IMAGE_LOGE("[ImageSource] get astc image info failed.");
+        return nullptr;
+    }
     errorCode = pixelAstc->SetImageInfo(info);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
@@ -2011,18 +2029,21 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 }
 #endif
 
-ASTCInfo ImageSource::GetASTCInfo(const uint8_t *fileData)
+bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo& astcInfo)
 {
-    uint32_t width = static_cast<unsigned int>(fileData[7]) + (static_cast<unsigned int>(fileData[8]) << 8) +
-        (static_cast<unsigned int>(fileData[9]) << 16);
-    uint32_t height = static_cast<unsigned int>(fileData[10]) + (static_cast<unsigned int>(fileData[11]) << 8) +
-        (static_cast<unsigned int>(fileData[12]) << 16);
-    uint32_t blockWidth = fileData[4];
-    uint32_t blockHeight = fileData[5];
-    return {
-        .size = {.width = width, .height = height},
-        .blockFootprint = {.width = blockWidth, .height = blockHeight}
-    };
+    if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
+        IMAGE_LOGE("[ImageSource]GetASTCInfo fileData incorrect.");
+        return false;
+    }
+    astcInfo.size.width = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
+                          (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + 1]) << NUM_8) +
+                          (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + NUM_2]) << NUM_16);
+    astcInfo.size.height = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y]) +
+                           (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + 1]) << NUM_8) +
+                           (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + NUM_2]) << NUM_16);
+    astcInfo.blockFootprint.width = fileData[ASTC_HEADER_BLOCK_X];
+    astcInfo.blockFootprint.height = fileData[ASTC_HEADER_BLOCK_Y];
+    return true;
 }
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts,
