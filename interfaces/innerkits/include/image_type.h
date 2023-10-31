@@ -201,6 +201,13 @@ enum class ScaleMode : int32_t {
 };
 
 enum class IncrementalMode { FULL_DATA = 0, INCREMENTAL_DATA = 1 };
+
+enum class AntiAliasingOption : int32_t {
+    NONE = 0,
+    LOW = 1,
+    MEDIUM = 2,
+    HIGH = 3,
+};
 } // namespace Media
 } // namespace OHOS
 

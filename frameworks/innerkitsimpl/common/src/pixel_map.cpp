@@ -2318,13 +2318,24 @@ struct TransInfos {
     SkMatrix matrix;
 };
 
-bool IsSupportAntiAliasing(const ImageInfo& imageInfo)
+bool IsSupportAntiAliasing(const ImageInfo& imageInfo, const AntiAliasingOption &option)
 {
-    return imageInfo.size.width <= ANTIALIASING_SIZE &&
+    return option != AntiAliasingOption::NONE && imageInfo.size.width <= ANTIALIASING_SIZE &&
             imageInfo.size.height <= ANTIALIASING_SIZE;
 }
 
-bool PixelMap::DoTranslation(TransInfos &infos)
+SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
+{
+    switch (option) {
+        case AntiAliasingOption::NONE: return SkSamplingOptions(SkFilterMode::kNearest, SkMipmapMode::kNone);
+        case AntiAliasingOption::LOW: return SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kNone);
+        case AntiAliasingOption::MEDIUM: return SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear);
+        case AntiAliasingOption::HIGH: return SkSamplingOptions(SkCubicResampler { 1 / 3.0f, 1 / 3.0f });
+        default: return SkSamplingOptions(SkFilterMode::kNearest, SkMipmapMode::kNone);
+    }
+}
+
+bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
@@ -2358,11 +2369,11 @@ bool PixelMap::DoTranslation(TransInfos &infos)
     }
     canvas.concat(infos.matrix);
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo)) {
+    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
         canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO,
             SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear));
     } else {
-        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO);
+        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
     }
 
     ToImageInfo(imageInfo, dst.info);
@@ -2382,6 +2393,15 @@ void PixelMap::scale(float xAxis, float yAxis)
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
+        HiLog::Error(LABEL, "scale falied");
+    }
+}
+
+void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
+{
+    TransInfos infos;
+    infos.matrix.setScale(xAxis, yAxis);
+    if (!DoTranslation(infos, option)) {
         HiLog::Error(LABEL, "scale falied");
     }
 }
