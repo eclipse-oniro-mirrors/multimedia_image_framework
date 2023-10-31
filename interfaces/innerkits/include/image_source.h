@@ -148,6 +148,8 @@ public:
                                                                        const SourceOptions &opts, uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(const int fd, const SourceOptions &opts,
                                                        uint32_t &errorCode);
+    NATIVEEXPORT static std::unique_ptr<ImageSource> CreateImageSource(
+        const int fd, int32_t offset, int32_t length, const SourceOptions &opts, uint32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<ImageSource> CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
                                                                                   uint32_t &errorCode);
     NATIVEEXPORT static bool IsASTC(const uint8_t *fileData, size_t fileSize);

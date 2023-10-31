@@ -33,6 +33,7 @@ namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPG_PATH = "/data/local/tmp/image/test.jpg";
 static constexpr uint32_t MAXSIZE = 10000;
+static constexpr size_t FILE_SIZE = 10;
 static constexpr size_t SIZE_T = 0;
 class FileSourceStreamTest : public testing::Test {
 public:
@@ -439,6 +440,34 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0020, TestSize.Level3)
     uint32_t ret = fileSourceStream->GetStreamType();
     ASSERT_EQ(ret, ImagePlugin::FILE_STREAM_TYPE);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0020 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0021
+ * @tc.desc: CreateSourceStream fd
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0021 start";
+    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd, SIZE_T, FILE_SIZE);
+    ASSERT_NE(fileSourceStream, nullptr);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0021 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0022
+ * @tc.desc: CreateSourceStream fd is -1
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0022 start";
+    const int fd = -1;
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd, -1, SIZE_T);
+    ASSERT_EQ(fileSourceStream, nullptr);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0022 end";
 }
 }
 }

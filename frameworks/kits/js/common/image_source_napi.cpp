@@ -54,6 +54,12 @@ napi_ref ImageSourceNapi::alphaTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
 
+struct RawFileDescriptorInfo {
+    int32_t fd = INVALID_FD;
+    int32_t offset;
+    int32_t length;
+};
+
 struct ImageSourceAsyncContext {
     napi_env env;
     napi_async_work work;
@@ -87,6 +93,7 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     uint32_t frameCount = 0;
+    struct RawFileDescriptorInfo rawFileInfo;
 };
 
 struct ImageEnum {
@@ -706,6 +713,49 @@ static void PrepareNapiEnv(napi_env env)
     napi_value returnValue;
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
 }
+
+static bool hasNamedProperty(napi_env env, napi_value object, std::string name)
+{
+    bool res = false;
+    return (napi_has_named_property(env, object, name.c_str(), &res) == napi_ok) && res;
+}
+
+static bool parseRawFileItem(napi_env env, napi_value argValue, std::string item, int32_t* value)
+{
+    napi_value nItem;
+    if (napi_get_named_property(env, argValue, item.c_str(), &nItem) != napi_ok) {
+        HiLog::Error(LABEL, "Failed to parse RawFileDescriptor item %{public}s", item.c_str());
+        return false;
+    }
+    if (napi_get_value_int32(env, nItem, value) != napi_ok) {
+        HiLog::Error(LABEL, "Failed to get RawFileDescriptor item %{public}s value", item.c_str());
+        return false;
+    }
+    return true;
+}
+
+static bool isRawFileDescriptor(napi_env env, napi_value argValue, ImageSourceAsyncContext* context)
+{
+    if (env == nullptr || argValue == nullptr || context == nullptr) {
+        HiLog::Error(LABEL, "isRawFileDescriptor invalid input");
+        return false;
+    }
+    if (!hasNamedProperty(env, argValue, "fd") ||
+        !hasNamedProperty(env, argValue, "offset") ||
+        !hasNamedProperty(env, argValue, "length")) {
+        HiLog::Error(LABEL, "RawFileDescriptor mismatch");
+        return false;
+    }
+    if (parseRawFileItem(env, argValue, "fd", &(context->rawFileInfo.fd)) &&
+        parseRawFileItem(env, argValue, "offset", &(context->rawFileInfo.offset)) &&
+        parseRawFileItem(env, argValue, "length", &(context->rawFileInfo.length))) {
+        return true;
+    }
+
+    HiLog::Error(LABEL, "Failed to parse RawFileDescriptor item");
+    return false;
+}
+
 static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_value argValue,
     SourceOptions &opts, ImageSourceAsyncContext* context)
 {
@@ -727,6 +777,13 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         napi_get_value_int32(env, argValue, &context->fdIndex);
         HiLog::Debug(LABEL, "CreateImageSource fdIndex is [%{public}d]", context->fdIndex);
         imageSource = ImageSource::CreateImageSource(context->fdIndex, opts, errorCode);
+    } else if (isRawFileDescriptor(env, argValue, context)) {
+        HiLog::Debug(LABEL,
+            "CreateImageSource RawFileDescriptor fd: %{public}d, offset: %{public}d, length: %{public}d",
+            context->rawFileInfo.fd, context->rawFileInfo.offset, context->rawFileInfo.length);
+        int32_t fileSize = context->rawFileInfo.offset + context->rawFileInfo.length;
+        imageSource = ImageSource::CreateImageSource(context->rawFileInfo.fd,
+            context->rawFileInfo.offset, fileSize, opts, errorCode);
     } else { // Input Buffer
         uint32_t refCount = NUM_1;
         napi_ref arrayRef = nullptr;

@@ -260,6 +260,20 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const Sourc
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by fd");
 }
+
+unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t offset,
+    int32_t length, const SourceOptions &opts, uint32_t &errorCode)
+{
+    IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
+    return DoImageSourceCreate([&fd, offset, length]() {
+        auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
+        if (streamPtr == nullptr) {
+            IMAGE_LOGE("[ImageSource]failed to create file fd source stream.");
+        }
+        return streamPtr;
+        }, opts, errorCode, "CreateImageSource by fd offset and length");
+}
+
 unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
                                                                   uint32_t &errorCode)
 {

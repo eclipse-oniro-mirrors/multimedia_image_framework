@@ -103,6 +103,29 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
     return (unique_ptr<FileSourceStream>(new FileSourceStream(filePtr, size, offset, offset)));
 }
 
+unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
+    const int fd, int32_t offset, int32_t length)
+{
+    int dupFd = dup(fd);
+    if (dupFd < 0) {
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
+        return nullptr;
+    }
+
+    FILE *filePtr = fdopen(dupFd, "rb");
+    if (filePtr == nullptr) {
+        IMAGE_LOGE("[FileSourceStream]open file fail.");
+        return nullptr;
+    }
+
+    int ret = fseek(filePtr, offset, SEEK_SET);
+    if (ret != 0) {
+        IMAGE_LOGE("[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
+        return nullptr;
+    }
+    return make_unique<FileSourceStream>(filePtr, length, offset, offset);
+}
+
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0 || filePtr_ == nullptr) {
@@ -189,7 +212,7 @@ bool FileSourceStream::Seek(uint32_t position)
 
 uint32_t FileSourceStream::Tell()
 {
-    return fileOffset_;
+    return fileOffset_ - fileOriginalOffset_;
 }
 
 bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
@@ -246,7 +269,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
 
 size_t FileSourceStream::GetStreamSize()
 {
-    return fileSize_;
+    return fileSize_ - fileOriginalOffset_;
 }
 
 static bool DupFd(FILE *f, int &res)
