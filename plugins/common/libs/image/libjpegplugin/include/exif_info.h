@@ -114,11 +114,11 @@ public:
     std::string hwMnoteSceneTextConf_;
     std::string hwMnoteFaceCount_;
     std::string hwMnoteFocusMode_;
+    std::map<std::string, std::string> makerInfoTagValueMap;
 
 private:
     void SetExifTagValues(const ExifTag &tag, const std::string &value);
     void SetExifTagValuesEx(const ExifTag &tag, const std::string &value);
-    void SetMakerExifTagValues(const ExifMakerNote &exifMakerNote);
     ExifEntry* InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag);
     ExifEntry* CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag, size_t len, ExifFormat format);
     unsigned long GetFileSize(FILE *fp);

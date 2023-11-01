@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <libexif/exif-data.h>
+#include <map>
 namespace OHOS {
 namespace ImagePlugin {
 class ExifMakerNote {
@@ -40,7 +41,6 @@ public:
     std::string hwMnoteSceneTextConf;
     std::string hwMnoteFaceCount;
     std::string hwMnoteFocusMode;
-
     static const uint16_t HW_MNOTE_TAG_SCENE_INFO_OFFSET = 0x0000;
     static const uint16_t HW_MNOTE_TAG_FACE_INFO_OFFSET = 0x0100;
     static const uint16_t HW_MNOTE_TAG_CAPTURE_MODE = 0x0200;
@@ -64,6 +64,25 @@ public:
     static const uint16_t HW_MNOTE_TAG_SCENE_TEXT_CONF = 0x000B;
     static const uint16_t HW_MNOTE_TAG_FACE_COUNT = 0x0102;
     static const uint16_t HW_MNOTE_TAG_FOCUS_MODE = 0x020D;
+    const std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+    std::map<std::string, std::string> makerTagValueMap = {
+        {"HwMnoteCaptureMode",DEFAULT_EXIF_VALUE},
+        {"HwMnotePhysicalAperture",DEFAULT_EXIF_VALUE},
+        {"HwMnoteRollAngle",DEFAULT_EXIF_VALUE},
+        {"HwMnotePitchAngle",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneFoodConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneStageConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneBlueSkyConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneGreenPlantConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneBeachConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneSnowConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneSunsetConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneFlowersConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneNightConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteSceneTextConf",DEFAULT_EXIF_VALUE},
+        {"HwMnoteFaceCount",DEFAULT_EXIF_VALUE},
+        {"HwMnoteFocusMode",DEFAULT_EXIF_VALUE},
+    };
 
     uint32_t Parser(ExifData *exif, const unsigned char *data, uint32_t size);
     [[nodiscard]] bool IsParsed() const;

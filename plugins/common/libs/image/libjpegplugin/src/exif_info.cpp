@@ -464,7 +464,7 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     }
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
-        SetMakerExifTagValues(exifMakerNote);
+        makerInfoTagValueMap = exifMakerNote.makerTagValueMap;
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
             exifMakerNote.hwCaptureMode);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
@@ -473,26 +473,6 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     isExifDataParsed_ = true;
     DumpTagsMap(exifTags_);
     return PARSE_EXIF_SUCCESS;
-}
-
-void EXIFInfo::SetMakerExifTagValues(const ExifMakerNote &exifMakerNote)
-{
-    hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
-    hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
-    hwMnoteRollAngle_ = exifMakerNote.hwMnoteRollAngle;
-    hwMnotePitchAngle_ = exifMakerNote.hwMnotePitchAngle;
-    hwMnoteSceneFoodConf_ = exifMakerNote.hwMnoteSceneFoodConf;
-    hwMnoteSceneStageConf_ = exifMakerNote.hwMnoteSceneStageConf;
-    hwMnoteSceneBlueSkyConf_ = exifMakerNote.hwMnoteSceneBlueSkyConf;
-    hwMnoteSceneGreenPlantConf_ = exifMakerNote.hwMnoteSceneGreenPlantConf;
-    hwMnoteSceneBeachConf_ = exifMakerNote.hwMnoteSceneBeachConf;
-    hwMnoteSceneSnowConf_ = exifMakerNote.hwMnoteSceneSnowConf;
-    hwMnoteSceneSunsetConf_ = exifMakerNote.hwMnoteSceneSunsetConf;
-    hwMnoteSceneFlowersConf_ = exifMakerNote.hwMnoteSceneFlowersConf;
-    hwMnoteSceneNightConf_ = exifMakerNote.hwMnoteSceneNightConf;
-    hwMnoteSceneTextConf_ = exifMakerNote.hwMnoteSceneTextConf;
-    hwMnoteFaceCount_ = exifMakerNote.hwMnoteFaceCount;
-    hwMnoteFocusMode_ = exifMakerNote.hwMnoteFocusMode;
 }
 
 int EXIFInfo::ParseExifData(const std::string &data)
@@ -1402,12 +1382,8 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
                 HiLog::Error(LABEL, "GPS time stamp Invalid value %{public}s", value.c_str());
                 return false;
             }
-
-            ExifRational longRational;
-            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
-            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
             *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP,
-                                      sizeof(longRational), EXIF_FORMAT_SRATIONAL);
+                                      MOVE_OFFSET_24, EXIF_FORMAT_SRATIONAL);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get GPS time stamp exif entry failed.");
                 return false;

@@ -43,6 +43,24 @@ constexpr uint32_t BACK_TO_EXIF_BEFORE = 6;
 constexpr uint32_t JPEG_TAG_SIZE = 2;
 constexpr uint32_t JPEG_CHECK_MIN_SIZE = 3;
 constexpr uint32_t EXIF_MIN_SIZE = 14;
+std::map<uint16_t, std::string>  makerTagKeyMap = {
+    {ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE, "HwMnoteCaptureMode"},
+    {ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE, "HwMnotePhysicalAperture"},
+    {ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE, "HwMnoteRollAngle"},
+    {ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE, "HwMnotePitchAngle"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF, "HwMnoteSceneFoodConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF, "HwMnoteSceneStageConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUESKY_CONF, "HwMnoteSceneBlueSkyConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF, "HwMnoteSceneGreenPlantConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF, "HwMnoteSceneBeachConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF, "HwMnoteSceneSnowConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_SUNSET_CONF, "HwMnoteSceneSunsetConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_FLOWERS_CONF, "HwMnoteSceneFlowersConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_NIGHT_CONF, "HwMnoteSceneNightConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_TEXT_CONF, "HwMnoteSceneTextConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_FACE_COUNT, "HwMnoteFaceCount"},
+    {ExifMakerNote::HW_MNOTE_TAG_FOCUS_MODE, "HwMnoteFocusMode"},
+};
 }
 
 ExifMakerNote::ExifItem::ExifItem()
@@ -554,42 +572,13 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 
 bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
-    if (entry.tag == HW_MNOTE_TAG_CAPTURE_MODE) {
-        hwCaptureMode = value;
-    } else if (entry.tag == HW_MNOTE_TAG_PHYSICAL_APERTURE) {
-        hwPhysicalAperture = value;
-    } else if (entry.tag == HW_MNOTE_TAG_ROLL_ANGLE) {
-        hwMnoteRollAngle = value;
-    } else if (entry.tag == HW_MNOTE_TAG_PITCH_ANGLE) {
-        hwMnotePitchAngle = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_FOOD_CONF) {
-        hwMnoteSceneFoodConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_STAGE_CONF) {
-        hwMnoteSceneStageConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF) {
-        hwMnoteSceneBlueSkyConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF) {
-        hwMnoteSceneGreenPlantConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_BEACH_CONF) {
-        hwMnoteSceneBeachConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_SNOW_CONF) {
-        hwMnoteSceneSnowConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_SUNSET_CONF) {
-        hwMnoteSceneSunsetConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_FLOWERS_CONF) {
-        hwMnoteSceneFlowersConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_NIGHT_CONF) {
-        hwMnoteSceneNightConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_SCENE_TEXT_CONF) {
-        hwMnoteSceneTextConf = value;
-    } else if (entry.tag == HW_MNOTE_TAG_FACE_COUNT) {
-        hwMnoteFaceCount = value;
-    } else if (entry.tag == HW_MNOTE_TAG_FOCUS_MODE) {
-        hwMnoteFocusMode = value;
-    } else {
-        return false;
+    uint16_t tag = entry.tag;
+    std::string tagName = makerTagKeyMap[tag]:
+    if (!tagName.empty()) {
+        makerTagValueMap[tagName] = value;
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool ExifMakerNote::GetUInt16AndMove(uint32_t &offset, uint16_t &value)

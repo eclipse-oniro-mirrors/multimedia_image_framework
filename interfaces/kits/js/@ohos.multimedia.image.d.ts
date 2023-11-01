@@ -421,9 +421,19 @@ declare namespace image {
     ROLL_ANGLE = 'HwMnoteRollAngle',
 
     /**
+     * Roll Angle
+     *
+     * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
+     * @since 11
+     */
+    ROLL_ANGLE = 'HwMnoteRollAngle',
+
+    /**
      * Pitch Angle
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     PITCH_ANGLE = 'HwMnotePitchAngle',
@@ -432,6 +442,7 @@ declare namespace image {
      * Capture Scene: Food
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_FOOD_CONF = 'HwMnoteSceneFoodConf',
@@ -440,6 +451,7 @@ declare namespace image {
      * Capture Scene: Stage
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_STAGE_CONF = 'HwMnoteSceneStageConf',
@@ -448,6 +460,7 @@ declare namespace image {
      * Capture Scene: Blue Sky
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_BLUE_SKY_CONF = 'HwMnoteSceneBlueSkyConf',
@@ -456,6 +469,7 @@ declare namespace image {
      * Capture Scene: Green Plant
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_GREEN_PLANT_CONF = 'HwMnoteSceneGreenPlantConf',
@@ -464,6 +478,7 @@ declare namespace image {
      * Capture Scene: Beach
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_BEACH_CONF = 'HwMnoteSceneBeachConf',
@@ -472,6 +487,7 @@ declare namespace image {
      * Capture Scene: Snow
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_SNOW_CONF = 'HwMnoteSceneSnowConf',
@@ -480,6 +496,7 @@ declare namespace image {
      * Capture Scene: Sunset
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_SUNSET_CONF = 'HwMnoteSceneSunsetConf',
@@ -488,6 +505,7 @@ declare namespace image {
      * Capture Scene: Flowers
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_FLOWERS_CONF = 'HwMnoteSceneFlowersConf',
@@ -496,6 +514,7 @@ declare namespace image {
      * Capture Scene: Night
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_NIGHT_CONF = 'HwMnoteSceneNightConf',
@@ -504,6 +523,7 @@ declare namespace image {
      * Capture Scene: Text
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     SCENE_TEXT_CONF = 'HwMnoteSceneTextConf',
@@ -512,6 +532,7 @@ declare namespace image {
      * Face Count
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     FACE_COUNT = 'HwMnoteFaceCount',
@@ -520,6 +541,7 @@ declare namespace image {
      * Focus Mode
      *
      * @syscap SystemCapability.Multimedia.Image.Core
+     * @crossplatform
      * @since 11
      */
     FOCUS_MODE = 'HwMnoteFocusMode'
