@@ -902,38 +902,12 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
 
 uint32_t JpegDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
 {
-    if (IsSameTextStr(key, HW_MNOTE_TAG_ROLL_ANGLE)) {
-        value = exifInfo_.hwMnoteRollAngle_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_PITCH_ANGLE)) {
-        value = exifInfo_.hwMnotePitchAngle_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FOOD_CONF)) {
-        value = exifInfo_.hwMnoteSceneFoodConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_STAGE_CONF)) {
-        value = exifInfo_.hwMnoteSceneStageConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF)) {
-        value = exifInfo_.hwMnoteSceneBlueSkyConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF)) {
-        value = exifInfo_.hwMnoteSceneGreenPlantConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_BEACH_CONF)) {
-        value = exifInfo_.hwMnoteSceneBeachConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SNOW_CONF)) {
-        value = exifInfo_.hwMnoteSceneSnowConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_SUNSET_CONF)) {
-        value = exifInfo_.hwMnoteSceneSunsetConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_FLOWERS_CONF)) {
-        value = exifInfo_.hwMnoteSceneFlowersConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_NIGHT_CONF)) {
-        value = exifInfo_.hwMnoteSceneNightConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_SCENE_TEXT_CONF)) {
-        value = exifInfo_.hwMnoteSceneTextConf_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FACE_COUNT)) {
-        value = exifInfo_.hwMnoteFaceCount_;
-    } else if (IsSameTextStr(key, HW_MNOTE_TAG_FOCUS_MODE)) {
-        value = exifInfo_.hwMnoteFocusMode_;
-    } else {
+    value = exifInfo_.makerInfoTagValueMap[key];
+    if (value.length() ==0) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     return Media::SUCCESS;
+}
 }
 
 void InitOriginalTimes(std::string &dataTime)
