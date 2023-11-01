@@ -94,6 +94,7 @@ public:
     NATIVEEXPORT virtual int32_t GetHeight();
     NATIVEEXPORT virtual int32_t GetBaseDensity();
     NATIVEEXPORT virtual void scale(float xAxis, float yAxis);
+    NATIVEEXPORT virtual void scale(float xAxis, float yAxis, const AntiAliasingOption &option);
     NATIVEEXPORT virtual bool resize(float xAxis, float yAxis);
     NATIVEEXPORT virtual void translate(float xAxis, float yAxis);
     NATIVEEXPORT virtual void rotate(float degrees);
@@ -297,7 +298,7 @@ private:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
-    bool DoTranslation(TransInfos &infos);
+    bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
 
     uint8_t *data_ = nullptr;
