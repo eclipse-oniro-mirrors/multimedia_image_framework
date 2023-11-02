@@ -573,8 +573,8 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
     uint16_t tag = entry.tag;
-    if (makerTagKeyMap.find(tag) != makerTagKeyMap.end()) {
-        std::string tagName = makerTagKeyMap[tag];
+    if (MAKER_TAG_KEY_MAP.find(tag) != MAKER_TAG_KEY_MAP.end()) {
+        std::string tagName = MAKER_TAG_KEY_MAP[tag];
         makerTagValueMap[tagName] = value;
         return true;
     }
