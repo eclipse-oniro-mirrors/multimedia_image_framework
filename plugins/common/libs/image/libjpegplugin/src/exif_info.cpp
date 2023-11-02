@@ -464,12 +464,12 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     }
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
-        makerInfoTagValueMap = exifMakerNote.makerTagValueMap;
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
             exifMakerNote.hwCaptureMode);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
             exifMakerNote.hwPhysicalAperture);
     }
+    makerInfoTagValueMap = exifMakerNote.makerTagValueMap;
     isExifDataParsed_ = true;
     DumpTagsMap(exifTags_);
     return PARSE_EXIF_SUCCESS;
