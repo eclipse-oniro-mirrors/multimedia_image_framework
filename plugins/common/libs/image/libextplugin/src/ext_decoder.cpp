@@ -831,7 +831,6 @@ uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::st
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     return Media::SUCCESS;
-    }
 }
 
 uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
