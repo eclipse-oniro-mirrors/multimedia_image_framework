@@ -574,7 +574,7 @@ bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
     uint16_t tag = entry.tag;
     if (MAKER_TAG_KEY_MAP.find(tag) != MAKER_TAG_KEY_MAP.end()) {
-        std::string tagName = MAKER_TAG_KEY_MAP[tag];
+        std::string tagName = MAKER_TAG_KEY_MAP.at(tag);
         makerTagValueMap[tagName] = value;
         return true;
     }
