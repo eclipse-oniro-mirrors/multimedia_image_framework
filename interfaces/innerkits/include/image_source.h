@@ -41,6 +41,7 @@ namespace OHOS {
 namespace ImagePlugin {
 class AbsImageFormatAgent;
 class AbsImageDecoder;
+struct DataStreamBuffer;
 struct PixelDecodeOptions;
 struct PlImageInfo;
 } // namespace ImagePlugin
@@ -209,6 +210,7 @@ private:
     using IncrementalRecordMap = std::map<PixelMap *, IncrementalDecodingContext>;
     ImageSource(std::unique_ptr<SourceStream> &&stream, const SourceOptions &opts);
     uint32_t CheckEncodedFormat(ImagePlugin::AbsImageFormatAgent &agent);
+    uint32_t GetData(ImagePlugin::DataStreamBuffer &outData, size_t size);
     static FormatAgentMap InitClass();
     uint32_t GetEncodedFormat(const std::string &formatHint, std::string &format);
     uint32_t DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &iter);
