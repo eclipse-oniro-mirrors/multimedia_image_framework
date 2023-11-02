@@ -44,6 +44,7 @@ namespace ImagePlugin {
 using namespace Media;
 using namespace OHOS::HiviewDFX;
 using namespace std;
+const static string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static string CODEC_INITED_KEY = "CodecInited";
 const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
@@ -52,6 +53,23 @@ const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
+const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
+const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
+const static std::string HW_MNOTE_TAG_ROLL_ANGLE = "HwMnoteRollAngle";
+const static std::string HW_MNOTE_TAG_PITCH_ANGLE = "HwMnotePitchAngle";
+const static std::string HW_MNOTE_TAG_SCENE_FOOD_CONF = "HwMnoteSceneFoodConf";
+const static std::string HW_MNOTE_TAG_SCENE_STAGE_CONF = "HwMnoteSceneStageConf";
+const static std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF = "HwMnoteSceneBlueSkyConf";
+const static std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF = "HwMnoteSceneGreenPlantConf";
+const static std::string HW_MNOTE_TAG_SCENE_BEACH_CONF = "HwMnoteSceneBeachConf";
+const static std::string HW_MNOTE_TAG_SCENE_SNOW_CONF = "HwMnoteSceneSnowConf";
+const static std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF = "HwMnoteSceneSunsetConf";
+const static std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF = "HwMnoteSceneFlowersConf";
+const static std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF = "HwMnoteSceneNightConf";
+const static std::string HW_MNOTE_TAG_SCENE_TEXT_CONF = "HwMnoteSceneTextConf";
+const static std::string HW_MNOTE_TAG_FACE_COUNT = "HwMnoteFaceCount";
+const static std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -794,9 +812,26 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         return res;
     }
     // Need exif property following
+    if (key.find(HW_MNOTE_TAG_HEADER) != std::string::npos) {
+        res = GetMakerImagePropertyString(key, value);
+        if (value.length() == 0) {
+            value = DEFAULT_EXIF_VALUE;
+            HiLog::Error(LABEL, "[GetImagePropertyString]The image does not contain the %{public}s  tag ", key.c_str());
+        }
+        return res;
+    }
     res = exifInfo_.GetExifData(key, value);
     HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return res;
+}
+
+uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
+{
+    if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
+        value = exifInfo_.makerInfoTagValueMap[key];
+        return Media::SUCCESS;
+    }
+    return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
 uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,

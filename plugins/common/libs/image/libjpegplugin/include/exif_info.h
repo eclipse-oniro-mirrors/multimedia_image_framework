@@ -14,12 +14,17 @@
  */
 #ifndef EXIF_INFO_H
 #define EXIF_INFO_H
-#include <libexif/exif-data.h>
+
 #include <map>
 #include <string>
 #include <vector>
+
+#include <libexif/exif-data.h>
+
+#include "exif_maker_note.h"
 #include "hilog/log.h"
 #include "log_tags.h"
+
 namespace OHOS {
 namespace ImagePlugin {
 struct DirectoryEntry {
@@ -99,6 +104,21 @@ public:
     std::string focalLengthIn35mmFilm_;
     std::string hwMnoteCaptureMode_;
     std::string hwMnotePhysicalAperture_;
+    std::string hwMnoteRollAngle_;
+    std::string hwMnotePitchAngle_;
+    std::string hwMnoteSceneFoodConf_;
+    std::string hwMnoteSceneStageConf_;
+    std::string hwMnoteSceneBlueSkyConf_;
+    std::string hwMnoteSceneGreenPlantConf_;
+    std::string hwMnoteSceneBeachConf_;
+    std::string hwMnoteSceneSnowConf_;
+    std::string hwMnoteSceneSunsetConf_;
+    std::string hwMnoteSceneFlowersConf_;
+    std::string hwMnoteSceneNightConf_;
+    std::string hwMnoteSceneTextConf_;
+    std::string hwMnoteFaceCount_;
+    std::string hwMnoteFocusMode_;
+    std::map<std::string, std::string> makerInfoTagValueMap;
 
 private:
     void SetExifTagValues(const ExifTag &tag, const std::string &value);

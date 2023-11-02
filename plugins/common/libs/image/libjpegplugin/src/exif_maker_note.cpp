@@ -43,6 +43,24 @@ constexpr uint32_t BACK_TO_EXIF_BEFORE = 6;
 constexpr uint32_t JPEG_TAG_SIZE = 2;
 constexpr uint32_t JPEG_CHECK_MIN_SIZE = 3;
 constexpr uint32_t EXIF_MIN_SIZE = 14;
+const static std::map<uint16_t, std::string>  MAKER_TAG_KEY_MAP = {
+    {ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE, "HwMnoteCaptureMode"},
+    {ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE, "HwMnotePhysicalAperture"},
+    {ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE, "HwMnoteRollAngle"},
+    {ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE, "HwMnotePitchAngle"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF, "HwMnoteSceneFoodConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF, "HwMnoteSceneStageConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF, "HwMnoteSceneBlueSkyConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF, "HwMnoteSceneGreenPlantConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF, "HwMnoteSceneBeachConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF, "HwMnoteSceneSnowConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_SUNSET_CONF, "HwMnoteSceneSunsetConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_FLOWERS_CONF, "HwMnoteSceneFlowersConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_NIGHT_CONF, "HwMnoteSceneNightConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_TEXT_CONF, "HwMnoteSceneTextConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_FACE_COUNT, "HwMnoteFaceCount"},
+    {ExifMakerNote::HW_MNOTE_TAG_FOCUS_MODE, "HwMnoteFocusMode"},
+};
 }
 
 ExifMakerNote::ExifItem::ExifItem()
@@ -554,16 +572,12 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 
 bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
-    if (entry.tag == HW_MNOTE_TAG_CAPTURE_MODE) {
-        hwCaptureMode = value;
+    uint16_t tag = entry.tag;
+    if (MAKER_TAG_KEY_MAP.find(tag) != MAKER_TAG_KEY_MAP.end()) {
+        std::string tagName = MAKER_TAG_KEY_MAP.at(tag);
+        makerTagValueMap[tagName] = value;
         return true;
     }
-
-    if (entry.tag == HW_MNOTE_TAG_PHYSICAL_APERTURE) {
-        hwPhysicalAperture = value;
-        return true;
-    }
-
     return false;
 }
 

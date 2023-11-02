@@ -44,6 +44,8 @@ namespace {
     static constexpr int MOVE_OFFSET_8 = 8;
     static constexpr int MOVE_OFFSET_16 = 16;
     static constexpr int MOVE_OFFSET_24 = 24;
+    static constexpr int CONSTANT_0 = 0;
+    static constexpr int CONSTANT_1 = 1;
     static constexpr int CONSTANT_2 = 2;
     static constexpr int CONSTANT_3 = 3;
     static constexpr int CONSTANT_4 = 4;
@@ -138,7 +140,6 @@ namespace {
         /* Not in EXIF 2.2 */
         {EXIF_TAG_TRANSFER_RANGE, "TransferRange", 0x0156},
         /* Not in EXIF 2.2 */
-        {EXIF_TAG_JPEG_PROC, "JPEGProc", 0x0200},
         {EXIF_TAG_JPEG_INTERCHANGE_FORMAT, "JPEGInterchangeFormat", 0x0201},
         {EXIF_TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, "JPEGInterchangeFormatLength", 0x0202},
         {EXIF_TAG_YCBCR_COEFFICIENTS, "YCbCrCoefficients", 0x0211},
@@ -315,6 +316,24 @@ const std::map<ExifTag, std::string> TAG_MAP = {
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE), "HwMnoteCaptureMode"},
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE), "HwMnotePhysicalAperture"},
 };
+
+const static std::map<ExifTag, std::string> TAG_MAKER_NOTE_MAP = {
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE), "HwMnoteRollAngle"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE), "HwMnotePitchAngle"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF), "HwMnoteSceneFoodConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF), "HwMnoteSceneStageConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF), "HwMnoteSceneBlueSkyConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF), "HwMnoteSceneGreenPlantConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF), "HwMnoteSceneBeachConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF), "HwMnoteSceneSnowConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_SUNSET_CONF), "HwMnoteSceneSunsetConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FLOWERS_CONF), "HwMnoteSceneFlowersConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_NIGHT_CONF), "HwMnoteSceneNightConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_TEXT_CONF), "HwMnoteSceneTextConf"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FACE_COUNT), "HwMnoteFaceCount"},
+    {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_FOCUS_MODE), "HwMnoteFocusMode"},
+};
+
 static const std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
     {"Top-left", 0},
     {"Bottom-right", 180},
@@ -360,6 +379,20 @@ EXIFInfo::EXIFInfo()
       focalLengthIn35mmFilm_(DEFAULT_EXIF_VALUE),
       hwMnoteCaptureMode_(DEFAULT_EXIF_VALUE),
       hwMnotePhysicalAperture_(DEFAULT_EXIF_VALUE),
+      hwMnoteRollAngle_(DEFAULT_EXIF_VALUE),
+      hwMnotePitchAngle_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneFoodConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneStageConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneBlueSkyConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneGreenPlantConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneBeachConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneSnowConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneSunsetConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneFlowersConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneNightConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteSceneTextConf_(DEFAULT_EXIF_VALUE),
+      hwMnoteFaceCount_(DEFAULT_EXIF_VALUE),
+      hwMnoteFocusMode_(DEFAULT_EXIF_VALUE),
       imageFileDirectory_(EXIF_IFD_COUNT),
       exifData_(nullptr),
       isExifDataParsed_(false)
@@ -404,7 +437,6 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     }
     exif_data_unset_option(exifData_, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
     exif_data_load_data (exifData_, buf, len);
-
     exif_data_foreach_content(exifData_,
         [](ExifContent *ec, void *userData) {
             ExifIfd ifd = exif_content_get_ifd(ec);
@@ -430,17 +462,14 @@ int EXIFInfo::ParseExifData(const unsigned char *buf, unsigned len)
     if (imageFileDirectory_ == EXIF_IFD_COUNT) {
         return PARSE_EXIF_IFD_ERROR;
     }
-
     ExifMakerNote exifMakerNote;
     if (exifMakerNote.Parser(exifData_, buf, len) == Media::SUCCESS) {
-        hwMnoteCaptureMode_ = exifMakerNote.hwCaptureMode;
-        hwMnotePhysicalAperture_ = exifMakerNote.hwPhysicalAperture;
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE),
             exifMakerNote.hwCaptureMode);
         SetExifTagValues(static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE),
             exifMakerNote.hwPhysicalAperture);
     }
-
+    makerInfoTagValueMap = exifMakerNote.makerTagValueMap;
     isExifDataParsed_ = true;
     DumpTagsMap(exifTags_);
     return PARSE_EXIF_SUCCESS;
@@ -814,7 +843,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     }
 
     // Write JPEG image data, skipping the non-EXIF header
-    if ((index + size - orginExifDataLength - sizeof(exifHeader)) > size) {
+    if ((index + size - orginExifDataLength - sizeof(exifHeader) - MOVE_OFFSET_8) > size) {
         HiLog::Error(LABEL, "There is not enough space for writing JPEG image data!");
         free(tempBuf);
         tempBuf = nullptr;
@@ -822,6 +851,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         ReleaseExifDataBuffer(exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
+
     for (unsigned int i = 0; i < (size - orginExifDataLength - sizeof(exifHeader)); i++) {
         tempBuf[index] = data[orginExifDataLength + sizeof(exifHeader) + i];
         index += 1;
@@ -1193,6 +1223,345 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             }
             break;
         }
+        case EXIF_TAG_WHITE_BALANCE: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get white balance exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get focal length in 35 film exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_FLASH: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FLASH);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get flash exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_APERTURE_VALUE: {
+            std::vector<std::string> longVec;
+            SplitStr(value, "/", longVec);
+            if (longVec.size() != CONSTANT_2) {
+                HiLog::Error(LABEL, "Aperture value Invalid value %{public}s", value.c_str());
+                return false;
+            }
+
+            ExifRational longRational;
+            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
+            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_APERTURE_VALUE,
+                                      sizeof(longRational), EXIF_FORMAT_RATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get Aperture value exif entry failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, longRational);
+            break;
+        }
+        case EXIF_TAG_DATE_TIME_ORIGINAL: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get original date time exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "Original date time memcpy error");
+            }
+            break;
+        }
+        case EXIF_TAG_DATE_TIME: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_DATE_TIME,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get date time exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "Date Time memcpy error");
+            }
+            break;
+        }
+        case EXIF_TAG_EXPOSURE_BIAS_VALUE: {
+            std::vector<std::string> longVec;
+            SplitStr(value, "/", longVec);
+            if (longVec.size() != CONSTANT_2) {
+                HiLog::Error(LABEL, "Exposure bias value Invalid value %{public}s", value.c_str());
+                return false;
+            }
+
+            ExifRational longRational;
+            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
+            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_BIAS_VALUE,
+                                      sizeof(longRational), EXIF_FORMAT_SRATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get exposure bias value exif entry failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, longRational);
+            break;
+        }
+        case EXIF_TAG_EXPOSURE_TIME: {
+            std::vector<std::string> longVec;
+            SplitStr(value, "/", longVec);
+            if (longVec.size() != CONSTANT_2) {
+                HiLog::Error(LABEL, "Exposure time Invalid value %{public}s", value.c_str());
+                return false;
+            }
+
+            ExifRational longRational;
+            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
+            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME,
+                                      sizeof(longRational), EXIF_FORMAT_SRATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get Exposure time exif entry failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, longRational);
+            break;
+        }
+        case EXIF_TAG_FNUMBER: {
+            std::vector<std::string> longVec;
+            SplitStr(value, "/", longVec);
+            if (longVec.size() != CONSTANT_2) {
+                HiLog::Error(LABEL, "Fnumber Invalid value %{public}s", value.c_str());
+                return false;
+            }
+
+            ExifRational longRational;
+            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
+            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FNUMBER,
+                                      sizeof(longRational), EXIF_FORMAT_SRATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get Fnumber exif entry failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, longRational);
+            break;
+        }
+        case EXIF_TAG_FOCAL_LENGTH: {
+            std::vector<std::string> longVec;
+            SplitStr(value, "/", longVec);
+            if (longVec.size() != CONSTANT_2) {
+                HiLog::Error(LABEL, "Focal length Invalid value %{public}s", value.c_str());
+                return false;
+            }
+
+            ExifRational longRational;
+            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
+            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH,
+                                      sizeof(longRational), EXIF_FORMAT_SRATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get focal length exif entry failed.");
+                return false;
+            }
+            exif_set_rational((*ptrEntry)->data, order, longRational);
+            break;
+        }
+
+        case EXIF_TAG_GPS_TIME_STAMP: {
+            std::vector<std::string> longVec;
+            SplitStr(value, ":", longVec);
+            if (longVec.size() != CONSTANT_3) {
+                HiLog::Error(LABEL, "GPS time stamp Invalid value %{public}s", value.c_str());
+                return false;
+            }
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP,
+                                      MOVE_OFFSET_24, EXIF_FORMAT_SRATIONAL);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get GPS time stamp exif entry failed.");
+                return false;
+            }
+            exif_set_long((*ptrEntry)->data, order, static_cast<ExifSLong>(atoi(longVec[CONSTANT_0].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_8, order,
+                          static_cast<ExifSLong>(atoi(longVec[CONSTANT_1].c_str())));
+            exif_set_long((*ptrEntry)->data + MOVE_OFFSET_16, order,
+                          static_cast<ExifSLong>(atoi(longVec[CONSTANT_2].c_str())));
+            break;
+        }
+
+        case EXIF_TAG_GPS_DATE_STAMP: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_DATE_STAMP,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get GPS Date stamp exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "GPS Date stamp memcpy error");
+            }
+            break;
+        }
+
+        case EXIF_TAG_IMAGE_DESCRIPTION: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_IMAGE_DESCRIPTION,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get image description exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "Image description memcpy error");
+            }
+            break;
+        }
+
+        case EXIF_TAG_ISO_SPEED_RATINGS: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get ISO speed ratings exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+
+        case EXIF_TAG_ISO_SPEED: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get ISO  speed  exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_LIGHT_SOURCE: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_LIGHT_SOURCE);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get light source exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+
+        case EXIF_TAG_MAKE: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_MAKE,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get maker exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "maker memcpy error");
+            }
+            break;
+        }
+
+        case EXIF_TAG_METERING_MODE: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_METERING_MODE);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get metering mode exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+
+        case EXIF_TAG_MODEL: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_MODEL,
+                                      value.length(), EXIF_FORMAT_ASCII);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get model exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "model memcpy error");
+            }
+            break;
+        }
+
+        case EXIF_TAG_PIXEL_X_DIMENSION: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get pixel X-dimension exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+
+        case EXIF_TAG_PIXEL_Y_DIMENSION: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get pixel Y-dimension exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+
+        case EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get recommended exposure index exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_SCENE_TYPE: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_SCENE_TYPE,
+                                      value.length(), EXIF_FORMAT_UNDEFINED);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get scene type exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "Scene type memcpy error");
+            }
+            break;
+        }
+        case EXIF_TAG_SENSITIVITY_TYPE: {
+            *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_SENSITIVITY_TYPE);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get sensitive type exif entry failed.");
+                return false;
+            }
+            ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
+            break;
+        }
+        case EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY,
+                                      value.length(), EXIF_FORMAT_LONG);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get standard out sensitivity exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "Standard out sensitivity memcpy error");
+            }
+            break;
+        }
+        case EXIF_TAG_USER_COMMENT: {
+            *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT,
+                                      value.length(), EXIF_FORMAT_UNDEFINED);
+            if ((*ptrEntry) == nullptr) {
+                HiLog::Error(LABEL, "Get user comment exif entry failed.");
+                return false;
+            }
+            if (memcpy_s((*ptrEntry)->data, value.length(), value.c_str(), value.length()) != 0) {
+                HiLog::Error(LABEL, "User comment memcpy error");
+            }
+            break;
+        }
+
         default:
             break;
     }
@@ -1830,7 +2199,11 @@ static bool GetExifTagByName(const std::string &name, ExifTag &tag)
         [name](const std::map<ExifTag, std::string>::value_type item) {
         return IsSameTextStr(item.second, name);
     });
-    if (find_item == TAG_MAP.end()) {
+    auto find_maker_item = std::find_if(TAG_MAKER_NOTE_MAP.begin(), TAG_MAKER_NOTE_MAP.end(),
+        [name](const std::map<ExifTag, std::string>::value_type item) {
+        return IsSameTextStr(item.second, name);
+    });
+    if (find_item == TAG_MAP.end() && find_maker_item == TAG_MAKER_NOTE_MAP.end()) {
         return false;
     }
     tag = find_item->first;

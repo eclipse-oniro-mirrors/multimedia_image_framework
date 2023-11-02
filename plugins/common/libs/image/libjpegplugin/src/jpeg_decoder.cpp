@@ -102,6 +102,21 @@ const std::string WHITE_BALANCE = "WhiteBalance";
 const std::string FOCAL_LENGTH_IN_35_MM_FILM = "FocalLengthIn35mmFilm";
 const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
+const std::string HW_MNOTE_TAG_ROLL_ANGLE = "HwMnoteRollAngle";
+const std::string HW_MNOTE_TAG_PITCH_ANGLE = "HwMnotePitchAngle";
+const std::string HW_MNOTE_TAG_SCENE_FOOD_CONF = "HwMnoteSceneFoodConf";
+const std::string HW_MNOTE_TAG_SCENE_STAGE_CONF = "HwMnoteSceneStageConf";
+const std::string HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF = "HwMnoteSceneBlueSkyConf";
+const std::string HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF = "HwMnoteSceneGreenPlantConf";
+const std::string HW_MNOTE_TAG_SCENE_BEACH_CONF = "HwMnoteSceneBeachConf";
+const std::string HW_MNOTE_TAG_SCENE_SNOW_CONF = "HwMnoteSceneSnowConf";
+const std::string HW_MNOTE_TAG_SCENE_SUNSET_CONF = "HwMnoteSceneSunsetConf";
+const std::string HW_MNOTE_TAG_SCENE_FLOWERS_CONF = "HwMnoteSceneFlowersConf";
+const std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF = "HwMnoteSceneNightConf";
+const std::string HW_MNOTE_TAG_SCENE_TEXT_CONF = "HwMnoteSceneTextConf";
+const std::string HW_MNOTE_TAG_FACE_COUNT = "HwMnoteFaceCount";
+const std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
+
 static const std::map<std::string, uint32_t> PROPERTY_INT = {
     {"Top-left", 0},
     {"Bottom-right", 180},
@@ -773,14 +788,12 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
             "[GetImagePropertyString] this key is used to check the original format of raw image!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
-
     if (!exifInfo_.IsExifDataParsed()) {
         if (!ParseExifData()) {
             HiLog::Error(LABEL, "[GetImagePropertyString] Parse exif data failed!");
             return Media::ERROR;
         }
     }
-
     if (IsSameTextStr(key, BITS_PER_SAMPLE)) {
         value = exifInfo_.bitsPerSample_;
     } else if (IsSameTextStr(key, ORIENTATION)) {
@@ -804,7 +817,6 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
     } else if (GetImagePropertyString(key, value) != Media::SUCCESS) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-
     if (IsSameTextStr(value, EXIFInfo::DEFAULT_EXIF_VALUE)) {
         HiLog::Error(LABEL, "[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
         return Media::ERR_MEDIA_VALUE_INVALID;
@@ -883,9 +895,18 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
     } else if (IsSameTextStr(key, HW_MNOTE_PHYSICAL_APERTURE)) {
         value = exifInfo_.hwMnotePhysicalAperture_;
     } else {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return GetMakerImagePropertyString(key, value);
     }
     return Media::SUCCESS;
+}
+
+uint32_t JpegDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
+{
+    if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
+        value = exifInfo_.makerInfoTagValueMap[key];
+        return Media::SUCCESS;
+    }
+    return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
 void InitOriginalTimes(std::string &dataTime)

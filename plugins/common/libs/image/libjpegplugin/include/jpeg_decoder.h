@@ -87,6 +87,7 @@ private:
     void FormatTimeStamp(std::string &value, std::string &src);
     uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     uint32_t GetImagePropertyStringEx(const std::string &key, std::string &value);
+    uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
 
     static MultimediaPlugin::PluginServer &pluginServer_;
     jpeg_decompress_struct decodeInfo_;
