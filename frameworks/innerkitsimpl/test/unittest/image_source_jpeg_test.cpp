@@ -2015,6 +2015,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0033, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0033 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0034
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2041,6 +2042,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0034, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0034 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0035
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2067,6 +2069,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0035, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0035 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0036
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2120,6 +2123,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0037, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0037 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0038
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2173,6 +2177,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0039, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0039 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0038
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2199,6 +2204,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0040, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0040 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0041
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2225,6 +2231,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0041, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0041 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0042
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2251,6 +2258,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0042, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0042 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0043
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2277,6 +2285,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0043, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0043 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0044
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2303,6 +2312,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0044, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0044 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0045
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2329,6 +2339,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0045, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0045 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0046
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2355,6 +2366,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0046, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0046 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0047
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2381,6 +2393,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0047, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0047 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0048
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2407,6 +2420,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0048, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0048 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0049
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2433,6 +2447,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0049, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0049 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0050
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2459,6 +2474,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0050, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0050 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0051
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2485,6 +2501,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0051, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0051 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0052
  * @tc.desc: Test GetImagePropertyString(index, key, value)
@@ -2674,6 +2691,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest006, TestSize.Level3)
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest006 end";
 }
+
 /**
  * @tc.name: ModifyImagePropertyPathTest007
  * @tc.desc: Test ModifyImageProperty width path
@@ -3213,6 +3231,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0026, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0026 end";
 }
+
 /**
  * @tc.name: ModifyImagePropertyPathTest0027
  * @tc.desc: Test ModifyImageProperty width path
@@ -3320,6 +3339,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0030, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0030 end";
 }
+
 /**
  * @tc.name: ModifyImagePropertyPathTest0031
  * @tc.desc: Test ModifyImageProperty width path
@@ -3400,6 +3420,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0033, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0033 end";
 }
+
 /**
  * @tc.name: ModifyImagePropertyPathTest0034
  * @tc.desc: Test ModifyImageProperty width path
@@ -3426,6 +3447,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0034, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0034 end";
 }
+
 /**
  * @tc.name: ModifyImagePropertyPathTest0035
  * @tc.desc: Test ModifyImageProperty width path
@@ -3479,7 +3501,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0036, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0036 end";
 }
-
 
 /**
  * @tc.name: ModifyImagePropertyPathTest0037

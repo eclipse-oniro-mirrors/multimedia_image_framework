@@ -902,11 +902,11 @@ uint32_t JpegDecoder::GetImagePropertyStringEx(const std::string &key, std::stri
 
 uint32_t JpegDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
 {
-    value = exifInfo_.makerInfoTagValueMap[key];
-    if (value.length() ==0) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
+        value = exifInfo_.makerInfoTagValueMap[key];
+        return Media::SUCCESS;
     }
-    return Media::SUCCESS;
+    return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
 void InitOriginalTimes(std::string &dataTime)

@@ -317,7 +317,7 @@ const std::map<ExifTag, std::string> TAG_MAP = {
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE), "HwMnotePhysicalAperture"},
 };
 
-const std::map<ExifTag, std::string> TAG_MAKER_NOTE_MAP = {
+const static std::map<ExifTag, std::string> TAG_MAKER_NOTE_MAP = {
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE), "HwMnoteRollAngle"},
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE), "HwMnotePitchAngle"},
     {static_cast<ExifTag>(ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF), "HwMnoteSceneFoodConf"},
@@ -843,7 +843,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     }
 
     // Write JPEG image data, skipping the non-EXIF header
-    if ((index + size - orginExifDataLength - sizeof(exifHeader)) > size) {
+    if ((index + size - orginExifDataLength - sizeof(exifHeader) - MOVE_OFFSET_8) > size) {
         HiLog::Error(LABEL, "There is not enough space for writing JPEG image data!");
         free(tempBuf);
         tempBuf = nullptr;

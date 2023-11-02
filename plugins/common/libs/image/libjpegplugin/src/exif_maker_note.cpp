@@ -43,7 +43,7 @@ constexpr uint32_t BACK_TO_EXIF_BEFORE = 6;
 constexpr uint32_t JPEG_TAG_SIZE = 2;
 constexpr uint32_t JPEG_CHECK_MIN_SIZE = 3;
 constexpr uint32_t EXIF_MIN_SIZE = 14;
-std::map<uint16_t, std::string>  makerTagKeyMap = {
+const static std::map<uint16_t, std::string>  MAKER_TAG_KEY_MAP = {
     {ExifMakerNote::HW_MNOTE_TAG_CAPTURE_MODE, "HwMnoteCaptureMode"},
     {ExifMakerNote::HW_MNOTE_TAG_PHYSICAL_APERTURE, "HwMnotePhysicalAperture"},
     {ExifMakerNote::HW_MNOTE_TAG_ROLL_ANGLE, "HwMnoteRollAngle"},
@@ -573,8 +573,8 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
     uint16_t tag = entry.tag;
-    std::string tagName = makerTagKeyMap[tag];
-    if (!tagName.empty()) {
+    if (makerTagKeyMap.find(tag) != makerTagKeyMap.end()) {
+        std::string tagName = makerTagKeyMap[tag];
         makerTagValueMap[tagName] = value;
         return true;
     }
