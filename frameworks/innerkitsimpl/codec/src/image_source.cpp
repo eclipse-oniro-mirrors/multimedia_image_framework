@@ -309,7 +309,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
 #if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
-    if (IsASTC(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize())) {
+    ImagePlugin::DataStreamBuffer outData;
+    uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
+    if (res == SUCCESS && IsASTC(outData.inputStreamBuffer, outData.dataSize)) {
         return CreatePixelMapForASTC(errorCode);
     }
 #endif
@@ -1119,6 +1121,19 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
 {
     uint32_t size = agent.GetHeaderSize();
     ImagePlugin::DataStreamBuffer outData;
+    uint32_t res = GetData(outData, size);
+    if (res != SUCCESS) {
+        return res;
+    }
+    if (!agent.CheckFormat(outData.inputStreamBuffer, size)) {
+        IMAGE_LOGE("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
+        return ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+    return SUCCESS;
+}
+
+uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t size)
+{
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]check image format, source stream is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -1127,15 +1142,9 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
         IMAGE_LOGE("[ImageSource]stream peek the data fail.");
         return ERR_IMAGE_SOURCE_DATA;
     }
-
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
-        IMAGE_LOGE("[ImageSource]the ouData is incomplete.");
+        IMAGE_LOGE("[ImageSource]the outData is incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
-    }
-
-    if (!agent.CheckFormat(outData.inputStreamBuffer, size)) {
-        IMAGE_LOGE("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
-        return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     return SUCCESS;
 }
@@ -1311,7 +1320,9 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
 uint32_t ImageSource::OnSourceUnresolved()
 {
     string formatResult;
-    if (IsASTC(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize())) {
+    ImagePlugin::DataStreamBuffer outData;
+    uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
+    if (res == SUCCESS && IsASTC(outData.inputStreamBuffer, outData.dataSize)) {
         formatResult = InnerFormat::ASTC_FORMAT;
     } else {
         auto ret = GetEncodedFormat(sourceInfo_.encodedFormat, formatResult);
