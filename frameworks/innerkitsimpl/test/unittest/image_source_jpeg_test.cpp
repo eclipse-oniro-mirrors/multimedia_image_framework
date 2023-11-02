@@ -1827,6 +1827,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0026, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0026 end";
 }
+
 /**
  * @tc.name: GetImagePropertyStringTest0027
  * @tc.desc: Test GetImagePropertyString(index, key, value)
