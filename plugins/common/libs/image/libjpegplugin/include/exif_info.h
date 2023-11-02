@@ -14,11 +14,14 @@
  */
 #ifndef EXIF_INFO_H
 #define EXIF_INFO_H
-#include "exif_maker_note.h"
-#include <libexif/exif-data.h>
+
 #include <map>
 #include <string>
 #include <vector>
+
+#include <libexif/exif-data.h>
+
+#include "exif_maker_note.h"
 #include "hilog/log.h"
 #include "log_tags.h"
 

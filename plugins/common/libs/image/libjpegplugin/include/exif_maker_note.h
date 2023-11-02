@@ -17,6 +17,7 @@
 #include <map>
 #include <string>
 #include <vector>
+
 #include <libexif/exif-data.h>
 
 namespace OHOS {
