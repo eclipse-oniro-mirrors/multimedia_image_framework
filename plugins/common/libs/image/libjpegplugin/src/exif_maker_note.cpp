@@ -50,7 +50,7 @@ std::map<uint16_t, std::string>  makerTagKeyMap = {
     {ExifMakerNote::HW_MNOTE_TAG_PITCH_ANGLE, "HwMnotePitchAngle"},
     {ExifMakerNote::HW_MNOTE_TAG_SCENE_FOOD_CONF, "HwMnoteSceneFoodConf"},
     {ExifMakerNote::HW_MNOTE_TAG_SCENE_STAGE_CONF, "HwMnoteSceneStageConf"},
-    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUESKY_CONF, "HwMnoteSceneBlueSkyConf"},
+    {ExifMakerNote::HW_MNOTE_TAG_SCENE_BLUE_SKY_CONF, "HwMnoteSceneBlueSkyConf"},
     {ExifMakerNote::HW_MNOTE_TAG_SCENE_GREEN_PLANT_CONF, "HwMnoteSceneGreenPlantConf"},
     {ExifMakerNote::HW_MNOTE_TAG_SCENE_BEACH_CONF, "HwMnoteSceneBeachConf"},
     {ExifMakerNote::HW_MNOTE_TAG_SCENE_SNOW_CONF, "HwMnoteSceneSnowConf"},
@@ -573,7 +573,7 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 bool ExifMakerNote::SetValue(const ExifItem &entry, const std::string &value)
 {
     uint16_t tag = entry.tag;
-    std::string tagName = makerTagKeyMap[tag]:
+    std::string tagName = makerTagKeyMap[tag];
     if (!tagName.empty()) {
         makerTagValueMap[tagName] = value;
         return true;

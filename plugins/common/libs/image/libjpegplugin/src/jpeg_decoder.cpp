@@ -908,7 +908,6 @@ uint32_t JpegDecoder::GetMakerImagePropertyString(const std::string &key, std::s
     }
     return Media::SUCCESS;
 }
-}
 
 void InitOriginalTimes(std::string &dataTime)
 {
