@@ -824,6 +824,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return res;
 }
+
 uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
 {
     if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
