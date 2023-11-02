@@ -14,13 +14,14 @@
  */
 #ifndef EXIF_INFO_H
 #define EXIF_INFO_H
+#include "exif_maker_note.h"
 #include <libexif/exif-data.h>
 #include <map>
 #include <string>
 #include <vector>
 #include "hilog/log.h"
 #include "log_tags.h"
-#include "exif_maker_note.h"
+
 namespace OHOS {
 namespace ImagePlugin {
 struct DirectoryEntry {

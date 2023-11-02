@@ -416,14 +416,6 @@ declare namespace image {
      * Roll Angle
      *
      * @syscap SystemCapability.Multimedia.Image.Core
-     * @since 11
-     */
-    ROLL_ANGLE = 'HwMnoteRollAngle',
-
-    /**
-     * Roll Angle
-     *
-     * @syscap SystemCapability.Multimedia.Image.Core
      * @crossplatform
      * @since 11
      */

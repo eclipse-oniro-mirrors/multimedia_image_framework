@@ -1223,7 +1223,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             }
             break;
         }
-        case EXIF_TAG_WHITE_BALANCE : {
+        case EXIF_TAG_WHITE_BALANCE: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get white balance exif entry failed.");
@@ -1232,7 +1232,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
-        case EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM : {
+        case EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get focal length in 35 film exif entry failed.");
@@ -1241,7 +1241,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
-        case EXIF_TAG_FLASH : {
+        case EXIF_TAG_FLASH: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_FLASH);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get flash exif entry failed.");
@@ -1422,7 +1422,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_ISO_SPEED_RATINGS : {
+        case EXIF_TAG_ISO_SPEED_RATINGS: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get ISO speed ratings exif entry failed.");
@@ -1432,7 +1432,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_ISO_SPEED : {
+        case EXIF_TAG_ISO_SPEED: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get ISO  speed  exif entry failed.");
@@ -1441,7 +1441,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
-        case EXIF_TAG_LIGHT_SOURCE : {
+        case EXIF_TAG_LIGHT_SOURCE: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_LIGHT_SOURCE);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get light source exif entry failed.");
@@ -1451,7 +1451,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_MAKE : {
+        case EXIF_TAG_MAKE: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_MAKE,
                                       value.length(), EXIF_FORMAT_ASCII);
             if ((*ptrEntry) == nullptr) {
@@ -1464,7 +1464,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_METERING_MODE : {
+        case EXIF_TAG_METERING_MODE: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_METERING_MODE);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get metering mode exif entry failed.");
@@ -1474,7 +1474,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_MODEL : {
+        case EXIF_TAG_MODEL: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_0, EXIF_TAG_MODEL,
                                       value.length(), EXIF_FORMAT_ASCII);
             if ((*ptrEntry) == nullptr) {
@@ -1487,7 +1487,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_PIXEL_X_DIMENSION : {
+        case EXIF_TAG_PIXEL_X_DIMENSION: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get pixel X-dimension exif entry failed.");
@@ -1497,7 +1497,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_PIXEL_Y_DIMENSION : {
+        case EXIF_TAG_PIXEL_Y_DIMENSION: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get pixel Y-dimension exif entry failed.");
@@ -1507,7 +1507,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             break;
         }
 
-        case EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX : {
+        case EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get recommended exposure index exif entry failed.");
@@ -1516,7 +1516,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
-        case EXIF_TAG_SCENE_TYPE : {
+        case EXIF_TAG_SCENE_TYPE: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_SCENE_TYPE,
                                       value.length(), EXIF_FORMAT_UNDEFINED);
             if ((*ptrEntry) == nullptr) {
@@ -1528,7 +1528,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             }
             break;
         }
-        case EXIF_TAG_SENSITIVITY_TYPE : {
+        case EXIF_TAG_SENSITIVITY_TYPE: {
             *ptrEntry = InitExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_SENSITIVITY_TYPE);
             if ((*ptrEntry) == nullptr) {
                 HiLog::Error(LABEL, "Get sensitive type exif entry failed.");
@@ -1537,7 +1537,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
             ExifIntValueByFormat((*ptrEntry)->data, order, (*ptrEntry)->format, atoi(value.c_str()));
             break;
         }
-        case EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY : {
+        case EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_EXIF, EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY,
                                       value.length(), EXIF_FORMAT_LONG);
             if ((*ptrEntry) == nullptr) {

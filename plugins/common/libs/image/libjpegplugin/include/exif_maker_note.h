@@ -14,10 +14,11 @@
  */
 #ifndef EXIF_MAKER_NOTE_H
 #define EXIF_MAKER_NOTE_H
+#include <map>
 #include <string>
 #include <vector>
 #include <libexif/exif-data.h>
-#include <map>
+
 namespace OHOS {
 namespace ImagePlugin {
 class ExifMakerNote {
