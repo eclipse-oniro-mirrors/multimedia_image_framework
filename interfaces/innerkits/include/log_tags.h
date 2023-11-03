@@ -23,5 +23,6 @@ const unsigned int LOG_TAG_DOMAIN_ID_DATA_TUNNEL = 0xD002B04;
 const unsigned int LOG_TAG_DOMAIN_ID_IMAGE = 0xD002B05;
 const unsigned int LOG_TAG_DOMAIN_ID_AUDIO = 0xD002B06;
 const unsigned int LOG_TAG_DOMAIN_ID_RADIO = 0xD002B07;
+static const unsigned int LOG_TAG_DOMAIN_ID_PIXEL_MAP_NAPI = 0xD002B08;
 
 #endif  // INTERFACES_INNERKITS_INCLUDE_LOG_TAGS_H_

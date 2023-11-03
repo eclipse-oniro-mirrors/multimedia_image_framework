@@ -47,12 +47,13 @@ static bool isUndefine(napi_env env, napi_value value)
     napi_typeof(env, value, &res);
     return (res == napi_undefined);
 }
-static PixelMap* GetPixelMap(PixelMapNapi* napi)
+
+static std::shared_ptr<PixelMap> GetPixelMap(PixelMapNapi* napi)
 {
-    if (napi == nullptr || napi->GetPixelMap() == nullptr) {
+    if (napi == nullptr || napi->GetPixelNapiInner() == nullptr) {
         return nullptr;
     }
-    return napi->GetPixelMap()->get();
+    return napi->GetPixelNapiInner();
 }
 
 static PixelFormat ParsePixelForamt(int32_t val)
@@ -138,7 +139,7 @@ static int32_t PixelMapNapiCreateAlpha(napi_env env, PixelMapNapiArgs* args)
     return isUndefine(env, *(args->outValue))?IMAGE_RESULT_BAD_PARAMETER:IMAGE_RESULT_SUCCESS;
 }
 
-static PixelMap* CheckAndGetPixelMap(PixelMapNapi* native, const PixelMapNapiArgs* args)
+static std::shared_ptr<PixelMap> CheckAndGetPixelMap(PixelMapNapi* native, const PixelMapNapiArgs* args)
 {
     if (args == nullptr) {
         return nullptr;
