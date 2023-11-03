@@ -455,17 +455,17 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    std::shared_ptr<PixelMap> *pixelMap = pixmapNapi->GetPixelMap();
-    if ((pixelMap == nullptr) || ((*pixelMap) == nullptr)) {
+    std::shared_ptr<PixelMap> pixelMap = pixmapNapi->GetPixelNapiInner();
+    if ((pixelMap == nullptr)) {
         HiLog::Error(LABEL, "pixelMap is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
     ImageInfo imageInfo;
-    (*pixelMap)->GetImageInfo(imageInfo);
+    pixelMap->GetImageInfo(imageInfo);
     info->width = imageInfo.size.width;
     info->height = imageInfo.size.height;
-    info->rowSize = (*pixelMap)->GetRowStride();
+    info->rowSize = pixelMap->GetRowStride();
     info->pixelFormat = static_cast<int32_t>(imageInfo.pixelFormat);
 
     HiLog::Debug(LABEL, "GetImageInfo, w=%{public}u, h=%{public}u, r=%{public}u, f=%{public}d",
@@ -486,13 +486,13 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixel
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    std::shared_ptr<PixelMap> *pixelMap = pixmapNapi->GetPixelMap();
-    if ((pixelMap == nullptr) || ((*pixelMap) == nullptr)) {
+    std::shared_ptr<PixelMap> pixelMap = pixmapNapi->GetPixelNapiInner();
+    if (pixelMap == nullptr) {
         HiLog::Error(LABEL, "pixelMap is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
-    const uint8_t *constPixels = (*pixelMap)->GetPixels();
+    const uint8_t *constPixels = pixelMap->GetPixels();
     if (constPixels == nullptr) {
         HiLog::Error(LABEL, "const pixels is nullptr");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
