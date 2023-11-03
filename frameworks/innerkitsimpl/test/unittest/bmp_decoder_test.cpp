@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+
+#define private public
+
 #include "bmp_decoder.h"
 #include "buffer_source_stream.h"
 #include "image_packer.h"
@@ -513,6 +516,41 @@ HWTEST_F(BmpDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "BmpDecoderTest: PromoteIncrementalDecodeTest003 end";
+}
+
+/**
+ * @tc.name: ConvertToAlphaTypeTest
+ * @tc.desc: Test of ConvertToAlphaType
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, ConvertToAlphaTypeTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToAlphaType start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kOpaque_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kPremul_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnpremul_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnknown_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToAlphaType end";
+}
+
+/**
+ * @tc.name: ConvertToColorTypeTest
+ * @tc.desc: Test of ConvertToColorType
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, ConvertToColorTypeTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToColorTypeTest start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    PlPixelFormat outputFormat;
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::UNKNOWN, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGBA_8888, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::BGRA_8888, outputFormat), kBGRA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::ALPHA_8, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGB_565, outputFormat), kRGB_565_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGB_888, outputFormat), kRGBA_8888_SkColorType);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToColorTypeTest end";
 }
 }
 }
