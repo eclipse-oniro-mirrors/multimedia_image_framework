@@ -110,6 +110,7 @@ ohos_shared_library("extplugin") {
     "src/ext_stream.cpp",
     "src/ext_wstream.cpp",
     "src/plugin_export.cpp",
+    "src/texture_encode/astc_codec.cpp",
   ]
   configs = [
     ":plugins_includes",
@@ -118,9 +119,11 @@ ohos_shared_library("extplugin") {
   ]
   include_dirs = [
     "include",
+    "include/texture_encode",
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${graphic_subsystem}/interfaces/inner_api/surface",
+    "//third_party/astc-encoder/Source",
   ]
   if (use_mingw_win) {
     configs += [ ":win_config" ]
@@ -147,6 +150,7 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
+      "//third_party/astc-encoder:astc_encoder_shared",
     ]
     deps += skia_platform
 
