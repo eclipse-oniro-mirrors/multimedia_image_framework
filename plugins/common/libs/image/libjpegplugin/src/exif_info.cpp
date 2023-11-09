@@ -2230,7 +2230,7 @@ uint32_t EXIFInfo::GetExifData(const std::string name, std::string &value)
     }
     value = exifTags_.at(tag);
     if (IsSameTextStr(value, DEFAULT_EXIF_VALUE)) {
-        HiLog::Error(LABEL, "GetExifData %{public}s[%{public}d] value is DEFAULT_EXIF_VALUE.",
+        HiLog::Debug(LABEL, "GetExifData %{public}s[%{public}d] value is DEFAULT_EXIF_VALUE.",
             name.c_str(), tag);
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
