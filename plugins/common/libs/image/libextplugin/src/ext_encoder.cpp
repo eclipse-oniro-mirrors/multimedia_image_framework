@@ -22,6 +22,7 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
+#include "astc_codec.h"
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
 #include "image_type_converter.h"
@@ -39,6 +40,7 @@ using namespace Media;
 namespace {
     constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtEncoder"};
 }
+
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kBMP, "image/bmp"},
     {SkEncodedImageFormat::kGIF, "image/gif"},
@@ -137,10 +139,20 @@ static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
     return res;
 }
 
+bool IsAstc(const std::string &format)
+{
+    return format.find("image/astc") == 0;
+}
+
 uint32_t ExtEncoder::FinalizeEncode()
 {
     if (pixelmap_ == nullptr || output_ == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (IsAstc(opts_.format)) {
+        AstcCodec astcEncoder;
+        astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
+        return astcEncoder.ASTCEncode();
     }
     auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
         [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
