@@ -43,13 +43,16 @@ public:
 
 private:
     static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
+    static uint8_t *AllocDmaMemory(const Size &size, const uint64_t bufferSize,
+                                   void **nativeBuffer, int &targetRowStride);
     uint32_t NeedScanlineFilter(const Rect &cropRect, const Size &srcSize, const bool &hasPixelConvert);
     void GetDstImageInfo(const DecodeOptions &opts, PixelMap &pixelMap,
                          ImageInfo srcImageInfo, ImageInfo &dstImageInfo);
     uint32_t PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap, ImageInfo &srcImageInfo);
     uint32_t AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64_t &dataSize, int &fd, uint32_t uniqueId);
     bool AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer);
-    void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, uint8_t **buffer);
+    void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize,
+                       uint8_t **buffer, void *nativeBuffer = nullptr);
     bool Transform(BasicTransformer &trans, const PixmapInfo &input, PixelMap &pixelMap);
     void ConvertPixelMapToPixmapInfo(PixelMap &pixelMap, PixmapInfo &pixmapInfo);
     void SetScanlineCropAndConvert(const Rect &cropRect, ImageInfo &dstImageInfo, ImageInfo &srcImageInfo,
@@ -59,7 +62,8 @@ private:
     uint32_t CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImageInfo, PixelMap &pixelMap,
                                  int32_t pixelBytes, ScanlineFilter &scanlineFilter);
     bool CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& dstSize,
-                    const int32_t srcWidth, const int32_t srcHeight);
+                    const int32_t srcWidth, const int32_t srcHeight,
+                    int srcRowStride = 0, int targetRowStride = 0);
     bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
                                uint8_t *resultData, uint32_t rowBytes);
     DecodeOptions decodeOpts_;

@@ -20,6 +20,7 @@
 #include "image_trace.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "memory_manager.h"
 #include "pixel_convert_adapter.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -27,9 +28,10 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
+#include "surface_buffer.h"
 #endif
 
 namespace OHOS {
@@ -141,7 +143,8 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
 }
 
 bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& dstSize,
-                          const int32_t srcWidth, const int32_t srcHeight)
+                          const int32_t srcWidth, const int32_t srcHeight,
+                          int32_t srcRowStride, int32_t targetRowStride)
 {
     int32_t targetWidth = dstSize.width;
     int32_t targetHeight = dstSize.height;
@@ -152,11 +155,17 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     uint8_t *dstStartPixel = nullptr;
     uint8_t *srcStartPixel = nullptr;
     uint32_t targetRowBytes = targetWidth * pixelBytes;
+    if (targetRowStride <= 0) {
+        targetRowStride = targetRowBytes;
+    }
     uint32_t srcRowBytes = srcWidth * pixelBytes;
+    if (srcRowStride <= 0) {
+        srcRowStride = srcRowBytes;
+    }
     uint32_t copyRowBytes = std::min(srcWidth, targetWidth) * pixelBytes;
     for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
-        dstStartPixel = dstPixels + scanLine * targetRowBytes;
-        srcStartPixel = srcPixels + scanLine * srcRowBytes;
+        dstStartPixel = dstPixels + scanLine * targetRowStride;
+        srcStartPixel = srcPixels + scanLine * srcRowStride;
         errno_t errRet = memcpy_s(dstStartPixel, targetRowBytes, srcStartPixel, copyRowBytes);
         if (errRet != EOK) {
             IMAGE_LOGE("[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
@@ -171,6 +180,7 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
 {
     ImageInfo dstImageInfo;
     pixelMap.GetImageInfo(dstImageInfo);
+    int32_t srcRowStride = pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC ? pixelMap.GetRowStride() : 0;
     dstImageInfo.size.width = targetWidth;
     dstImageInfo.size.height = targetHeight;
     if (pixelMap.SetImageInfo(dstImageInfo, true) != SUCCESS) {
@@ -179,9 +189,17 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     }
     int32_t bufferSize = pixelMap.GetByteCount();
     uint8_t *dstPixels = nullptr;
+    void *nativeBuffer = nullptr;
     int fd = 0;
+    int targetRowStride = 0;
     if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
         if (!AllocHeapBuffer(bufferSize, &dstPixels)) {
+            return false;
+        }
+    } else if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        dstPixels = AllocDmaMemory(dstImageInfo.size, bufferSize, &nativeBuffer, targetRowStride);
+        if (dstPixels == nullptr) {
+            IMAGE_LOGE("[PostProc]CenterDisplay AllocDmaMemory failed");
             return false;
         }
     } else {
@@ -191,14 +209,16 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
             return false;
         }
     }
-    if (!CopyPixels(pixelMap, dstPixels, dstImageInfo.size, srcWidth, srcHeight)) {
+    if (!CopyPixels(pixelMap, dstPixels, dstImageInfo.size, srcWidth, srcHeight, srcRowStride, targetRowStride)) {
         IMAGE_LOGE("[PostProc]CopyPixels failed");
-        ReleaseBuffer(pixelMap.GetAllocatorType(), fd, bufferSize, &dstPixels);
+        ReleaseBuffer(pixelMap.GetAllocatorType(), fd, bufferSize, &dstPixels, nativeBuffer);
         return false;
     }
     void *fdBuffer = nullptr;
     if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
         pixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    } else if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        pixelMap.SetPixelsAddr(dstPixels, nativeBuffer, bufferSize, AllocatorType::DMA_ALLOC, nullptr);
     } else {
         fdBuffer = new int32_t();
         *static_cast<int32_t *>(fdBuffer) = fd;
@@ -433,13 +453,41 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 #endif
 }
 
-void PostProc::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, uint8_t **buffer)
+uint8_t *PostProc::AllocDmaMemory(const Size &size, const uint64_t bufferSize,
+                                  void **nativeBuffer, int &targetRowStride)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(A_PLATFORM)
+    return nullptr;
+#else
+    MemoryData memoryData = {nullptr, (uint32_t)bufferSize, "PostProc", {size.width, size.height}};
+    auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
+    if (dstMemory == nullptr) {
+        return nullptr;
+    }
+    *nativeBuffer = dstMemory->extend.data;
+    auto sbBuffer = reinterpret_cast<SurfaceBuffer *>(dstMemory->extend.data);
+    targetRowStride = sbBuffer->GetStride();
+    return (uint8_t *)dstMemory->data.data;
+#endif
+}
+
+void PostProc::ReleaseBuffer(AllocatorType allocatorType, int fd,
+                             uint64_t dataSize, uint8_t **buffer, void *nativeBuffer)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (*buffer != nullptr) {
             ::munmap(*buffer, dataSize);
             ::close(fd);
+        }
+        return;
+    }
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        if (nativeBuffer != nullptr) {
+            int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(nativeBuffer));
+            if (err != OHOS::GSERROR_OK) {
+                IMAGE_LOGE("PostProc NativeBufferReference failed");
+            }
         }
         return;
     }
