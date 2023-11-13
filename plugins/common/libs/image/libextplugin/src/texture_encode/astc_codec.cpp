@@ -70,13 +70,13 @@ uint32_t GenAstcHeader(astc_header &hdr, astcenc_image img, TextureEncodeOptions
     hdr.dim_x[ASTC_NUM_1] = (img.dim_x >> ASTC_NUM_8) & ASTC_MASK;
     hdr.dim_x[ASTC_NUM_2] = (img.dim_x >> ASTC_NUM_16) & ASTC_MASK;
 
-    hdr.dim_y[0] = img.dim_x & ASTC_MASK;
-    hdr.dim_y[ASTC_NUM_1] = (img.dim_x >> ASTC_NUM_8) & ASTC_MASK;
-    hdr.dim_y[ASTC_NUM_2] = (img.dim_x >> ASTC_NUM_16) & ASTC_MASK;
+    hdr.dim_y[0] = img.dim_y & ASTC_MASK;
+    hdr.dim_y[ASTC_NUM_1] = (img.dim_y >> ASTC_NUM_8) & ASTC_MASK;
+    hdr.dim_y[ASTC_NUM_2] = (img.dim_y >> ASTC_NUM_16) & ASTC_MASK;
 
-    hdr.dim_z[0] = img.dim_x & ASTC_MASK;
-    hdr.dim_z[ASTC_NUM_1] = (img.dim_x >> ASTC_NUM_8) & ASTC_MASK;
-    hdr.dim_z[ASTC_NUM_2] = (img.dim_x >> ASTC_NUM_16) & ASTC_MASK;
+    hdr.dim_z[0] = img.dim_z & ASTC_MASK;
+    hdr.dim_z[ASTC_NUM_1] = (img.dim_z >> ASTC_NUM_8) & ASTC_MASK;
+    hdr.dim_z[ASTC_NUM_2] = (img.dim_z >> ASTC_NUM_16) & ASTC_MASK;
     return SUCCESS;
 }
 
