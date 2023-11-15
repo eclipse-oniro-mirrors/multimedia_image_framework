@@ -35,6 +35,20 @@ namespace Media {
 using TransColorProc = bool (*)(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
 using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
+typedef struct {
+    float scaleX;
+    float scaleY;
+    float rotateD;
+    float cropLeft;
+    float cropTop;
+    float cropWidth;
+    float cropHeight;
+    float translateX;
+    float translateY;
+    bool flipX;
+    bool flipY;
+} TransformData;
+
 struct InitializationOptions {
     Size size;
     PixelFormat srcPixelFormat = PixelFormat::BGRA_8888;
@@ -92,6 +106,8 @@ public:
     NATIVEEXPORT virtual int32_t GetByteCount();
     NATIVEEXPORT virtual int32_t GetWidth();
     NATIVEEXPORT virtual int32_t GetHeight();
+    NATIVEEXPORT void GetTransformData(TransformData &transformData);
+    NATIVEEXPORT void SetTransformData(TransformData transformData);
     NATIVEEXPORT virtual int32_t GetBaseDensity();
     NATIVEEXPORT virtual void scale(float xAxis, float yAxis);
     NATIVEEXPORT virtual void scale(float xAxis, float yAxis, const AntiAliasingOption &option);
@@ -262,6 +278,8 @@ private:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WriteInfoToParcel(Parcel &parcel) const;
+    bool WriteTransformDataToParcel(Parcel &parcel) const;
+    bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
     void SetEditable(bool editable)
     {
@@ -321,6 +339,7 @@ private:
     // only used by rosen backend
     uint32_t uniqueId_ = 0;
     bool isAstc_ = false;
+    TransformData transformData_ = {1, 1, 0, -1, -1, -1, -1, 0, 0, false, false};
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;

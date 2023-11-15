@@ -40,6 +40,7 @@ using namespace std;
 constexpr uint32_t NEED_NEXT = 1;
 constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
+constexpr float HALF_F = 2;
 
 uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap, FinalOutputStep finalOutputStep)
 {
@@ -124,6 +125,18 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
     float widthScale = static_cast<float>(targetWidth) / static_cast<float>(srcWidth);
     float heightScale = static_cast<float>(targetHeight) / static_cast<float>(srcHeight);
     float scale = max(widthScale, heightScale);
+    if (pixelMap.IsAstc() && scale != 0) {
+        TransformData transformData;
+        pixelMap.GetTransformData(transformData);
+        transformData.scaleX *= scale;
+        transformData.scaleY *= scale;
+        transformData.cropLeft = (srcWidth - targetWidth / scale) / HALF_F;
+        transformData.cropTop = (srcHeight - targetHeight / scale) / HALF_F;
+        transformData.cropWidth = targetWidth / scale;
+        transformData.cropHeight = targetHeight / scale;
+        pixelMap.SetTransformData(transformData);
+        return true;
+    }
     if (!ScalePixelMap(scale, scale, pixelMap)) {
         IMAGE_LOGE("[PostProc]center scale pixelmap %{public}f fail", scale);
         return false;

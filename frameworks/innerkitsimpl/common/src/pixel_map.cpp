@@ -960,6 +960,16 @@ int32_t PixelMap::GetHeight()
     return imageInfo_.size.height;
 }
 
+void PixelMap::GetTransformData(TransformData &transformData)
+{
+    transformData = transformData_;
+}
+
+void PixelMap::SetTransformData(TransformData transformData)
+{
+    transformData_ = transformData;
+}
+
 int32_t PixelMap::GetBaseDensity()
 {
     return imageInfo_.baseDensity;
@@ -1609,6 +1619,57 @@ bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
     return true;
 }
 
+bool PixelMap::WriteTransformDataToParcel(Parcel &parcel) const
+{
+    if (isAstc_) {
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.scaleX))) {
+            HiLog::Error(LABEL, "write scaleX:[%{public}f] to parcel failed.", transformData_.scaleX);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.scaleY))) {
+            HiLog::Error(LABEL, "write scaleY:[%{public}f] to parcel failed.", transformData_.scaleY);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.rotateD))) {
+            HiLog::Error(LABEL, "write rotateD:[%{public}f] to parcel failed.", transformData_.rotateD);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.cropLeft))) {
+            HiLog::Error(LABEL, "write cropLeft:[%{public}f] to parcel failed.", transformData_.cropLeft);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.cropTop))) {
+            HiLog::Error(LABEL, "write cropTop:[%{public}f] to parcel failed.", transformData_.cropTop);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.cropWidth))) {
+            HiLog::Error(LABEL, "write cropWidth:[%{public}f] to parcel failed.", transformData_.cropWidth);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.cropHeight))) {
+            HiLog::Error(LABEL, "write cropHeight:[%{public}f] to parcel failed.", transformData_.cropHeight);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.translateX))) {
+            HiLog::Error(LABEL, "write translateX:[%{public}f] to parcel failed.", transformData_.translateX);
+            return false;
+        }
+        if (!parcel.WriteFloat(static_cast<float>(transformData_.translateY))) {
+            HiLog::Error(LABEL, "write translateY:[%{public}f] to parcel failed.", transformData_.translateY);
+            return false;
+        }
+        if (!parcel.WriteBool(static_cast<bool>(transformData_.flipX))) {
+            HiLog::Error(LABEL, "write astc transformData_.flipX to parcel failed.");
+            return false;
+        }
+        if (!parcel.WriteBool(static_cast<bool>(transformData_.flipY))) {
+            HiLog::Error(LABEL, "write astc transformData_.flipY to parcel failed.");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
@@ -1664,6 +1725,11 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 #endif
+    
+    if (!WriteTransformDataToParcel(parcel)) {
+        HiLog::Error(LABEL, "write transformData to parcel failed.");
+        return false;
+    }
     return true;
 }
 
@@ -1680,6 +1746,26 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     imgInfo.alphaType = static_cast<AlphaType>(parcel.ReadInt32());
     HiLog::Debug(LABEL, "read pixel map alphaType:[%{public}d] to parcel.", imgInfo.alphaType);
     imgInfo.baseDensity = parcel.ReadInt32();
+    return true;
+}
+
+bool PixelMap::ReadTransformData(Parcel &parcel, PixelMap *pixelMap)
+{
+    if (pixelMap->IsAstc()) {
+        TransformData transformData;
+        transformData.scaleX = parcel.ReadFloat();
+        transformData.scaleY = parcel.ReadFloat();
+        transformData.rotateD = parcel.ReadFloat();
+        transformData.cropLeft = parcel.ReadFloat();
+        transformData.cropTop = parcel.ReadFloat();
+        transformData.cropWidth = parcel.ReadFloat();
+        transformData.cropHeight = parcel.ReadFloat();
+        transformData.translateX = parcel.ReadFloat();
+        transformData.translateY = parcel.ReadFloat();
+        transformData.flipX = parcel.ReadBool();
+        transformData.flipY = parcel.ReadBool();
+        pixelMap->SetTransformData(transformData);
+    }
     return true;
 }
 
@@ -1803,6 +1889,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         return nullptr;
     }
     pixelMap->SetPixelsAddr(base, context, bufferSize, allocType, nullptr);
+    if (!pixelMap->ReadTransformData(parcel, pixelMap)) {
+        HiLog::Error(LABEL, "read transformData fail");
+        delete pixelMap;
+        return nullptr;
+    }
     return pixelMap;
 }
 
