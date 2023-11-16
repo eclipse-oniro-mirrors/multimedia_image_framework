@@ -20,9 +20,10 @@
 #include "media_errors.h"
 #include "image_format.h"
 #include "image_napi_utils.h"
+#include "log_tags.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageNapi"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageNapi"};
     constexpr int NUM0 = 0;
     constexpr int NUM1 = 1;
     constexpr int NUM2 = 2;

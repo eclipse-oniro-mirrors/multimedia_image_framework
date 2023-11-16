@@ -14,20 +14,24 @@
  */
 
 #include "exif_info.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <memory>
 #include <unistd.h>
-#include "media_errors.h"
-#include "string_ex.h"
-#include "securec.h"
+
 #include "exif_maker_note.h"
+#include "hilog/log.h"
+#include "log_tags.h"
+#include "media_errors.h"
+#include "securec.h"
+#include "string_ex.h"
 
 namespace OHOS {
 namespace ImagePlugin {
 namespace {
     using namespace OHOS::HiviewDFX;
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "Exif" };
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "exifInfo" };
     static constexpr int PARSE_EXIF_SUCCESS = 0;
     static constexpr int PARSE_EXIF_DATA_ERROR = 10001;
     static constexpr int PARSE_EXIF_IFD_ERROR = 10002;
@@ -1090,7 +1094,7 @@ static void ExifIntValueByFormat(unsigned char *b, ExifByteOrder order, ExifForm
         case EXIF_FORMAT_ASCII:
         case EXIF_FORMAT_RATIONAL:
         default:
-            HiLog::Error(LABEL, "ExifIntValueByFormat unsupport format %{public}d.", format);
+            HiLog::Error(LABEL, "ExifIntValueByFormat unsupported format %{public}d.", format);
             break;
     }
 }
@@ -1797,7 +1801,7 @@ void ByteOrderedBuffer::GetDataRangeFromDE(const ExifIfd &ifd, const int16_t &co
                 curPosition_ = static_cast<uint32_t>(offset);
             } else {
                 // Skip if invalid data offset.
-                HiLog::Error(LABEL, "Skip the tag entry since data offset is invalid: %{public}d.", offset);
+                HiLog::Info(LABEL, "Skip the tag entry since data offset is invalid: %{public}d.", offset);
                 curPosition_ = nextEntryOffset;
                 continue;
             }

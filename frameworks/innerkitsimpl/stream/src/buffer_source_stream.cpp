@@ -16,7 +16,8 @@
 #include "buffer_source_stream.h"
 
 #include <string>
-#include "image_log.h"
+#include "hilog/log.h"
+#include "log_tags.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -27,6 +28,7 @@
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "BufferSourceStream"};
 using namespace std;
 using namespace ImagePlugin;
 
@@ -45,19 +47,19 @@ BufferSourceStream::~BufferSourceStream()
 std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const uint8_t *data, uint32_t size)
 {
     if ((data == nullptr) || (size == 0)) {
-        IMAGE_LOGE("[BufferSourceStream]input the parameter exception.");
+        HiLog::Error(LABEL, "[BufferSourceStream]input the parameter exception.");
         return nullptr;
     }
     uint8_t *dataCopy = static_cast<uint8_t *>(malloc(size));
     if (dataCopy == nullptr) {
-        IMAGE_LOGE("[BufferSourceStream]malloc the input data buffer fail.");
+        HiLog::Error(LABEL, "[BufferSourceStream]malloc the input data buffer fail.");
         return nullptr;
     }
     errno_t ret = memcpy_s(dataCopy, size, data, size);
     if (ret != EOK) {
         free(dataCopy);
         dataCopy = nullptr;
-        IMAGE_LOGE("[BufferSourceStream]copy the input data fail, ret:%{public}d.", ret);
+        HiLog::Error(LABEL, "[BufferSourceStream]copy the input data fail, ret:%{public}d.", ret);
         return nullptr;
     }
     return (unique_ptr<BufferSourceStream>(new BufferSourceStream(dataCopy, size, 0)));
@@ -66,7 +68,7 @@ std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const
 bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (!Peek(desiredSize, outData)) {
-        IMAGE_LOGE("[BufferSourceStream]read fail.");
+        HiLog::Error(LABEL, "[BufferSourceStream]read fail.");
         return false;
     }
     dataOffset_ += outData.dataSize;
@@ -76,12 +78,12 @@ bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 bool BufferSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0) {
-        IMAGE_LOGE("[BufferSourceStream]input the parameter exception.");
+        HiLog::Error(LABEL, "[BufferSourceStream]input the parameter exception.");
         return false;
     }
     if (dataSize_ == dataOffset_) {
-        IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.", dataOffset_,
-                   dataSize_);
+        HiLog::Error(LABEL, "[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
+            dataOffset_, dataSize_);
         return false;
     }
     outData.bufferSize = dataSize_ - dataOffset_;
@@ -90,15 +92,15 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     outData.dataSize = desiredSize;
     outData.inputStreamBuffer = inputBuffer_ + dataOffset_;
-    IMAGE_LOGD("[BufferSourceStream]Peek end. desiredSize:%{public}d, offset:%{public}zu ,dataSize%{public}zu.",
-               desiredSize, dataOffset_, dataSize_);
+    HiLog::Debug(LABEL, "[BufferSourceStream]Peek end. desiredSize:%{public}d, offset:%{public}zu,"
+        "dataSize%{public}zu.", desiredSize, dataOffset_, dataSize_);
     return true;
 }
 
 bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (!Peek(desiredSize, outBuffer, bufferSize, readSize)) {
-        IMAGE_LOGE("[BufferSourceStream]read fail.");
+        HiLog::Error(LABEL, "[BufferSourceStream]read fail.");
         return false;
     }
     dataOffset_ += readSize;
@@ -108,13 +110,13 @@ bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
 bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize) {
-        IMAGE_LOGE("[BufferSourceStream]input the parameter exception, desiredSize:%{public}u, bufferSize:%{public}u.",
-                   desiredSize, bufferSize);
+        HiLog::Error(LABEL, "[BufferSourceStream]input the parameter exception, desiredSize:%{public}u,"
+            "bufferSize:%{public}u.", desiredSize, bufferSize);
         return false;
     }
     if (dataSize_ == dataOffset_) {
-        IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.", dataOffset_,
-                   dataSize_);
+        HiLog::Error(LABEL, "[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
+            dataOffset_, dataSize_);
         return false;
     }
     if (desiredSize > dataSize_ - dataOffset_) {
@@ -122,9 +124,8 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
     }
     errno_t ret = memcpy_s(outBuffer, bufferSize, inputBuffer_ + dataOffset_, desiredSize);
     if (ret != EOK) {
-        IMAGE_LOGE("[BufferSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u, offset:%{public}zu, \
-                   desiredSize:%{public}u.",
-                   ret, bufferSize, dataOffset_, desiredSize);
+        HiLog::Error(LABEL, "[BufferSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
+            "offset:%{public}zu, desiredSize:%{public}u.", ret, bufferSize, dataOffset_, desiredSize);
         return false;
     }
     readSize = desiredSize;
@@ -139,7 +140,8 @@ uint32_t BufferSourceStream::Tell()
 bool BufferSourceStream::Seek(uint32_t position)
 {
     if (position > dataSize_) {
-        IMAGE_LOGE("[BufferSourceStream]Seek the position greater than the Data Size,position:%{public}u.", position);
+        HiLog::Error(LABEL, "[BufferSourceStream]Seek the position greater than the Data Size,position:%{public}u.",
+            position);
         return false;
     }
     dataOffset_ = position;

@@ -17,9 +17,11 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
+#include "hilog/log.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImageInfo.h"
 #include "jerror.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_convert.h"
 #include "src/images/SkImageEncoderFns.h"
@@ -47,6 +49,7 @@ constexpr uint8_t INDEX_ZERO = 0;
 constexpr uint8_t INDEX_ONE = 1;
 constexpr uint8_t INDEX_TWO = 2;
 constexpr uint8_t SHIFT_MASK = 1;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JpegEncoder" };
 
 JpegDstMgr::JpegDstMgr(OutputDataStream *stream) : outputStream(stream)
 {

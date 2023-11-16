@@ -18,10 +18,11 @@
 #include "hilog/log.h"
 #include "image_napi_utils.h"
 #include "image_pixel_map_napi.h"
+#include "log_tags.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "MyPixelMapNapiTest"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "MyPixelMapNapiTest"};
 constexpr uint32_t TEST_ARG_SUM = 1;
 }
 namespace OHOS {
@@ -174,7 +175,7 @@ napi_value MyPixelMap::TestUnAccessPixels(napi_env env, napi_callback_info info)
  */
 static napi_value Export(napi_env env, napi_value exports)
 {
-    HiLog::Error(LABEL, "MyPixelMap CALL");
+    HiLog::Info(LABEL, "MyPixelMap CALL");
     MyPixelMap::Init(env, exports);
     return exports;
 }

@@ -138,7 +138,7 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, uint16_t servi
 
     shared_ptr<ImplClass> target = SearchByPriority(candidates, priorityScheme);
     if (target == nullptr) {
-        HiLog::Error(LABEL, "failed to find class by priority.");
+        HiLog::Info(LABEL, "failed to find class by priority.");
         errorCode = ERR_MATCHING_PLUGIN;
         return nullptr;
     }
@@ -220,7 +220,7 @@ shared_ptr<ImplClass> ImplClassMgr::SearchByPriority(const list<shared_ptr<ImplC
 {
     auto size = candidates.size();
     if (size == 0) {  // 0 means class no candidate,  return empty directly.
-        HiLog::Error(LABEL, "SearchByPriority: candidates size is zero.");
+        HiLog::Info(LABEL, "SearchByPriority: candidates size is zero.");
         return nullptr;
     }
 

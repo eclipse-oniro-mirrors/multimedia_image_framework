@@ -17,8 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_BUFFER_PACKER_STREAM_H_
 
 #include <string>
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "nocopyable.h"
 #include "packer_stream.h"
 
@@ -43,9 +41,7 @@ public:
     }
 private:
     DISALLOW_COPY(BufferPackerStream);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
-        LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "BufferPackerStream"
-    };
+
     uint8_t *outputData_ = nullptr;
     uint32_t maxSize_ = 0;
     int64_t offset_ = 0;

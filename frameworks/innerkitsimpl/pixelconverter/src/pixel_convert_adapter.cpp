@@ -13,7 +13,11 @@
  * limitations under the License.
  */
 
+#include "pixel_convert_adapter.h"
+
 #include <map>
+
+#include "hilog/log.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColor.h"
@@ -21,7 +25,7 @@
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPixmap.h"
-#include "pixel_convert_adapter.h"
+#include "log_tags.h"
 #ifdef _WIN32
 #include <iomanip>
 #endif

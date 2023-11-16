@@ -101,7 +101,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
             }
         }
     }
-    HiLog::Error(LABEL, "check heif format failed.");
+    HiLog::Info(LABEL, "check heif format failed.");
     return false;
 }
 

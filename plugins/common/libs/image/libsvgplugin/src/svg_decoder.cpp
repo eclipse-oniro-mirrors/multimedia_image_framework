@@ -267,7 +267,7 @@ uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     if (state_ < SvgDecodingState::BASE_INFO_PARSED) {
         uint32_t ret = DoDecodeHeader();
         if (ret != Media::SUCCESS) {
-            HiLog::Error(LABEL, "[SetDecodeOptions] decode header error on set decode options:%{public}u.", ret);
+            HiLog::Error(LABEL, "[SetDecodeOptions] decode header error on set decode options, ret:%{public}u.", ret);
             state_ = SvgDecodingState::BASE_INFO_PARSING;
             return ret;
         }
@@ -278,7 +278,7 @@ uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     // only state SvgDecodingState::BASE_INFO_PARSED can go here.
     uint32_t ret = DoSetDecodeOptions(index, opts, info);
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "[SetDecodeOptions] do set decode options:%{public}u.", ret);
+        HiLog::Error(LABEL, "[SetDecodeOptions] do set decode options failed, ret:%{public}u.", ret);
         state_ = SvgDecodingState::BASE_INFO_PARSING;
         return ret;
     }
@@ -362,7 +362,7 @@ uint32_t SvgDecoder::GetImageSize(uint32_t index, PlSize &size)
 
     ret = DoGetImageSize(index, size);
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "[GetImageSize] do get image size, ret:%{public}u.", ret);
+        HiLog::Error(LABEL, "[GetImageSize] do get image size failed, ret:%{public}u.", ret);
         state_ = SvgDecodingState::BASE_INFO_PARSING;
         return ret;
     }

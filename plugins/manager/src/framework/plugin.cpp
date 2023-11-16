@@ -72,7 +72,7 @@ uint32_t Plugin::Register(istream &metadata, string &&libraryPath, weak_ptr<Plug
     std::unique_lock<std::recursive_mutex> guard(dynDataLock_);
     if (state_ != PluginState::PLUGIN_STATE_UNREGISTER) {
         guard.unlock();
-        HiLog::Error(LABEL, "repeat registration.");
+        HiLog::Info(LABEL, "repeat registration.");
         return ERR_INTERNAL;
     }
 

@@ -14,11 +14,15 @@
  */
 
 #include "buffer_packer_stream.h"
+
+#include "hilog/log.h"
+#include "log_tags.h"
 #include "securec.h"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "BufferPackerStream"};
 
 BufferPackerStream::BufferPackerStream(uint8_t *outputData, uint32_t maxSize)
     : outputData_(outputData), maxSize_(maxSize)

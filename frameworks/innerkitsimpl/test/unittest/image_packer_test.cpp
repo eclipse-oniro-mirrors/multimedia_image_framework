@@ -30,7 +30,6 @@
 
 using namespace OHOS::Media;
 using namespace testing::ext;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImagePlugin;
 using namespace OHOS::MultimediaPlugin;
 namespace OHOS {

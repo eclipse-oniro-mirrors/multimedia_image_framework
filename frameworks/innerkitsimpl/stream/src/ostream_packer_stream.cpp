@@ -15,9 +15,13 @@
 
 #include "ostream_packer_stream.h"
 
+#include "hilog/log.h"
+#include "log_tags.h"
+
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "OstreamPackerStream"};
 
 OstreamPackerStream::OstreamPackerStream(std::ostream &outputStream) : outputStream_(&outputStream) {}
 

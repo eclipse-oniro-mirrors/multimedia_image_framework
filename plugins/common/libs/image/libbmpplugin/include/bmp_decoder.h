@@ -21,8 +21,6 @@
 #include "SkCodec.h"
 #include "abs_image_decoder.h"
 #include "bmp_stream.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "plugin_class_base.h"
 
 namespace OHOS {

@@ -15,10 +15,11 @@
 
 #include "native_module_ohos_image.h"
 #include "hilog/log.h"
+#include "log_tags.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "NAPITEST"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "NAPITEST"};
 }
 namespace OHOS {
 namespace Media{
@@ -27,18 +28,18 @@ namespace Media{
  */
 static napi_value Export(napi_env env, napi_value exports)
 {
-    HiLog::Error(LABEL, "ImagePackerNapi CALL");
+    HiLog::Info(LABEL, "ImagePackerNapi CALL");
     ImagePackerNapi::Init(env, exports);
-    HiLog::Error(LABEL, "PixelMapNapi CALL");
+    HiLog::Info(LABEL, "PixelMapNapi CALL");
     PixelMapNapi::Init(env, exports);
-    HiLog::Error(LABEL, "ImageSourceNapi CALL");
+    HiLog::Info(LABEL, "ImageSourceNapi CALL");
     ImageSourceNapi::Init(env, exports);
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    HiLog::Error(LABEL, "ImageReceiverNapi CALL");
+    HiLog::Info(LABEL, "ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
-    HiLog::Error(LABEL, "ImageCreatorNapi CALL");
+    HiLog::Info(LABEL, "ImageCreatorNapi CALL");
     ImageCreatorNapi::Init(env, exports);
-    HiLog::Error(LABEL, "ImageNapi CALL");
+    HiLog::Info(LABEL, "ImageNapi CALL");
     ImageNapi::Init(env, exports);
 #endif
     return exports;

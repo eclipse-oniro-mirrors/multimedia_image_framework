@@ -754,7 +754,7 @@ uint32_t GifDecoder::GetImageLoopCount(uint32_t index, int32_t &value)
 
 uint32_t GifDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
-    HiLog::Error(LABEL, "[GetImagePropertyInt] enter gif plugin, key:%{public}s", key.c_str());
+    HiLog::Debug(LABEL, "[GetImagePropertyInt] enter gif plugin, key:%{public}s", key.c_str());
     uint32_t errorCode = CheckIndex(0);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "[GetImagePropertyInt]index %{public}u is invalid", index);

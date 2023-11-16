@@ -19,7 +19,6 @@
 #include <surface.h>
 #include <list>
 #include "iconsumer_surface.h"
-#include "hilog/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -99,8 +98,6 @@ public:
     }
 
 private:
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
-        LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageReceiverContext"};
     OHOS::sptr<IConsumerSurface> receiverConsumerSurface_;
     OHOS::sptr<Surface> receiverProducerSurface_;
     int32_t width_;

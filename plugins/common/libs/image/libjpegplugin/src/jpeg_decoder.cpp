@@ -347,7 +347,7 @@ uint32_t JpegDecoder::GetRowBytes()
 
 uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanitize("cfi")))
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "DoSwDecode");
+    ImageTrace imageTrace("JpegDecoder::DoSwDecode");
     if (setjmp(jerr_.setjmp_buffer)) {
         HiLog::Error(LABEL, "decode image failed.");
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -476,7 +476,6 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         return iccPaseredResult;
     }
 #endif
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return Media::SUCCESS;
 }
 

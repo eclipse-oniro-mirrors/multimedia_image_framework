@@ -16,11 +16,12 @@
 #include "image_source_mdk_kits.h"
 #include <map>
 #include "hilog/log.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageSourceMdk"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceMdk"};
     constexpr size_t SIZE_ZERO = 0;
     constexpr int32_t INVALID_FD = -1;
     constexpr uint32_t DEFAULT_INDEX = 0;

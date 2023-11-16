@@ -22,10 +22,8 @@
 #include <string>
 #include <surface.h>
 
-#include "hilog/log.h"
 #include "image_format.h"
 #include "image_type.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "display_type.h"

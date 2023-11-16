@@ -15,8 +15,14 @@
 
 #include "matrix.h"
 
+#include "hilog/log.h"
+#include "log_tags.h"
+
 namespace OHOS {
 namespace Media {
+using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "Matrix" };
+
 Matrix &Matrix::Reset()
 {
     *this = Matrix();
@@ -230,10 +236,9 @@ const Matrix::CalcXYProc Matrix::gCalcXYProcs[] = { Matrix::IdentityXY, Matrix::
 // Matrix print function, including 9 elements
 void Matrix::Print()
 {
-    IMAGE_LOGD("[Matrix][%{public}8.4f %{public}8.4f %{public}8.4f]\
-                [%{public}8.4f %{public}8.4f %{public}8.4f]\
-                [%{public}8.4f %{public}8.4f %{public}8.4f].",
-               fMat_[0], fMat_[1], fMat_[2], fMat_[3], fMat_[4], fMat_[5], fMat_[6], fMat_[7], fMat_[8]);
+    HiLog::Debug(LABEL, "[Matrix][%{public}8.4f %{public}8.4f %{public}8.4f]"
+        "[%{public}8.4f %{public}8.4f %{public}8.4f][%{public}8.4f %{public}8.4f %{public}8.4f].",
+        fMat_[0], fMat_[1], fMat_[2], fMat_[3], fMat_[4], fMat_[5], fMat_[6], fMat_[7], fMat_[8]);
 }
 } // namespace Media
 } // namespace OHOS

@@ -17,7 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_MATRIX_H_
 
 #include <cmath>
-#include "image_log.h"
 #include "image_type.h"
 
 namespace OHOS {

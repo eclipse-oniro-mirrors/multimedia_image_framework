@@ -15,6 +15,9 @@
 
 #include "bmp_stream.h"
 
+#include "hilog/log.h"
+#include "log_tags.h"
+
 namespace OHOS {
 namespace ImagePlugin {
 using namespace OHOS::HiviewDFX;

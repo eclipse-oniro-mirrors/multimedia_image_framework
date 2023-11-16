@@ -22,9 +22,6 @@
 #include <parameters.h>
 #endif
 
-#include "hilog/log_cpp.h"
-#include "image_log.h"
-
 extern "C" {
 extern char* __progname;
 }

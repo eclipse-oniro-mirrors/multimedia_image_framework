@@ -17,8 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_FILE_PACKER_STREAM_H_
 
 #include <fstream>
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "nocopyable.h"
 #include "packer_stream.h"
 
@@ -35,7 +33,6 @@ public:
 
 private:
     DISALLOW_COPY(FilePackerStream);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "FilePackerStream" };
     FILE *file_ = nullptr;
 };
 } // namespace Media

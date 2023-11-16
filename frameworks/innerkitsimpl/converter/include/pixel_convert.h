@@ -19,9 +19,7 @@
 #include <cstdint>
 #include <cmath>
 #include <memory>
-#include "hilog/log.h"
 #include "image_type.h"
-#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {

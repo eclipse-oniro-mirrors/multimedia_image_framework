@@ -14,15 +14,17 @@
  */
 
 #include "image_utils.h"
+
 #include <sys/stat.h>
 #include <climits>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+
 #include "__config"
-#include "hilog/log_cpp.h"
-#include "image_log.h"
+#include "hilog/log.h"
+#include "log_tags.h"
 #include "ios"
 #include "istream"
 #include "media_errors.h"
@@ -46,6 +48,7 @@ using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace MultimediaPlugin;
 
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageUtils" };
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -65,13 +68,13 @@ static const uint8_t NUM_4 = 4;
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
     if (pathName.empty()) {
-        IMAGE_LOGE("[ImageUtil]input parameter exception.");
+        HiLog::Error(LABEL, "[ImageUtil]input parameter exception.");
         return false;
     }
     struct stat statbuf;
     int ret = stat(pathName.c_str(), &statbuf);
     if (ret != 0) {
-        IMAGE_LOGE("[ImageUtil]get the file size failed, ret:%{public}d.", ret);
+        HiLog::Error(LABEL, "[ImageUtil]get the file size failed, ret:%{public}d.", ret);
         return false;
     }
     size = statbuf.st_size;
@@ -88,7 +91,7 @@ bool ImageUtils::GetFileSize(const int fd, size_t &size)
 
     int ret = fstat(fd, &statbuf);
     if (ret != 0) {
-        IMAGE_LOGE("[ImageUtil]get the file size failed, ret:%{public}d.", ret);
+        HiLog::Error(LABEL, "[ImageUtil]get the file size failed, ret:%{public}d.", ret);
         return false;
     }
     size = statbuf.st_size;
@@ -98,7 +101,7 @@ bool ImageUtils::GetFileSize(const int fd, size_t &size)
 bool ImageUtils::GetInputStreamSize(istream &inputStream, size_t &size)
 {
     if (inputStream.rdbuf() == nullptr) {
-        IMAGE_LOGE("[ImageUtil]input parameter exception.");
+        HiLog::Error(LABEL, "[ImageUtil]input parameter exception.");
         return false;
     }
     size_t original = inputStream.tellg();
@@ -140,7 +143,8 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
             pixelBytes = ASTC_4X4_BYTES;
             break;
         default:
-            IMAGE_LOGE("[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.", static_cast<int32_t>(pixelFormat));
+            HiLog::Error(LABEL, "[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.",
+                static_cast<int32_t>(pixelFormat));
             break;
     }
     return pixelBytes;
@@ -160,10 +164,10 @@ uint32_t ImageUtils::RegisterPluginServer()
     PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
     uint32_t result = pluginServer.Register(std::move(pluginPaths));
     if (result != SUCCESS) {
-        IMAGE_LOGE("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+        HiLog::Error(LABEL, "[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
     } else {
         g_pluginRegistered = true;
-        IMAGE_LOGI("[ImageUtil]success to register plugin server");
+        HiLog::Info(LABEL, "[ImageUtil]success to register plugin server");
     }
     return result;
 }
@@ -173,7 +177,7 @@ PluginServer& ImageUtils::GetPluginServer()
     if (!g_pluginRegistered) {
         uint32_t result = RegisterPluginServer();
         if (result != SUCCESS) {
-            IMAGE_LOGI("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+            HiLog::Info(LABEL, "[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
         }
     }
     return DelayedRefSingleton<PluginServer>::GetInstance();
@@ -182,12 +186,12 @@ PluginServer& ImageUtils::GetPluginServer()
 bool ImageUtils::PathToRealPath(const string &path, string &realPath)
 {
     if (path.empty()) {
-        IMAGE_LOGE("path is empty!");
+        HiLog::Error(LABEL, "path is empty!");
         return false;
     }
 
     if ((path.length() >= PATH_MAX)) {
-        IMAGE_LOGE("path len is error, the len is: [%{public}lu]", static_cast<unsigned long>(path.length()));
+        HiLog::Error(LABEL, "path len is error, the len is: [%{public}lu]", static_cast<unsigned long>(path.length()));
         return false;
     }
 
@@ -195,11 +199,11 @@ bool ImageUtils::PathToRealPath(const string &path, string &realPath)
 
 #ifdef _WIN32
     if (_fullpath(tmpPath, path.c_str(), path.length()) == nullptr) {
-        IMAGE_LOGW("path to _fullpath error");
+        HiLog::Warn(LABEL, "path to _fullpath error");
     }
 #else
     if (realpath(path.c_str(), tmpPath) == nullptr) {
-        IMAGE_LOGE("path to realpath is nullptr");
+        HiLog::Error(LABEL, "path to realpath is nullptr");
         return false;
     }
 #endif
@@ -263,7 +267,7 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
 {
     if (width == 0 || bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "para is 0");
+        HiLog::Error(LABEL, "param is 0");
         return true;
     }
     int64_t rowSize = static_cast<int64_t>(width) * bytesPerPixel;
@@ -277,7 +281,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel)
 {
     if (width == 0 || height == 0 || bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "para is 0");
+        HiLog::Error(LABEL, "param is 0");
         return true;
     }
     int64_t rectSize = static_cast<int64_t>(width) * height;
@@ -314,9 +318,8 @@ static void ReversePixels(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteC
 
 void ImageUtils::BGRAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "BGRAToARGB");
+    ImageTrace imageTrace("BGRAToARGB");
     ReversePixels(srcPixels, dstPixels, byteCount);
-    FinishTrace(HITRACE_TAG_ZIMAGE);
 }
 
 void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)

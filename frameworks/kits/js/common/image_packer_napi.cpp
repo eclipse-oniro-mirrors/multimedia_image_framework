@@ -23,10 +23,11 @@
 #include "pixel_map_napi.h"
 #include "image_trace.h"
 #include "hitrace_meter.h"
+#include "log_tags.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImagePackerNapi"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImagePackerNapi"};
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
@@ -276,7 +277,7 @@ napi_value ImagePackerNapi::Constructor(napi_env env, napi_callback_info info)
 
 napi_value ImagePackerNapi::CreateImagePacker(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "CreateImagePacker");
+    ImageTrace imageTrace("ImagePackerNapi::CreateImagePacker");
     napi_value constructor = nullptr;
     napi_value result = nullptr;
     napi_status status;
@@ -292,7 +293,6 @@ napi_value ImagePackerNapi::CreateImagePacker(napi_env env, napi_callback_info i
             HiLog::Error(LABEL, "New instance could not be obtained");
         }
     }
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }
 
@@ -408,7 +408,7 @@ static int32_t ParserPackingArgumentType(napi_env env, napi_value argv)
         return TYPE_PIXEL_MAP;
     }
 
-    HiLog::Error(LABEL, "Inalued type!");
+    HiLog::Error(LABEL, "Invalid type!");
     return TYPE_IMAGE_SOURCE;
 }
 
@@ -457,7 +457,7 @@ static void ParserPackingArguments(napi_env env,
 
 napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "Packing");
+    ImageTrace imageTrace("ImagePackerNapi::Packing");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_THREE;
@@ -491,7 +491,6 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }
 
@@ -545,7 +544,7 @@ static void ReleaseComplete(napi_env env, napi_status status, void *data)
 
 napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "Release");
+    ImageTrace imageTrace("ImagePackerNapi::Release");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -575,7 +574,6 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
         [](napi_env env, void *data) {}, ReleaseComplete, context, context->work);
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }
 
@@ -653,7 +651,7 @@ STATIC_COMPLETE_FUNC(PackToFile)
 
 napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "PackToFile");
+    ImageTrace imageTrace("ImagePackerNapi::PackToFile");
     napi_status status;
     napi_value result = nullptr;
     size_t argc = ARGS_FOUR;
@@ -687,7 +685,6 @@ napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return result;
 }
 void ImagePackerNapi::release()

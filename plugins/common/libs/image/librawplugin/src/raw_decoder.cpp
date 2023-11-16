@@ -138,7 +138,7 @@ uint32_t RawDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     uint32_t ret = DoSetDecodeOptions(index, opts, info);
     if (ret != Media::SUCCESS) {
         state_ = RawDecodingState::BASE_INFO_PARSING;
-        HiLog::Error(LABEL, "[SetDecodeOptions] do set decode options:%{public}u.", ret);
+        HiLog::Error(LABEL, "[SetDecodeOptions] do set decode options fail, ret:%{public}u.", ret);
         return ret;
     }
 
@@ -179,7 +179,7 @@ uint32_t RawDecoder::GetImageSize(uint32_t index, PlSize &size)
 
     ret = DoGetImageSize(index, size);
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "[GetImageSize]do get image size, ret:%{public}u.", ret);
+        HiLog::Error(LABEL, "[GetImageSize]do get image size failed, ret:%{public}u.", ret);
         state_ = RawDecodingState::BASE_INFO_PARSING;
         return ret;
     }

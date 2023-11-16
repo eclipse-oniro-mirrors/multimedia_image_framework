@@ -111,7 +111,7 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
                                            int &fd, uint64_t &bufferSize, Size &dstSize)
 {
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[BasicTransformer]Invalid value of bufferSize");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]Invalid value of bufferSize");
         return false;
     }
     if (allocate == nullptr) {
@@ -123,7 +123,7 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
         outPixmap.context = tmp.release();
     }
     if (outPixmap.data == nullptr) {
-        IMAGE_LOGE("[BasicTransformer]apply heap memory failed");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]apply heap memory failed");
         return false;
     }
     return true;
@@ -152,12 +152,12 @@ void BasicTransformer::ReleaseBuffer(AllocatorType allocatorType, int fd, int da
 uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInfo &outPixmap, AllocateMem allocate)
 {
     if (inPixmap.data == nullptr) {
-        IMAGE_LOGE("[BasicTransformer]input data is null.");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]input data is null.");
         return ERR_IMAGE_GENERAL_ERROR;
     }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(inPixmap.imageInfo.pixelFormat);
     if (pixelBytes == 0) {
-        IMAGE_LOGE("[BasicTransformer]input pixel is invalid.");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]input pixel is invalid.");
         return ERR_IMAGE_INVALID_PIXEL;
     }
 
@@ -165,14 +165,14 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
     GetDstDimension(inPixmap.imageInfo.size, dstSize);
     outPixmap.imageInfo.size = dstSize;
     if (dstSize.width <= 0 || dstSize.height <= 0) {
-        IMAGE_LOGE("[BasicTransformer]buffer size is invalid.");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]buffer size is invalid.");
         return ERR_IMAGE_ALLOC_MEMORY_FAILED;
     }
 
     uint64_t bufferSize = static_cast<uint64_t>(dstSize.width) * dstSize.height * pixelBytes;
     if (bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[BasicTransformer] buffer size:%{public}llu out of range.",
-                   static_cast<unsigned long long>(bufferSize));
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer] buffer size:%{public}llu out of range.",
+            static_cast<unsigned long long>(bufferSize));
         return ERR_IMAGE_ALLOC_MEMORY_FAILED;
     }
     int fd = 0;
@@ -186,14 +186,14 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
     outPixmap.imageInfo.baseDensity = inPixmap.imageInfo.baseDensity;
 
     if (memset_s(outPixmap.data, bufferSize * sizeof(uint8_t), COLOR_DEFAULT, bufferSize * sizeof(uint8_t)) != EOK) {
-        IMAGE_LOGE("[BasicTransformer]apply heap memory failed.");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer]apply heap memory failed.");
         ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
             fd, bufferSize, outPixmap.data);
         return ERR_IMAGE_GENERAL_ERROR;
     }
 
     if (!DrawPixelmap(inPixmap, pixelBytes, dstSize, outPixmap.data)) {
-        IMAGE_LOGE("[BasicTransformer] the matrix can not invert.");
+        HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer] the matrix can not invert.");
         ReleaseBuffer((allocate == nullptr) ? AllocatorType::HEAP_ALLOC : AllocatorType::SHARE_MEM_ALLOC,
             fd, bufferSize, outPixmap.data);
         return ERR_IMAGE_MATRIX_NOT_INVERT;
@@ -336,7 +336,8 @@ void BasicTransformer::BilinearPixelProc(const AroundPos aroundPos, struct Bilin
                 break;
             }
         default:
-            IMAGE_LOGE("[BasicTransformer] pixel format not supported, format:%{public}d", args.format);
+            HiLog::Error(BASIC_TRANSFORMER_LABEL, "[BasicTransformer] pixel format not supported, format:%{public}d",
+                args.format);
     }
 }
 

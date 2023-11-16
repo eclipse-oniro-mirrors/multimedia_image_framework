@@ -21,6 +21,7 @@
 #include "image_receiver_context.h"
 #include "image_napi.h"
 #include "image_receiver_manager.h"
+#include "log_tags.h"
 
 using OHOS::HiviewDFX::HiLog;
 using std::string;
@@ -31,7 +32,7 @@ using std::make_shared;
 using std::make_unique;
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN, "ImageReceiverNapi"};
+    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageReceiverNapi"};
 }
 
 namespace OHOS {
@@ -204,7 +205,7 @@ static bool parseImageReceiverArgs(napi_env env, napi_callback_info info,
     }
 
     if (args.argc != ARGS4) {
-        errMsg = "Invailed arg counts ";
+        errMsg = "Invalid arg counts ";
         errMsg.append(std::to_string(args.argc));
         return false;
     }
@@ -212,7 +213,7 @@ static bool parseImageReceiverArgs(napi_env env, napi_callback_info info,
     for (size_t i = PARAM0; i < args.argc; i++) {
         napi_valuetype argvType = ImageNapiUtils::getType(env, (args.argv)[i]);
         if (argvType != napi_number) {
-            errMsg = "Invailed arg ";
+            errMsg = "Invalid arg ";
             errMsg.append(std::to_string(i)).append(" type ").append(std::to_string(argvType));
             return false;
         }
@@ -286,7 +287,7 @@ napi_value ImageReceiverNapi::CreateImageReceiverJsObject(napi_env env, struct I
 
     IMAGE_FUNCTION_IN();
     if (!checkFormat(args.format)) {
-        IMAGE_ERR("Invailed type");
+        IMAGE_ERR("Invalid type");
         return nullptr;
     }
     napi_create_int32(env, args.width, &(inputArgs.argv[PARAM0]));
@@ -326,7 +327,7 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
 
     if (!checkFormat(inputArgs.args[PARAM2])) {
         return ImageNapiUtils::ThrowExceptionError(env,
-            static_cast<int32_t>(napi_invalid_arg), "Invailed type");
+            static_cast<int32_t>(napi_invalid_arg), "Invalid type");
     }
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
@@ -897,7 +898,7 @@ static bool JsOnQueryArgs(ImageReceiverCommonArgs &args, ImageReceiverInnerConte
             return false;
         }
     } else {
-        std::string errMsg = "Invailed argc: ";
+        std::string errMsg = "Invalid argc: ";
         ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
             errMsg.append(std::to_string(ic.argc)));
         return false;
