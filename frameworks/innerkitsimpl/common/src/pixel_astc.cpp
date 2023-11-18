@@ -66,7 +66,11 @@ bool PixelAstc::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 
 void PixelAstc::scale(float xAxis, float yAxis)
 {
-    HiLog::Error(LABEL, "scale is not support on pixelastc");
+    TransformData transformData;
+    GetTransformData(transformData);
+    transformData.scaleX *= xAxis;
+    transformData.scaleY *= yAxis;
+    SetTransformData(transformData);
 }
 
 bool PixelAstc::resize(float xAxis, float yAxis)
@@ -77,23 +81,45 @@ bool PixelAstc::resize(float xAxis, float yAxis)
 
 void PixelAstc::translate(float xAxis, float yAxis)
 {
-    HiLog::Error(LABEL, "translate is not support on pixelastc");
+    TransformData transformData;
+    GetTransformData(transformData);
+    transformData.translateX = xAxis;
+    transformData.translateY = yAxis;
+    SetTransformData(transformData);
 }
 
 void PixelAstc::rotate(float degrees)
 {
-    HiLog::Error(LABEL, "rotate is not support on pixelastc");
+    TransformData transformData;
+    GetTransformData(transformData);
+    transformData.rotateD = degrees;
+    SetTransformData(transformData);
 }
 
 void PixelAstc::flip(bool xAxis, bool yAxis)
 {
-    HiLog::Error(LABEL, "flip is not support on pixelastc");
+    TransformData transformData;
+    GetTransformData(transformData);
+    transformData.flipX = xAxis;
+    transformData.flipY = yAxis;
+    SetTransformData(transformData);
 }
 
 uint32_t PixelAstc::crop(const Rect &rect)
 {
-    HiLog::Error(LABEL, "crop is not support on pixelastc");
-    return ERR_IMAGE_CROP;
+    if (rect.left >= 0 && rect.top >= 0 && rect.width >= 0 && rect.height >= 0) {
+        TransformData transformData;
+        GetTransformData(transformData);
+        transformData.cropLeft = rect.left;
+        transformData.cropTop = rect.top;
+        transformData.cropWidth = rect.width;
+        transformData.cropHeight = rect.height;
+        SetTransformData(transformData);
+    } else {
+        HiLog::Error(LABEL, "crop failed");
+        return ERR_IMAGE_CROP;
+    }
+    return SUCCESS;
 }
 
 uint32_t PixelAstc::SetAlpha(const float percent)
