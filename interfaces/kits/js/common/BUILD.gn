@@ -194,6 +194,7 @@ if (use_clang_ios) {
     public_configs = [ ":image_external_config" ]
     sources = [
       "$image_subsystem/frameworks/kits/js/common/image_mdk_kits.cpp",
+      "$image_subsystem/frameworks/kits/js/common/image_packer_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_receiver_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_source_mdk_kits.cpp",

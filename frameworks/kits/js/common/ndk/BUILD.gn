@@ -74,3 +74,18 @@ ohos_shared_library("image_source_ndk") {
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
+
+ohos_shared_library("image_packer_ndk") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+
+  sources = [ "image_packer_mdk.cpp" ]
+  public_configs = [ ":native_public_config" ]
+  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
+
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}

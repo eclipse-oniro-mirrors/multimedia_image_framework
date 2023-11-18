@@ -915,11 +915,13 @@ ohos_unittest("ndktest") {
   ]
   sources = [
     "unittest/image_ndk_test.cpp",
+    "unittest/image_packer_mdk_test.cpp",
     "unittest/ndk_test.cpp",
   ]
 
   deps = [
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_packer_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_receiver_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source_ndk",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
