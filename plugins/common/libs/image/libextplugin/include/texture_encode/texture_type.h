@@ -25,28 +25,21 @@ typedef struct TextureEncodeOptionsType {
     int32_t height_;
     uint8_t blockX_;
     uint8_t blockY_;
+    int32_t stride_;
 } TextureEncodeOptions;
 
-struct astc_header {
-    uint8_t magic[4];
-    uint8_t block_x; // block_x info
-    uint8_t block_y; // block_y info
-    uint8_t block_z; // block_z info
-    uint8_t dim_x[3];
-    uint8_t dim_y[3];
-    uint8_t dim_z[3];
-};
-
 typedef struct AstcEncoderInfo {
-    astc_header head;
     astcenc_config config;
     astcenc_profile profile;
     astcenc_context* codec_context;
     astcenc_image image_;
     astcenc_swizzle swizzle_;
     uint8_t* data_out_;
-    size_t data_len_;
     astcenc_error error_;
+#if QUALITY_CONTROL
+    bool calQualityEnable;
+    int32_t *mse[RGBA_COM + 1];
+#endif
 } AstcEncoder;
 } // namespace Media
 } // namespace OHOS
