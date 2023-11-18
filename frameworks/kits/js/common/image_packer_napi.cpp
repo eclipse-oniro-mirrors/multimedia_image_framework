@@ -697,5 +697,12 @@ void ImagePackerNapi::release()
         isRelease = true;
     }
 }
+std::shared_ptr<ImagePacker> ImagePackerNapi::GetNative(ImagePackerNapi* napi)
+{
+    if (napi != nullptr) {
+        return napi->nativeImgPck;
+    }
+    return nullptr;
+}
 }  // namespace Media
 }  // namespace OHOS

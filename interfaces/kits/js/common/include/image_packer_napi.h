@@ -41,6 +41,7 @@ public:
     ~ImagePackerNapi();
     static napi_value Init(napi_env env, napi_value exports);
     static napi_value CreateImagePacker(napi_env env, napi_callback_info info);
+    static std::shared_ptr<ImagePacker> GetNative(ImagePackerNapi* napi);
 
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);

@@ -22,6 +22,7 @@
 #include "image_receiver_mdk_kits.h"
 #include "image_source_mdk.h"
 #include "image_source_mdk_kits.h"
+#include "image_pixel_map_napi.h"
 
 using namespace testing::ext;
 namespace OHOS {

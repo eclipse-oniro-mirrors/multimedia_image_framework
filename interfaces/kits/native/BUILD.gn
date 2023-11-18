@@ -62,3 +62,13 @@ ohos_ndk_headers("image_source_ndk_header") {
   dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
   sources = [ "./include/image_source_mdk.h" ]
 }
+
+ohos_ndk_library("libimage_packer_ndk") {
+  ndk_description_file = "./libimage_packer_ndk.ndk.json"
+  output_name = "image_packer_ndk"
+}
+
+ohos_ndk_headers("image_packer_ndk_header") {
+  dest_dir = "$ndk_headers_out_dir/multimedia/image_framework"
+  sources = [ "./include/image_packer_mdk.h" ]
+}

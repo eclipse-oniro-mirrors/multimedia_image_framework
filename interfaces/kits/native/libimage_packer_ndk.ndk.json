@@ -1,0 +1,22 @@
+[
+    {
+        "first_introduced": "11",
+        "name": "OH_ImagePacker_Create"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImagePacker_InitNative"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImagePacker_PackToData"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImagePacker_PackToFile"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImagePacker_Release"
+    }
+]
