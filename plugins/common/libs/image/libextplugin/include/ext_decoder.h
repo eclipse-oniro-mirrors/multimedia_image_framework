@@ -21,8 +21,10 @@
 
 #include "SkCodec.h"
 #include "abs_image_decoder.h"
+#include "display_type.h"
 #include "ext_stream.h"
 #include "exif_info.h"
+#include "hardware/jpeg_hw_decoder.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 
@@ -34,6 +36,12 @@ public:
     ~ExtDecoder() override;
     bool HasProperty(std::string key) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
+    #ifdef JPEG_HW_DECODE_ENABLE
+    uint32_t AllocOutputBuffer(DecodeContext &context);
+    void ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType);
+    uint32_t HardWareDecode(DecodeContext &context);
+    uint32_t DoHardWareDecode(DecodeContext &context);
+    #endif
     uint32_t GifDecode(uint32_t index, DecodeContext &context, const uint64_t rowStride);
     uint32_t GetImageSize(uint32_t index, PlSize &size) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
@@ -63,8 +71,10 @@ private:
     bool DecodeHeader();
     bool IsSupportScaleOnDecode();
     bool GetScaledSize(int &dWidth, int &dHeight, float &scale);
+    bool GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale);
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
+    bool IsSupportHardwareDecode();
     bool ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &outputType);
     bool ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);
@@ -85,6 +95,16 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     uint32_t gifCacheIndex_ = 0;
+
+    //hardware
+    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
+    SkImageInfo hwDstInfo_;
+    PlSize orgImgSize_;
+    PlSize outputBufferSize_;
+    PixelFormat outputColorFmt_ = PIXEL_FMT_RGBA_8888;
+    uint32_t sampleSize_ = 1;
+    static constexpr uint32_t ALIGN_8 = 8;
+    static constexpr uint32_t ALIGN_16 = 16;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
