@@ -66,7 +66,7 @@ uint32_t HeapMemory::Release()
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     HiLog::Debug(LABEL, "HeapMemory::Release IN");
     if (data.data == nullptr) {
-        HiLog::Error(LABEL, "HeapMemory::Release nullptr data");
+        HiLog::Info(LABEL, "HeapMemory::Release nullptr data");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     free(data.data);

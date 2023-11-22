@@ -14,8 +14,12 @@
  */
 
 #include "pixel_convert.h"
+
 #include <map>
 #include <mutex>
+
+#include "hilog/log.h"
+#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {

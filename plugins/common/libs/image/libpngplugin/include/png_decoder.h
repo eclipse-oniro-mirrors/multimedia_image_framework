@@ -17,9 +17,7 @@
 #define PNG_DECODER_H
 
 #include "abs_image_decoder.h"
-#include "hilog/log.h"
 #include "input_data_stream.h"
-#include "log_tags.h"
 #include "nine_patch_listener.h"
 #include "plugin_class_base.h"
 #include "png.h"

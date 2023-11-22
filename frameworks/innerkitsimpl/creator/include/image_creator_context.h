@@ -19,7 +19,6 @@
 #include <surface.h>
 #include <list>
 #include "iconsumer_surface.h"
-#include "hilog/log.h"
 
 namespace OHOS {
 namespace Media {
@@ -96,8 +95,6 @@ public:
         currentCreatorBuffer_ = currentCreatorBuffer;
     }
 private:
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageCreatorContext"};
     OHOS::sptr<IConsumerSurface> creatorConsumerSurface_;
     OHOS::sptr<Surface> creatorProducerSurface_;
     int32_t width_;

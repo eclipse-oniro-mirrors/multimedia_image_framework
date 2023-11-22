@@ -67,7 +67,7 @@ bool NinePatchListener::ReadChunk(const std::string &tag, void *data, size_t len
         PngNinePatchRes *patch = static_cast<PngNinePatchRes *>(data);
         size_t patchSize = patch->SerializedSize();
         if (length != patchSize) {
-            HiLog::Error(LABEL, "length(%{public}zu) ne patchSize(%{public}zu)", length, patchSize);
+            HiLog::Error(LABEL, "length(%{public}zu) not equals patchSize(%{public}zu)", length, patchSize);
             return false;
         }
         // copy the data because it is owned by the png reader

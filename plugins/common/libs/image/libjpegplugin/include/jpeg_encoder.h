@@ -18,12 +18,10 @@
 
 #include <vector>
 #include "abs_image_encoder.h"
-#include "hilog/log.h"
 #include "icc_profile_info.h"
 #include "icc_profile_info.h"
 #include "jpeg_utils.h"
 #include "jpeglib.h"
-#include "log_tags.h"
 #include "plugin_class_base.h"
 
 namespace OHOS {
@@ -47,7 +45,6 @@ private:
     uint32_t Yuv420spEncoder(const uint8_t *data);
     uint32_t RGBAF16Encoder(const uint8_t *data);
     uint32_t RGB565Encoder(const uint8_t *data);
-    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JpegEncoder" };
     jpeg_compress_struct encodeInfo_;
     JpegDstMgr dstMgr_;
     ErrorMgr jerr_;

@@ -202,7 +202,7 @@ void ExifMakerNote::ExifItem::Dump(const std::string &info, const ExifMakerNote:
 {
     uint32_t dataOrOffset = 0;
     if (!ExifMakerNote::GetUInt32(item.data, order, 0, dataOrOffset)) {
-        HiLog::Error(LABEL, "Dump, data");
+        HiLog::Error(LABEL, "ExifMakerNote::ExifItem::Dump, GetUInt32 failed");
         return;
     }
 
@@ -236,14 +236,14 @@ uint32_t ExifMakerNote::Parser(ExifData *exif, const unsigned char *data, uint32
     }
 
     if ((data == nullptr) || (size < sizeof(EXIF_HEADER))) {
-        HiLog::Error(LABEL, "Parser leave. check");
+        HiLog::Error(LABEL, "Parser leave. param invalid");
         return Media::ERROR;
     }
 
     const unsigned char *newData = nullptr;
     uint32_t newSize = 0;
     if (!FindExifLocation(data, size, newData, newSize)) {
-        HiLog::Error(LABEL, "Parser leave. findExifLocation");
+        HiLog::Error(LABEL, "Parser leave. findExifLocation failed");
         return Media::ERROR;
     }
 

@@ -14,8 +14,10 @@
  */
 
 #include "scan_line_filter.h"
-#include "image_log.h"
+
+#include "hilog/log.h"
 #include "image_utils.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #ifndef _WIN32
 #include "securec.h"
@@ -25,6 +27,9 @@
 
 namespace OHOS {
 namespace Media {
+using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ScanLineFilter" };
+
 ScanlineFilter::ScanlineFilter(const PixelFormat &srcPixelFormat) : srcBpp_(ImageUtils::GetPixelBytes(srcPixelFormat))
 {}
 
@@ -61,23 +66,23 @@ void ScanlineFilter::SetPixelConvert(const ImageInfo &srcImageInfo, const ImageI
 uint32_t ScanlineFilter::FilterLine(void *destRowPixels, uint32_t destRowBytes, const void *srcRowPixels)
 {
     if (destRowPixels == nullptr || srcRowPixels == nullptr) {
-        IMAGE_LOGE("[ScanlineFilter]the src or dest pixel point is null.");
+        HiLog::Error(LABEL, "[ScanlineFilter]the src or dest pixel point is null.");
         return ERR_IMAGE_CROP;
     }
     auto startPixel = static_cast<const uint8_t *>(srcRowPixels) + srcRegion_.left * srcBpp_;
     if (startPixel == nullptr) {
-        IMAGE_LOGE("[ScanlineFilter]the shift src pixel point is null.");
+        HiLog::Error(LABEL, "[ScanlineFilter]the shift src pixel point is null.");
         return ERR_IMAGE_CROP;
     }
     if (!needPixelConvert_) {
         errno_t ret = memcpy_s(destRowPixels, destRowBytes, startPixel, srcRegion_.width * srcBpp_);
         if (ret != 0) {
-            IMAGE_LOGE("[ScanlineFilter]memcpy failed,ret=%{public}d.", ret);
+            HiLog::Error(LABEL, "[ScanlineFilter]memcpy failed,ret=%{public}d.", ret);
             return ERR_IMAGE_CROP;
         }
     } else {
         if (!ConvertPixels(destRowPixels, startPixel, srcRegion_.width)) {
-            IMAGE_LOGE("[ScanlineFilter]convert color failed.");
+            HiLog::Error(LABEL, "[ScanlineFilter]convert color failed.");
             return ERR_IMAGE_COLOR_CONVERT;
         }
     }
@@ -87,12 +92,12 @@ uint32_t ScanlineFilter::FilterLine(void *destRowPixels, uint32_t destRowBytes, 
 bool ScanlineFilter::ConvertPixels(void *destRowPixels, const uint8_t *startPixel, uint32_t reqPixelNum)
 {
     if (destRowPixels == nullptr || startPixel == nullptr) {
-        IMAGE_LOGE("[ScanlineFilter]convert color failed, the destRowPixels or startPixel is null.");
+        HiLog::Error(LABEL, "[ScanlineFilter]convert color failed, the destRowPixels or startPixel is null.");
         return false;
     }
 
     if (pixelConverter_ == nullptr) {
-        IMAGE_LOGE("[ScanlineFilter]pixel converter is null");
+        HiLog::Error(LABEL, "[ScanlineFilter]pixel converter is null");
         return false;
     }
 

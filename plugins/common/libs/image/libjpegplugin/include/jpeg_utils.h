@@ -20,11 +20,10 @@
 #include <cstdio>
 #include <cstdint>
 #include <string>
-#include "hilog/log.h"
+
 #include "input_data_stream.h"
 #include "jerror.h"
 #include "jpeglib.h"
-#include "log_tags.h"
 #include "output_data_stream.h"
 
 namespace OHOS {

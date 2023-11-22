@@ -308,7 +308,7 @@ uint32_t ExtDecoder::GetImageSize(uint32_t index, PlSize &size)
         HiLog::Error(LABEL, "Invalid index:%{public}u, range:%{public}d", index, frameCount_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    HiLog::Error(LABEL, "GetImageSize index:%{public}u, range:%{public}d", index, frameCount_);
+    HiLog::Debug(LABEL, "GetImageSize index:%{public}u, range:%{public}d", index, frameCount_);
     // Info has been get in check process, or empty on get failed.
     if (info_.isEmpty()) {
         HiLog::Error(LABEL, "GetImageSize failed, decode header failed.");

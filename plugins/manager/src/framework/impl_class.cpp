@@ -46,7 +46,7 @@ uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classIn
 {
     if (state_ != ClassState::CLASS_STATE_UNREGISTER) {
         // repeat registration
-        HiLog::Error(LABEL, "repeat registration.");
+        HiLog::Info(LABEL, "repeat registration.");
         return ERR_INTERNAL;
     }
 

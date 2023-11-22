@@ -56,7 +56,7 @@ bool SvgFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     if (memcmp(SVG_STAMP, headerData, SVG_STAMP_LEN) != 0) {
-        HiLog::Error(LABEL, "header stamp mismatch.");
+        HiLog::Info(LABEL, "header stamp mismatch.");
         return false;
     }
 

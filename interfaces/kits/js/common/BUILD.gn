@@ -233,8 +233,9 @@ if (use_clang_ios) {
       ]
     } else {
       deps = [
-        "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
-        "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+        "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+        "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+        "$image_subsystem/interfaces/innerkits:image_native",
       ]
     }
 

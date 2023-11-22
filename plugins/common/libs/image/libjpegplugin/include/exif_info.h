@@ -22,8 +22,6 @@
 #include <libexif/exif-data.h>
 
 #include "exif_maker_note.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 
 namespace OHOS {
 namespace ImagePlugin {

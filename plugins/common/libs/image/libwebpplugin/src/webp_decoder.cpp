@@ -15,7 +15,9 @@
 
 #include "webp_decoder.h"
 
+#include "hilog/log.h"
 #include "image_utils.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
@@ -178,7 +180,7 @@ uint32_t WebpDecoder::DecodeHeader()
             state_ = WebpDecodingState::BASE_INFO_PARSING;
         } else {
             state_ = WebpDecodingState::SOURCE_INITED;
-            HiLog::Error(LABEL, "decode image head, ret:%{public}u.", ret);
+            HiLog::Error(LABEL, "decode image head failed, ret:%{public}u.", ret);
         }
         return ret;
     }
@@ -293,7 +295,7 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
     if (status == VP8_STATUS_SUSPENDED && opts_.allowPartialImage) {
         state_ = WebpDecodingState::IMAGE_PARTIAL;
         context.ifPartialOutput = true;
-        HiLog::Error(LABEL, "this is partial image data to decode.");
+        HiLog::Info(LABEL, "this is partial image data to decode.");
         return SUCCESS;
     }
 

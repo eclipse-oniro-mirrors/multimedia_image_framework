@@ -15,7 +15,9 @@
 
 #include "png_decoder.h"
 
+#include "hilog/log.h"
 #include "image_utils.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
@@ -558,7 +560,7 @@ void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
 void PngDecoder::PngWarning(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Error(LABEL, "WarningExit message is null.");
+        HiLog::Debug(LABEL, "WarningExit message is null.");
         return;
     }
     HiLog::Warn(LABEL, "png warn %{public}s", message);
@@ -567,7 +569,7 @@ void PngDecoder::PngWarning(png_structp pngPtr, png_const_charp message)
 void PngDecoder::PngErrorMessage(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Error(LABEL, "PngErrorMessage message is null.");
+        HiLog::Debug(LABEL, "PngErrorMessage message is null.");
         return;
     }
     HiLog::Error(LABEL, "PngErrorMessage, message:%{public}s.", message);
@@ -576,10 +578,10 @@ void PngDecoder::PngErrorMessage(png_structp pngPtr, png_const_charp message)
 void PngDecoder::PngWarningMessage(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Error(LABEL, "PngWarningMessage message is null.");
+        HiLog::Debug(LABEL, "PngWarningMessage message is null.");
         return;
     }
-    HiLog::Error(LABEL, "PngWarningMessage, message:%{public}s.", message);
+    HiLog::Warn(LABEL, "PngWarningMessage, message:%{public}s.", message);
 }
 
 // image incremental decode Interface
@@ -775,7 +777,7 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     }
     if (rowNum < firstRow_ || rowNum > lastRow_ || interlacedComplete_) {
         HiLog::Error(LABEL, "ignore this row, rowNum:%{public}u,InterlacedComplete:%{public}u.", rowNum,
-                     interlacedComplete_);
+            interlacedComplete_);
         return;
     }
     png_bytep oldRow = pixelsData_ + (rowNum - firstRow_) * pngImageInfo_.rowDataSize;
@@ -783,28 +785,28 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     uint64_t needByteCount = static_cast<uint64_t>(pngStructPtr_->width) * sizeof(*oldRow);
     if (mollocByteCount < needByteCount) {
         HiLog::Error(LABEL, "malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
-                     static_cast<unsigned long long>(mollocByteCount), static_cast<unsigned long long>(needByteCount));
+            static_cast<unsigned long long>(mollocByteCount), static_cast<unsigned long long>(needByteCount));
         return;
     }
     png_progressive_combine_row(pngStructPtr_, oldRow, row);
     if (pass == 0) {
         // The first pass initializes all rows.
         if (outputRowsNum_ == rowNum - firstRow_) {
-            HiLog::Error(LABEL, "rowNum(%{public}u) - firstRow(%{public}u) = outputRow(%{public}u)", rowNum, firstRow_,
-                         outputRowsNum_);
+            HiLog::Info(LABEL, "rowNum(%{public}u) - firstRow(%{public}u) = outputRow(%{public}u)", rowNum, firstRow_,
+                outputRowsNum_);
             return;
         }
         outputRowsNum_++;
     } else {
         if (outputRowsNum_ == lastRow_ - firstRow_ + 1) {
-            HiLog::Error(LABEL, "lastRow_(%{public}u) + firstRow(%{public}u) + 1 = outputRow(%{public}u)", lastRow_,
-                         firstRow_, outputRowsNum_);
+            HiLog::Info(LABEL, "lastRow_(%{public}u) + firstRow(%{public}u) + 1 = outputRow(%{public}u)", lastRow_,
+                firstRow_, outputRowsNum_);
             return;
         }
         if (pngImageInfo_.numberPasses - 1 == pass && rowNum == lastRow_) {
             // Last pass, and we have read all of the rows we care about.
-            HiLog::Error(LABEL, "last pass:%{public}d, numberPasses:%{public}d, rowNum:%{public}d, lastRow:%{public}d.",
-                         pass, pngImageInfo_.numberPasses, rowNum, lastRow_);
+            HiLog::Info(LABEL, "last pass:%{public}d, numberPasses:%{public}d, rowNum:%{public}d, lastRow:%{public}d.",
+                pass, pngImageInfo_.numberPasses, rowNum, lastRow_);
             interlacedComplete_ = true;
         }
     }

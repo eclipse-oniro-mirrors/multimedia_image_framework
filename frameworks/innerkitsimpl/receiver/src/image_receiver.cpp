@@ -14,12 +14,14 @@
  */
 
 #include "image_receiver.h"
+
+#include "hilog/log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_utils.h"
-#include "hilog/log.h"
 #include "image_receiver_buffer_processor.h"
 #include "image_receiver_manager.h"
+#include "log_tags.h"
 
 namespace OHOS {
     namespace Media {

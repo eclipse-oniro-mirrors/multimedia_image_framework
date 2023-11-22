@@ -14,6 +14,9 @@
  */
 
 #include "jpeg_utils.h"
+
+#include "hilog/log.h"
+#include "log_tags.h"
 #include "securec.h"
 
 namespace OHOS {

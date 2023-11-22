@@ -18,8 +18,10 @@
 
 #include <algorithm>
 #include <string>
-#include "image_log.h"
+
+#include "hilog/log.h"
 #include "image_type.h"
+#include "log_tags.h"
 #include "matrix.h"
 
 static constexpr uint32_t IMAGE_SUCCESS = 0;                                     // success
@@ -41,6 +43,10 @@ namespace OHOS {
 namespace Media {
 struct BilinearPixelProcArgs;
 using BilinearPixelProcArgs = struct BilinearPixelProcArgs;
+
+using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel BASIC_TRANSFORMER_LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE,
+                                                                         "BasicTransformer" };
 
 static inline bool CheckOutOfRange(const Point &pt, const Size &size)
 {
@@ -109,10 +115,9 @@ struct PixmapInfo {
 
     void PrintPixmapInfo(const std::string &strFlag) const
     {
-        IMAGE_LOGD("[PixmapInfo][%{public}s][width, height:%{public}d, %{public}d]\
-                    [bufferSize:%{public}u][pixelFormat:%{public}d].",
-                   strFlag.c_str(), imageInfo.size.width, imageInfo.size.height, bufferSize,
-                   static_cast<int32_t>(imageInfo.pixelFormat));
+        HiLog::Debug(BASIC_TRANSFORMER_LABEL, "[PixmapInfo][%{public}s][width, height:%{public}d, %{public}d]"
+            "[bufferSize:%{public}u][pixelFormat:%{public}d].", strFlag.c_str(), imageInfo.size.width,
+            imageInfo.size.height, bufferSize, static_cast<int32_t>(imageInfo.pixelFormat));
     }
 };
 

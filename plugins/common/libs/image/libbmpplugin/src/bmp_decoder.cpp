@@ -14,7 +14,10 @@
  */
 
 #include "bmp_decoder.h"
+
+#include "hilog/log.h"
 #include "image_utils.h"
+#include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
@@ -344,7 +347,7 @@ PlAlphaType BmpDecoder::ConvertToAlphaType(SkAlphaType alphaType)
         case kUnpremul_SkAlphaType:
             return PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
         default:
-            HiLog::Error(LABEL, "known alpha type:%{public}d", alphaType);
+            HiLog::Error(LABEL, "unknown alpha type:%{public}d", alphaType);
             break;
     }
     return PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;

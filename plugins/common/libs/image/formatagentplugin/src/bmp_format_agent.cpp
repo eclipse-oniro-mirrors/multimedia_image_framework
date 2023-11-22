@@ -54,7 +54,7 @@ bool BmpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     if (memcmp(headerData, BMP_HEADER, headerSize) != 0) {
-        HiLog::Error(LABEL, "header stamp mismatch.");
+        HiLog::Info(LABEL, "header stamp mismatch.");
         return false;
     }
     return true;

@@ -16,9 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_PIXELCONVERTER_INCLUDE_PIXEL_CONVERT_ADAPTER_H_
 #define FRAMEWORKS_INNERKITSIMPL_PIXELCONVERTER_INCLUDE_PIXEL_CONVERT_ADAPTER_H_
 
-#include "hilog/log.h"
 #include "image_type.h"
-#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {

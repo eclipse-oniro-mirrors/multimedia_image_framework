@@ -14,13 +14,18 @@
  */
 
 #include "file_packer_stream.h"
+
 #include <cerrno>
+
 #include "directory_ex.h"
+#include "hilog/log.h"
 #include "image_utils.h"
+#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "FilePackerStream" };
 
 FilePackerStream::FilePackerStream(const std::string &filePath)
 {

@@ -80,6 +80,7 @@ static const uint8_t NUM_7 = 7;
 constexpr int32_t ANTIALIASING_SIZE = 350;
 PixelMap::~PixelMap()
 {
+    HiLog::Debug(LABEL, "PixelMap::~PixelMap");
     FreePixelMap();
 }
 
@@ -165,7 +166,7 @@ void PixelMap::SetTransformered(bool isTransformered)
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     if (data_ != nullptr) {
-        HiLog::Error(LABEL, "SetPixelsAddr error ");
+        HiLog::Info(LABEL, "SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
@@ -721,7 +722,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
-                HiLog::Error(LABEL, "set imageInfo context_ null");
+                HiLog::Error(LABEL, "set imageInfo failed, context_ is null");
                 return ERR_IMAGE_DATA_ABNORMAL;
             }
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
@@ -1029,12 +1030,12 @@ bool PixelMap::IsSameImage(const PixelMap &other)
     if (imageInfo_.size.width != other.imageInfo_.size.width ||
         imageInfo_.size.height != other.imageInfo_.size.height ||
         imageInfo_.pixelFormat != other.imageInfo_.pixelFormat || imageInfo_.alphaType != other.imageInfo_.alphaType) {
-        HiLog::Error(LABEL, "IsSameImage imageInfo check not OK.");
+        HiLog::Info(LABEL, "IsSameImage imageInfo is not same");
         return false;
     }
     uint64_t size = static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height;
     if (memcmp(data_, other.data_, size) != 0) {
-        HiLog::Error(LABEL, "IsSameImage mmemcmp check not OK.");
+        HiLog::Info(LABEL, "IsSameImage memcmp is not same");
         return false;
     }
     return true;
@@ -1042,7 +1043,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
 
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "ReadPixels by bufferSize");
+    ImageTrace imageTrace("ReadPixels by bufferSize");
     if (dst == nullptr) {
         HiLog::Error(LABEL, "read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -1066,7 +1067,6 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         }
         dst += rowDataSize_; // Move the destination buffer pointer to the next row
     }
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return SUCCESS;
 }
 
@@ -1291,7 +1291,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 
 uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
 {
-    StartTrace(HITRACE_TAG_ZIMAGE, "WritePixels");
+    ImageTrace imageTrace("WritePixels");
     if (source == nullptr || bufferSize < static_cast<uint64_t>(pixelsSize_)) {
         HiLog::Error(LABEL, "write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
                      static_cast<unsigned long long>(bufferSize), pixelsSize_);
@@ -1318,7 +1318,6 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
-    FinishTrace(HITRACE_TAG_ZIMAGE);
     return SUCCESS;
 }
 

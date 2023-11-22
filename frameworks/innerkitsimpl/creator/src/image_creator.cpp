@@ -14,12 +14,14 @@
  */
 
 #include "image_creator.h"
-#include "image_packer.h"
-#include "image_source.h"
-#include "image_utils.h"
+
 #include "hilog/log.h"
 #include "image_creator_buffer_processor.h"
 #include "image_creator_manager.h"
+#include "image_packer.h"
+#include "image_source.h"
+#include "image_utils.h"
+#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {
