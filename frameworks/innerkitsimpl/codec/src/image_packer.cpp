@@ -240,6 +240,9 @@ uint32_t ImagePacker::FinalizePacking()
 uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
 {
     uint32_t ret = FinalizePacking();
+    if (packerStream_ != nullptr) {
+        packerStream_->Flush();
+    }
     packedSize = (packerStream_ != nullptr) ? packerStream_->BytesWritten() : 0;
     return ret;
 }
