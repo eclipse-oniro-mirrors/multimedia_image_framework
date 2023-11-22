@@ -78,6 +78,9 @@ static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_7 = 7;
 
 constexpr int32_t ANTIALIASING_SIZE = 350;
+
+std::atomic<uint32_t> PixelMap::currentId = 0;
+
 PixelMap::~PixelMap()
 {
     HiLog::Debug(LABEL, "PixelMap::~PixelMap");
