@@ -49,11 +49,8 @@ static bool isUndefine(napi_env env, napi_value value)
 
 static std::shared_ptr<PixelMap> GetPixelMap(PixelMapNapi* napi, PixelMapNapiArgs* args)
 {
-    if (napi == nullptr) {
+    if (napi == nullptr || api->GetPixelNapiInner() == nullptr) {
         args->error = IMAGE_RESULT_DATA_ABNORMAL;
-        return nullptr;
-    } else if (napi->GetPixelNapiInner() == nullptr) {
-        args->error = IMAGE_RESULT_INDEX_INVALID;
         return nullptr;
     }
     return napi->GetPixelNapiInner();
