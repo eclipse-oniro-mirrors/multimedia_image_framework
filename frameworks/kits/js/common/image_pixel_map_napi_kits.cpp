@@ -12,11 +12,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "image_pixel_map_napi_kits.h"
+
 #include <map>
 #include <set>
 #include "pixel_map_napi.h"
 #include "pngpriv.h"
-#include "image_pixel_map_napi_kits.h"
 
 namespace {
     constexpr uint32_t NUM_0 = 0;
@@ -49,7 +51,7 @@ static bool isUndefine(napi_env env, napi_value value)
 
 static std::shared_ptr<PixelMap> GetPixelMap(PixelMapNapi* napi, PixelMapNapiArgs* args)
 {
-    if (napi == nullptr || api->GetPixelNapiInner() == nullptr) {
+    if (napi == nullptr || napi->GetPixelNapiInner() == nullptr) {
         args->error = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }

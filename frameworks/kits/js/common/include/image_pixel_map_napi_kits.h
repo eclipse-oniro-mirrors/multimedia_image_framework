@@ -68,7 +68,6 @@ enum {
 PixelMapNapi* PixelMapNapi_Unwrap(napi_env env, napi_value value);
 int32_t PixelMapNapiNativeEnvCall(int32_t mode, napi_env env, PixelMapNapiArgs* args);
 int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNapiArgs* args);
-
 #ifdef __cplusplus
 };
 #endif
