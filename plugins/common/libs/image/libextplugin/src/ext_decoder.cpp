@@ -246,6 +246,11 @@ static inline float Max(float a, float b)
 bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
 {
     if (info_.isEmpty() && !DecodeHeader()) {
+        HiLog::Error(LABEL, "DecodeHeader failed in GetScaledSize!");
+        return false;
+    }
+    if (info_.isEmpty()) {
+        HiLog::Error(LABEL, "empty image info in GetScaledSize!");
         return false;
     }
     float finalScale = scale;
@@ -265,6 +270,11 @@ bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
 
 bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) {
     if (info_.isEmpty() && !DecodeHeader()) {
+        HiLog::Error(LABEL, "DecodeHeader failed in GetHardwareScaledSize!");
+        return false;
+    }
+    if (info_.isEmpty()) {
+        HiLog::Error(LABEL, "empty image info in GetHardwareScaledSize!");
         return false;
     }
     float finalScale = scale;
@@ -516,9 +526,6 @@ bool ExtDecoder::ResetCodec()
 #ifdef JPEG_HW_DECODE_ENABLE
 uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 {
-    if (!ImageSystemProperties::GetHardWareDecodeEnabled()) {
-        return ERROR;
-    }
     if (HardWareDecode(context) == SUCCESS) {
         HiLog::Info(LABEL, "hardware decode success.");
         return SUCCESS;
@@ -531,8 +538,7 @@ uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef JPEG_HW_DECODE_ENABLE
-    if (codec_->getEncodedFormat() == SkEncodedImageFormat::kJPEG &&
-            DoHardWareDecode(context) == SUCCESS) {
+    if (IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
         return SUCCESS;
     }
 #endif
@@ -629,17 +635,15 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
-    JpegHardwareDecoder hwDecoder;
     // check if the hwDstInfo is equal to the dstInfo
     if (hwDstInfo_.width() != dstInfo_.width() || hwDstInfo_.height() != dstInfo_.height()) {
+        HiLog::Info(LABEL, "hwDstInfo(%{public}d, %{public}d) != dstInfo(%{public}d, %{public}d)",
+                    hwDstInfo_.width(), hwDstInfo_.height(), dstInfo_.width(), dstInfo_.height());
         return ERROR;
     }
+    JpegHardwareDecoder hwDecoder;
     orgImgSize_.width = info_.width();
     orgImgSize_.height = info_.height();
-    if (!hwDecoder.IsHardwareDecodeSupported("image/jpeg", orgImgSize_)) {
-        HiLog::Error(LABEL, "hardware decode unsupported.");
-        return ERROR;
-    }
 
     if (!CheckContext(dstInfo_)) {
         HiLog::Error(LABEL, "hardware decode not support this decode option.");

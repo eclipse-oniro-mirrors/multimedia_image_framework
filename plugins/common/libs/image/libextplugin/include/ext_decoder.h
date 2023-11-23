@@ -96,7 +96,7 @@ private:
     uint8_t *gifCache_ = nullptr;
     uint32_t gifCacheIndex_ = 0;
 
-    //hardware
+    // hardware
     OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
     SkImageInfo hwDstInfo_;
     PlSize orgImgSize_;
