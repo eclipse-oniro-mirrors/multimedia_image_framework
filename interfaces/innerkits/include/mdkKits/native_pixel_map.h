@@ -30,8 +30,7 @@ struct NativePixelMap_ {
 };
 #endif
 
-using namespace std;
-shared_ptr<OHOS::Media::PixelMap> OH_PixelMapNative_GetPixelMap(struct NativePixelMap_ *nativePixelMap)
+std::shared_ptr<OHOS::Media::PixelMap> OH_PixelMapNative_GetPixelMap(struct NativePixelMap_ *nativePixelMap)
 {
     return nativePixelMap == nullptr ? nullptr :
 	nativePixelMap->napi == nullptr ? nullptr :

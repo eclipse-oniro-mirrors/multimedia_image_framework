@@ -254,7 +254,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
         HiLog::Error(LABEL, "check pixelMap pointer fail");
-        errorCode = IMAGE_RESULT_ENCODE_FAILED;
+        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
     int fd = 0;

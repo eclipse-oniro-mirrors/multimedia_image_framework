@@ -194,7 +194,7 @@ static int32_t PixelMapNapiSetAlphaAble(PixelMapNapi* native, PixelMapNapiArgs* 
     } else if ((args->inNum0 == NUM_0) && !(alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
         pixelmap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
     } else {
-        return IMAGE_RESULT_INDEX_INVALID;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
 
     return IMAGE_RESULT_SUCCESS;
@@ -237,7 +237,7 @@ static int32_t PixelMapNapiSetOpacity(PixelMapNapi* native, PixelMapNapiArgs* ar
     }
 
     if (pixelmap->SetAlpha(args->inFloat0) != IMAGE_RESULT_SUCCESS) {
-        return IMAGE_RESULT_INDEX_INVALID;
+        return IMAGE_RESULT_BAD_PARAMETER;
     }
     return IMAGE_RESULT_SUCCESS;
 }
