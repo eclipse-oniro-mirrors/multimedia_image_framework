@@ -129,7 +129,7 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
     float widthScale = static_cast<float>(targetWidth) / static_cast<float>(srcWidth);
     float heightScale = static_cast<float>(targetHeight) / static_cast<float>(srcHeight);
     float scale = max(widthScale, heightScale);
-    if (pixelMap.IsAstc() && scale != 0) {
+    if (pixelMap.IsAstc() && scale > 0) {
         TransformData transformData;
         pixelMap.GetTransformData(transformData);
         transformData.scaleX *= scale;
@@ -139,6 +139,11 @@ bool PostProc::CenterScale(const Size &size, PixelMap &pixelMap)
         transformData.cropWidth = targetWidth / scale;
         transformData.cropHeight = targetHeight / scale;
         pixelMap.SetTransformData(transformData);
+        ImageInfo imageInfo;
+        pixelMap.GetImageInfo(imageInfo);
+        imageInfo.size.width = targetWidth;
+        imageInfo.size.height = targetHeight;
+        pixelMap.SetImageInfo(imageInfo, true);
         return true;
     }
     if (!ScalePixelMap(scale, scale, pixelMap)) {
