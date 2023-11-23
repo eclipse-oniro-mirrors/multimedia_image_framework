@@ -100,6 +100,7 @@ struct PixelDecodeOptions {
     bool editable = false;
     PlFillColor plFillColor;
     PlSVGResize plSVGResize;
+    PlColorSpaceInfo plDesiredColorSpace;
 };
 
 class AbsImageDecoder {

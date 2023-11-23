@@ -206,6 +206,7 @@ public:
     {
         return grColorSpace_;
     }
+    NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 

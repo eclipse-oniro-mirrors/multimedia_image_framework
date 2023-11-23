@@ -2608,6 +2608,58 @@ uint32_t PixelMap::crop(const Rect &rect)
         }
         return *grColorSpace_;
     }
+
+static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
+    const OHOS::ColorManager::ColorSpace &dst)
+{
+    auto skSrc = src.ToSkColorSpace();
+    auto skDst = dst.ToSkColorSpace();
+    return SkColorSpace::Equals(skSrc.get(), skDst.get());
+}
+
+uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
+{
+    if (grColorSpace_ != nullptr && isSameColorSpace(*grColorSpace_, grColorSpace)) {
+        return SUCCESS;
+    }
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    // Build sk source infomation
+    SkTransInfo src;
+    src.info = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
+    uint64_t rowStride = src.info.minRowBytes();
+    uint8_t* srcData = data_;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
+        rowStride = sbBuffer->GetStride();
+    }
+    srcData = static_cast<uint8_t *>(GetWritablePixels());
+#endif
+    src.bitmap.installPixels(src.info, srcData, rowStride);
+    // Build sk target infomation
+    SkTransInfo dst;
+    dst.info = ToSkImageInfo(imageInfo, grColorSpace.ToSkColorSpace());
+    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(),
+        "Trans ImageData", {dst.info.width(), dst.info.height()}};
+    auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
+    if (m == nullptr) {
+        HiLog::Error(LABEL, "applyColorSpace CreateMemory failed");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    // Transfor pixels by readPixels
+    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
+        m->Release();
+        HiLog::Error(LABEL, "ReadPixels failed");
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    // Restore target infomation into pixelmap
+    ToImageInfo(imageInfo, dst.info);
+    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace());
+    SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
+    SetImageInfo(imageInfo, true);
+    return SUCCESS;
+}
 #endif
 } // namespace Media
 } // namespace OHOS
