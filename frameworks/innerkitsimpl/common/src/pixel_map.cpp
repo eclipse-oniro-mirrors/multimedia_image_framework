@@ -516,7 +516,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
 }
 
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
-    const Rect &srcRect, PixelMap &dstPixelMap, int &error)
+    const Rect &srcRect, PixelMap &dstPixelMap)
 {
     int error;
     return SourceCropAndConvert(source, srcImageInfo, dstImageInfo, srcRect, dstPixelMap, error);
