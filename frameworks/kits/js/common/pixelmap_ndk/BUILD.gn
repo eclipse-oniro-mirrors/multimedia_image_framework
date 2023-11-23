@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
 
@@ -22,6 +23,7 @@ ohos_shared_library("pixelmap_ndk") {
     debug = false
   }
   include_dirs = [
+    "${image_subsystem}/interfaces/innerkits/include/mdkKits",
     "include",
     "//foundation/arkui/napi/interfaces/inner_api",
     "//foundation/arkui/napi/interfaces/kits",
