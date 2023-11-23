@@ -1538,15 +1538,12 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
 static void CopyColorSpaceToPlugin(const ColorSpaceInfo &src, PlColorSpaceInfo &dst)
 {
     dst.isValidColorSpace = src.isValidColorSpace;
-    for (int i = NUM_0; i < ColorSpaceInfo::XYZ_SIZE; i++)
-    {
-        for (int j = NUM_0; j < ColorSpaceInfo::XYZ_SIZE; j++)
-        {
+    for (int i = NUM_0; i < ColorSpaceInfo::XYZ_SIZE; i++) {
+        for (int j = NUM_0; j < ColorSpaceInfo::XYZ_SIZE; j++) {
             dst.xyz[i][j] = src.xyz[i][j];
         }
     }
-    for (int k = NUM_0; k < ColorSpaceInfo::XYZ_SIZE; k++)
-    {
+    for (int k = NUM_0; k < ColorSpaceInfo::XYZ_SIZE; k++) {
         dst.transferFn[k] = src.transferFn[k];
     }
 }
