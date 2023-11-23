@@ -112,6 +112,9 @@ ohos_shared_library("extplugin") {
     "src/plugin_export.cpp",
     "src/texture_encode/astc_codec.cpp",
   ]
+  if (enable_jpeg_hw_decode) {
+    sources += [ "src/hardware/jpeg_hw_decoder.cpp" ]
+  }
   configs = [
     ":plugins_includes",
     ":skia_includes",
@@ -123,6 +126,12 @@ ohos_shared_library("extplugin") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${graphic_subsystem}/interfaces/inner_api/surface",
+    "${image_subsystem}/../../../drivers/peripheral/base/",
+    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
+    "${image_subsystem}/../../../third_party/skia/",
+    "${image_subsystem}/../../../third_party/skia/include/codec/",
+    "${image_subsystem}/../../../third_party/skia/include/core/",
+    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
     "//third_party/astc-encoder/Source",
   ]
   if (use_mingw_win) {
@@ -159,6 +168,21 @@ ohos_shared_library("extplugin") {
       "graphic_2d:color_manager",
       "hilog:libhilog",
     ]
+
+    if (enable_jpeg_hw_decode) {
+      external_deps += [
+        "drivers_interface_codec:image_idl_headers",
+        "drivers_interface_codec:libimage_proxy_1.0",
+        "drivers_interface_display:display_buffer_idl_headers",
+        "drivers_interface_display:display_composer_idl_headers",
+        "drivers_interface_display:libdisplay_buffer_hdi_impl",
+        "drivers_interface_display:libdisplay_composer_hdi_impl",
+        "hdf_core:libhdf_utils",
+        "hdf_core:libhdi",
+        "ipc:ipc_single",
+      ]
+      defines = [ "JPEG_HW_DECODE_ENABLE" ]
+    }
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   subsystem_name = "multimedia"

@@ -17,13 +17,13 @@
 #include <algorithm>
 #include <chrono>
 #include <securec.h>
+#include "hardware/jpeg_hw_decoder.h"
 #include "hardware/jpeg_marker_define.h"
 #include "media_errors.h"
 #include "hdf_base.h"
 #include "src/codec/SkJpegUtility.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "src/codec/SkJpegCodec.h"
-#include "hardware/jpeg_hw_decoder.h"
 
 
 namespace OHOS::ImagePlugin {
