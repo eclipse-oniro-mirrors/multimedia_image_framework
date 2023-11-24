@@ -30,6 +30,7 @@
           "hichecker",
           "hitrace",
           "hilog",
+          "hisysevent",
           "ipc",
           "napi",
           "zlib",

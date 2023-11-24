@@ -228,6 +228,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 uint32_t ImagePacker::FinalizePacking()
 {
     ImageTrace imageTrace("ImagePacker::FinalizePacking");
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap_);
     return DoEncodingFunc([](ImagePlugin::AbsImageEncoder* encoder) {
         auto res = encoder->FinalizeEncode();
         if (res != SUCCESS) {

@@ -19,6 +19,7 @@
 
 #include "ext_pixel_convert.h"
 #include "hilog/log.h"
+#include "hisysevent.h"
 #include "image_utils.h"
 #include "log_tags.h"
 #include "media_errors.h"
@@ -70,6 +71,11 @@ const static std::string HW_MNOTE_TAG_SCENE_NIGHT_CONF = "HwMnoteSceneNightConf"
 const static std::string HW_MNOTE_TAG_SCENE_TEXT_CONF = "HwMnoteSceneTextConf";
 const static std::string HW_MNOTE_TAG_FACE_COUNT = "HwMnoteFaceCount";
 const static std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
+// SUCCESS is existed in both OHOS::HiviewDFX and OHOS::Media
+#define SUCCESS OHOS::Media::SUCCESS
+const static std::string DEFAULT_PACKAGE_NAME = "entry";
+const static std::string DEFAULT_VERSION_ID = "1";
+const static std::string UNKNOWN_IMAGE = "unknown";
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -478,6 +484,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         rowStride = sbBuffer->GetStride();
     }
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
+    ReportImageType(skEncodeFormat);
     HiLog::Debug(LABEL, "decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
         return GifDecode(index, context, rowStride);
@@ -497,6 +504,59 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             byteCount, dstInfo_.width() * dstInfo_.height());
     }
     return SUCCESS;
+}
+
+static std::string GetFormatStr(SkEncodedImageFormat format)
+{
+    switch (format) {
+        case SkEncodedImageFormat::kBMP:
+            return "bmp";
+        case SkEncodedImageFormat::kGIF:
+            return "gif";
+        case SkEncodedImageFormat::kICO:
+            return "ico";
+        case SkEncodedImageFormat::kJPEG:
+            return "jpeg";
+        case SkEncodedImageFormat::kPNG:
+            return "png";
+        case SkEncodedImageFormat::kWBMP:
+            return "wbmp";
+        case SkEncodedImageFormat::kWEBP:
+            return "webp";
+        case SkEncodedImageFormat::kPKM:
+            return "pkm";
+        case SkEncodedImageFormat::kKTX:
+            return "ktx";
+        case SkEncodedImageFormat::kASTC:
+            return "astc";
+        case SkEncodedImageFormat::kDNG:
+            return "dng";
+        case SkEncodedImageFormat::kHEIF:
+            return "heif";
+        case SkEncodedImageFormat::kAVIF:
+            return "avif";
+        default:
+            return UNKNOWN_IMAGE;
+    }
+}
+
+void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
+{
+    HiLog::Debug(LABEL, "ExtDecoder::ReportImageType format %{public}d start", skEncodeFormat);
+    static constexpr char IMAGE_FWK_UE[] = "IMAGE_FWK_UE";
+    int32_t ret = HiSysEventWrite(
+            IMAGE_FWK_UE,
+            "DECODED_IMAGE_TYPE_STATISTICS",
+            HiSysEvent::EventType::STATISTIC,
+            "PNAMEID", DEFAULT_PACKAGE_NAME,
+            "PVERSIONID", DEFAULT_VERSION_ID,
+            "IMAGE_TYPE", GetFormatStr(skEncodeFormat)
+    );
+    if (SUCCESS != ret) {
+        HiLog::Debug(LABEL, "ExtDecoder::ReportImageType failed, ret = %{public}d", ret);
+        return;
+    }
+    HiLog::Debug(LABEL, "ExtDecoder::ReportImageType format %{public}d success", skEncodeFormat);
 }
 
 uint32_t ExtDecoder::GifDecode(uint32_t index, DecodeContext &context, const uint64_t rowStride)
@@ -829,7 +889,7 @@ uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::st
 {
     if (exifInfo_.makerInfoTagValueMap.find(key) != exifInfo_.makerInfoTagValueMap.end()) {
         value = exifInfo_.makerInfoTagValueMap[key];
-        return Media::SUCCESS;
+        return SUCCESS;
     }
     return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
@@ -877,7 +937,7 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
         HiLog::Debug(LABEL, "[GetFilterArea]: get app1 area size");
         appSize += APP1_SIZE_H_OFF;
         auto ret = exifInfo_.GetFilterArea(buffer, (appSize < size) ? appSize : size, privacyType, ranges);
-        if (ret != Media::SUCCESS) {
+        if (ret != SUCCESS) {
             HiLog::Error(LABEL, "[GetFilterArea]: failed to get area %{public}d", ret);
         }
         return ret;

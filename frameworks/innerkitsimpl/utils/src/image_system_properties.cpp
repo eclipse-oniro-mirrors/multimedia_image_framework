@@ -67,5 +67,10 @@ bool ImageSystemProperties::GetAntiAliasingEnabled()
     return false;
 #endif
 }
+
+bool ImageSystemProperties::GetDumpImageEnabled()
+{
+    return system::GetBoolParameter("persist.multimedia.image.dumpimage.enabled", false);
+}
 } // namespace Media
 } // namespace OHOS

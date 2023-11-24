@@ -27,6 +27,7 @@ namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
 constexpr uint32_t MALLOC_MAX_LENTH = 0x40000000;
+class PixelMap;
 
 class ImageUtils {
 public:
@@ -45,9 +46,13 @@ public:
     static void ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount);
     static int32_t SurfaceBuffer_Reference(void* buffer);
     static int32_t SurfaceBuffer_Unreference(void* buffer);
+    static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap);
+    static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat");
 
 private:
     static uint32_t RegisterPluginServer();
+    static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
+    static std::string GetLocalTime();
 };
 } // namespace Media
 } // namespace OHOS
