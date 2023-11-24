@@ -684,7 +684,6 @@ STATIC_COMPLETE_FUNC(PackToFile)
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<ImagePackerAsyncContext*>(data);
-    context->status = SUCCESS;
     CommonCallbackRoutine(env, context, result);
 }
 
