@@ -22,14 +22,14 @@ using namespace testing::ext;
 using namespace OHOS::ImagePlugin;
 using namespace OHOS::HDI::Codec::Image::V1_0;
 
-class JpegHwDecoderUnitTest : public testing::Test {
+class JpegHwDecoderTest : public testing::Test {
 public:
     static constexpr char JPEG_FORMAT[] = "image/jpeg";
     static constexpr char HEIF_FORMAT[] = "image/heif";
     static constexpr char TEST_JPEG_IMG[] = "/data/local/tmp/image/test_hw.jpg";
 };
 
-HWTEST_F(JpegHwDecoderUnitTest, supported_img_inner_size, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, supported_img_inner_size, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -40,7 +40,7 @@ HWTEST_F(JpegHwDecoderUnitTest, supported_img_inner_size, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, supported_img_lower_bound_size, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, supported_img_lower_bound_size, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -51,7 +51,7 @@ HWTEST_F(JpegHwDecoderUnitTest, supported_img_lower_bound_size, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, supported_img_upper_bound_size, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, supported_img_upper_bound_size, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -62,7 +62,7 @@ HWTEST_F(JpegHwDecoderUnitTest, supported_img_upper_bound_size, TestSize.Level1)
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_empty_format, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, unsupported_img_empty_format, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -73,7 +73,7 @@ HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_empty_format, TestSize.Level1)
     ASSERT_FALSE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_unknown_format, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, unsupported_img_unknown_format, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -84,7 +84,7 @@ HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_unknown_format, TestSize.Level1)
     ASSERT_FALSE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_size_too_small, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_small, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -95,7 +95,7 @@ HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_size_too_small, TestSize.Level1)
     ASSERT_FALSE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_size_too_big, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_big, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
@@ -106,7 +106,7 @@ HWTEST_F(JpegHwDecoderUnitTest, unsupported_img_size_too_big, TestSize.Level1)
     ASSERT_FALSE(ret);
 }
 
-HWTEST_F(JpegHwDecoderUnitTest, decode_ok, TestSize.Level1)
+HWTEST_F(JpegHwDecoderTest, decode_ok, TestSize.Level1)
 {
     CommandOpt opt;
     opt.width = 3456;
