@@ -38,6 +38,14 @@ public:
     {
         return nativePixelMap_;
     }
+    void setPixelNapiEditable(bool isEditable)
+    {
+        isPixelNapiEditable = isEditable;
+    }
+    bool GetPixelNapiEditable()
+    {
+        return isPixelNapiEditable;
+    }
 
     bool IsLockPixelMap();
     bool LockPixelMap();
@@ -95,6 +103,7 @@ private:
     std::shared_ptr<PixelMap> nativePixelMap_;
     int32_t lockCount = 0;
     bool isRelease = false;
+    bool isPixelNapiEditable = true;
 };
 } // namespace Media
 } // namespace OHOS

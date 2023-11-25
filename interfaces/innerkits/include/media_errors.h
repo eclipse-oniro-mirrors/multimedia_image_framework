@@ -144,6 +144,7 @@ const uint32_t IMAGE_RESULT_ALPHA_TYPE_ERROR = BASE_MEDIA_ERR_OFFSET + 175; // h
 const uint32_t IMAGE_RESULT_INDEX_INVALID = BASE_MEDIA_ERR_OFFSET + 176; // invalid index
 
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
+const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 }  // namespace Media
 }  // namespace OHOS
 #endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H_
