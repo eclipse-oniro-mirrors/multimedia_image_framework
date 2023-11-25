@@ -132,15 +132,6 @@ static const uint8_t ASTC_HEADER_DIM_Y = 10;
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 
-static inline void trace(std::string name = "")
-{
-#if !defined(_WIN32) && !defined(_APPLE)
-    ImageTrace imageTrace(name);
-#else
-    (void) (name);
-#endif
-}
-
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     HiLog::Debug(LABEL, "[ImageSource]get supported image type.");
@@ -181,7 +172,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
     std::function<unique_ptr<SourceStream>(void)> stream,
     const SourceOptions &opts, uint32_t &errorCode, const string traceName)
 {
-    trace(traceName);
+    ImageTrace imageTrace(traceName);
     HiLog::Debug(LABEL, "[ImageSource]DoImageSourceCreate IN.");
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
@@ -325,6 +316,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         return CreatePixelMapForYUV(errorCode);
     }
 
+    DumpInputData();
     return CreatePixelMap(index, opts, errorCode);
 }
 
@@ -476,7 +468,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     const DecodeOptions &opts, uint32_t &errorCode)
 {
-    trace("CreatePixelMapExtended");
+    ImageTrace imageTrace("CreatePixelMapExtended");
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
@@ -604,6 +596,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     } else if (opts_.rotateNewDegrees != INT_ZERO) {
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
     if (opts_.desiredSize.height != pixelMap->GetHeight() ||
         opts_.desiredSize.width != pixelMap->GetWidth()) {
         float xScale = static_cast<float>(opts_.desiredSize.width)/pixelMap->GetWidth();
@@ -611,6 +604,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         if (!pixelMap->resize(xScale, yScale)) {
             return nullptr;
         }
+        // dump pixelMap after resize
+        ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
     }
     pixelMap->SetEditable(saveEditable);
     return pixelMap;
@@ -880,7 +875,7 @@ DecodeEvent ImageSource::GetDecodeEvent()
 
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
-    trace("GetImageInfo by index");
+    ImageTrace imageTrace("GetImageInfo by index");
     uint32_t ret = SUCCESS;
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto iter = GetValidImageStatus(index, ret);
@@ -1920,6 +1915,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 {
     HiLog::Debug(LABEL, "[ImageSource]CreatePixelMapForYUV IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
         "%{public}d)", sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
+    DumpInputData("yuv");
 
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr) {
@@ -2008,7 +2004,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 }
 #else
 {
-    trace("CreatePixelMapForASTC");
+    ImageTrace imageTrace("CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
 
     ImageInfo info;
@@ -2077,6 +2073,7 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts,
     uint32_t &errorCode)
 {
+    DumpInputData();
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "[ImageSource]CreatePixelMapList get frame count error.");
@@ -2149,6 +2146,34 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 
     return frameCount;
 }
+
+void ImageSource::DumpInputData(const std::string& fileSuffix)
+{
+    if (sourceStreamPtr_ == nullptr) {
+        HiLog::Info(LABEL, "ImageSource::DumpInputData failed, streamPtr is null");
+    }
+
+    std::string fileFormat;
+    for (auto& it : formatAgentMap_) {
+        if (SUCCESS == CheckEncodedFormat(*(it.second))) {
+            fileFormat = it.first;
+            break;
+        }
+    }
+
+    uint8_t* data = sourceStreamPtr_->GetDataPtr();
+    size_t size = sourceStreamPtr_->GetStreamSize();
+
+    if (fileFormat.empty()) {
+        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix);
+    } else {
+        // fileFormat is like "image/jpeg", "image/png"...
+        std::string formatPrefix = "image/";
+        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size,
+            fileFormat.substr(formatPrefix.size()));
+    }
+}
+
 #ifdef IMAGE_PURGEABLE_PIXELMAP
 size_t ImageSource::GetSourceSize() const
 {

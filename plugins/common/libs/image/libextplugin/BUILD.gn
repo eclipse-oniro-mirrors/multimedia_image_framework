@@ -167,6 +167,7 @@ ohos_shared_library("extplugin") {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
     ]
 
     if (enable_jpeg_hw_decode) {

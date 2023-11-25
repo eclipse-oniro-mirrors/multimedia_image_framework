@@ -142,6 +142,7 @@ const uint32_t IMAGE_RESULT_HW_DECODE_FAILED = BASE_MEDIA_ERR_OFFSET + 173; // h
 const uint32_t IMAGE_RESULT_ALLOCATER_TYPE_ERROR = BASE_MEDIA_ERR_OFFSET + 174; // hard decode failed
 const uint32_t IMAGE_RESULT_ALPHA_TYPE_ERROR = BASE_MEDIA_ERR_OFFSET + 175; // hard decode failed
 const uint32_t IMAGE_RESULT_INDEX_INVALID = BASE_MEDIA_ERR_OFFSET + 176; // invalid index
+const uint32_t IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED = BASE_MEDIA_ERR_OFFSET + 177; // save data to file failed
 
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
 }  // namespace Media

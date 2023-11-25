@@ -68,6 +68,11 @@ bool ImageSystemProperties::GetAntiAliasingEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetDumpImageEnabled()
+{
+    return system::GetBoolParameter("persist.multimedia.image.dumpimage.enabled", false);
+}
+
 bool ImageSystemProperties::GetHardWareDecodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)

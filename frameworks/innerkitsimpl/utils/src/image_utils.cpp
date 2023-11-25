@@ -22,6 +22,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <fstream>
+#include <sstream>
 
 #include "__config"
 #include "hilog/log.h"
@@ -37,6 +39,8 @@
 #include "vector"
 #include "image_trace.h"
 #include "hitrace_meter.h"
+#include "image_system_properties.h"
+#include "pixel_map.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #else
@@ -65,6 +69,7 @@ static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
@@ -348,6 +353,66 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
     ref->DecStrongRef(ref);
     return SUCCESS;
+}
+
+void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
+{
+    if (!ImageSystemProperties::GetDumpImageEnabled()) {
+        return;
+    }
+    if (pixelMap == nullptr) {
+        HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
+    }
+
+    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
+    int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
+        std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
+        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + ".dat";
+    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
+        HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled failed");
+        return;
+    }
+    HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
+}
+
+void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix)
+{
+    if (!ImageSystemProperties::GetDumpImageEnabled()) {
+        return;
+    }
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_data_total" + std::to_string(totalSize) +
+        "." + fileSuffix;
+    if (SUCCESS != SaveDataToFile(fileName, data, totalSize)) {
+        HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled failed");
+        return;
+    }
+    HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
+}
+
+uint32_t ImageUtils::SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize)
+{
+    std::ofstream outFile(fileName, std::ofstream::out);
+    if (!outFile.is_open()) {
+        HiLog::Info(LABEL, "ImageUtils::SaveDataToFile write error, path=%{public}s", fileName.c_str());
+        return IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED;
+    }
+    outFile.write(data, totalSize);
+    return SUCCESS;
+}
+
+std::string ImageUtils::GetLocalTime()
+{
+    // time string : "year-month-day hour_minute_second.millisecond", ':' is not supported in windows file name
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&t);
+
+    std::stringstream ss;
+    int millSecondWidth = 3;
+    ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
+    return ss.str();
 }
 } // namespace Media
 } // namespace OHOS

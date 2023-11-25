@@ -22,16 +22,21 @@ static constexpr int32_t FORMAT_BUF_SIZE = 128;
 
 ImageTrace::ImageTrace(const std::string &title) : title_(title)
 {
+#if !defined(_WIN32) && !defined(_APPLE)
     StartTrace(HITRACE_TAG_ZIMAGE, title);
+#endif
 }
 
 ImageTrace::~ImageTrace()
 {
+#if !defined(_WIN32) && !defined(_APPLE)
     FinishTrace(HITRACE_TAG_ZIMAGE);
+#endif
 }
 
 ImageTrace::ImageTrace(const char *fmt, ...)
 {
+#if !defined(_WIN32) && !defined(_APPLE)
     if (fmt == nullptr) {
         title_ = "ImageTraceFmt Param invalid";
     } else {
@@ -47,6 +52,7 @@ ImageTrace::ImageTrace(const char *fmt, ...)
         }
     }
     StartTrace(HITRACE_TAG_ZIMAGE, title_);
+#endif
 }
 } // namespace Media
 } // namespace OHOS

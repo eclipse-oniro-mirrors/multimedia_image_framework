@@ -259,6 +259,7 @@ private:
                                                      uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
                                                     PixelMapAddrInfos &addrInfos, uint32_t &errorCode);
+    void DumpInputData(const std::string& fileSuffix = "dat");
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;
