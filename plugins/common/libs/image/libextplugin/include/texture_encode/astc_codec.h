@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H_
-#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H_
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H
 #include "abs_image_encoder.h"
+#include "texture_type.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -25,6 +26,8 @@ public:
     ~AstcCodec() {};
     uint32_t SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap);
     uint32_t ASTCEncode();
+    uint32_t AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
+                                int32_t blocksNum, int32_t outSize);
 
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
@@ -34,4 +37,4 @@ private:
 };
 } // namespace ImagePlugin
 } // namespace OHOS
-#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H_
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_ASTC_ENCODE_H

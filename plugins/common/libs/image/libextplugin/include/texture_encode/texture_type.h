@@ -13,13 +13,13 @@
  * limitations under the License.
  */
 
-#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H_
-#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H_
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H
 
 #include "astcenc.h"
 
 namespace OHOS {
-namespace Media {
+namespace ImagePlugin {
 typedef struct TextureEncodeOptionsType {
     int32_t width_;
     int32_t height_;
@@ -41,7 +41,7 @@ typedef struct AstcEncoderInfo {
     int32_t *mse[RGBA_COM + 1];
 #endif
 } AstcEncoder;
-} // namespace Media
+} // namespace ImagePlugin
 } // namespace OHOS
 
-#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H_
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H

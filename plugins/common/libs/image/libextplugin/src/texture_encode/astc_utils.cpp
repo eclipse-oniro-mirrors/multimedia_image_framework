@@ -21,16 +21,11 @@ namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "AstcUtils"};\
-
 constexpr uint8_t BIT_SHIFT_8BITS = 8;
 constexpr uint8_t BIT_SHIFT_16BITS = 16;
 constexpr uint8_t BIT_SHIFT_24BITS = 24;
-constexpr uint8_t BYTES_MASK = 0xFF;
 
 constexpr uint8_t HALF_BYTES_MASK = 0xF;
-constexpr uint8_t GLOBAL_WH_NUM_CL = 2;
-
 // Hash seed used for generate a mixed hash value
 constexpr uint8_t HASH_MAGIC_SEED_BIT = 15;
 constexpr uint32_t HASH_MAGIC_SEED = 0xEEDE0891;
@@ -69,9 +64,6 @@ constexpr uint8_t MASK_LOW7BIT = 0x3F;
 constexpr uint8_t PARTITION_COUNT_1 = 1;
 constexpr uint8_t PARTITION_COUNT_2 = 2;
 constexpr uint8_t PARTITION_COUNT_3 = 3;
-constexpr uint8_t PARTITION_COUNT_4 = 4;
-
-constexpr uint8_t SEED_NUM = 12;
 }
 
 uint32_t AstcUtils::SeedMixHash(uint32_t seed)

@@ -95,6 +95,66 @@ config("mac_config") {
   }
 }
 
+ohos_shared_library("textureEncoderCL") {
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+  }
+  sources = [
+    "src/texture_encode/astc_utils.cpp",
+    "src/texture_encode/image_compressor.cpp",
+  ]
+  configs = [
+    ":plugins_includes",
+    ":skia_includes",
+    ":third_part_includes",
+  ]
+  include_dirs = [
+    "include",
+    "include/texture_encode",
+    "${image_subsystem}/plugins/manager/include/image",
+    "${third_party_root}/bounds_checking_function/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
+  ]
+  if (use_mingw_win) {
+    configs += [ ":win_config" ]
+  } else if (use_clang_mac) {
+    configs += [ ":mac_config" ]
+  } else {
+    include_dirs += [ "${commonlibrary_subsystem}/base/include" ]
+    deps = [
+      "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+      "${image_subsystem}/interfaces/innerkits:image_native",
+      "${image_subsystem}/plugins/manager:pluginmanager",
+      "//third_party/bounds_checking_function:libsec_static",
+      "//third_party/opencl-headers:libcl",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "graphic_2d:color_manager",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+    ]
+  }
+  cflags = [
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-O3",
+    "-mfpu=neon",
+  ]
+  cflags_cc = [
+    "-O3",
+    "-mfpu=neon",
+  ]
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+  defines = [ "__aarch64__" ]
+}
+
 ohos_shared_library("extplugin") {
   if (!use_clang_android && !use_clang_ios) {
     sanitize = {
@@ -133,6 +193,12 @@ ohos_shared_library("extplugin") {
     "${image_subsystem}/../../../third_party/skia/include/core/",
     "${image_subsystem}/../../../third_party/libjpeg-turbo/",
     "//third_party/astc-encoder/Source",
+    "//third_party/skia",
+    "//third_party/skia/include/codec",
+    "//third_party/skia/include/core",
+    "//third_party/libjpeg-turbo",
+    "${image_subsystem}/../../../drivers/peripheral/base",
+    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include",
   ]
   if (use_mingw_win) {
     configs += [ ":win_config" ]
@@ -156,10 +222,12 @@ ohos_shared_library("extplugin") {
     include_dirs += [ "${commonlibrary_subsystem}/base/include" ]
     deps = [
       ":exifhelper",
+      ":textureEncoderCL",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
       "//third_party/astc-encoder:astc_encoder_shared",
+      "//third_party/opencl-headers:libcl",
     ]
     deps += skia_platform
 
@@ -184,7 +252,11 @@ ohos_shared_library("extplugin") {
       defines = [ "JPEG_HW_DECODE_ENABLE" ]
     }
   }
-  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  cflags = [
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-O3",
+  ]
+  cflags_cc = [ "-O3" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
