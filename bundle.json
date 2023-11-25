@@ -51,7 +51,8 @@
           "json",
           "skia",
           "zlib",
-          "astc-encoder"
+          "astc-encoder",
+          "opencl-headers"
         ]
       },
       "build": {

@@ -23,6 +23,7 @@
 
 namespace OHOS {
 namespace Media {
+constexpr uint8_t SEED_NUM = 12;
 class AstcUtils {
 public:
     /**
@@ -57,7 +58,7 @@ public:
      * @return The selected partition index (0 to 3) for the block.
      */
     static uint8_t CalPartition(int32_t blockWidth, int32_t partitionA, int32_t partitionB,
-        int32_t partitionC, int32_t partitionD)
+        int32_t partitionC, int32_t partitionD);
 
     /**
      * @brief Selects a partition index based on the given parameters.

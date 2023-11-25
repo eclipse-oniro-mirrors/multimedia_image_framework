@@ -26,16 +26,13 @@
 #include <string.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-
 #include "astc_utils.h"
-#include "hitrace_meter.h"
-#include "opencl_wrapper.h"
 
 #define USE_OPENCL_WRAPPER
+#include "opencl_wrapper.h"
+
 namespace OHOS {
 namespace Media {
-const char *g_programSource = R"()";
-
 constexpr int TEXTURE_HEAD_BYTES = 16;
 constexpr int MAGIC_FILE_CONSTANT = 0x5CA1AB13;
 constexpr int DIM = 4;
@@ -49,7 +46,7 @@ class ImageCompressor {
 public:
     static std ::shared_ptr<ImageCompressor> GetInstance();
     static const int32_t releaseTimeMs = TIMEUS_UNIT;
-    
+
     bool CanCompress();
     bool CreateKernel();
     bool TextureEncodeCL(uint8_t *data, int32_t stride, int32_t width, int32_t height, uint8_t *buffer);
@@ -59,7 +56,7 @@ private:
     static std::shared_ptr<ImageCompressor> instance_;
     static std::mutex instanceMutex_;
     size_t sourceSize_;
- 
+
     bool clOk_;
     bool switch_;
     void Init();
@@ -80,7 +77,7 @@ private:
         198, 204, 210, 216, 226, 232, 239, 269, 273, 293, 324, 344, 348, 359, 389, 394, 441, 443, 475, 476, 479, 496,
         511, 567, 593, 594, 600, 601, 666, 684, 703, 726, 730, 732, 756, 796, 799, 828, 958, 959, 988, 993
     };
-   
+
     struct PartInfo {
         int32_t partid;
         uint32_t bitmaps[BIT_MAP_NUM];

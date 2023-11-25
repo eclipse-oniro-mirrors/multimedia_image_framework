@@ -81,5 +81,14 @@ bool ImageSystemProperties::GetHardWareDecodeEnabled()
     return false;
 #endif
 }
+
+bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.AstcHardWareEncode.enabled", false);
+#else
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

@@ -25,6 +25,7 @@ public:
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();
     static bool GetHardWareDecodeEnabled();
+    static bool GetAstcHardWareEncodeEnabled();
 private:
     ImageSystemProperties() = default;
 };

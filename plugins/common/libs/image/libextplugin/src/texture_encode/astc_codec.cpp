@@ -14,8 +14,9 @@
  */
 
 #include "astc_codec.h"
+#include "image_compressor.h"
+#include "image_system_properties.h"
 #include "securec.h"
-#include "texture_type.h"
 #include "media_errors.h"
 #include "hilog/log.h"
 #include "log_tags.h"
@@ -31,7 +32,7 @@ namespace {
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MASK = 0xFF;
 constexpr uint8_t ASTC_NUM_8 = 8;
-constexpr uint8_t ASTC_NUM_16 = 16;
+constexpr uint8_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t ASTC_NUM_24 = 24;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 
@@ -48,29 +49,29 @@ uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOption
 }
 
 // test ASTCEncoder
-uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions *encodeParams)
+uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions *encodeParams, size_t size)
 {
-    if ((encodeParams == nullptr) || (header == nullptr)) {
-        HiLog::Error(LABEL, "header is nullptr or encodeParams is nullptr");
+    if ((encodeParams == nullptr) || (header == nullptr) || size < ASTC_HEADER_SIZE) {
+        HiLog::Error(LABEL, "header is nullptr or encodeParams is nullptr or header_size is error");
         return ERROR;
     }
     uint8_t *tmp = header;
     *tmp++ = ASTC_MAGIC_ID & ASTC_MASK;
     *tmp++ = (ASTC_MAGIC_ID >> ASTC_NUM_8) & ASTC_MASK;
-    *tmp++ = (ASTC_MAGIC_ID >> ASTC_NUM_16) & ASTC_MASK;
+    *tmp++ = (ASTC_MAGIC_ID >> ASTC_HEADER_SIZE) & ASTC_MASK;
     *tmp++ = (ASTC_MAGIC_ID >> ASTC_NUM_24) & ASTC_MASK;
     *tmp++ = static_cast<uint8_t>(encodeParams->blockX_);
     *tmp++ = static_cast<uint8_t>(encodeParams->blockY_);
     *tmp++ = 1;
     *tmp++ = img.dim_x & ASTC_MASK;
     *tmp++ = (img.dim_x >> ASTC_NUM_8) & ASTC_MASK;
-    *tmp++ = (img.dim_x >> ASTC_NUM_16) & ASTC_MASK;
+    *tmp++ = (img.dim_x >> ASTC_HEADER_SIZE) & ASTC_MASK;
     *tmp++ = img.dim_y & ASTC_MASK;
     *tmp++ = (img.dim_y >> ASTC_NUM_8) & ASTC_MASK;
-    *tmp++ = (img.dim_y >> ASTC_NUM_16) & ASTC_MASK;
+    *tmp++ = (img.dim_y >> ASTC_HEADER_SIZE) & ASTC_MASK;
     *tmp++ = img.dim_z & ASTC_MASK;
     *tmp++ = (img.dim_z >> ASTC_NUM_8) & ASTC_MASK;
-    *tmp++ = (img.dim_z >> ASTC_NUM_16) & ASTC_MASK;
+    *tmp++ = (img.dim_z >> ASTC_HEADER_SIZE) & ASTC_MASK;
     return SUCCESS;
 }
 
@@ -230,20 +231,11 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
 }
 
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
-uint32_t AstcCodec::ASTCEncode()
+
+uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
+                                       int32_t blocksNum, int32_t outSize)
 {
-    ImageInfo imageInfo;
-    astcPixelMap_->GetImageInfo(imageInfo);
-    TextureEncodeOptions param;
-    param.width_ = imageInfo.size.width;
-    param.height_ = imageInfo.size.height;
-    param.stride_ = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    bool enableQualityCheck = false; // astcOpts_.enableQualityCheck
     AstcEncoder work;
-    extractDimensions(astcOpts_.format, param);
-    int blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
-        ((param.height_ + param.blockY_ - 1) / param.blockY_);
-    int outSize = blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
     if (!InitMem(&work, param, enableQualityCheck, blocksNum)) {
         FreeMem(&work);
         return ERROR;
@@ -255,7 +247,9 @@ uint32_t AstcCodec::ASTCEncode()
     }
     work.image_.data[0] = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
     work.data_out_ = astcOutput_->GetAddr();
-    if (GenAstcHeader(work.data_out_, work.image_, &param) != SUCCESS) {
+    size_t size;
+    astcOutput_->GetCapicity(size);
+    if (GenAstcHeader(work.data_out_, work.image_, &param, size) != SUCCESS) {
         HiLog::Error(LABEL, "astc GenAstcHeader failed");
         FreeMem(&work);
         return ERROR;
@@ -276,8 +270,46 @@ uint32_t AstcCodec::ASTCEncode()
         FreeMem(&work);
         return ERROR;
     }
-    astcOutput_->SetOffset(outSize);
     FreeMem(&work);
+    return SUCCESS;
+}
+
+uint32_t AstcCodec::ASTCEncode()
+{
+    ImageInfo imageInfo;
+    astcPixelMap_->GetImageInfo(imageInfo);
+    TextureEncodeOptions param;
+    param.width_ = imageInfo.size.width;
+    param.height_ = imageInfo.size.height;
+    param.stride_ = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
+    bool enableQualityCheck = false; // astcOpts_.enableQualityCheck
+    bool hardwareFlag = false;
+    extractDimensions(astcOpts_.format, param);
+    int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
+        ((param.height_ + param.blockY_ - 1) / param.blockY_);
+    int32_t outSize = blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
+
+    if (ImageSystemProperties::GetAstcHardWareEncodeEnabled()) {
+        HiLog::Info(LABEL, "astc hardware encode begin");
+        std::shared_ptr<ImageCompressor> instance = ImageCompressor::GetInstance();
+        if (!(instance -> CreateKernel())) {
+            HiLog::Error(LABEL, "Create kernel error !");
+        } else {
+            if (instance->TextureEncodeCL(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
+                astcPixelMap_->GetRowStride(), param.width_, param.height_, astcOutput_->GetAddr())) {
+                hardwareFlag = true;
+            }
+        }
+        instance->ReleaseResource();
+    }
+    if (!hardwareFlag) {
+        uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+        if (res != SUCCESS) {
+            HiLog::Error(LABEL, "AstcSoftwareEncode failed");
+            return ERROR;
+        }
+    }
+    astcOutput_->SetOffset(outSize);
     return SUCCESS;
 }
 } // namespace ImagePlugin
