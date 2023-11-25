@@ -350,6 +350,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("crop", Crop),
         DECLARE_NAPI_FUNCTION("getColorSpace", GetColorSpace),
         DECLARE_NAPI_FUNCTION("setColorSpace", SetColorSpace),
+        DECLARE_NAPI_FUNCTION("applyColorSpace", ApplyColorSpace),
         DECLARE_NAPI_FUNCTION("marshalling", Marshalling),
         DECLARE_NAPI_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_GETTER("isEditable", GetIsEditable),
@@ -2034,6 +2035,85 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
     napi_value result = nullptr;
     return result;
 #endif
+}
+
+static void ApplyColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
+{
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "Null context");
+        return;
+    }
+    if (context->status != SUCCESS) {
+        HiLog::Debug(LABEL, "ApplyColorSpace has failed. do nothing");
+        return;
+    }
+    if (context->rPixelMap == nullptr || context->colorSpace == nullptr) {
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
+        HiLog::Error(LABEL, "ApplyColorSpace Null native ref");
+        return;
+    }
+    context->status = context->rPixelMap->ApplyColorSpace(*(context->colorSpace));
+}
+
+static void ParseColorSpaceVal(napi_env env, napi_value val, PixelMapAsyncContext* context)
+{
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "Null context");
+        return;
+    }
+
+#ifdef IMAGE_COLORSPACE_FLAG
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, val);
+#endif
+    if (context->colorSpace == nullptr) {
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+#else
+    Val.context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
+napi_value PixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    nVal.argc = NUM_2;
+    napi_value argValue[NUM_2] = {0};
+    nVal.argv = argValue;
+    HiLog::Debug(LABEL, "ApplyColorSpace IN");
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return nVal.result;
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+
+    if (nVal.argc != NUM_1 && nVal.argc != NUM_2) {
+        HiLog::Error(LABEL, "Invalid args count");
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    } else {
+        ParseColorSpaceVal(env, nVal.argv[NUM_0], nVal.context.get());
+    }
+    if (nVal.argc >= NUM_1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
+        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+    }
+
+    if (nVal.context->callbackRef == nullptr) {
+        napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
+    }
+    napi_value _resource = nullptr;
+    napi_create_string_utf8(env, "ApplyColorSpace", NAPI_AUTO_LENGTH, &_resource);
+    nVal.status = napi_create_async_work(env, nullptr, _resource, [](napi_env env, void *data)
+        {
+            auto context = static_cast<PixelMapAsyncContext*>(data);
+            ApplyColorSpaceExec(env, context);
+        }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
+
+    if (nVal.status == napi_ok) {
+        nVal.status = napi_queue_async_work(env, nVal.context->work);
+        if (nVal.status == napi_ok) {
+            nVal.context.release();
+        }
+    }
+    return nVal.result;
 }
 
 void PixelMapNapi::release()

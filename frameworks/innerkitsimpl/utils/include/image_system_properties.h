@@ -24,6 +24,7 @@ public:
     static bool GetDmaEnabled();
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();
+    static bool GetHardWareDecodeEnabled();
 private:
     ImageSystemProperties() = default;
 };

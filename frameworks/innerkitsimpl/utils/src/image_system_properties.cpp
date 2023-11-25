@@ -72,5 +72,14 @@ bool ImageSystemProperties::GetDumpImageEnabled()
 {
     return system::GetBoolParameter("persist.multimedia.image.dumpimage.enabled", false);
 }
+
+bool ImageSystemProperties::GetHardWareDecodeEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.hardwaredecode.enabled", false);
+#else
+    return false;
+#endif
+}
 } // namespace Media
 } // namespace OHOS

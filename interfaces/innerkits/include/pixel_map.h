@@ -76,9 +76,9 @@ typedef struct PixelMapError {
 
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
+    static std::atomic<uint32_t> currentId;
     PixelMap()
     {
-        static std::atomic<uint32_t> currentId = 0;
         uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
     }
     virtual ~PixelMap();
@@ -206,6 +206,7 @@ public:
     {
         return grColorSpace_;
     }
+    NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 

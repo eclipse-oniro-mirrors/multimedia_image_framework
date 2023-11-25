@@ -34,7 +34,6 @@ class PixelAstc : public PixelMap {
 public:
     PixelAstc()
     {
-        static std::atomic<uint32_t> currentId = 0;
         astcId_ = currentId.fetch_add(1, std::memory_order_relaxed);
     }
     virtual ~PixelAstc();

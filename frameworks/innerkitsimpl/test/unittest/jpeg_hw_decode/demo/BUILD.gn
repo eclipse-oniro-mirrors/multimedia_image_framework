@@ -15,6 +15,13 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_executable("jpeg_hw_decoder_demo") {
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+  }
   install_enable = false
   subsystem_name = "multimedia"
   part_name = "image_framework"

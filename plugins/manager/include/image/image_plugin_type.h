@@ -132,6 +132,14 @@ struct PlSVGResize {
     uint32_t resizePercentage = 100;
 };
 
+struct PlColorSpaceInfo {
+    static constexpr uint8_t XYZ_SIZE = 3;
+    static constexpr uint8_t TRANSFER_FN_SIZE = 7;
+    bool isValidColorSpace = false;
+    float xyz[XYZ_SIZE][XYZ_SIZE] = {{0}};
+    float transferFn[TRANSFER_FN_SIZE] = {0};
+};
+
 struct PlImageInfo {
     PlSize size;
     PlPixelFormat pixelFormat = PlPixelFormat::UNKNOWN;

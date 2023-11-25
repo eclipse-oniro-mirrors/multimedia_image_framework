@@ -77,6 +77,7 @@ ohos_unittest("imagepixelmaptest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   ]
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_packer_ex_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_pixel_map_switch_test.cpp",
@@ -92,8 +93,12 @@ ohos_unittest("imagepixelmaptest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
+  if (use_clang_android || use_clang_ios) {
+    external_deps -= [ "graphic_2d:color_manager" ]
+  }
 }
 
 ohos_unittest("imagepixelmapparceltest") {
