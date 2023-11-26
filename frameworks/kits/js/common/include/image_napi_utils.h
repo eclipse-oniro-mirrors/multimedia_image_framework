@@ -33,6 +33,19 @@ do \
     } \
 } while (0)
 
+#define IMG_NAPI_CHECK_BUILD_ERROR(x, build, res, result) \
+do \
+{ \
+    if (!(x)) \
+    { \
+        build; \
+        { \
+            res; \
+        } \
+        return (result); \
+    } \
+} while (0)
+
 #define IMG_NAPI_CHECK_RET(x, res) \
 do \
 { \
