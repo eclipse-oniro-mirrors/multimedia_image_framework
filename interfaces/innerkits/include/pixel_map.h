@@ -88,10 +88,15 @@ public:
                                                          int32_t stride, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
         int32_t stride, const InitializationOptions &opts, bool useCustomFormat);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
+        int32_t stride, const InitializationOptions &opts, bool useCustomFormat, int32_t &errorCode);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
                                                          const InitializationOptions &opts);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,
+        const InitializationOptions &opts, int32_t &errorCode);
+
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info);
     NATIVEEXPORT virtual uint32_t SetImageInfo(ImageInfo &info, bool isReused);
     NATIVEEXPORT virtual const uint8_t *GetPixel(int32_t x, int32_t y);
@@ -260,15 +265,20 @@ private:
     static bool BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
-                            const InitializationOptions &opts);
+        const InitializationOptions &opts);
+    static bool CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
+        const InitializationOptions &opts, int &error);
     static void UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
                                   PixelMap dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
                                  ImageInfo &dstImageInfo);
     static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
+    static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error);
     static bool CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap);
     static bool SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
-                                     const Rect &srcRect, PixelMap &dstPixelMap);
+        const Rect &srcRect, PixelMap &dstPixelMap, int &error);
+    static bool SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
+        const Rect &srcRect, PixelMap &dstPixelMap);
     static bool IsSameSize(const Size &src, const Size &dst);
     static bool ScalePixelMap(const Size &targetSize, const Size &dstSize, const ScaleMode &scaleMode,
                               PixelMap &dstPixelMap);

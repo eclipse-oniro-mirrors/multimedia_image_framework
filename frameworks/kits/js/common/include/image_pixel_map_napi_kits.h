@@ -41,6 +41,7 @@ struct PixelMapNapiArgs {
     int32_t* outNum;
     OhosPixelMapInfos *outInfo;
     void** outAddr;
+    int32_t error;
 };
 
 using PixelMapNapiArgs = struct PixelMapNapiArgs;

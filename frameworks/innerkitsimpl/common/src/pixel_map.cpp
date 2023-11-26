@@ -34,6 +34,7 @@
 #include "post_proc.h"
 #include "parcel.h"
 #include "pubdef.h"
+#include "image_mdk_common.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -222,13 +223,21 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
                                       const InitializationOptions &opts, bool useCustomFormat)
 {
+    int errorCode;
+    return Create(colors, colorLength, 0, opts.size.width, opts, false, errorCode);
+}
+
+unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
+                                      const InitializationOptions &opts, bool useCustomFormat, int32_t &errorCode)
+{
     HiLog::Info(LABEL, "PixelMap::Create useCustomFormat enter");
-    if (!CheckParams(colors, colorLength, offset, stride, opts)) {
+    if (!CheckParams(colors, colorLength, offset, stride, opts, errorCode)) {
         return nullptr;
     }
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
         HiLog::Error(LABEL, "create pixelMap pointer fail");
+        errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
         return nullptr;
     }
 
@@ -245,6 +254,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
         HiLog::Error(LABEL, "check pixelMap pointer fail");
+        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
     int fd = 0;
@@ -252,6 +262,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
+        errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
 
@@ -263,6 +274,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
         dstPixels = nullptr;
+        errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
 
@@ -327,30 +339,42 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 }
 
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
-                           const InitializationOptions &opts)
+    const InitializationOptions &opts)
+{
+    int error;
+    return CheckParams(colors, colorLength, offset, stride, opts, error);
+}
+
+bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
+    const InitializationOptions &opts, int &error)
 {
     if (colors == nullptr || colorLength <= 0 || colorLength > PIXEL_MAP_MAX_RAM_SIZE) {
         HiLog::Error(LABEL, "colors invalid");
+        error = IMAGE_RESULT_INIT_ABNORMAL;
         return false;
     }
     int32_t dstWidth = opts.size.width;
     int32_t dstHeight = opts.size.height;
     if (dstWidth <= 0 || dstHeight <= 0) {
         HiLog::Error(LABEL, "initial options size invalid");
+        error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
     if (stride < dstWidth) {
         HiLog::Error(LABEL, "stride: %{public}d must >= width: %{public}d", stride, dstWidth);
+        error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
     if (stride > MAX_DIMENSION) {
         HiLog::Error(LABEL, "stride %{public}d is out of range", stride);
+        error = IMAGE_RESULT_DATA_UNSUPPORT;
         return false;
     }
     int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * stride + offset;
     if (offset < 0 || static_cast<int64_t>(offset) + dstWidth > colorLength || lastLine + dstWidth > colorLength) {
         HiLog::Error(LABEL, "colors length: %{public}u, offset: %{public}d, stride: %{public}d  is invalid",
                      colorLength, offset, stride);
+        error = IMAGE_RESULT_DECODE_HEAD_ABNORMAL;
         return false;
     }
     return true;
@@ -429,6 +453,13 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOpti
 
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts)
 {
+    int error;
+    return Create(source, srcRect, opts, error);
+}
+
+unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
+    int32_t &errorCode)
+{
     HiLog::Info(LABEL, "PixelMap::Create5 enter");
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
@@ -437,6 +468,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     CropValue cropType = PostProc::ValidCropValue(sRect, srcImageInfo.size);
     if (cropType == CropValue::INVALID) {
         HiLog::Error(LABEL, "src crop range is invalid");
+        errorCode = IMAGE_RESULT_DECODE_FAILED;
         return nullptr;
     }
     ImageInfo dstImageInfo;
@@ -452,6 +484,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
         HiLog::Error(LABEL, "create pixelmap pointer fail");
+        errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
         return nullptr;
     }
     if (cropType == CropValue::VALID) {
@@ -461,16 +494,17 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         dstImageInfo.size = srcImageInfo.size;
     }
     if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
+        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
     // dst pixelmap is source crop and convert pixelmap
     if ((cropType == CropValue::VALID) || isHasConvert) {
-        if (!SourceCropAndConvert(source, srcImageInfo, dstImageInfo, sRect, *dstPixelMap.get())) {
+        if (!SourceCropAndConvert(source, srcImageInfo, dstImageInfo, sRect, *dstPixelMap.get(), errorCode)) {
             return nullptr;
         }
     } else {
         // only maybe size changed, copy source as scale operation
-        if (!CopyPixelMap(source, *dstPixelMap.get())) {
+        if (!CopyPixelMap(source, *dstPixelMap.get(), errorCode)) {
             return nullptr;
         }
     }
@@ -482,11 +516,19 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
 }
 
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
-                                    const Rect &srcRect, PixelMap &dstPixelMap)
+    const Rect &srcRect, PixelMap &dstPixelMap)
+{
+    int error;
+    return SourceCropAndConvert(source, srcImageInfo, dstImageInfo, srcRect, dstPixelMap, error);
+}
+
+bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
+    const Rect &srcRect, PixelMap &dstPixelMap, int &error)
 {
     uint32_t bufferSize = dstPixelMap.GetByteCount();
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         HiLog::Error(LABEL, "AllocSharedMemory  parameter bufferSize:[%{public}d] error.", bufferSize);
+        error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
     int fd = 0;
@@ -498,6 +540,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     }
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
 
@@ -509,6 +552,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
         ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
+        error = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return false;
     }
 
@@ -594,13 +638,20 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint
 
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 {
+    int32_t error;
+    return CopyPixelMap(source, dstPixelMap, error);
+}
+bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
+{
     uint32_t bufferSize = source.GetByteCount();
     if (source.GetPixels() == nullptr) {
         HiLog::Error(LABEL, "source pixelMap data invalid");
+        error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
     if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
+        error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
     int fd = 0;
@@ -612,10 +663,12 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     }
     if (dstPixels == nullptr) {
         HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        error = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
     void* tmpDstPixels = dstPixels;
     if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
+        error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
     if (fd <= 0) {
@@ -2451,6 +2504,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
         HiLog::Error(LABEL, "GendstTransInfo dstMemory falied");
+        this->errorCode = IMAGE_RESULT_DECODE_FAILED;
         return false;
     }
 

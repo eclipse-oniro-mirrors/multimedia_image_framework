@@ -14,18 +14,14 @@
  */
 
 #include "image_pixel_map_mdk.h"
-
-#include "common_utils.h"
 #include "image_pixel_map_napi_kits.h"
+#include "native_pixel_map.h"
+#include "common_utils.h"
 
 using namespace OHOS::Media;
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct NativePixelMap_ {
-    PixelMapNapi* napi = nullptr;
-};
 
 MIDK_EXPORT
 NativePixelMap* OH_PixelMap_InitNativePixelMap(napi_env env, napi_value source)
@@ -53,6 +49,7 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     args.inBuffer = buf;
     args.bufferLen = len;
     args.outValue = res;
+    args.error = 0;
     return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE, env, &args);
 }
 
@@ -62,6 +59,7 @@ int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_va
     PixelMapNapiArgs args;
     args.inValue = source;
     args.outValue = alpha;
+    args.error = 0;
     return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE_ALPHA, env, &args);
 }
 
@@ -74,6 +72,7 @@ int32_t OH_PixelMap_GetBytesNumberPerRow(const NativePixelMap* native, int32_t* 
     }
     PixelMapNapiArgs args;
     args.outNum = num;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_ROW_BYTES, native->napi, &args);
 }
 
@@ -96,6 +95,7 @@ int32_t OH_PixelMap_IsSupportAlpha(const NativePixelMap* native, int32_t* alpha)
     }
     PixelMapNapiArgs args;
     args.outNum = alpha;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_IS_SUPPORT_ALPHA, native->napi, &args);
 }
 
@@ -107,6 +107,7 @@ int32_t OH_PixelMap_SetAlphaAble(const NativePixelMap* native, int32_t alpha)
     }
     PixelMapNapiArgs args;
     args.inNum0 = alpha;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_ALPHAABLE, native->napi, &args);
 }
 
@@ -118,6 +119,7 @@ int32_t OH_PixelMap_GetDensity(const NativePixelMap* native, int32_t* density)
     }
     PixelMapNapiArgs args;
     args.outNum = density;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_DENSITY, native->napi, &args);
 }
 
@@ -129,6 +131,7 @@ int32_t OH_PixelMap_SetDensity(const NativePixelMap* native, int32_t density)
     }
     PixelMapNapiArgs args;
     args.inNum0 = density;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_DENSITY, native->napi, &args);
 }
 
@@ -140,6 +143,7 @@ int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity)
     }
     PixelMapNapiArgs args;
     args.inFloat0 = opacity;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SET_OPACITY, native->napi, &args);
 }
 
@@ -152,6 +156,7 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
 }
 
@@ -164,6 +169,7 @@ int32_t OH_PixelMap_Translate(const NativePixelMap* native, float x, float y)
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_TRANSLATE, native->napi, &args);
 }
 
@@ -175,6 +181,7 @@ int32_t OH_PixelMap_Rotate(const NativePixelMap* native, float angle)
     }
     PixelMapNapiArgs args;
     args.inFloat0 = angle;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_ROTATE, native->napi, &args);
 }
 
@@ -187,6 +194,7 @@ int32_t OH_PixelMap_Flip(const NativePixelMap* native, int32_t x, int32_t y)
     PixelMapNapiArgs args;
     args.inNum0 = x;
     args.inNum1 = y;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_FLIP, native->napi, &args);
 }
 
@@ -201,6 +209,7 @@ int32_t OH_PixelMap_Crop(const NativePixelMap* native, int32_t x, int32_t y, int
     args.inNum1 = y;
     args.inNum2 = width;
     args.inNum3 = height;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_CROP, native->napi, &args);
 }
 
@@ -212,6 +221,7 @@ int32_t OH_PixelMap_GetImageInfo(const NativePixelMap* native, OhosPixelMapInfos
     }
     PixelMapNapiArgs args;
     args.outInfo = info;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_GET_IMAGE_INFO, native->napi, &args);
 }
 
@@ -223,6 +233,7 @@ int32_t OH_PixelMap_AccessPixels(const NativePixelMap* native, void** addr)
     }
     PixelMapNapiArgs args;
     args.outAddr = addr;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_ACCESS_PIXELS, native->napi, &args);
 }
 
@@ -233,6 +244,7 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     PixelMapNapiArgs args;
+    args.error = 0;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_UNACCESS_PIXELS, native->napi, &args);
 }
 
