@@ -325,7 +325,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0017, TestSize.Level3)
     int32_t height = 480;
     int32_t format = 4;
     int32_t capicity = 8;
-    ImageReceiver1->CreateImageReceiver(width, height, format, capicity);
+    imageReceiver1->CreateImageReceiver(width, height, format, capicity);
     ASSERT_EQ(imageReceiver1, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0017 end";
 }
