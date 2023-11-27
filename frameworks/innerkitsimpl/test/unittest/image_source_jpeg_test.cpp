@@ -295,7 +295,7 @@ HWTEST_F(ImageSourceJpegTest, TC038, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 }
 
 /**
@@ -387,7 +387,7 @@ HWTEST_F(ImageSourceJpegTest, TC056, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap, nullptr);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step4. get image source information.
      * @tc.expected: step4. get image source information success and source state is parsed.
@@ -530,7 +530,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap, nullptr);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step4. get image source information.
      * @tc.expected: step4. get image source information success and source state is parsed.
