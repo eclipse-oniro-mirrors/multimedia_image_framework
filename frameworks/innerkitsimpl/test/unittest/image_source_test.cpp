@@ -1026,7 +1026,7 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     ImageInfo imageInfo;
     ASTCInfo astcInfo;
     astcInfo.blockFootprint.width=4;
-    int32_t errorCode = 0;
+    uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->GetImageInfoForASTC(imageInfo);
