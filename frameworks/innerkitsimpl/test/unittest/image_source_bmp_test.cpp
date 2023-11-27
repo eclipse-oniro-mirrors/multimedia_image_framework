@@ -65,7 +65,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
@@ -100,7 +100,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode002, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
@@ -135,7 +135,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode003, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 }
 
 /**
@@ -164,7 +164,7 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode004, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
