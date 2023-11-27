@@ -74,6 +74,12 @@ typedef struct PixelMapError {
     std::string errorInfo = "";
 } PIXEL_MAP_ERR;
 
+typedef struct BuildParam {
+    int32_t offset_ = 0;
+    int32_t stride_ = 0;
+    bool flag_ = true;
+} BUILD_PARAM;
+
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
     static std::atomic<uint32_t> currentId;
@@ -88,8 +94,8 @@ public:
                                                          int32_t stride, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
         int32_t stride, const InitializationOptions &opts, bool useCustomFormat);
-    NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength, int32_t offset,
-        int32_t stride, const InitializationOptions &opts, bool useCustomFormat, int32_t &errorCode);
+    NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const uint32_t *colors, uint32_t colorLength,
+        BUILD_PARAM &info, const InitializationOptions &opts, int &errorCode);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const InitializationOptions &opts);
     NATIVEEXPORT static std::unique_ptr<PixelMap> Create(PixelMap &source, const Rect &srcRect,

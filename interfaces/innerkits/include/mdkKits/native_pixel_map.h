@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,19 +21,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct NativePixelMap_ {
-    OHOS::Media::PixelMapNapi* napi = nullptr;
-};
-
+struct NativePixelMap_;
 #ifdef __cplusplus
 };
 #endif
 
-std::shared_ptr<OHOS::Media::PixelMap> OH_PixelMapNative_GetPixelMap(struct NativePixelMap_ *nativePixelMap)
+namespace OHOS {
+namespace Media {
+PixelMapNapi *OH_PixelMapNative_GetPixelMapNapi(struct NativePixelMap_ *nativePixelMap);
+
+std::shared_ptr<OHOS::Media::PixelMap> PixelMapNative_GetPixelMap(struct NativePixelMap_ *nativePixelMap)
 {
-    return nativePixelMap == nullptr ? nullptr :
-	nativePixelMap->napi == nullptr ? nullptr :
-	    nativePixelMap->napi->GetPixelNapiInner();
+    auto ptr = OH_PixelMapNative_GetPixelMapNapi(nativePixelMap);
+    return ptr == nullptr ? nullptr : ptr->GetPixelNapiInner();
+}
+}
 }
 #endif // NATIVE_PIXEL_MAP_H_

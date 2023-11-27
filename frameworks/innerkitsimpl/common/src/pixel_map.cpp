@@ -224,23 +224,40 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
                                       const InitializationOptions &opts, bool useCustomFormat)
 {
     int errorCode;
-    return Create(colors, colorLength, 0, opts.size.width, opts, false, errorCode);
+    BUILD_PARAM info;
+    info.offset_ = offset;
+    info.stride_ = stride;
+    info.flag_ = useCustomFormat;
+    return Create(colors, colorLength, info, opts, errorCode);
 }
 
-unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
-                                      const InitializationOptions &opts, bool useCustomFormat, int32_t &errorCode)
+static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dstPixelMap)
+{
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    uint32_t bufferSize = dstPixelMap->GetByteCount();
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+#else
+    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+#endif
+}
+
+unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
+    const InitializationOptions &opts, int &errorCode)
 {
     HiLog::Info(LABEL, "PixelMap::Create useCustomFormat enter");
+    int offset = info.offset_;
+    int32_t stride = info.stride_;
+    bool useCustomFormat = info.flag_;
     if (!CheckParams(colors, colorLength, offset, stride, opts, errorCode)) {
         return nullptr;
     }
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
-        HiLog::Error(LABEL, "create pixelMap pointer fail");
         errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
         return nullptr;
     }
-
     PixelFormat format = PixelFormat::BGRA_8888;
     if (useCustomFormat) {
         format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
@@ -265,7 +282,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
-
     Position dstPosition;
     if (!CheckConvertParmas(srcImageInfo, dstImageInfo) &&
         !PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
@@ -277,15 +293,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
-
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
     dstPixelMap->SetEditable(opts.editable);
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
-#else
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-#endif
+    MakePixelMap(dstPixels, fd, dstPixelMap);
     return dstPixelMap;
 }
 
@@ -457,6 +466,27 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return Create(source, srcRect, opts, error);
 }
 
+static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropType,
+    ImageInfo &dstImageInfo, Rect &sRect, ImageInfo &srcImageInfo)
+{
+    dstPixelMap = make_unique<PixelMap>();
+    if (dstPixelMap == nullptr) {
+        HiLog::Error(LABEL, "create pixelmap pointer fail");
+        return IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
+    }
+
+    if (cropType == CropValue::VALID) {
+        dstImageInfo.size.width = sRect.width;
+        dstImageInfo.size.height = sRect.height;
+    } else {
+        dstImageInfo.size = srcImageInfo.size;
+    }
+    if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
+        return IMAGE_RESULT_DATA_ABNORMAL;
+    }
+    return SUCCESS;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
@@ -481,20 +511,8 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         source.useSourceAsResponse_ = true;
         return unique_ptr<PixelMap>(&source);
     }
-    unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
-    if (dstPixelMap == nullptr) {
-        HiLog::Error(LABEL, "create pixelmap pointer fail");
-        errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
-        return nullptr;
-    }
-    if (cropType == CropValue::VALID) {
-        dstImageInfo.size.width = sRect.width;
-        dstImageInfo.size.height = sRect.height;
-    } else {
-        dstImageInfo.size = srcImageInfo.size;
-    }
-    if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
-        errorCode = IMAGE_RESULT_DATA_ABNORMAL;
+    unique_ptr<PixelMap> dstPixelMap = nullptr;
+    if ((errorCode = BuildPixelMap(dstPixelMap, cropType, dstImageInfo, sRect, srcImageInfo)) != SUCCESS) {
         return nullptr;
     }
     // dst pixelmap is source crop and convert pixelmap
