@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <algorithm>
 #include <fcntl.h>
 #include <fstream>
@@ -1015,5 +1015,32 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
 }
 #endif
+/**
+ * @tc.name: CreateImageSource0015
+ * @tc.desc: test CreateImageSource correct fd and file size is 100
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC start";
+    ImageInfo imageInfo;
+    ASTCInfo astcInfo;
+    astcInfo.blockFootprint.width=4;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    auto ret = imageSource->GetImageInfoForASTC(imageInfo);
+    ASSERT_NE(ret, true);
+    astcInfo.blockFootprint.width = 6;
+    ret = imageSource->GetImageInfoForASTC(imageInfo);
+    ASSERT_NE(ret, true);
+    astcInfo.blockFootprint.width = 8;
+    ret = imageSource->GetImageInfoForASTC(imageInfo);
+    ASSERT_NE(ret, true);
+    astcInfo.blockFootprint.width = 2;
+    ret = imageSource->GetImageInfoForASTC(imageInfo);
+    ASSERT_NE(ret, true);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC end";
+}
 } // namespace Multimedia
 } // namespace OHOS
