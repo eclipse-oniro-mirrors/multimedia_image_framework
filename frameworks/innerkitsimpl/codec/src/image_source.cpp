@@ -185,8 +185,14 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
         HiLog::Error(LABEL, "[ImageSource]failed to create ImageSource.");
         return nullptr;
     }
+    auto imageSource = unique_ptr<ImageSource>(sourcePtr);
+    ImagePlugin::DataStreamBuffer outData;
+    uint32_t res = imageSource->GetData(outData, ASTC_HEADER_SIZE);
+    if (res == SUCCESS) {
+        imageSource->isAstc_ = IsASTC(outData.inputStreamBuffer, outData.dataSize);
+    }
     errorCode = SUCCESS;
-    return unique_ptr<ImageSource>(sourcePtr);
+    return imageSource;
 }
 
 unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is,
@@ -305,9 +311,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "(%{public}d, %{public}d)", opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
 #if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
-    ImagePlugin::DataStreamBuffer outData;
-    uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
-    if (res == SUCCESS && IsASTC(outData.inputStreamBuffer, outData.dataSize)) {
+    if (isAstc_) {
         return CreatePixelMapForASTC(errorCode);
     }
 #endif
@@ -1303,9 +1307,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
 uint32_t ImageSource::OnSourceUnresolved()
 {
     string formatResult;
-    ImagePlugin::DataStreamBuffer outData;
-    uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
-    if (res == SUCCESS && IsASTC(outData.inputStreamBuffer, outData.dataSize)) {
+    if (isAstc_) {
         formatResult = InnerFormat::ASTC_FORMAT;
     } else {
         auto ret = GetEncodedFormat(sourceInfo_.encodedFormat, formatResult);

@@ -285,6 +285,7 @@ private:
     bool isIncrementalCompleted_ = false;
     bool hasDesiredSizeOptions = false;
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
+    bool isAstc_ = false;
 };
 } // namespace Media
 } // namespace OHOS
