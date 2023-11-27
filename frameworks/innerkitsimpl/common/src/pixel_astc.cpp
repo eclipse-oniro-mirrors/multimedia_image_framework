@@ -66,11 +66,21 @@ bool PixelAstc::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 
 void PixelAstc::scale(float xAxis, float yAxis)
 {
-    TransformData transformData;
-    GetTransformData(transformData);
-    transformData.scaleX *= xAxis;
-    transformData.scaleY *= yAxis;
-    SetTransformData(transformData);
+    if (xAxis == 0 || yAxis == 0) {
+        HiLog::Error(LABEL, "scale param incorrect on pixelastc");
+        return;
+    } else {
+        TransformData transformData;
+        GetTransformData(transformData);
+        transformData.scaleX *= xAxis;
+        transformData.scaleY *= yAxis;
+        SetTransformData(transformData);
+        ImageInfo imageInfo;
+        GetImageInfo(imageInfo);
+        imageInfo.size.width *= abs(xAxis);
+        imageInfo.size.height *= abs(yAxis);
+        SetImageInfo(imageInfo, true);
+    }
 }
 
 bool PixelAstc::resize(float xAxis, float yAxis)
@@ -107,7 +117,11 @@ void PixelAstc::flip(bool xAxis, bool yAxis)
 
 uint32_t PixelAstc::crop(const Rect &rect)
 {
-    if (rect.left >= 0 && rect.top >= 0 && rect.width >= 0 && rect.height >= 0) {
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    if (rect.left >= 0 && rect.top >= 0 && rect.width > 0 && rect.height > 0 &&
+        rect.left + rect.width <= imageInfo.size.width &&
+        rect.top + rect.height <= imageInfo.size.height) {
         TransformData transformData;
         GetTransformData(transformData);
         transformData.cropLeft = rect.left;
@@ -115,6 +129,9 @@ uint32_t PixelAstc::crop(const Rect &rect)
         transformData.cropWidth = rect.width;
         transformData.cropHeight = rect.height;
         SetTransformData(transformData);
+        imageInfo.size.width = rect.width;
+        imageInfo.size.height = rect.height;
+        SetImageInfo(imageInfo, true);
     } else {
         HiLog::Error(LABEL, "crop failed");
         return ERR_IMAGE_CROP;

@@ -117,6 +117,14 @@ public:
     NATIVEEXPORT virtual int32_t GetByteCount();
     NATIVEEXPORT virtual int32_t GetWidth();
     NATIVEEXPORT virtual int32_t GetHeight();
+    NATIVEEXPORT void GetAstcRealSize(Size &size)
+    {
+        size = astcrealSize_;
+    }
+    NATIVEEXPORT void SetAstcRealSize(Size size)
+    {
+        astcrealSize_ = size;
+    }
     NATIVEEXPORT void GetTransformData(TransformData &transformData);
     NATIVEEXPORT void SetTransformData(TransformData transformData);
     NATIVEEXPORT virtual int32_t GetBaseDensity();
@@ -297,6 +305,8 @@ private:
     bool WriteInfoToParcel(Parcel &parcel) const;
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
+    bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
+    bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
     void SetEditable(bool editable)
     {
@@ -356,7 +366,8 @@ private:
     // only used by rosen backend
     uint32_t uniqueId_ = 0;
     bool isAstc_ = false;
-    TransformData transformData_ = {1, 1, 0, -1, -1, -1, -1, 0, 0, false, false};
+    TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
+    Size astcrealSize_;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;

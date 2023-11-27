@@ -1743,6 +1743,21 @@ bool PixelMap::WriteTransformDataToParcel(Parcel &parcel) const
     return true;
 }
 
+bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
+{
+    if (isAstc_) {
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.width))) {
+            HiLog::Error(LABEL, "write astcrealSize_.width:[%{public}d] to parcel failed.", astcrealSize_.width);
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.height))) {
+            HiLog::Error(LABEL, "write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
@@ -1803,6 +1818,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         HiLog::Error(LABEL, "write transformData to parcel failed.");
         return false;
     }
+    if (!WriteAstcRealSizeToParcel(parcel)) {
+        HiLog::Error(LABEL, "write astcrealSize to parcel failed.");
+        return false;
+    }
     return true;
 }
 
@@ -1838,6 +1857,17 @@ bool PixelMap::ReadTransformData(Parcel &parcel, PixelMap *pixelMap)
         transformData.flipX = parcel.ReadBool();
         transformData.flipY = parcel.ReadBool();
         pixelMap->SetTransformData(transformData);
+    }
+    return true;
+}
+
+bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
+{
+    if (pixelMap->IsAstc()) {
+        Size realSize;
+        realSize.width = parcel.ReadInt32();
+        realSize.height = parcel.ReadInt32();
+        pixelMap->SetAstcRealSize(realSize);
     }
     return true;
 }
@@ -1964,6 +1994,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     pixelMap->SetPixelsAddr(base, context, bufferSize, allocType, nullptr);
     if (!pixelMap->ReadTransformData(parcel, pixelMap)) {
         HiLog::Error(LABEL, "read transformData fail");
+        delete pixelMap;
+        return nullptr;
+    }
+    if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
+        HiLog::Error(LABEL, "read astcrealSize fail");
         delete pixelMap;
         return nullptr;
     }

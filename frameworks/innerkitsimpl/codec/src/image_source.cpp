@@ -2015,6 +2015,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
         return nullptr;
     }
     errorCode = pixelAstc->SetImageInfo(info);
+    pixelAstc->SetAstcRealSize(info.size);
     if (errorCode != SUCCESS) {
         HiLog::Error(LABEL, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         return nullptr;
