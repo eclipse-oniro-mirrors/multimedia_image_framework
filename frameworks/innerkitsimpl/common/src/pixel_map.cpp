@@ -170,7 +170,7 @@ void PixelMap::SetTransformered(bool isTransformered)
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     if (data_ != nullptr) {
-        HiLog::Info(LABEL, "SetPixelsAddr release the existed data first");
+        HiLog::Debug(LABEL, "SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
@@ -209,14 +209,14 @@ bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
-    HiLog::Info(LABEL, "PixelMap::Create1 enter");
+    HiLog::Debug(LABEL, "PixelMap::Create1 enter");
     return Create(colors, colorLength, 0, opts.size.width, opts);
 }
 
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
                                       const InitializationOptions &opts)
 {
-    HiLog::Info(LABEL, "PixelMap::Create2 enter");
+    HiLog::Debug(LABEL, "PixelMap::Create2 enter");
     return Create(colors, colorLength, 0, opts.size.width, opts, false);
 }
 
@@ -246,7 +246,7 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
-    HiLog::Info(LABEL, "PixelMap::Create useCustomFormat enter");
+    HiLog::Debug(LABEL, "PixelMap::Create useCustomFormat enter");
     int offset = info.offset_;
     int32_t stride = info.stride_;
     bool useCustomFormat = info.flag_;
@@ -455,7 +455,7 @@ void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &
 
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOptions &opts)
 {
-    HiLog::Info(LABEL, "PixelMap::Create4 enter");
+    HiLog::Debug(LABEL, "PixelMap::Create4 enter");
     Rect rect;
     return Create(source, rect, opts);
 }
@@ -490,7 +490,7 @@ static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropT
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
-    HiLog::Info(LABEL, "PixelMap::Create5 enter");
+    HiLog::Debug(LABEL, "PixelMap::Create5 enter");
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
     PostProc postProc;

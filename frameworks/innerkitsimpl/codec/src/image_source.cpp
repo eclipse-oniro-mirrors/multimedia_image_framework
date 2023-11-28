@@ -965,7 +965,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 
     ret = mainDecoder_->GetImagePropertyInt(index, key, value);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] GetImagePropertyInt fail, ret:%{public}u", ret);
+        HiLog::Debug(LABEL, "[ImageSource] GetImagePropertyInt fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -982,7 +982,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     }
     ret = mainDecoder_->GetImagePropertyString(index, key, value);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] GetImagePropertyString fail, ret:%{public}u", ret);
+        HiLog::Debug(LABEL, "[ImageSource] GetImagePropertyString fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -1124,7 +1124,7 @@ uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t siz
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!sourceStreamPtr_->Peek(size, outData)) {
-        HiLog::Info(LABEL, "[ImageSource]stream peek the data fail.");
+        HiLog::Error(LABEL, "[ImageSource]stream peek the data fail.");
         return ERR_IMAGE_SOURCE_DATA;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
