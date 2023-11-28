@@ -1471,8 +1471,6 @@ napi_value PixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback_info in
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->nConstructor),
         nullptr, HiLog::Error(LABEL, "fail to unwrap context"));
-    IMG_NAPI_CHECK_RET_D(asyncContext->nConstructor->GetPixelNapiEditable(),
-        nullptr, HiLog::Error(LABEL, "pixelmap has crossed threads . WritePixels failed"));
     asyncContext->rPixelMap = asyncContext->nConstructor->nativePixelMap_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPixelMap),
         nullptr, HiLog::Error(LABEL, "empty native pixelmap"));
@@ -2182,10 +2180,6 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
-    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->GetPixelNapiEditable(),
-        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
-        "Pixelmap has crossed threads . Marshalling failed"),
-        HiLog::Error(LABEL, "Pixelmap has crossed threads . Marshalling failed"));
     NAPI_MessageSequence *napiSequence = nullptr;
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
