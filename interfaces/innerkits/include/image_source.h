@@ -157,6 +157,8 @@ public:
 
     NATIVEEXPORT static bool GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo& astcInfo);
 
+    NATIVEEXPORT static bool IsSupportGenAstc();
+
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
         return CreatePixelMapEx(0, opts, errorCode);
