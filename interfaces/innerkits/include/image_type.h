@@ -194,7 +194,7 @@ struct DecodeOptions {
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
     AllocatorType allocatorType = AllocatorType::HEAP_ALLOC;
 #else
-    AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    AllocatorType allocatorType = AllocatorType::DEFAULT;
 #endif
     ColorSpace desiredColorSpace = ColorSpace::SRGB;
     bool allowPartialImage = true;
