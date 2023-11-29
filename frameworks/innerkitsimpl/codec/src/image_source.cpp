@@ -469,13 +469,14 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #endif
 }
 
-DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
+DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
+    const MemoryUsagePreference &preference, bool hasDesiredSizeOptions)
 {
     DecodeContext context;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
     } else {
-        if (preference_ == MemoryUsagePreference::DEFAULT && IsSupportDma(opts_, info, hasDesiredSizeOptions)) {
+        if (preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) {
             HiLog::Debug(LABEL, "[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else {
@@ -509,7 +510,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         return nullptr;
     }
     NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_HEADER_DECODE, &guard);
-    DecodeContext context = InitDecodeContext(opts_, info, hasDesiredSizeOptions);
+    DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions);
 
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
