@@ -1351,7 +1351,7 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     info.pixelFormat = 7;
     ret = pixelmap.SetAlpha(percent);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);   
+    ASSERT_EQ(ret,  ERR_IMAGE_INVALID_PARAMETER);   
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  end";
 }
 /**
