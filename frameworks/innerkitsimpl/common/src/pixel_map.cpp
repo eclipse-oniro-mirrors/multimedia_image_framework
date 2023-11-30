@@ -200,7 +200,8 @@ bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
         return false;
     }
     uint32_t bufferSize = pixelMap->GetByteCount();
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+    if (bufferSize == 0 || (pixelMap->GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+        bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
         HiLog::Error(LABEL, "AllocSharedMemory parameter is zero");
         return false;
     }
@@ -350,7 +351,7 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
     const InitializationOptions &opts)
 {
-    if (colors == nullptr || colorLength <= 0 || colorLength > PIXEL_MAP_MAX_RAM_SIZE) {
+    if (colors == nullptr || colorLength <= 0) {
         HiLog::Error(LABEL, "colors invalid");
         return false;
     }
@@ -395,7 +396,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         return nullptr;
     }
     uint32_t bufferSize = dstPixelMap->GetByteCount();
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+    if (bufferSize == 0) {
         HiLog::Error(LABEL, "calloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
@@ -526,8 +527,9 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
     uint32_t bufferSize = dstPixelMap.GetByteCount();
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "AllocSharedMemory  parameter bufferSize:[%{public}d] error.", bufferSize);
+    if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+        bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
+        HiLog::Error(LABEL, "SourceCropAndConvert  parameter bufferSize:[%{public}d] error.", bufferSize);
         return false;
     }
     int fd = 0;
@@ -646,7 +648,8 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
-    if (bufferSize == 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+    if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+        bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
         HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
@@ -805,7 +808,8 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    if ((static_cast<uint64_t>(pixelBytes_) * info.size.width) > PIXEL_MAP_MAX_RAM_SIZE) {
+    if (allocatorType_ == AllocatorType::HEAP_ALLOC &&
+        ((static_cast<uint64_t>(pixelBytes_) * info.size.width) > PIXEL_MAP_MAX_RAM_SIZE)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
@@ -816,7 +820,8 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    if (rowDataSize_ != 0 && info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
+    if (rowDataSize_ != 0 && allocatorType_ == AllocatorType::HEAP_ALLOC &&
+        info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "pixel map byte count out of range.");
         return ERR_IMAGE_TOO_LARGE;
