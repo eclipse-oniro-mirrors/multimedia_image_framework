@@ -137,6 +137,5 @@ HWTEST_F(PluginServerTest, AnalyzeFWTyper002, TestSize.Level3)
     ASSERT_EQ(result, PluginFWType::PLUGIN_FW_GSTREAMER);
     GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 end";
 }
-
 }
 }
