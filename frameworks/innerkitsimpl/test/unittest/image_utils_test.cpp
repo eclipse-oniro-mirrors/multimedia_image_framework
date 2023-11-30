@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
@@ -329,11 +329,11 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 
     pixelFormat =PixelFormat::RGB_888;
     ret = imageutils.GetPixelBytes(pixelFormat);
-     ASSERT_EQ(ret, RGB888_BYTES );
+    ASSERT_EQ(ret, RGB888_BYTES );
 
     pixelFormat =PixelFormat::RGB_565;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,RGB565_BYTES );
+    ASSERT_EQ(ret, RGB565_BYTES );
 
     pixelFormat =PixelFormat::RGBA_F16;
     ret = imageutils.GetPixelBytes(pixelFormat);
@@ -348,7 +348,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ASSERT_EQ(ret, ASTC_4X4_BYTES );
 
     pixelFormat =14;
-     ret = imageutils.GetPixelBytes(pixelFormat);
+    ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 end";
 }
@@ -371,7 +371,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 
-    format =  PixelFormat::RGB_888;
+    format = PixelFormat::RGB_888;
     ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 
