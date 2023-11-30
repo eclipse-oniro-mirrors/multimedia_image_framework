@@ -743,7 +743,7 @@ HWTEST_F(WebpEncoderTest, MakeImageInfoTest003, TestSize.Level3)
     PixelFormat pf;
     AlphaType at;
     ColorSpace cs;
-    encoder.MakeImageInfo(width, height,pf,at,cs);
+    encoder.MakeImageInfo(width, height, pf, at, cs);
     GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest003 end";
 }
 
@@ -761,6 +761,5 @@ HWTEST_F(WebpEncoderTest, ShowTransformParamTest004, TestSize.Level3)
     encoder.ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
     GTEST_LOG_(INFO) << "WebpEncoderTest: ShowTransformParamTest003 end";
 }
-
 }
 }
