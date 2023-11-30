@@ -354,8 +354,6 @@ HWTEST_F(PluginLibJpegTest, exif_info015, TestSize.Level3)
     ASSERT_EQ(ret, EXIF_IFD_INTEROPERABILITY);
     ret = exinfo.GetIFDOfIFDPointerTag(-1);
     ASSERT_EQ(ret, EXIF_IFD_COUNT);
-    // bool ret = exinfo.GetIFDOfIFDPointerTag(0xa301);
-    // ASSERT_EQ(ret, EXIF_IFD_COUNT);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag end";
 }
 
