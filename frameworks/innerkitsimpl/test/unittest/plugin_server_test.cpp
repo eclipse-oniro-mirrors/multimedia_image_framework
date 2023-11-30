@@ -112,5 +112,31 @@ HWTEST_F(PluginServerTest, CreateObject001, TestSize.Level3)
         pluginServer.CreateObject<AbsImageDetector>(implClassName);
     ASSERT_EQ(labelDetector, nullptr);
 }
+
+HWTEST_F(PluginServerTest, Register001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: Register001 start";
+    PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
+    vector<string> pluginPaths = { "/system/etc/multimediaplugin/testplugins" };
+    uint32_t ret = pluginServer.Register(std::move(pluginPaths));
+    bool result = (ret != SUCCESS);
+    ASSERT_EQ(result, true);
+    vector<string> pluginPaths = { "/system/etc/multimediaplugin/gstreamer" };
+    uint32_t ret = pluginServer.Register(std::move(pluginPaths));
+    bool result = (ret != SUCCESS);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PluginServerTest: Register001 end";
+}
+
+HWTEST_F(PluginServerTest, AnalyzeFWTyper002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 start";
+    PluginServer server;
+    string path = "/path/to/gstreamer/plugin";
+    PluginFWType result = server.AnalyzeFWType(path);
+    ASSERT_EQ(result, PluginFWType::PLUGIN_FW_GSTREAMER);
+    GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 end";
+}
+
 }
 }
