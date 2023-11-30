@@ -2195,5 +2195,10 @@ size_t ImageSource::GetSourceSize() const
     return sourceStreamPtr_ ? sourceStreamPtr_->GetStreamSize() : 0;
 }
 #endif
+
+bool ImageSource::IsSupportGenAstc()
+{
+    return ImageSystemProperties::GetMediaLibraryAstcEnabled();
+}
 } // namespace Media
 } // namespace OHOS
