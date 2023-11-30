@@ -690,5 +690,77 @@ HWTEST_F(WebpEncoderTest, Write001, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "WebpEncoderTest: Write001 end";
 }
+
+HWTEST_F(WebpEncoderTest, CheckEncodeFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: CheckEncodeFormatTest001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    PixelFormat pixelFormat = PixelFormat::RGBA_8888;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::BGRA_8888;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::RGBA_F16;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::ARGB_8888;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::RGB_888;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::RGB_565;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::ALPHA_8;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    PixelFormat pixelFormat = PixelFormat::ASTC_8x8;
+    bool result = webpDecoder->CheckEncodeFormat(pixelMap);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: CheckEncodeFormatTest001 end";
+}
+
+HWTEST_F(WebpEncoderTest, WriteTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: WriteTest002 start";
+    WebpEncoder encoder;
+    uint8_t data[] = {0x01, 0x02, 0x03};
+    size_t data_size = sizeof(data);
+    iccValid_ = true;
+    bool result = encoder.Write(data, data_size);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: WriteTest002 end";
+}
+
+HWTEST_F(WebpEncoderTest, MakeImageInfoTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest003 start";
+    WebpEncoder encoder;
+    int width = 1;
+    int height = 2;
+    PixelFormat pf;
+    AlphaType at;
+    ColorSpace cs;
+    encoder.MakeImageInfo(width, height,pf,at,cs);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest003 end";
+}
+
+HWTEST_F(WebpEncoderTest, ShowTransformParamTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: ShowTransformParamTest004 start";
+    WebpEncoder encoder;
+    uint32_t srcRowBytes = pixelMap.GetRowBytes();
+    const ImageInfo srcInfo = MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
+        PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    uint32_t dstRowBytes = pixelMap.GetWidth() * componentsNum;
+    const ImageInfo dstInfo = MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
+        PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    const int componentsNum = 2;
+    encoder.ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: ShowTransformParamTest003 end";
+}
+
 }
 }
