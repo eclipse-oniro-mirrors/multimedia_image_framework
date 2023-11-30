@@ -1310,7 +1310,7 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     format = PixelFormat:ASTC_4x4 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true); 
-    format =14 ;
+    format = 14 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, false);          
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPixelFormatDetail GetPurgeableMemPtr end";
@@ -1344,11 +1344,11 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     PixelMap pixelmap;
     ImageInfo info;
     const float percent = 1;
-    info.alphaType=2;
-    info.pixelFormat=6;
+    info.alphaType = 2;
+    info.pixelFormat = 6;
     auto ret = pixelmap.SetAlpha(percent);   
-   ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    info.pixelFormat=7;
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    info.pixelFormat = 7;
     ret = pixelmap.SetAlpha(percent);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);   
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  end";
