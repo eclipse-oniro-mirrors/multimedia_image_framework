@@ -1280,19 +1280,19 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     const PixelFormat format = PixelFormat::RGBA_8888;
     auto ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::BGRA_8888 ;
+    format = PixelFormat::BGRA_8888 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::ARGB_8888 ;
+    format = PixelFormat::ARGB_8888 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::ALPHA_8 ;
+    format = PixelFormat::ALPHA_8 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::ARGB_8888 ;
+    format = PixelFormat::ARGB_8888 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::RGB_565 ;
+    format = PixelFormat::RGB_565 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
     format =PixelFormat::RGB_888 ;
@@ -1301,13 +1301,13 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     format =PixelFormat::NV12 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat::CMYK ;
+    format = PixelFormat::CMYK ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
-    format =PixelFormat:RGBA_F16 ;
+    format = PixelFormat:RGBA_F16 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);    
-    format =PixelFormat:ASTC_4x4 ;
+    format = PixelFormat:ASTC_4x4 ;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true); 
     format =14 ;
@@ -1328,7 +1328,7 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     const float percent = 1;
     auto ret = pixelmap.SetAlpha(percent);
     ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);   
-    info.alphaType=1;
+    info.alphaType = 1;
     auto ret = pixelmap.SetAlpha(percent);
     ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);   
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedAlphaTyp  end";
@@ -1364,8 +1364,8 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     PixelMap pixelmap;
     ImageInfo info;
     const float percent = 1;
-    info.alphaType=2;
-    info.pixelFormat=1;
+    info.alphaType = 2;
+    info.pixelFormat = 1;
     auto ret = pixelmap.SetAlpha(percent);   
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  end";
@@ -1382,8 +1382,8 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     PixelMap pixeimap;
     Parcel parcel;
     ImageInfo imgInfo;
-    bool  ret = pixeimap.ReadImageInfo(parcel,imgInfo);
-    ASSERT_EQ(ret,true);
+    bool ret = pixeimap.ReadImageInfo(parcel, imgInfo);
+    ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  end";
 }
 }
