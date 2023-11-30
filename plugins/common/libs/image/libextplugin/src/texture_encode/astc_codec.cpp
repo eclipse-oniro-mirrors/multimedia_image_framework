@@ -151,14 +151,14 @@ bool CheckQuality(int32_t *mseIn[RGBA_COM], int blockNum, int blockXYZ)
             psnr[i] = MAX_PSNR;
             continue;
         }
-        double mseRgb = (double) mseTotal[i] / (blockNum * blockXYZ);
-        psnr[i] = LOG_BASE * log((double)(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
+        double mseRgb = static_cast<double>(mseTotal[i] / (blockNum * blockXYZ));
+        psnr[i] = LOG_BASE * log(static_cast<double>(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
     }
     if (mseTotal[RGBA_COM] == 0) {
         psnr[RGBA_COM] = MAX_PSNR;
     } else {
-        double mseRgb = (double) mseTotal[RGBA_COM] / (blockNum * blockXYZ * (RGBA_COM - 1));
-        psnr[RGBA_COM] = LOG_BASE * log((double)(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
+        double mseRgb = static_cast<double>(mseTotal[RGBA_COM] / (blockNum * blockXYZ * (RGBA_COM - 1)));
+        psnr[RGBA_COM] = LOG_BASE * log(static_cast<double>(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
     }
     HiLog::Debug(LABEL, "astc psnr r%{public}f g%{public}f b%{public}f a%{public}f rgb%{public}f",
         psnr[R_COM], psnr[G_COM], psnr[B_COM], psnr[A_COM],
