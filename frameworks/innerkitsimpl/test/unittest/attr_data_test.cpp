@@ -1291,7 +1291,7 @@ HWTEST_F(AttrDataTest, InRange1Test0075, TestSize.Level3)
     ASSERT_EQ(res, false);
     uint32_t value = 4;
     MultimediaPlugin::AttrData aData(value);
-    value_.uint32Set = new (std::nothrow) set<uint32_t>({ value });
+    value_.uint32Set = new (std::nothrow) set<uint32_t>({value});
     bool res = aData.InRange(value);
     ASSERT_EQ(res, false);
     uint32_t value = 6;
@@ -1440,6 +1440,5 @@ HWTEST_F(AttrDataTest, GetMaxValue2Test0081, TestSize.Level3)
     ASSERT_EQ(res, ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "AttrDataTest: GetMaxValueTest0081 end";
 }
-
 }
 }
