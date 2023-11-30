@@ -132,5 +132,21 @@ HWTEST_F(NativeImageTest, NativeImageTest006, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest006 end";
 }
+/**
+ * @tc.name: NativeImageTest006
+ * @tc.desc: SplitSurfaceToComponent***
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitSurfaceToComponent, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest006 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    buffer_ = nullptr;
+    int32_t ret = image.SplitSurfaceToComponent();
+    ASSERT_EQ(ret,ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent end";
+}
 }
 }
