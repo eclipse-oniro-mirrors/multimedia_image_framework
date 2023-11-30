@@ -1206,5 +1206,31 @@ HWTEST_F(JpegDecoderTest, IsMarkerTest002, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest002 end";
 }
+
+/**
+ * @tc.name: GetDecodeFormat
+ * @tc.desc: Test of GetDecodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetDecodeFormat, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetDecodeFormatTest start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    PlPixelFormat outputFormat;
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::UNKNOWN, outputFormat);
+    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGBA_8888, outputFormat);
+    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::BGRA_8888, outputFormat);
+    ASSERT_EQ(outputFormat, PlPixelFormat::BGRA_8888);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::ARGB_8888, outputFormat);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::ALPHA_8, outputFormat);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGB_565, outputFormat);
+    ASSERT_EQ(outputFormat, PlPixelFormat::RGB_888);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGB_888, outputFormat);
+    jpegDecoder->GetDecodeFormat(PlPixelFormat::ASTC_8X8, outputFormat);
+    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetDecodeFormatTest end";
+}
 }
 }
