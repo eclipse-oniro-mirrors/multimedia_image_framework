@@ -1099,7 +1099,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     size_t size;
     sourceStreamPtr_ = nullptr;
     auto ret = imagesource.GetData(outData, size);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER );
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 end";
 }
 /**
