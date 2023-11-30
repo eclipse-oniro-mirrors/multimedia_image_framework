@@ -1042,5 +1042,33 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC end";
 }
+/**
+ * @tc.name: CreateImageSource0015
+ * @tc.desc: test GetSourceDecodingState****
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState start";
+    ImageInfo imageInfo;
+    ASTCInfo astcInfo;
+    int32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::DecodeSourceInfo(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    bool isAcquiredImageNum = true;
+    imageSource->decodeState_=1;
+    auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
+   ASSERT_EQ(ret,ERR_IMAGE_SOURCE_DATA);
+    imageSource->decodeState_=2;
+    ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
+    ASSERT_EQ(ret,ERR_IMAGE_UNKNOWN_FORMAT);
+    imageSource->decodeState_=4;
+    ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
+    ASSERT_EQ(ret,ERR_IMAGE_PLUGIN_CREATE_FAILED);
+    imageSource->decodeState_=5;
+    ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
+    ASSERT_EQ(ret,ERR_IMAGE_DECODE_FAILED);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState end";
+}
 } // namespace Multimedia
 } // namespace OHOS
