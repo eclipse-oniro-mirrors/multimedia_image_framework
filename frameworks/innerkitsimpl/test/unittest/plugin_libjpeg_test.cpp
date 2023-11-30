@@ -448,7 +448,7 @@ HWTEST_F(PluginLibJpegTest, exif_info019, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck001 start";
     EXIFInfo exinfo;
-    exinfo.EXIFInfoBufferCheck(nullptr,1);
+    exinfo.EXIFInfoBufferCheck(nullptr, 1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck001 end";
 }
 
