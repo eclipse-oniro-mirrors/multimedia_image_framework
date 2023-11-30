@@ -492,7 +492,7 @@ HWTEST_F(WebpDecoderTest, MakeImageInfoTest003, TestSize.Level3)
     PixelFormat pf;
     AlphaType at;
     ColorSpace cs;
-    decoder.MakeImageInfo(width, height,pf,at,cs);
+    decoder.MakeImageInfo(width, height, pf, at, cs);
     GTEST_LOG_(INFO) << "WebpDecoderTest: MakeImageInfoTest003 end";
 }
 
@@ -510,6 +510,5 @@ HWTEST_F(WebpDecoderTest, ShowTransformParamoTest004, TestSize.Level3)
     const int componentsNum = 2;
     GTEST_LOG_(INFO) << "WebpDecoderTest: ShowTransformParamTest004 end";
 }
-
 }
 }
