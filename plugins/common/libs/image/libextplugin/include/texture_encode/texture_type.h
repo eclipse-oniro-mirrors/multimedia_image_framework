@@ -17,7 +17,9 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_TEXTURE_TYPE_H
 
 #include "astcenc.h"
-
+#ifndef QUALITY_CONTROL
+#define QUALITY_CONTROL (1)
+#endif
 namespace OHOS {
 namespace ImagePlugin {
 typedef struct TextureEncodeOptionsType {
