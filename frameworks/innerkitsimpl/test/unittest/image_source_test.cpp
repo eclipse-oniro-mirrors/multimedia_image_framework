@@ -1067,7 +1067,7 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     ASSERT_EQ(ret,ERR_IMAGE_PLUGIN_CREATE_FAILED);
     imageSource->decodeState_=5;
     ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
-    ASSERT_EQ(ret,ERR_IMAGE_DECODE_FAILED);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState end";
 }
 /**
@@ -1083,7 +1083,7 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
     MemoryData  extend;
     auto mm = std::__make_shared<MemoryManager>();
     auto ret = mm->CreateMemory(type,  data,  extend);
-    ASSERT_EQ(ret,nullptr );
+    ASSERT_EQ(ret, nullptr );
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
 }
 /**
@@ -1099,7 +1099,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     size_t size;
     sourceStreamPtr_ = nullptr;
     auto ret = imagesource.GetData(outData,size);
-    ASSERT_EQ(ret,ERR_IMAGE_INVALID_PARAMETER );
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER );
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 end";
 }
 /**
@@ -1115,7 +1115,7 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
     size_t size =0;
     sourceStreamPtr_ = std::make_shared<ImageSource>();
     auto ret = imagesource.GetData(outData,size);
-    ASSERT_EQ(ret,ERR_IMAGE_SOURCE_DATA );
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA );
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 end";
 }
 /**
