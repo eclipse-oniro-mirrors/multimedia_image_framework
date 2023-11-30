@@ -320,32 +320,32 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 start";
     const PixelFormat pixelFormat = 1;
     ImageUtils imageutils;
-    auto ret  = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, ARGB8888_BYTES );
+    auto ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, ARGB8888_BYTES);
 
-    pixelFormat =PixelFormat::ALPHA_8;
+    pixelFormat = PixelFormat::ALPHA_8;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, ALPHA8_BYTES );
+    ASSERT_EQ(ret, ALPHA8_BYTES);
 
-    pixelFormat =PixelFormat::RGB_888;
+    pixelFormat = PixelFormat::RGB_888;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, RGB888_BYTES );
+    ASSERT_EQ(ret, RGB888_BYTES);
 
-    pixelFormat =PixelFormat::RGB_565;
+    pixelFormat = PixelFormat::RGB_565;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, RGB565_BYTES );
+    ASSERT_EQ(ret, RGB565_BYTES);
 
-    pixelFormat =PixelFormat::RGBA_F16;
+    pixelFormat = PixelFormat::RGBA_F16;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, RGBA_F16_BYTES );
+    ASSERT_EQ(ret, RGBA_F16_BYTES);
 
-    pixelFormat =PixelFormat::NV21;
+    pixelFormat = PixelFormat::NV21;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, NV21_BYTES );
+    ASSERT_EQ(ret, NV21_BYTES);
 
-    pixelFormat =PixelFormat::ASTC_4x4;
+    pixelFormat = PixelFormat::ASTC_4x4;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret, ASTC_4X4_BYTES );
+    ASSERT_EQ(ret, ASTC_4X4_BYTES);
 
     pixelFormat =14;
     ret = imageutils.GetPixelBytes(pixelFormat);
