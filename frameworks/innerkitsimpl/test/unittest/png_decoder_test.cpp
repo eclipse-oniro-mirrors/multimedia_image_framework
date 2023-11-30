@@ -722,15 +722,16 @@ HWTEST_F(PngDecoderTest, ChooseFormat, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     PlPixelFormat outputFormat;
-    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat);
+    png_byte destType = PNG_COLOR_TYPE_RGBA;
+    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest end";
 }
