@@ -321,15 +321,15 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     const PixelFormat pixelFormat = 1;
     ImageUtils imageutils;
     auto ret  = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,ARGB8888_BYTES );
+    ASSERT_EQ(ret, ARGB8888_BYTES );
 
     pixelFormat =PixelFormat::ALPHA_8;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,ALPHA8_BYTES );
+    ASSERT_EQ(ret, ALPHA8_BYTES );
 
     pixelFormat =PixelFormat::RGB_888;
     ret = imageutils.GetPixelBytes(pixelFormat);
-     ASSERT_EQ(ret,RGB888_BYTES );
+     ASSERT_EQ(ret, RGB888_BYTES );
 
     pixelFormat =PixelFormat::RGB_565;
     ret = imageutils.GetPixelBytes(pixelFormat);
@@ -337,15 +337,15 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 
     pixelFormat =PixelFormat::RGBA_F16;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,RGBA_F16_BYTES );
+    ASSERT_EQ(ret, RGBA_F16_BYTES );
 
     pixelFormat =PixelFormat::NV21;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,NV21_BYTES );
+    ASSERT_EQ(ret, NV21_BYTES );
 
     pixelFormat =PixelFormat::ASTC_4x4;
     ret = imageutils.GetPixelBytes(pixelFormat);
-    ASSERT_EQ(ret,ASTC_4X4_BYTES );
+    ASSERT_EQ(ret, ASTC_4X4_BYTES );
 
     pixelFormat =14;
      ret = imageutils.GetPixelBytes(pixelFormat);
@@ -364,20 +364,20 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ImageUtils imageutils;
     const AlphaType dsType = 0;
     const PixelFormat format = PixelFormat::RGBA_8888;
-    auto ret = imageutils.GetValidAlphaTypeByFormat(dsType,format);
+    auto ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, 0);
     
     format = PixelFormat::ALPHA_8;
-    ret = imageutils.GetValidAlphaTypeByFormat(dsType,format);
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 
     format =  PixelFormat::RGB_888;
-    ret = imageutils.GetValidAlphaTypeByFormat(dsType,format);
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 
     dsType = 0;
     format = 0;
-    ret = imageutils.GetValidAlphaTypeByFormat(dsType,format);
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat end";
 }
