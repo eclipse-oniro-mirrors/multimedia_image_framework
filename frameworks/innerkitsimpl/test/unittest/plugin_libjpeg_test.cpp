@@ -310,5 +310,161 @@ HWTEST_F(PluginLibJpegTest, exif_info013, TestSize.Level3)
     ASSERT_EQ(ret, 1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info013 end";
 }
+
+/**
+ * @tc.name: exif_info014
+ * @tc.desc: IsIFDPointerTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.IsIFDPointerTag(0x014a);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.IsIFDPointerTag(0x8769);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.IsIFDPointerTag(0x8825);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.IsIFDPointerTag(0xa005);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.IsIFDPointerTag(0xa301);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.IsIFDPointerTag(-1);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag end";
+}
+
+/**
+ * @tc.name: exif_info015
+ * @tc.desc: GetIFDOfIFDPointerTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag start";
+    EXIFInfo exinfo;
+    ExifIfd ret;
+    ret = exinfo.GetIFDOfIFDPointerTag(0x8769);
+    ASSERT_EQ(ret, EXIF_IFD_EXIF);
+    ret = exinfo.GetIFDOfIFDPointerTag(0x8825);
+    ASSERT_EQ(ret, EXIF_IFD_GPS);
+    ret = exinfo.GetIFDOfIFDPointerTag(0xa005);
+    ASSERT_EQ(ret, EXIF_IFD_INTEROPERABILITY);
+    ret = exinfo.GetIFDOfIFDPointerTag(-1);
+    ASSERT_EQ(ret, EXIF_IFD_COUNT);
+    // bool ret = exinfo.GetIFDOfIFDPointerTag(0xa301);
+    // ASSERT_EQ(ret, EXIF_IFD_COUNT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag end";
+}
+
+/**
+ * @tc.name: exif_info016
+ * @tc.desc: CheckExifEntryValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_ORIENTATION);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid end";
+}
+
+/**
+ * @tc.name: exif_info017
+ * @tc.desc: CheckExifEntryValidEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, TAG_SENSITIVITY_TYPE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx end";
+}
+
+/**
+ * @tc.name: exif_info018
+ * @tc.desc: GetEncodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat start";
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    int32_t componentsNum;
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_F16, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_8888, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    
+    jpegEncoder->GetEncodeFormat(PixelFormat::BGRA_8888, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_BGRA);
+    
+    jpegEncoder->GetEncodeFormat(PixelFormat::ARGB_8888, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_ARGB);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::ALPHA_8, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_GRAY);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_565, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_888, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::NV12, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::NV21, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+
+    jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
+}
+
+/**
+ * @tc.name: exif_info019
+ * @tc.desc: EXIFInfoBufferCheck
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck001 start";
+    EXIFInfo exinfo;
+    exinfo.EXIFInfoBufferCheck(nullptr,1);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck001 end";
+}
+
+/**
+ * @tc.name: exif_info020
+ * @tc.desc: EXIFInfoBufferCheck
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck002 start";
+    EXIFInfo exinfo;
+    auto exifEntry = std::make_shared<ExifEntry>();
+    exifEntry->size = 2;
+    exinfo.EXIFInfoBufferCheck(exifEntry,5);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
