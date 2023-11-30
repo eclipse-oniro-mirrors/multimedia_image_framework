@@ -1289,11 +1289,6 @@ HWTEST_F(AttrDataTest, InRange1Test0075, TestSize.Level3)
     MultimediaPlugin::AttrData aData(value);
     bool res = aData.InRange(value);
     ASSERT_EQ(res, false);
-    uint32_t value = 4;
-    MultimediaPlugin::AttrData aData(value);
-    value_.uint32Set = new (std::nothrow) set<uint32_t>({ value });
-    bool res = aData.InRange(value);
-    ASSERT_EQ(res, false);
     uint32_t value = 6;
     MultimediaPlugin::AttrData aData(value);
     bool res = aData.InRange(value);
