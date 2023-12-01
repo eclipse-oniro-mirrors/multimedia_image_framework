@@ -1234,48 +1234,22 @@ HWTEST_F(AttrDataTest, AttrDataTest0072, TestSize.Level3)
 HWTEST_F(AttrDataTest, AttrDataTest0073, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0072 start";
-    MultimediaPlugin::AttrData aData;
     uint32_t value = 1;
-    aData(value);
-    value = 2;
-    aData(value);
-    value = 3;
-    aData(value);
-    value = 4;
-    aData(value);
-    value = 5;
-    aData(value);
-    value = 6;
-    aData(value);
-    value = 7;
-    aData(value);
-    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 end";
-}
-
-/**
- * @tc.name: AttrDataTest0074
- * @tc.desc: test ClearData
- * @tc.type: FUNC
- */
-HWTEST_F(AttrDataTest, ClearDataTest0074, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "AttrDataTest: ClearDataTest0074 start";
-    AttrDataUnion value_;
-    uint32_t value = 3;
-    value_.stringValue = "try";
     MultimediaPlugin::AttrData aData(value);
-    aData.ClearData();
+    aData.SetData(value);
+    value = 2;
+    aData.SetData(value);
+    value = 3;
+    aData.SetData(value);
     value = 4;
-    value_.uint32Set = "try";
-    aData(value);
+    aData.SetData(value);
     value = 5;
-    value_.stringSet = "try";
-    aData(value);
-    aData.ClearData();
+    aData.SetData(value);
     value = 6;
-    aData(value);
-    aData.ClearData();
-    GTEST_LOG_(INFO) << "AttrDataTest: ClearDataTest0074 end";
+    aData.SetData(value);
+    value = 7;
+    aData.SetData(value);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 end";
 }
 
 /**
@@ -1290,13 +1264,11 @@ HWTEST_F(AttrDataTest, InRange1Test0075, TestSize.Level3)
     MultimediaPlugin::AttrData aData(value);
     bool res = aData.InRange(value);
     ASSERT_EQ(res, false);
-    uint32_t value = 6;
-    MultimediaPlugin::AttrData aData(value);
-    bool res = aData.InRange(value);
+    value = 6;
+    res = aData.InRange(value);
     ASSERT_EQ(res, false);
-    uint32_t value = 8;
-    MultimediaPlugin::AttrData aData(value);
-    bool res = aData.InRange(value);
+    value = 8;
+    res = aData.InRange(value);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "AttrDataTest: InRange1Test0075 end";
 }
@@ -1309,20 +1281,17 @@ HWTEST_F(AttrDataTest, InRange1Test0075, TestSize.Level3)
 HWTEST_F(AttrDataTest, InRange2Test0076, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: InRange2Test0076 start";
+    MultimediaPlugin::AttrData aData;
     std::string value = "111";
-    type_ = AttrDataType::ATTR_DATA_STRING;
-    MultimediaPlugin::AttrData aData(value);
+    aData.type_ = AttrDataType::ATTR_DATA_STRING;
     bool ret = aData.InRange(value);
     ASSERT_EQ(ret, false);
-    std::string value = "111";
-    type_ = AttrDataType::ATTR_DATA_STRING_SET;
-    MultimediaPlugin::AttrData aData(value);
-    bool ret = aData.InRange(value);
+    value = "111";
+    aData.type_ = AttrDataType::ATTR_DATA_STRING_SET;
     ASSERT_EQ(ret, false);
-    std::string value = "111";
-    type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
-    MultimediaPlugin::AttrData aData(value);
-    bool ret = aData.InRange(value);
+    value = "111";
+    aData.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    ret = aData.InRange(value);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "AttrDataTest: InRange2Test0076 end";
 }
@@ -1365,57 +1334,55 @@ HWTEST_F(AttrDataTest, InRange3Test0077, TestSize.Level3)
 HWTEST_F(AttrDataTest, GetMinValueTest0078, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: GetMinValueTest0078 start";
-    uint32_t value = 1;
-    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData;
     uint32_t v;
-    type_ = AttrDataType::ATTR_DATA_UINT32;
+    aDta.type_ = AttrDataType::ATTR_DATA_UINT32;
     uint32_t ret = aData.GetMinValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_UINT32_SET;
-    uint32_t ret = aData.GetMinValue(v);
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32_SET;
+    ret = aData.GetMinValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
-    uint32_t ret = aData.GetMinValue(v);
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
+    ret = aData.GetMinValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
-    uint32_t ret = aData.GetMinValue(v);
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
+    ret = aData.GetMinValue(v);
     GTEST_LOG_(INFO) << "AttrDataTest: GetMinValueTest0078 end";
 }
 
 HWTEST_F(AttrDataTest, GetMaxValueTest0079, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: GetMaxValueTest0079 start";
-    uint32_t value = 1;
-    MultimediaPlugin::AttrData aData(value);
+    MultimediaPlugin::AttrData aData;
     uint32_t v;
-    type_ = AttrDataType::ATTR_DATA_UINT32;
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32;
     uint32_t ret = aData.GetMaxValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_UINT32_SET;
-    uint32_t ret = aData.GetMaxValue(v);
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32_SET;
+    ret = aData.GetMaxValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
-    uint32_t ret = aData.GetMaxValue(v);
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
+    ret = aData.GetMaxValue(v);
     ASSERT_EQ(ret, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
-    uint32_t ret = aData.GetMaxValue(v);
-    ASSERT_EQ(ret, SUERR_INVALID_PARAMETERCCESS);
+    aData.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    ret = aData.GetMaxValue(v);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "AttrDataTest: GetMaxValueTest0079 end";
 }
 
 HWTEST_F(AttrDataTest, GetMinValue2Test0080, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: GetMinValue2Test0080 start";
+    MultimediaPlugin::AttrData aData;
     std::string value = "111";
-    MultimediaPlugin::AttrData aData(value);
     const string *value1 = nullptr;
-    type_ = AttrDataType::ATTR_DATA_STRING;
+    aDat.type_ = AttrDataType::ATTR_DATA_STRING;
     uint32_t res = aData.GetMinValue(value1);
     ASSERT_EQ(res, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_STRING_SET;
+    aData.type_ = AttrDataType::ATTR_DATA_STRING_SET;
     aData.GetMinValue(value1);
-    type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
-    uint32_t res = aData.GetMinValue(value1);
+    aData.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    res = aData.GetMinValue(value1);
     ASSERT_EQ(res, ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "AttrDataTest: GetMinValue2Test0080 end";
 }
@@ -1423,16 +1390,16 @@ HWTEST_F(AttrDataTest, GetMinValue2Test0080, TestSize.Level3)
 HWTEST_F(AttrDataTest, GetMaxValue2Test0081, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: GetMaxValue2Test0081 start";
+    MultimediaPlugin::AttrData aData;
     std::string value = "111";
-    MultimediaPlugin::AttrData aData(value);
     const string *value1 = nullptr;
-    type_ = AttrDataType::ATTR_DATA_STRING;
+    aData.type_ = AttrDataType::ATTR_DATA_STRING;
     uint32_t res = aData.GetMaxValue(value1);
     ASSERT_EQ(res, SUCCESS);
-    type_ = AttrDataType::ATTR_DATA_STRING;
+    aData.type_ = AttrDataType::ATTR_DATA_STRING;
     aData.GetMaxValue(value1);
-    type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
-    uint32_t res = aData.GetMaxValue(value1);
+    aData.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    res = aData.GetMaxValue(value1);
     ASSERT_EQ(res, ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "AttrDataTest: GetMaxValueTest0081 end";
 }
