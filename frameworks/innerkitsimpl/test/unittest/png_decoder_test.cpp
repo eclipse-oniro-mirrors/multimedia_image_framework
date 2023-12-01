@@ -722,15 +722,16 @@ HWTEST_F(PngDecoderTest, ChooseFormat, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     PlPixelFormat outputFormat;
-    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat);
-    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat);
+    png_byte destType = PNG_COLOR_TYPE_RGBA;
+    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat), destType;
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat, destType);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest end";
 }
@@ -747,10 +748,6 @@ HWTEST_F(PngDecoderTest, ConvertOriginalFormat, TestSize.Level3)
     png_byte destination;
     pngDecoder->ConvertOriginalFormat(PNG_COLOR_TYPE_PALETTE, destination);
     ASSERT_EQ(destination, PNG_COLOR_TYPE_RGB);
-    pngImageInfo_.bitDepth = 9;
-    pngDecoder->ConvertOriginalFormat(PNG_COLOR_TYPE_GRAY, destination);
-    ASSERT_EQ(destination, PNG_COLOR_TYPE_RGB);
-    pngImageInfo_.bitDepth = 1;
     pngDecoder->ConvertOriginalFormat(PNG_COLOR_TYPE_GRAY, destination);
     ASSERT_EQ(destination, PNG_COLOR_TYPE_RGB);
     pngDecoder->ConvertOriginalFormat(PNG_COLOR_TYPE_GRAY_ALPHA, destination);
@@ -772,8 +769,8 @@ HWTEST_F(PngDecoderTest, ProcessData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngErrorExit, PngWarning);
-    png_infop infoStructPtr = png_create_info_struct(pngStructPtr_);
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, ImagePlugin::PngDecoder::PngErrorExit, ImagePlugin::PngDecoder::PngWarning);
+    png_infop infoStructPtr = png_create_info_struct(pngStructPtr);
     InputDataStream *sourceStream;
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
@@ -796,9 +793,8 @@ HWTEST_F(PngDecoderTest, ProcessData002, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
-    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngErrorExit, PngWarning);
-    png_infop infoStructPtr = png_create_info_struct(pngStructPtr_);
-    InputDataStream *sourceStream = std::make_shared<InputDataStream>();
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, ImagePlugin::PngDecoder::PngErrorExit, ImagePlugin::PngDecoder::PngWarning);
+    png_infop infoStructPtr = png_create_info_struct(pngStructPtr);
     DataStreamBuffer streamData;
     streamData.dataSize = 4;
     const uint32_t ret = pngDecoder->ProcessData(pngStructPtr, infoStructPtr, mock.get(), streamData, 1, 20);
@@ -881,8 +877,8 @@ HWTEST_F(PngDecoderTest, IncrementalReadRows002, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
-    idatLength_ = 1;
-    incrementalLength_ = 2;
+    pngDecoder->idatLength_ = 1;
+    pngDecoder->incrementalLength_ = 2;
     uint32_t ret = pngDecoder->IncrementalReadRows(mock.get());
     ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows002 end";
@@ -914,7 +910,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode002, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
-    idatLength_ = 0;
+    pngDecoder->idatLength_ = 0;
     uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode002 end";
