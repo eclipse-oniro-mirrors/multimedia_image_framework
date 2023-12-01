@@ -1056,16 +1056,16 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::DecodeSourceInfo(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool isAcquiredImageNum = true;
-    imageSource->decodeState_ = 1;
+    imageSource->decodeState_ = SourceDecodingState::SOURCE_ERROR;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
-    imageSource->decodeState_ = 2;
+    imageSource->decodeState_ = SourceDecodingState::UNKNOWN_FORMAT;
     ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, ERR_IMAGE_UNKNOWN_FORMAT);
-    imageSource->decodeState_ = 4;
+    imageSource->decodeState_ = SourceDecodingState::UNSUPPORTED_FORMAT;
     ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, ERR_IMAGE_PLUGIN_CREATE_FAILED);
-    imageSource->decodeState_ = 5;
+    imageSource->decodeState_ = SourceDecodingState::FILE_INFO_ERROR;
     ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState end";
@@ -1079,9 +1079,7 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
     AllocatorType type = 0;
-    MemoryData  data;
-    MemoryData  extend;
-    auto mm = std::__make_shared<MemoryManager>();
+    auto mm = std::make_shared<MemoryManager>();
     auto ret = mm->CreateMemory(type, data, extend);
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
