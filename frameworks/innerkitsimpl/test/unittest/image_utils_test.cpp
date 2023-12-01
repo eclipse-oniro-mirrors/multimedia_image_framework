@@ -369,7 +369,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
  * @tc.desc: ImageUtils::GetValidAlphaTypeByFormat
  * @tc.type: FUNC
  */
-HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
+HWTEST_F(ImageUtilsTest, GetValidAlphaTypeByFormat, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat start";
     ImageUtils imageutils;
