@@ -20,6 +20,24 @@
 #include "image_trace.h"
 #include "source_stream.h"
 #include "istream_source_stream.h"
+#include "image_type.h"
+#include "image_pugin_type.h"
+
+constexpr int32_t ALPHA8_BYTES = 1;
+constexpr int32_t RGB565_BYTES = 2;
+constexpr int32_t RGB888_BYTES = 3;
+constexpr int32_t ARGB8888_BYTES = 4;
+constexpr int32_t RGBA_F16_BYTES = 8;
+constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
+constexpr int32_t ASTC_4X4_BYTES = 1;
+constexpr float EPSILON = 1e-6;
+constexpr int MAX_DIMENSION = INT32_MAX >> 2;
+static bool g_pluginRegistered = false;
+static const uint8_t NUM_0 = 0;
+static const uint8_t NUM_1 = 1;
+static const uint8_t NUM_2 = 2;
+static const uint8_t NUM_3 = 3;
+static const uint8_t NUM_4 = 4;
 
 using namespace testing::ext;
 using namespace OHOS::Media;
