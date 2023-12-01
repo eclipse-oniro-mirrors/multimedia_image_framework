@@ -336,7 +336,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 start";
-    const PixelFormat pixelFormat = PixelFormat::ARGB_8888;
+    PixelFormat pixelFormat = PixelFormat::ARGB_8888;
     ImageUtils imageutils;
     auto ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, ARGB8888_BYTES);
@@ -365,7 +365,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, ASTC_4X4_BYTES);
 
-    pixelFormat =UNKNOWN;
+    pixelFormat = PixelFormat::UNKNOWN;
     ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 end";
@@ -380,8 +380,8 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat start";
     ImageUtils imageutils;
-    const AlphaType dsType = 0;
-    const PixelFormat format = PixelFormat::RGBA_8888;
+    AlphaType dsType = 0;
+    PixelFormat format = PixelFormat::RGBA_8888;
     auto ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, 0);
     
@@ -393,7 +393,6 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 
-    dsType = 0;
     format = 0;
     ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
