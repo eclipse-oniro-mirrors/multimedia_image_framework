@@ -313,7 +313,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 start";
     void* buffer = nullptr;
-    int32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
+    uint32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
     ASSERT_NE(res, SUCCESS);
 
     int32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
