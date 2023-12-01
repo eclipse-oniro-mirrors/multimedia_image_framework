@@ -392,7 +392,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
     AllocatorType allocType, PlImageBuffer &buffer)
 {
     if (func != nullptr) {
-        func(buffer.buffer, buffer.context, buffer.dataSize);
+        func(buffer.buffer, buffer.context, buffer.bufferSize);
         return;
     }
 
@@ -400,7 +400,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func,
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int *>(buffer.context);
         if (buffer.buffer != nullptr) {
-            ::munmap(buffer.buffer, buffer.dataSize);
+            ::munmap(buffer.buffer, buffer.bufferSize);
         }
         if (fd != nullptr) {
             ::close(*fd);
