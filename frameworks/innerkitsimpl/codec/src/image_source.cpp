@@ -1202,6 +1202,10 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
     const static string EXT_ENCODED_FORMAT_KEY = "EncodedFormat";
     auto decoderPtr = unique_ptr<AbsImageDecoder>(codec);
+    if (decoderPtr == nullptr) {
+        HiLog::Error(LABEL, "[ImageSource]decoderPtr null");
+        return ERR_MEDIA_NULL_POINTER;
+    }
     ProgDecodeContext context;
     if (IsIncrementalSource() &&
         decoderPtr->PromoteIncrementalDecode(UINT32_MAX, context) == ERR_IMAGE_DATA_UNSUPPORT) {
