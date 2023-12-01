@@ -917,6 +917,7 @@ ohos_unittest("ndktest") {
     "../../../../../arkui/napi/interfaces/inner_api",
     "../../../../../arkui/napi/interfaces/kits",
     "//third_party/node/src",
+    "$resource_management_subsystem/interfaces/native/resource/include",
   ]
   sources = [
     "unittest/image_ndk_test.cpp",

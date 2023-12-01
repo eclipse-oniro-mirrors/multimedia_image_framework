@@ -49,6 +49,10 @@ commonlibrary_subsystem =
 commonlibrary_memory_utils = "memory_utils"
 comlibmemory_subsystem =
     "/$comlib_sep_c$comlib_ommonlibrary/$commonlibrary_memory_utils"
+base_sep_b = "/b"
+base_ase = "ase"
+resource_management_subsystem =
+    "/$base_sep_b$base_ase/global/resource_management"
 
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia

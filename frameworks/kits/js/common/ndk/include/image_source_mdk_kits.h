@@ -19,12 +19,18 @@
 #include "common_utils.h"
 #include "image_source_napi.h"
 #include "image_source_mdk.h"
+#include "raw_file.h"
 
 namespace OHOS {
 namespace Media {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct DataArray {
+    uint8_t* data = nullptr;
+    uint32_t dataSize = 0;
+};
 
 struct ImageSourceArgs {
     struct OhosImageSource* source;
@@ -36,6 +42,10 @@ struct ImageSourceArgs {
     struct OhosImageSourceProperty* inPropertyKey;
     struct OhosImageSourceProperty* propertyVal;
     struct OhosImageSourceUpdateData* inUpdateData;
+    DataArray dataArray;
+    std::string uri;
+    int32_t fd = -1;
+    RawFileDescriptor rawFile;
     ImageSourceNapi* napi;
     napi_env inEnv;
     napi_value inVal;
@@ -46,6 +56,10 @@ struct ImageSourceArgs {
 
 enum {
     ENV_FUNC_IMAGE_SOURCE_CREATE,
+    ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_URI,
+    ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_FD,
+    ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_DATA,
+    ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_RAW_FILE,
     ENV_FUNC_IMAGE_SOURCE_CREATE_INCREMENTAL,
     ENV_FUNC_IMAGE_SOURCE_UNWRAP,
     STA_FUNC_IMAGE_SOURCE_GET_SUPPORTED_FORMATS,

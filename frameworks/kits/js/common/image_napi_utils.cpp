@@ -24,6 +24,13 @@ namespace OHOS {
 namespace Media {
 const size_t NUM0 = 0;
 const size_t NUM1 = 1;
+const int ARGS3 = 3;
+const int ARGS4 = 4;
+const int PARAM0 = 0;
+const int PARAM1 = 1;
+const int PARAM2 = 2;
+const int PARAM3 = 3;
+
 bool ImageNapiUtils::GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len)
 {
     napi_value tempValue = nullptr;
@@ -114,6 +121,61 @@ napi_valuetype ImageNapiUtils::getType(napi_env env, napi_value root)
     napi_valuetype res = napi_undefined;
     napi_typeof(env, root, &res);
     return res;
+}
+
+static bool ParseSize(napi_env env, napi_value root, int32_t width, int32_t height)
+{
+    if (!GET_INT32_BY_NAME(root, "width", width) || !GET_INT32_BY_NAME(root, "height", height)) {
+        return false;
+    }
+    return true;
+}
+
+bool ImageNapiUtils::ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
+    napi_value argv[], int32_t args[], std::string &errMsg)
+{
+    if ((argc != ARGS3) && (argc != ARGS4)) {
+        errMsg = "Invalid arg counts ";
+        errMsg.append(std::to_string(argc));
+        return false;
+    }
+    if (argc == ARGS3) {
+        napi_valuetype argvType0 = ImageNapiUtils::getType(env, argv[PARAM0]);
+        if (argvType0 != napi_object || !ParseSize(env, argv[PARAM0], args[PARAM0], args[PARAM1])) {
+            errMsg = "Invalid arg ";
+            errMsg.append(std::to_string(PARAM0)).append(",type:").append(std::to_string(argvType0));
+            return false;
+        }
+        napi_valuetype argvType1 = ImageNapiUtils::getType(env, argv[PARAM1]);
+        if (argvType1 != napi_number || napi_get_value_int32(env, argv[PARAM1], &(args[PARAM2])) != napi_ok) {
+            errMsg = "Invalid arg ";
+            errMsg.append(std::to_string(PARAM1)).append(",type:").append(std::to_string(argvType1));
+            return false;
+        }
+        napi_valuetype argvType2 = ImageNapiUtils::getType(env, argv[PARAM2]);
+        if (argvType2 != napi_number || napi_get_value_int32(env, argv[PARAM2], &(args[PARAM3])) != napi_ok) {
+            errMsg = "Invalid arg ";
+            errMsg.append(std::to_string(PARAM2)).append(",type:").append(std::to_string(argvType2));
+            return false;
+        }
+        return true;
+    }
+    for (size_t i = PARAM0; i < argc; i++) {
+        napi_valuetype argvType = ImageNapiUtils::getType(env, argv[i]);
+        if (argvType != napi_number) {
+            errMsg = "Invalid arg ";
+            errMsg.append(std::to_string(i)).append(" type ").append(std::to_string(argvType));
+            return false;
+        }
+
+        napi_status status = napi_get_value_int32(env, argv[i], &(args[i]));
+        if (status != napi_ok) {
+            errMsg = "fail to get arg ";
+            errMsg.append(std::to_string(i)).append(" : ").append(std::to_string(status));
+            return false;
+        }
+    }
+    return true;
 }
 
 void ImageNapiUtils::HicheckerReport()

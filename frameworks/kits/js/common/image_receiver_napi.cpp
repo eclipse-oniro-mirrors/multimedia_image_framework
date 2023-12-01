@@ -46,6 +46,7 @@ using SurfaceListener = SurfaceBufferAvaliableListener;
 const int ARGS0 = 0;
 const int ARGS1 = 1;
 const int ARGS2 = 2;
+const int ARGS3 = 3;
 const int ARGS4 = 4;
 const int PARAM0 = 0;
 const int PARAM1 = 1;
@@ -60,6 +61,7 @@ struct ImageEnum {
 
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"CAMERA_APP_INNER", 4, ""},
+    {"YCBCR_422_SP", 1000, ""},
     {"JPEG", 2000, ""},
 };
 
@@ -204,28 +206,13 @@ static bool parseImageReceiverArgs(napi_env env, napi_callback_info info,
         return false;
     }
 
-    if (args.argc != ARGS4) {
+    if (args.argc != ARGS3 && args.argc != ARGS4) {
         errMsg = "Invalid arg counts ";
         errMsg.append(std::to_string(args.argc));
         return false;
     }
 
-    for (size_t i = PARAM0; i < args.argc; i++) {
-        napi_valuetype argvType = ImageNapiUtils::getType(env, (args.argv)[i]);
-        if (argvType != napi_number) {
-            errMsg = "Invalid arg ";
-            errMsg.append(std::to_string(i)).append(" type ").append(std::to_string(argvType));
-            return false;
-        }
-
-        status = napi_get_value_int32(env, (args.argv)[i], &((args.args)[i]));
-        if (status != napi_ok) {
-            errMsg = "fail to get arg ";
-            errMsg.append(std::to_string(i)).append(" : ").append(std::to_string(status));
-            return false;
-        }
-    }
-    return true;
+    return ImageNapiUtils::ParseImageCreatorReceiverArgs(env, args.argc, args.argv, args.args, errMsg);
 }
 
 napi_value ImageReceiverNapi::Constructor(napi_env env, napi_callback_info info)

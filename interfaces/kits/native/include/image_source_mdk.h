@@ -39,6 +39,7 @@
 #include <cstdint>
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
+#include "raw_file.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -292,6 +293,7 @@ struct OhosImageSourceInfo {
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
+ * @deprecated since 11
  */
 struct OhosImageSource {
     /** Pointer to the image source URI. Only a file URI or Base64 URI is accepted. */
@@ -418,8 +420,102 @@ struct OhosImageSourceUpdateData {
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
+ * @deprecated since 11
+ * @useinstead image#OH_ImageSource_CreateFromUri
+ * @useinstead image#OH_ImageSource_CreateFromFd
+ * @useinstead image#OH_ImageSource_CreateFromData
  */
 int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
+    struct OhosImageSourceOps* ops, napi_value *res);
+
+/**
+ * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * image source URI and {@link OhosImageSourceOps} structs.
+ *
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param uri Indicates a pointer to the image source URI. Only a file URI or Base64 URI is accepted.
+ * @param size Indicates the length of the image source URI.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * @see {@link OhosImageSourceOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 11
+ * @version 4.1
+ */
+int32_t OH_ImageSource_CreateFromUri(napi_env env, char* uri, size_t size,
+    struct OhosImageSourceOps* ops, napi_value *res);
+
+/**
+ * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * image source file descriptor and {@link OhosImageSourceOps} structs.
+ *
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param fd Indicates the image source file descriptor.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * @see {@link OhosImageSourceOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 11
+ * @version 4.1
+ */
+int32_t OH_ImageSource_CreateFromFd(napi_env env, int32_t fd,
+    struct OhosImageSourceOps* ops, napi_value *res);
+
+/**
+ * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * image source data and {@link OhosImageSourceOps} structs.
+ *
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param data Indicates a pointer to the image source data. Only a formatted packet data or Base64 data is accepted.
+ * @param dataSize Indicates the size of the image source data.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * @see {@link OhosImageSourceOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 11
+ * @version 4.1
+ */
+int32_t OH_ImageSource_CreateFromData(napi_env env, uint8_t* data, size_t dataSize,
+    struct OhosImageSourceOps* ops, napi_value *res);
+
+/**
+ * @brief Creates an <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * raw file's file descriptor and {@link OhosImageSourceOps} structs.
+ *
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param rawFile Indicates the raw file's file descriptor.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * @see {@link OhosImageSourceOps}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 11
+ * @version 4.1
+ */
+int32_t OH_ImageSource_CreateFromRawFile(napi_env env, RawFileDescriptor rawFile,
     struct OhosImageSourceOps* ops, napi_value *res);
 
 /**
@@ -456,8 +552,34 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
  * @Syscap SystemCapability.Multimedia.Image
  * @since 10
  * @version 4.0
+ * @deprecated since 11
+ * @useinstead image#OH_ImageSource_CreateIncrementalFromData
  */
 int32_t OH_ImageSource_CreateIncremental(napi_env env, struct OhosImageSource* source,
+    struct OhosImageSourceOps* ops, napi_value *res);
+
+/**
+ * @brief Creates an incremental <b>ImageSource</b> object at the JavaScript native layer based on the specified
+ * image source data and {@link OhosImageSourceOps} structs.
+ * The image source data will be updated through {@link OH_ImageSource_UpdateData}.
+ *
+ * @param env Indicates a pointer to the JNI environment.
+ * @param data Indicates a pointer to the image source data. Only a formatted packet data or Base64 data is accepted.
+ * @param dataSize Indicates the size of the image source data.
+ * @param ops Indicates a pointer to the options for creating the image source.
+ * For details, see {@link OhosImageSourceOps}.
+ * @param res Indicates a pointer to the <b>ImageSource</b> object created at the JavaScript native layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * @see {@link OhosImageSourceOps}, {@link OH_ImageSource_UpdateData}
+ *
+ * @Syscap SystemCapability.Multimedia.Image
+ * @since 11
+ * @version 4.1
+ */
+int32_t OH_ImageSource_CreateIncrementalFromData(napi_env env, uint8_t* data, size_t dataSize,
     struct OhosImageSourceOps* ops, napi_value *res);
 
 /**
