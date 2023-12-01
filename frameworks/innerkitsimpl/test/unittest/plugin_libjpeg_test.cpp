@@ -449,7 +449,7 @@ HWTEST_F(PluginLibJpegTest, exif_info019, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray start";
     EXIFInfo exinfo;
     unsigned char *buf = new unsigned char;
-    exinfo.GetOrginExifDataLength(false,buf);
+    exinfo.GetOrginExifDataLength(false, buf);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray end";
 }
 
@@ -464,7 +464,7 @@ HWTEST_F(PluginLibJpegTest, exif_info020, TestSize.Level3)
     EXIFInfo exinfo;
     auto exifEntry = std::make_shared<ExifEntry>();
     exifEntry->size = 2;
-    exinfo.EXIFInfoBufferCheck(exifEntry,5);
+    exinfo.EXIFInfoBufferCheck(exifEntry, 5);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: EXIFInfoBufferCheck002 end";
 }
 } // namespace Multimedia
