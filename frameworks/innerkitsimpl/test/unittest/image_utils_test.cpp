@@ -326,7 +326,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
  * @tc.desc: int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
  * @tc.type: FUNC***
  */
-HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
+HWTEST_F(ImageUtilsTest, GetPixelBytes001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 start";
     PixelFormat pixelFormat = PixelFormat::ARGB_8888;
