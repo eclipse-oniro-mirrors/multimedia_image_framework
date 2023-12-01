@@ -1337,7 +1337,7 @@ HWTEST_F(AttrDataTest, GetMinValueTest0078, TestSize.Level3)
     GTEST_LOG_(INFO) << "AttrDataTest: GetMinValueTest0078 start";
     MultimediaPlugin::AttrData aData;
     uint32_t v;
-    aDta.type_ = AttrDataType::ATTR_DATA_UINT32;
+    aData.type_ = AttrDataType::ATTR_DATA_UINT32;
     uint32_t ret = aData.GetMinValue(v);
     ASSERT_EQ(ret, SUCCESS);
     aData.type_ = AttrDataType::ATTR_DATA_UINT32_SET;
@@ -1377,7 +1377,7 @@ HWTEST_F(AttrDataTest, GetMinValue2Test0080, TestSize.Level3)
     MultimediaPlugin::AttrData aData;
     std::string value = "111";
     const string *value1 = nullptr;
-    aDat.type_ = AttrDataType::ATTR_DATA_STRING;
+    aData.type_ = AttrDataType::ATTR_DATA_STRING;
     uint32_t res = aData.GetMinValue(value1);
     ASSERT_EQ(res, SUCCESS);
     aData.type_ = AttrDataType::ATTR_DATA_STRING_SET;
