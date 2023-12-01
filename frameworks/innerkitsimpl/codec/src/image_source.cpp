@@ -2168,29 +2168,19 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 
 void ImageSource::DumpInputData(const std::string& fileSuffix)
 {
-    if (sourceStreamPtr_ == nullptr) {
-        HiLog::Info(LABEL, "ImageSource::DumpInputData failed, streamPtr is null");
+    if (!ImageSystemProperties::GetDumpImageEnabled()) {
+        return;
     }
 
-    std::string fileFormat;
-    for (auto& it : formatAgentMap_) {
-        if (SUCCESS == CheckEncodedFormat(*(it.second))) {
-            fileFormat = it.first;
-            break;
-        }
+    if (sourceStreamPtr_ == nullptr) {
+        HiLog::Info(LABEL, "ImageSource::DumpInputData failed, streamPtr is null");
+        return;
     }
 
     uint8_t* data = sourceStreamPtr_->GetDataPtr();
     size_t size = sourceStreamPtr_->GetStreamSize();
 
-    if (fileFormat.empty()) {
-        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix);
-    } else {
-        // fileFormat is like "image/jpeg", "image/png"...
-        std::string formatPrefix = "image/";
-        ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size,
-            fileFormat.substr(formatPrefix.size()));
-    }
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix);
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
