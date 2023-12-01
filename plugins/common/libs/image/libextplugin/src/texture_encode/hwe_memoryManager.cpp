@@ -25,7 +25,7 @@ HWE_ReturnVal HWE_InitMemoryManager(HWE_HANDLE *memoryHandle,
         HWE_LOGE("Init memoryInfoArray memoryHandle is nullptr.");
         return HWE_RET_FAILED;
     }
-    MemoryManager *memoryManager = (MemoryManager *)HWE_Malloc(sizeof(MemoryManager));
+    MemoryManager *memoryManager = static_cast<MemoryManager *>(HWE_Malloc(sizeof(MemoryManager)));
     HWE_RETURN_IF_NULL(memoryManager, "memoryManager malloc failed!");
     *memoryHandle = memoryManager;
 
@@ -49,20 +49,13 @@ HWE_ReturnVal HWE_InitMemoryManager(HWE_HANDLE *memoryHandle,
         memoryManager->freeCallback = nullptr;
     }
 
-    if (ret) {
-        HWE_PthreadMutexDestroy(&memoryManager->mutex);
-        HWE_Free(memoryManager);
-        HWE_LOGE("Init memoryInfoArray failed.");
-        return HWE_RET_FAILED;
-    }
-
     return HWE_RET_OK;
 }
 
 HWE_ReturnVal HWE_FreeMemory(HWE_HANDLE memoryHandle)
 {
     HWE_RETURN_IF_NULL(memoryHandle, "memoryHandle is nullptr!");
-    MemoryManager *memoryManager = (MemoryManager *)memoryHandle;
+    MemoryManager *memoryManager = static_cast<MemoryManager *>(memoryHandle);
     uint64_t i;
     int32_t ret;
     for (i = 0; i < memoryManager->usedCount; i++) {
@@ -108,7 +101,7 @@ void* HWE_MemAlloc(HWE_HANDLE memoryHandle, size_t size)
         HWE_LOGE("Alloc size is zero");
         return nullptr;
     }
-    MemoryManager *memoryManager = (MemoryManager *)memoryHandle;
+    MemoryManager *memoryManager = static_cast<MemoryManager *>(memoryHandle);
     HWE_PthreadMutexLock(&memoryManager->mutex);
     if (memoryManager->usedCount >= memoryManager->maxMemoryNumber) {
         HWE_LOGE("Don't enough memory[max:%d, used:%d]!", memoryManager->maxMemoryNumber, memoryManager->usedCount);

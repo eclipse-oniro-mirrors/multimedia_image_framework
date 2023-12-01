@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
-bool CheckValidParam(TextureEncodeOptions *encodeParams);
+bool CheckValidParam(const TextureEncodeOptions *encodeParams);
 } // namespace ImagePlugin
 } // namespace OHOS
 #endif // CHECKPARA_H

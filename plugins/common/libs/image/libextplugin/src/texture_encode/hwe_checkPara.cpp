@@ -41,19 +41,19 @@ static void LogDefault(const int8_t *fileName, uint32_t line, LogLevel eLevel,
             levelMsg = "TextureEncode unknown";
             break;
     }
-    int32_t ret = fprintf(stderr, "[%s\t]: %d %d: ", levelMsg, fileName, line);
+    int32_t ret = fprintf(stderr, "[%s\t]: %s %u: ", levelMsg, fileName, line);
     if (ret < 0) {
         return;
     }
-    ret = vfprintf(stderr, (const char *)pszFmt, arg);
+    ret = vfprintf(stderr, const_cast<const char *>(pszFmt), arg);
     if (ret < 0) {
         return;
     }
 }
 
-bool CheckValidParam(TextureEncodeOptions *param)
+bool CheckValidParam(const TextureEncodeOptions *encodeParams)
 {
-    if (param) {
+    if (encodeParams) {
         return true;
     }
     return false;
