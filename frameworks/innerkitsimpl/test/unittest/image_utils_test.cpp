@@ -336,7 +336,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 start";
-    const PixelFormat pixelFormat = 1;
+    const PixelFormat pixelFormat = ARGB_8888;
     ImageUtils imageutils;
     auto ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, ARGB8888_BYTES);
@@ -365,7 +365,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, ASTC_4X4_BYTES);
 
-    pixelFormat =14;
+    pixelFormat =UNKNOWN;
     ret = imageutils.GetPixelBytes(pixelFormat);
     ASSERT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes001 end";
