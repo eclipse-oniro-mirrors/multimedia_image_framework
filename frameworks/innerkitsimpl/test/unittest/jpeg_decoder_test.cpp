@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#define private public
 #include "jpeg_decoder.h"
 #include "image_packer.h"
 #include "buffer_source_stream.h"
