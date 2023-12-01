@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#define private public
 #include <fcntl.h>
 #include "buffer_source_stream.h"
 #include "exif_info.h"
