@@ -722,16 +722,15 @@ HWTEST_F(PngDecoderTest, ChooseFormat, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     PlPixelFormat outputFormat;
-    png_byte destType = PNG_COLOR_TYPE_RGBA;
-    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat);
+    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat, destType);
+    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat);
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest end";
 }
@@ -773,10 +772,14 @@ HWTEST_F(PngDecoderTest, ProcessData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    png_infop infoStructPtr;
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngErrorExit, PngWarning);
+    png_infop infoStructPtr = png_create_info_struct(pngStructPtr_);
     InputDataStream *sourceStream;
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
     DataStreamBuffer streamData;
-    uint32_t ret = pngDecoder->ProcessData(nullptr, infoStructPtr, sourceStream, streamData, 10, 20);
+    uint32_t ret = pngDecoder->ProcessData(nullptr, infoStructPtr, mock.get(), streamData, 10, 20);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 end";
 }
@@ -790,12 +793,15 @@ HWTEST_F(PngDecoderTest, ProcessData002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    png_structp pngStructPtr = std::make_shared<png_structp>();
-    png_infop infoStructPtr = std::make_shared<png_infop>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, PngErrorExit, PngWarning);
+    png_infop infoStructPtr = png_create_info_struct(pngStructPtr_);
     InputDataStream *sourceStream = std::make_shared<InputDataStream>();
     DataStreamBuffer streamData;
     streamData.dataSize = 4;
-    const uint32_t ret = pngDecoder->ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, 1, 20);
+    const uint32_t ret = pngDecoder->ProcessData(pngStructPtr, infoStructPtr, mock.get(), streamData, 1, 20);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData002 end";
 }
@@ -825,9 +831,11 @@ HWTEST_F(PngDecoderTest, IncrementalRead002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    InputDataStream *stream = std::make_shared<InputDataStream>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
     DataStreamBuffer outData;
-    uint32_t ret = pngDecoder->IncrementalRead(stream, 0, outData);
+    uint32_t ret = pngDecoder->IncrementalRead(mock.get(), 0, outData);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead002 end";
 }
@@ -870,10 +878,12 @@ HWTEST_F(PngDecoderTest, IncrementalReadRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    auto stream = std::make_shared<InputDataStream>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
     idatLength_ = 1;
     incrementalLength_ = 2;
-    uint32_t ret = pngDecoder->IncrementalReadRows(stream);
+    uint32_t ret = pngDecoder->IncrementalReadRows(mock.get());
     ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows002 end";
 }
@@ -901,9 +911,11 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    auto stream = std::make_shared<InputDataStream>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
     idatLength_ = 0;
-    uint32_t ret = pngDecoder->PushCurrentToDecode(stream);
+    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode002 end";
 }
@@ -917,10 +929,12 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    auto stream = std::make_shared<InputDataStream>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
     incrementalLength_ = 5;
     idatLength_ = 20;
-    uint32_t ret = pngDecoder->PushCurrentToDecode(stream);
+    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
 } // namespace Multimedia
