@@ -1236,19 +1236,19 @@ HWTEST_F(AttrDataTest, AttrDataTest0073, TestSize.Level3)
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0072 start";
     MultimediaPlugin::AttrData aData;
     uint32_t value = 1;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 2;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 3;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 4;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 5;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 6;
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 7;
-    MultimediaPlugin::AttrData aData(value);
+    aData(value);
+    value = 2;
+    aData(value);
+    value = 3;
+    aData(value);
+    value = 4;
+    aData(value);
+    value = 5;
+    aData(value);
+    value = 6;
+    aData(value);
+    value = 7;
+    aData(value);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 end";
 }
 
@@ -1260,19 +1260,20 @@ HWTEST_F(AttrDataTest, AttrDataTest0073, TestSize.Level3)
 HWTEST_F(AttrDataTest, ClearDataTest0074, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "AttrDataTest: ClearDataTest0074 start";
+    AttrDataUnion value_;
     uint32_t value = 3;
     value_.stringValue = "try";
     MultimediaPlugin::AttrData aData(value);
     aData.ClearData();
-    uint32_t value = 4;
+    value = 4;
     value_.uint32Set = "try";
-    MultimediaPlugin::AttrData aData(value);
-    uint32_t value = 5;
+    aData(value);
+    value = 5;
     value_.stringSet = "try";
-    MultimediaPlugin::AttrData aData(value);
+    aData(value);
     aData.ClearData();
-    uint32_t value = 6;
-    MultimediaPlugin::AttrData aData(value);
+    value = 6;
+    aData(value);
     aData.ClearData();
     GTEST_LOG_(INFO) << "AttrDataTest: ClearDataTest0074 end";
 }
