@@ -21,7 +21,7 @@
 #include "source_stream.h"
 #include "istream_source_stream.h"
 #include "image_type.h"
-#include "image_pugin_type.h"
+#include "image_plugin_type.h"
 
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
