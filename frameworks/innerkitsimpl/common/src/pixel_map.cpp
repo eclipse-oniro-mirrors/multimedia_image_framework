@@ -2049,10 +2049,10 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
             }
         }
     } else {
-       int32_t size = pixelsSize_;
-       for (int32_t offset = 0; offset < size; offset++) {
-           buff.push_back(*(data + offset));
-       }
+        int32_t size = pixelsSize_;
+        for (int32_t offset = 0; offset < size; offset++) {
+            buff.push_back(*(data + offset));
+        }
     }
 }
 
