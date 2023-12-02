@@ -2039,10 +2039,20 @@ int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
     return value;
 }
 
-void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const
+void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
+    const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const
 {
-    for (int32_t offset = 0; offset < size; offset++) {
-        buff.push_back(*(data + offset));
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        for (int row = 0; row < height; row++) {
+            for (int col = 0; col < rowDataSize; col++) {
+                buff.push_back(*(data + row * rowStride + col));
+            }
+        }
+    } else {
+       int32_t size = pixelsSize_;
+       for (int32_t offset = 0; offset < size; offset++) {
+           buff.push_back(*(data + offset));
+       }
     }
 }
 
@@ -2101,7 +2111,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
         return false;
     }
     WriteVarint(buff, dataSize);
-    WriteData(buff, data, dataSize);
+    WriteData(buff, data, imageInfo_.size.height, rowDataSize_, rowStride_);
     WriteUint8(buff, TLV_END); // end tag
     return true;
 }
