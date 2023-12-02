@@ -1051,8 +1051,6 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
 HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState start";
-    ImageInfo imageInfo;
-    ASTCInfo astcInfo;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1098,7 +1096,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size;
-    sourceStreamPtr_ = nullptr;
+    std::unique_ptr<SourceStream> sourceStreamPtr_; = nullptr;
     auto ret = imagesource.GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 end";
@@ -1167,7 +1165,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool  isAcquiredImageNum = false;
-    decodeState_ = 6;
+    decodeState_ = SourceDecodingState::FILE_INFO_DECODED;
     auto ret = imagesource.DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo001 end";
@@ -1184,7 +1182,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool  isAcquiredImageNum = false;
-    decodeState_ = 3;
+    decodeState_ = SourceDecodingState::FORMAT_RECOGNIZED;
     SourceInfo sourceInfo;
     sourceInfo.encodedFormat = "image/astc";
     auto ret = imagesource.DecodeSourceInfo(isAcquiredImageNum);
@@ -1196,7 +1194,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
  * @tc.desc: test InitMainDecoder****
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
+HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder start";
     uint32_t errorCode = 0;
