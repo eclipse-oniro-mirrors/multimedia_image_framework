@@ -769,7 +769,7 @@ HWTEST_F(PngDecoderTest, ProcessData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, 
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
         ImagePlugin::PngDecoder::PngErrorExit, ImagePlugin::PngDecoder::PngWarning);
     png_infop infoStructPtr = png_create_info_struct(pngStructPtr);
     auto mock = std::make_shared<MockInputDataStream>();
@@ -793,7 +793,7 @@ HWTEST_F(PngDecoderTest, ProcessData002, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
-    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, 
+    png_structp pngStructPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
         ImagePlugin::PngDecoder::PngErrorExit, ImagePlugin::PngDecoder::PngWarning);
     png_infop infoStructPtr = png_create_info_struct(pngStructPtr);
     DataStreamBuffer streamData;
