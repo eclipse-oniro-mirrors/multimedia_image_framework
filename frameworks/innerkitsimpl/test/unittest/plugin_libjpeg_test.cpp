@@ -390,11 +390,11 @@ HWTEST_F(PluginLibJpegTest, exif_info017, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx start";
     EXIFInfo exinfo;
     bool ret;
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, exinfo.EXIF_TAG_DATE_TIME);
     ASSERT_EQ(ret, true);
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, TAG_SENSITIVITY_TYPE);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, exinfo.TAG_SENSITIVITY_TYPE);
     ASSERT_EQ(ret, true);
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, exinfo.EXIF_TAG_GPS_TIME_STAMP);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx end";
 }
@@ -410,34 +410,34 @@ HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
     auto jpegEncoder = std::make_shared<JpegEncoder>();
     int32_t componentsNum;
     jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_F16, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_RGBA);
     
     jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_8888, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_RGBA);
     
     jpegEncoder->GetEncodeFormat(PixelFormat::BGRA_8888, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_BGRA);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_BGRA);
     
     jpegEncoder->GetEncodeFormat(PixelFormat::ARGB_8888, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_ARGB);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_ARGB);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::ALPHA_8, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_GRAY);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_GRAY);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::RGB_565, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_RGB);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::RGB_888, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_RGB);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::NV12, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_YUV420SP);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::NV21, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_YUV420SP);
 
     jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
-    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    ASSERT_EQ(componentsNum, jpegEncoder->COMPONENT_NUM_RGBA);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
 }
 } // namespace Multimedia
