@@ -34,6 +34,7 @@
 #include "image_source.h"
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
+#include "memorymanager.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -1047,14 +1048,12 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
  * @tc.desc: test GetSourceDecodingState****
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
+HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState start";
     ImageInfo imageInfo;
     ASTCInfo astcInfo;
-    int32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ImageSource imagesource;
     bool isAcquiredImageNum = true;
     imageSource->decodeState_ = SourceDecodingState::SOURCE_ERROR;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
@@ -1078,7 +1077,7 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
 HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
-    AllocatorType type = 0;
+    AllocatorType type = AllocatorType::DEFAULT;
     auto mm = std::make_shared<MemoryManager>();
     auto ret = mm->CreateMemory(type, data, extend);
     ASSERT_EQ(ret, nullptr);
