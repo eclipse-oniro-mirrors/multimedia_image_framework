@@ -34,7 +34,7 @@
 #include "image_source.h"
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
-#include "memorymanager.h"
+#include "memory_manager.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
