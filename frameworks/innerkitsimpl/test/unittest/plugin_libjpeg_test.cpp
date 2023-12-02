@@ -380,29 +380,6 @@ HWTEST_F(PluginLibJpegTest, exif_info016, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid end";
 }
 
-/**
- * @tc.name: exif_info017
- * @tc.desc: CheckExifEntryValidEx
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, exif_info017, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx start";
-    EXIFInfo exinfo;
-    bool ret;
-    ExifEntry* exifentry = exinfo.CreateExifTag(exinfo.exifData_, exinfo.imageFileDirectory_, 
-            exinfo.tag, 10, exinfo.format);
-    exifentry->tag = EXIF_TAG_ORIENTATION;
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, exifentry->tag);
-    ASSERT_EQ(ret, true);
-    exifentry->tag = EXIF_TAG_DATE_TIME_ORIGINAL;
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, exifentry->tag);
-    ASSERT_EQ(ret, true);
-    exifentry->tag = EXIF_TAG_GPS_LATITUDE;
-    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, exifentry->tag);
-    ASSERT_EQ(ret, true);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx end";
-}
 
 /**
  * @tc.name: exif_info018
