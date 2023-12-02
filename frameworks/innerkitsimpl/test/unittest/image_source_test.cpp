@@ -1096,7 +1096,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size;
-    std::unique_ptr<SourceStream> sourceStreamPtr_; = nullptr;
+    imageSource->sourceStreamPtr_ = nullptr;
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 end";
@@ -1114,7 +1114,7 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size = 0;
-    std::unique_ptr<SourceStream> sourceStreamPtr_ = std::make_shared<SourceStream>();
+    std::shared_ptr<SourceStream> sourceStreamPtr_ = std::make_shared<SourceStream>();
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 end";
@@ -1165,7 +1165,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool  isAcquiredImageNum = false;
-    decodeState_ = SourceDecodingState::FILE_INFO_DECODED;
+    SourceDecodingState decodeState_ = SourceDecodingState::FILE_INFO_DECODED;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo001 end";
@@ -1217,7 +1217,7 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     PixelMap pixelMap;
-    IncrementalRecordMap::iterator iterator;
+    ImageSource::IncrementalRecordMap::iterator iterator;
     mainDecoder_ = std::make_shared<ImageSource>();
     auto ret = imageSource->AddIncrementalContext(pixelMap, iterator);
     ASSERT_EQ(ret, SUCCESS);
@@ -1228,7 +1228,7 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
  * @tc.desc: test ImageSizeChange****
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
+HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: ImageSizeChange start";
     uint32_t errorCode = 0;
@@ -1247,7 +1247,7 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
  * @tc.desc: test IsASTC****
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
+HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: IsASTC start";
     uint32_t errorCode = 0;
