@@ -336,7 +336,8 @@ private:
     uint8_t GetVarintLen(int32_t value) const;
     void WriteVarint(std::vector<uint8_t> &buff, int32_t value) const;
     static int32_t ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor);
-    void WriteData(std::vector<uint8_t> &buff, const uint8_t *data, int32_t size) const;
+    void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
+        const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
