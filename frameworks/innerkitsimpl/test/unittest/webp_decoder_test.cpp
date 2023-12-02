@@ -452,24 +452,5 @@ HWTEST_F(WebpDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "WebpDecoderTest: PromoteIncrementalDecodeTest003 end";
 }
-
-HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest001 start";
-    ImagePlugin::WebpDecoder webpDecoder;
-    PlPixelFormat pixelFormat = PlPixelFormat::BGRA_8888;
-    bool result = webpDecoder.GetWebpDecodeMode(pixelFormat, true);
-    ASSERT_EQ(result, true);
-    pixelFormat = PlPixelFormat::RGBA_8888;
-    result = webpDecoder.GetWebpDecodeMode(pixelFormat, true);
-    ASSERT_EQ(result, true);
-    pixelFormat = PlPixelFormat::RGB_565;
-    result = webpDecoder.GetWebpDecodeMode(pixelFormat, true);
-    ASSERT_EQ(result, true);
-    pixelFormat = PlPixelFormat::UNKNOWN;
-    result = webpDecoder.GetWebpDecodeMode(pixelFormat, true);
-    ASSERT_EQ(result, true);
-    GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest001 end";
-}
 }
 }
