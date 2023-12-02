@@ -316,7 +316,7 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
     uint32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
     ASSERT_NE(res, SUCCESS);
 
-    int32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
+    uint32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
     ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 end";
@@ -373,10 +373,10 @@ HWTEST_F(ImageUtilsTest, GetValidAlphaTypeByFormat, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat start";
     ImageUtils imageutils;
-    AlphaType dsType = 0;
+    AlphaType dsType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     PixelFormat format = PixelFormat::RGBA_8888;
     auto ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
-    ASSERT_EQ(ret, AlphaType::UNKNOWN);
+    ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
     
     format = PixelFormat::ALPHA_8;
     ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
