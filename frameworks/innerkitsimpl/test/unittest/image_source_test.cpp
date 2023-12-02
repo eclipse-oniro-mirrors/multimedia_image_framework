@@ -1074,16 +1074,16 @@ HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
  * @tc.desc: test GetSourceDecodingState****
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
+HWTEST_F(ImageSourceTest, GetSourceSize, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize start";
     AllocatorType type = AllocatorType::DEFAULT;
     OHOS::Media::MemoryData data;
     OHOS::Media::MemoryData extend;
     auto mm = std::make_shared<MemoryManager>();
     auto ret = mm->CreateMemory(type, data, extend);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize end";
 }
 /**
  * @tc.name: CreateImageSource0015
