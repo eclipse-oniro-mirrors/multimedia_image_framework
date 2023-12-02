@@ -700,7 +700,7 @@ HWTEST_F(WebpEncoderTest, CheckEncodeFormatTest001, TestSize.Level3)
     PixelFormat pixelFormat = PixelFormat::RGBA_8888;
     bool result = webpEncoder.CheckEncodeFormat(pixelMap);
     ASSERT_EQ(result, true);
-    PixelFormat pixelFormat = PixelFormat::BGRA_8888;
+    pixelFormat = PixelFormat::BGRA_8888;
     result = webpEncoder.CheckEncodeFormat(pixelMap);
     ASSERT_EQ(result, true);
     pixelFormat = PixelFormat::RGBA_F16;
@@ -754,10 +754,10 @@ HWTEST_F(WebpEncoderTest, ShowTransformParamTest004, TestSize.Level3)
     ImagePlugin::WebpEncoder encoder;
     PixelMap pixelMap;
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
-    const ImageInfo srcInfo = MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
+    const ImageInfo srcInfo = encoder.MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
         PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     uint32_t dstRowBytes = pixelMap.GetWidth();
-    const ImageInfo dstInfo = MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
+    const ImageInfo dstInfo = encoder.MakeImageInfo(pixelMap.GetWidth(), pixelMap.GetHeight(),
         PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     const int componentsNum = 2;
     encoder.ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
