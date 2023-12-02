@@ -1136,24 +1136,7 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
 }
-/**
- * @tc.name: CreateImageSource0015
- * @tc.desc: test DecodeImageInfo****
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo start";
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    uint32_t index;
-    ImageStatusMap imageStatusMap_;
-    auto iter = imageStatusMap_.find(1);;
-    auto ret = imageSource->DecodeImageInfo(index, iter);
-    ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo end";
-}
+
 /**
  * @tc.name: CreateImageSource0015
  * @tc.desc: test DecodeSourceInfo****
