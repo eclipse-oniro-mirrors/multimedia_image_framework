@@ -2042,7 +2042,7 @@ int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
 void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
     const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const
 {
-    if (allocatorType == AllocatorType::DMA_ALLOC) {
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < rowDataSize; col++) {
                 buff.push_back(*(data + row * rowStride + col));
