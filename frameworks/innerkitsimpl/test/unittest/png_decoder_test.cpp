@@ -812,7 +812,7 @@ HWTEST_F(PngDecoderTest, IncrementalRead001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    uint32_t desiredSize;
+    uint32_t desiredSize = 5;
     DataStreamBuffer outData;
     uint32_t ret = pngDecoder->IncrementalRead(nullptr, desiredSize, outData);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -931,7 +931,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
     pngDecoder->SetSource(*mock.get());
     pngDecoder->incrementalLength_ = 5;
     pngDecoder->idatLength_ = 20;
-    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
+    pngDecoder->PushCurrentToDecode(mock.get());
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
 } // namespace Multimedia
