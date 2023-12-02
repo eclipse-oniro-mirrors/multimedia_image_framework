@@ -380,7 +380,6 @@ HWTEST_F(PluginLibJpegTest, exif_info016, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid end";
 }
 
-
 /**
  * @tc.name: exif_info018
  * @tc.desc: GetEncodeFormat
@@ -409,7 +408,6 @@ HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
     ASSERT_EQ(componentsNum, 3);
     jpegEncoder->GetEncodeFormat(PixelFormat::NV21, componentsNum);
     ASSERT_EQ(componentsNum, 3);
-    encodeInfo_.input_components = COMPONENT_NUM_RGBA;
     jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
     ASSERT_EQ(componentsNum, 4);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
