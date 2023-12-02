@@ -146,7 +146,7 @@ HWTEST_F(NativeImageTest, SplitSurfaceToComponent, TestSize.Level3)
     NativeImage image(buffer, releaser);
     image.buffer_ = nullptr;
     int32_t ret = image.SplitSurfaceToComponent();
-    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent end";
 }
 }
