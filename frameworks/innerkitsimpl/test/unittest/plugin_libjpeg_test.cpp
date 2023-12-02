@@ -390,7 +390,8 @@ HWTEST_F(PluginLibJpegTest, exif_info017, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx start";
     EXIFInfo exinfo;
     bool ret;
-    ExifEntry* exifentry = exinfo.CreateExifTag(exinfo.exifData_, exinfo.imageFileDirectory_, exinfo.tag, 10, exinfo.format);
+    ExifEntry* exifentry = exinfo.CreateExifTag(exinfo.exifData_, exinfo.imageFileDirectory_, 
+            exinfo.tag, 10, exinfo.format);
     exifentry->tag = EXIF_TAG_ORIENTATION;
     ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, exifentry->tag);
     ASSERT_EQ(ret, true);
