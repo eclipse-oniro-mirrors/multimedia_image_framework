@@ -583,6 +583,10 @@ napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
 
     attachPixelMap_ = pixelNapi->GetPixelNapiInner();
+    if (attachPixelMap_ == nullptr) {
+        HiLog::Info(LABEL, "AttachPixelMapFunc attachPixelMap_ is nullptr");
+        return nullptr;
+    }
     HiLog::Info(LABEL, "AttachPixelMapFunc in id:%{public}d", attachPixelMap_->GetUniqueId());
     status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
     if (!IMG_IS_OK(status)) {
