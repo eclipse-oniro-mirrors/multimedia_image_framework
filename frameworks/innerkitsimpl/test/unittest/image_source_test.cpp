@@ -1054,7 +1054,7 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     ASTCInfo astcInfo;
     int32_t errorCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::DecodeSourceInfo(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool isAcquiredImageNum = true;
     imageSource->decodeState_ = SourceDecodingState::SOURCE_ERROR;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
