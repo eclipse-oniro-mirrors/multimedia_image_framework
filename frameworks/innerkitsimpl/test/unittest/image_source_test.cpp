@@ -1053,7 +1053,9 @@ HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState start";
     ImageInfo imageInfo;
     ASTCInfo astcInfo;
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool isAcquiredImageNum = true;
     imageSource->decodeState_ = SourceDecodingState::SOURCE_ERROR;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
@@ -1091,7 +1093,9 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
 HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size;
     sourceStreamPtr_ = nullptr;
@@ -1107,7 +1111,9 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
 HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size = 0;
     sourceStreamPtr_ = std::make_shared<ImageSource>();
@@ -1123,10 +1129,12 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
 HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format;
     mainDecode = std::make_shared<ImageSource>();
-    imagesource.GetFormatExtended(format);
+    auto ret = imagesource.GetFormatExtended(format);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
 }
@@ -1138,7 +1146,9 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
 HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index;
     ImageStatusMap::iterator iter;
     auto ret = imagesource.DecodeImageInfo(index, iter);
@@ -1153,7 +1163,9 @@ HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
 HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfo001 start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool  isAcquiredImageNum = false;
     decodeState_ = 6;
     auto ret = imagesource.DecodeSourceInfo(isAcquiredImageNum);
@@ -1168,7 +1180,9 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
 HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfo002 start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool  isAcquiredImageNum = false;
     decodeState_ = 3;
     SourceInfo sourceInfo;
@@ -1185,7 +1199,9 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     mainDecoder_ = std::make_shared<ImageSource>();
     auto ret = imagesource.InitMainDecoder();
     ASSERT_EQ(ret, SUCCESS);
@@ -1199,7 +1215,9 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: AddIncrementalContext start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     PixelMap pixelMap;
     IncrementalRecordMap::iterator iterator;
     mainDecoder_ = std::make_shared<ImageSource>();
@@ -1215,7 +1233,9 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: ImageSizeChange start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     int32_t width = 0;
     int32_t height = 0;
     int32_t desiredWidth = 0;
@@ -1232,7 +1252,9 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: IsASTC start";
-    ImageSource imagesource;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     const uint8_t *fileData = nullptr;
     size_t fileSize = 10;
     bool ret = imagesource.IsASTC(fileData, fileSize);
