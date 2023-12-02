@@ -18,6 +18,7 @@
 #include "buffer_source_stream.h"
 #include "exif_info.h"
 #include "jpeg_decoder.h"
+#include "jpeg_encoder.h"
 #include "media_errors.h"
 
 using namespace testing::ext;
