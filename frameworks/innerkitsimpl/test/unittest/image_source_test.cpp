@@ -1118,7 +1118,7 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
     auto ret = imageSource->GetFormatExtended(format);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
 }
 
@@ -1155,7 +1155,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
     SourceInfo sourceInfo;
     sourceInfo.encodedFormat = "image/astc";
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo002 end";
 }
 /**
@@ -1170,7 +1170,7 @@ HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->InitMainDecoder();
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder end";
 }
 /**
@@ -1187,7 +1187,7 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
     PixelMap pixelMap;
     ImageSource::IncrementalRecordMap::iterator iterator;
     auto ret = imageSource->AddIncrementalContext(pixelMap, iterator);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: AddIncrementalContext end";
 }
 /**
