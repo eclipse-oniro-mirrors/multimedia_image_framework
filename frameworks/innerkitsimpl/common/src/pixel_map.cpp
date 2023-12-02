@@ -2710,7 +2710,11 @@ static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,
 
 uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
+    auto grName = grColorSpace.GetColorSpaceName();
     if (grColorSpace_ != nullptr && isSameColorSpace(*grColorSpace_, grColorSpace)) {
+        if (grColorSpace_->GetColorSpaceName() != grName) {
+            InnerSetColorSpace(grColorSpace);
+        }
         return SUCCESS;
     }
     ImageInfo imageInfo;
@@ -2746,7 +2750,7 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     }
     // Restore target infomation into pixelmap
     ToImageInfo(imageInfo, dst.info);
-    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace());
+    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace(), grName);
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     return SUCCESS;
