@@ -320,19 +320,20 @@ HWTEST_F(PluginLibJpegTest, exif_info013, TestSize.Level3)
 HWTEST_F(PluginLibJpegTest, exif_info014, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag start";
-    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
     bool ret;
-    ret = exinfo.IsIFDPointerTag(0x014a);
+    ret = byteorder.IsIFDPointerTag(0x014a);
     ASSERT_EQ(ret, true);
-    ret = exinfo.IsIFDPointerTag(0x8769);
+    ret = byteorder.IsIFDPointerTag(0x8769);
     ASSERT_EQ(ret, true);
-    ret = exinfo.IsIFDPointerTag(0x8825);
+    ret = byteorder.IsIFDPointerTag(0x8825);
     ASSERT_EQ(ret, true);
-    ret = exinfo.IsIFDPointerTag(0xa005);
+    ret = byteorder.IsIFDPointerTag(0xa005);
     ASSERT_EQ(ret, true);
-    ret = exinfo.IsIFDPointerTag(0xa301);
+    ret = byteorder.IsIFDPointerTag(0xa301);
     ASSERT_EQ(ret, false);
-    ret = exinfo.IsIFDPointerTag(-1);
+    ret = byteorder.IsIFDPointerTag(-1);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag end";
 }
@@ -345,15 +346,16 @@ HWTEST_F(PluginLibJpegTest, exif_info014, TestSize.Level3)
 HWTEST_F(PluginLibJpegTest, exif_info015, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag start";
-    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
     ExifIfd ret;
-    ret = exinfo.GetIFDOfIFDPointerTag(0x8769);
+    ret = byteorder.GetIFDOfIFDPointerTag(0x8769);
     ASSERT_EQ(ret, EXIF_IFD_EXIF);
-    ret = exinfo.GetIFDOfIFDPointerTag(0x8825);
+    ret = byteorder.GetIFDOfIFDPointerTag(0x8825);
     ASSERT_EQ(ret, EXIF_IFD_GPS);
-    ret = exinfo.GetIFDOfIFDPointerTag(0xa005);
+    ret = byteorder.GetIFDOfIFDPointerTag(0xa005);
     ASSERT_EQ(ret, EXIF_IFD_INTEROPERABILITY);
-    ret = exinfo.GetIFDOfIFDPointerTag(-1);
+    ret = byteorder.GetIFDOfIFDPointerTag(-1);
     ASSERT_EQ(ret, EXIF_IFD_COUNT);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag end";
 }
