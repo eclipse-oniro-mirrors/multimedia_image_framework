@@ -1132,7 +1132,6 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
-    imageSource->mainDecode_ = std::make_unique<ImagePlugin::AbsImageDecoder>();
     auto ret = imageSource->GetFormatExtended(format);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
@@ -1149,6 +1148,7 @@ HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index;
+    ImageStatusMap imageStatusMap_;
     auto iter = imageStatusMap_.find(1);;
     auto ret = imageSource->DecodeImageInfo(index, iter);
     ASSERT_NE(ret, SUCCESS);
@@ -1219,7 +1219,6 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     PixelMap pixelMap;
     ImageSource::IncrementalRecordMap::iterator iterator;
-    mainDecoder_ = std::make_shared<ImageSource>();
     auto ret = imageSource->AddIncrementalContext(pixelMap, iterator);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: AddIncrementalContext end";
