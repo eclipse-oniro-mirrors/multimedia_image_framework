@@ -918,7 +918,7 @@ HWTEST_F(PixelMapTest, PixelMapTest024, TestSize.Level3)
     for (unsigned int i = 0; i < bufferSize; i++) {
         *(ch++) = (char)i;
     }
-    int32_t contextSize = 10;
+    uint32_t contextSize = 10;
     void *context = malloc(contextSize);
     EXPECT_TRUE(context != nullptr);
     char *contextChar = static_cast<char *>(context);
@@ -1277,7 +1277,7 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPixelFormatDetail  start";
     PixelMap pixelmap;
-    const PixelFormat format = PixelFormat::RGBA_8888;
+    PixelFormat format = PixelFormat::RGBA_8888;
     auto ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true);
     format = PixelFormat::BGRA_8888;
@@ -1310,7 +1310,7 @@ HWTEST_F(PixelMapTest, GetPurgeableMemPtrTest, TestSize.Level3)
     format = PixelFormat:ASTC_4x4;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, true); 
-    format = 14;
+    format = PixelFormat::UNKNOWN;
     ret = pixelmap.GetPixelFormatDetail(format);
     ASSERT_EQ(ret, false);          
     GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPixelFormatDetail GetPurgeableMemPtr end";
