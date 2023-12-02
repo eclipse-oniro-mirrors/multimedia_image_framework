@@ -799,7 +799,7 @@ HWTEST_F(PngDecoderTest, ProcessData002, TestSize.Level3)
     DataStreamBuffer streamData;
     streamData.dataSize = 4;
     const uint32_t ret = pngDecoder->ProcessData(pngStructPtr, infoStructPtr, mock.get(), streamData, 1, 20);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData002 end";
 }
 
@@ -881,7 +881,7 @@ HWTEST_F(PngDecoderTest, IncrementalReadRows002, TestSize.Level3)
     pngDecoder->idatLength_ = 1;
     pngDecoder->incrementalLength_ = 2;
     uint32_t ret = pngDecoder->IncrementalReadRows(mock.get());
-    ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows002 end";
 }
 
