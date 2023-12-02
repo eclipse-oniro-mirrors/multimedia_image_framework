@@ -1184,7 +1184,6 @@ HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->mainDecoder_ = std::make_unique<ImagePlugin::AbsImageDecoder>();
     auto ret = imageSource->InitMainDecoder();
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder end";
