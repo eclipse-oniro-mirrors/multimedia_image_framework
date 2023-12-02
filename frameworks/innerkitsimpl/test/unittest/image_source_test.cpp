@@ -662,7 +662,7 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
     std::string key = "";
     std::string path = "";
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, path);
-    ASSERT_NE(ret, 0);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty001 end";
 }
 
@@ -1078,6 +1078,8 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
     AllocatorType type = AllocatorType::DEFAULT;
+    OHOS::Media::MemoryData data;
+    OHOS::Media::MemoryData extend;
     auto mm = std::make_shared<MemoryManager>();
     auto ret = mm->CreateMemory(type, data, extend);
     ASSERT_EQ(ret, nullptr);
@@ -1148,7 +1150,7 @@ HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index;
-    imageSource->ImageStatusMap::iterator iter;
+    imageSource->ImageStatusMap::iterator iterator;
     auto ret = imageSource->DecodeImageInfo(index, iter);
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo end";
