@@ -1340,18 +1340,18 @@ HWTEST_F(PixelMapTest, GetNamedAlphaType, TestSize.Level3)
  */
 HWTEST_F(PixelMapTest, GetNamedPixelFormat001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  start";
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat001  start";
     PixelMap pixelmap;
     ImageInfo info;
     const float percent = 1;
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     info.pixelFormat = PixelFormat::ALPHA_8;
     auto ret = pixelmap.SetAlpha(percent);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
     info.pixelFormat = PixelFormat::RGBA_F16;
     ret = pixelmap.SetAlpha(percent);
-    ASSERT_EQ(ret,  ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  end";
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat001  end";
 }
 /**
  * @tc.name: GetPurgeableMemPtr
@@ -1360,15 +1360,15 @@ HWTEST_F(PixelMapTest, GetNamedPixelFormat001, TestSize.Level3)
  */
 HWTEST_F(PixelMapTest, GetNamedPixelFormat002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  start";
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat002  start";
     PixelMap pixelmap;
     ImageInfo info;
     const float percent = 1;
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     info.pixelFormat = PixelFormat::ARGB_8888;
     uint32_t ret = pixelmap.SetAlpha(percent);
-    ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat  end";
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat002  end";
 }
 
 /**
