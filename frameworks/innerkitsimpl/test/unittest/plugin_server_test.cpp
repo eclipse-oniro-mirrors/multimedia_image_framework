@@ -114,6 +114,12 @@ HWTEST_F(PluginServerTest, CreateObject001, TestSize.Level3)
     ASSERT_EQ(labelDetector, nullptr);
 }
 
+/**
+ * @tc.name: Register001
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
 HWTEST_F(PluginServerTest, Register001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginServerTest: Register001 start";
@@ -129,6 +135,12 @@ HWTEST_F(PluginServerTest, Register001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginServerTest: Register001 end";
 }
 
+/**
+ * @tc.name: AnalyzeFWTyper002
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
 HWTEST_F(PluginServerTest, AnalyzeFWTyper002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 start";
