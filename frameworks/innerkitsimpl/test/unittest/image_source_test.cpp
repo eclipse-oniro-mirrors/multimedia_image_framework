@@ -685,7 +685,7 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
     std::string key;
     int fd = open("/data/receiver/Receiver_buffer7.jpg", std::fstream::binary | std::fstream::in);
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, fd);
-    ASSERT_NE(ret, 0);
+    ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty002 end";
 }
@@ -709,7 +709,7 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
 
     std::string key;
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, data, size);
-    ASSERT_NE(ret, 0);
+    ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty003 end";
 }
@@ -799,7 +799,7 @@ HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     uint32_t ret = imageSource->GetFilterArea(filterType, ranges);
-    ASSERT_NE(ret, 0);
+    ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterArea001 end";
 }
@@ -1097,7 +1097,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
-    size_t size;
+    size_t size = 0;
     imageSource->sourceStreamPtr_ = nullptr;
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
@@ -1116,7 +1116,6 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     ImagePlugin::DataStreamBuffer outData;
     size_t size = 0;
-    std::shared_ptr<SourceStream> sourceStreamPtr_ = std::make_shared<SourceStream>();
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 end";
@@ -1133,7 +1132,7 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
-    imageSource->mainDecode = std::make_unique<ImagePlugin::AbsImageDecoder>();
+    imageSource->mainDecode_ = std::make_unique<ImagePlugin::AbsImageDecoder>();
     auto ret = imageSource->GetFormatExtended(format);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
@@ -1150,7 +1149,7 @@ HWTEST_F(ImageSourceTest, DecodeImageInfo, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     uint32_t index;
-    imageSource->ImageStatusMap::iterator iterator;
+    auto iter = imageStatusMap_.find(1);;
     auto ret = imageSource->DecodeImageInfo(index, iter);
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo end";
@@ -1202,7 +1201,7 @@ HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    imageSource->mainDecoder_ = std::make_shared<ImageSource>();
+    imageSource->mainDecoder_ = std::make_unique<ImagePlugin::AbsImageDecoder>();
     auto ret = imageSource->InitMainDecoder();
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder end";
