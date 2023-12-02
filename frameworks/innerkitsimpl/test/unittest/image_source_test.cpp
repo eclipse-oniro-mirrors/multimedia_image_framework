@@ -1133,7 +1133,7 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
-    imageSource->mainDecode = std::make_shared<ImageSource>();
+    imageSource->mainDecode = std::make_unique<ImagePlugin::AbsImageDecoder>();
     auto ret = imageSource->GetFormatExtended(format);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
