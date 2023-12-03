@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#define private public
 #include <fcntl.h>
 #include "buffer_source_stream.h"
 #include "exif_info.h"
 #include "jpeg_decoder.h"
+#include "jpeg_encoder.h"
 #include "media_errors.h"
 
 using namespace testing::ext;
@@ -309,6 +311,106 @@ HWTEST_F(PluginLibJpegTest, exif_info013, TestSize.Level3)
     uint32_t ret = exinfo.GetFilterArea(buf, bufSize, filterType, ranges);
     ASSERT_EQ(ret, 1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info013 end";
+}
+
+/**
+ * @tc.name: exif_info014
+ * @tc.desc: IsIFDPointerTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    bool ret;
+    ret = byteorder.IsIFDPointerTag(0x014a);
+    ASSERT_EQ(ret, true);
+    ret = byteorder.IsIFDPointerTag(0x8769);
+    ASSERT_EQ(ret, true);
+    ret = byteorder.IsIFDPointerTag(0x8825);
+    ASSERT_EQ(ret, true);
+    ret = byteorder.IsIFDPointerTag(0xa005);
+    ASSERT_EQ(ret, true);
+    ret = byteorder.IsIFDPointerTag(0xa301);
+    ASSERT_EQ(ret, false);
+    ret = byteorder.IsIFDPointerTag(-1);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDPointerTag end";
+}
+
+/**
+ * @tc.name: exif_info015
+ * @tc.desc: GetIFDOfIFDPointerTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    ExifIfd ret;
+    ret = byteorder.GetIFDOfIFDPointerTag(0x8769);
+    ASSERT_EQ(ret, EXIF_IFD_EXIF);
+    ret = byteorder.GetIFDOfIFDPointerTag(0x8825);
+    ASSERT_EQ(ret, EXIF_IFD_GPS);
+    ret = byteorder.GetIFDOfIFDPointerTag(0xa005);
+    ASSERT_EQ(ret, EXIF_IFD_INTEROPERABILITY);
+    ret = byteorder.GetIFDOfIFDPointerTag(-1);
+    ASSERT_EQ(ret, EXIF_IFD_COUNT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetIFDOfIFDPointerTag end";
+}
+
+/**
+ * @tc.name: exif_info016
+ * @tc.desc: CheckExifEntryValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_ORIENTATION);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_DATE_TIME_ORIGINAL);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid end";
+}
+
+/**
+ * @tc.name: exif_info018
+ * @tc.desc: GetEncodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat start";
+    auto jpegEncoder = std::make_shared<JpegEncoder>();
+    int32_t componentsNum;
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_F16, componentsNum);
+    ASSERT_EQ(componentsNum, 4);
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_8888, componentsNum);
+    ASSERT_EQ(componentsNum, 4);
+    jpegEncoder->GetEncodeFormat(PixelFormat::BGRA_8888, componentsNum);
+    ASSERT_EQ(componentsNum, 4);
+    jpegEncoder->GetEncodeFormat(PixelFormat::ARGB_8888, componentsNum);
+    ASSERT_EQ(componentsNum, 4);
+    jpegEncoder->GetEncodeFormat(PixelFormat::ALPHA_8, componentsNum);
+    ASSERT_EQ(componentsNum, 1);
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_565, componentsNum);
+    ASSERT_EQ(componentsNum, 3);
+    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_888, componentsNum);
+    ASSERT_EQ(componentsNum, 3);
+    jpegEncoder->GetEncodeFormat(PixelFormat::NV12, componentsNum);
+    ASSERT_EQ(componentsNum, 3);
+    jpegEncoder->GetEncodeFormat(PixelFormat::NV21, componentsNum);
+    ASSERT_EQ(componentsNum, 3);
+    jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
+    ASSERT_EQ(componentsNum, 4);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
 }
 } // namespace Multimedia
 } // namespace OHOS
