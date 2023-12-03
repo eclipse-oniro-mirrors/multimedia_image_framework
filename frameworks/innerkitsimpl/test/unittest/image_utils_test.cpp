@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fcntl.h>
 #include <fstream>
@@ -20,6 +20,17 @@
 #include "image_trace.h"
 #include "source_stream.h"
 #include "istream_source_stream.h"
+#include "image_type.h"
+
+
+constexpr int32_t ALPHA8_BYTES = 1;
+constexpr int32_t RGB565_BYTES = 2;
+constexpr int32_t RGB888_BYTES = 3;
+constexpr int32_t ARGB8888_BYTES = 4;
+constexpr int32_t RGBA_F16_BYTES = 8;
+constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
+constexpr int32_t ASTC_4X4_BYTES = 1;
+
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -302,13 +313,83 @@ HWTEST_F(ImageUtilsTest, SurfaceBuffer_Reference001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 start";
     void* buffer = nullptr;
-    int32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
+    uint32_t res = ImageUtils::SurfaceBuffer_Reference(buffer);
     ASSERT_NE(res, SUCCESS);
 
-    int32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
+    uint32_t ret = ImageUtils::SurfaceBuffer_Unreference(buffer);
     ASSERT_NE(ret, SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageUtilsTest: SurfaceBuffer_Reference001 end";
+}
+/**
+ * @tc.name: SurfaceBuffer_Reference001
+ * @tc.desc: int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
+ * @tc.type: FUNC***
+ */
+HWTEST_F(ImageUtilsTest, GetPixelBytes, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes start";
+    PixelFormat pixelFormat = PixelFormat::ARGB_8888;
+    ImageUtils imageutils;
+    auto ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, ARGB8888_BYTES);
+
+    pixelFormat = PixelFormat::ALPHA_8;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, ALPHA8_BYTES);
+
+    pixelFormat = PixelFormat::RGB_888;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, RGB888_BYTES);
+
+    pixelFormat = PixelFormat::RGB_565;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, RGB565_BYTES);
+
+    pixelFormat = PixelFormat::RGBA_F16;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, RGBA_F16_BYTES);
+
+    pixelFormat = PixelFormat::NV21;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, NV21_BYTES);
+
+    pixelFormat = PixelFormat::ASTC_4x4;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, ASTC_4X4_BYTES);
+
+    pixelFormat = PixelFormat::UNKNOWN;
+    ret = imageutils.GetPixelBytes(pixelFormat);
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelBytes end";
+}
+
+/**
+ * @tc.name: SurfaceBuffer_Reference001
+ * @tc.desc: ImageUtils::GetValidAlphaTypeByFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetValidAlphaTypeByFormat, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat start";
+    ImageUtils imageutils;
+    AlphaType dsType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    PixelFormat format = PixelFormat::RGBA_8888;
+    auto ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
+    ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    
+    format = PixelFormat::ALPHA_8;
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
+    ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+
+    format = PixelFormat::RGB_888;
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
+    ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+
+    format = PixelFormat::UNKNOWN;
+    ret = imageutils.GetValidAlphaTypeByFormat(dsType, format);
+    ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat end";
 }
 }
 }

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include "media_errors.h"
 #include "native_image.h"
@@ -111,7 +112,7 @@ HWTEST_F(NativeImageTest, NativeImageTest005, TestSize.Level3)
     sptr<SurfaceBuffer> buffer = nullptr;
     std::shared_ptr<IBufferProcessor> releaser = nullptr;
     NativeImage image(buffer, releaser);
-    int32_t res = image.CombineYUVComponents();
+    uint32_t res = image.CombineYUVComponents();
     ASSERT_NE(res, SUCCESS);
 
     GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest005 end";
@@ -131,6 +132,22 @@ HWTEST_F(NativeImageTest, NativeImageTest006, TestSize.Level3)
     image.release();
 
     GTEST_LOG_(INFO) << "NativeImageTest: NativeImageTest006 end";
+}
+/**
+ * @tc.name: NativeImageTest006
+ * @tc.desc: SplitSurfaceToComponent***
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitSurfaceToComponent, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    image.buffer_ = nullptr;
+    int32_t ret = image.SplitSurfaceToComponent();
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent end";
 }
 }
 }

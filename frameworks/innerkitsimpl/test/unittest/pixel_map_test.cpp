@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
-
 #include "image_type.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -918,7 +918,7 @@ HWTEST_F(PixelMapTest, PixelMapTest024, TestSize.Level3)
     for (unsigned int i = 0; i < bufferSize; i++) {
         *(ch++) = (char)i;
     }
-    int32_t contextSize = 10;
+    uint32_t contextSize = 10;
     void *context = malloc(contextSize);
     EXPECT_TRUE(context != nullptr);
     char *contextChar = static_cast<char *>(context);
@@ -1148,7 +1148,7 @@ HWTEST_F(PixelMapTest, SetAndGetRowStride, TestSize.Level3)
 
     uint32_t stride = 1;
     pixelMap.SetRowStride(stride);
-    uint32_t res = pixelMap.GetRowStride();
+    int32_t res = pixelMap.GetRowStride();
     ASSERT_EQ(res, 1);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAndGetRowStride end";
 }
@@ -1268,5 +1268,123 @@ HWTEST_F(PixelMapTest, SetPurgeableMemPtrTest, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetPurgeableMemPtrTest SetPurgeableMemPtr end";
 }
 #endif
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: GetPixelFormatDetail***
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, GetPixelFormatDetail, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPixelFormatDetail  start";
+    PixelMap pixelmap;
+    PixelFormat format = PixelFormat::RGBA_8888;
+    auto ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::BGRA_8888;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::ARGB_8888 ;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::ALPHA_8;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::ARGB_8888;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::RGB_565;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format =PixelFormat::RGB_888;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format =PixelFormat::NV12;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::CMYK;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::RGBA_F16;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::ASTC_4x4;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, true);
+    format = PixelFormat::UNKNOWN;
+    ret = pixelmap.GetPixelFormatDetail(format);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetPixelFormatDetail GetPurgeableMemPtr end";
+}
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: SetAlpha  GetNamedAlphaType
+ * @tc.type: FUNC***
+ */
+HWTEST_F(PixelMapTest, GetNamedAlphaType, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedAlphaType  start";
+    PixelMap pixelmap;
+    ImageInfo info;
+    const float percent = 1;
+    auto ret = pixelmap.SetAlpha(percent);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    ret = pixelmap.SetAlpha(percent);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedAlphaTyp  end";
+}
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: SetAlpha  GetNamedPixelFormat
+ * @tc.type: FUNC***
+ */
+HWTEST_F(PixelMapTest, GetNamedPixelFormat001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat001  start";
+    PixelMap pixelmap;
+    ImageInfo info;
+    const float percent = 1;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    auto ret = pixelmap.SetAlpha(percent);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    info.pixelFormat = PixelFormat::RGBA_F16;
+    ret = pixelmap.SetAlpha(percent);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat001  end";
+}
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: SetAlpha  GetAlphaIndex
+ * @tc.type: FUNC***
+ */
+HWTEST_F(PixelMapTest, GetNamedPixelFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat002  start";
+    PixelMap pixelmap;
+    ImageInfo info;
+    const float percent = 1;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    info.pixelFormat = PixelFormat::ARGB_8888;
+    uint32_t ret = pixelmap.SetAlpha(percent);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: GetNamedPixelFormat002  end";
+}
+
+/**
+ * @tc.name: GetPurgeableMemPtr
+ * @tc.desc: ReadImageInfo
+ * @tc.type: FUNC***
+ */
+HWTEST_F(PixelMapTest, ReadImageInfo, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  start";
+    PixelMap pixeimap;
+    Parcel parcel;
+    ImageInfo imgInfo;
+    bool ret = pixeimap.ReadImageInfo(parcel, imgInfo);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  end";
+}
 }
 }
