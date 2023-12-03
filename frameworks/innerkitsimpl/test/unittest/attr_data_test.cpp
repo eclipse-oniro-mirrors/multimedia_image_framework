@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "attr_data.h"
@@ -1224,6 +1225,53 @@ HWTEST_F(AttrDataTest, AttrDataTest0072, TestSize.Level3)
     uint32_t res = aData.GetValue(value1);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0072 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0073
+ * @tc.desc: test AttrData::AttrData
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest0073, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 start";
+    uint32_t value = 1;
+    MultimediaPlugin::AttrData aData(value);
+    aData.SetData(value);
+    value = 2;
+    aData.SetData(value);
+    value = 3;
+    aData.SetData(value);
+    value = 4;
+    aData.SetData(value);
+    value = 5;
+    aData.SetData(value);
+    value = 6;
+    aData.SetData(value);
+    value = 7;
+    aData.SetData(value);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest0073 end";
+}
+
+/**
+ * @tc.name: AttrDataTest0074
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest0074, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest0074 start";
+    uint32_t value = 2;
+    MultimediaPlugin::AttrData aData(value);
+    bool res = aData.InRange(value);
+    ASSERT_EQ(res, false);
+    value = 6;
+    res = aData.InRange(value);
+    ASSERT_EQ(res, false);
+    value = 8;
+    res = aData.InRange(value);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRange1Test0074 end";
 }
 }
 }

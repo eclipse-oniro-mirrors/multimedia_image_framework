@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
 #include <gtest/gtest.h>
 #include "webp_encoder.h"
 #include "image_source.h"
@@ -689,6 +690,24 @@ HWTEST_F(WebpEncoderTest, Write001, TestSize.Level3)
     bool result = (webpEncoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "WebpEncoderTest: Write001 end";
+}
+
+/**
+ * @tc.name: MakeImageInfoTest002
+ * @tc.desc: Test of Write
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, MakeImageInfoTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest002 start";
+    ImagePlugin::WebpEncoder encoder;
+    int width = 1;
+    int height = 2;
+    Media::PixelFormat pf = PixelFormat::RGB_565;
+    Media::AlphaType at = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    Media::ColorSpace cs = ColorSpace::EXTENDED_SRGB;
+    encoder.MakeImageInfo(width, height, pf, at, cs);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest002 end";
 }
 }
 }

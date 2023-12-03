@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
 #include <gtest/gtest.h>
 #include "abs_image_detector.h"
 #include "image_source.h"
@@ -111,6 +112,43 @@ HWTEST_F(PluginServerTest, CreateObject001, TestSize.Level3)
     AbsImageDetector *labelDetector =
         pluginServer.CreateObject<AbsImageDetector>(implClassName);
     ASSERT_EQ(labelDetector, nullptr);
+}
+
+/**
+ * @tc.name: Register001
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, Register001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: Register001 start";
+    PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
+    vector<string> pluginPaths = { "/system/etc/multimediaplugin/testplugins" };
+    uint32_t ret = pluginServer.Register(std::move(pluginPaths));
+    bool result = (ret != SUCCESS);
+    ASSERT_EQ(result, true);
+    pluginPaths = { "/system/etc/multimediaplugin/gstreamer" };
+    ret = pluginServer.Register(std::move(pluginPaths));
+    result = (ret != SUCCESS);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "PluginServerTest: Register001 end";
+}
+
+/**
+ * @tc.name: AnalyzeFWTyper002
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, AnalyzeFWTyper002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 start";
+    MultimediaPlugin::PluginServer server;
+    string path = "/path/to/gstreamer/plugin";
+    PluginFWType result = server.AnalyzeFWType(path);
+    ASSERT_EQ(result, PluginFWType::PLUGIN_FW_GSTREAMER);
+    GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 end";
 }
 }
 }
