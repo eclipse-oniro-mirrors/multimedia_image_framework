@@ -934,5 +934,121 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
     pngDecoder->PushCurrentToDecode(mock.get());
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC  new creat——————————————
+ */
+HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    PlPixelFormat format = PlPixelFormat::RGB_888;
+    PlPixelFormat outputFormat;
+    PlAlphaType alphaType;
+    uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    PngImageInfo info;
+    PlPixelFormat format = PlPixelFormat::RGBA_F16;
+    PlPixelFormat outputFormat;
+    PlAlphaType alphaType;
+    info.bitDepth=16;
+    uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
+    PngDecoder png;
+    png_structp pngPtr = new(png_structp);
+    png_const_charp message
+    png.PngErrorExit(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
+    PngDecoder png;
+    png_structp pngPtr = new(png_structp);
+    png_const_charp message
+    png.PngErrorExit(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage start";
+    PngDecoder png;
+    png_structp pngPtr;
+    png_const_charp message = new(png_structp);
+    png.PngErrorMessage(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage start";
+    PngDecoder png;
+    png_structp pngPtr;
+    png_const_charp message = new(png_structp);
+    png.PngErrorMessage(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData start";
+    PngDecoder png;
+    png_structp pngStructPtr;
+    png_infop infoStructPtr;
+    InputDataStream *sourceStream;
+    DataStreamBuffer streamData;
+    size_t bufferSize = 0;
+    size_t totalSize = 0;
+    uint32_t ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
+    ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData end";
+}
 } // namespace Multimedia
 } // namespace OHOS
