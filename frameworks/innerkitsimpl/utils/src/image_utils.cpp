@@ -362,6 +362,7 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
     }
     if (pixelMap == nullptr) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
+        return;
     }
 
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
