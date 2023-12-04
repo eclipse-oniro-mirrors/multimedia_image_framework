@@ -97,7 +97,7 @@ HWTEST_F(NinePathListenerTest, ReadChunk003, TestSize.Level3)
     const std::string tag = "npTc";
     PngNinePatchRes *data = static_cast<PngNinePatchRes *>(data);
     int32_t length = 32;
-   PngNinePatchRes att;
+    PngNinePatchRes att;
     att.numXDivs = 0;
     att.numYDivs = 0;
     att.numColors = 0;
