@@ -422,7 +422,7 @@ HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 start";
     EXIFInfo exinfo;
-    unsigned char *buf="ttttttExif"
+    unsigned char buf[20]="ttttttExif"
     ExifData **ptrData;
     bool ret = exinfo.CreateExifData(buf, 5, ptrData, true);
     ASSERT_EQ(ret, false);
@@ -438,7 +438,7 @@ HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 start";
     EXIFInfo exinfo;
-    unsigned char *buf="tttttttttt"
+    unsigned char buf[20]="tttttttttt";
     ExifData **ptrData;
     bool ret = exinfo.CreateExifData(buf, 5, ptrData, true);
     ASSERT_EQ(ret, false);
@@ -470,7 +470,7 @@ HWTEST_F(PluginLibJpegTest, exif_info024, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder002 start";
     EXIFInfo exinfo;
-    unsigned char *buf = "ttttttttttttMM";
+    unsigned char buf[20] = "ttttttttttttMM";
     ExifByteOrder ret = exinfo.GetExifByteOrder(false, buf);
     ASSERT_EQ(ret, EXIF_BYTE_ORDER_MOTOROLA);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder002 end";
@@ -485,7 +485,7 @@ HWTEST_F(PluginLibJpegTest, exif_info025, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder003 start";
     EXIFInfo exinfo;
-    unsigned char *buf = "tttttttttttttt";
+    unsigned char buf[20] = "tttttttttttttt";
     ExifByteOrder ret = exinfo.GetExifByteOrder(false, buf);
     ASSERT_EQ(ret, EXIF_BYTE_ORDER_INTEL);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder003 end";
@@ -546,9 +546,9 @@ HWTEST_F(PluginLibJpegTest, exif_info029, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries start";
     EXIFInfo exinfo;
-    const uint8_t *buf = new const uint8_t;
+    const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
-    byteOrderedBuffer->GenerateDEArray();
+    byteOrderedBuffer.GenerateDEArray();
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer->directoryEntryArray_, ranges);
     delete buf;
@@ -565,7 +565,7 @@ HWTEST_F(PluginLibJpegTest, exif_info030, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos start";
     const uint8_t *buf = new const uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
-    uint32_t ret = byteorder->TransformTiffOffsetToFilePos(20);
+    uint32_t ret = byteorder.TransformTiffOffsetToFilePos(20);
     ASSERT_EQ(ret, 32);
     delete buf;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos end";
