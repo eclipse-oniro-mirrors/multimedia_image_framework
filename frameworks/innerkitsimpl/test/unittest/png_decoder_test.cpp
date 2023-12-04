@@ -948,7 +948,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
     PlPixelFormat outputFormat;
     PlAlphaType alphaType;
     uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(result, SUCCESS);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat001 end";
 }
 
@@ -967,7 +967,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     PlAlphaType alphaType;
     info.bitDepth=16;
     uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
-    ASSERT_EQ(result, SUCCESS);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 end";
 }
 
@@ -1047,8 +1047,23 @@ HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
     size_t bufferSize = 0;
     size_t totalSize = 0;
     uint32_t ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
-    ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk start";
+    const png_byte *chunk = nullptr;
+    const char *flag = nullptr;
+    bool ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk end";
 }
 } // namespace Multimedia
 } // namespace OHOS
