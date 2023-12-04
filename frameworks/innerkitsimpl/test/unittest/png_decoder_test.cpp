@@ -943,7 +943,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
 HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     PlPixelFormat format = PlPixelFormat::RGB_888;
     PlPixelFormat outputFormat;
     PlAlphaType alphaType;
@@ -981,7 +981,7 @@ HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
     PngDecoder png;
     png_structp pngPtr = new(png_structp);
-    png_const_charp message
+    png_const_charp message；
     png.PngErrorExit(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
 }
@@ -996,7 +996,7 @@ HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
     PngDecoder png;
     png_structp pngPtr = new(png_structp);
-    png_const_charp message
+    png_const_charp message；
     png.PngErrorExit(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
 }
@@ -1011,8 +1011,10 @@ HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage start";
     PngDecoder png;
     png_structp pngPtr;
-    png_const_charp message = new(png_structp);
+    png_const_charp message = new(png_structp)；
     png.PngErrorMessage(pngPtr, message);
+    delete message;
+    message = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage end";
 }
 
@@ -1028,6 +1030,8 @@ HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
     png_structp pngPtr;
     png_const_charp message = new(png_structp);
     png.PngErrorMessage(pngPtr, message);
+    delete message;
+    message = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage end";
 }
 
