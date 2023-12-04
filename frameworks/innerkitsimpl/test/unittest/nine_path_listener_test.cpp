@@ -67,5 +67,84 @@ HWTEST_F(NinePathListenerTest, Scale001, TestSize.Level3)
     ASSERT_NE(&ninepath, nullptr);
     GTEST_LOG_(INFO) << "NinePathListenerTest: Scale001 end";
 }
+
+/**
+ * @tc.name: ReadChunk002
+ * @tc.desc: test Scale
+ * @tc.type: FUNC  new create
+ */
+HWTEST_F(NinePathListenerTest, ReadChunk002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk002 start";
+    ImagePlugin::NinePatchListener ninepath;
+    const std::string tag = "npTc";
+    PngNinePatchRes *data = static_cast<PngNinePatchRes *>(data);
+    int32_t length = 100;
+    bool ret = ninepath.ReadChunk(tag, data, length);
+    ASSERT_NE(ret, true);
+    GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk002 end";
+}
+
+/**
+ * @tc.name: ReadChunk002
+ * @tc.desc: test Scale
+ * @tc.type: FUNC  new create
+ */
+HWTEST_F(NinePathListenerTest, ReadChunk003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk003 start";
+    ImagePlugin::NinePatchListener ninepath;
+    const std::string tag = "npTc";
+    PngNinePatchRes *data = static_cast<PngNinePatchRes *>(data);
+    int32_t length = 32;
+   PngNinePatchRes att;
+    att.numXDivs = 0;
+    att.numYDivs = 0;
+    att.numColors = 0;
+    bool ret = ninepath.ReadChunk(tag, data, length);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk003 end";
+}
+
+/**
+ * @tc.name: Scale002
+ * @tc.desc: test Scale
+ * @tc.type: FUNC
+ */
+HWTEST_F(NinePathListenerTest, Scale002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 start";
+    ImagePlugin::NinePatchListener ninepath;
+    ninepath.patch_ = new(PngNinePatchRes);
+    float scaleX = 3.0;
+    float scaleY = 2.0;
+    int32_t scaledWidth = 3;
+    int32_t scaledHeight = 4;
+    ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
+    ASSERT_NE(&ninepath, nullptr);
+    delete patch_;
+    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 end";
+}
+
+/**
+ * @tc.name: Scale003
+ * @tc.desc: test Scale
+ * @tc.type: FUNC
+ */
+HWTEST_F(NinePathListenerTest, Scale003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 start";
+    ImagePlugin::NinePatchListener ninepath;
+    ninepath.patch_ = new(PngNinePatchRes);
+    float scaleX = 1.0f;
+    float scaleY = 2.0;
+    int32_t scaledWidth = 3;
+    int32_t scaledHeight = 4;
+    ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
+    ASSERT_NE(&ninepath, nullptr);
+    delete ninepath.patch_ ;
+    ninepath.patch_ = nullptr;
+    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
