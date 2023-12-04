@@ -960,7 +960,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
 HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     PngImageInfo info;
     PlPixelFormat format = PlPixelFormat::RGBA_F16;
     PlPixelFormat outputFormat;
