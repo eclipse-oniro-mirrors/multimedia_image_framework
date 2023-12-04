@@ -412,5 +412,163 @@ HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
     ASSERT_EQ(componentsNum, 4);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
 }
+
+/**
+ * @tc.name: exif_info021
+ * @tc.desc: CreateExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 start";
+    EXIFInfo exinfo;
+    unsigned char *buf="ttttttExif"
+    ExifData **ptrData;
+    bool ret = exinfo.CreateExifData(buf, 5, ptrData, true);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 end";
+}
+
+/**
+ * @tc.name: exif_info022
+ * @tc.desc: CreateExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 start";
+    EXIFInfo exinfo;
+    unsigned char *buf="tttttttttt"
+    ExifData **ptrData;
+    bool ret = exinfo.CreateExifData(buf, 5, ptrData, true);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: GetExifByteOrder
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder001 start";
+    EXIFInfo exinfo;
+    unsigned char *buf = new unsigned char;
+    ExifByteOrder ret = exinfo.GetExifByteOrder(true, buf);
+    ASSERT_EQ(ret, EXIF_BYTE_ORDER_INTEL);
+    delete buf;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder001 end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: GetExifByteOrder
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder002 start";
+    EXIFInfo exinfo;
+    unsigned char *buf = "ttttttttttttMM";
+    ExifByteOrder ret = exinfo.GetExifByteOrder(false, buf);
+    ASSERT_EQ(ret, EXIF_BYTE_ORDER_MOTOROLA);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder002 end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: GetExifByteOrder
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder003 start";
+    EXIFInfo exinfo;
+    unsigned char *buf = "tttttttttttttt";
+    ExifByteOrder ret = exinfo.GetExifByteOrder(false, buf);
+    ASSERT_EQ(ret, EXIF_BYTE_ORDER_INTEL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder003 end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: WriteExifDataToFile
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile start";
+    EXIFInfo exinfo;
+    bool ret = exinfo.WriteExifDataToFile(nullptr, 5, 20, nullptr, nullptr);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: ReleaseSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource start";
+    EXIFInfo exinfo;
+    unsigned char *ptrBuf = new unsigned char;
+    FILE *file = fopen("napi_test.cpp", "rb");
+    exinfo.ReleaseSource(&ptrBuf, &file);
+    ASSERT_EQ(ptrBuf, nullptr);
+    ASSERT_EQ(file, nullptr);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: UpdateCacheExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource start";
+    EXIFInfo exinfo;
+    FILE *file = fopen("napi_test.cpp", "rb");
+    exinfo.UpdateCacheExifData(file);
+    fclose(file);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: GetAreaFromExifEntries
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info029, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new const uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer->GenerateDEArray();
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer->directoryEntryArray_, ranges);
+    delete buf;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries end";
+}
+
+/**
+ * @tc.name: exif_info023
+ * @tc.desc: TransformTiffOffsetToFilePos
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info030, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos start";
+    const uint8_t *buf = new const uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    uint32_t ret = byteorder->TransformTiffOffsetToFilePos(20);
+    ASSERT_EQ(ret, 32);
+    delete buf;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos end";
+}
 } // namespace Multimedia
 } // namespace OHOS
