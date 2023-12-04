@@ -1040,9 +1040,9 @@ HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData start";
     PngDecoder png;
-    png_structp pngStructPtr;
-    png_infop infoStructPtr;
-    InputDataStream *sourceStream;
+    png_structp pngStructPtr = nullptr;
+    png_infop infoStructPtr = nullptr;
+    InputDataStream *sourceStream = nullptr;
     DataStreamBuffer streamData;
     size_t bufferSize = 0;
     size_t totalSize = 0;
