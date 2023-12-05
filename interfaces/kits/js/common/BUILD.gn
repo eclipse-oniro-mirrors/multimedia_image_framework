@@ -250,7 +250,8 @@ if (use_clang_ios) {
       "napi:ace_napi",
     ]
 
-    if (defined(global_parts_info) && defined(global_parts_info.hiviewdfx_hichecker)) {
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.hiviewdfx_hichecker)) {
       external_deps += [ "hichecker:libhichecker" ]
       defines += [ "HICHECKER_ENABLE" ]
     }
@@ -291,7 +292,8 @@ if (use_clang_ios) {
         "hitrace:hitrace_meter",
       ]
 
-      if (defined(global_parts_info) && defined(global_parts_info.hiviewdfx_hichecker)) {
+      if (defined(global_parts_info) &&
+          defined(global_parts_info.hiviewdfx_hichecker)) {
         external_deps += [ "hichecker:libhichecker" ]
         defines += [ "HICHECKER_ENABLE" ]
       }
