@@ -2584,6 +2584,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 
 void PixelMap::scale(float xAxis, float yAxis)
 {
+    ImageTrace imageTrace("PixelMap scale");
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -2593,6 +2594,7 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
+    ImageTrace imageTrace("PixelMap scale");
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos, option)) {
@@ -2602,6 +2604,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
+    ImageTrace imageTrace("PixelMap resize");
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -2613,6 +2616,7 @@ bool PixelMap::resize(float xAxis, float yAxis)
 
 void PixelMap::translate(float xAxis, float yAxis)
 {
+    ImageTrace imageTrace("PixelMap translate");
     TransInfos infos;
     infos.matrix.setTranslate(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -2622,6 +2626,7 @@ void PixelMap::translate(float xAxis, float yAxis)
 
 void PixelMap::rotate(float degrees)
 {
+    ImageTrace imageTrace("PixelMap rotate");
     TransInfos infos;
     infos.matrix.setRotate(degrees);
     if (!DoTranslation(infos)) {
@@ -2631,6 +2636,7 @@ void PixelMap::rotate(float degrees)
 
 void PixelMap::flip(bool xAxis, bool yAxis)
 {
+    ImageTrace imageTrace("PixelMap flip");
     if (xAxis == false && yAxis == false) {
         return;
     }
@@ -2639,6 +2645,7 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    ImageTrace imageTrace("PixelMap crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -2678,8 +2685,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         rowStride = sbBuffer->GetStride();
     }
 #endif
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride,
-        dstIRect.fLeft, dstIRect.fTop)) {
+    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
         HiLog::Error(LABEL, "ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
