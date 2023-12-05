@@ -1069,5 +1069,170 @@ HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk end";
 }
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, GetImageInfo, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageInfo start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    PngImageInfo info;
+    bool ret = pngDecoder.GetImageInfo(info);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageInfo end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, IncrementalRead001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    InputDataStream *stream = nullptr;
+    uint32_t desiredSize = 0;
+    DataStreamBuffer outData = nullptr;
+    uint32_t ret = pngDecoder.IncrementalRead(stream, desiredSize, outData);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, IncrementalRead002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    InputDataStream *stream = new(InputDataStream);
+    uint32_t desiredSize = 0;
+    DataStreamBuffer outData = nullptr;
+    uint32_t ret = pngDecoder.IncrementalRead(stream, desiredSize, outData);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    delete stream;
+    stream = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead002 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    InputDataStream *stream;
+    uint32_t desiredSize = 0;
+    DataStreamBuffer outData;
+    outData.inputStreamBuffer = nullptr;
+    uint32_t ret = pngDecoder.IncrementalRead(stream, desiredSize, outData);
+    ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead003 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_bytep row;
+    png_uint_32 rowNum = 1;
+    pngDecoder->SaveRows(row, rowNum);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_bytep row;
+    png_uint_32 rowNum = 0;
+    pngDecoder->SaveRows(row, rowNum);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows002 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_bytep row = nullptr;
+    png_uint_32 rowNum;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows001 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_bytep row;
+    png_uint_32 rowNum = 1;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_bytep row;
+    pngDecoder->lastRow_ = 2;
+    png_uint_32 rowNum = 1;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows003 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest005
+ * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, GetAllRows, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_structp pngPtr = nullptr;
+    png_bytep row = nullptr;
+    png_uint_32 rowNum;
+    int pass;
+    pngDecoder->SaveInterlacedRows(pngPtr, row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows end";
+}
 } // namespace Multimedia
 } // namespace OHOS
