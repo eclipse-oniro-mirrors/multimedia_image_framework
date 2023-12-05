@@ -1206,5 +1206,303 @@ HWTEST_F(JpegDecoderTest, IsMarkerTest002, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "JpegDecoderTest: IsMarkerTest002 end";
 }
+
+/**
+ * @tc.name: GetImageSizeTest0001
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImageSizeTest0001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest0001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ImagePlugin::PlSize plSize;
+    ErrCodeOffset(2, 0);
+    jpegDecoder->GetImageSize(1, plSize);
+    jpegDecoder->GetImageSize(0, plSize);
+    ImagePlugin::JpegDecoder::state_ = ImagePlugin::JpegDecodingState::IMAGE_DECODING;
+    uint32_t result = jpegDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(result, Media::SUCCESS);
+    ImagePlugin::JpegDecoder::state_ = ImagePlugin::JpegDecodingState::BASE_INFO_PARSING;
+    jpegDecoder->GetImageSize(0, plSize);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest0001 end";
+}
+
+/**
+ * @tc.name: GetScaledFractionTest0002
+ * @tc.desc: Test of GetScaledFraction
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetScaledFractionTest0002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetScaledFractionTest0001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int inSampleSize;
+    jpeg_decompress_struct dInfo;
+    jpegDecoder->GetScaledFraction(inSampleSize, dInfo);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetScaledFractionTest0002 end";
+}
+
+/**
+ * @tc.name: GetRowBytesTest0003
+ * @tc.desc: Test of GetRowBytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetRowBytesTest0003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest0003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->JpegDecoder::GetRowBytes();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest0003 end";
+}
+
+/**
+ * @tc.name: ResetTest0004
+ * @tc.desc: Test of Reset
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ResetTest0004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest0004 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->JpegDecoder::Reset();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest0004 end";
+}
+
+/**
+ * @tc.name: FinishOldDecompressTest0005
+ * @tc.desc: Test of FinishOldDecompress
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FinishOldDecompressTest0005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest0005 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->JpegDecoder::FinishOldDecompress();
+    ImagePlugin::JpegDecoder::state_ = ImagePlugin::JpegDecodingState::BASE_INFO_PARSED;
+    jpegDecoder->JpegDecoder::FinishOldDecompress();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest0005 end";
+}
+
+/**
+ * @tc.name: SetOriginalTimesTest0006
+ * @tc.desc: Test of SetOriginalTimes
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, SetOriginalTimesTest0006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetOriginalTimesTest0006 start";
+    std::string dataTime1 = "2023-10-15";
+    std::string result1 = SetOriginalTimes(dataTime1);
+    ASSERT_EQ(result1, "2023-10-15 00:00:00");
+    std::string dataTime2 = "2023-10-15 ";
+    std::string result2 = SetOriginalTimes(dataTime2);
+    ASSERT_EQ(result2, "2023-10-15 00:00:00");
+    std::string dataTime3 = "2023-10-15 12:34:56 ";
+    std::string result3 = SetOriginalTimes(dataTime3);
+    ASSERT_EQ(result3, "2023-10-15 12:34:56");
+    std::string dataTime4 = "2023-10-15";
+    std::string result4 = SetOriginalTimes(dataTime4);
+    ASSERT_EQ(result4, "2023-10-15 00:00:00");
+    std::string dataTime5 = "2023-10-15 12:34";
+    std::string result5 = SetOriginalTimes(dataTime5);
+    ASSERT_EQ(result5, "2023-10-15 12:34:00");
+    std::string dataTime6 = "2023-10-15 12:34:56.789";
+    std::string result6 = SetOriginalTimes(dataTime6);
+    ASSERT_EQ(result6, "2023-10-15 12:34:56");
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SetOriginalTimesTest0006 end";
+}
+
+/**
+ * @tc.name: FormatTimeStampTest0007
+ * @tc.desc: Test of FormatTimeStamp
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest0007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest0007 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    std::string value = "";
+    std::string src = "2023-10-15 12:34:56";
+    jpegDecoder->JpegDecoder::FormatTimeStamp(value, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest0007 end";
+}
+
+/**
+ * @tc.name: getExifTagFromKeyTest0008
+ * @tc.desc: Test of getExifTagFromKey
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, getExifTagFromKeyTest0008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest0008 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    const std::string key1 ="BitsPerSample";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key1);
+    const std::string key2 ="Orientation";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key2);
+    const std::string key3 ="ImageLength";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key3);
+    const std::string key4 ="ImageWidth";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key4);
+    const std::string key5 ="GPSLatitude";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key5);
+    const std::string key6 ="GPSLongitude";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key6);
+    const std::string key7 ="GPSLatitudeRef";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key7);
+    const std::string key8 ="GPSLongitudeRef";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key8);
+    const std::string key9 ="DateTimeOriginal";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key9);
+    const std::string key10 ="ExposureTime";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key10);
+    const std::string key11 ="FNumber";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key11);
+    const std::string key12 ="ISOSpeedRatings";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key12);
+    const std::string key13 ="SceneType";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key13);
+    const std::string key14 ="CompressedBitsPerPixel";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key14);
+    const std::string key15 ="GPSTimeStamp";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key15);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest0008 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertyTest0009
+ * @tc.desc: Test of ModifyImageProperty
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest0009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest0009 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    uint32_t index = 1;
+    const std::string key = "GPSTimeStamp";
+    const std::string value = "111";
+    const std::string path = " ";
+    int32_t result = JpegDecoder::ModifyImageProperty(index, key, value, path);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest0009 end";
+}
+
+/**
+ * @tc.name: GetFilterAreaTest0010
+ * @tc.desc: Test of GetFilterArea
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetFilterAreaTest0010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest0010 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    uint32_t ret = JpegDecoder->GetFilterArea(1, ranges);
+    EXPECT_EQ(ret, Media::ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest0010 end";
+}
+
+/**
+ * @tc.name: FillInputBufferTest0011
+ * @tc.desc: Test of FillInputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FillInputBufferTest0011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FillInputBufferTest0011 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    j_decompress_ptr dinfo = nullptr;
+    boolean ret = JpegDecoder->FillInputBuffer(dinfo);
+    EXPECT_EQ(ret, FALSE);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FillInputBufferTest0011 end";
+}
+
+/**
+ * @tc.name: SkipInputDataTest0012
+ * @tc.desc: Test of SkipInputData
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, SkipInputDataTest0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SkipInputDataTest0012 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    j_decompress_ptr dinfo = nullptr;
+    long numBytes;
+    JpegDecoder->SkipInputData(dinfo,numBytes);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: SkipInputDataTest0012 end";
+}
+
+/**
+ * @tc.name: TermSrcStreamTest0013
+ * @tc.desc: Test of TermSrcStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, TermSrcStreamTest0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: TermSrcStreamTest0013 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    JpegDecoder->TermSrcStream();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: TermSrcStreamTest0013 end";
+}
+
+/**
+ * @tc.name: InitDstStreamTest0014
+ * @tc.desc: Test of InitDstStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, InitDstStreamTest0014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: InitDstStreamTest0014 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    j_compress_ptr cinfo = nullptr;
+    cinfo->dest == nullptr;
+    JpegDecoder->InitDstStream();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: InitDstStreamTest0014 end";
+}
+
+/**
+ * @tc.name: EmptyOutputBufferTest0015
+ * @tc.desc: Test of EmptyOutputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, EmptyOutputBufferTest0015, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: EmptyOutputBufferTest0015 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    j_compress_ptr cinfo = nullptr;
+    boolean ret = JpegDecoder->EmptyOutputBuffer(cinfo);
+    ASSERT_EQ(ret, FALSE);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: EmptyOutputBufferTest0015 end";
+}
+
+/**
+ * @tc.name: TermDstStreamTest0016
+ * @tc.desc: Test of TermDstStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, TermDstStreamTest0016, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: TermDstStreamTest0016 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    j_compress_ptr cinfo = nullptr;
+    JpegDecoder->TermDstStream(cinfo);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: TermDstStreamTest0016 end";
+}
+
+/**
+ * @tc.name: DoubleToStringTest0017
+ * @tc.desc: Test of DoubleToString
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, DoubleToStringTest0017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    double num;
+    std::string ret = JpegDecoder->DoubleToString(num);
+    ASSERT_EQ(ret, result);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 end";
+}
 }
 }
