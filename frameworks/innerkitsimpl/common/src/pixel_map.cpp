@@ -2685,8 +2685,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         rowStride = sbBuffer->GetStride();
     }
 #endif
-    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride,
-        dstIRect.fLeft, dstIRect.fTop)) {
+    if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
         HiLog::Error(LABEL, "ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
