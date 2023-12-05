@@ -936,8 +936,8 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: GetDecodeFormat001
+ * @tc.desc: Test of GetDecodeFormat
  * @tc.type: FUNC  new creat——————————————
  */
 HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
@@ -953,8 +953,8 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: GetDecodeFormat002
+ * @tc.desc: Test of GetDecodeFormat
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
@@ -972,11 +972,11 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: PngErrorExit001
+ * @tc.desc: Test of PngErrorExit
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
+HWTEST_F(PngDecoderTest, PngErrorExit001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
     PngDecoder png;
@@ -987,23 +987,23 @@ HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: PngErrorExit002
+ * @tc.desc: Test of PngErrorExit
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PngErrorExit, TestSize.Level3)
+HWTEST_F(PngDecoderTest, PngErrorExit002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 start";
     PngDecoder png;
     png_structp pngPtr = new(png_structp);
     png_const_charp message；
     png.PngErrorExit(pngPtr, message);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 end";
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: PngErrorMessage
+ * @tc.desc: Test of PngErrorMessage
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
@@ -1019,8 +1019,8 @@ HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: PngWarningMessage
+ * @tc.desc: Test of PngWarningMessage
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
@@ -1036,8 +1036,8 @@ HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: ProcessData
+ * @tc.desc: Test of ProcessData
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
@@ -1056,8 +1056,8 @@ HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: IsChunk
+ * @tc.desc: Test of IsChunk
  * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
@@ -1071,8 +1071,8 @@ HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: GetImageInfo
+ * @tc.desc: Test of GetImageInfo
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, GetImageInfo, TestSize.Level3)
@@ -1086,8 +1086,8 @@ HWTEST_F(PngDecoderTest, GetImageInfo, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: IncrementalRead001
+ * @tc.desc: Test of IncrementalRead
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, IncrementalRead001, TestSize.Level3)
@@ -1103,8 +1103,8 @@ HWTEST_F(PngDecoderTest, IncrementalRead001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: IncrementalRead002
+ * @tc.desc: Test of IncrementalRead
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, IncrementalRead002, TestSize.Level3)
@@ -1122,8 +1122,8 @@ HWTEST_F(PngDecoderTest, IncrementalRead002, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: IncrementalRead003
+ * @tc.desc: Test of IncrementalRead
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
@@ -1140,8 +1140,8 @@ HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: SaveRows001
+ * @tc.desc: Test of SaveRows
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
@@ -1155,8 +1155,8 @@ HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: SaveRows002
+ * @tc.desc: Test of SaveRows
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
@@ -1170,8 +1170,8 @@ HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: SaveInterlacedRows001
+ * @tc.desc: Test of SaveInterlacedRows
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
@@ -1186,8 +1186,8 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: SaveInterlacedRows002
+ * @tc.desc: Test of SaveInterlacedRows
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
@@ -1202,8 +1202,8 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: SaveInterlacedRows003
+ * @tc.desc: Test of SaveInterlacedRows
  * @tc.type: FUNC 2023-12-05
  */
 HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
@@ -1219,20 +1219,37 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
 }
 
 /**
- * @tc.name: PromoteIncrementalDecodeTest005
- * @tc.desc: Test of ConvertOriginalFormat
+ * @tc.name: GetAllRows001
+ * @tc.desc: Test of GetAllRows
  * @tc.type: FUNC 2023-12-05
  */
-HWTEST_F(PngDecoderTest, GetAllRows, TestSize.Level3)
+HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 start";
     auto pngDecoder = std::make_shared<PngDecoder>(); 
     png_structp pngPtr = nullptr;
     png_bytep row = nullptr;
     png_uint_32 rowNum;
     int pass;
     pngDecoder->SaveInterlacedRows(pngPtr, row, rowNum, pass);
-    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 end";
 }
+/**
+ * @tc.name: GetAllRows002
+ * @tc.desc: Test of GetAllRows
+ * @tc.type: FUNC 2023-12-05
+ */
+HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    png_structp pngPtr ;
+    png_bytep row;
+    png_uint_32 rowNum;
+    int pass;
+    pngDecoder->SaveInterlacedRows(pngPtr, row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 end";
+}
+} // name
 } // namespace Multimedia
 } // namespace OHOS
