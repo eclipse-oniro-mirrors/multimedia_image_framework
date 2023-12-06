@@ -1066,6 +1066,5 @@ HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk end";
 }
-} // name
 } // namespace Multimedia
 } // namespace OHOS
