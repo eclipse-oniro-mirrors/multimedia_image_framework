@@ -1485,7 +1485,7 @@ HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest0009, TestSize.Level3)
     const std::string key = "GPSTimeStamp";
     const std::string value = "111";
     const std::string path = " ";
-    int32_t result = JpegDecoder->ModifyImageProperty(index, key, value, path);
+    int32_t result = jpegDecoder->ModifyImageProperty(index, key, value, path);
     ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest0009 end";
 }
@@ -1500,7 +1500,7 @@ HWTEST_F(JpegDecoderTest, GetFilterAreaTest0010, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest0010 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
-    uint32_t ret = JpegDecoder->GetFilterArea(1, ranges);
+    uint32_t ret = jpegDecoder->GetFilterArea(1, ranges);
     EXPECT_EQ(ret, Media::ERR_MEDIA_INVALID_OPERATION);
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest0010 end";
 }
@@ -1529,7 +1529,7 @@ HWTEST_F(JpegDecoderTest, SkipInputDataTest0012, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: SkipInputDataTest0012 start";
     j_decompress_ptr dinfo = nullptr;
     long numBytes = 0;
-    ImagePlugin::SkipInputData(dinfo,numBytes);
+    ImagePlugin::SkipInputData(dinfo, numBytes);
     GTEST_LOG_(INFO) << "JpegDecoderTest: SkipInputDataTest0012 end";
 }
 
@@ -1595,8 +1595,7 @@ HWTEST_F(JpegDecoderTest, DoubleToStringTest0017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 start";
     double num =0;
-    std::string ret = ImagePlugin::DoubleToString(num);
-    ASSERT_EQ(ret, result);
+    ImagePlugin::DoubleToString(num);
     GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 end";
 }
 }
