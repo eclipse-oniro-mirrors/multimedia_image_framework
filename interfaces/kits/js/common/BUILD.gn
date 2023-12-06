@@ -246,7 +246,7 @@ if (use_clang_ios) {
       "graphic_2d:color_space_object_convertor",
       "graphic_2d:surface",
       "hitrace:hitrace_meter",
-      "ipc:ipc_napi_common",
+      "ipc:ipc_napi",
       "napi:ace_napi",
     ]
 
