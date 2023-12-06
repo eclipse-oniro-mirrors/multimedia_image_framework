@@ -232,6 +232,7 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       ]
     } else {
+      defines = []
       deps = [
         "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
@@ -244,11 +245,17 @@ if (use_clang_ios) {
       "graphic_2d:color_manager",
       "graphic_2d:color_space_object_convertor",
       "graphic_2d:surface",
-      "hichecker:libhichecker",
       "hitrace:hitrace_meter",
       "ipc:ipc_napi_common",
       "napi:ace_napi",
     ]
+
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.hiviewdfx_hichecker)) {
+      external_deps += [ "hichecker:libhichecker" ]
+      defines += [ "HICHECKER_ENABLE" ]
+    }
+
     deps += [ "//third_party/libpng:png_static" ]
     output_name = "libimage_napi"
     subsystem_name = "multimedia"
@@ -282,9 +289,15 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
-        "hichecker:libhichecker",
         "hitrace:hitrace_meter",
       ]
+
+      if (defined(global_parts_info) &&
+          defined(global_parts_info.hiviewdfx_hichecker)) {
+        external_deps += [ "hichecker:libhichecker" ]
+        defines += [ "HICHECKER_ENABLE" ]
+      }
+
       relative_install_dir = "module/multimedia"
       subsystem_name = "multimedia"
       part_name = "image_framework"
