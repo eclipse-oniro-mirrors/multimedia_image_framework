@@ -84,7 +84,7 @@ std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
 {
-    HiLog::Debug(LABEL, "PixelMap::~PixelMap");
+    HiLog::Debug(LABEL, "PixelMap::~PixelMap_id:%{public}d", GetUniqueId());
     FreePixelMap();
 }
 

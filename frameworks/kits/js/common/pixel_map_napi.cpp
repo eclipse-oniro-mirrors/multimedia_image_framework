@@ -50,10 +50,8 @@ static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
     {MARSHALLING, {62980115, 62980097, 62980096}}
 };
 static const std::string CLASS_NAME = "PixelMap";
-
+static const std::int32_t NEW_INSTANCE_ARGC = 1;
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
-std::shared_ptr<PixelMap> PixelMapNapi::sPixelMap_ = nullptr;
-std::shared_ptr<PixelMap> attachPixelMap_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
@@ -305,7 +303,8 @@ STATIC_COMPLETE_FUNC(GeneralError)
 
 PixelMapNapi::PixelMapNapi():env_(nullptr)
 {
-
+    static std::atomic<uint32_t> currentId = 0;
+    uniqueId_ = currentId.fetch_add(1, std::memory_order_relaxed);
 }
 
 PixelMapNapi::~PixelMapNapi()
@@ -551,9 +550,23 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
 inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
 {
     HiLog::Debug(LABEL, "DetachPixelMapFunc in");
+    if (value == nullptr) {
+        HiLog::Error(LABEL, "DetachPixelMapFunc value is nullptr");
+        return value;
+    }
     auto pixelNapi = reinterpret_cast<PixelMapNapi*>(value);
     pixelNapi->setPixelNapiEditable(false);
     return value;
+}
+
+static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
+    std::shared_ptr<PixelMap> &pixelMap, napi_value &result)
+{
+    size_t argc = NEW_INSTANCE_ARGC;
+    napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
+    napi_create_int32(env, pixelMap->GetUniqueId(), &argv[0]);
+    PixelMapContainer::GetInstance().Insert(pixelMap->GetUniqueId(), pixelMap);
+    return napi_new_instance(env, constructor, argc, argv, &result);
 }
 
 napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
@@ -582,13 +595,15 @@ napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
     status = napi_get_named_property(env, globalValue, CLASS_NAME.c_str(), &constructor);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
 
-    attachPixelMap_ = pixelNapi->GetPixelNapiInner();
-    if (attachPixelMap_ == nullptr) {
-        HiLog::Info(LABEL, "AttachPixelMapFunc attachPixelMap_ is nullptr");
-        return nullptr;
+    std::shared_ptr<PixelMap> attachPixelMap = pixelNapi->GetPixelNapiInner();
+    if (attachPixelMap == nullptr) {
+        HiLog::Error(LABEL, "AttachPixelMapFunc attachPixelMap is nullptr");
+        napi_get_undefined(env, &result);
+        return result;
     }
-    HiLog::Info(LABEL, "AttachPixelMapFunc in id:%{public}d", attachPixelMap_->GetUniqueId());
-    status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+    HiLog::Debug(LABEL, "AttachPixelMapFunc in napi_id:%{public}d, id:%{public}d",
+        pixelNapi->GetUniqueId(), attachPixelMap->GetUniqueId());
+    status = NewPixelNapiInstance(env, constructor, attachPixelMap, result);
     if (!IMG_IS_OK(status)) {
         HiLog::Error(LABEL, "AttachPixelMapFunc napi_get_referencce_value failed");
     }
@@ -603,17 +618,25 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
     napi_status status;
     napi_value thisVar = nullptr;
     napi_get_undefined(env, &thisVar);
-
+    size_t argc = NEW_INSTANCE_ARGC;
+    napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
     HiLog::Debug(LABEL, "Constructor IN");
-    IMG_JS_NO_ARGS(env, info, status, thisVar);
-
+    status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     IMG_NAPI_CHECK_RET(IMG_IS_READY(status, thisVar), undefineVar);
+    uint32_t pixelMapId = 0;
+    napi_get_value_uint32(env, argv[0], &pixelMapId);
     std::unique_ptr<PixelMapNapi> pPixelMapNapi = std::make_unique<PixelMapNapi>();
 
     IMG_NAPI_CHECK_RET(IMG_NOT_NULL(pPixelMapNapi), undefineVar);
 
     pPixelMapNapi->env_ = env;
-    pPixelMapNapi->nativePixelMap_ = attachPixelMap_ == nullptr ? sPixelMap_ : attachPixelMap_;
+    if (PixelMapContainer::GetInstance().Find(pixelMapId)) {
+        pPixelMapNapi->nativePixelMap_ = PixelMapContainer::GetInstance()[pixelMapId];
+        HiLog::Debug(LABEL, "Constructor in napi_id:%{public}d, id:%{public}d",
+            pPixelMapNapi->GetUniqueId(), pPixelMapNapi->nativePixelMap_->GetUniqueId());
+    } else {
+        HiLog::Error(LABEL, "Constructor nativePixelMap is nullptr");
+    }
 
     napi_coerce_to_native_binding_object(
         env, thisVar, DetachPixelMapFunc, AttachPixelMapFunc, pPixelMapNapi.get(), nullptr);
@@ -623,15 +646,15 @@ napi_value PixelMapNapi::Constructor(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), undefineVar, HiLog::Error(LABEL, "Failure wrapping js to native napi"));
 
     pPixelMapNapi.release();
-    attachPixelMap_ = nullptr;
-    sPixelMap_ = nullptr;
-
+    PixelMapContainer::GetInstance().Erase(pixelMapId);
     return thisVar;
 }
 
 void PixelMapNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
 {
     if (nativeObject != nullptr) {
+        HiLog::Debug(LABEL, "Destructor in napi_id:%{public}d",
+            reinterpret_cast<PixelMapNapi*>(nativeObject)->GetUniqueId());
         delete reinterpret_cast<PixelMapNapi*>(nativeObject);
         nativeObject = nullptr;
     }
@@ -671,8 +694,7 @@ void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void
     status = napi_get_reference_value(env, sConstructor_, &constructor);
 
     if (IMG_IS_OK(status)) {
-        sPixelMap_ = context->rPixelMap;
-        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        status = NewPixelNapiInstance(env, constructor, context->rPixelMap, result);
     }
 
     if (!IMG_IS_OK(status)) {
@@ -762,8 +784,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
 
     if (IMG_IS_OK(status)) {
-        sPixelMap_ = pixelmap;
-        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        status = NewPixelNapiInstance(env, constructor, pixelmap, result);
     }
 
     if (!IMG_IS_OK(status)) {
@@ -803,8 +824,7 @@ void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void 
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        sPixelMap_ = context->rPixelMap;
-        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        status = NewPixelNapiInstance(env, constructor, context->rPixelMap, result);
     }
 
     if (!IMG_IS_OK(status)) {
@@ -933,8 +953,7 @@ napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_in
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        sPixelMap_ = std::move(pixelPtr);
-        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        status = NewPixelNapiInstance(env, constructor, pixelPtr, result);
     }
     if (!IMG_IS_OK(status)) {
         HiLog::Error(LABEL, "New instance could not be obtained");
@@ -1618,6 +1637,9 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
         asyncContext->status = ERROR;
     } else {
         if (asyncContext->nConstructor->nativePixelMap_ != nullptr) {
+            HiLog::Debug(LABEL, "Release in napi_id:%{public}d, id:%{public}d",
+                asyncContext->nConstructor->GetUniqueId(),
+                asyncContext->nConstructor->nativePixelMap_->GetUniqueId());
             asyncContext->nConstructor->nativePixelMap_.reset();
         }
         asyncContext->status = SUCCESS;

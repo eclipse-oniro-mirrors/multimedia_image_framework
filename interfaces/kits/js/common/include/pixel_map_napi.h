@@ -34,7 +34,7 @@ public:
     static napi_value CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
     static std::shared_ptr<PixelMap> GetPixelMap(napi_env env, napi_value pixelmap);
     std::shared_ptr<PixelMap>* GetPixelMap();
-    std::shared_ptr<PixelMap> GetPixelNapiInner()
+    std::shared_ptr<PixelMap>& GetPixelNapiInner()
     {
         return nativePixelMap_;
     }
@@ -46,7 +46,10 @@ public:
     {
         return isPixelNapiEditable;
     }
-
+    uint32_t GetUniqueId()
+    {
+        return uniqueId_;
+    }
     bool IsLockPixelMap();
     bool LockPixelMap();
     void UnlockPixelMap();
@@ -97,13 +100,69 @@ private:
 
     void release();
     static thread_local napi_ref sConstructor_;
-    static std::shared_ptr<PixelMap> sPixelMap_;
-
     napi_env env_ = nullptr;
     std::shared_ptr<PixelMap> nativePixelMap_;
     int32_t lockCount = 0;
     bool isRelease = false;
     bool isPixelNapiEditable = true;
+    uint32_t uniqueId_ = 0;
+};
+
+class PixelMapContainer {
+public:
+    static PixelMapContainer& GetInstance()
+    {
+        static PixelMapContainer source;
+        return source;
+    }
+
+    std::shared_ptr<PixelMap>& operator[](const uint32_t &key)
+    {
+        return map_[key];
+    }
+
+    bool IsEmpty()
+    {
+        return map_.empty();
+    }
+
+    bool Insert(const uint32_t &key, const std::shared_ptr<PixelMap> &value)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (!IsEmpty() && Find(key)) map_.erase(key);
+        auto ret = map_.insert(std::pair<uint32_t, std::shared_ptr<PixelMap>>(key, value));
+        return ret.second;
+    }
+
+    bool Find(const uint32_t &key)
+    {
+        auto it = map_.find(key);
+        return it != map_.end() ? true : false;
+    }
+
+    void Erase(const uint32_t &key)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (Find(key)) {
+            map_.erase(key);
+        }
+        return;
+    }
+
+    void Clear()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        map_.clear();
+        return;
+    }
+
+private:
+    PixelMapContainer() = default;
+    PixelMapContainer(const PixelMapContainer&) = delete;
+    PixelMapContainer(const PixelMapContainer&&) = delete;
+    PixelMapContainer &operator=(const PixelMapContainer&) = delete;
+    std::mutex mutex_;
+    std::map<uint32_t, std::shared_ptr<PixelMap>> map_;
 };
 } // namespace Media
 } // namespace OHOS
