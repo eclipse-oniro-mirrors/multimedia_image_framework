@@ -1146,7 +1146,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
 HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
@@ -1201,7 +1201,8 @@ HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 start";
     auto pngDecoder = std::make_shared<PngDecoder>(); 
-    png_structp pngPtr =  png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 
+        nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
