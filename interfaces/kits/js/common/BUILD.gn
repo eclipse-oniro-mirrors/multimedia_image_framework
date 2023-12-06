@@ -246,7 +246,7 @@ if (use_clang_ios) {
       "graphic_2d:surface",
       "hichecker:libhichecker",
       "hitrace:hitrace_meter",
-      "ipc:ipc_napi_common",
+      "ipc:ipc_napi",
       "napi:ace_napi",
     ]
     deps += [ "//third_party/libpng:png_static" ]
