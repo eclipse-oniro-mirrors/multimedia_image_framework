@@ -1594,7 +1594,7 @@ HWTEST_F(JpegDecoderTest, TermDstStreamTest0016, TestSize.Level3)
 HWTEST_F(JpegDecoderTest, DoubleToStringTest0017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 start";
-    double num =0;
+    double num = 0;
     ImagePlugin::DoubleToString(num);
     GTEST_LOG_(INFO) << "JpegDecoderTest: DoubleToStringTest0017 end";
 }
