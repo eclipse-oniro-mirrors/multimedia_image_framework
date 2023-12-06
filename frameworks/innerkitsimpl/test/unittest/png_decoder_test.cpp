@@ -947,7 +947,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
     PlPixelFormat format = PlPixelFormat::RGB_888;
     PlPixelFormat outputFormat;
     PlAlphaType alphaType;
-    uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat001 end";
 }
@@ -965,8 +965,8 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     PlPixelFormat format = PlPixelFormat::RGBA_F16;
     PlPixelFormat outputFormat;
     PlAlphaType alphaType;
-    info.bitDepth=16;
-    uint32_t ret pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    info.bitDepth = 16;
+    uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 end";
 }
@@ -980,8 +980,8 @@ HWTEST_F(PngDecoderTest, PngErrorExit001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
     PngDecoder png;
-    png_structp pngPtr = new(png_structp);
-    png_const_charp message；
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
     png.PngErrorExit(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
 }
@@ -995,8 +995,8 @@ HWTEST_F(PngDecoderTest, PngErrorExit002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 start";
     PngDecoder png;
-    png_structp pngPtr = new(png_structp);
-    png_const_charp message；
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
     png.PngErrorExit(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 end";
 }
@@ -1010,11 +1010,9 @@ HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage start";
     PngDecoder png;
-    png_structp pngPtr;
-    png_const_charp message = new(png_structp)；
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
     png.PngErrorMessage(pngPtr, message);
-    delete message;
-    message = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage end";
 }
 
@@ -1027,11 +1025,9 @@ HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage start";
     PngDecoder png;
-    png_structp pngPtr;
-    png_const_charp message = new(png_structp);
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
     png.PngErrorMessage(pngPtr, message);
-    delete message;
-    message = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage end";
 }
 
@@ -1063,9 +1059,10 @@ HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
 HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk start";
+    PngDecoder png;
     const png_byte *chunk = nullptr;
     const char *flag = nullptr;
-    bool ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
+    bool ret = png.IsChunk(chunk, flag);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk end";
 }
