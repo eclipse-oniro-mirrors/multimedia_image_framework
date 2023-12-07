@@ -1074,7 +1074,7 @@ HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
 HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
@@ -1094,7 +1094,7 @@ HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
 HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
@@ -1113,7 +1113,7 @@ HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
 HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
     readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
@@ -1156,6 +1156,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
     delete readData.inputStreamBuffer;
+    readData.inputStreamBuffer = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 end";
 }
 
@@ -1167,7 +1168,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
 HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     png_structp pngPtr = nullptr;
     png_bytep row = nullptr;
     png_uint_32 rowNum = 0;
@@ -1183,7 +1184,7 @@ HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
 HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
         nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
     DataStreamBuffer readData;
@@ -1205,7 +1206,7 @@ HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
 HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     InputDataStream *stream = nullptr;
     size_t bufferSize = 0;
     size_t length = 0;
@@ -1222,7 +1223,7 @@ HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
 HWTEST_F(PngDecoderTest, PushAllToDecode002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     size_t bufferSize = 1;
     size_t length = 1;
@@ -1274,7 +1275,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
 HWTEST_F(PngDecoderTest, ConfigInfo, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     NinePatchListener nine;
     PixelDecodeOptions opts;
     opts.desiredPixelFormat =  PlPixelFormat::RGB_565;
