@@ -42,6 +42,7 @@ using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
 
 class ImageSourceTest : public testing::Test {
 public:
@@ -257,6 +258,25 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
     const DecodeOptions opt;
     imageSource->CreatePixelMapEx(index, opt, errorCode);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 end";
+}
+
+/**
+ * @tc.name: CreatePixelMapEx003
+ * @tc.desc: test CreatePixelMapEx of ico picture resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapEx003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx003 start";
+    uint32_t res = 0;
+    SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    uint32_t index = 1;
+    const DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, decodeOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx003 end";
 }
 
 /**
@@ -996,6 +1016,23 @@ HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
     auto filePtr = ImageSource::CreateImageSource(fd, 0, 100, opts, errorCode);
     ASSERT_EQ(filePtr, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0016 end";
+}
+
+/**
+ * @tc.name: CreateImageSource017
+ * @tc.desc: test CreateImageSource of ico picture resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSource017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource017 start";
+
+    uint32_t res = 0;
+    const SourceOptions sourceOpts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
+    ASSERT_NE(imageSource, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource017 end";
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
