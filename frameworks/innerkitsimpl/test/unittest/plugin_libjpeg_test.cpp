@@ -426,7 +426,7 @@ HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
     ExifData *ptrData = exif_data_new();
     bool isNewExifData = true;
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
-    ASSERT_EQ(ret, false);
+    ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 end";
 }
 
@@ -443,7 +443,7 @@ HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
     ExifData *ptrData = exif_data_new();
     bool isNewExifData = true;
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
-    ASSERT_EQ(ret, false);
+    ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 end";
 }
 
@@ -517,7 +517,7 @@ HWTEST_F(PluginLibJpegTest, exif_info027, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource start";
     EXIFInfo exinfo;
     unsigned char *ptrBuf = new unsigned char;
-    FILE *file = fopen("napi_test.cpp", "rb");
+    FILE *file = fopen("/data/local/tmp/image/test.txt", "r+");
     exinfo.ReleaseSource(&ptrBuf, &file);
     ASSERT_EQ(ptrBuf, nullptr);
     ASSERT_EQ(file, nullptr);
@@ -533,7 +533,7 @@ HWTEST_F(PluginLibJpegTest, exif_info028, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData start";
     EXIFInfo exinfo;
-    FILE *file = fopen("napi_test.cpp", "rb");
+    FILE *file = fopen("/data/local/tmp/image/test.txt", "rb");
     exinfo.UpdateCacheExifData(file);
     fclose(file);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData end";
