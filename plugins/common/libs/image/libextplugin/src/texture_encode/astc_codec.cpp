@@ -121,7 +121,7 @@ void extractDimensions(std::string &format, TextureEncodeOptions &param)
     }
 }
 
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
 constexpr double MAX_PSNR = 99.9;
 constexpr double MAX_VALUE = 255;
 constexpr double THRESHOLD_R = 30.0;
@@ -174,7 +174,7 @@ static void FreeMem(AstcEncoder *work)
     if (!work) {
         return;
     }
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
     if (work->calQualityEnable) {
         for (int i = R_COM; i < RGBA_COM; i++) {
             if (work->mse[i]) {
@@ -208,10 +208,10 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
     work->codec_context = nullptr;
     work->image_.data = nullptr;
     work->profile = ASTCENC_PRF_LDR_SRGB;
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
     work->mse[R_COM] = work->mse[G_COM] = work->mse[B_COM] = work->mse[RGBA_COM] = nullptr;
 #endif
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
     work->calQualityEnable = enableQualityCheck;
     if (work->calQualityEnable) {
         for (int i = R_COM; i < RGBA_COM; i++) {
@@ -256,11 +256,11 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
     }
     work.error_ = astcenc_compress_image(work.codec_context, &work.image_, &work.swizzle_,
         work.data_out_ + TEXTURE_HEAD_BYTES, outSize - TEXTURE_HEAD_BYTES,
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
         work.calQualityEnable, work.mse,
 #endif
         0);
-#if defined(QUALITY_CONTROL) && QUALITY_CONTROL == 1
+#if defined(QUALITY_CONTROL)
     if ((ASTCENC_SUCCESS != work.error_) ||
         (work.calQualityEnable && !CheckQuality(work.mse, blocksNum, param.blockX_ * param.blockY_))) {
 #else
