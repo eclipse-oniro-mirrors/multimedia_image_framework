@@ -1069,7 +1069,7 @@ HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
 /**
  * @tc.name: IncrementalRead003
  * @tc.desc: Test of IncrementalRead
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
 {
@@ -1089,7 +1089,7 @@ HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
 /**
  * @tc.name: SaveRows001
  * @tc.desc: Test of SaveRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
 {
@@ -1108,7 +1108,7 @@ HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
 /**
  * @tc.name: SaveRows002
  * @tc.desc: Test of SaveRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
 {
@@ -1127,7 +1127,7 @@ HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
 /**
  * @tc.name: SaveInterlacedRows001
  * @tc.desc: Test of SaveInterlacedRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
 {
@@ -1143,7 +1143,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
 /**
  * @tc.name: SaveInterlacedRows002
  * @tc.desc: Test of SaveInterlacedRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
 {
@@ -1163,7 +1163,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
 /**
  * @tc.name: GetAllRows001
  * @tc.desc: Test of GetAllRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
 {
@@ -1179,7 +1179,7 @@ HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
 /**
  * @tc.name: GetAllRows002
  * @tc.desc: Test of GetAllRows
- * @tc.type: FUNC 2023-12-05
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
 {
@@ -1201,7 +1201,7 @@ HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
 /**
  * @tc.name: PushAllToDecode001
  * @tc.desc: Test of PushAllToDecode
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
 {
@@ -1218,7 +1218,7 @@ HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
 /**
  * @tc.name: PushAllToDecode001
  * @tc.desc: Test of PushAllToDecode
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PushAllToDecode002, TestSize.Level3)
 {
@@ -1235,12 +1235,12 @@ HWTEST_F(PngDecoderTest, PushAllToDecode002, TestSize.Level3)
 /**
  * @tc.name: IncrementalReadRows003
  * @tc.desc: Test of IncrementalReadRows
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, IncrementalReadRows003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
         pngDecoder->PngErrorExit, pngDecoder->PngWarning);
@@ -1253,12 +1253,12 @@ HWTEST_F(PngDecoderTest, IncrementalReadRows003, TestSize.Level3)
 /**
  * @tc.name: PushCurrentToDecode004
  * @tc.desc: Test of PushCurrentToDecode
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     pngDecoder->idatLength_ = 1;
     pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
@@ -1270,7 +1270,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
 /**
  * @tc.name: ConfigInfo
  * @tc.desc: Test of ConfigInfo
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, ConfigInfo, TestSize.Level3)
 {
@@ -1290,7 +1290,7 @@ HWTEST_F(PngDecoderTest, ConfigInfo, TestSize.Level3)
 /**
  * @tc.name: DoOneTimeDecode001
  * @tc.desc: Test of DoOneTimeDecode
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, DoOneTimeDecode001, TestSize.Level3)
 {
@@ -1305,7 +1305,7 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode001, TestSize.Level3)
 /**
  * @tc.name: DoOneTimeDecode002
  * @tc.desc: Test of DoOneTimeDecode
- * @tc.type: FUNC 2023-12-06
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, DoOneTimeDecode002, TestSize.Level3)
 {
