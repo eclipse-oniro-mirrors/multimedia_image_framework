@@ -1132,7 +1132,7 @@ HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
 HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows001 start";
-    auto pngDecoder = std::make_shared<PngDecoder>(); 
+    auto pngDecoder = std::make_shared<PngDecoder>();
     png_bytep row = nullptr;
     png_uint_32 rowNum = 0;
     int pass = 0;
