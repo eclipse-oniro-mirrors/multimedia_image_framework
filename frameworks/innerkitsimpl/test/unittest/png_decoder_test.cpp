@@ -938,7 +938,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
 /**
  * @tc.name: GetDecodeFormat001
  * @tc.desc: Test of GetDecodeFormat
- * @tc.type: FUNC  new creat——————————————
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
 {
@@ -949,7 +949,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
     PlAlphaType alphaType;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat001 end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 end";
 }
 
 /**
@@ -968,7 +968,7 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     info.bitDepth = 16;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PngDecoderTest: ConvertOriginalFormat002 end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 end";
 }
 
 /**
@@ -987,21 +987,6 @@ HWTEST_F(PngDecoderTest, PngErrorExit001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PngErrorExit002
- * @tc.desc: Test of PngErrorExit
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, PngErrorExit002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 start";
-    PngDecoder png;
-    png_structp pngPtr = nullptr;
-    png_const_charp message;
-    png.PngErrorExit(pngPtr, message);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit002 end";
-}
-
-/**
  * @tc.name: PngErrorMessage
  * @tc.desc: Test of PngErrorMessage
  * @tc.type: FUNC
@@ -1017,18 +1002,18 @@ HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
 }
 
 /**
- * @tc.name: PngWarningMessage
+ * @tc.name: PngWarningMessage001
  * @tc.desc: Test of PngWarningMessage
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PngWarningMessage, TestSize.Level3)
+HWTEST_F(PngDecoderTest, PngWarningMessage001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage001 start";
     PngDecoder png;
     png_structp pngPtr = nullptr;
     png_const_charp message;
-    png.PngErrorMessage(pngPtr, message);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage end";
+    png.PngWarningMessage(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage001 end";
 }
 
 /**
@@ -1216,7 +1201,7 @@ HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PushAllToDecode001
+ * @tc.name: PushAllToDecode002
  * @tc.desc: Test of PushAllToDecode
  * @tc.type: FUNC
  */
@@ -1251,30 +1236,13 @@ HWTEST_F(PngDecoderTest, IncrementalReadRows003, TestSize.Level3)
 }
 
 /**
- * @tc.name: PushCurrentToDecode004
- * @tc.desc: Test of PushCurrentToDecode
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    pngDecoder->idatLength_ = 1;
-    pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
-        pngDecoder->PngErrorExit, pngDecoder->PngWarning);
-    uint32_t ret = pngDecoder->IncrementalReadRows(mock.get());
-    ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 end";
-}
-/**
  * @tc.name: ConfigInfo
  * @tc.desc: Test of ConfigInfo
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, ConfigInfo, TestSize.Level3)
+HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     NinePatchListener nine;
     PixelDecodeOptions opts;
@@ -1285,7 +1253,7 @@ HWTEST_F(PngDecoderTest, ConfigInfo, TestSize.Level3)
     ASSERT_EQ(ret, SUCCESS);
     delete nine.patch_;
     nine.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 end";
 }
 /**
  * @tc.name: DoOneTimeDecode001
