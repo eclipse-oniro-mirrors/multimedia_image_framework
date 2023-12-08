@@ -987,18 +987,18 @@ HWTEST_F(PngDecoderTest, PngErrorExit001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PngErrorMessage
+ * @tc.name: PngErrorMessage001
  * @tc.desc: Test of PngErrorMessage
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, PngErrorMessage, TestSize.Level3)
+HWTEST_F(PngDecoderTest, PngErrorMessage001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage001 start";
     PngDecoder png;
     png_structp pngPtr = nullptr;
     png_const_charp message;
     png.PngErrorMessage(pngPtr, message);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage001 end";
 }
 
 /**
@@ -1017,13 +1017,13 @@ HWTEST_F(PngDecoderTest, PngWarningMessage001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ProcessData
+ * @tc.name: ProcessData001
  * @tc.desc: Test of ProcessData
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
+HWTEST_F(PngDecoderTest, ProcessData001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 start";
     PngDecoder png;
     png_structp pngStructPtr = nullptr;
     png_infop infoStructPtr = nullptr;
@@ -1033,23 +1033,23 @@ HWTEST_F(PngDecoderTest, ProcessData, TestSize.Level3)
     size_t totalSize = 0;
     uint32_t ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 end";
 }
 
 /**
- * @tc.name: IsChunk
+ * @tc.name: IsChunk001
  * @tc.desc: Test of IsChunk
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, IsChunk, TestSize.Level3)
+HWTEST_F(PngDecoderTest, IsChunk001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk001 start";
     PngDecoder png;
     const png_byte *chunk = nullptr;
     const char *flag = nullptr;
     bool ret = png.IsChunk(chunk, flag);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk001 end";
 }
 /**
  * @tc.name: IncrementalRead003
