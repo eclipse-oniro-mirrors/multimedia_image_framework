@@ -46,6 +46,7 @@ config("image_external_config") {
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "$resource_management_subsystem/interfaces/native/resource/include",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
     "$skia_root/skia/third_party/externals/libjpeg-turbo",
