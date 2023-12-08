@@ -562,11 +562,18 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
 static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
     std::shared_ptr<PixelMap> &pixelMap, napi_value &result)
 {
+    napi_status status;
+    if (pixelMap == nullptr) {
+        status = napi_invalid_arg;
+        HiLog::Error(LABEL, "NewPixelNapiInstance pixelMap is nullptr");
+        return status;
+    }
     size_t argc = NEW_INSTANCE_ARGC;
     napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
     napi_create_int32(env, pixelMap->GetUniqueId(), &argv[0]);
     PixelMapContainer::GetInstance().Insert(pixelMap->GetUniqueId(), pixelMap);
-    return napi_new_instance(env, constructor, argc, argv, &result);
+    status = napi_new_instance(env, constructor, argc, argv, &result);
+    return status;
 }
 
 napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
