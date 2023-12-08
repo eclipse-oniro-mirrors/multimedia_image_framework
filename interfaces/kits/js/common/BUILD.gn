@@ -145,7 +145,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/libpng:png_static",
     ]
 
     #relative_install_dir = "module/multimedia"
@@ -256,7 +255,6 @@ if (use_clang_ios) {
       defines += [ "HICHECKER_ENABLE" ]
     }
 
-    deps += [ "//third_party/libpng:png_static" ]
     output_name = "libimage_napi"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
