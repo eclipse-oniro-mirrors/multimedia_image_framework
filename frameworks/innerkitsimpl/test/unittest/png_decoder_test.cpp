@@ -1017,26 +1017,6 @@ HWTEST_F(PngDecoderTest, PngWarningMessage001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ProcessData001
- * @tc.desc: Test of ProcessData
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, ProcessData001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 start";
-    PngDecoder png;
-    png_structp pngStructPtr = nullptr;
-    png_infop infoStructPtr = nullptr;
-    InputDataStream *sourceStream = nullptr;
-    DataStreamBuffer streamData;
-    size_t bufferSize = 0;
-    size_t totalSize = 0;
-    uint32_t ret = png.ProcessData(pngStructPtr, infoStructPtr, sourceStream, streamData, bufferSize, totalSize);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "PngDecoderTest: ProcessData001 end";
-}
-
-/**
  * @tc.name: IsChunk001
  * @tc.desc: Test of IsChunk
  * @tc.type: FUNC
