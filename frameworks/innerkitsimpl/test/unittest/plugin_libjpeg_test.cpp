@@ -422,7 +422,7 @@ HWTEST_F(PluginLibJpegTest, CreateExifData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 start";
     EXIFInfo exinfo;
-    unsigned char buf[20]="ttttttExif";
+    unsigned char buf[20] = "ttttttExif";
     ExifData *ptrData = exif_data_new();
     bool isNewExifData = true;
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
@@ -443,7 +443,7 @@ HWTEST_F(PluginLibJpegTest, CreateExifData002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 start";
     EXIFInfo exinfo;
-    unsigned char buf[20]="tttttttttt";
+    unsigned char buf[20] = "tttttttttt";
     ExifData *ptrData = exif_data_new();
     bool isNewExifData = true;
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
