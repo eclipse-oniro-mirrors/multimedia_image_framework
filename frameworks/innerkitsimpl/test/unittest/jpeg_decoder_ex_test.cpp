@@ -1361,19 +1361,19 @@ HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest005, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetImageSizeTest001
+ * @tc.name: GetImageSizeTest003
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
  */
-HWTEST_F(JpegDecoderTest, GetImageSizeTest001, TestSize.Level3)
+HWTEST_F(JpegDecoderTest, GetImageSizeTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest001 start";
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     ImagePlugin::PlSize plSize;
     ErrCodeOffset(2, 0);
     jpegDecoder->GetImageSize(1, plSize);
     jpegDecoder->GetImageSize(0, plSize);
-    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest001 end";
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 end";
 }
 
 /**
@@ -1473,13 +1473,13 @@ HWTEST_F(JpegDecoderTest, getExifTagFromKeyTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ModifyImagePropertyTest001
+ * @tc.name: ModifyImagePropertyTest006
  * @tc.desc: Test of ModifyImageProperty
  * @tc.type: FUNC
  */
-HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest001, TestSize.Level3)
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest001 start";
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest006 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     uint32_t index = 1;
     const std::string key = "GPSTimeStamp";
@@ -1487,7 +1487,7 @@ HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest001, TestSize.Level3)
     const std::string path = " ";
     int32_t result = jpegDecoder->ModifyImageProperty(index, key, value, path);
     ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest001 end";
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest006 end";
 }
 
 /**
