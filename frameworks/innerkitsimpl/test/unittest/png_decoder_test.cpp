@@ -934,5 +934,336 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode003, TestSize.Level3)
     pngDecoder->PushCurrentToDecode(mock.get());
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
 }
+
+/**
+ * @tc.name: GetDecodeFormat001
+ * @tc.desc: Test of GetDecodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    PlPixelFormat format = PlPixelFormat::RGB_888;
+    PlPixelFormat outputFormat;
+    PlAlphaType alphaType;
+    uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 end";
+}
+
+/**
+ * @tc.name: GetDecodeFormat002
+ * @tc.desc: Test of GetDecodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    PngImageInfo info;
+    PlPixelFormat format = PlPixelFormat::RGBA_F16;
+    PlPixelFormat outputFormat;
+    PlAlphaType alphaType;
+    info.bitDepth = 16;
+    uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 end";
+}
+
+/**
+ * @tc.name: PngErrorExit001
+ * @tc.desc: Test of PngErrorExit
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngErrorExit001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 start";
+    PngDecoder png;
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
+    png.PngErrorExit(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorExit001 end";
+}
+
+/**
+ * @tc.name: PngErrorMessage001
+ * @tc.desc: Test of PngErrorMessage
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngErrorMessage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage001 start";
+    PngDecoder png;
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
+    png.PngErrorMessage(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngErrorMessage001 end";
+}
+
+/**
+ * @tc.name: PngWarningMessage001
+ * @tc.desc: Test of PngWarningMessage
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngWarningMessage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage001 start";
+    PngDecoder png;
+    png_structp pngPtr = nullptr;
+    png_const_charp message;
+    png.PngWarningMessage(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarningMessage001 end";
+}
+
+/**
+ * @tc.name: IsChunk001
+ * @tc.desc: Test of IsChunk
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, IsChunk001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk001 start";
+    PngDecoder png;
+    const png_byte *chunk = nullptr;
+    const char *flag = nullptr;
+    bool ret = png.IsChunk(chunk, flag);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk001 end";
+}
+/**
+ * @tc.name: IncrementalRead003
+ * @tc.desc: Test of IncrementalRead
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, IncrementalRead003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    uint32_t desiredSize = 0;
+    DataStreamBuffer outData;
+    outData.inputStreamBuffer = nullptr;
+    uint32_t ret = pngDecoder->IncrementalRead(mock.get(), desiredSize, outData);
+    ASSERT_NE(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead003 end";
+}
+
+/**
+ * @tc.name: SaveRows001
+ * @tc.desc: Test of SaveRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SaveRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DataStreamBuffer readData;
+    readData.inputStreamBuffer= new uint8_t;
+    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_uint_32 rowNum = 1;
+    pngDecoder->SaveRows(row, rowNum);
+    delete readData.inputStreamBuffer;
+    readData.inputStreamBuffer = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows001 end";
+}
+
+/**
+ * @tc.name: SaveRows002
+ * @tc.desc: Test of SaveRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SaveRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DataStreamBuffer readData;
+    readData.inputStreamBuffer= new uint8_t;
+    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_uint_32 rowNum = 0;
+    pngDecoder->SaveRows(row, rowNum);
+    delete readData.inputStreamBuffer;
+    readData.inputStreamBuffer = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveRows002 end";
+}
+
+/**
+ * @tc.name: SaveInterlacedRows001
+ * @tc.desc: Test of SaveInterlacedRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_bytep row = nullptr;
+    png_uint_32 rowNum = 0;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows001 end";
+}
+
+/**
+ * @tc.name: SaveInterlacedRows002
+ * @tc.desc: Test of SaveInterlacedRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DataStreamBuffer readData;
+    readData.inputStreamBuffer= new uint8_t;
+    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_uint_32 rowNum = 1;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    delete readData.inputStreamBuffer;
+    readData.inputStreamBuffer = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows002 end";
+}
+
+/**
+ * @tc.name: GetAllRows001
+ * @tc.desc: Test of GetAllRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_structp pngPtr = nullptr;
+    png_bytep row = nullptr;
+    png_uint_32 rowNum = 0;
+    int pass = 0;
+    pngDecoder->GetAllRows(pngPtr, row, rowNum, pass);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 end";
+}
+/**
+ * @tc.name: GetAllRows002
+ * @tc.desc: Test of GetAllRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetAllRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+        nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    DataStreamBuffer readData;
+    readData.inputStreamBuffer= new uint8_t;
+    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_uint_32 rowNum = 0;
+    int pass = 0;
+    pngDecoder->GetAllRows(pngPtr, row, rowNum, pass);
+    delete readData.inputStreamBuffer;
+    readData.inputStreamBuffer = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows002 end";
+}
+
+/**
+ * @tc.name: PushAllToDecode001
+ * @tc.desc: Test of PushAllToDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PushAllToDecode001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    InputDataStream *stream = nullptr;
+    size_t bufferSize = 0;
+    size_t length = 0;
+    uint32_t ret = pngDecoder->PushAllToDecode(stream, bufferSize, length);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode001 end";
+}
+
+/**
+ * @tc.name: PushAllToDecode002
+ * @tc.desc: Test of PushAllToDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PushAllToDecode002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    size_t bufferSize = 1;
+    size_t length = 1;
+    uint32_t ret = pngDecoder->PushAllToDecode(mock.get(), bufferSize, length);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode002 end";
+}
+
+/**
+ * @tc.name: IncrementalReadRows003
+ * @tc.desc: Test of IncrementalReadRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, IncrementalReadRows003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
+        pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    pngDecoder->idatLength_ = 0;
+    uint32_t ret = pngDecoder->IncrementalReadRows(mock.get());
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalReadRows003 end";
+}
+
+/**
+ * @tc.name: ConfigInfo
+ * @tc.desc: Test of ConfigInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    NinePatchListener nine;
+    PixelDecodeOptions opts;
+    opts.desiredPixelFormat =  PlPixelFormat::RGB_565;
+    nine.patch_ = new PngNinePatchRes;
+    pngDecoder->idatLength_ = 1;
+    uint32_t ret = pngDecoder->ConfigInfo(opts);
+    ASSERT_EQ(ret, SUCCESS);
+    delete nine.patch_;
+    nine.patch_ = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 end";
+}
+/**
+ * @tc.name: DoOneTimeDecode001
+ * @tc.desc: Test of DoOneTimeDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DoOneTimeDecode001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DecodeContext context;
+    pngDecoder->idatLength_ = 0;
+    uint32_t ret = pngDecoder->DoOneTimeDecode(context);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode001 end";
+}
+/**
+ * @tc.name: DoOneTimeDecode002
+ * @tc.desc: Test of DoOneTimeDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DoOneTimeDecode002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DecodeContext context;
+    pngDecoder->idatLength_ = 1;
+    uint32_t ret = pngDecoder->DoOneTimeDecode(context);
+    ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
