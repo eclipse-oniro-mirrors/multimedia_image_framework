@@ -418,7 +418,7 @@ HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
  * @tc.desc: CreateExifData
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, CreateExifData001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 start";
     EXIFInfo exinfo;
@@ -428,8 +428,8 @@ HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
     ASSERT_EQ(ret, true);
     if (ptrData != nullptr) {
-    exif_data_unref(ptrData);
-    ptrData = nullptr;
+        exif_data_unref(ptrData);
+        ptrData = nullptr;
     }
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData001 end";
 }
@@ -439,7 +439,7 @@ HWTEST_F(PluginLibJpegTest, exif_info021, TestSize.Level3)
  * @tc.desc: CreateExifData
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, CreateExifData002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 start";
     EXIFInfo exinfo;
@@ -449,8 +449,8 @@ HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
     bool ret = exinfo.CreateExifData(buf, 5, &ptrData, isNewExifData);
     ASSERT_EQ(ret, true);
     if (ptrData != nullptr) {
-    exif_data_unref(ptrData);
-    ptrData = nullptr;
+        exif_data_unref(ptrData);
+        ptrData = nullptr;
     }
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifData002 end";
 }
@@ -460,7 +460,7 @@ HWTEST_F(PluginLibJpegTest, exif_info022, TestSize.Level3)
  * @tc.desc: GetExifByteOrder
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info023, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetExifByteOrder001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder001 start";
     EXIFInfo exinfo;
@@ -477,7 +477,7 @@ HWTEST_F(PluginLibJpegTest, exif_info023, TestSize.Level3)
  * @tc.desc: GetExifByteOrder
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info024, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetExifByteOrder002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder002 start";
     EXIFInfo exinfo;
@@ -492,7 +492,7 @@ HWTEST_F(PluginLibJpegTest, exif_info024, TestSize.Level3)
  * @tc.desc: GetExifByteOrder
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info025, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetExifByteOrder003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifByteOrder003 start";
     EXIFInfo exinfo;
@@ -507,13 +507,13 @@ HWTEST_F(PluginLibJpegTest, exif_info025, TestSize.Level3)
  * @tc.desc: WriteExifDataToFile
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info026, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, WriteExifDataToFile001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile001 start";
     EXIFInfo exinfo;
     bool ret = exinfo.WriteExifDataToFile(nullptr, 5, 20, nullptr, nullptr);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: WriteExifDataToFile001 end";
 }
 
 /**
@@ -521,16 +521,16 @@ HWTEST_F(PluginLibJpegTest, exif_info026, TestSize.Level3)
  * @tc.desc: ReleaseSource
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info027, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, ReleaseSource001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource001 start";
     EXIFInfo exinfo;
     unsigned char *ptrBuf = new unsigned char;
     FILE *file = fopen("/data/local/tmp/image/test.txt", "r+");
     exinfo.ReleaseSource(&ptrBuf, &file);
     ASSERT_EQ(ptrBuf, nullptr);
     ASSERT_EQ(file, nullptr);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReleaseSource001 end";
 }
 
 /**
@@ -538,14 +538,14 @@ HWTEST_F(PluginLibJpegTest, exif_info027, TestSize.Level3)
  * @tc.desc: UpdateCacheExifData
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info028, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, UpdateCacheExifData001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData001 start";
     EXIFInfo exinfo;
     FILE *file = fopen("/data/local/tmp/image/test.txt", "rb");
     exinfo.UpdateCacheExifData(file);
     fclose(file);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData001 end";
 }
 
 /**
@@ -553,9 +553,9 @@ HWTEST_F(PluginLibJpegTest, exif_info028, TestSize.Level3)
  * @tc.desc: GetAreaFromExifEntries
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info029, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetAreaFromExifEntries001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries001 start";
     EXIFInfo exinfo;
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteOrderedBuffer(buf, 10);
@@ -564,7 +564,7 @@ HWTEST_F(PluginLibJpegTest, exif_info029, TestSize.Level3)
     exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer.directoryEntryArray_, ranges);
     delete buf;
     buf = nullptr;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries001 end";
 }
 
 /**
@@ -572,16 +572,16 @@ HWTEST_F(PluginLibJpegTest, exif_info029, TestSize.Level3)
  * @tc.desc: TransformTiffOffsetToFilePos
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info030, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, TransformTiffOffsetToFilePos001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos001 start";
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     uint32_t ret = byteorder.TransformTiffOffsetToFilePos(20);
     ASSERT_EQ(ret, 32);
     delete buf;
     buf = nullptr;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: TransformTiffOffsetToFilePos001 end";
 }
 
 /**
@@ -589,7 +589,7 @@ HWTEST_F(PluginLibJpegTest, exif_info030, TestSize.Level3)
  * @tc.desc: ReadShort
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info031, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, ReadShort001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadShort001 start";
     const uint8_t *buf = new uint8_t;
@@ -607,7 +607,7 @@ HWTEST_F(PluginLibJpegTest, exif_info031, TestSize.Level3)
  * @tc.desc: ReadShort
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info032, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, ReadShort002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadShort002 start";
     const uint8_t *buf = new uint8_t;
@@ -626,7 +626,7 @@ HWTEST_F(PluginLibJpegTest, exif_info032, TestSize.Level3)
  * @tc.desc: ReadShort
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info033, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, ReadShort003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadShort003 start";
     const uint8_t *buf = new uint8_t;
@@ -645,7 +645,7 @@ HWTEST_F(PluginLibJpegTest, exif_info033, TestSize.Level3)
  * @tc.desc: GetDataRangeFromIFD
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info034, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromIFD001 start";
     const uint8_t *buf = new uint8_t;
@@ -662,7 +662,7 @@ HWTEST_F(PluginLibJpegTest, exif_info034, TestSize.Level3)
  * @tc.desc: GetDataRangeFromIFD
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info035, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromIFD002 start";
     const uint8_t *buf = new uint8_t;
@@ -679,9 +679,9 @@ HWTEST_F(PluginLibJpegTest, exif_info035, TestSize.Level3)
  * @tc.desc: ParseIFDPointerTag
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info036, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag start";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag001 start";
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     uint16_t tagNumber = byteorder.ReadUnsignedShort();
@@ -690,7 +690,7 @@ HWTEST_F(PluginLibJpegTest, exif_info036, TestSize.Level3)
     byteorder.ParseIFDPointerTag(ifd, dataFormat);
     delete buf;
     buf = nullptr;
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag end";
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag001 end";
 }
 
 /**
@@ -698,7 +698,7 @@ HWTEST_F(PluginLibJpegTest, exif_info036, TestSize.Level3)
  * @tc.desc: IsIFDhandled
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info037, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, IsIFDhandled001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDhandled001 start";
     const uint8_t *buf = new uint8_t;
@@ -716,7 +716,7 @@ HWTEST_F(PluginLibJpegTest, exif_info037, TestSize.Level3)
  * @tc.desc: IsIFDhandled
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info038, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, IsIFDhandled002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDhandled002 start";
     const uint8_t *buf = new uint8_t;
