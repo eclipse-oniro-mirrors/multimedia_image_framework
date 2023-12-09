@@ -121,7 +121,9 @@ static void CommonCallbackRoutine(napi_env env, Context &context, const napi_val
 void ImageReceiverNapi::NativeRelease()
 {
     if (imageReceiver_ != nullptr) {
-        imageReceiver_->~ImageReceiver();
+        if (imageReceiver_->iraContext_) {
+            ImageReceiverManager::ReleaseReceiverById(imageReceiver_->iraContext_->GetReceiverKey());
+        }
         imageReceiver_ = nullptr;
     }
 }
@@ -397,9 +399,8 @@ napi_value ImageReceiverNapi::JSCommonProcess(ImageReceiverCommonArgs &args)
         if (ic.context->constructor_ == nullptr) {
             return ic.result;
         }
-        ic.context->receiver_ = ic.context->constructor_->imageReceiver_;
 
-        IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->receiver_),
+        IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->constructor_->imageReceiver_),
             ic.result, IMAGE_ERR("empty native receiver"));
     }
     if (args.async != CallType::GETTER) {
@@ -609,7 +610,7 @@ napi_value ImageReceiverNapi::JsTest(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->receiver_, PIXEL_FMT_RGBA_8888);
+        DoTest(ic.context->constructor->receiver_, PIXEL_FMT_RGBA_8888);
         return true;
     };
 
@@ -632,7 +633,7 @@ napi_value ImageReceiverNapi::JsCheckDeviceTest(napi_env env, napi_callback_info
         napi_create_string_utf8(args.env, DEVICE_ERRCODE.c_str(), NAPI_AUTO_LENGTH, &mess);
         ic.result = mess;
         if (args.async != CallType::GETTER) {
-            DoTest(ic.context->receiver_, PIXEL_FMT_RGBA_8888);
+            DoTest(ic.context->constructor->receiver_, PIXEL_FMT_RGBA_8888);
         }
         return true;
     };
@@ -651,7 +652,7 @@ napi_value ImageReceiverNapi::JsTestYUV(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageReceiverCommonArgs &args, ImageReceiverInnerContext &ic) -> bool {
         ic.context->constructor_->isCallBackTest = true;
-        DoTest(ic.context->receiver_, PIXEL_FMT_YCBCR_422_SP);
+        DoTest(ic.context->constructor->receiver_, PIXEL_FMT_YCBCR_422_SP);
         return true;
     };
 

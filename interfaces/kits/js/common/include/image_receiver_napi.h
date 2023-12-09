@@ -93,7 +93,6 @@ struct ImageReceiverAsyncContext {
     napi_deferred deferred = nullptr;
     napi_ref callbackRef = nullptr;
     ImageReceiverNapi *constructor_ = nullptr;
-    std::shared_ptr<ImageReceiver> receiver_ = nullptr;
     uint32_t status;
 };
 struct ImageReceiverInnerContext {

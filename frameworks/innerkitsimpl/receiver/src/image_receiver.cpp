@@ -28,9 +28,6 @@ namespace OHOS {
         ImageReceiver::~ImageReceiver()
         {
             std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-            if (iraContext_ != nullptr) {
-                ImageReceiverManager::ReleaseReceiverById(iraContext_->GetReceiverKey());
-            }
             if (receiverConsumerSurface_ != nullptr) {
                 receiverConsumerSurface_->UnregisterConsumerListener();
             }
