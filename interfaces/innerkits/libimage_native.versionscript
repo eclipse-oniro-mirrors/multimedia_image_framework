@@ -19,6 +19,7 @@
     *ImageReceiver*;
     *BufferSourceStream*;
     *PixelMap*;
+    *PixelAstc*;
     *Matrix*;
     *ScanlineFilter*GetFilterRowType*;
     *ScanlineFilter*SetSrcPixelFormat*;
