@@ -95,7 +95,7 @@ HWTEST_F(NinePathListenerTest, ReadChunk002, TestSize.Level3)
 /**
  * @tc.name: Scale002
  * @tc.desc: test Scale
- * @tc.type: FUNC 2023-12-07
+ * @tc.type: FUNC 
  */
 HWTEST_F(NinePathListenerTest, Scale002, TestSize.Level3)
 {
