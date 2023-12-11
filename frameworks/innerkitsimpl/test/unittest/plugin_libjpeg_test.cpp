@@ -802,7 +802,7 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues002, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 start";
     EXIFInfo exinfo;
     exinfo.SetExifTagValues(EXIF_TAG_ORIENTATION, "222");
-    ASSERT_EQ(exinfo.bitsPerSample_, "222");
+    ASSERT_EQ(exinfo.orientation_, "222");
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 end";
 }
 
@@ -816,7 +816,7 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 start";
     EXIFInfo exinfo;
     exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "333");
-    ASSERT_EQ(exinfo.bitsPerSample_, "333");
+    ASSERT_EQ(exinfo.imageLength_, "333");
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 end";
 }
 
@@ -830,7 +830,7 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues004, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 start";
     EXIFInfo exinfo;
     exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "444");
-    ASSERT_EQ(exinfo.bitsPerSample_, "444");
+    ASSERT_EQ(exinfo.imageWidth_, "444");
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 end";
 }
 } // namespace Multimedia
