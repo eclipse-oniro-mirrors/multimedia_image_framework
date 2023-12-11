@@ -728,5 +728,110 @@ HWTEST_F(PluginLibJpegTest, IsIFDhandled002, TestSize.Level3)
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: IsIFDhandled002 end";
 }
+
+/**
+ * @tc.name: GetNextIfdFromLinkList001
+ * @tc.desc: GetNextIfdFromLinkList
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetNextIfdFromLinkList001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList001 start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    ExifIfd ret = byteorder.GetNextIfdFromLinkList(EXIF_IFD_0);
+    ASSERT_EQ(ret, EXIF_IFD_1);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList001 end";
+}
+
+/**
+ * @tc.name: GetNextIfdFromLinkList002
+ * @tc.desc: GetNextIfdFromLinkList
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetNextIfdFromLinkList002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList002 start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    ExifIfd ret = byteorder.GetNextIfdFromLinkList(EXIF_IFD_EXIF);
+    ASSERT_EQ(ret, EXIF_IFD_1);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList002 end";
+}
+
+/**
+ * @tc.name: IsExifDataParsed001
+ * @tc.desc: IsExifDataParsed
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, IsExifDataParsed001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsExifDataParsed001 start";
+    EXIFInfo exinfo;
+    exinfo.isExifDataParsed_ = false;
+    bool ret = exinfo.IsExifDataParsed();
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: IsExifDataParsed001 end";
+}
+
+/**
+ * @tc.name: SetExifTagValues001
+ * @tc.desc: SetExifTagValues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetExifTagValues001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues001 start";
+    EXIFInfo exinfo;
+    exinfo.SetExifTagValues(EXIF_TAG_BITS_PER_SAMPLE, "111");
+    ASSERT_EQ(exinfo.bitsPerSample_, "111");
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues001 end";
+}
+
+/**
+ * @tc.name: SetExifTagValues002
+ * @tc.desc: SetExifTagValues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetExifTagValues002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 start";
+    EXIFInfo exinfo;
+    exinfo.SetExifTagValues(EXIF_TAG_ORIENTATION, "222");
+    ASSERT_EQ(exinfo.bitsPerSample_, "222");
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 end";
+}
+
+/**
+ * @tc.name: SetExifTagValues003
+ * @tc.desc: SetExifTagValues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetExifTagValues003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 start";
+    EXIFInfo exinfo;
+    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "333");
+    ASSERT_EQ(exinfo.bitsPerSample_, "333");
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 end";
+}
+
+/**
+ * @tc.name: SetExifTagValues004
+ * @tc.desc: SetExifTagValues
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetExifTagValues004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 start";
+    EXIFInfo exinfo;
+    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "444");
+    ASSERT_EQ(exinfo.bitsPerSample_, "444");
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
