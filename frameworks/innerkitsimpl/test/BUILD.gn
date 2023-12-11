@@ -212,7 +212,7 @@ ohos_unittest("jpegutilstest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include"
+    "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
