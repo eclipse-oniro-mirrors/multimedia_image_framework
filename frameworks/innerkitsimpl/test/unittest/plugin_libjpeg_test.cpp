@@ -740,9 +740,9 @@ HWTEST_F(PluginLibJpegTest, GetNextIfdFromLinkList001, TestSize.Level3)
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     ExifIfd ret = byteorder.GetNextIfdFromLinkList(EXIF_IFD_0);
+    ASSERT_EQ(ret, EXIF_IFD_1);
     delete buf;
     buf = nullptr;
-    ASSERT_EQ(ret, EXIF_IFD_1);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList001 end";
 }
 
@@ -757,9 +757,9 @@ HWTEST_F(PluginLibJpegTest, GetNextIfdFromLinkList002, TestSize.Level3)
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
     ExifIfd ret = byteorder.GetNextIfdFromLinkList(EXIF_IFD_EXIF);
+    ASSERT_EQ(ret, EXIF_IFD_COUNT);
     delete buf;
     buf = nullptr;
-    ASSERT_EQ(ret, EXIF_IFD_COUNT);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetNextIfdFromLinkList002 end";
 }
 
