@@ -787,8 +787,9 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues001 start";
     EXIFInfo exinfo;
-    exinfo.SetExifTagValues(EXIF_TAG_BITS_PER_SAMPLE, "111");
-    ASSERT_EQ(exinfo.bitsPerSample_, "111");
+    const std::string val = "111";
+    exinfo.SetExifTagValues(EXIF_TAG_BITS_PER_SAMPLE, val);
+    ASSERT_EQ(exinfo.bitsPerSample_, val);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues001 end";
 }
 
@@ -801,8 +802,9 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 start";
     EXIFInfo exinfo;
-    exinfo.SetExifTagValues(EXIF_TAG_ORIENTATION, "222");
-    ASSERT_EQ(exinfo.orientation_, "222");
+    const std::string val = "222";
+    exinfo.SetExifTagValues(EXIF_TAG_ORIENTATION, val);
+    ASSERT_EQ(exinfo.orientation_, val);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues002 end";
 }
 
@@ -815,8 +817,9 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 start";
     EXIFInfo exinfo;
-    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "333");
-    ASSERT_EQ(exinfo.imageLength_, "333");
+    const std::string val = "333";
+    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, val);
+    ASSERT_EQ(exinfo.imageLength_, val);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues003 end";
 }
 
@@ -829,8 +832,9 @@ HWTEST_F(PluginLibJpegTest, SetExifTagValues004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 start";
     EXIFInfo exinfo;
-    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_LENGTH, "444");
-    ASSERT_EQ(exinfo.imageWidth_, "444");
+    const std::string val = "444";
+    exinfo.SetExifTagValues(EXIF_TAG_IMAGE_WIDTH, val);
+    ASSERT_EQ(exinfo.imageWidth_, val);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValues004 end";
 }
 } // namespace Multimedia
