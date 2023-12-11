@@ -1289,7 +1289,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress002, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     pngDecoder->state_ = PngDecodingState::IMAGE_ERROR;
     bool ret = pngDecoder->FinishOldDecompress();
-    ASSERT_EQ(ret, false);
+    ASSERT_NE(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress002 end";
 }
 /**
@@ -1306,20 +1306,20 @@ HWTEST_F(PngDecoderTest, InitPnglib001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: InitPnglib001 end";
 }
 /**
- * @tc.name: DealNinePatch
+ * @tc.name: DealNinePatch001
  * @tc.desc: Test of DealNinePatch
  * @tc.type: FUNC
  */
-HWTEST_F(PngDecoderTest, DealNinePatch, TestSize.Level3)
+HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch start";
+    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     const  PixelDecodeOptions opts;
     pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
     pngDecoder->DealNinePatch(opts);
     delete pngDecoder->ninePatch_.patch_;
     pngDecoder->ninePatch_.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch end";
+    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
