@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
 #include "gtest/gtest.h"
 #include "jpeg_utils.h"
 #include "buffer_source_stream.h"
