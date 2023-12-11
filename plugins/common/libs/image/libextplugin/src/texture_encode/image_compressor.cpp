@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,78 +26,158 @@ namespace OHOS {
 namespace Media {
 using namespace OHOS::HiviewDFX;
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ImageCompressor"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ImageCompressor" };
 constexpr uint8_t BIT_SHIFT_8BITS = 8;
 constexpr uint8_t BIT_SHIFT_16BITS = 16;
 constexpr uint8_t BIT_SHIFT_24BITS = 24;
 constexpr uint8_t BYTES_MASK = 0xFF;
 constexpr uint8_t STRIDE_RGBA_LOG2 = 2;
 constexpr uint8_t GLOBAL_WH_NUM_CL = 2;
-
+constexpr uint8_t PARTITION_COUNT_1 = 1;
 constexpr uint8_t PARTITION_COUNT_2 = 2;
 constexpr uint8_t PARTITION_COUNT_3 = 3;
 constexpr uint8_t PARTITION_COUNT_4 = 4;
 }
 
 const char *g_programSource = R"(
-#define DIM 4
-#define BLOCK_SIZE 16 // DIM * DIM
-#define X_GRIDS 4
-#define Y_GRIDS 4
-#define SMALL_VALUE 0.00001f
-#define BLOCK_MAX_WEIGHTS 64
-#define BLOCK_MAX_WEIGHTS_2PLANE 32
-#define WEIGHTS_PLANE2_OFFSET BLOCK_MAX_WEIGHTS_2PLANE
-#define CEM_LDR_RGB_DIRECT 8u
-#define CEM_LDR_RGB_BASE_OFFSET 9u
-#define CEM_LDR_RGBA_DIRECT 12u
-#define CEM_LDR_RGBA_BASE_OFFSET 13u
+// Notice: the code from line 42 to line 1266 is openCL language
+// openCL cound only support C language style and could not support constexpr and static_cast in same platform
+#define DIM (4)
+#define BLOCK_SIZE (16)
+#define X_GRIDS (4)
+#define Y_GRIDS (4)
+#define SMALL_VALUE (0.00001f) // avoid divide 0
+#define BLOCK_MAX_WEIGHTS (64)
+#define BLOCK_MAX_WEIGHTS_SHORT (64)
+#define BLOCK_MAX_WEIGHTS_FLOAT (64.0f)
+#define BLOCK_MAX_WEIGHTS_2PLANE (32)
+#define WEIGHTS_PLANE2_OFFSET (32)
+#define CEM_LDR_RGB_DIRECT (8)
+#define CEM_LDR_RGB_BASE_OFFSET (9)
+#define CEM_LDR_RGBA_DIRECT (12)
+#define CEM_LDR_RGBA_BASE_OFFSET (13)
+#define PIXEL_MAX_VALUE (255.0f)
 
-#define    QUANT_2 0
-#define    QUANT_3 1
-#define    QUANT_4 2
-#define    QUANT_5 3
-#define    QUANT_6 4
-#define    QUANT_8 5
-#define    QUANT_10 6
-#define    QUANT_12 7
-#define    QUANT_16 8
-#define    QUANT_20 9
-#define    QUANT_24 10
-#define    QUANT_32 11
-#define    QUANT_40 12
-#define    QUANT_48 13
-#define    QUANT_64 14
-#define    QUANT_80 15
-#define    QUANT_96 16
-#define    QUANT_128 17
-#define    QUANT_160 18
-#define    QUANT_192 19
-#define    QUANT_256 20
-#define    QUANT_MAX 21
+#define QUANT_2 (0)
+#define QUANT_3 (1)
+#define QUANT_4 (2)
+#define QUANT_5 (3)
+#define QUANT_6 (4)
+#define QUANT_8 (5)
+#define QUANT_10 (6)
+#define QUANT_12 (7)
+#define QUANT_16 (8)
+#define QUANT_20 (9)
+#define QUANT_24 (10)
+#define QUANT_32 (11)
+#define QUANT_40 (12)
+#define QUANT_48 (13)
+#define QUANT_64 (14)
+#define QUANT_80 (15)
+#define QUANT_96 (16)
+#define QUANT_128 (17)
+#define QUANT_160 (18)
+#define QUANT_192 (19)
+#define QUANT_256 (20)
+#define QUANT_MAX (21)
 
-#define WEIGHT_QUANTIZE_NUM 32
-#define COLOR_NUM 256
+#define WEIGHT_RANGE_6 (6)
+#define WEIGHT_QUANTIZE_NUM (32)
+#define COLOR_NUM (256)
+#define MAX_PARTITION_COUNT (4)
+#define PARTITION_COUNT (2)
+#define MAX_BLOCK_SIZE (32)
+#define WEIGHT_QUANTIZE_GROUP (12)
+#define SECOND_PARTITION_INDEX (1)
 
-#define MAX_PARTITION_COUNT 4
-#define PARTITION_COUNT 2
+#define START_INDEX (0)
+#define FLOAT_ZERO (0.0f)
+#define FLOAT_ONE (1.0f)
+#define INT_ZERO (0)
+#define INT_ONE (1)
+#define SHORT_ZERO (0)
+#define UINT_ZERO (0)
+#define UINT_ONE (1u)
+#define EP0_INDEX (0)
+#define EP1_INDEX (1)
+#define END_POINT_NUM (2)
+#define EP0_R_INDEX (0)
+#define EP1_R_INDEX (1)
+#define EP0_G_INDEX (2)
+#define EP1_G_INDEX (3)
+#define EP0_B_INDEX (4)
+#define EP1_B_INDEX (5)
+#define EP0_A_INDEX (6)
+#define EP1_A_INDEX (7)
+#define COLOR_COMPONENT_NUM (8)
+#define QUANTIZE_WEIGHT_MIN (0)
+
+#define TRIT_MSB_SIZE (8)
+#define TRIT_BLOCK_SIZE (5)
+#define TRIT_ROUND_NUM (4)
+#define QUINT_MSB_SIZE (7)
+#define QUINT_BLOCK_SIZE (3)
+#define QUINT_ROUND_NUM (2)
+#define ISE_0 (0)
+#define ISE_1 (1)
+#define ISE_2 (2)
+#define ISE_3 (3)
+#define ISE_4 (4)
+
+#define WEIGHT_0 (0)
+#define WEIGHT_1 (1)
+#define WEIGHT_2 (2)
+#define WEIGHT_3 (3)
+#define WEIGHT_4 (4)
+#define WEIGHT_5 (5)
+#define WEIGHT_6 (6)
+#define WEIGHT_7 (7)
+#define WEIGHT_8 (8)
+#define WEIGHT_9 (9)
+#define WEIGHT_10 (10)
+#define WEIGHT_11 (11)
+#define WEIGHT_12 (12)
+#define WEIGHT_13 (13)
+#define WEIGHT_14 (14)
+#define WEIGHT_15 (15)
+
+#define BYTE_1_POS (8)
+#define BYTE_2_POS (16)
+#define BYTE_3_POS (24)
+#define BYTE_MASK (0xFFu)
+#define CEM_POS (13)
+#define COLOR_EP_POS (17)
+#define COLOR_EP_HIGH_BIT (15)
+#define MASK_FOR_4BITS (0xFu)
+#define MASK_FOR_15BITS (0x7FFFu)
+#define MASK_FOR_17BITS (0x1FFFFu)
+
+#define HEIGHT_BITS_OFFSET (2)
+#define WIDTH_BITS_OFFSET (4)
+#define MASK_FOR_2BITS (0x3u)
+#define MASK_FOR_1BITS (0x1u)
+#define WEIGHT_METHOD_OFFSET (2u)
+#define WEIGHT_METHOD_RIGHT_BIT (1)
+#define WEIGHT_METHOD_POS (4u)
+#define BLOCK_WIDTH_POS (5u)
+#define BLOCK_HEIGHT_POS (5u)
+#define WEIGHT_PRECISION_POS (9u)
+#define IS_DUALPLANE_POS (10u)
 
 typedef struct {
     int partid;
-    uint bitmaps[2];
+    uint bitmaps[PARTITION_COUNT];
 } PartInfo;
 
-int get_part(PartInfo* part_info, int i)
+int GetPart(PartInfo* partInfo, int i)
 {
-    if (i >= 32) {
+    if (i >= MAX_BLOCK_SIZE) {
         return 0;
     }
-    return (int)(((*part_info).bitmaps[1] >> i) & 0x1u);
+    return (int)(((*partInfo).bitmaps[SECOND_PARTITION_INDEX] >> i) & MASK_FOR_1BITS);
 }
 
-#define PARTITION_ORDER_MAX 5
-#define WEIGHT_QUANTIZE_NUM 32
-__constant short scramble_table[12 * WEIGHT_QUANTIZE_NUM] = {
+__constant short g_scrambleTable[WEIGHT_QUANTIZE_GROUP * WEIGHT_QUANTIZE_NUM] = {
     0, 1,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0,
@@ -125,7 +205,7 @@ __constant short scramble_table[12 * WEIGHT_QUANTIZE_NUM] = {
     20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
 };
 
-__constant short weight_unquant[12 * WEIGHT_QUANTIZE_NUM] = {
+__constant short g_weightUnquant[WEIGHT_QUANTIZE_GROUP * WEIGHT_QUANTIZE_NUM] = {
     0, 64,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 32, 64,
@@ -151,8 +231,7 @@ __constant short weight_unquant[12 * WEIGHT_QUANTIZE_NUM] = {
     0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 34, 36, 38,
     40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64
 };
-
-__constant short integer_from_trits[243] = {
+__constant short g_integerFromTrits[243] = { // the numbers of integer to derivated from trits is 243
     0, 1, 2, 4, 5, 6, 8, 9, 10,
     16, 17, 18, 20, 21, 22, 24, 25, 26,
     3, 7, 15, 19, 23, 27, 12, 13, 14,
@@ -184,8 +263,7 @@ __constant short integer_from_trits[243] = {
     31, 63, 127, 159, 191, 255, 252, 253, 254
 };
 
-#define QUANT_MAX 21
-__constant int bits_trits_quints_table[QUANT_MAX * 3] = {
+__constant int g_bitsTritsQuintsTable[QUANT_MAX * 3] = { // 1 quints match 3 number
     1, 0, 0, // RANGE_2
     0, 1, 0, // RANGE_3
     2, 0, 0, // RANGE_4
@@ -209,7 +287,7 @@ __constant int bits_trits_quints_table[QUANT_MAX * 3] = {
     8, 0, 0 // RANGE_256
 };
 
-__constant short integer_from_quints[125] = {
+__constant short g_integerFromQuints[125] = { // the numbers of integer to derivated from quints is 125
     0, 1, 2, 3, 4, 8, 9, 10, 11, 12, 16, 17, 18, 19, 20, 24, 25, 26, 27, 28, 5, 13, 21, 29, 6,
     32, 33, 34, 35, 36, 40, 41, 42, 43, 44, 48, 49, 50, 51, 52, 56, 57, 58, 59, 60, 37, 45, 53,
     61, 14,
@@ -221,7 +299,7 @@ __constant short integer_from_quints[125] = {
     47, 55, 63, 31
 };
 
-__constant short color_quant_tables[21 * 256] = {
+__constant short g_colorQuantTables[QUANT_MAX * COLOR_NUM] = {
     // QUANT_2
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -581,7 +659,7 @@ __constant short color_quant_tables[21 * 256] = {
     240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255
 };
 
-__constant short color_unquant_tables[21][256] = {
+__constant short color_unquant_tables[QUANT_MAX][COLOR_NUM] = {
     {
         0, 255
     },
@@ -708,693 +786,489 @@ __constant short color_unquant_tables[21][256] = {
     }
 };
 
-void swap(float4* lhs, float4* rhs)
+void Swap(float4* lhs, float4* rhs)
 {
     float4 tmp = *lhs;
     *lhs = *rhs;
     *rhs = tmp;
 }
 
-void find_min_max(float4* texels, float4 pt_mean, float4 vec_k, float4* e0, float4* e1, bool has_alpha)
+void FindMinMax(float4* texels, float4 ptMean, float4 vecK, float4* e0, float4* e1)
 {
-    float a = 1e31f;
-    float b = -1e31f;
-    for (int i = 0; i < BLOCK_SIZE; ++i) {
-        float t = dot(texels[i] - pt_mean, vec_k);
+    float a = 1e31f; // max float is clipped to 1e31f
+    float b = -1e31f; // min float is clipped to -1e31f
+    for (int i = START_INDEX; i < BLOCK_SIZE; ++i) {
+        float t = dot(texels[i] - ptMean, vecK);
         a = min(a, t);
         b = max(b, t);
     }
-
-    *e0 = clamp(vec_k * a + pt_mean, 0.0f, 255.0f);
-    *e1 = clamp(vec_k * b + pt_mean, 0.0f, 255.0f);
-
+    *e0 = clamp(vecK * a + ptMean, 0.0f, 255.0f); // 8bit max is 255.0f
+    *e1 = clamp(vecK * b + ptMean, 0.0f, 255.0f); // 8bit max is 255.0f
     // if the direction_vector ends up pointing from light to dark, FLIP IT!
     // this will make the endpoint the darkest one;
     float4 e0u = round(*e0);
     float4 e1u = round(*e1);
     if (e0u.x + e0u.y + e0u.z > e1u.x + e1u.y + e1u.z) {
-        swap(e0, e1);
-    }
-
-    if (!has_alpha) {
-        (*e0).w = 255.0f;
-        (*e1).w = 255.0f;
+        Swap(e0, e1);
     }
 }
 
-void max_accumulation_pixel_direction(float4* texels, float4 pt_mean, float4* e0, float4* e1, bool has_alpha)
+void MaxAccumulationPixelDirection(float4* texels, float4 ptMean, float4* e0, float4* e1, bool hasAlpha)
 {
-    int i = 0;
-
-    float4 sum_r = (float4)(0);
-    float4 sum_g = (float4)(0);
-    float4 sum_b = (float4)(0);
-    float4 sum_a = (float4)(0);
-    for (i = 0; i < BLOCK_SIZE; ++i) {
-        float4 dt = texels[i] - pt_mean;
-        sum_r += (dt.x > 0.0f) ? dt : (float4)(0);
-        sum_g += (dt.y > 0.0f) ? dt : (float4)(0);
-        sum_b += (dt.z > 0.0f) ? dt : (float4)(0);
-        sum_a += (dt.w > 0.0f) ? dt : (float4)(0);
+    float4 sumR = (float4)(FLOAT_ZERO);
+    float4 sumG = (float4)(FLOAT_ZERO);
+    float4 sumB = (float4)(FLOAT_ZERO);
+    float4 sumA = (float4)(FLOAT_ZERO);
+    for (int i = START_INDEX; i < BLOCK_SIZE; ++i) {
+        float4 dt = texels[i] - ptMean;
+        sumR += (dt.x > FLOAT_ZERO) ? dt : (float4)(FLOAT_ZERO);
+        sumG += (dt.y > FLOAT_ZERO) ? dt : (float4)(FLOAT_ZERO);
+        sumB += (dt.z > FLOAT_ZERO) ? dt : (float4)(FLOAT_ZERO);
+        sumA += (dt.w > FLOAT_ZERO) ? dt : (float4)(FLOAT_ZERO);
     }
-
-    float dot_r = dot(sum_r, sum_r);
-    float dot_g = dot(sum_g, sum_g);
-    float dot_b = dot(sum_b, sum_b);
-    float dot_a = dot(sum_a, sum_a);
-
-    float maxdot = dot_r;
-    float4 vec_k = sum_r;
-
-    if (dot_g > maxdot) {
-        vec_k = sum_g;
-        maxdot = dot_g;
+    float dotR = dot(sumR, sumR);
+    float dotG = dot(sumG, sumG);
+    float dotB = dot(sumB, sumB);
+    float dotA = dot(sumA, sumA);
+    float maxDot = dotR;
+    float4 vecK = sumR;
+    if (dotG > maxDot) {
+        vecK = sumG;
+        maxDot = dotG;
     }
-
-    if (dot_b > maxdot) {
-        vec_k = sum_b;
-        maxdot = dot_b;
+    if (dotB > maxDot) {
+        vecK = sumB;
+        maxDot = dotB;
     }
-
-    if (has_alpha && dot_a > maxdot) {
-        vec_k = sum_a;
-        maxdot = dot_a;
+    if (hasAlpha && dotA > maxDot) {
+        vecK = sumA;
+        maxDot = dotA;
     }
-
     // safe normalize
-    float lenk = length(vec_k);
-    vec_k = (lenk < SMALL_VALUE) ? vec_k : normalize(vec_k);
-
-    find_min_max(texels, pt_mean, vec_k, e0, e1, has_alpha);
+    float lenk = length(vecK);
+    vecK = (lenk < SMALL_VALUE) ? vecK : normalize(vecK);
+    FindMinMax(texels, ptMean, vecK, e0, e1);
 }
 
-void encode_color_normal(short quant_level, float4 e0, float4 e1, short* endpoint_quantized)
+void EncodeColorNormal(short quantLevel, float4 e0, float4 e1, short* endpointQuantized)
 {
-    int4 e0q = (int4)((int)(round(e0.x)), (int)(round(e0.y)), (int)(round(e0.z)), (int)(round(e0.w)));
-    int4 e1q = (int4)((int)(round(e1.x)), (int)(round(e1.y)), (int)(round(e1.z)), (int)(round(e1.w)));
-
-    endpoint_quantized[0] = color_quant_tables[quant_level * 256 + e0q.x];
-    endpoint_quantized[1] = color_quant_tables[quant_level * 256 + e1q.x];
-    endpoint_quantized[2] = color_quant_tables[quant_level * 256 + e0q.y];
-    endpoint_quantized[3] = color_quant_tables[quant_level * 256 + e1q.y];
-    endpoint_quantized[4] = color_quant_tables[quant_level * 256 + e0q.z];
-    endpoint_quantized[5] = color_quant_tables[quant_level * 256 + e1q.z];
-    endpoint_quantized[6] = color_quant_tables[quant_level * 256 + e0q.w];
-    endpoint_quantized[7] = color_quant_tables[quant_level * 256 + e1q.w];
+    int4 e0q = (int4)((int)(round(e0.x)), (int)(round(e0.y)),
+        (int)(round(e0.z)), (int)(round(e0.w)));
+    int4 e1q = (int4)((int)(round(e1.x)), (int)(round(e1.y)),
+        (int)(round(e1.z)), (int)(round(e1.w)));
+    endpointQuantized[EP0_R_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.x];
+    endpointQuantized[EP1_R_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e1q.x];
+    endpointQuantized[EP0_G_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.y];
+    endpointQuantized[EP1_G_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e1q.y];
+    endpointQuantized[EP0_B_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.z];
+    endpointQuantized[EP1_B_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e1q.z];
+    endpointQuantized[EP0_A_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e0q.w];
+    endpointQuantized[EP1_A_INDEX] = g_colorQuantTables[quantLevel * COLOR_NUM + e1q.w];
 }
 
-void decode_color(short quant_level, short endpoint_quantized[8], float4* e0, float4* e1)
+void DecodeColor(short quantLevel, short endpointQuantized[COLOR_COMPONENT_NUM], float4* e0, float4* e1)
 {
-    (*e0).x = (float)(color_unquant_tables[quant_level][endpoint_quantized[0]]);
-    (*e1).x = (float)(color_unquant_tables[quant_level][endpoint_quantized[1]]);
-    (*e0).y = (float)(color_unquant_tables[quant_level][endpoint_quantized[2]]);
-    (*e1).y = (float)(color_unquant_tables[quant_level][endpoint_quantized[3]]);
-    (*e0).z = (float)(color_unquant_tables[quant_level][endpoint_quantized[4]]);
-    (*e1).z = (float)(color_unquant_tables[quant_level][endpoint_quantized[5]]);
-    (*e0).w = (float)(color_unquant_tables[quant_level][endpoint_quantized[6]]);
-    (*e1).w = (float)(color_unquant_tables[quant_level][endpoint_quantized[7]]);
+    (*e0).x = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_R_INDEX]]);
+    (*e1).x = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP1_R_INDEX]]);
+    (*e0).y = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_G_INDEX]]);
+    (*e1).y = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP1_G_INDEX]]);
+    (*e0).z = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_B_INDEX]]);
+    (*e1).z = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP1_B_INDEX]]);
+    (*e0).w = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_A_INDEX]]);
+    (*e1).w = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP1_A_INDEX]]);
 }
 
-//calculate quantize weights
-short quantize_weight(uint weight_range, float weight)
+// calculate quantize weights
+short QuantizeWeight(uint weightRange, float weight)
 {
-    short q = (short)(round(weight * (float)(weight_range)));
-    return clamp(q, (short)(0), (short)(weight_range));
+    short q = (short)(round(weight * ((float)(weightRange))));
+    return clamp(q, (short)(QUANTIZE_WEIGHT_MIN), (short)(weightRange));
 }
 
-float unquantize_weight(uint weight_range, uint qw)
+void CalculateNormalWeights(int part, PartInfo* partInfo, float4* texels,
+    float4 endPoint[END_POINT_NUM], float* projw)
 {
-    float w = 1.0f * (float)(qw) / (float)(weight_range);
-    return clamp(w, 0.0f, 1.0f);
-}
-
-float4 samp_texel(float4 texels[BLOCK_SIZE], uint4 index, float4 coff)
-{
-    float4 sum = texels[index.x] * coff.x;
-    sum += texels[index.y] * coff.y;
-    sum += texels[index.z] * coff.z;
-    sum += texels[index.w] * coff.w;
-    return sum;
-}
-
-void calculate_normal_weights_2plane(float4* texels,
-    float4 ep0, float4 ep1, int component_plane2, float* projw)
-{
-    int i = 0;
-    float4 vec_k = ep1 - ep0;
-    if (length(vec_k) < SMALL_VALUE) {
-        for (i = 0; i < 2 * X_GRIDS * Y_GRIDS; ++i) {
-            projw[i] = 0.0f;
+    int i = START_INDEX;
+    float4 vecK = endPoint[EP1_INDEX] - endPoint[EP0_INDEX];
+    if (length(vecK) < SMALL_VALUE && !partInfo) {
+        for (i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
+            projw[i] = FLOAT_ZERO;
         }
     } else {
-        float minw = 1e31f;
-        float maxw = -1e31f;
-        float minwp = 1e31f;
-        float maxwp = -1e31f;
-        if (component_plane2 == 0) {
-            vec_k = normalize((float4)(0, vec_k.y, vec_k.z, vec_k.w));
-        } else if (component_plane2 == 1) {
-            vec_k = normalize((float4)(vec_k.x, 0, vec_k.z, vec_k.w));
-        } else if (component_plane2 == 2) {
-            vec_k = normalize((float4)(vec_k.x, vec_k.y, 0, vec_k.w));
-        } else if (component_plane2 == 3) {
-            vec_k = normalize((float4)(vec_k.x, vec_k.y, vec_k.z, 0));
-        }
-        for (i = 0; i < BLOCK_SIZE; ++i) {
-            float4 texel = texels[i];
-            float w = dot(vec_k, texel - ep0);
-            minw = min(w, minw);
-            maxw = max(w, maxw);
-            projw[2*i] = w;
-
-            float wp = texel.x - ep0.x;
-            if (component_plane2 == 1) {
-                wp = texel.y - ep0.y;
-            } else if (component_plane2 == 2) {
-                wp = texel.z - ep0.z;
-            } else if (component_plane2 == 3) {
-                wp = texel.w - ep0.w;
-            }
-            minwp = min(wp, minwp);
-            maxwp = max(wp, maxwp);
-            projw[2 * i + 1] = wp;
-        }
-        float invlen = maxw - minw;
-        float invlenp = maxwp - minwp;
-        invlen = max(SMALL_VALUE, invlen);
-        invlen = 1.0f / invlen;
-        invlenp = max(SMALL_VALUE, invlenp);
-        invlenp = 1.0f / invlenp;
-        for (i = 0; i < X_GRIDS * Y_GRIDS; ++i) {
-            projw[2 * i] = (projw[2 * i] - minw) * invlen;
-            projw[2 * i + 1] = (projw[2 * i + 1] - minwp) * invlenp;
-        }
-    }
-}
-
-void calculate_normal_weights(int part, PartInfo* part_info, float4* texels, float4 ep0, float4 ep1, float* projw)
-{
-    int i = 0;
-    float4 vec_k = ep1 - ep0;
-    if (length(vec_k) < SMALL_VALUE && !part_info) {
-        for (i = 0; i < X_GRIDS * Y_GRIDS; ++i) {
-            projw[i] = 0.0f;
-        }
-    } else {
-        vec_k = normalize(vec_k);
-        float minw = 1e31f;
-        float maxw = -1e31f;
-        for (i = 0; i < BLOCK_SIZE; ++i) {
-            if (!part_info) {
-                float w = dot(vec_k, texels[i] - ep0);
+        vecK = normalize(vecK);
+        float minw = 1e31f; // max float is clipped to 1e31f
+        float maxw = -1e31f; // min float is clipped to -1e31f
+        for (i = START_INDEX; i < BLOCK_SIZE; ++i) {
+            if ((!partInfo) || (GetPart(partInfo, i) == part)) {
+                float w = dot(vecK, texels[i] - endPoint[EP0_INDEX]);
                 minw = min(w, minw);
                 maxw = max(w, maxw);
                 projw[i] = w;
-            } else {
-                int cur_part = get_part(part_info, i);
-                if (cur_part == part) {
-                    float w = dot(vec_k, texels[i] - ep0);
-                    minw = min(w, minw);
-                    maxw = max(w, maxw);
-                    projw[i] = w;
-                }
             }
         }
         float invlen = maxw - minw;
         invlen = max(SMALL_VALUE, invlen);
-        invlen = 1.0f / invlen;
-        for (i = 0; i < X_GRIDS * Y_GRIDS; ++i) {
-            if (!part_info) {
+        invlen = FLOAT_ONE / invlen; // invlen min is SMALL_VALUE, not zero
+        for (i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
+            if ((!partInfo) || (GetPart(partInfo, i) == part)) {
                 projw[i] = (projw[i] - minw) * invlen;
-            } else {
-                int cur_part = get_part(part_info, i);
-                if (cur_part  == part) {
-                    projw[i] = (projw[i] - minw) * invlen;
-                }
             }
         }
     }
 }
 
-void quantize_weights_rgb(float projw[2 * X_GRIDS * Y_GRIDS], uint weight_range, short* weights)
+void QuantizeWeights(float projw[X_GRIDS * Y_GRIDS], uint weightRange, short* weights)
 {
-    for (int i = 0; i < 2 * X_GRIDS * Y_GRIDS; ++i) {
-        weights[i] = quantize_weight(weight_range, projw[i]);
+    for (int i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
+        weights[i] = QuantizeWeight(weightRange, projw[i]);
     }
 }
 
-void calculate_quantized_weights_2plane(float4* texels,
-uint weight_range,
-float4 ep0,
-float4 ep1,
-short* weights,
-int component_plane2)
-{
-    float projw[2 * X_GRIDS * Y_GRIDS];
-    calculate_normal_weights_2plane(texels, ep0, ep1, component_plane2, projw);
-    quantize_weights_rgb(projw, weight_range, weights);
-    return;
-}
-
-void quantize_weights(float projw[X_GRIDS * Y_GRIDS], uint weight_range, short* weights)
-{
-    for (int i = 0; i < X_GRIDS * Y_GRIDS; ++i) {
-        weights[i] = quantize_weight(weight_range, projw[i]);
-    }
-}
-
-void calculate_quantized_weights(float4* texels, uint weight_range, float4 ep0, float4 ep1, short* weights)
+void CalculateQuantizedWeights(float4* texels, uint weightRange, float4 endPoint[END_POINT_NUM], short* weights)
 {
     float projw[X_GRIDS * Y_GRIDS];
-    calculate_normal_weights(0, NULL, texels, ep0, ep1, projw);
-    quantize_weights(projw, weight_range, weights);
+    CalculateNormalWeights(INT_ZERO, NULL, texels, endPoint, projw);
+    QuantizeWeights(projw, weightRange, weights);
 }
 
-void orbits8_ptr(uint4* outputs, uint* bitoffset, uint number, uint bitcount)
+void Orbits8Ptr(uint4* outputs, uint* bitoffset, uint number, uint bitcount)
 {
     uint newpos = *bitoffset + bitcount;
-
-    uint nidx = newpos >> 5;
-    uint uidx = *bitoffset >> 5;
-    uint bit_idx = *bitoffset & 31u;
-    if (uidx == 0) {
-        (*outputs).x |= (number << bit_idx);
-        (*outputs).y |= (nidx >uidx) ? (number >> (32u - bit_idx)) : 0u;
-    } else if (uidx == 1) {
-        (*outputs).y |= (number << bit_idx);
-        (*outputs).z |= (nidx >uidx) ? (number >> (32u - bit_idx)) : 0u;
-    } else if (uidx == 2) {
-        (*outputs).z |= (number << bit_idx);
-        (*outputs).w |= (nidx >uidx) ? (number >> (32u - bit_idx)) : 0u;
-    } else if (uidx == 3) {
+    uint nidx = newpos >> 5; // split low bits (5 bits) to get high bits
+    uint uidx = *bitoffset >> 5; // split low bits (5 bits) to get high bits
+    uint bitIdx = *bitoffset & 31u; // split low bits to get low bits (31 for mask 5 bits)
+    if (uidx == 0) { // high bits is 0 for x
+        (*outputs).x |= (number << bitIdx);
+        (*outputs).y |= (nidx > uidx) ? (number >> (32u - bitIdx)) : UINT_ZERO; // uint 32 bits
+    } else if (uidx == 1) { // high bits is 1 for y
+        (*outputs).y |= (number << bitIdx);
+        (*outputs).z |= (nidx > uidx) ? (number >> (32u - bitIdx)) : UINT_ZERO; // uint 32 bits
+    } else if (uidx == 2) { // high bits is 2 for z
+        (*outputs).z |= (number << bitIdx);
+        (*outputs).w |= (nidx > uidx) ? (number >> (32u - bitIdx)) : UINT_ZERO; // uint 32 bits
     }
     *bitoffset = newpos;
 }
 
-void split_high_low(uint n, uint i, int* high, uint* low)
+void SplitHighLow(uint n, uint i, int* high, uint* low)
 {
-    uint low_mask = (1u << i) - 1u;
+    uint low_mask = (UINT_ONE << i) - UINT_ONE;
     *low = n & low_mask;
-    *high = (int)(n >> i) & 0xFF;
+    *high = ((int)(n >> i)) & 0xFF; // mask 0xFF to get low 8 bits
 }
 
-uint reverse_byte(uint p)
+uint ReverseByte(uint p)
 {
-    p = ((p & 0xFu) << 4) | ((p >> 4) & 0xFu);
-    p = ((p & 0x33u) << 2) | ((p >> 2) & 0x33u);
-    p = ((p & 0x55u) << 1) | ((p >> 1) & 0x55u);
+    p = ((p & 0xFu) << 4) | ((p >> 4) & 0xFu); // 0xFu 4 for reverse
+    p = ((p & 0x33u) << 2) | ((p >> 2) & 0x33u); // 0x33u 2 for reverse
+    p = ((p & 0x55u) << 1) | ((p >> 1) & 0x55u); // 0x55u 1 for reverse
     return p;
 }
 
-void encode_trits(uint bitcount,
-uint b0, uint b1, uint b2, uint b3, uint b4,
-uint4* outputs, uint* outpos)
+void EncodeTrits(uint bitcount, uint tritInput[TRIT_BLOCK_SIZE], uint4* outputs, uint* outpos)
 {
-    int t0, t1, t2, t3, t4;
-    uint m0, m1, m2, m3, m4;
-    split_high_low(b0, bitcount, &t0, &m0);
-    split_high_low(b1, bitcount, &t1, &m1);
-    split_high_low(b2, bitcount, &t2, &m2);
-    split_high_low(b3, bitcount, &t3, &m3);
-    split_high_low(b4, bitcount, &t4, &m4);
+    int t0;
+    int t1;
+    int t2;
+    int t3;
+    int t4;
+    uint m0;
+    uint m1;
+    uint m2;
+    uint m3;
+    uint m4;
+    SplitHighLow(tritInput[ISE_0], bitcount, &t0, &m0);
+    SplitHighLow(tritInput[ISE_1], bitcount, &t1, &m1);
+    SplitHighLow(tritInput[ISE_2], bitcount, &t2, &m2);
+    SplitHighLow(tritInput[ISE_3], bitcount, &t3, &m3);
+    SplitHighLow(tritInput[ISE_4], bitcount, &t4, &m4);
+    ushort packhigh = (ushort)(
+        g_integerFromTrits[t4 * 81 + t3 * 27 + t2 * 9 + t1 * 3 + t0]); // trits for 3 9 27 81
+    Orbits8Ptr(outputs, outpos, m0, bitcount);
+    Orbits8Ptr(outputs, outpos, packhigh & 3u, 2u); // low 2bits (mask 3u) offset 2u
 
-    ushort packhigh = (ushort)(integer_from_trits[t4 * 81 + t3 * 27 + t2 * 9 + t1 * 3 + t0]);
+    Orbits8Ptr(outputs, outpos, m1, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 2) & 3u, 2u); // right shift 2 bits for low 2bits (mask 3u) offset 2u
 
-    orbits8_ptr(outputs, outpos, m0, bitcount);
-    orbits8_ptr(outputs, outpos, packhigh & 3u, 2u);
+    Orbits8Ptr(outputs, outpos, m2, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 4) & 1u, 1u); // right shift 4 bits for low 1bits (mask 1u) offset 1u
 
-    orbits8_ptr(outputs, outpos, m1, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 2) & 3u, 2u);
+    Orbits8Ptr(outputs, outpos, m3, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 5) & 3u, 2u); // right shift 5 bits for low 2bits (mask 3u) offset 2u
 
-    orbits8_ptr(outputs, outpos, m2, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 4) & 1u, 1u);
-
-    orbits8_ptr(outputs, outpos, m3, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 5) & 3u, 2u);
-
-    orbits8_ptr(outputs, outpos, m4, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 7) & 1u, 1u);
+    Orbits8Ptr(outputs, outpos, m4, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 7) & 1u, 1u); // right shift 7 bits for low 1bits (mask 1u) offset 1u
 }
 
-void encode_quints(uint bitcount, uint b0, uint b1, uint b2, uint4* outputs, uint* outpos)
+void EncodeQuints(uint bitcount, uint quintInput[QUINT_BLOCK_SIZE], uint4* outputs, uint* outpos)
 {
-    int q0, q1, q2;
-    uint m0, m1, m2;
-
-    split_high_low(b0, bitcount, &q0, &m0);
-    split_high_low(b1, bitcount, &q1, &m1);
-    split_high_low(b2, bitcount, &q2, &m2);
-
-    ushort packhigh = (ushort)(integer_from_quints[q2 * 25 + q1 * 5 + q0]);
-
-    orbits8_ptr(outputs, outpos, m0, bitcount);
-    orbits8_ptr(outputs, outpos, packhigh & 7u, 3u);
-
-    orbits8_ptr(outputs, outpos, m1, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 3) & 3u, 2u);
-
-    orbits8_ptr(outputs, outpos, m2, bitcount);
-    orbits8_ptr(outputs, outpos, (packhigh >> 5) & 3u, 2u);
+    int q0;
+    int q1;
+    int q2;
+    uint m0;
+    uint m1;
+    uint m2;
+    SplitHighLow(quintInput[ISE_0], bitcount, &q0, &m0);
+    SplitHighLow(quintInput[ISE_1], bitcount, &q1, &m1);
+    SplitHighLow(quintInput[ISE_2], bitcount, &q2, &m2);
+    ushort packhigh = (ushort)(g_integerFromQuints[q2 * 25 + q1 * 5 + q0]); // Quints 5 25
+    Orbits8Ptr(outputs, outpos, m0, bitcount);
+    Orbits8Ptr(outputs, outpos, packhigh & 7u, 3u); // low 3bits (mask 7u) offset 3u
+    Orbits8Ptr(outputs, outpos, m1, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 3) & 3u, 2u); // right shift 3 bits for low 2bits (mask 3u) offset 2u
+    Orbits8Ptr(outputs, outpos, m2, bitcount);
+    Orbits8Ptr(outputs, outpos, (packhigh >> 5) & 3u, 2u); // right shift 5 bits for low 2bits (mask 3u) offset 2u
 }
 
-void bise_endpoints(short numbers[8], int range, uint4* outputs, bool has_alpha, uint* bitpos)
+void BiseEndpoints(short numbers[COLOR_COMPONENT_NUM], int range, uint4* outputs, bool hasAlpha, uint* bitPos)
 {
-    uint bits = (uint)(bits_trits_quints_table[range * 3 + 0]);
-    uint trits = (uint)(bits_trits_quints_table[range * 3 + 1]);
-    uint quints = (uint)(bits_trits_quints_table[range * 3 + 2]);
-
-    uint count = has_alpha ? 8u : 6u;
-
-    if (trits == 1u) {
-        encode_trits(bits, numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], outputs, bitpos);
-        encode_trits(bits, numbers[5], numbers[6], numbers[7], 0u, 0u, outputs, bitpos);
-        *bitpos = ((8u + 5u * bits) * count + 4u) / 5u;
-    } else if (quints == 1u) {
-        encode_quints(bits, numbers[0], numbers[1], numbers[2], outputs, bitpos);
-        encode_quints(bits, numbers[3], numbers[4], numbers[5], outputs, bitpos);
-        encode_quints(bits, numbers[6], numbers[7], 0u, outputs, bitpos);
-        *bitpos = ((7u + 3u * bits) * count + 2u) / 3u;
+    uint bits = (uint)(g_bitsTritsQuintsTable[range * 3 + 0]); // Quints 3 offset 0
+    uint trits = (uint)(g_bitsTritsQuintsTable[range * 3 + 1]); // Quints 3 offset 1
+    uint quints = (uint)(g_bitsTritsQuintsTable[range * 3 + 2]); // Quints 3 offset 2
+    uint count = hasAlpha ? 8u : 6u; // RGBA 4x2 = 8 or RGB 3x2 = 6
+    if (trits == UINT_ONE) {
+        uint tritsInput[TRIT_BLOCK_SIZE];
+        tritsInput[ISE_0] = numbers[EP0_R_INDEX];
+        tritsInput[ISE_1] = numbers[EP1_R_INDEX];
+        tritsInput[ISE_2] = numbers[EP0_G_INDEX];
+        tritsInput[ISE_3] = numbers[EP1_G_INDEX];
+        tritsInput[ISE_4] = numbers[EP0_B_INDEX];
+        EncodeTrits(bits, tritsInput, outputs, bitPos);
+        tritsInput[ISE_0] = numbers[EP1_B_INDEX];
+        tritsInput[ISE_1] = numbers[EP0_A_INDEX];
+        tritsInput[ISE_2] = numbers[EP1_A_INDEX];
+        tritsInput[ISE_3] = UINT_ZERO;
+        tritsInput[ISE_4] = UINT_ZERO;
+        EncodeTrits(bits, tritsInput, outputs, bitPos);
+        *bitPos = ((TRIT_MSB_SIZE + TRIT_BLOCK_SIZE * bits) * count + TRIT_ROUND_NUM) / TRIT_BLOCK_SIZE;
+    } else if (quints == UINT_ONE) {
+        uint quintsInput[QUINT_BLOCK_SIZE];
+        quintsInput[ISE_0] = numbers[EP0_R_INDEX];
+        quintsInput[ISE_1] = numbers[EP1_R_INDEX];
+        quintsInput[ISE_2] = numbers[EP0_G_INDEX];
+        EncodeQuints(bits, quintsInput, outputs, bitPos);
+        quintsInput[ISE_0] = numbers[EP1_G_INDEX];
+        quintsInput[ISE_1] = numbers[EP0_B_INDEX];
+        quintsInput[ISE_2] = numbers[EP1_B_INDEX];
+        EncodeQuints(bits, quintsInput, outputs, bitPos);
+        quintsInput[ISE_0] = numbers[EP0_A_INDEX];
+        quintsInput[ISE_1] = numbers[EP1_A_INDEX];
+        quintsInput[ISE_2] = UINT_ZERO;
+        EncodeQuints(bits, quintsInput, outputs, bitPos);
+        *bitPos = ((QUINT_MSB_SIZE + QUINT_BLOCK_SIZE * bits) * count + QUINT_ROUND_NUM) / QUINT_BLOCK_SIZE;
     } else {
-        for (uint i = 0u; i < count; ++i) {
-            orbits8_ptr(outputs, bitpos, numbers[i], bits);
+        for (uint i = UINT_ZERO; i < count; ++i) {
+            Orbits8Ptr(outputs, bitPos, numbers[i], bits);
         }
     }
 }
 
-void bise_weights(short numbers[16], int range, uint4* outputs)
+void BiseWeights(short numbers[BLOCK_SIZE], int range, uint4* outputs)
 {
-    uint bitpos = 0u;
-    uint bits = (uint)(bits_trits_quints_table[range * 3 + 0]);
-    uint trits = (uint)(bits_trits_quints_table[range * 3 + 1]);
-    uint quints = (uint)(bits_trits_quints_table[range * 3 + 2]);
-
-    if (trits == 1u) {
-        encode_trits(bits, numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], outputs, &bitpos);
-        encode_trits(bits, numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], outputs, &bitpos);
-        encode_trits(bits, numbers[10], numbers[11], numbers[12], numbers[13], numbers[14], outputs, &bitpos);
-        encode_trits(bits, numbers[15], 0u, 0u, 0u, 0u, outputs, &bitpos);
-        bitpos = ((8u + 5u * bits) * 16u + 4u) / 5u;
-    } else if (quints == 1u) {
-        encode_quints(bits, numbers[0], numbers[1], numbers[2], outputs, &bitpos);
-        encode_quints(bits, numbers[3], numbers[4], numbers[5], outputs, &bitpos);
-        encode_quints(bits, numbers[6], numbers[7], numbers[8], outputs, &bitpos);
-        encode_quints(bits, numbers[9], numbers[10], numbers[11], outputs, &bitpos);
-        encode_quints(bits, numbers[12], numbers[13], numbers[14], outputs, &bitpos);
-        encode_quints(bits, numbers[15], 0u, 0u, outputs, &bitpos);
-        bitpos = ((7u + 3u * bits) * 16u + 2u) / 3u;
+    uint bitPos = UINT_ZERO;
+    uint bits = (uint)(g_bitsTritsQuintsTable[range * 3 + 0]); // Quints 3 offset 0
+    uint trits = (uint)(g_bitsTritsQuintsTable[range * 3 + 1]); // Quints 3 offset 1
+    if (trits == UINT_ONE) {
+        uint tritsInput[TRIT_BLOCK_SIZE];
+        tritsInput[ISE_0] = numbers[WEIGHT_0];
+        tritsInput[ISE_1] = numbers[WEIGHT_1];
+        tritsInput[ISE_2] = numbers[WEIGHT_2];
+        tritsInput[ISE_3] = numbers[WEIGHT_3];
+        tritsInput[ISE_4] = numbers[WEIGHT_4];
+        EncodeTrits(bits, tritsInput, outputs, &bitPos);
+        tritsInput[ISE_0] = numbers[WEIGHT_5];
+        tritsInput[ISE_1] = numbers[WEIGHT_6];
+        tritsInput[ISE_2] = numbers[WEIGHT_7];
+        tritsInput[ISE_3] = numbers[WEIGHT_8];
+        tritsInput[ISE_4] = numbers[WEIGHT_9];
+        EncodeTrits(bits, tritsInput, outputs, &bitPos);
+        tritsInput[ISE_0] = numbers[WEIGHT_10];
+        tritsInput[ISE_1] = numbers[WEIGHT_11];
+        tritsInput[ISE_2] = numbers[WEIGHT_12];
+        tritsInput[ISE_3] = numbers[WEIGHT_13];
+        tritsInput[ISE_4] = numbers[WEIGHT_14];
+        EncodeTrits(bits, tritsInput, outputs, &bitPos);
+        tritsInput[ISE_0] = numbers[WEIGHT_15];
+        tritsInput[ISE_1] = UINT_ZERO;
+        tritsInput[ISE_2] = UINT_ZERO;
+        tritsInput[ISE_3] = UINT_ZERO;
+        tritsInput[ISE_4] = UINT_ZERO;
+        EncodeTrits(bits, tritsInput, outputs, &bitPos);
+        bitPos = ((TRIT_MSB_SIZE + TRIT_BLOCK_SIZE * bits) * BLOCK_SIZE + TRIT_ROUND_NUM) / TRIT_BLOCK_SIZE;
     } else {
-        for (int i = 0; i < 16; ++i) {
-            orbits8_ptr(outputs, &bitpos, numbers[i], bits);
+        for (int i = START_INDEX; i < BLOCK_SIZE; ++i) {
+            Orbits8Ptr(outputs, &bitPos, numbers[i], bits);
         }
     }
 }
 
-uint bise_weights_2plane(short numbers[32], int range, uint4* outputs)
+uint4 AssembleBlock(uint blockMode, uint colorEndpointMode, uint4 epIse, uint4 wtIse)
 {
-    uint bitpos = 0u;
+    uint4 phyBlk = (uint4)(0, 0, 0, 0); // initialize to (0, 0, 0, 0)
+    phyBlk.w |= ReverseByte(wtIse.x & BYTE_MASK) << BYTE_3_POS;
+    phyBlk.w |= ReverseByte((wtIse.x >> BYTE_1_POS) & BYTE_MASK) << BYTE_2_POS;
+    phyBlk.w |= ReverseByte((wtIse.x >> BYTE_2_POS) & BYTE_MASK) << BYTE_1_POS;
+    phyBlk.w |= ReverseByte((wtIse.x >> BYTE_3_POS) & BYTE_MASK);
+    phyBlk.z |= ReverseByte(wtIse.y & BYTE_MASK) << BYTE_3_POS;
+    phyBlk.z |= ReverseByte((wtIse.y >> BYTE_1_POS) & BYTE_MASK) << BYTE_2_POS;
+    phyBlk.z |= ReverseByte((wtIse.y >> BYTE_2_POS) & BYTE_MASK) << BYTE_1_POS;
+    phyBlk.z |= ReverseByte((wtIse.y >> BYTE_3_POS) & BYTE_MASK);
+    phyBlk.y |= ReverseByte(wtIse.z & BYTE_MASK) << BYTE_3_POS;
+    phyBlk.y |= ReverseByte((wtIse.z >> BYTE_1_POS) & BYTE_MASK) << BYTE_2_POS;
+    phyBlk.y |= ReverseByte((wtIse.z >> BYTE_2_POS) & BYTE_MASK) << BYTE_1_POS;
+    phyBlk.y |= ReverseByte((wtIse.z >> BYTE_3_POS) & BYTE_MASK);
+    phyBlk.x = blockMode;
 
-    uint bits = (uint)(bits_trits_quints_table[range * 3 + 0]);
-    uint trits = (uint)(bits_trits_quints_table[range * 3 + 1]);
-    uint quints = (uint)(bits_trits_quints_table[range * 3 + 2]);
+    phyBlk.x |= (colorEndpointMode & MASK_FOR_4BITS) << CEM_POS;
+    phyBlk.x |= (epIse.x & MASK_FOR_15BITS) << COLOR_EP_POS;
+    phyBlk.y |= ((epIse.x >> COLOR_EP_HIGH_BIT) & MASK_FOR_17BITS);
+    phyBlk.y |= (epIse.y & MASK_FOR_15BITS) << COLOR_EP_POS;
+    phyBlk.z |= ((epIse.y >> COLOR_EP_HIGH_BIT) & MASK_FOR_17BITS);
 
-    if (trits == 1u) {
-        encode_trits(bits, numbers[0], numbers[1], numbers[2], numbers[3], numbers[4], outputs, &bitpos);
-        encode_trits(bits, numbers[5], numbers[6], numbers[7], numbers[8], numbers[9], outputs, &bitpos);
-        encode_trits(bits, numbers[10], numbers[11], numbers[12], numbers[13], numbers[14], outputs, &bitpos);
-        encode_trits(bits, numbers[15], numbers[16], numbers[17], numbers[18], numbers[19], outputs, &bitpos);
-        encode_trits(bits, numbers[20], numbers[21], numbers[22], numbers[23], numbers[24], outputs, &bitpos);
-        encode_trits(bits, numbers[25], numbers[26], numbers[27], numbers[28], numbers[29], outputs, &bitpos);
-        encode_trits(bits, numbers[30], numbers[31], 0u, 0u, 0u, outputs, &bitpos);
-        bitpos = ((8u + 5u * bits) * 32u + 4u) / 5u;
-    } else if (quints == 1u) {
-        encode_quints(bits, numbers[0], numbers[1], numbers[2], outputs, &bitpos);
-        encode_quints(bits, numbers[3], numbers[4], numbers[5], outputs, &bitpos);
-        encode_quints(bits, numbers[6], numbers[7], numbers[8], outputs, &bitpos);
-        encode_quints(bits, numbers[9], numbers[10], numbers[11], outputs, &bitpos);
-        encode_quints(bits, numbers[12], numbers[13], numbers[14], outputs, &bitpos);
-        encode_quints(bits, numbers[15], numbers[16], numbers[17], outputs, &bitpos);
-        encode_quints(bits, numbers[18], numbers[19], numbers[20], outputs, &bitpos);
-        encode_quints(bits, numbers[21], numbers[22], numbers[23], outputs, &bitpos);
-        encode_quints(bits, numbers[24], numbers[25], numbers[26], outputs, &bitpos);
-        encode_quints(bits, numbers[27], numbers[28], numbers[29], outputs, &bitpos);
-        encode_quints(bits, numbers[30], numbers[31], 0u, outputs, &bitpos);
-        bitpos = ((7u + 3u * bits) * 32u + 2u) / 3u;
-    } else {
-        for (int i = 0; i < 32; ++i) {
-            orbits8_ptr(outputs, &bitpos, numbers[i], bits);
-        }
+    return phyBlk;
+}
+
+uint AssembleBlockmode(uint weightQuantmethod, bool isDualPlane)
+{
+    uint a = (uint)((Y_GRIDS - HEIGHT_BITS_OFFSET) & MASK_FOR_2BITS);
+    uint b = (uint)((X_GRIDS - WIDTH_BITS_OFFSET) & MASK_FOR_2BITS);
+    uint d = isDualPlane ? UINT_ONE : UINT_ZERO;
+    uint h = (weightQuantmethod < 6u) ? UINT_ZERO : UINT_ONE; // low/high-precision limit is 6u
+    uint r = (weightQuantmethod % 6u) + WEIGHT_METHOD_OFFSET; // low/high-precision limit is 6u
+    uint blockMode = (r >> WEIGHT_METHOD_RIGHT_BIT) & MASK_FOR_2BITS;
+    blockMode |= (r & MASK_FOR_1BITS) << WEIGHT_METHOD_POS;
+    blockMode |= (a & MASK_FOR_2BITS) << BLOCK_WIDTH_POS;
+    blockMode |= (b & MASK_FOR_2BITS) << BLOCK_HEIGHT_POS;
+    blockMode |= h << WEIGHT_PRECISION_POS;
+    blockMode |= d << IS_DUALPLANE_POS;
+    return blockMode;
+}
+
+uint4 EndpointIse(float4* ep0, float4* ep1, short endpointQuantmethod, bool hasAlpha)
+{
+    short epQuantized[COLOR_COMPONENT_NUM];
+    EncodeColorNormal(endpointQuantmethod, *ep0, *ep1, epQuantized);
+    DecodeColor(endpointQuantmethod, epQuantized, ep0, ep1);
+    if (!hasAlpha) {
+        epQuantized[EP0_A_INDEX] = SHORT_ZERO;
+        epQuantized[EP1_A_INDEX] = SHORT_ZERO;
     }
-    return bitpos;
+    uint4 epIse = (uint4)(UINT_ZERO);
+    uint bitPos = UINT_ZERO;
+    BiseEndpoints(epQuantized, endpointQuantmethod, &epIse, hasAlpha, &bitPos);
+    return epIse;
 }
 
-uint4 assemble_block(uint blockmode, uint color_endpoint_mode,
-                     uint partition_count, uint partition_index, uint4 ep_ise, uint4 wt_ise)
+float4 CalTexel(short weight, float4 ep0, float4 ep1)
 {
-    uint4 phy_blk = (uint4)(0, 0, 0, 0);
-    phy_blk.w |= reverse_byte(wt_ise.x & 0xFFu) << 24;
-    phy_blk.w |= reverse_byte((wt_ise.x >> 8) & 0xFFu) << 16;
-    phy_blk.w |= reverse_byte((wt_ise.x >> 16) & 0xFFu) << 8;
-    phy_blk.w |= reverse_byte((wt_ise.x >> 24) & 0xFFu);
-
-    phy_blk.z |= reverse_byte(wt_ise.y & 0xFFu) << 24;
-    phy_blk.z |= reverse_byte((wt_ise.y >> 8) & 0xFFu) << 16;
-    phy_blk.z |= reverse_byte((wt_ise.y >> 16) & 0xFFu) << 8;
-    phy_blk.z |= reverse_byte((wt_ise.y >> 24) & 0xFFu);
-
-    phy_blk.y |= reverse_byte(wt_ise.z & 0xFFu) << 24;
-    phy_blk.y |= reverse_byte((wt_ise.z >> 8) & 0xFFu) << 16;
-    phy_blk.y |= reverse_byte((wt_ise.z >> 16) & 0xFFu) << 8;
-    phy_blk.y |= reverse_byte((wt_ise.z >> 24) & 0xFFu);
-
-    phy_blk.x = blockmode;
-
-    if (partition_count > 1u) {
-        uint endpoint_offset = 29u;
-        uint cem_bits = 6u;
-        uint bitpos = 11u;
-        orbits8_ptr(&phy_blk, &bitpos, partition_count - 1u, 2u);
-        orbits8_ptr(&phy_blk, &bitpos, partition_index & 63u, 6u);
-        orbits8_ptr(&phy_blk, &bitpos, partition_index >> 6, 4u);
-        orbits8_ptr(&phy_blk, &bitpos, color_endpoint_mode << 2, 6u);
-
-        phy_blk.x |= (ep_ise.x & 0x7u) << 29;
-        phy_blk.y |= ((ep_ise.x >> 3) & 0x1FFFFFFFu);
-        phy_blk.y |= (ep_ise.y & 0x7u) <<29;
-        phy_blk.z |= ((ep_ise.y >> 3) & 0x1FFFFFFFu);
-    } else {
-        phy_blk.x |= (color_endpoint_mode & 0xFu) << 13;
-        phy_blk.x |= (ep_ise.x & 0x7FFFu) << 17;
-        phy_blk.y |= ((ep_ise.x >> 15) & 0x1FFFFu);
-        phy_blk.y |= (ep_ise.y & 0x7FFFu) << 17;
-        phy_blk.z |= ((ep_ise.y >> 15) & 0x1FFFFu);
-    }
-
-    return phy_blk;
+    short weight0 = BLOCK_MAX_WEIGHTS_SHORT - weight;
+    return (ep0 * weight0 + ep1 * weight) / BLOCK_MAX_WEIGHTS_FLOAT;
 }
 
-uint assemble_blockmode(uint weight_quantmethod, bool is_dual_plane)
+uint4 WeightIse(float4* texels, uint weightRange, float4 endPoint[END_POINT_NUM],
+    short weightQuantmethod, float* errval)
 {
-    uint a = (uint)((Y_GRIDS - 2) & 0x3);
-    uint b = (uint)((X_GRIDS - 4) & 0x3);
-
-    uint d = is_dual_plane ? 1u : 0u;
-
-    uint h = (weight_quantmethod < 6u) ? 0u : 1u;
-    uint r = (weight_quantmethod % 6u) + 2u;
-
-    uint blockmode = (r >> 1) & (uint)(0x3);
-    blockmode |= (r & (uint)(0x1)) << 4u;
-    blockmode |= (a & (uint)(0x3)) << 5u;
-    blockmode |= (b & (uint)(0x3)) << 7u;
-    blockmode |= h << 9u;
-    blockmode |= d << 10u;
-    return blockmode;
-}
-
-uint4 endpoint_ise(float4* ep0, float4* ep1, short endpoint_quantmethod, bool has_alpha)
-{
-    short ep_quantized[8];
-    encode_color_normal(endpoint_quantmethod, *ep0, *ep1, ep_quantized);
-    decode_color(endpoint_quantmethod, ep_quantized, ep0, ep1);
-
-    if (!has_alpha) {
-        ep_quantized[6] = 0;
-        ep_quantized[7] = 0;
-    }
-
-    uint4 ep_ise = (uint4)(0);
-    uint bitpos = 0u;
-    bise_endpoints(ep_quantized, endpoint_quantmethod, &ep_ise, has_alpha, &bitpos);
-    return ep_ise;
-}
-
-float4 cal_texel(short weight, float4 ep0, float4 ep1) {
-    short weight0 = 64 - weight;
-    return (ep0 * weight0 + ep1 * weight) / 64.0f;
-}
-
-uint4 weight_ise_2plane(float4* texels, uint weight_range, float4 ep0,
-    float4 ep1, short weight_quantmethod, int component_plane2, float* errval)
-{
-    int i = 0;
-    short wt_quantized[2 * X_GRIDS * Y_GRIDS];
-    calculate_quantized_weights_2plane(texels, weight_range, ep0, ep1, wt_quantized, component_plane2);
-
-    float sum_err = 0.0f;
-    for (i = 0; i < 2 * X_GRIDS * Y_GRIDS; ++i) {
-        short w = weight_quantmethod * WEIGHT_QUANTIZE_NUM + wt_quantized[i];
-        wt_quantized[i] = scramble_table[w];
-        bool odd = (i % 2 == 1);
-        if (odd) {
-            short w_even = weight_quantmethod * WEIGHT_QUANTIZE_NUM + wt_quantized[i - 1];
-            w = weight_quantmethod * WEIGHT_QUANTIZE_NUM + wt_quantized[i];
-            short wt = weight_unquant[w_even];
-            short wt1 = weight_unquant[w];
-            float4 new_texel = cal_texel(wt, ep0, ep1);
-            float4 tex = cal_texel(wt1, ep0, ep1);
-            if (component_plane2 == 0) {
-                new_texel.x = tex.x;
-            } else if (component_plane2 == 1) {
-                new_texel.y = tex.y;
-            } else if (component_plane2 == 2) {
-                new_texel.z = tex.z;
-            } else if (component_plane2 == 3) {
-                new_texel.w = tex.w;
-            }
-            float4 curTexel = texels[i >> 2];
-            float4 diff = new_texel - curTexel;
-            sum_err += dot(diff, diff);
-        }
-    }
-    *errval = sum_err;
-
-    uint4 wt_ise = (uint4)(0);
-    uint bitpos = bise_weights_2plane(wt_quantized, (int)(weight_quantmethod), &wt_ise);
-    component_plane2 = ((component_plane2 >> 1) & 0x3) | ((component_plane2 << 1) & 0x3);
-    orbits8_ptr(&wt_ise, &bitpos, (uint)(component_plane2), 2u);
-    return wt_ise;
-}
-
-uint4 weight_ise(float4* texels, uint weight_range, float4 ep0, float4 ep1, short weight_quantmethod, float* errval)
-{
-    int i = 0;
-    short wt_quantized[X_GRIDS * Y_GRIDS];
-    calculate_quantized_weights(texels, weight_range, ep0, ep1, wt_quantized);
-
-    float sum_err = 0.0f;
-    for (i = 0; i < X_GRIDS * Y_GRIDS; ++i) {
-        short w = weight_quantmethod * WEIGHT_QUANTIZE_NUM + wt_quantized[i];
-        wt_quantized[i] = scramble_table[w];
-        w = weight_quantmethod * WEIGHT_QUANTIZE_NUM + wt_quantized[i];
-        short wt = weight_unquant[w];
-        float4 new_texel = cal_texel(wt, ep0, ep1);
+    int i = START_INDEX;
+    short wtQuantized[X_GRIDS * Y_GRIDS];
+    CalculateQuantizedWeights(texels, weightRange, endPoint, wtQuantized);
+    float sumErr = FLOAT_ZERO;
+    for (i = START_INDEX; i < X_GRIDS * Y_GRIDS; ++i) {
+        short w = weightQuantmethod * WEIGHT_QUANTIZE_NUM + wtQuantized[i];
+        wtQuantized[i] = g_scrambleTable[w];
+        w = weightQuantmethod * WEIGHT_QUANTIZE_NUM + wtQuantized[i];
+        short wt = g_weightUnquant[w];
+        float4 new_texel = CalTexel(wt, endPoint[EP0_INDEX], endPoint[EP1_INDEX]);
         float4 diff = new_texel - texels[i];
-        sum_err += dot(diff, diff);
+        sumErr += dot(diff, diff);
     }
-    *errval = sum_err;
-    uint4 wt_ise = (uint4)(0);
-    bise_weights(wt_quantized, (int)(weight_quantmethod), &wt_ise);
-    return wt_ise;
-}
-uint hash52(uint inp) {
-    inp ^= inp >> 15;
-
-    inp *= 0xEEDE0891u;
-    inp ^= (inp >> 5) & 0x7FFFFFFu;
-    inp += inp << 16;
-    inp ^= (inp >> 7) & 0x1FFFFFFu;
-    inp ^= (inp >> 3) & 0x1FFFFFFFu;
-    inp ^= inp << 6;
-    inp ^= (inp >> 17) & 0x7FFFu;
-    return inp;
+    *errval = sumErr;
+    uint4 wtIse = (uint4)(UINT_ZERO);
+    BiseWeights(wtQuantized, (int)(weightQuantmethod), &wtIse);
+    return wtIse;
 }
 
-__constant float cluster_cutoffs[9] = {
-    0.626220f, 0.932770f, 0.275454f,
-    0.318558f, 0.240113f, 0.009190f,
-    0.347661f, 0.731960f, 0.156391f
-};
-
-float try_encode(float4* texels, float4 texels_mean, bool has_alpha, int dual_plane_component,
-uint4* ep_ise, uint4* wt_ise, short3* best_blockmode) {
+float TryEncode(float4* texels, float4 texelsMean, uint4* epIse, uint4* wtIse, short3* bestBlockmode)
+{
     float errval;
-    if (has_alpha) {
-        *best_blockmode = (short3)(QUANT_6, QUANT_256, 6);
-    } else {
-        *best_blockmode = (short3)(QUANT_12, QUANT_256, 12);
-    }
-    short weight_quantmethod = (*best_blockmode).x;
-    short endpoint_quantmethod = (*best_blockmode).y;
-    short weight_range = (*best_blockmode).z;
-
-    float4 ep0, ep1;
-    max_accumulation_pixel_direction(texels, texels_mean, &ep0, &ep1, has_alpha);
-
-    *ep_ise = endpoint_ise(&ep0, &ep1, endpoint_quantmethod, has_alpha);
-    *wt_ise = weight_ise(texels, weight_range - 1u, ep0, ep1, weight_quantmethod, &errval);
+    bool hasAlpha = true;
+    *bestBlockmode = (short3)(QUANT_6, QUANT_256, WEIGHT_RANGE_6);
+    short weightQuantmethod = (*bestBlockmode).x;
+    short endpointQuantmethod = (*bestBlockmode).y;
+    short weightRange = (*bestBlockmode).z;
+    float4 ep0;
+    float4 ep1;
+    float4 endPoint[END_POINT_NUM];
+    MaxAccumulationPixelDirection(texels, texelsMean, &ep0, &ep1, hasAlpha);
+    *epIse = EndpointIse(&ep0, &ep1, endpointQuantmethod, hasAlpha);
+    endPoint[EP0_INDEX] = ep0;
+    endPoint[EP1_INDEX] = ep1;
+    *wtIse = WeightIse(texels, weightRange - UINT_ONE, endPoint, weightQuantmethod, &errval);
     return errval;
 }
 
-uint4 encode_block(float4* texels, float4 texels_mean,
-    int blockID, __global PartInfo* global_parts, __global uint* errs)
+uint4 EncodeBlock(float4* texels, float4 texelsMean,
+    int blockID, __global PartInfo* globalParts, __global uint* errs)
 {
-    bool has_alpha = true;
-    bool is_dual_plane = false;
-    float errval = 10000000.0f;
-    float tmp_err_val;
-    int part_count = 1;
-    int part_index = 0;
+    bool hasAlpha = true;
+    bool isDualPlane = false;
+    float errval = 10000000.0f; // the errval is initialized to 10000000.0f
 
-    uint4 ep_ise, wt_ise, tmp_ep_ise, tmp_wt_ise;
-    short3 best_blockmode, tmp_best_blockmode;
-    float threshhold = 10000.0f;
-    errval = try_encode(texels, texels_mean,
-        has_alpha, 0, &ep_ise, &wt_ise, &best_blockmode);
+    uint4 epIse, wtIse;
+    short3 bestBlockmode, tmpBestBlockMode;
+    errval = TryEncode(texels, texelsMean, &epIse, &wtIse, &bestBlockmode);
 
-    uint blockmode = assemble_blockmode(best_blockmode.x, is_dual_plane);
-    uint color_endpoint_mode;
-    if (has_alpha) {
-        color_endpoint_mode = CEM_LDR_RGBA_DIRECT;
+    uint blockMode = AssembleBlockmode(bestBlockmode.x, isDualPlane);
+    uint ColorEndpointMode;
+    if (hasAlpha) {
+        ColorEndpointMode = CEM_LDR_RGBA_DIRECT;
     } else {
-        color_endpoint_mode = CEM_LDR_RGB_DIRECT;
+        ColorEndpointMode = CEM_LDR_RGB_DIRECT;
     }
     errs[blockID] = (uint)(errval);
-    return
-        assemble_block(blockmode, color_endpoint_mode, (uint)(part_count), (uint)(part_index), ep_ise, wt_ise);
+    return AssembleBlock(blockMode, ColorEndpointMode, epIse, wtIse);
 }
 
-kernel void astc(read_only image2d_t inputImage, __global uint4* astc_arr,
-    __global PartInfo* global_parts, __global uint* errs) {
-    int uWidth = get_global_size(0);
-    int uHeight = get_global_size(1);
-    const int2 local_id = (int2) (get_local_id(0), get_local_id(1));
-    if (local_id.x == 0 && local_id.y == 0) {
-        const int2 pos = (int2)(get_global_id(0), get_global_id(1));
-        const int2 group = (int2)(get_group_id(0), get_group_id(1));
-        int BlockNumX = (uWidth + DIM - 1)/DIM;
-        int BlockNumY = (uHeight + DIM - 1)/DIM;
-
-        int BlockID = group.y * BlockNumX + group.x;
-        float4 texels[BLOCK_SIZE];
-        float4 texel_mean = (float4)(0);
-        for (int i = 0; i < DIM; ++i) {
-            for (int j = 0; j < DIM; ++j) {
-                int2 pixelPos = pos + (int2)(j, i);
-                if (pixelPos.x > uWidth || pixelPos.y > uHeight) {
-                    texels[i * DIM + j] = (float4)(255.0f);
-                    continue;
-                }
-                float4 texel = read_imagef(inputImage, pixelPos);
-                texels[i * DIM + j] = texel * 255.0f;
-                texel_mean += texel * 255.0f;
+void GotTexelFromImage(read_only image2d_t inputImage, float4 texels[BLOCK_SIZE],
+    int width, int height, float4 *texelMean)
+{
+    const int2 pos = (int2)(get_global_id(INT_ZERO), get_global_id(INT_ONE));
+    for (int i = START_INDEX; i < DIM; ++i) {
+        for (int j = START_INDEX; j < DIM; ++j) {
+            int2 pixelPos = pos + (int2)(j, i);
+            if (pixelPos.x > width || pixelPos.y > height) {
+                texels[i * DIM + j] = (float4)(PIXEL_MAX_VALUE);
+                continue;
             }
+            float4 texel = read_imagef(inputImage, pixelPos);
+            texels[i * DIM + j] = texel * PIXEL_MAX_VALUE;
+            *texelMean += texel * PIXEL_MAX_VALUE;
         }
-        texel_mean = texel_mean / (float)(BLOCK_SIZE);
-        astc_arr[BlockID] = encode_block(texels, texel_mean, BlockID, global_parts, errs);
+    }
+}
+
+kernel void AstcCl(read_only image2d_t inputImage, __global uint4* astcArr,
+    __global PartInfo* globalParts, __global uint* errs) {
+    int width = get_global_size(INT_ZERO);
+    int height = get_global_size(INT_ONE);
+    const int2 local_id = (int2)(get_local_id(INT_ZERO), get_local_id(INT_ONE));
+    if (local_id.x == INT_ZERO && local_id.y == INT_ZERO) {
+        int blockNumX = (width + DIM - INT_ONE) / DIM;
+        int blockNumY = (height + DIM - INT_ONE) / DIM;
+        const int2 group = (int2)(get_group_id(INT_ZERO), get_group_id(INT_ONE));
+        int blockID = group.y * blockNumX + group.x;
+        float4 texels[BLOCK_SIZE];
+        float4 texelMean = (float4)(FLOAT_ZERO);
+        GotTexelFromImage(inputImage, texels, width, height, &texelMean);
+        texelMean = texelMean / ((float)(BLOCK_SIZE));
+        astcArr[blockID] = EncodeBlock(texels, texelMean, blockID, globalParts, errs);
     }
 }
 )";
 
+constexpr int32_t INT32_ZERO = 0;
+constexpr int32_t INT32_ONE = 1;
+constexpr uint8_t Z_DIM_NUM = 1;
+constexpr size_t READ_OFFSET = 0;
 std::shared_ptr<ImageCompressor> ImageCompressor::instance_ = nullptr;
 std::mutex ImageCompressor::instanceMutex_;
 std::shared_ptr<ImageCompressor> ImageCompressor::GetInstance()
@@ -1411,7 +1285,9 @@ std::shared_ptr<ImageCompressor> ImageCompressor::GetInstance()
 
 void ImageCompressor::Init()
 {
-    switch_  = true;
+    context_= nullptr;
+    kernel_ = nullptr;
+    switch_ = true;
     if (switch_) {
         clOk_ = OHOS::InitOpenCL();
         if (!clOk_) {
@@ -1433,8 +1309,8 @@ bool ImageCompressor::CanCompress()
 cl_program ImageCompressor::LoadShader(cl_context context)
 {
     cl_int err;
-    sourceSize_ = strlen(g_programSource) + 1;
-    cl_program p = clCreateProgramWithSource(context, 1, &g_programSource, &sourceSize_, &err);
+    sourceSize_ = strlen(g_programSource) + 1; // '\0' occupies 1 byte
+    cl_program p = clCreateProgramWithSource(context, 1, &g_programSource, &sourceSize_, &err); // default 1 count
     if (err || (!p)) {
         HiLog::Error(LABEL, "clCreateProgramWithSource error !");
         return nullptr;
@@ -1456,11 +1332,11 @@ std::string ImageCompressor::ReadSourceCode(const char *fileName)
     }
 
     std::string content;
-    file.seekg(0, std::fstream::end);
+    file.seekg(INT32_ZERO, std::fstream::end);
     content.resize(file.tellg());
-    file.seekg(0, std::fstream::beg);
+    file.seekg(INT32_ZERO, std::fstream::beg);
 
-    file.read(&content[0], content.size());
+    file.read(&content[INT32_ZERO], content.size());
     file.close();
 
     sourceSize_ = content.size();
@@ -1471,23 +1347,23 @@ bool ImageCompressor::CreateKernel()
 {
     if (!context_ || !kernel_) {
         cl_int err;
-        cl_platform_id platform_id;
-        cl_device_id device_id;
-        clGetPlatformIDs(1, &platform_id, NULL);
-        if (!platform_id) {
+        cl_platform_id platformID;
+        cl_device_id deviceID;
+        clGetPlatformIDs(1, &platformID, NULL); // 1 platform
+        if (!platformID) {
             HiLog::Error(LABEL, "clGetPlatformIDs err!");
             return false;
         }
-        clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-        if (!device_id) {
+        clGetDeviceIDs(platformID, CL_DEVICE_TYPE_GPU, 1, &deviceID, NULL); // 1 device
+        if (!deviceID) {
             HiLog::Error(LABEL, "clGetDeviceIDs error!");
             return false;
         }
-        context_ = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+        context_ = clCreateContext(0, 1, &deviceID, NULL, NULL, &err); // 0 indicates auto select platform; 1 device
         if (!context_) {
             HiLog::Error(LABEL, "clCreateContext error %{public}d !", err);
         }
-        queue_ = clCreateCommandQueueWithProperties(context_, device_id, 0, &err);
+        queue_ = clCreateCommandQueueWithProperties(context_, deviceID, 0, &err); // properties set to 0
         if (!queue_) {
             HiLog::Error(LABEL, "clCreateCommandQueueWithProperties error %{public}d !", err);
         }
@@ -1495,8 +1371,8 @@ bool ImageCompressor::CreateKernel()
         if (!program) {
             HiLog::Error(LABEL, "LoadShaderBin error !");
         }
-        clBuildProgram(program, 1, &device_id, compileOption_.c_str(), NULL, NULL);
-        kernel_ = clCreateKernel(program, "astc", &err);
+        clBuildProgram(program, 1, &deviceID, compileOption_.c_str(), NULL, NULL); // 1 device
+        kernel_ = clCreateKernel(program, "AstcCl", &err);
         if (!kernel_) {
             HiLog::Error(LABEL, "clCreateKernel error %{public}d !", err);
         }
@@ -1508,18 +1384,17 @@ bool ImageCompressor::CreateKernel()
         clOk_ = false;
         return false;
     }
-    refCount_++;
     return true;
 }
 
 void ImageCompressor::ReleaseResource()
 {
     clReleaseKernel(kernel_);
-    kernel_ = NULL;
+    kernel_ = nullptr;
     clReleaseCommandQueue(queue_);
-    queue_ = NULL;
+    queue_ = nullptr;
     clReleaseContext(context_);
-    context_ = NULL;
+    context_ = nullptr;
     instance_ = nullptr;
 }
 
@@ -1536,23 +1411,23 @@ void ImageCompressor::GenAstcHeader(uint8_t *buffer, uint8_t blockX, uint8_t blo
     *headInfo++ = (MAGIC_FILE_CONSTANT >> BIT_SHIFT_24BITS) & BYTES_MASK;
     *headInfo++ = static_cast<uint8_t>(blockX);
     *headInfo++ = static_cast<uint8_t>(blockY);
-    *headInfo++ = 1;
+    *headInfo++ = Z_DIM_NUM;
     *headInfo++ = dimX & BYTES_MASK;
-    *headInfo++ = (dimX >> BIT_SHIFT_8BITS)& BYTES_MASK;
-    *headInfo++ = (dimX >> BIT_SHIFT_16BITS)& BYTES_MASK;
+    *headInfo++ = (dimX >> BIT_SHIFT_8BITS) & BYTES_MASK;
+    *headInfo++ = (dimX >> BIT_SHIFT_16BITS) & BYTES_MASK;
     *headInfo++ = dimY & BYTES_MASK;
-    *headInfo++ = (dimY >> BIT_SHIFT_8BITS)& BYTES_MASK;
-    *headInfo++ = (dimY >> BIT_SHIFT_16BITS)& BYTES_MASK;
-    *headInfo++ = 1 & BYTES_MASK;
-    *headInfo++ = (1 >> BIT_SHIFT_8BITS) & BYTES_MASK;
-    *headInfo++ = (1 >> BIT_SHIFT_16BITS) & BYTES_MASK;
+    *headInfo++ = (dimY >> BIT_SHIFT_8BITS) & BYTES_MASK;
+    *headInfo++ = (dimY >> BIT_SHIFT_16BITS) & BYTES_MASK;
+    *headInfo++ = Z_DIM_NUM & BYTES_MASK;
+    *headInfo++ = (Z_DIM_NUM >> BIT_SHIFT_8BITS) & BYTES_MASK;
+    *headInfo++ = (Z_DIM_NUM >> BIT_SHIFT_16BITS) & BYTES_MASK;
 }
 
-void GetMaxAndSumVal(int32_t &numBlocks, uint32_t *blockErrs, uint32_t &max_val, uint32_t &sum_val)
+void GetMaxAndSumVal(size_t &numBlocks, uint32_t *blockErrs, uint32_t &maxVal, uint32_t &sumVal)
 {
-    for (int32_t i = 0; i < numBlocks; i++) {
-        sum_val += blockErrs[i];
-        max_val = fmax(max_val, blockErrs[i]);
+    for (size_t i = INT32_ZERO; i < numBlocks; i++) {
+        sumVal += blockErrs[i];
+        maxVal = fmax(maxVal, blockErrs[i]);
     }
 }
 
@@ -1560,115 +1435,82 @@ bool ImageCompressor::TextureEncodeCL(uint8_t *data, int32_t strideIn, int32_t w
 {
     int32_t stride = strideIn >> STRIDE_RGBA_LOG2;
     std::lock_guard<std::mutex> lock(instanceMutex_);
-    if (!clOk_ || width <= 0 || height <= 0 || !buffer || !data || (stride < width)) {
+    if (!clOk_ || width <= INT32_ZERO || height <= INT32_ZERO || !buffer || !data || (stride < width)) {
         HiLog::Error(LABEL, "TextureEncodeCL input parameters error");
-        return  false;
+        return false;
     }
     GenAstcHeader(buffer, DIM, DIM, width, height);
     cl_int err;
-    int32_t blockX = (width + DIM - 1) / DIM;
-    int32_t blockY = (height + DIM - 1) / DIM;
-    int32_t numBlocks = blockX * blockY;
+    size_t numBlocks = ((width + DIM - INT32_ONE) / DIM) * ((height + DIM - INT32_ONE) / DIM);
     size_t local[] = {DIM, DIM};
-
     size_t global[GLOBAL_WH_NUM_CL];
-    global[0] = (width % local[0] == 0 ? width : (width + local[0] - width % local[0]));
-    global[1] = (height % local[1] == 0 ? height : (height + local[1] - height % local[1]));
-
-    size_t astc_size = numBlocks * DIM * DIM;
-
-    cl_image_format image_format = { CL_RGBA, CL_UNORM_INT8 };
-    cl_image_desc desc = { CL_MEM_OBJECT_IMAGE2D, stride, height };
+    global[INT32_ZERO] =
+        (width % local[INT32_ZERO] == INT32_ZERO ? width : (width + local[INT32_ZERO] - width % local[INT32_ZERO]));
+    global[INT32_ONE] =
+        (height % local[INT32_ONE] == INT32_ZERO ? height : (height + local[INT32_ONE] - height % local[INT32_ONE]));
+    size_t astcSize = numBlocks * DIM * DIM;
+    cl_image_format imageFormat = {CL_RGBA, CL_UNORM_INT8};
+    cl_image_desc desc = {CL_MEM_OBJECT_IMAGE2D, stride, height};
     cl_mem inputImage =
-        clCreateImage(context_, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &image_format, &desc, data, &err);
-    cl_mem astcResult = clCreateBuffer(context_, CL_MEM_ALLOC_HOST_PTR, astc_size, NULL, &err);
+        clCreateImage(context_, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, &imageFormat, &desc, data, &err);
+    cl_mem astcResult = clCreateBuffer(context_, CL_MEM_ALLOC_HOST_PTR, astcSize, NULL, &err);
     cl_mem partInfos =
-        clCreateBuffer(context_, CL_MEM_COPY_HOST_PTR, sizeof(PartInfo) * parts_.size(), &parts_[0], &err);
-
-    uint32_t *blockErrs = new uint32_t[numBlocks] {0};
+        clCreateBuffer(context_, CL_MEM_COPY_HOST_PTR, sizeof(PartInfo) * parts_.size(), &parts_[INT32_ZERO], &err);
+    uint32_t *blockErrs = new uint32_t[numBlocks] {0}; // initialize to 0
     if (!blockErrs) {
         HiLog::Error(LABEL, "TextureEncodeCL blockErrs new failed");
         return false;
     }
     cl_mem clErrs = clCreateBuffer(context_, CL_MEM_USE_HOST_PTR, sizeof(uint32_t) * numBlocks, blockErrs, &err);
-
-    int32_t kernelId = 0;
+    int32_t kernelId = INT32_ZERO;
     err |= clSetKernelArg(kernel_, kernelId++, sizeof(cl_mem), &inputImage);
     err |= clSetKernelArg(kernel_, kernelId++, sizeof(cl_mem), &astcResult);
     err |= clSetKernelArg(kernel_, kernelId++, sizeof(cl_mem), &partInfos);
     err |= clSetKernelArg(kernel_, kernelId++, sizeof(cl_mem), &clErrs);
-
-    err = clEnqueueNDRangeKernel(queue_, kernel_, GLOBAL_WH_NUM_CL, NULL, global, local, 0, NULL, NULL);
-
+    err = clEnqueueNDRangeKernel(queue_, kernel_, GLOBAL_WH_NUM_CL, NULL, global, local, 0, NULL, NULL); // 0 wait
     clFinish(queue_);
-
-    uint32_t max_val = 0, sum_val = 0;
-    err = clEnqueueReadBuffer(queue_, clErrs, CL_TRUE, 0, sizeof(uint32_t) * numBlocks, blockErrs, 0, NULL, NULL);
-    GetMaxAndSumVal(numBlocks, blockErrs, max_val, sum_val);
+    uint32_t maxVal = 0;
+    uint32_t sumVal = 0;
+    GetMaxAndSumVal(numBlocks, blockErrs, maxVal, sumVal);
     clReleaseMemObject(inputImage);
     clReleaseMemObject(partInfos);
     clReleaseMemObject(clErrs);
     delete[] blockErrs;
-
-    clEnqueueReadBuffer(queue_, astcResult, CL_TRUE, 0, astc_size, buffer + TEXTURE_HEAD_BYTES, 0, NULL, NULL);
+    clEnqueueReadBuffer(queue_, astcResult, CL_TRUE,
+        READ_OFFSET, astcSize, buffer + TEXTURE_HEAD_BYTES, 0, NULL, NULL);
     clReleaseMemObject(astcResult);
-
     return true;
 }
 
-std::function<void()> ImageCompressor::ScheduleReleaseTask()
-{
-    std::function<void()> task = [this]() {
-        if (refCount_ > 0 && clOk_) {
-            refCount_--;
-            if (refCount_ <= 0) {
-                this->ReleaseResource();
-
-                std::ofstream saveFile(recordsPath_);
-                if (!saveFile.is_open()) {
-                    HiLog::Error(LABEL, "ScheduleReleaseTask saveFile is_open failed");
-                    return;
-                }
-                std::lock_guard<std::mutex> mLock(recordsMutex_);
-                for (auto s : failedRecords_) {
-                    saveFile << s << "\n";
-                }
-                saveFile.close();
-            }
-        }
-    };
-    return task;
-}
-
-bool ImageCompressor::InitPartitionInfo(PartInfo *partInfos, int32_t part_index, int32_t part_count)
+bool ImageCompressor::InitPartitionInfo(PartInfo *partInfos, int32_t partIndex, int32_t partCount)
 {
     if (partInfos == nullptr) {
         HiLog::Error(LABEL, "InitPartitionInfo partInfos is nullptr");
         return false;
     }
-    int32_t texIdx = 0;
-    int32_t counts[PARTITION_COUNT_4] = {0};
-    for (int32_t y = 0; y < DIM; y++) {
-        for (int32_t x = 0; x < DIM; x++) {
-            int32_t part = AstcUtils::SelectPartition(part_index, x, y, part_count, true);
-            partInfos->bitmaps[part] |= 1u << texIdx;
+    int32_t texIdx = INT32_ZERO;
+    int32_t counts[PARTITION_COUNT_4] = {0, 0, 0, 0};
+    for (int32_t y = INT32_ZERO; y < DIM; y++) {
+        for (int32_t x = INT32_ZERO; x < DIM; x++) {
+            int32_t part = AstcUtils::SelectPartition(partIndex, x, y, partCount, true);
+            partInfos->bitmaps[part] |= 1u << texIdx; // 1u flag current position
             counts[part]++;
             texIdx++;
         }
     }
-    int32_t realPartCount = 0;
-    if (counts[0] == 0) {
-        realPartCount = 0;
-    } else if (counts[1] == 0) {
-        realPartCount = 1;
-    } else if (counts[PARTITION_COUNT_2] == 0) {
+    int32_t realPartCount = INT32_ZERO;
+    if (counts[INT32_ZERO] == INT32_ZERO) {
+        realPartCount = INT32_ZERO;
+    } else if (counts[PARTITION_COUNT_1] == INT32_ZERO) {
+        realPartCount = PARTITION_COUNT_1;
+    } else if (counts[PARTITION_COUNT_2] == INT32_ZERO) {
         realPartCount = PARTITION_COUNT_2;
-    } else if (counts[PARTITION_COUNT_3] == 0) {
+    } else if (counts[PARTITION_COUNT_3] == INT32_ZERO) {
         realPartCount = PARTITION_COUNT_3;
     } else {
         realPartCount = PARTITION_COUNT_4;
     }
-    if (realPartCount == part_count) {
+    if (realPartCount == partCount) {
         return true;
     }
     return false;
@@ -1677,8 +1519,8 @@ bool ImageCompressor::InitPartitionInfo(PartInfo *partInfos, int32_t part_index,
 void ImageCompressor::InitPartition()
 {
     parts_.clear();
-    int32_t arrSize = sizeof(partitions_) / sizeof(partitions_[0]);
-    for (int32_t i = 0; i < arrSize; i++) {
+    int32_t arrSize = sizeof(partitions_) / sizeof(partitions_[INT32_ZERO]);
+    for (int32_t i = INT32_ZERO; i < arrSize; i++) {
         PartInfo p = {};
         if (InitPartitionInfo(&p, partitions_[i], PARTITION_COUNT_2)) {
             p.partid = partitions_[i];

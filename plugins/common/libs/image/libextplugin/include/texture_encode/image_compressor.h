@@ -50,7 +50,6 @@ public:
     bool CanCompress();
     bool CreateKernel();
     bool TextureEncodeCL(uint8_t *data, int32_t stride, int32_t width, int32_t height, uint8_t *buffer);
-    std::function<void()> ScheduleReleaseTask();
     void ReleaseResource();
 private:
     static std::shared_ptr<ImageCompressor> instance_;
@@ -63,7 +62,6 @@ private:
 
     static const int32_t maxSize_ = MAX_WIDTH_HEIGHT;
 
-    std::atomic<int32_t> refCount_;
     cl_context context_;
     cl_command_queue queue_;
     cl_kernel kernel_;
