@@ -139,7 +139,7 @@ namespace OHOS {
             return 0;
         }
 
-        void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
+        void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer) __attribute__((no_sanitize("cfi")))
         {
             std::lock_guard<std::mutex> guard(imageReceiverMutex_);
             if (buffer != nullptr) {
