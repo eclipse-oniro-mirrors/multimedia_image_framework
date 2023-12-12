@@ -1321,5 +1321,88 @@ HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
     pngDecoder->ninePatch_.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch001 end";
 }
+/**
+ * @tc.name: DecodeHeader001
+ * @tc.desc: Test of DecodeHeader
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeHeader001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeHeader001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    pngDecoder->state_ = PngDecodingState::SOURCE_INITED;
+    uint32_t ret = pngDecoder->DecodeHeader();
+    ASSERT_EQ(ret, SUCCESS);
+    pngDecoder->pngImageInfo_.width = 0;
+    pngDecoder->pngImageInfo_.height = 0;
+    ret = pngDecoder->DecodeHeader();
+    ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeHeader001 end";
+}
+/**
+ * @tc.name: ReadUserChunk001
+ * @tc.desc: Test of ReadUserChunk
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, ReadUserChunk001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: ReadUserChunk001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_structp png_ptr = nullptr;
+    png_unknown_chunkp chunk = nullptr;
+    uint32_t ret = pngDecoder->ReadUserChunk(png_ptr, chunk);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: ReadUserChunk001 end";
+}
+/**
+ * @tc.name: GetInterlacedRows001
+ * @tc.desc: Test of GetInterlacedRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetInterlacedRows001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DataStreamBuffer readData;
+    png_structp pngPtr = nullptr;
+    png_bytep row = nullptr;
+    png_uint_32 rowNum = 0;
+    int pass = 0;
+    pngDecoder->GetInterlacedRows(pngPtr, row, rowNum, pass);
+    pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+        nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    pngDecoder->GetInterlacedRows(pngPtr, row, rowNum, pass);
+    ASSERT_NE(pngPtr, nullptr);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows001 end";
+}
+/**
+ * @tc.name: GetImageInfo001
+ * @tc.desc: Test of ReadUserChunk
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetImageInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageInfo001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    PngImageInfo info;
+    bool ret = pngDecoder->GetImageInfo(info);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageInfo001 end";
+}
+/**
+ * @tc.name: PngWarning001
+ * @tc.desc: Test of PngWarning
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PngWarning001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarning001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_const_charp message = nullptr;
+    png_structp pngPtr = nullptr;
+    pngDecoder->PngWarning(pngPtr, message);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PngWarning001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
