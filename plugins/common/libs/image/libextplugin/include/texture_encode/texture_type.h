@@ -38,7 +38,7 @@ typedef struct AstcEncoderInfo {
     astcenc_swizzle swizzle_;
     uint8_t* data_out_;
     astcenc_error error_;
-#if defined(QUALITY_CONTROL)
+#if defined(QUALITY_CONTROL) && (QUALITY_CONTROL == 1)
     bool calQualityEnable;
     int32_t *mse[RGBA_COM + 1];
 #endif
