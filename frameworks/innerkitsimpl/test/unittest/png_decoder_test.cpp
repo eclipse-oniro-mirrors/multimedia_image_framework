@@ -1274,6 +1274,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
+    pngDecoder->state_ = PngDecodingState:: SOURCE_INITED;
     bool ret = pngDecoder->FinishOldDecompress();
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress001 end";
