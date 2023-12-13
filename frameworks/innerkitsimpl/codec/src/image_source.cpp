@@ -1194,7 +1194,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
 
     if (sourceStreamPtr_ == nullptr) {
-        HiLog::Error(LABEL,"[ImageSource]sourceStreamPtr_ is null");
+        HiLog::Error(LABEL, "[ImageSource]sourceStreamPtr_ is null");
         return ERR_MEDIA_NULL_POINTER;
     }
 
