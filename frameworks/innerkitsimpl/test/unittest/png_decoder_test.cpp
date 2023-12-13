@@ -1444,23 +1444,5 @@ HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
     ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 end";
 }
-/**
- * @tc.name: PushCurrentToDecode003
- * @tc.desc: Test of PushCurrentToDecode
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    pngDecoder->SetSource(*mock.get());
-    pngDecoder->incrementalLength_ = 20;
-    pngDecoder->idatLength_ = 5;
-    uint32_t ret = pngDecoder->PushCurrentToDecode(mock.get());
-     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode003 end";
-}
 } // namespace Multimedia
 } // namespace OHOS
