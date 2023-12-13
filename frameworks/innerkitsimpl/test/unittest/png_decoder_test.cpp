@@ -1274,7 +1274,6 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    pngDecoder->state_ = PngDecodingState:: SOURCE_INITED;
     bool ret = pngDecoder->FinishOldDecompress();
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress001 end";
@@ -1444,6 +1443,20 @@ HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
     uint32_t ret = pngDecoder->PushAllToDecode(mock.get(), bufferSize, length);
     ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 end";
+}
+/**
+ * @tc.name: FinishOldDecompress003
+ * @tc.desc: Test of FinishOldDecompress
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, FinishOldDecompress003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    pngDecoder->state_ = PngDecodingState:: SOURCE_INITED;
+    bool ret = pngDecoder->FinishOldDecompress();
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
