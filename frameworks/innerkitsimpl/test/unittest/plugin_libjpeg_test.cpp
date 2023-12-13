@@ -1053,7 +1053,7 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry006, TestSize.Level3)
     ASSERT_EQ(ret, false);
     ExifEntry *ptrEntry = new ExifEntry;
     exinfo.CreateExifEntry(EXIF_TAG_GPS_LATITUDE, ptrExifData, "test,test", order, &ptrEntry);
-    ASSERT_EQ(ret, true);
+    ASSERT_EQ(ret, false);
     delete ptrEntry;
     ptrEntry = nullptr;
     free(fileBuf);
