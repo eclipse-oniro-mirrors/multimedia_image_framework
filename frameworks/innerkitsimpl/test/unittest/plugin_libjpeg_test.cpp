@@ -651,7 +651,7 @@ HWTEST_F(PluginLibJpegTest, exif_info034, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromIFD001 start";
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
-    byteorder.curPosition_ = 0
+    byteorder.curPosition_ = 0;
     byteorder.bufferLength_ = 20;
     byteorder.GetDataRangeFromIFD(EXIF_IFD_0);
     delete buf;
