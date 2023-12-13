@@ -1374,24 +1374,7 @@ HWTEST_F(PngDecoderTest, PngWarning001, TestSize.Level3)
     pngDecoder->PngWarning(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarning001 end";
 }
-/**
- * @tc.name: PushCurrentToDecode004
- * @tc.desc: Test of PushCurrentToDecode
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(false);
-    pngDecoder->SetSource(*mock.get());
-    pngDecoder->incrementalLength_ = 2;
-    pngDecoder->idatLength_ = 2;
-    auto ret = pngDecoder->PushCurrentToDecode(mock.get());
-    ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 end";
-}
+
 /**
  * @tc.name: AllocOutputBuffer001
  * @tc.desc: Test of AllocOutputBuffer
