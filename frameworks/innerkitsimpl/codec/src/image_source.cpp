@@ -1192,6 +1192,12 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         format = sourceInfo_.encodedFormat;
         return SUCCESS;
     }
+
+    if (sourceStreamPtr_ == nullptr) {
+        HiLog::Error(LABEL, "[ImageSource]sourceStreamPtr_ is null");
+        return ERR_MEDIA_NULL_POINTER;
+    }
+
     auto imageType = sourceStreamPtr_->Tell();
     uint32_t errorCode = ERR_IMAGE_DECODE_ABNORMAL;
     auto codec = DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *sourceStreamPtr_,
