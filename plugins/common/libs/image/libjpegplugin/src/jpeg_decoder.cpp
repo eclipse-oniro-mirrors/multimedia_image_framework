@@ -448,6 +448,15 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         HiLog::Error(LABEL, "decode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+
+    if (srcMgr_.inputStream->Seek(streamPosition_ - decodeInfo_.src->bytes_in_buffer)) {
+        auto dataPtr = srcMgr_.inputStream->GetDataPtr();
+        if (dataPtr) {
+            // sourceData_.data() maybe changed after IncrementalSourceStream::UpdateData(), so reset next_input_byte
+            decodeInfo_.src->next_input_byte = dataPtr + streamPosition_ - decodeInfo_.src->bytes_in_buffer;
+        }
+    }
+
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
 #if !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
