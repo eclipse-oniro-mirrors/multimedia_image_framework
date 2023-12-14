@@ -449,7 +449,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    if （srcMgr_.inputStream->Seek(streamPosition_ - decodeInfo_.src->bytes_in_buffer)）{
+    if  (srcMgr_.inputStream->Seek(streamPosition_ - decodeInfo_.src->bytes_in_buffer)) {
         auto dataPtr = srcMgr_.inputStream->GetDataPtr();
         if (dataPtr) {
             decodeInfo_.src->next_input_byte = dataPtr + streamPosition_ - decodeInfo_.src->bytes_in_buffer; //sourceData_.data() maybe changed after IncrementalSourceStream::UpdateData(), so reset next_input_byte address
