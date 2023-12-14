@@ -1033,6 +1033,30 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CreateExifEntry005
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry005 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "1.0";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_COMPRESSED_BITS_PER_PIXEL, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry005 end";
+}
+
+/**
  * @tc.name: CreateExifEntry006
  * @tc.desc: CreateExifEntry
  * @tc.type: FUNC
