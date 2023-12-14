@@ -162,5 +162,11 @@ size_t IncrementalSourceStream::GetStreamSize()
 {
     return dataSize_;
 }
+
+uint8_t *IncrementalSourceStream::GetDataPtr()
+{
+    return sourceData_.data();
+}
+
 } // namespace Media
 } // namespace OHOS

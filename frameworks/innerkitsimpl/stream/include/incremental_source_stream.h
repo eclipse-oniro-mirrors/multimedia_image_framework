@@ -39,7 +39,7 @@ public:
     uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted) override;
     bool IsStreamCompleted() override;
     size_t GetStreamSize() override;
-
+    uint8_t *GetDataPtr() override;
 private:
     explicit IncrementalSourceStream(IncrementalMode mode);
     IncrementalMode incrementalMode_;
