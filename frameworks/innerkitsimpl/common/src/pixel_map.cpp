@@ -1416,12 +1416,16 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-        int *fd = static_cast<int *>(context);
-        if (addr != nullptr) {
-            ::munmap(addr, size);
-        }
-        if (fd != nullptr) {
-            ::close(*fd);
+        if (context != nullptr) {
+            int *fd = static_cast<int *>(context);
+            if (addr != nullptr) {
+                ::munmap(addr, size);
+            }
+            if (fd != nullptr) {
+                ::close(*fd);
+            }
+            context = nullptr;
+            addr = nullptr;
         }
     } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (addr != nullptr) {
@@ -1429,7 +1433,11 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
             addr = nullptr;
         }
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
+        if (context != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
+        }
+        context = nullptr;
+        addr = nullptr;
     }
 #else
     if (addr != nullptr) {
