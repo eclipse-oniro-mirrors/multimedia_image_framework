@@ -646,7 +646,7 @@ HWTEST_F(PluginLibJpegTest, ReadShort003, TestSize.Level3)
  * @tc.desc: GetDataRangeFromIFD
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, exif_info034, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetDataRangeFromIFD001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetDataRangeFromIFD001 start";
     const uint8_t *buf = new uint8_t;
