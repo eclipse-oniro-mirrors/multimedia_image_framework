@@ -148,11 +148,11 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest005 start";
     auto ExifMakerNote = std::make_shared<ExifMakerNote::ExifItem>();
-    std::string value "111";
+    std::string value = "111";
     ExifContent *exifContent = nullptr;
     ExifMakerNote::ExifItem item;
     bool mock =true;
-    bool ret = ExifMakerNote->GetValue(value, ExifContent, item, mock);
+    bool ret = ExifMakerNote->GetValue(value, exifContent, item, mock);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest005 end";
 }
