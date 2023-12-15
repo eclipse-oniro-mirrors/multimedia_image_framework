@@ -28,6 +28,7 @@
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
+#include "pixel_map_from_surface.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
@@ -778,6 +779,10 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     HiLog::Debug(LABEL, "CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
+    
+    auto pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
+    context->rPixelMap = std::move(pixelMap);
+
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
     } else {
@@ -794,8 +799,7 @@ void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status s
     auto context = static_cast<PixelMapAsyncContext*>(data);
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        sPixelMap_ = context->rPixelMap;
-        status = napi_new_instance(env, constructor, NUM_0, nullptr, &result);
+        status = NewPixelNapiInstance(env, constructor, context->rPixelMap, result);
     }
 
     if (!IMG_IS_OK(status)) {
@@ -812,29 +816,29 @@ void setSurfaceId(const char *surfaceId, std::string &dst)
     dst = surfaceId;
 }
 
-static bool GetCharPointerArgument(napi_env env, napi_value value, std::string &dst)
+static std::string GetStringArgument(napi_env env, napi_value value)
 {
-    napi_status status;
+    std::string strValue = "";
     size_t bufLength = 0;
-    char *surfaceId = nullptr;
-    bool ret = false;
-    // get buffer length first and get buffer based on length
-    status = napi_get_value_string_utf8(env, value, nullptr, 0, &bufLength);
-    if (status == napi_ok && bufLength > 0) {
-        // Create a buffer and create std::string later from it
-        surfaceId = (char *) malloc((bufLength + 1) * sizeof(char));
-        if (surfaceId != nullptr) {
-            status = napi_get_value_string_utf8(env, value, surfaceId, bufLength + 1, &bufLength);
-            if (status == napi_ok) {
-                setSurfaceId(surfaceId, dst);
-                HiLog::Debug(LABEL, "CreatePixelMapFromSurface setSurfaceId success %{public}s", dst.c_str());
-                ret = true;
-            }
-            free(surfaceId);
-            surfaceId = nullptr;
+    napi_status status = napi_get_value_string_utf8(env, value, nullptr, NUM_0, &bufLength);
+    if (status == napi_ok && bufLength > NUM_0 && bufLength < PATH_MAX) {
+        char *buffer = reinterpret_cast<char *>(malloc((bufLength + NUM_1) * sizeof(char)));
+        if (buffer == nullptr) {
+            HiLog::Error(LABEL, "No memory");
+            return strValue;
+        }
+
+        status = napi_get_value_string_utf8(env, value, buffer, bufLength + NUM_1, &bufLength);
+        if (status == napi_ok) {
+            HiLog::Debug(LABEL, "Get Success");
+            strValue.assign(buffer, 0, bufLength + NUM_1);
+        }
+        if (buffer != nullptr) {
+            free(buffer);
+            buffer = nullptr;
         }
     }
-    return ret;
+    return strValue;
 }
 
 napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_info info)
@@ -861,10 +865,8 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "fail to napi_get_cb_info"));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    napi_value surfaceIdNapi;
-    napi_get_named_property(env, argValue[NUM_0], "surfaceId", &surfaceIdNapi);
-    bool ret = GetCharPointerArgument(env, surfaceIdNapi, asyncContext->surfaceId) &&
-        parseRegion(env, argValue[NUM_1], &(asyncContext->area.region));
+    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    bool ret = parseRegion(env, argValue[NUM_1], &(asyncContext->area.region));
     HiLog::Debug(LABEL, "CreatePixelMapFromSurface get data: %{public}d", ret);
     if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
         napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);

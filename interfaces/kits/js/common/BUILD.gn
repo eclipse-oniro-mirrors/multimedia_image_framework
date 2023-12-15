@@ -234,6 +234,7 @@ if (use_clang_ios) {
     } else {
       defines = []
       deps = [
+        "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image",
         "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
         "$image_subsystem/interfaces/innerkits:image_native",
@@ -244,7 +245,9 @@ if (use_clang_ios) {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_2d:color_space_object_convertor",
+      "graphic_2d:libgl",
       "graphic_2d:surface",
+      "graphic_2d:sync_fence",
       "hitrace:hitrace_meter",
       "ipc:ipc_napi",
       "napi:ace_napi",
