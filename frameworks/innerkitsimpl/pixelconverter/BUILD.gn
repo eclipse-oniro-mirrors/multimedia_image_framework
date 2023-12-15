@@ -169,7 +169,10 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
       deps += skia_platform
-      external_deps = [ "c_utils:utils" ]
+      external_deps = [
+        "c_utils:utils",
+        "graphic_2d:color_manager",
+      ]
     }
 
     #relative_install_dir = "module/multimedia"

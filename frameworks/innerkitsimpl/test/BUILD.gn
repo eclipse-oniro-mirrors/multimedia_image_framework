@@ -312,6 +312,7 @@ ohos_unittest("imageutilstest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:color_manager",
 
     #"hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -500,7 +501,10 @@ ohos_unittest("attrdatatest") {
     "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+  ]
 }
 
 ohos_unittest("convertertest") {
@@ -620,7 +624,10 @@ ohos_unittest("pluginsmanagersrcframeworktest") {
     "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+  ]
 }
 
 ohos_unittest("pngtest") {

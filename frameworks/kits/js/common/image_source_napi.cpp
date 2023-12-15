@@ -639,33 +639,6 @@ static PixelFormat ParsePixlForamt(int32_t val)
     return PixelFormat::UNKNOWN;
 }
 
-static bool ParseColorSpaceInfo(napi_env env, napi_value colorSpace, ColorSpaceInfo &colorSpaceInfo)
-{
-    if (env == nullptr || colorSpace == nullptr) {
-        HiLog::Error(LABEL, "Invalid args");
-        return false;
-    }
-    auto grColorSpacePtr = OHOS::ColorManager::GetColorSpaceByJSObject(env, colorSpace);
-    if (grColorSpacePtr == nullptr) {
-        HiLog::Error(LABEL, "Get colorspace by JS object failed");
-        return false;
-    }
-    auto skColorSpace = grColorSpacePtr->ToSkColorSpace();
-    if (skColorSpace == nullptr) {
-        HiLog::Error(LABEL, "To skcolorspace failed");
-        return false;
-    }
-    skcms_Matrix3x3 skMatrix;
-    skColorSpace->toXYZD50(&skMatrix);
-    for (int i = 0; i < ColorSpaceInfo::XYZ_SIZE; ++i) {
-        for (int j = 0; j < ColorSpaceInfo::XYZ_SIZE; ++j) {
-            colorSpaceInfo.xyz[i][j] = skMatrix.vals[i][j];
-        }
-    }
-    skColorSpace->transferFn(colorSpaceInfo.transferFn);
-    return true;
-}
-
 static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
 {
     uint32_t tmpNumber = 0;
@@ -699,11 +672,11 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
         HiLog::Debug(LABEL, "no SVGResize percentage");
     }
     napi_value nDesiredColorSpace = nullptr;
-    if (napi_get_named_property(env, root, "desiredColorSpace", &nDesiredColorSpace) == napi_ok &&
-        ParseColorSpaceInfo(env, nDesiredColorSpace, opts->desiredColorSpaceInfo)) {
-        opts->desiredColorSpaceInfo.isValidColorSpace = true;
+    if (napi_get_named_property(env, root, "desiredColorSpace", &nDesiredColorSpace) == napi_ok) {
+        opts->desiredColorSpaceInfo = OHOS::ColorManager::GetColorSpaceByJSObject(env, nDesiredColorSpace);
         HiLog::Debug(LABEL, "desiredColorSpace parse finished");
-    } else {
+    }
+    if (opts->desiredColorSpaceInfo == nullptr) {
         HiLog::Debug(LABEL, "no desiredColorSpace");
     }
     return true;
