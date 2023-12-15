@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MOCK_NATIVE_INCLUDE_ERRORS_H_
-#define MOCK_NATIVE_INCLUDE_ERRORS_H_
+#ifndef MOCK_NATIVE_INCLUDE_ERRORS_H
+#define MOCK_NATIVE_INCLUDE_ERRORS_H
 
 #include <cerrno>
 
@@ -113,4 +113,4 @@ enum {
 #define FAILED(errCode) ((errCode) != ERR_OK)
 } // namespace OHOS
 
-#endif  // MOCK_NATIVE_INCLUDE_ERRORS_H_
+#endif  // MOCK_NATIVE_INCLUDE_ERRORS_H

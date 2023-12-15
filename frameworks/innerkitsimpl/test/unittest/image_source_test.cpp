@@ -575,11 +575,11 @@ HWTEST_F(ImageSourceTest, IsIncrementalSource001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageSourceTest: IsIncrementalSource001 start";
 
-    bool isIncrementalSource_ = false;
+    bool isIncrementalSource = false;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    isIncrementalSource_ = imageSource->IsIncrementalSource();
+    isIncrementalSource = imageSource->IsIncrementalSource();
 
     GTEST_LOG_(INFO) << "ImageSourceTest: IsIncrementalSource001 end";
 }

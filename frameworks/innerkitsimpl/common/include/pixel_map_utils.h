@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H_
-#define FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H_
+#ifndef FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
+#define FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
 
 #include "image_type.h"
 #include "log_tags.h"
@@ -165,4 +165,4 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H_
+#endif // FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H

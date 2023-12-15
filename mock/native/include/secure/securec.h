@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H_
-#define MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H_
+#ifndef MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H
+#define MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H
 
 /* success */
 #ifndef EOK
@@ -77,4 +77,4 @@ extern "C" {
 }
 #endif /* __cplusplus */
 
-#endif // MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H_
+#endif // MOCK_NATIVE_INCLUDE_SECURE_SECUREC_H

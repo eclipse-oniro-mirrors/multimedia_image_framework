@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MOCK_NATIVE_INCLUDE_RWLOCK_H_
-#define MOCK_NATIVE_INCLUDE_RWLOCK_H_
+#ifndef MOCK_NATIVE_INCLUDE_RWLOCK_H
+#define MOCK_NATIVE_INCLUDE_RWLOCK_H
 
 #include <atomic>
 #include <thread>
@@ -96,4 +96,4 @@ private:
 };
 } // namespace Utils
 } // namespace OHOS
-#endif // MOCK_NATIVE_INCLUDE_RWLOCK_H_
+#endif // MOCK_NATIVE_INCLUDE_RWLOCK_H

@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H_
-#define MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H_
+#ifndef MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H
+#define MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H
 #include <string>
 #include "parcel.h"
 
@@ -29,4 +29,4 @@ public:
     int  ReadFileDescriptor();
 };
 } // namespace OHOS
-#endif // MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H_
+#endif // MOCK_NATIVE_INCLUDE_MESSAGE_PARCEL_H

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H_
-#define INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H_
+#ifndef INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H
+#define INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H
 
 #include <cstdint>
 #include "errors.h"
@@ -148,4 +148,4 @@ const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
 }  // namespace Media
 }  // namespace OHOS
-#endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H_
+#endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H
