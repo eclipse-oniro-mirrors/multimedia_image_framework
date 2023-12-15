@@ -12,17 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <gtest/gtest.h>
 #define private public
-#include "exif_maker_note.h"
+#include <gtest/gtest.h>
 #include <memory>
+#include <fcntl.h>
+#include "exif_maker_note.h"
 #include "exif_info.h"
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
-#include <fcntl.h>
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 
