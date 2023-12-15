@@ -1403,14 +1403,14 @@ HWTEST_F(PngDecoderTest, AllocOutputBuffer001, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     ImagePlugin::DecodeContext context;
     auto ret = pngDecoder->AllocOutputBuffer(context);
-     ASSERT_EQ(ret, nullptr);
+    ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer001 end";
 }
 
 /**
  * @tc.name: PushAllToDecode003
  * @tc.desc: Test of PushAllToDecode
- * @tc.type: FUNC  
+ * @tc.type: FUNC
  */
 HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
 {
@@ -1437,7 +1437,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress003 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    pngDecoder->state_ = PngDecodingState:: SOURCE_INITED;
+    pngDecoder->state_ = PngDecodingState::SOURCE_INITED;
     bool ret = pngDecoder->FinishOldDecompress();
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress003 end";
