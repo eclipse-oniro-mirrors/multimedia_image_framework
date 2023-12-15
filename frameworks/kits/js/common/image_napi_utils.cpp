@@ -123,7 +123,7 @@ napi_valuetype ImageNapiUtils::getType(napi_env env, napi_value root)
     return res;
 }
 
-static bool ParseSize(napi_env env, napi_value root, int32_t width, int32_t height)
+static bool ParseSize(napi_env env, napi_value root, int32_t& width, int32_t& height)
 {
     if (!GET_INT32_BY_NAME(root, "width", width) || !GET_INT32_BY_NAME(root, "height", height)) {
         return false;
