@@ -1084,5 +1084,180 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry006, TestSize.Level3)
     fileBuf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry006 end";
 }
+
+/**
+ * @tc.name: CreateExifEntry007
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry007 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test,test,test,test,test,test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LONGITUDE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ExifEntry *ptrEntry = nullptr;
+    ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LONGITUDE, ptrExifData, "test,test", order, &ptrEntry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry007 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry008
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry008 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test,test,test,test,test,test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LATITUDE_REF, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry008 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry009
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry009 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test,test,test,test,test,test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LONGITUDE_REF, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry009 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry0010
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry0010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0010 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test,test,test,test,test,test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_WHITE_BALANCE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FLASH, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0010 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry0011
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry0011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0011 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test/test/test/test/test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_APERTURE_VALUE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_APERTURE_VALUE, ptrExifData, "test/test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_DATE_TIME_ORIGINAL, ptrExifData, "test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_DATE_TIME, ptrExifData, "test", order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0011 end";
+}
+
+/**
+ * @tc.name: CreateExifEntry0012
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry0012, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0012 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test/test/test/test/test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_EXPOSURE_BIAS_VALUE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_EXPOSURE_BIAS_VALUE, ptrExifData, "test/test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_EXPOSURE_TIME, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_EXPOSURE_TIME, ptrExifData, "test/test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FNUMBER, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FNUMBER, ptrExifData, "test/test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FOCAL_LENGTH, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_FOCAL_LENGTH, ptrExifData, "test/test", order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_TIME_STAMP, ptrExifData, "test:test", order, &entry);
+    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_TIME_STAMP, ptrExifData, "test:test:test", order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0012 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
