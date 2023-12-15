@@ -217,7 +217,9 @@ static bool isTest(const int32_t* args, const int32_t len)
 napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_info info)
 {
     napi_status status;
-    napi_value constructor = nullptr, result = nullptr, thisVar = nullptr;
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
+    napi_value thisVar = nullptr;
     size_t argc = ARGS4;
     napi_value argv[ARGS4] = {0};
     int32_t args[ARGS4] = {0};
@@ -354,7 +356,9 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
 
 static napi_value BuildJsSize(napi_env env, int32_t width, int32_t height)
 {
-    napi_value result = nullptr, sizeWith = nullptr, sizeHeight = nullptr;
+    napi_value result = nullptr;
+    napi_value sizeWith = nullptr;
+    napi_value sizeHeight = nullptr;
 
     napi_create_object(env, &result);
 
@@ -658,7 +662,8 @@ void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
 napi_value ImageCreatorNapi::JsQueueImage(napi_env env, napi_callback_info info)
 {
     IMAGE_FUNCTION_IN();
-    napi_value result = nullptr, thisVar = nullptr;
+    napi_value result = nullptr;
+    napi_value thisVar = nullptr;
     size_t argc = ARGS2;
     napi_value argv[ARGS2] = {0};
 
@@ -781,7 +786,8 @@ static void DoCallBackAfterWork(uv_work_t *work, int status)
         IMAGE_ERR("context is empty");
     } else {
         napi_value result[PARAM2] = {0};
-        napi_value retVal, callback = nullptr;
+        napi_value retVal = nullptr;
+        napi_value callback = nullptr;
         if (context->env != nullptr && context->callbackRef != nullptr) {
             napi_handle_scope scope = nullptr;
             napi_open_handle_scope(context->env, &scope);

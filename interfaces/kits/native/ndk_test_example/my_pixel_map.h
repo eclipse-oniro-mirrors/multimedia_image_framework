@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef PIXEL_MAP_NAPI_TEST_H_
-#define PIXEL_MAP_NAPI_TEST_H_
+#ifndef PIXEL_MAP_NAPI_TEST_H
+#define PIXEL_MAP_NAPI_TEST_H
 
 #include "pixel_map.h"
 #include "image_type.h"
@@ -44,4 +44,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif /* PIXEL_MAP_NAPI_TEST_H_ */
+#endif /* PIXEL_MAP_NAPI_TEST_H */

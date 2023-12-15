@@ -284,7 +284,8 @@ static void GetScaledFraction(const int& inSampleSize, jpeg_decompress_struct& d
     unsigned int denom = 8;
     float desiredScale = 1.0f / static_cast<float>(inSampleSize);
 
-    int left = 0, right = SCALE_NUMS_LENGTH;
+    int left = 0;
+    int right = SCALE_NUMS_LENGTH;
     while (left <= right) {
         int mid = left + (right - left) / 2;
         if (desiredScale >= SCALES[mid]) {

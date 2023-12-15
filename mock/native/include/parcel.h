@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MOCK_NATIVE_INCLUDE_PARCEL_H_
-#define MOCK_NATIVE_INCLUDE_PARCEL_H_
+#ifndef MOCK_NATIVE_INCLUDE_PARCEL_H
+#define MOCK_NATIVE_INCLUDE_PARCEL_H
 
 #include <string>
 #include <vector>
@@ -54,4 +54,4 @@ public:
     const uint8_t *ReadBuffer(size_t length);
 };
 } // namespace OHOS
-#endif // MOCK_NATIVE_INCLUDE_PARCEL_H_
+#endif // MOCK_NATIVE_INCLUDE_PARCEL_H

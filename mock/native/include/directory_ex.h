@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H_
-#define MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H_
+#ifndef MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H
+#define MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H
 
 #include <string>
 #include <vector>
@@ -116,4 +116,4 @@ bool ChangeModeDirectory(const std::string& path, const mode_t& mode);
 bool PathToRealPath(const std::string& path, std::string& realPath);
 } // namespace OHOS
 
-#endif // MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H_
+#endif // MOCK_NATIVE_INCLUDE_DIRECTORY_EX_H

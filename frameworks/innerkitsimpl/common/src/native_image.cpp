@@ -64,7 +64,8 @@ static inline bool IsYUV422SPFormat(int32_t format)
 
 static void YUV422SPDataCopy(uint8_t* buffer, uint64_t size, YUVData &data, bool flip)
 {
-    uint64_t ui = NUM_0, vi = NUM_0;
+    uint64_t ui = NUM_0;
+    uint64_t vi = NUM_0;
     for (uint64_t i = NUM_0; i < size; i++) {
         if (i < data.ySize) {
             DataSwap(&(buffer[i]), &(data.y[i]), flip);

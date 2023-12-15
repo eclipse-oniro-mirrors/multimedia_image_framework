@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H_
-#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H_
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H
 
 #include "common_utils.h"
 #include "native_image.h"
@@ -60,4 +60,4 @@ int32_t ImageReceiverNativeCtxCall(int32_t mode, ImageReceiverNapi* native, stru
 #endif
 } // namespace Media
 } // namespace OHOS
-#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H_
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_MDK_KITS_H
