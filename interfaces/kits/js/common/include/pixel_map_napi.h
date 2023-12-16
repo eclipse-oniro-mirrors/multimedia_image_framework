@@ -53,7 +53,10 @@ public:
     bool IsLockPixelMap();
     bool LockPixelMap();
     void UnlockPixelMap();
-
+    static napi_ref GetConstructor()
+    {
+        return sConstructor_;
+    }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
