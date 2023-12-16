@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H_
-#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H_
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H
 
 #include "common_utils.h"
 #include "pixel_map.h"
@@ -73,4 +73,4 @@ int32_t PixelMapNapiNativeCtxCall(int32_t mode, PixelMapNapi* native, PixelMapNa
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H_
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_PIXEL_MAP_NAPI_KITS_H

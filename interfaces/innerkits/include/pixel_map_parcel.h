@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H_
-#define INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H_
+#ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H
+#define INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H
 
 #include "message_parcel.h"
 #include "pixel_map.h"
@@ -32,4 +32,4 @@ private:
 }  // namespace Media
 }  // namespace OHOS
 
-#endif // INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H_
+#endif // INTERFACES_INNERKITS_INCLUDE_PIXEL_MAP_PARCEL_H
