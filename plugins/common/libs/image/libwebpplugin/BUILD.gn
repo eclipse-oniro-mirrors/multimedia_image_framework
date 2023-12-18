@@ -78,7 +78,7 @@ ohos_shared_library("webpplugin") {
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
-      "graphic_2d:surface",
+      "graphic_surface:surface",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
