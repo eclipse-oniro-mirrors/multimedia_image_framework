@@ -50,7 +50,7 @@ public:
         std::string localId = processEof(id);
         auto iter = holder_.find(localId);
         if (iter != holder_.end()) {
-            return iter->second;
+            return iter->second.lock();
         }
         return nullptr;
     }
@@ -83,7 +83,7 @@ public:
         return holder_.count(localId);
     }
 private:
-    std::map<std::string, std::shared_ptr<ContentType>> holder_;
+    std::map<std::string, std::weak_ptr<ContentType>> holder_;
     std::mutex idMutex_;
     std::mutex holderMutex_;
     uint32_t gId_ = 0;
