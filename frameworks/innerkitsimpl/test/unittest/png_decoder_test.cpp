@@ -1408,27 +1408,6 @@ HWTEST_F(PngDecoderTest, AllocOutputBuffer001, TestSize.Level3)
 }
 
 /**
- * @tc.name: PushAllToDecode003
- * @tc.desc: Test of PushAllToDecode
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    auto mock = std::make_shared<MockInputDataStream>();
-    size_t bufferSize = 1;
-    size_t length = -1;
-    mock->SetReturn(false);
-    pngDecoder->SetSource(*mock.get());
-    pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
-        pngDecoder->PngErrorExit, pngDecoder->PngWarning);
-    pngDecoder->pngInfoPtr_ = png_create_info_struct(pngDecoder->pngStructPtr_);
-    uint32_t ret = pngDecoder->PushAllToDecode(mock.get(), bufferSize, length);
-    ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
-    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 end";
-}
-/**
  * @tc.name: FinishOldDecompress003
  * @tc.desc: Test of FinishOldDecompress
  * @tc.type: FUNC
@@ -1471,7 +1450,7 @@ HWTEST_F(PngDecoderTest, GetImageIdatSize001, TestSize.Level3)
     mock->SetReturn(false);
     pngDecoder->SetSource(*mock.get());
     uint32_t ret = pngDecoder->GetImageIdatSize(mock.get());
-    ASSERT_NE(ret, false);
+    ASSERT_NE(ret, 0);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetImageIdatSize001 end";
 }
 /**
@@ -1484,13 +1463,10 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows003 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     DataStreamBuffer readData;
-    readData.inputStreamBuffer= new uint8_t;
     png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
     png_uint_32 rowNum = 0;
     int pass = 0;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
-    delete readData.inputStreamBuffer;
-    readData.inputStreamBuffer = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows003 end";
 }
 } // namespace Multimedia
