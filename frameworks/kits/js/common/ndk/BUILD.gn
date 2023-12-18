@@ -25,6 +25,7 @@ config("native_public_config") {
     "$BASE_DIR/arkui/napi/interfaces/kits",
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
     "$THIRD_DIR/node/src",
+    "$resource_management_subsystem/interfaces/native/resource/include",
   ]
 }
 

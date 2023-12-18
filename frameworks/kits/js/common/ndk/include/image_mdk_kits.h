@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H_
-#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H_
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H
 
 #include "common_utils.h"
 #include "native_image.h"
@@ -51,4 +51,4 @@ int32_t ImageNapiNativeCtxCall(int32_t mode, ImageNapi* native, struct ImageNapi
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H_
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_KITS_H

@@ -284,7 +284,8 @@ static void GetScaledFraction(const int& inSampleSize, jpeg_decompress_struct& d
     unsigned int denom = 8;
     float desiredScale = 1.0f / static_cast<float>(inSampleSize);
 
-    int left = 0, right = SCALE_NUMS_LENGTH;
+    int left = 0;
+    int right = SCALE_NUMS_LENGTH;
     while (left <= right) {
         int mid = left + (right - left) / 2;
         if (desiredScale >= SCALES[mid]) {
@@ -448,6 +449,15 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         HiLog::Error(LABEL, "decode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+
+    if (srcMgr_.inputStream->Seek(streamPosition_ - decodeInfo_.src->bytes_in_buffer)) {
+        auto dataPtr = srcMgr_.inputStream->GetDataPtr();
+        if (dataPtr) {
+            // sourceData_.data() maybe changed after IncrementalSourceStream::UpdateData(), so reset next_input_byte
+            decodeInfo_.src->next_input_byte = dataPtr + streamPosition_ - decodeInfo_.src->bytes_in_buffer;
+        }
+    }
+
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
 #if !defined(A_PLATFORM) && !defined(IOS_PLATFORM)

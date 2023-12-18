@@ -23,6 +23,7 @@
 #include "image_source_mdk.h"
 #include "image_source_mdk_kits.h"
 #include "image_pixel_map_napi.h"
+#include "raw_file.h"
 
 using namespace testing::ext;
 namespace OHOS {
@@ -292,6 +293,83 @@ HWTEST_F(ImageNdkTest, OH_ImageSource_CreateTest, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_ImageSource_CreateFromUriTest
+ * @tc.desc: OH_ImageSource_CreateFromUri
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateFromUriTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromUriTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    char* uri = nullptr;
+    size_t size = 0;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateFromUri(env, uri, size, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromUriTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreateFromFdTest
+ * @tc.desc: OH_ImageSource_CreateFromFd
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateFromFdTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromFdTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    int32_t fd = -1;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateFromFd(env, fd, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromFdTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreateFromDataTest
+ * @tc.desc: OH_ImageSource_CreateFromData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateFromDataTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromDataTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    uint8_t* data = nullptr;
+    size_t dataSize = 0;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateFromData(env, data, dataSize, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromDataTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreateFromRawFileTest
+ * @tc.desc: OH_ImageSource_CreateFromRawFile
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateFromRawFileTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromRawFileTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    RawFileDescriptor rawFile;
+    rawFile.fd = -1;
+    rawFile.start = 0;
+    rawFile.length = 0;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateFromRawFile(env, rawFile, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateFromRawFileTest end";
+}
+
+/**
  * @tc.name: OH_ImageSource_CreateIncrementalTest
  * @tc.desc: OH_ImageSource_CreateIncremental
  * @tc.type: FUNC
@@ -307,6 +385,25 @@ HWTEST_F(ImageNdkTest, OH_ImageSource_CreateIncrementalTest, TestSize.Level3)
     ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
 
     GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateIncrementalTest end";
+}
+
+/**
+ * @tc.name: OH_ImageSource_CreateIncrementalFromDataTest
+ * @tc.desc: OH_ImageSource_CreateIncrementalFromData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNdkTest, OH_ImageSource_CreateIncrementalFromDataTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateIncrementalFromDataTest start";
+    napi_env env = nullptr;
+    napi_value* res = nullptr;
+    uint8_t* data = nullptr;
+    size_t dataSize = 0;
+    OhosImageSourceOps* ops= nullptr;
+    int32_t ret = OH_ImageSource_CreateIncrementalFromData(env, data, dataSize, ops, res);
+    ASSERT_NE(ret, OHOS_IMAGE_RESULT_SUCCESS);
+
+    GTEST_LOG_(INFO) << "ImageNdkTest: OH_ImageSource_CreateIncrementalFromDataTest end";
 }
 
 /**

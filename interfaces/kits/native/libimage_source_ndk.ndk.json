@@ -38,5 +38,25 @@
     },
     {
         "name": "OH_ImageSource_Release"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImageSource_CreateFromUri"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImageSource_CreateFromFd"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImageSource_CreateFromData"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImageSource_CreateFromRawFile"
+    },
+    {
+        "first_introduced": "11",
+        "name": "OH_ImageSource_CreateIncrementalFromData"
     }
 ]

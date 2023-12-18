@@ -1416,12 +1416,16 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-        int *fd = static_cast<int *>(context);
-        if (addr != nullptr) {
-            ::munmap(addr, size);
-        }
-        if (fd != nullptr) {
-            ::close(*fd);
+        if (context != nullptr) {
+            int *fd = static_cast<int *>(context);
+            if (addr != nullptr) {
+                ::munmap(addr, size);
+            }
+            if (fd != nullptr) {
+                ::close(*fd);
+            }
+            context = nullptr;
+            addr = nullptr;
         }
     } else if (allocType == AllocatorType::HEAP_ALLOC) {
         if (addr != nullptr) {
@@ -1429,7 +1433,11 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
             addr = nullptr;
         }
     } else if (allocType == AllocatorType::DMA_ALLOC) {
-        ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
+        if (context != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context));
+        }
+        context = nullptr;
+        addr = nullptr;
     }
 #else
     if (addr != nullptr) {
@@ -2279,20 +2287,20 @@ static float ProcessPremulF16Pixel(float mulPixel, float alpha, const float perc
 
 static void SetF16PixelAlpha(uint8_t *pixel, const float percent, bool isPixelPremul)
 {
-    float A = HalfTranslate(pixel + RGBA_F16_A_OFFSET);
+    float a = HalfTranslate(pixel + RGBA_F16_A_OFFSET);
     if (isPixelPremul) {
-        float R = HalfTranslate(pixel + RGBA_F16_R_OFFSET);
-        float G = HalfTranslate(pixel + RGBA_F16_G_OFFSET);
-        float B = HalfTranslate(pixel + RGBA_F16_B_OFFSET);
-        R = ProcessPremulF16Pixel(R, A, percent);
-        G = ProcessPremulF16Pixel(G, A, percent);
-        B = ProcessPremulF16Pixel(B, A, percent);
-        HalfTranslate(R, pixel + RGBA_F16_R_OFFSET);
-        HalfTranslate(G, pixel + RGBA_F16_G_OFFSET);
-        HalfTranslate(B, pixel + RGBA_F16_B_OFFSET);
+        float r = HalfTranslate(pixel + RGBA_F16_R_OFFSET);
+        float g = HalfTranslate(pixel + RGBA_F16_G_OFFSET);
+        float b = HalfTranslate(pixel + RGBA_F16_B_OFFSET);
+        r = ProcessPremulF16Pixel(r, a, percent);
+        g = ProcessPremulF16Pixel(g, a, percent);
+        b = ProcessPremulF16Pixel(b, a, percent);
+        HalfTranslate(r, pixel + RGBA_F16_R_OFFSET);
+        HalfTranslate(g, pixel + RGBA_F16_G_OFFSET);
+        HalfTranslate(b, pixel + RGBA_F16_B_OFFSET);
     }
-    A = percent * MAX_HALF;
-    HalfTranslate(A, pixel + RGBA_F16_A_OFFSET);
+    a = percent * MAX_HALF;
+    HalfTranslate(a, pixel + RGBA_F16_A_OFFSET);
 }
 
 static constexpr uint8_t U_ZERO = 0;

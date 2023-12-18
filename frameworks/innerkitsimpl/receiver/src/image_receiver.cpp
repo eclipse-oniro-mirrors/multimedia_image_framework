@@ -28,9 +28,6 @@ namespace OHOS {
         ImageReceiver::~ImageReceiver()
         {
             std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-            if (iraContext_ != nullptr) {
-                ImageReceiverManager::ReleaseReceiverById(iraContext_->GetReceiverKey());
-            }
             if (receiverConsumerSurface_ != nullptr) {
                 receiverConsumerSurface_->UnregisterConsumerListener();
             }
@@ -43,7 +40,7 @@ namespace OHOS {
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageReceiver"};
         using namespace OHOS::HiviewDFX;
 
-        enum class mode_ {
+        enum class Mode {
             MODE_PREVIEW = 0,
             MODE_PHOTO
         };
@@ -139,7 +136,7 @@ namespace OHOS {
             return 0;
         }
 
-        void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
+        void ImageReceiver::ReleaseBuffer(OHOS::sptr<OHOS::SurfaceBuffer> &buffer) __attribute__((no_sanitize("cfi")))
         {
             std::lock_guard<std::mutex> guard(imageReceiverMutex_);
             if (buffer != nullptr) {

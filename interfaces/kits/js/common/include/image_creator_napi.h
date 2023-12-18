@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef IMAGE_CREATOR_NAPI_H_
-#define IMAGE_CREATOR_NAPI_H_
+#ifndef IMAGE_CREATOR_NAPI_H
+#define IMAGE_CREATOR_NAPI_H
 
 #include <cerrno>
 #include <dirent.h>
@@ -149,4 +149,4 @@ public:
     };
 } // namespace Media
 } // namespace OHOS
-#endif /* IMAGE_CREATOR_NAPI_H_ */
+#endif /* IMAGE_CREATOR_NAPI_H */

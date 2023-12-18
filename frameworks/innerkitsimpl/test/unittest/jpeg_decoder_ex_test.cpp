@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
 #include <gtest/gtest.h>
 #include "buffer_source_stream.h"
 #include "exif_info.h"
@@ -1357,6 +1358,151 @@ HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest005, TestSize.Level3)
     int32_t result = jpegDecoder->ModifyImageProperty(0, key, value, fd);
     ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest005 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest003
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetImageSizeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    ImagePlugin::PlSize plSize;
+    ErrCodeOffset(2, 0);
+    jpegDecoder->GetImageSize(1, plSize);
+    jpegDecoder->GetImageSize(0, plSize);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 end";
+}
+
+/**
+ * @tc.name: GetRowBytesTest001
+ * @tc.desc: Test of GetRowBytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetRowBytesTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->GetRowBytes();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetRowBytesTest001 end";
+}
+
+/**
+ * @tc.name: ResetTest001
+ * @tc.desc: Test of Reset
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ResetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->JpegDecoder::Reset();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ResetTest001 end";
+}
+
+/**
+ * @tc.name: FinishOldDecompressTest001
+ * @tc.desc: Test of FinishOldDecompress
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FinishOldDecompressTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    jpegDecoder->FinishOldDecompress();
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FinishOldDecompressTest001 end";
+}
+
+/**
+ * @tc.name: FormatTimeStampTest001
+ * @tc.desc: Test of FormatTimeStamp
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, FormatTimeStampTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    std::string value = "";
+    std::string src = "2023-10-15 12:34:56";
+    jpegDecoder->FormatTimeStamp(value, src);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: FormatTimeStampTest001 end";
+}
+
+/**
+ * @tc.name: getExifTagFromKeyTest001
+ * @tc.desc: Test of getExifTagFromKey
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, getExifTagFromKeyTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    const std::string key1 ="BitsPerSample";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key1);
+    const std::string key2 ="Orientation";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key2);
+    const std::string key3 ="ImageLength";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key3);
+    const std::string key4 ="ImageWidth";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key4);
+    const std::string key5 ="GPSLatitude";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key5);
+    const std::string key6 ="GPSLongitude";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key6);
+    const std::string key7 ="GPSLatitudeRef";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key7);
+    const std::string key8 ="GPSLongitudeRef";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key8);
+    const std::string key9 ="DateTimeOriginal";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key9);
+    const std::string key10 ="ExposureTime";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key10);
+    const std::string key11 ="FNumber";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key11);
+    const std::string key12 ="ISOSpeedRatings";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key12);
+    const std::string key13 ="SceneType";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key13);
+    const std::string key14 ="CompressedBitsPerPixel";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key14);
+    const std::string key15 ="GPSTimeStamp";
+    jpegDecoder->JpegDecoder::getExifTagFromKey(key15);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: getExifTagFromKeyTest001 end";
+}
+
+/**
+ * @tc.name: ModifyImagePropertyTest006
+ * @tc.desc: Test of ModifyImageProperty
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, ModifyImagePropertyTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest006 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    uint32_t index = 1;
+    const std::string key = "GPSTimeStamp";
+    const std::string value = "111";
+    const std::string path = " ";
+    int32_t result = jpegDecoder->ModifyImageProperty(index, key, value, path);
+    ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: ModifyImagePropertyTest006 end";
+}
+
+/**
+ * @tc.name: GetFilterAreaTest001
+ * @tc.desc: Test of GetFilterArea
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, GetFilterAreaTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest001 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    uint32_t ret = jpegDecoder->GetFilterArea(1, ranges);
+    EXPECT_EQ(ret, Media::ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: GetFilterAreaTest001 end";
 }
 }
 }

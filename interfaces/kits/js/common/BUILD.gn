@@ -46,6 +46,7 @@ config("image_external_config") {
     "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
     "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
+    "$resource_management_subsystem/interfaces/native/resource/include",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
     "$skia_root/skia/third_party/externals/libjpeg-turbo",
@@ -145,7 +146,6 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/libpng:png_static",
     ]
 
     #relative_install_dir = "module/multimedia"
@@ -256,7 +256,6 @@ if (use_clang_ios) {
       defines += [ "HICHECKER_ENABLE" ]
     }
 
-    deps += [ "//third_party/libpng:png_static" ]
     output_name = "libimage_napi"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]

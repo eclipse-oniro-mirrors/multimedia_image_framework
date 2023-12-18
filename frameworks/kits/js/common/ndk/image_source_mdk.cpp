@@ -23,6 +23,7 @@ using namespace OHOS::Media;
 extern "C" {
 #endif
 
+const size_t SIZE_ZERO = 0;
 struct ImageSourceNative_ {
     ImageSourceNapi* napi = nullptr;
     napi_env env = nullptr;
@@ -58,12 +59,86 @@ int32_t OH_ImageSource_Create(napi_env env, struct OhosImageSource* src,
 }
 
 MIDK_EXPORT
+int32_t OH_ImageSource_CreateFromUri(napi_env env, char* uri, size_t size,
+    struct OhosImageSourceOps* ops, napi_value *res)
+{
+    if (uri == nullptr || size == SIZE_ZERO) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageSourceArgs args;
+    args.inEnv = env;
+    args.uri = std::string(uri, size);
+    args.sourceOps = ops;
+    args.outVal = res;
+    auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_URI, &args);
+    return ret;
+}
+
+MIDK_EXPORT
+int32_t OH_ImageSource_CreateFromFd(napi_env env, int32_t fd,
+    struct OhosImageSourceOps* ops, napi_value *res)
+{
+    ImageSourceArgs args;
+    args.inEnv = env;
+    args.fd = fd;
+    args.sourceOps = ops;
+    args.outVal = res;
+    auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_FD, &args);
+    return ret;
+}
+
+MIDK_EXPORT
+int32_t OH_ImageSource_CreateFromData(napi_env env, uint8_t* data, size_t dataSize,
+    struct OhosImageSourceOps* ops, napi_value *res)
+{
+    ImageSourceArgs args;
+    DataArray dataArray;
+    dataArray.data = data;
+    dataArray.dataSize = dataSize;
+    args.inEnv = env;
+    args.dataArray = dataArray;
+    args.sourceOps = ops;
+    args.outVal = res;
+    auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_DATA, &args);
+    return ret;
+}
+
+MIDK_EXPORT
+int32_t OH_ImageSource_CreateFromRawFile(napi_env env, RawFileDescriptor rawFile,
+    struct OhosImageSourceOps* ops, napi_value *res)
+{
+    ImageSourceArgs args;
+    args.inEnv = env;
+    args.rawFile = rawFile;
+    args.sourceOps = ops;
+    args.outVal = res;
+    auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_RAW_FILE, &args);
+    return ret;
+}
+
+MIDK_EXPORT
 int32_t OH_ImageSource_CreateIncremental(napi_env env,
     struct OhosImageSource* source, struct OhosImageSourceOps* ops, napi_value *res)
 {
     ImageSourceArgs args;
     args.inEnv = env;
     args.source = source;
+    args.sourceOps = ops;
+    args.outVal = res;
+    auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_INCREMENTAL, &args);
+    return ret;
+}
+
+MIDK_EXPORT
+int32_t OH_ImageSource_CreateIncrementalFromData(napi_env env, uint8_t* data, size_t dataSize,
+    struct OhosImageSourceOps* ops, napi_value *res)
+{
+    ImageSourceArgs args;
+    DataArray dataArray;
+    dataArray.data = data;
+    dataArray.dataSize = dataSize;
+    args.inEnv = env;
+    args.dataArray = dataArray;
     args.sourceOps = ops;
     args.outVal = res;
     auto ret = ImageSourceNativeCall(ENV_FUNC_IMAGE_SOURCE_CREATE_INCREMENTAL, &args);

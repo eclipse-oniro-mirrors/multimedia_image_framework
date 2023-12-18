@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H_
-#define INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H_
+#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H
+#define INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H
 
 #include "native_image.h"
 #include "napi/native_api.h"
@@ -52,4 +52,4 @@ private:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H_
+#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_H

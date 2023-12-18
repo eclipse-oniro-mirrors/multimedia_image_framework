@@ -14,8 +14,8 @@
  */
 
 
-#ifndef MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H_
-#define MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H_
+#ifndef MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H
+#define MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H
 
 #include "hilog/log_c.h"
 
@@ -40,4 +40,4 @@ public:
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // __cplusplus
-#endif // MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H_
+#endif // MOCK_NATIVE_INCLUDE_HILOG_LOG_CPP_H

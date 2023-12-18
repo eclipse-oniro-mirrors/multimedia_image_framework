@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H_
-#define FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H_
+#ifndef FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H
+#define FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H
 
 #include <cstdint>
 #include <memory>
@@ -39,7 +39,7 @@ public:
     uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted) override;
     bool IsStreamCompleted() override;
     size_t GetStreamSize() override;
-
+    uint8_t *GetDataPtr() override;
 private:
     explicit IncrementalSourceStream(IncrementalMode mode);
     IncrementalMode incrementalMode_;
@@ -51,4 +51,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H_
+#endif // FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_INCREMENTAL_SOURCE_STREAM_H

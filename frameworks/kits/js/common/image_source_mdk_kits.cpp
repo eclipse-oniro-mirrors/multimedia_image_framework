@@ -200,6 +200,152 @@ static int32_t ImageSourceNapiCreate(struct ImageSourceArgs* args)
     return IMAGE_RESULT_SUCCESS;
 }
 
+static int32_t ImageSourceNapiCreateFromUri(struct ImageSourceArgs* args)
+{
+    if (args == nullptr || args->inEnv == nullptr || args->uri.empty()) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    SourceOptions opts;
+    if (args->sourceOps != nullptr) {
+        ParseImageSourceOps(opts, args->sourceOps);
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri by path %{public}s", args->uri.c_str());
+    auto path = UrlToPath(args->uri);
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    if (nativeImageSource == nullptr) {
+        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri create failed:%{public}d", errorCode);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageResource resource;
+    resource.type = ImageResourceType::IMAGE_RESOURCE_PATH;
+    resource.path = path;
+    std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
+    if (imageSource == nullptr) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromUri native create failed");
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromUri napi create failed");
+        args->outVal = nullptr;
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri success");
+    return IMAGE_RESULT_SUCCESS;
+}
+
+static int32_t ImageSourceNapiCreateFromFd(struct ImageSourceArgs* args)
+{
+    if (args == nullptr || args->inEnv == nullptr || args->fd == INVALID_FD) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    SourceOptions opts;
+    if (args->sourceOps != nullptr) {
+        ParseImageSourceOps(opts, args->sourceOps);
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd");
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(args->fd, opts, errorCode);
+    if (nativeImageSource == nullptr) {
+        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd create failed:%{public}d", errorCode);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageResource resource;
+    resource.type = ImageResourceType::IMAGE_RESOURCE_FD;
+    resource.fd = args->fd;
+    std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
+    if (imageSource == nullptr) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromFd native create failed");
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromFd napi create failed");
+        args->outVal = nullptr;
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd success");
+    return IMAGE_RESULT_SUCCESS;
+}
+
+static int32_t ImageSourceNapiCreateFromData(struct ImageSourceArgs* args)
+{
+    if (args == nullptr || args->inEnv == nullptr ||
+        args->dataArray.data == nullptr || args->dataArray.dataSize == SIZE_ZERO) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    SourceOptions opts;
+    if (args->sourceOps != nullptr) {
+        ParseImageSourceOps(opts, args->sourceOps);
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData");
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
+        args->dataArray.data, args->dataArray.dataSize, opts, errorCode);
+    if (nativeImageSource == nullptr) {
+        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData create failed:%{public}d", errorCode);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageResource resource;
+    resource.type = ImageResourceType::IMAGE_RESOURCE_BUFFER;
+    resource.buffer = args->dataArray.data;
+    resource.bufferSize = args->dataArray.dataSize;
+    std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
+    if (imageSource == nullptr) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromData native create failed");
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromData napi create failed");
+        args->outVal = nullptr;
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData success");
+    return IMAGE_RESULT_SUCCESS;
+}
+
+static bool isValidRawFile(RawFileDescriptor &rawFile)
+{
+    return rawFile.fd != INVALID_FD && rawFile.start >= SIZE_ZERO && rawFile.length > SIZE_ZERO;
+}
+
+static int32_t ImageSourceNapiCreateFromRawFile(struct ImageSourceArgs* args)
+{
+    if (args == nullptr || args->inEnv == nullptr || !isValidRawFile(args->rawFile)) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    SourceOptions opts;
+    if (args->sourceOps != nullptr) {
+        ParseImageSourceOps(opts, args->sourceOps);
+    }
+    RawFileDescriptor rawFile = args->rawFile;
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile");
+    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    int32_t rawFileLength = rawFile.start + rawFile.length;
+    std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
+        rawFile.fd, rawFile.start, rawFileLength, opts, errorCode);
+    if (nativeImageSource == nullptr) {
+        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile create failed:%{public}d", errorCode);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    ImageResource resource;
+    resource.type = ImageResourceType::IMAGE_RESOURCE_RAW_FILE;
+    resource.fd = rawFile.fd;
+    resource.fileStart = rawFile.start;
+    resource.fileLength = rawFileLength;
+    std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
+    if (imageSource == nullptr) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromRawFile native create failed");
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
+        HiLog::Error(LABEL, "ImageSourceNapiCreateFromRawFile napi create failed");
+        args->outVal = nullptr;
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile success");
+    return IMAGE_RESULT_SUCCESS;
+}
+
 static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr) {
@@ -217,6 +363,10 @@ static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
     if (imageSource == nullptr) {
         HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental native imagesource failed");
         return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    if (args->dataArray.data != nullptr && args->dataArray.dataSize > SIZE_ZERO) {
+        HiLog::Debug(LABEL, "ImageSourceNapiCreateIncremental update dataArray");
+        imageSource->UpdateData(args->dataArray.data, args->dataArray.dataSize, false);
     }
     DecodeOptions decodeOpts;
     uint32_t index = DEFAULT_INDEX;
@@ -579,6 +729,10 @@ static int32_t ImageSourceNapiUpdateData(struct ImageSourceArgs* args)
 
 static const std::map<int32_t, ImageSourceNapiFunc> g_Functions = {
     {ENV_FUNC_IMAGE_SOURCE_CREATE, ImageSourceNapiCreate},
+    {ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_URI, ImageSourceNapiCreateFromUri},
+    {ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_FD, ImageSourceNapiCreateFromFd},
+    {ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_DATA, ImageSourceNapiCreateFromData},
+    {ENV_FUNC_IMAGE_SOURCE_CREATE_FROM_RAW_FILE, ImageSourceNapiCreateFromRawFile},
     {ENV_FUNC_IMAGE_SOURCE_CREATE_INCREMENTAL, ImageSourceNapiCreateIncremental},
     {ENV_FUNC_IMAGE_SOURCE_UNWRAP, ImageSourceNapiUnwrap},
     {STA_FUNC_IMAGE_SOURCE_GET_SUPPORTED_FORMATS, ImageSourceNapiGetSupportedFormats},

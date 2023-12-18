@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef NATIVE_PIXEL_MAP_H_
-#define NATIVE_PIXEL_MAP_H_
+#ifndef NATIVE_PIXEL_MAP_H
+#define NATIVE_PIXEL_MAP_H
 
 #include "pixel_map_napi.h"
 
@@ -37,4 +37,4 @@ std::shared_ptr<OHOS::Media::PixelMap> PixelMapNative_GetPixelMap(struct NativeP
 }
 }
 }
-#endif // NATIVE_PIXEL_MAP_H_
+#endif // NATIVE_PIXEL_MAP_H

@@ -18,7 +18,6 @@
 #include <map>
 #include <set>
 #include "pixel_map_napi.h"
-#include "pngpriv.h"
 
 namespace {
     constexpr uint32_t NUM_0 = 0;

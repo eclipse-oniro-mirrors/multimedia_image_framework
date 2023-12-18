@@ -106,7 +106,6 @@ static AlphaType ParseAlphaType(int32_t val)
     }
 
     return AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-
 }
 
 static ScaleMode ParseScaleMode(int32_t val)
@@ -562,11 +561,18 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
 static napi_status NewPixelNapiInstance(napi_env &env, napi_value &constructor,
     std::shared_ptr<PixelMap> &pixelMap, napi_value &result)
 {
+    napi_status status;
+    if (pixelMap == nullptr) {
+        status = napi_invalid_arg;
+        HiLog::Error(LABEL, "NewPixelNapiInstance pixelMap is nullptr");
+        return status;
+    }
     size_t argc = NEW_INSTANCE_ARGC;
     napi_value argv[NEW_INSTANCE_ARGC] = { 0 };
     napi_create_int32(env, pixelMap->GetUniqueId(), &argv[0]);
     PixelMapContainer::GetInstance().Insert(pixelMap->GetUniqueId(), pixelMap);
-    return napi_new_instance(env, constructor, argc, argv, &result);
+    status = napi_new_instance(env, constructor, argc, argv, &result);
+    return status;
 }
 
 napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
@@ -1169,7 +1175,6 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
     return result;
-
 }
 
 napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info info)
@@ -1762,7 +1767,6 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-
             context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
             context->status = SUCCESS;
         } else {

@@ -158,7 +158,8 @@ uint8_t AstcUtils::SelectPartition(int32_t seed, int32_t x, int32_t y, int32_t p
     CalSeedNum(seedn, num);
 
     // Determine shift values based on seed and partition count
-    int32_t sh1, sh2;
+    int32_t sh1;
+    int32_t sh2;
     if (seed & 1) {
         sh1 = (seed & SEED_MAGIC_2 ? SEED_MAGIC_4 : SEED_MAGIC_5);
         sh2 = (partitionCount == PARTITION_COUNT_3 ? SEED_MAGIC_6 : SEED_MAGIC_5);

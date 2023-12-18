@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H_
-#define INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H_
+#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H
+#define INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H
 
 #include <cerrno>
 #include <dirent.h>
@@ -93,7 +93,6 @@ struct ImageReceiverAsyncContext {
     napi_deferred deferred = nullptr;
     napi_ref callbackRef = nullptr;
     ImageReceiverNapi *constructor_ = nullptr;
-    std::shared_ptr<ImageReceiver> receiver_ = nullptr;
     uint32_t status;
 };
 struct ImageReceiverInnerContext {
@@ -147,4 +146,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H_
+#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_IMAGE_RECEIVER_NAPI_H

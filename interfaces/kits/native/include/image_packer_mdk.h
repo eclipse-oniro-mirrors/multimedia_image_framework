@@ -46,8 +46,8 @@
  * @version 4.1
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H_
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H_
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
 
@@ -175,4 +175,4 @@ int32_t OH_ImagePacker_Release(ImagePacker_Native* native);
 };
 #endif
 /** @} */
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H_
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PACKER_MDK_H

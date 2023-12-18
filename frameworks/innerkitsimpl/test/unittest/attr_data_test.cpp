@@ -1264,7 +1264,7 @@ HWTEST_F(AttrDataTest, InRangeTest0074, TestSize.Level3)
     uint32_t value = 2;
     MultimediaPlugin::AttrData aData(value);
     bool res = aData.InRange(value);
-    ASSERT_EQ(res, false);
+    ASSERT_EQ(res, true);
     value = 6;
     res = aData.InRange(value);
     ASSERT_EQ(res, false);

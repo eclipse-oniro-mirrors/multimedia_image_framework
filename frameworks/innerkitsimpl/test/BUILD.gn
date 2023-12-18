@@ -208,6 +208,35 @@ ohos_unittest("jpegdecoderextest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("jpegutilstest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
+    "$image_subsystem/plugins/manager/include",
+    "//third_party/googletest/googletest/include",
+  ]
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/jpeg_utils_test.cpp" ]
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/plugins/common/libs/image/libjpegplugin:jpegplugin",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
 ohos_unittest("format_agent_plugin_src_test") {
   module_out_path = module_output_path
 
@@ -592,7 +621,7 @@ ohos_unittest("pngtest") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin:pngplugin",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
-    "//third_party/libpng:png_static",
+    "//third_party/libpng:libpng",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -696,7 +725,6 @@ ohos_unittest("creatortest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
-    "//third_party/libpng:png_static",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -917,6 +945,7 @@ ohos_unittest("ndktest") {
     "../../../../../arkui/napi/interfaces/inner_api",
     "../../../../../arkui/napi/interfaces/kits",
     "//third_party/node/src",
+    "$resource_management_subsystem/interfaces/native/resource/include",
   ]
   sources = [
     "unittest/image_ndk_test.cpp",
@@ -1025,6 +1054,7 @@ group("unittest") {
     ":imageutilstest",
     ":interfacetest",
     ":jpegdecoderextest",
+    ":jpegutilstest",
     ":napitest",
     ":pixelconvertadaptertest",
     ":pixelmaptest",
