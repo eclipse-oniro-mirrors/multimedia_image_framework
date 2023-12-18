@@ -118,10 +118,10 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest003 start";
     auto ExifMakerNote = std::make_shared<ExifMakerNote::ExifItem>();
-    std::string value ="111";
+    std::string value = "111";
     ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
     ExifMakerNote::ExifItem item;
-    bool mock =true;
+    bool mock = true;
     bool ret = ExifMakerNote->GetValue(value, order, item, mock);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest003 end";
@@ -139,7 +139,7 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest004, TestSize.Level3)
     std::string value = "111";
     ExifData *exifData = nullptr;
     ExifMakerNote::ExifItem item;
-    bool mock =true;
+    bool mock = true;
     bool ret = ExifMakerNote->GetValue(value, exifData, item, mock);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest004 end";
@@ -157,7 +157,7 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest005, TestSize.Level3)
     std::string value = "111";
     ExifContent *exifContent = nullptr;
     ExifMakerNote::ExifItem item;
-    bool mock =true;
+    bool mock = true;
     bool ret = ExifMakerNote->GetValue(value, exifContent, item, mock);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest005 end";
