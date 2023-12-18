@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_NATIVE_INCLUDE_HILOG_LOG_H_
-#define MOCK_NATIVE_INCLUDE_HILOG_LOG_H_
+#ifndef MOCK_NATIVE_INCLUDE_HILOG_LOG_H
+#define MOCK_NATIVE_INCLUDE_HILOG_LOG_H
 
 #include "hilog/log_c.h"
 #include "hilog/log_cpp.h"
 
-#endif // MOCK_NATIVE_INCLUDE_HILOG_LOG_H_
+#endif // MOCK_NATIVE_INCLUDE_HILOG_LOG_H

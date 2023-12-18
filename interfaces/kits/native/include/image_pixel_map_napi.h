@@ -33,8 +33,8 @@
  * @version 1.0
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H
 #include <cstdint>
 #include "napi/native_api.h"
 namespace OHOS {
@@ -170,4 +170,4 @@ int32_t OH_UnAccessPixels(napi_env env, napi_value value);
 /** @} */
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H_
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXEL_MAP_NAPI_H

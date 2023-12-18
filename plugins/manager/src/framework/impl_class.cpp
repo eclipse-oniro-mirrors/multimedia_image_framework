@@ -121,7 +121,10 @@ PluginClassBase *ImplClass::CreateObject(uint32_t &errorCode)
     PluginClassBase *object = DoCreateObject(sharedPlugin);
     if (object == nullptr) {
         HiLog::Error(LABEL, "create object result null, className: %{public}s.", className_.c_str());
-        goto CREATE_INTERNAL_ERROR_EXIT;
+        if (instanceNum_ == 0) {
+            sharedPlugin->DeRef();
+        }
+        return nullptr;
     }
 
     ++instanceNum_;
@@ -130,12 +133,6 @@ PluginClassBase *ImplClass::CreateObject(uint32_t &errorCode)
 
     errorCode = SUCCESS;
     return object;
-
-CREATE_INTERNAL_ERROR_EXIT:
-    if (instanceNum_ == 0) {
-        sharedPlugin->DeRef();
-    }
-    return nullptr;
 }
 
 weak_ptr<Plugin> ImplClass::GetPluginRef() const

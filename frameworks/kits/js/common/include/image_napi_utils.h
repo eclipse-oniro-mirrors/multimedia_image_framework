@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H_
-#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H_
+#ifndef FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
+#define FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H
 
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -151,4 +151,4 @@ public:
 };
 } // namespace Media
 } // namespace OHOS
-#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H_
+#endif // FRAMEWORKS_KITS_JS_COMMON_INCLUDE_IMAGE_NAPI_UTILS_H

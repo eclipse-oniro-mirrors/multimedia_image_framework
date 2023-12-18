@@ -40,7 +40,7 @@ namespace OHOS {
         constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageReceiver"};
         using namespace OHOS::HiviewDFX;
 
-        enum class mode_ {
+        enum class Mode {
             MODE_PREVIEW = 0,
             MODE_PHOTO
         };

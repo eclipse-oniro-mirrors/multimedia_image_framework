@@ -106,7 +106,6 @@ static AlphaType ParseAlphaType(int32_t val)
     }
 
     return AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-
 }
 
 static ScaleMode ParseScaleMode(int32_t val)
@@ -1176,7 +1175,6 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
     return result;
-
 }
 
 napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info info)
@@ -1769,7 +1767,6 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-
             context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
             context->status = SUCCESS;
         } else {

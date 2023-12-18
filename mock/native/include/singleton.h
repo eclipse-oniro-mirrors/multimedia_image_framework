@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_NATIVE_INCLUDE_SINGLETON_H_
-#define MOCK_NATIVE_INCLUDE_SINGLETON_H_
+#ifndef MOCK_NATIVE_INCLUDE_SINGLETON_H
+#define MOCK_NATIVE_INCLUDE_SINGLETON_H
 
 #include "nocopyable.h"
 #include <mutex>
@@ -131,4 +131,4 @@ private:
 template<typename T>
 T Singleton<T>::instance_;
 } // namespace OHOS
-#endif // MOCK_NATIVE_INCLUDE_SINGLETON_H_
+#endif // MOCK_NATIVE_INCLUDE_SINGLETON_H

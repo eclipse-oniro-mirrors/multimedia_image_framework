@@ -297,7 +297,8 @@ napi_value ImageReceiverNapi::CreateImageReceiverJsObject(napi_env env, struct I
 napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_info info)
 {
     napi_status status;
-    napi_value constructor = nullptr, result = nullptr;
+    napi_value constructor = nullptr;
+    napi_value result = nullptr;
     ImageReceiverInputArgs inputArgs;
     inputArgs.argc = ARGS4;
 
@@ -427,7 +428,9 @@ napi_value ImageReceiverNapi::JSCommonProcess(ImageReceiverCommonArgs &args)
 
 static napi_value BuildJsSize(napi_env env, int32_t width, int32_t height)
 {
-    napi_value result = nullptr, sizeWith = nullptr, sizeHeight = nullptr;
+    napi_value result = nullptr;
+    napi_value sizeWith = nullptr;
+    napi_value sizeHeight = nullptr;
 
     napi_create_object(env, &result);
 
