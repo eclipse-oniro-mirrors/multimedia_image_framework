@@ -40,5 +40,19 @@ HWTEST_F(WebpPluginExportTest, PluginExternalCreate001, TestSize.Level3)
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "WebpPluginExportTest: PluginExternalCreate001 end";
 }
+/**
+ * @tc.name: PluginExternalCreate002
+ * @tc.desc: test PluginExternalCreate
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpPluginExportTest, PluginExternalCreate002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpPluginExportTest: PluginExternalCreate002 start";
+    string testStr = "WebpDecoder";
+    auto test = PluginExternalCreate(testStr);
+    bool result = (test == nullptr);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "WebpPluginExportTest: PluginExternalCreate002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
