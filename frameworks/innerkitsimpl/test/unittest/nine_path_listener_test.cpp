@@ -41,10 +41,10 @@ HWTEST_F(NinePathListenerTest, ReadChunk001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 start";
     ImagePlugin::NinePatchListener ninepath;
-    const std::string tag = "";
+    const std::string tag = "npTc";
     void *data = nullptr;
     ASSERT_EQ(data, nullptr);
-    size_t length = 1;
+    size_t length = 100;
     bool readck = ninepath.ReadChunk(tag, data, length);
     ASSERT_EQ(readck, true);
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 end";
