@@ -44,7 +44,7 @@ HWTEST_F(NinePathListenerTest, ReadChunk001, TestSize.Level3)
     const std::string tag = "npTc";
     void *data = nullptr;
     ASSERT_EQ(data, nullptr);
-    size_t length = 100;
+    size_t length = 88;
     bool readck = ninepath.ReadChunk(tag, data, length);
     ASSERT_EQ(readck, true);
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 end";
