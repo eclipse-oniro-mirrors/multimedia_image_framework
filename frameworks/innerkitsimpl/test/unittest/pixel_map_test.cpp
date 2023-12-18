@@ -922,7 +922,7 @@ HWTEST_F(PixelMapTest, PixelMapTest024, TestSize.Level3)
     void *context = malloc(contextSize);
     EXPECT_TRUE(context != nullptr);
     char *contextChar = static_cast<char *>(context);
-    for (unsigned int i = 0; i < contextSize; i++) {
+    for (int32_t i = 0; i < contextSize; i++) {
         *(contextChar++) = (char)i;
     }
     pixelMap->SetPixelsAddr(buffer, context, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -1149,7 +1149,7 @@ HWTEST_F(PixelMapTest, SetAndGetRowStride, TestSize.Level3)
     uint32_t stride = 1;
     pixelMap.SetRowStride(stride);
     int32_t res = pixelMap.GetRowStride();
-    ASSERT_EQ(res, 1);
+    ASSERT_EQ(res, stride);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAndGetRowStride end";
 }
 
@@ -1268,6 +1268,27 @@ HWTEST_F(PixelMapTest, SetPurgeableMemPtrTest, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetPurgeableMemPtrTest SetPurgeableMemPtr end";
 }
 #endif
+
+/**
+ * @tc.name: IsStrideAlignment
+ * @tc.desc: test IsStrideAlignment
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, IsStrideAlignmentTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: IsStrideAlignmentTest IsStrideAlignment start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = 3;
+    info.size.height = 3;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    bool res = pixelMap.IsStrideAlignment();
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: IsStrideAlignmentTest IsStrideAlignment end";
+}
+
 /**
  * @tc.name: GetPurgeableMemPtr
  * @tc.desc: GetPixelFormatDetail***

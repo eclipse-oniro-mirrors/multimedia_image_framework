@@ -159,6 +159,7 @@ public:
     NATIVEEXPORT virtual uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize);
     NATIVEEXPORT virtual bool WritePixels(const uint32_t &color);
     NATIVEEXPORT virtual void FreePixelMap();
+    NATIVEEXPORT bool IsStrideAlignment();
     NATIVEEXPORT virtual AllocatorType GetAllocatorType();
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
