@@ -17,12 +17,12 @@
 #include <memory>
 #include <fcntl.h>
 #include "exif_maker_note.h"
-#include "exif_info.h"
+#include "securec.h"
+#include "string_ex.h"
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "media_errors.h"
-#include "securec.h"
-#include "string_ex.h"
+#include "exif_info.h"
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 
@@ -51,7 +51,9 @@ HWTEST_F(ExifMakerNoteTest, CopyItemTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: CopyItemTest001 start";
     auto ExifMakerNote = std::make_shared<ExifMakerNote::ExifItem>();
     ExifMakerNote::ExifItem item;
+    item.ifd = 1;
     ExifMakerNote->CopyItem(item);
+    ASSERT_EQ(item.ifd, 1);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: CopyItemTest0001 end";
 }
 
@@ -67,7 +69,8 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest001, TestSize.Level3)
     std::string value = "111";
     ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
     bool mock = true;
-    ExifMakerNote->GetValue(value, order, mock);
+    bool ret = ExifMakerNote->GetValue(value, order, mock);
+    ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest001 end";
 }
 
@@ -83,7 +86,8 @@ HWTEST_F(ExifMakerNoteTest, GetValueTest002, TestSize.Level3)
     std::string value = "111";
     ExifData *exifData = nullptr;
     bool mock = true;
-    ExifMakerNote->GetValue(value, exifData, mock);
+    bool ret = ExifMakerNote->GetValue(value, exifData, mock);
+    ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetValueTest002 end";
 }
 
@@ -99,7 +103,9 @@ HWTEST_F(ExifMakerNoteTest, DumpTest001, TestSize.Level3)
     std::string info = "nihao";
     ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
     ExifMakerNote::ExifItem item;
+    item.tag =2;
     ExifMakerNote->Dump(info, order);
+    ASSERT_EQ(item.tag, 2);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest001 end";
 }
 
@@ -168,8 +174,10 @@ HWTEST_F(ExifMakerNoteTest, DumpTest002, TestSize.Level3)
     auto ExifMakerNote = std::make_shared<ExifMakerNote::ExifItem>();
     std::string info = "infomation";
     ExifMakerNote::ExifItem item;
+    item.ifd = 1;
     ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
     ExifMakerNote->Dump(info, item, order);
+    ASSERT_EQ(item.ifd, 1);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest002 end";
 }
 
@@ -181,11 +189,12 @@ HWTEST_F(ExifMakerNoteTest, DumpTest002, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, ParserTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserTest001 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     ExifData *exif = nullptr;
     unsigned char* data = nullptr;
     uint32_t size = 11;
-    exifmakernote.Parser(exif, data, size);
+    uint32_t ret = exifMakerNote.Parser(exif, data, size);
+    ASSERT_EQ(ret, Media::SUCCESS);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserTest001 end";
 }
 
@@ -197,12 +206,12 @@ HWTEST_F(ExifMakerNoteTest, ParserTest001, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, FindExifLocationTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest001 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     const unsigned char *data = nullptr;
     uint32_t size = 3;
     const unsigned char *&newData = data;
     uint32_t newSize = 7;
-    bool result = exifmakernote.FindExifLocation(data, size, newData, newSize);
+    bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest001 end";
 }
@@ -215,12 +224,13 @@ HWTEST_F(ExifMakerNoteTest, FindExifLocationTest001, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, FindExifLocationTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest002 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     const unsigned char *data = EXIF_HEADER;
     uint32_t size = 6;
     const unsigned char *&newData = data;
     uint32_t newSize = 7;
-    exifmakernote.FindExifLocation(data, size, newData, newSize);
+    bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
+    ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest002 end";
 }
 
@@ -232,12 +242,12 @@ HWTEST_F(ExifMakerNoteTest, FindExifLocationTest002, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, FindExifLocationTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest003 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     const unsigned char *data = EXIF_TAIL;
     uint32_t size = 13;
     const unsigned char *&newData = data;
     uint32_t newSize = 7;
-    bool result = exifmakernote.FindExifLocation(data, size, newData, newSize);
+    bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest003 end";
 }
@@ -250,12 +260,12 @@ HWTEST_F(ExifMakerNoteTest, FindExifLocationTest003, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test001 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     const unsigned char *data = EXIF_TCL;
     uint32_t size = 4;
     const unsigned char *&newData = data;
     uint32_t newSize = 7;
-    bool result = exifmakernote.FindJpegAPP1(data, size, newData, newSize);
+    bool result = exifMakerNote.FindJpegAPP1(data, size, newData, newSize);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test001 end";
 }
@@ -268,12 +278,12 @@ HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test001, TestSize.Level3)
 HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test002 start";
-    ExifMakerNote exifmakernote;
+    ExifMakerNote exifMakerNote;
     const unsigned char *data = EXIF_TCB;
     uint32_t size = 2;
     const unsigned char *&newData = data;
     uint32_t newSize = 7;
-    bool result = exifmakernote.FindJpegAPP1(data, size, newData, newSize);
+    bool result = exifMakerNote.FindJpegAPP1(data, size, newData, newSize);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test002 end";
 }
