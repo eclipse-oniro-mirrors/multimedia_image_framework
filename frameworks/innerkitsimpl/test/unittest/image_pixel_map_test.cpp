@@ -59,7 +59,7 @@ public:
         if (buffer == nullptr) {
             return nullptr;
         }
-        char *ch = reinterpret_cast<char *>(buffer);
+        char *ch = static_cast<char *>(buffer);
         for (unsigned int i = 0; i < bufferSize; i++) {
             *(ch++) = (char)i;
         }
