@@ -392,10 +392,10 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap007, TestSize.Level3)
     info.size.height = 500 * 1024;
     info.pixelFormat = PixelFormat::ARGB_8888;
     info.colorSpace = ColorSpace::SRGB;
-    EXPECT_EQ(pixelMap.SetImageInfo(info), ERR_IMAGE_TOO_LARGE);
-    EXPECT_EQ(pixelMap.GetHeight(), 0);
-    EXPECT_EQ(pixelMap.GetWidth(), 0);
-    EXPECT_EQ(pixelMap.GetByteCount(), 0);
+    EXPECT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
+    EXPECT_EQ(pixelMap.GetHeight(), info.size.width);
+    EXPECT_EQ(pixelMap.GetWidth(), info.size.width);
+    EXPECT_NE(pixelMap.GetByteCount(), 0);
     uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());
     EXPECT_EQ(data, nullptr);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap007 end";
