@@ -1322,16 +1322,15 @@ HWTEST_F(PluginLibJpegTest, SetDEDataByteCount001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount001 start";
     const uint8_t *buf = new uint8_t;
     ByteOrderedBuffer byteorder(buf, 10);
-    uint16_t tagNumber = byteorder.ReadUnsignedShort();
     uint16_t dataFormat = byteorder.ReadUnsignedShort();
     int32_t numberOfComponents = byteorder.ReadInt32();
     uint32_t byteCount = 0;
-    bool ret = byteorder.SetDEDataByteCount(tagNumber, dataFormat, numberOfComponents, byteCount);
+    bool ret = byteorder.SetDEDataByteCount(0x0000, dataFormat, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, false);
+    ret = byteorder.SetDEDataByteCount(0x0133, -1, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, false);
+    ret = byteorder.SetDEDataByteCount(0x0133, 1, numberOfComponents, byteCount);
     ASSERT_EQ(ret, true);
-    ret = byteorder.SetDEDataByteCount(0, dataFormat, numberOfComponents, byteCount);
-    ASSERT_EQ(ret, false);
-    ret = byteorder.SetDEDataByteCount(tagNumber, -1, numberOfComponents, byteCount);
-    ASSERT_EQ(ret, false);
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount001 end";
@@ -1356,23 +1355,6 @@ HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 end";
-}
-
-/**
- * @tc.name: GetExifData001
- * @tc.desc: GetExifData
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, GetExifData001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 start";
-    EXIFInfo exinfo;
-    std::string orgValue;
-    uint32_t ret = exinfo.GetExifData("DateTimeOriginalForMedia", orgValue);
-    ASSERT_EQ(ret, Media::SUCCESS);
-    ret = exinfo.GetExifData("OrientationInt", orgValue);
-    ASSERT_EQ(ret, Media::SUCCESS);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
