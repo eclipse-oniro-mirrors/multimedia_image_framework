@@ -60,6 +60,7 @@ private:
 
     // readonly property
     static napi_value GetIsEditable(napi_env env, napi_callback_info info);
+    static napi_value GetIsStrideAlignment(napi_env env, napi_callback_info info);
 
     // static mothod
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);

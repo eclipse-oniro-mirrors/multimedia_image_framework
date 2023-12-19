@@ -1166,6 +1166,15 @@ declare namespace image {
      * @since 10
      */
     density: number;
+
+    /**
+     * The number of byte per row.
+     *
+     * @type { number }
+     * @syscap SystemCapability.Multimedia.Image.Core
+     * @since 11
+     */
+      stride: number;
   }
 
   /**
@@ -2613,6 +2622,16 @@ declare namespace image {
      * @since 10
      */
     setColorSpace(colorSpace: colorSpaceManager.ColorSpaceManager): void;
+
+    /**
+     * Is it stride Alignment
+     *
+     * @type { boolean }
+     * @readonly
+     * @syscap SystemCapability.Multimedia.Image.Core
+     * @since 11
+     */
+     readonly isStrideAlignment: boolean;
 
     /**
      * Releases this PixelMap object. This method uses a callback to return the result.
