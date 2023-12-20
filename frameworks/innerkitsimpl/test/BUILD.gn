@@ -1026,6 +1026,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
 
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
     "${image_subsystem}/plugins/manager/include/",
     "${image_subsystem}/interfaces/innerkits/include/",
@@ -1038,6 +1039,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
   ]
 
   deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "//third_party/googletest:gtest_main",
     "//third_party/skia:skia_ohos",
