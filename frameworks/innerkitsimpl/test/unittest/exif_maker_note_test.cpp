@@ -343,8 +343,7 @@ HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest002 start";
     ExifMakerNote exifMakerNote;
-    const unsigned char data[] ={ 'e', 'x', 'p', 'o', 'r', 't', 's', 'c',
-        'I', 'I', '0x2A', '0x00', '0x08', '0x00', '0x00', '0x00' };
+    const unsigned char data[] = { 'e', 'x', 'p', 'o', 'r', 't', 's', 'c','I', 'I' };
     uint32_t size = 20;
     bool result = exifMakerNote.IsHwMakerNote(data, size);
     ASSERT_EQ(result, false);
@@ -360,8 +359,7 @@ HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest003 start";
     ExifMakerNote exifMakerNote;
-    const unsigned char data[] ={ 'e', 'x', 'p', 'o', 'r', 't', 's', 'c',
-        'M', 'M', '0x00', '0x2A', '0x00', '0x00', '0x00', '0x80' };
+    const unsigned char data[] = { 'e', 'x', 'p', 'o', 'r', 't', 's', 'c','M', 'M' };
     uint32_t size = 20;
     bool result = exifMakerNote.IsHwMakerNote(data, size);
     ASSERT_EQ(result, false);
@@ -377,7 +375,7 @@ HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest004 start";
     ExifMakerNote exifMakerNote;
-    const unsigned char data[] ={ 'e', 'x' };
+    const unsigned char data[] = { 'e', 'x' };
     uint32_t size = 20;
     bool result = exifMakerNote.IsHwMakerNote(data, size);
     ASSERT_EQ(result, false);
