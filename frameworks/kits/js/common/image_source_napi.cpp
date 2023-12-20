@@ -260,6 +260,48 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     context = nullptr;
 }
 
+static void ImageSourceCallbackWithErrorObj(napi_env env,
+    ImageSourceAsyncContext* &context, const napi_value &val)
+{
+    napi_value result[NUM_2] = {0};
+
+    if (context == nullptr) {
+        HiLog::Error(LABEL, "context is nullptr");
+        return;
+    }
+
+    if (context->status == SUCCESS) {
+        napi_get_undefined(env, &result[NUM_0]);
+        result[NUM_1] = val;
+    } else {
+        std::string errMsg = (context->errMsg.size() > 0) ? context->errMsg : "error status, no message";
+        HiLog::Debug(LABEL, "Operation failed code:%{public}d, msg:%{public}s",
+            context->status, errMsg.c_str());
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg);
+        napi_get_undefined(env, &result[NUM_1]);
+    }
+
+    if (context->deferred) {
+        if (context->status == SUCCESS) {
+            napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+        } else {
+            napi_reject_deferred(env, context->deferred, result[NUM_0]);
+        }
+    } else {
+        napi_value retVal;
+        napi_value callback = nullptr;
+        HiLog::Debug(LABEL, "call callback function");
+        napi_get_reference_value(env, context->callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, NUM_2, result, &retVal);
+        napi_delete_reference(env, context->callbackRef);
+    }
+
+    napi_delete_async_work(env, context->work);
+
+    delete context;
+    context = nullptr;
+}
+
 static napi_value CreateEnumTypeObject(napi_env env,
     napi_valuetype type, napi_ref* ref, std::vector<struct ImageEnum> imageEnumMap)
 {
@@ -1755,6 +1797,7 @@ static ImageSourceAsyncContext* CheckAsyncContext(ImageSourceAsyncContext* conte
 
         if (context->rImageSource == nullptr) {
             HiLog::Error(LABEL, "empty context rImageSource");
+            context->status = ERROR;
             return nullptr;
         }
     }
@@ -1786,7 +1829,7 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     } else {
         HiLog::Error(LABEL, "Create PixelMap List error, error=%{public}u", errorCode);
         context->errMsg = "Create PixelMap List error";
-        context->status = ERROR;
+        context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
     }
 }
 
@@ -1821,7 +1864,7 @@ STATIC_COMPLETE_FUNC(CreatePixelMapList)
     HiLog::Debug(LABEL, "CreatePixelMapListComplete set to nullptr");
     context->pixelMaps = nullptr;
 
-    ImageSourceCallbackRoutine(env, context, result);
+    ImageSourceCallbackWithErrorObj(env, context, result);
 }
 
 napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info info)
@@ -1830,7 +1873,7 @@ napi_value ImageSourceNapi::CreatePixelMapList(napi_env env, napi_callback_info 
 
     auto asyncContext = UnwrapContextForList(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
             "async context unwrap failed");
     }
 
@@ -1872,7 +1915,7 @@ STATIC_EXEC_FUNC(GetDelayTime)
     } else {
         HiLog::Error(LABEL, "Get DelayTime error, error=%{public}u", errorCode);
         context->errMsg = "Get DelayTime error";
-        context->status = errorCode;
+        context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
     }
 }
 
@@ -1907,7 +1950,7 @@ STATIC_COMPLETE_FUNC(GetDelayTime)
 
     HiLog::Debug(LABEL, "GetDelayTimeComplete set to nullptr");
     context->delayTimes = nullptr;
-    ImageSourceCallbackRoutine(env, context, result);
+    ImageSourceCallbackWithErrorObj(env, context, result);
 }
 
 napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
@@ -1984,7 +2027,7 @@ STATIC_COMPLETE_FUNC(GetFrameCount)
     }
 
     context->frameCount = 0;
-    ImageSourceCallbackRoutine(env, context, result);
+    ImageSourceCallbackWithErrorObj(env, context, result);
 }
 
 napi_value ImageSourceNapi::GetFrameCount(napi_env env, napi_callback_info info)
