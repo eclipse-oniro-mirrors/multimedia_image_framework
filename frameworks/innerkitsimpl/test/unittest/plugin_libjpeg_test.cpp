@@ -949,9 +949,9 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry001, TestSize.Level3)
     bool ret = exinfo.CreateExifEntry(EXIF_TAG_BITS_PER_SAMPLE, ptrExifData, value, order, &entry);
     ASSERT_EQ(ret, false);
     ExifEntry *ptrEntry = new ExifEntry;
-    exinfo.CreateExifEntry(EXIF_TAG_BITS_PER_SAMPLE, ptrExifData, value, order, &ptrEntry);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_BITS_PER_SAMPLE, ptrExifData, value, order, &ptrEntry);
     ASSERT_EQ(ret, false);
-    exinfo.CreateExifEntry(EXIF_TAG_BITS_PER_SAMPLE, ptrExifData, "test,test", order, &ptrEntry);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_BITS_PER_SAMPLE, ptrExifData, "test,test", order, &ptrEntry);
     ASSERT_EQ(ret, true);
     delete ptrEntry;
     ptrEntry = nullptr;
@@ -1076,8 +1076,8 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry006, TestSize.Level3)
     bool ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LATITUDE, ptrExifData, value, order, &entry);
     ASSERT_EQ(ret, false);
     ExifEntry *ptrEntry = new ExifEntry;
-    exinfo.CreateExifEntry(EXIF_TAG_GPS_LATITUDE, ptrExifData, "test,test", order, &ptrEntry);
-    ASSERT_EQ(ret, false);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_LATITUDE, ptrExifData, "test,test", order, &ptrEntry);
+    ASSERT_EQ(ret, true);
     delete ptrEntry;
     ptrEntry = nullptr;
     free(fileBuf);
