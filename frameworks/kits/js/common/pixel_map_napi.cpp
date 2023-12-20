@@ -588,17 +588,12 @@ napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
     napi_value constructor = nullptr;
     napi_status status;
 
-    napi_value globalValue;
-    napi_get_global(env, &globalValue);
-    napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
-
-    napi_value imageInfo;
-    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
-    napi_value funcArgv[1] = { imageInfo };
-    napi_value returnValue;
-    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
-
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
+    napi_value globalValue = nullptr;
     status = napi_get_named_property(env, globalValue, CLASS_NAME.c_str(), &constructor);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
 
@@ -715,16 +710,11 @@ void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
 {
-    napi_value globalValue;
-    napi_get_global(env, &globalValue);
-    napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
-
-    napi_value imageInfo;
-    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
-    napi_value funcArgv[1] = { imageInfo };
-    napi_value returnValue;
-    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
 
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -772,16 +762,11 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap)
 {
-    napi_value globalValue;
-    napi_get_global(env, &globalValue);
-    napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
-
-    napi_value imageInfo;
-    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
-    napi_value funcArgv[1] = { imageInfo };
-    napi_value returnValue;
-    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
 
     napi_value constructor = nullptr;
     napi_value result = nullptr;
@@ -846,16 +831,11 @@ void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void 
 napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
 {
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
-    napi_value globalValue;
-    napi_get_global(env, &globalValue);
-    napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
-
-    napi_value imageInfo;
-    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
-    napi_value funcArgv[1] = { imageInfo };
-    napi_value returnValue;
-    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -922,15 +902,11 @@ napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_in
 }
 #else
 {
-    napi_value globalValue;
-    napi_get_global(env, &globalValue);
-    napi_value func;
-    napi_get_named_property(env, globalValue, "requireNapi", &func);
-    napi_value imageInfo;
-    napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
-    napi_value funcArgv[1] = { imageInfo };
-    napi_value returnValue;
-    napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status status;
