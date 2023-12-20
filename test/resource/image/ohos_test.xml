@@ -79,7 +79,7 @@
     </target>
     <target name="jpeg_hw_decoder_test">
         <preparer>
-            <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_hw1.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="test_imagesystemadapter_java_maple">
