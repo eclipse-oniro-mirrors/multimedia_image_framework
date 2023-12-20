@@ -1259,5 +1259,102 @@ HWTEST_F(PluginLibJpegTest, CreateExifEntry0012, TestSize.Level3)
     fileBuf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0012 end";
 }
+
+/**
+ * @tc.name: CreateExifEntry0013
+ * @tc.desc: CreateExifEntry
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CreateExifEntry0013, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0013 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData;
+    bool isNewExifData = false;
+    unsigned long fileLength = 100;
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    exinfo.CreateExifData(fileBuf, fileLength, &ptrExifData, isNewExifData);
+    ExifByteOrder order = exinfo.GetExifByteOrder(isNewExifData, fileBuf);
+    ExifEntry *entry = nullptr;
+    const std::string value = "test/test/test/test/test";
+    bool ret = exinfo.CreateExifEntry(EXIF_TAG_GPS_DATE_STAMP, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_IMAGE_DESCRIPTION, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_ISO_SPEED_RATINGS, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_ISO_SPEED, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_LIGHT_SOURCE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_MAKE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_METERING_MODE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_MODEL, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_PIXEL_X_DIMENSION, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_PIXEL_Y_DIMENSION, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_RECOMMENDED_EXPOSURE_INDEX, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_SCENE_TYPE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_SENSITIVITY_TYPE, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_STANDARD_OUTPUT_SENSITIVITY, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CreateExifEntry(EXIF_TAG_USER_COMMENT, ptrExifData, value, order, &entry);
+    ASSERT_EQ(ret, true);
+    free(fileBuf);
+    fileBuf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CreateExifEntry0013 end";
+}
+
+/**
+ * @tc.name: SetDEDataByteCount001
+ * @tc.desc: SetDEDataByteCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetDEDataByteCount001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount001 start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    uint16_t dataFormat = byteorder.ReadUnsignedShort();
+    int32_t numberOfComponents = byteorder.ReadInt32();
+    uint32_t byteCount = 0;
+    bool ret = byteorder.SetDEDataByteCount(0x0000, dataFormat, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, false);
+    ret = byteorder.SetDEDataByteCount(0x0133, -1, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, false);
+    ret = byteorder.SetDEDataByteCount(0x0133, 1, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, true);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount001 end";
+}
+
+/**
+ * @tc.name: ParseIFDPointerTag002
+ * @tc.desc: ParseIFDPointerTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    uint16_t tagNumber = byteorder.ReadUnsignedShort();
+    const ExifIfd ifd = byteorder.GetIFDOfIFDPointerTag(tagNumber);;
+    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SHORT);
+    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SSHORT);
+    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_LONG);
+    byteorder.ParseIFDPointerTag(ifd, EXIF_FORMAT_SLONG);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

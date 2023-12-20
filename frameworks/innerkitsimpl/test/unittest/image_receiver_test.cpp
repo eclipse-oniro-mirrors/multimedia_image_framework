@@ -319,14 +319,13 @@ HWTEST_F(ImageReceiverTest, ImageReceiver0016, TestSize.Level3)
 HWTEST_F(ImageReceiverTest, ImageReceiver0017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0017 start";
-    ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
-    std::shared_ptr<ImageReceiver> imageReceiver1 = imageReceiverManager.getImageReceiverByKeyId("1");
+    std::shared_ptr<ImageReceiver> imageReceiver1 = nullptr;
     int32_t width = 640;
     int32_t height = 480;
     int32_t format = 4;
     int32_t capicity = 8;
     imageReceiver1->CreateImageReceiver(width, height, format, capicity);
-    ASSERT_EQ(imageReceiver1, nullptr);
+    ASSERT_NE(imageReceiver1, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver0017 end";
 }
 
