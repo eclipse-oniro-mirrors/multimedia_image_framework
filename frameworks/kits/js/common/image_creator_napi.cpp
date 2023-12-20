@@ -229,13 +229,12 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
     status = napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr);
     if (status != napi_ok || ((argc != ARGS3) && (argc != ARGS4))) {
         std::string errMsg = "Invailed arg counts ";
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
             errMsg.append(std::to_string(argc)));
     }
     std::string errMsg;
     if (!ImageNapiUtils::ParseImageCreatorReceiverArgs(env, argc, argv, args, errMsg)) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
-            errMsg);
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, errMsg);
     }
     int32_t len = sizeof(args) / sizeof(args[PARAM0]);
     if (isTest(args, len)) {

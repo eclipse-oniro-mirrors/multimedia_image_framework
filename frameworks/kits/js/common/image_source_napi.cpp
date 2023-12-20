@@ -1470,8 +1470,7 @@ napi_value ImageSourceNapi::ModifyImageProperty(napi_env env, napi_callback_info
     napi_status status;
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContextForModify(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
-            "async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "async context unwrap failed");
     }
 
     if (asyncContext->callbackRef == nullptr) {
@@ -1521,8 +1520,7 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
     napi_status status;
     std::unique_ptr<ImageSourceAsyncContext> asyncContext = UnwrapContext(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
-            "async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "async context unwrap failed");
     }
 
     if (asyncContext->callbackRef == nullptr) {
