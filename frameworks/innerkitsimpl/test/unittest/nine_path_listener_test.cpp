@@ -102,7 +102,7 @@ HWTEST_F(NinePathListenerTest, Scale002, TestSize.Level3)
     int32_t scaledHeight = 4;
     ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
     delete ninepath.patch_;
-    ninepath.patch_= nullptr;
+    ninepath.patch_ = nullptr;
     GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 end";
 }
 
