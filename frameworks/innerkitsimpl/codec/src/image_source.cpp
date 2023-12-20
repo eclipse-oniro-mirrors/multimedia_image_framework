@@ -534,8 +534,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d), pixelMapSize: (%{public}d, %{public}d)", opts.desiredSize.width,
-        opts.desiredSize.height, info.size.width, info.size.height, pixelMap->GetWidth(), pixelMap->GetHeight());
+        "imageSize: (%{public}d, %{public}d)", opts.desiredSize.width, opts.desiredSize.height, info.size.width,
+        info.size.height);
     return pixelMap;
 }
 
