@@ -53,6 +53,7 @@ base_sep_b = "/b"
 base_ase = "ase"
 resource_management_subsystem =
     "/$base_sep_b$base_ase/global/resource_management"
+graphic_surface_root = "//foundation/graphic/graphic_surface"
 
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia

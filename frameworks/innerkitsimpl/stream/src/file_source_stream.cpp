@@ -151,7 +151,7 @@ bool FileSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        HiLog::Info(LABEL, "[FileSourceStream]peek dataStreamBuffer fail.");
+        HiLog::Info(LABEL, "[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}zu", desiredSize);
         return false;
     }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);

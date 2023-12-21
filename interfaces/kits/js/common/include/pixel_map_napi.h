@@ -53,13 +53,17 @@ public:
     bool IsLockPixelMap();
     bool LockPixelMap();
     void UnlockPixelMap();
-
+    static napi_ref GetConstructor()
+    {
+        return sConstructor_;
+    }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
 
     // readonly property
     static napi_value GetIsEditable(napi_env env, napi_callback_info info);
+    static napi_value GetIsStrideAlignment(napi_env env, napi_callback_info info);
 
     // static mothod
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
@@ -67,6 +71,8 @@ private:
     static napi_value Unmarshalling(napi_env env, napi_callback_info info);
     static void UnmarshallingComplete(napi_env env, napi_status status, void *data);
     static napi_value CreatePixelMapFromParcel(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapFromSurface(napi_env env, napi_callback_info info);
+    static void CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
 

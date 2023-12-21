@@ -117,10 +117,10 @@ do { \
 #ifdef IMAGE_DEBUG_FLAG
 #define IMAGE_INFO(fmt, ...) DECORATOR_HILOG(HiLog::Info, fmt, ##__VA_ARGS__)
 #define IMAGE_DEBUG(fmt, ...) DECORATOR_HILOG(HiLog::Debug, fmt, ##__VA_ARGS__)
-#define IMAGE_FUNCTION_IN(fmt, ...) DECORATOR_HILOG(HiLog::Info, fmt "%{public}s IN", __FUNCTION__, ##__VA_ARGS__)
-#define IMAGE_FUNCTION_OUT(fmt, ...) DECORATOR_HILOG(HiLog::Info, fmt "%{public}s OUT", __FUNCTION__, ##__VA_ARGS__)
-#define IMAGE_LINE_IN(fmt, ...) DECORATOR_HILOG(HiLog::Info, fmt "%{public}d IN", __LINE__, ##__VA_ARGS__)
-#define IMAGE_LINE_OUT(fmt, ...) DECORATOR_HILOG(HiLog::Info, fmt "%{public}d OUT", __LINE__, ##__VA_ARGS__)
+#define IMAGE_FUNCTION_IN(fmt, ...) DECORATOR_HILOG(HiLog::Debug, fmt "%{public}s IN", __FUNCTION__, ##__VA_ARGS__)
+#define IMAGE_FUNCTION_OUT(fmt, ...) DECORATOR_HILOG(HiLog::Debug, fmt "%{public}s OUT", __FUNCTION__, ##__VA_ARGS__)
+#define IMAGE_LINE_IN(fmt, ...) DECORATOR_HILOG(HiLog::Debug, fmt "%{public}d IN", __LINE__, ##__VA_ARGS__)
+#define IMAGE_LINE_OUT(fmt, ...) DECORATOR_HILOG(HiLog::Debug, fmt "%{public}d OUT", __LINE__, ##__VA_ARGS__)
 #else
 #define IMAGE_INFO(fmt, ...)
 #define IMAGE_DEBUG(fmt, ...)
