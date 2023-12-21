@@ -28,6 +28,7 @@ typedef struct TextureEncodeOptionsType {
     uint8_t blockX_;
     uint8_t blockY_;
     int32_t stride_;
+    QualityProfile privateProfile_; // enum type defined in astc-encoder module: HIGH_QUALITY_PROFILE HIGH_SPEED_PROFILE
 } TextureEncodeOptions;
 
 typedef struct AstcEncoderInfo {
