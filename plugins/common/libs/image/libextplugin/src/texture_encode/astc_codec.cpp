@@ -35,6 +35,8 @@ constexpr uint8_t ASTC_NUM_8 = 8;
 constexpr uint8_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t ASTC_NUM_24 = 24;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+constexpr uint8_t DEFAULT_DIM = 4;
+constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 for thumbnail
 
 uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap)
 {
@@ -86,7 +88,7 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int blockZ = 1;
 
     float quality = ASTCENC_PRE_FAST;
-    unsigned int flags = 0;
+    unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
     if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
@@ -99,6 +101,12 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
         HiLog::Error(LABEL, "ERROR: config failed");
         return ERROR;
     }
+    work->config.privateProfile = option->privateProfile_;
+    if (work->config.privateProfile == HIGH_SPEED_PROFILE) {
+        work->config.tune_refinement_limit = 1;
+        work->config.tune_candidate_limit = 1;
+        work->config.tune_partition_count_limit = 1;
+    }
     if (astcenc_context_alloc(&work->config, 1, &work->codec_context) != ASTCENC_SUCCESS) {
         return ERROR;
     }
@@ -107,6 +115,8 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
 
 void extractDimensions(std::string &format, TextureEncodeOptions &param)
 {
+    param.blockX_ = DEFAULT_DIM;
+    param.blockY_ = DEFAULT_DIM;
     std::size_t slashPos = format.rfind('/');
     if (slashPos != std::string::npos) {
         std::string dimensions = format.substr(slashPos + 1);
@@ -272,6 +282,20 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
     return SUCCESS;
 }
 
+static QualityProfile GetAstcQuality(int32_t quality)
+{
+    QualityProfile privateProfile;
+    switch (quality) {
+        case HIGH_SPEED_PROFILE_MAP_QUALITY:
+            privateProfile = HIGH_SPEED_PROFILE;
+            break;
+        default:
+            privateProfile = HIGH_QUALITY_PROFILE;
+            break;
+    }
+    return privateProfile;
+}
+
 uint32_t AstcCodec::ASTCEncode()
 {
     ImageInfo imageInfo;
@@ -280,6 +304,7 @@ uint32_t AstcCodec::ASTCEncode()
     param.width_ = imageInfo.size.width;
     param.height_ = imageInfo.size.height;
     param.stride_ = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
+    param.privateProfile_ = GetAstcQuality(astcOpts_.quality);
     bool enableQualityCheck = false; // astcOpts_.enableQualityCheck
     bool hardwareFlag = false;
     extractDimensions(astcOpts_.format, param);
@@ -287,8 +312,8 @@ uint32_t AstcCodec::ASTCEncode()
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
 
-    if (ImageSystemProperties::GetAstcHardWareEncodeEnabled()) {
-        HiLog::Info(LABEL, "astc hardware encode begin");
+    if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+        (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         std::shared_ptr<ImageCompressor> instance = ImageCompressor::GetInstance();
         if (!(instance -> CreateKernel())) {
             HiLog::Error(LABEL, "Create kernel error !");
@@ -299,6 +324,7 @@ uint32_t AstcCodec::ASTCEncode()
             }
         }
         instance->ReleaseResource();
+        HiLog::Info(LABEL, "astc hardware encode finished");
     }
     if (!hardwareFlag) {
         uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
@@ -307,6 +333,8 @@ uint32_t AstcCodec::ASTCEncode()
             return ERROR;
         }
     }
+    HiLog::Info(LABEL, "astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
+        hardwareFlag, enableQualityCheck, param.privateProfile_);
     astcOutput_->SetOffset(outSize);
     return SUCCESS;
 }
