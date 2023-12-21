@@ -244,7 +244,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
             streamPtr = FileSourceStream::CreateSourceStream(pathName);
         }
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create file path source stream.");
+            HiLog::Error(LABEL, "[ImageSource]failed to create file path source stream. pathName=%s", pathName.c_str());
         }
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by path");
@@ -533,7 +533,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success");
+    HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
+        "imageSize: (%{public}d, %{public}d)", opts.desiredSize.width, opts.desiredSize.height, info.size.width,
+        info.size.height);
     return pixelMap;
 }
 
@@ -1136,7 +1138,7 @@ uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t siz
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!sourceStreamPtr_->Peek(size, outData)) {
-        HiLog::Error(LABEL, "[ImageSource]stream peek the data fail.");
+        HiLog::Error(LABEL, "[ImageSource]stream peek the data fail, desiredSize:%{public}zu", size);
         return ERR_IMAGE_SOURCE_DATA;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
