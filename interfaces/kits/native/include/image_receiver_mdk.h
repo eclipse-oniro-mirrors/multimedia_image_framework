@@ -33,8 +33,8 @@
  * @version 2.0
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H
 #include "napi/native_api.h"
 #include "image_mdk_common.h"
 #include "image_mdk.h"
@@ -275,4 +275,4 @@ int32_t OH_Image_Receiver_Release(ImageReceiverNative* native);
 #endif
 /** @} */
 
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H_
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_RECEIVER_MDK_H

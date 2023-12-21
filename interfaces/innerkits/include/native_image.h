@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H_
-#define INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H_
+#ifndef INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H
+#define INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H
 
 #include <map>
 #include <memory>
@@ -66,4 +66,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H_
+#endif // INTERFACES_INNERKITS_INCLUDE_NATIVE_IMAGE_H

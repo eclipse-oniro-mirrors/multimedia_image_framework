@@ -80,7 +80,8 @@ bool WbmpFormatAgent::read_header(const void *stream, uint32_t dataSize)
     }
     HiLog::Debug(LABEL, "read_header data %{public}d.", data);
 
-    uint64_t width, height;
+    uint64_t width;
+    uint64_t height;
     if (!read_mbf(pData, width, offset, dataSize) || width > 0xFFFF || !width) {
         return false;
     }

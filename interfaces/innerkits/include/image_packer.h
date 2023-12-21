@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H_
-#define INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H_
+#ifndef INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H
+#define INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H
 
 #include <set>
 #include <vector>
@@ -93,4 +93,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H_
+#endif // INTERFACES_INNERKITS_INCLUDE_IMAGE_PACKER_H

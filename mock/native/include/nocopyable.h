@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MOCK_NATIVE_INCLUDE_NOCOPYABLE_H_
-#define MOCK_NATIVE_INCLUDE_NOCOPYABLE_H_
+#ifndef MOCK_NATIVE_INCLUDE_NOCOPYABLE_H
+#define MOCK_NATIVE_INCLUDE_NOCOPYABLE_H
 
 namespace OHOS {
 #define DISALLOW_COPY_AND_MOVE(className) \
@@ -38,4 +38,4 @@ private:
     DISALLOW_COPY_AND_MOVE(NoCopyable);
 };
 } // namespace OHOS
-#endif  // MOCK_NATIVE_INCLUDE_NOCOPYABLE_H_
+#endif  // MOCK_NATIVE_INCLUDE_NOCOPYABLE_H

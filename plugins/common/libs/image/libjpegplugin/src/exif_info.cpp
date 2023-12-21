@@ -62,7 +62,7 @@ namespace {
     static constexpr size_t SIZE_ONE = 1;
 
     /* raw EXIF header data */
-    static const unsigned char exifHeader[] = {
+    static const unsigned char EXIF_HEADER[] = {
         0xff, 0xd8, 0xff, 0xe1
     };
     /* Offset of tiff begin from jpeg file begin */
@@ -75,7 +75,7 @@ namespace {
         ExifTag tag;
         const std::string name;
         const uint16_t number;
-    } ExifTagTable[] = {
+    } EXIF_TAG_TABLE[] = {
         {EXIF_TAG_GPS_VERSION_ID, "GPSVersionID", 0x0000},
         {EXIF_TAG_INTEROPERABILITY_INDEX, "InteroperabilityIndex", 0x0001},
         {EXIF_TAG_GPS_LATITUDE_REF, "GPSLatitudeRef", 0x0001},
@@ -793,7 +793,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
 
     // Write EXIF header to buffer
     uint32_t index = 0;
-    if (sizeof(exifHeader) >= size) {
+    if (sizeof(EXIF_HEADER) >= size) {
         HiLog::Debug(LABEL, "There is not enough space for EXIF header!");
         free(tempBuf);
         tempBuf = nullptr;
@@ -802,8 +802,8 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
 
-    for (size_t i = 0; i < sizeof(exifHeader); i++) {
-        tempBuf[index] = exifHeader[i];
+    for (size_t i = 0; i < sizeof(EXIF_HEADER); i++) {
+        tempBuf[index] = EXIF_HEADER[i];
         index += 1;
     }
 
@@ -847,7 +847,7 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     }
 
     // Write JPEG image data, skipping the non-EXIF header
-    if ((index + size - orginExifDataLength - sizeof(exifHeader) - MOVE_OFFSET_8) > size) {
+    if ((index + size - orginExifDataLength - sizeof(EXIF_HEADER) - MOVE_OFFSET_8) > size) {
         HiLog::Debug(LABEL, "There is not enough space for writing JPEG image data!");
         free(tempBuf);
         tempBuf = nullptr;
@@ -856,8 +856,8 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
 
-    for (unsigned int i = 0; i < (size - orginExifDataLength - sizeof(exifHeader)); i++) {
-        tempBuf[index] = data[orginExifDataLength + sizeof(exifHeader) + i];
+    for (unsigned int i = 0; i < (size - orginExifDataLength - sizeof(EXIF_HEADER)); i++) {
+        tempBuf[index] = data[orginExifDataLength + sizeof(EXIF_HEADER) + i];
         index += 1;
     }
 
@@ -1584,7 +1584,7 @@ bool EXIFInfo::WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLen
     }
 
     // Write EXIF header
-    if (fwrite(exifHeader, sizeof(exifHeader), 1, fp) != 1) {
+    if (fwrite(EXIF_HEADER, sizeof(EXIF_HEADER), 1, fp) != 1) {
         HiLog::Debug(LABEL, "Error writing EXIF header to file!");
         ReleaseExifDataBuffer(exifDataBuf);
         return false;
@@ -1610,7 +1610,7 @@ bool EXIFInfo::WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLen
         return false;
     }
     // Write JPEG image data, skipping the non-EXIF header
-    unsigned int dataOffset = orginExifDataLength + sizeof(exifHeader);
+    unsigned int dataOffset = orginExifDataLength + sizeof(EXIF_HEADER);
     if (fwrite(buf + dataOffset, fileLength - dataOffset, 1, fp) != 1) {
         HiLog::Debug(LABEL, "Error writing JPEG image data to file!");
         ReleaseExifDataBuffer(exifDataBuf);
@@ -1900,8 +1900,8 @@ void ByteOrderedBuffer::ParseIFDPointerTag(const ExifIfd &ifd, const uint16_t &d
 
 bool ByteOrderedBuffer::IsValidTagNumber(const uint16_t &tagNumber)
 {
-    for (uint32_t i = 0; (IsSameTextStr(ExifTagTable[i].name, "")); i++) {
-        if (ExifTagTable[i].number == tagNumber) {
+    for (uint32_t i = 0; (IsSameTextStr(EXIF_TAG_TABLE[i].name, "")); i++) {
+        if (EXIF_TAG_TABLE[i].number == tagNumber) {
             return true;
         }
     }

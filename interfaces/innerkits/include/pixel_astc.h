@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H_
-#define INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H_
+#ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H
+#define INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H
 
 #include "pixel_map.h"
 
@@ -88,4 +88,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H_
+#endif // INTERFACES_INNERKITS_INCLUDE_PIXEL_ASTC_H
