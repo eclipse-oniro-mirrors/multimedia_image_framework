@@ -443,7 +443,7 @@ HWTEST_F(ExifMakerNoteTest, ParserIFDTest001, TestSize.Level3)
     ExifMakerNote exifMakerNote;
     uint32_t offset = 0;
     uint32_t ifd = 0;
-    uint32_t deep =0;
+    uint32_t deep = 0;
     bool result = exifMakerNote.ParserIFD(offset, ifd, deep);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest001 end";
