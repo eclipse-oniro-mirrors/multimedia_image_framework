@@ -71,6 +71,8 @@ private:
     static napi_value Unmarshalling(napi_env env, napi_callback_info info);
     static void UnmarshallingComplete(napi_env env, napi_status status, void *data);
     static napi_value CreatePixelMapFromParcel(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapFromSurface(napi_env env, napi_callback_info info);
+    static void CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
 
