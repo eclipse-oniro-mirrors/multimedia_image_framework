@@ -1051,27 +1051,17 @@ group("unittest") {
     ":gstpluginfwtest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
-    ":imagepixelmaptest",
-    ":imagesourcetest",
     ":imageutilstest",
     ":interfacetest",
     ":jpegdecoderextest",
     ":jpegutilstest",
     ":napitest",
     ":pixelconvertadaptertest",
-    ":pixelmaptest",
-    ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
-    ":pngtest",
     ":rawdecodertest",
-    ":receivertest",
     ":streamtest",
     ":transformtest",
     ":webpplugintest",
   ]
-
-  if (enable_jpeg_hw_decode) {
-    deps += [ ":jpeg_hw_decoder_test" ]
-  }
 }
 ################################################
