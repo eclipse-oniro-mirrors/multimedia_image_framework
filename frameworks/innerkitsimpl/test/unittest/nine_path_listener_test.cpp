@@ -41,10 +41,10 @@ HWTEST_F(NinePathListenerTest, ReadChunk001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 start";
     ImagePlugin::NinePatchListener ninepath;
-    const std::string tag = "";
+    const std::string tag = "npTc";
     void *data = nullptr;
     ASSERT_EQ(data, nullptr);
-    size_t length = 1;
+    size_t length = 88;
     bool readck = ninepath.ReadChunk(tag, data, length);
     ASSERT_EQ(readck, true);
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 end";
@@ -79,10 +79,6 @@ HWTEST_F(NinePathListenerTest, ReadChunk002, TestSize.Level3)
     const std::string tag = "npTc";
     int *p = new int;
     int32_t length = 33;
-    ImagePlugin::PngNinePatchRes att;
-    att.numXDivs = 0;
-    att.numYDivs = 0;
-    att.numColors = 0;
     bool ret = ninepath.ReadChunk(tag, static_cast<void *>(p), length);
     ASSERT_EQ(ret, false);
     delete p;
@@ -106,7 +102,7 @@ HWTEST_F(NinePathListenerTest, Scale002, TestSize.Level3)
     int32_t scaledHeight = 4;
     ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
     delete ninepath.patch_;
-    ninepath.patch_=nullptr;
+    ninepath.patch_ = nullptr;
     GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 end";
 }
 
