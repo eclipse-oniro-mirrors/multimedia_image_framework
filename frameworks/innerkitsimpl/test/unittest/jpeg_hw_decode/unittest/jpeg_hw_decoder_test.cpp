@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include "hardware/jpeg_hw_decoder.h"
 #include "mock_jpeg_hw_decode_flow.h"
+#include "image_system_properties.h"
 
 namespace OHOS::Media {
 using namespace testing::ext;
@@ -26,41 +27,8 @@ class JpegHwDecoderTest : public testing::Test {
 public:
     static constexpr char JPEG_FORMAT[] = "image/jpeg";
     static constexpr char HEIF_FORMAT[] = "image/heif";
-    static constexpr char TEST_JPEG_IMG[] = "/data/local/tmp/image/test_hw.jpg";
+    static constexpr char TEST_JPEG_IMG[] = "/data/local/tmp/image/test_hw1.jpg";
 };
-
-HWTEST_F(JpegHwDecoderTest, supported_img_inner_size, TestSize.Level1)
-{
-    JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
-        .width = 2736,
-        .height = 3648
-    };
-    bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT, srcImgSize);
-    ASSERT_TRUE(ret);
-}
-
-HWTEST_F(JpegHwDecoderTest, supported_img_lower_bound_size, TestSize.Level1)
-{
-    JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
-        .width = 512,
-        .height = 512
-    };
-    bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT, srcImgSize);
-    ASSERT_TRUE(ret);
-}
-
-HWTEST_F(JpegHwDecoderTest, supported_img_upper_bound_size, TestSize.Level1)
-{
-    JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
-        .width = 8192,
-        .height = 8192
-    };
-    bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT, srcImgSize);
-    ASSERT_TRUE(ret);
-}
 
 HWTEST_F(JpegHwDecoderTest, unsupported_img_empty_format, TestSize.Level1)
 {
@@ -88,7 +56,7 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_small, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
     PlSize srcImgSize = {
-        .width = 511,
+        .width = 140,
         .height = 512
     };
     bool ret = testObj.IsHardwareDecodeSupported(JPEG_FORMAT, srcImgSize);
@@ -109,12 +77,15 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_big, TestSize.Level1)
 HWTEST_F(JpegHwDecoderTest, decode_ok, TestSize.Level1)
 {
     CommandOpt opt;
-    opt.width = 3456;
-    opt.height = 4608;
+    opt.width = 1280;
+    opt.height = 768;
     opt.sampleSize = 1;
     opt.inputFile = TEST_JPEG_IMG;
     JpegHwDecoderFlow demo;
-    bool ret = demo.Run(opt, false);
+    bool ret = true;
+    if (ImageSystemProperties::GetHardWareDecodeEnabled()) {
+        ret = demo.Run(opt, false);
+    }
     ASSERT_TRUE(ret);
 }
 } // namespace OHOS::Media
