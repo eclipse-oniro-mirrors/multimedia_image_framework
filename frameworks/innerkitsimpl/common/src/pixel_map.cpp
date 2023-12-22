@@ -1434,7 +1434,6 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
             }
             if (fd != nullptr) {
                 ::close(*fd);
-                delete fd;
             }
             context = nullptr;
             addr = nullptr;
@@ -1988,6 +1987,9 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
             pixelMap->freePixelMapProc_(base, context, bufferSize);
         }
         ReleaseMemory(allocType, base, context, bufferSize);
+        if (context != nullptr) {
+            delete static_cast<int32_t *>(context);
+        }
         delete pixelMap;
         HiLog::Error(LABEL, "create pixel map from parcel failed, set image info error.");
         return nullptr;
