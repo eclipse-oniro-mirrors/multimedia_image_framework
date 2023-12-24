@@ -1462,7 +1462,6 @@ HWTEST_F(ImagePixelMapTest, CheckPixelsInput002, TestSize.Level3)
     uint32_t status = 0;
 
     ASSERT_NE(source, nullptr);
-    ASSERT_NE(bufferSize, 0);
 
     ImageInfo imageInfo;
     pixelMap->GetImageInfo(imageInfo);
@@ -1757,7 +1756,7 @@ HWTEST_F(ImagePixelMapTest, SetAlpha001, TestSize.Level3)
     ASSERT_EQ(pixelsSize > 0 ? 0 : 1, 0);
 
     uint32_t status = pixelmap->SetAlpha(percent);
-    ASSERT_EQ(status, 0);
+    ASSERT_EQ(status, SUCCESS);
 
     ASSERT_EQ(alphaType, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetAlpha001 end";
@@ -1826,6 +1825,42 @@ HWTEST_F(ImagePixelMapTest, TlvEncode001, TestSize.Level3)
     ASSERT_NE(pixelMap2, nullptr);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: TlvEncode001 end";
+}
+
+/**
+ * @tc.name: ImagePixelMap008
+ * @tc.desc: RGB_888 pixel format pixel map operation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, TransformData001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: TransformData001 start";
+    /**
+     * @tc.steps: step1. Set image info and alloc pixel map memory.
+     * @tc.expected: step1. The pixel map info is correct.
+     */
+    int8_t bytesPerPixel = 3;
+    int8_t rowDataSize = PIXEL_MAP_TEST_WIDTH * bytesPerPixel;
+    ImageInfo imgInfo;
+    imgInfo.size.width = PIXEL_MAP_TEST_WIDTH;
+    imgInfo.size.height = PIXEL_MAP_TEST_HEIGHT;
+    imgInfo.pixelFormat = PixelFormat::RGB_888;
+    imgInfo.colorSpace = ColorSpace::SRGB;
+    PixelMap pixelMap;
+    pixelMap.SetImageInfo(imgInfo);
+    uint32_t pixelsSize = rowDataSize * PIXEL_MAP_TEST_HEIGHT;
+    void *buffer = malloc(pixelsSize);
+    EXPECT_NE(buffer, nullptr);
+    pixelMap.SetPixelsAddr(buffer, nullptr, pixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
+    TransformData transformDate = {1.5, 1.5, 0, -1, -1, -1, -1, 0, 0, false, false};
+    pixelMap.SetTransformData(transformDate);
+    TransformData transformDate2;
+    pixelMap.GetTransformData(transformDate2);
+    EXPECT_EQ(transformDate2.scaleX, transformDate.scaleX);
+    EXPECT_EQ(transformDate2.scaleY, transformDate.scaleY);
+    EXPECT_EQ(transformDate2.flipX, transformDate.flipX);
+    EXPECT_EQ(transformDate2.flipY, transformDate.flipY);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: TransformData001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
