@@ -1987,7 +1987,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
             pixelMap->freePixelMapProc_(base, context, bufferSize);
         }
         ReleaseMemory(allocType, base, context, bufferSize);
-        if (context != nullptr) {
+        if (allocType == AllocatorType::SHARE_MEM_ALLOC && context != nullptr) {
             delete static_cast<int32_t *>(context);
         }
         delete pixelMap;
