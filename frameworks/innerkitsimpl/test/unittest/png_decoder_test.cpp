@@ -1031,6 +1031,7 @@ HWTEST_F(PngDecoderTest, IsChunk001, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: IsChunk001 end";
 }
+
 /**
  * @tc.name: IncrementalRead003
  * @tc.desc: Test of IncrementalRead
@@ -1141,6 +1142,7 @@ HWTEST_F(PngDecoderTest, GetAllRows001, TestSize.Level3)
     pngDecoder->GetAllRows(pngPtr, row, rowNum, pass);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetAllRows001 end";
 }
+
 /**
  * @tc.name: GetAllRows002
  * @tc.desc: Test of GetAllRows
@@ -1235,6 +1237,7 @@ HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
     nine.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: ConfigInfo001 end";
 }
+
 /**
  * @tc.name: DoOneTimeDecode001
  * @tc.desc: Test of DoOneTimeDecode
@@ -1250,6 +1253,7 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode001, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode001 end";
 }
+
 /**
  * @tc.name: DoOneTimeDecode002
  * @tc.desc: Test of DoOneTimeDecode
@@ -1265,6 +1269,7 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode002, TestSize.Level3)
     ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode002 end";
 }
+
 /**
  * @tc.name: FinishOldDecompress001
  * @tc.desc: Test of FinishOldDecompress
@@ -1278,6 +1283,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress001, TestSize.Level3)
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress001 end";
 }
+
 /**
  * @tc.name: FinishOldDecompress002
  * @tc.desc: Test of FinishOldDecompress
@@ -1292,6 +1298,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress002, TestSize.Level3)
     ASSERT_NE(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress002 end";
 }
+
 /**
  * @tc.name: InitPnglib001
  * @tc.desc: Test of InitPnglib
@@ -1305,6 +1312,7 @@ HWTEST_F(PngDecoderTest, InitPnglib001, TestSize.Level3)
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: InitPnglib001 end";
 }
+
 /**
  * @tc.name: DealNinePatch001
  * @tc.desc: Test of DealNinePatch
@@ -1321,6 +1329,7 @@ HWTEST_F(PngDecoderTest, DealNinePatch001, TestSize.Level3)
     pngDecoder->ninePatch_.patch_ = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch001 end";
 }
+
 /**
  * @tc.name: ReadUserChunk001
  * @tc.desc: Test of ReadUserChunk
@@ -1336,6 +1345,7 @@ HWTEST_F(PngDecoderTest, ReadUserChunk001, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: ReadUserChunk001 end";
 }
+
 /**
  * @tc.name: GetInterlacedRows001
  * @tc.desc: Test of GetInterlacedRows
@@ -1373,6 +1383,7 @@ HWTEST_F(PngDecoderTest, PngWarning001, TestSize.Level3)
     pngDecoder->PngWarning(pngPtr, message);
     GTEST_LOG_(INFO) << "PngDecoderTest: PngWarning001 end";
 }
+
 /**
  * @tc.name: PushCurrentToDecode004
  * @tc.desc: Test of PushCurrentToDecode
@@ -1391,6 +1402,7 @@ HWTEST_F(PngDecoderTest, PushCurrentToDecode004, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: PushCurrentToDecode004 end";
 }
+
 /**
  * @tc.name: AllocOutputBuffer001
  * @tc.desc: Test of AllocOutputBuffer
@@ -1405,6 +1417,7 @@ HWTEST_F(PngDecoderTest, AllocOutputBuffer001, TestSize.Level3)
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer001 end";
 }
+
 /**
  * @tc.name: AllocOutputBuffer002
  * @tc.desc: Test of AllocOutputBuffer
@@ -1435,6 +1448,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress003, TestSize.Level3)
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress003 end";
 }
+
 /**
  * @tc.name: FinishOldDecompress004
  * @tc.desc: Test of FinishOldDecompress
@@ -1451,6 +1465,7 @@ HWTEST_F(PngDecoderTest, FinishOldDecompress004, TestSize.Level3)
     ASSERT_NE(ret, false);
     GTEST_LOG_(INFO) << "PngDecoderTest: FinishOldDecompress004 end";
 }
+
 /**
  * @tc.name: GetImageIdatSize001
  * @tc.desc: Test of GetImageIdatSize
@@ -1467,6 +1482,7 @@ HWTEST_F(PngDecoderTest, GetImageIdatSize001, TestSize.Level3)
     ASSERT_NE(ret, 0);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetImageIdatSize001 end";
 }
+
 /**
  * @tc.name: SaveInterlacedRows003
  * @tc.desc: Test of SaveInterlacedRows
@@ -1483,6 +1499,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows003, TestSize.Level3)
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows003 end";
 }
+
 /**
  * @tc.name: SetDecodeOptionsTest013
  * @tc.desc: Test of SetDecodeOptions
