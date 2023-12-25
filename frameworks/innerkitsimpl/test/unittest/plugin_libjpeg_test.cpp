@@ -1373,6 +1373,7 @@ HWTEST_F(PluginLibJpegTest, GetOrginExifDataLength001, TestSize.Level3)
     ASSERT_NE(ret, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetOrginExifDataLength001 end";
 }
+
 /**
  * @tc.name: GenerateDEArray001
  * @tc.desc: GenerateDEArray
