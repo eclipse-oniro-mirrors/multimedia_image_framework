@@ -287,5 +287,318 @@ HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test002, TestSize.Level3)
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test002 end";
 }
+
+/**
+ * @tc.name: IsParsedTest001
+ * @tc.desc: Test of IsParsed
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsParsedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsParsedTest001 start";
+    ExifMakerNote exifMakerNote;
+    bool result = exifMakerNote.IsParsed();
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsParsedTest001 end";
+}
+
+/**
+ * @tc.name: ParserMakerNoteTest001
+ * @tc.desc: Test of ParserMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserMakerNoteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest001 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char *data = nullptr;
+    uint32_t size = 0;
+    uint32_t result = exifMakerNote.ParserMakerNote(data, size);
+    ASSERT_EQ(result, Media::ERROR);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest001 end";
+}
+
+/**
+ * @tc.name: IsHwMakerNoteTest001
+ * @tc.desc: Test of IsHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest001 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char *data = nullptr;
+    uint32_t size = 0;
+    bool result = exifMakerNote.IsHwMakerNote(data, size);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest001 end";
+}
+
+/**
+ * @tc.name: IsHwMakerNoteTest002
+ * @tc.desc: Test of IsHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest002 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char data[] = { 'e', 'x', 'p', 'o', 'r', 't', 's', 'c', 'I', 'I' };
+    uint32_t size = 20;
+    bool result = exifMakerNote.IsHwMakerNote(data, size);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest002 end";
+}
+
+/**
+ * @tc.name: IsHwMakerNoteTest003
+ * @tc.desc: Test of IsHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest003 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char data[] = { 'e', 'x', 'p', 'o', 'r', 't', 's', 'c', 'M', 'M' };
+    uint32_t size = 20;
+    bool result = exifMakerNote.IsHwMakerNote(data, size);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest003 end";
+}
+
+/**
+ * @tc.name: IsHwMakerNoteTest004
+ * @tc.desc: Test of IsHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest004 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char data[] = { 'e', 'x' };
+    uint32_t size = 20;
+    bool result = exifMakerNote.IsHwMakerNote(data, size);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest004 end";
+}
+
+/**
+ * @tc.name: GetUInt16Test001
+ * @tc.desc: Test of GetUInt16
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt16Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16Test001 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer;
+    ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    size_t offset = 0;
+    uint16_t value;
+    bool result = exifMakerNote.GetUInt16(buffer, order, offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16Test001 end";
+}
+
+/**
+ * @tc.name: GetUInt16Test002
+ * @tc.desc: Test of GetUInt16
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt16Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16Test002 start";
+    ExifMakerNote exifMakerNote;
+    size_t offset = 0;
+    uint16_t value;
+    bool result = exifMakerNote.GetUInt16(offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16Test002 end";
+}
+
+/**
+ * @tc.name: GetUInt16AndMoveTest001
+ * @tc.desc: Test of GetUInt16AndMove
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt16AndMoveTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16AndMoveTest001 start";
+    ExifMakerNote exifMakerNote;
+    uint32_t offset = 0;
+    uint16_t value;
+    bool result = exifMakerNote.GetUInt16AndMove(offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt16AndMoveTest001 end";
+}
+
+/**
+ * @tc.name: ParserIFDTest001
+ * @tc.desc: Test of ParserIFD
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserIFDTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest001 start";
+    ExifMakerNote exifMakerNote;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserIFD(offset, ifd, deep);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest001 end";
+}
+
+/**
+ * @tc.name: ParserHwMakerNoteTest001
+ * @tc.desc: Test of ParserHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserHwMakerNoteTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserHwMakerNoteTest001 start";
+    ExifMakerNote exifMakerNote;
+    bool result = exifMakerNote.ParserHwMakerNote();
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserHwMakerNoteTest001 end";
+}
+
+/**
+ * @tc.name: ParserItemTest001
+ * @tc.desc: Test of ParserItem
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserItemTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest001 start";
+    ExifMakerNote exifMakerNote;
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest001 end";
+}
+
+/**
+ * @tc.name: GetUInt32Test001
+ * @tc.desc: Test of GetUInt32
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt32Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32Test001 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer;
+    ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    size_t offset = 0;
+    uint32_t value;
+    bool result = exifMakerNote.GetUInt32(buffer, order, offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32Test001 end";
+}
+
+/**
+ * @tc.name: GetUInt32Test002
+ * @tc.desc: Test of GetUInt32
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt32Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32Test002 start";
+    ExifMakerNote exifMakerNote;
+    uint32_t offset = 0;
+    uint32_t value;
+    bool result = exifMakerNote.GetUInt32(offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32Test002 end";
+}
+
+/**
+ * @tc.name: GetUInt32AndMoveTest001
+ * @tc.desc: Test of GetUInt32AndMove
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetUInt32AndMoveTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32AndMoveTest001 start";
+    ExifMakerNote exifMakerNote;
+    uint32_t offset = 0;
+    uint32_t value;
+    bool result = exifMakerNote.GetUInt32AndMove(offset, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetUInt32AndMoveTest001 end";
+}
+
+/**
+ * @tc.name: GetDataTest001
+ * @tc.desc: Test of GetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest001 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer(3);
+    size_t offset = 2;
+    size_t count = 2;
+    std::vector<unsigned char> value;
+    bool result = exifMakerNote.GetData(buffer, offset, count, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest001 end";
+}
+
+/**
+ * @tc.name: GetDataTest002
+ * @tc.desc: Test of GetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest002 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer(3);
+    size_t offset = 2;
+    size_t count = 2;
+    std::vector<unsigned char> value;
+    bool result = exifMakerNote.GetData(offset, count, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest002 end";
+}
+
+/**
+ * @tc.name: GetDataTest003
+ * @tc.desc: Test of GetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetDataTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest003 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer(5);
+    size_t offset = 2;
+    size_t count = 2;
+    std::vector<unsigned char> value;
+    bool result = exifMakerNote.GetData(buffer, offset, count, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest003 end";
+}
+
+/**
+ * @tc.name: DumpTest003
+ * @tc.desc: Test of Dump
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, DumpTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest003 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> data(2);
+    uint32_t offset = 1;
+    uint32_t sum = 1;
+    std::string result = exifMakerNote.Dump(data, offset, sum);
+    ASSERT_EQ(result, "00");
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest003 end";
+}
 }
 }
