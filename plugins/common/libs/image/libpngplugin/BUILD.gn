@@ -37,13 +37,13 @@ ohos_shared_library("pngplugin") {
     "//third_party/zlib",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/libjpeg-turbo",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/skia/third_party/skcms",
   ]
   deps = [
     "//third_party/libpng:png_static",
