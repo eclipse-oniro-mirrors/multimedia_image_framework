@@ -385,11 +385,11 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
         return;
     }
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode start");
-    int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
+    int32_t totalSize = pixelMap.GetRowStride() * pixelMap.GetHeight();
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
-        std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
-        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + ".dat";
-    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
+        std::to_string(pixelMap.GetWidth()) + "_h" + std::to_string(pixelMap.GetHeight()) + "_rowStride" +
+        std::to_string(pixelMap.GetRowStride()) + "_total" + std::to_string(totalSize) + ".dat";
+    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap.GetPixels()), totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode failed");
         return;
     }
