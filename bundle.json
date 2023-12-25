@@ -155,7 +155,16 @@
                 "image_packer_mdk.h"
               ]
             },
-            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer_ndk"          
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer_ndk"
+          },
+          {
+            "header":{
+              "header_files":[
+                "pixel_map_from_surface.h"
+              ],
+              "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image/include"
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image:egl_image"
           }
         ],
         "test": [
