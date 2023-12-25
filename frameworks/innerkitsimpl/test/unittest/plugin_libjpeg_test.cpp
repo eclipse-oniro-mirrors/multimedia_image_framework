@@ -1356,5 +1356,84 @@ HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 end";
 }
+
+/**
+ * @tc.name: GetOrginExifDataLength001
+ * @tc.desc: GetOrginExifDataLength
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetOrginExifDataLength001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetOrginExifDataLength001 start";
+    EXIFInfo exinfo;
+    unsigned char buf[10] = "testtest";
+    unsigned int ret = exinfo.GetOrginExifDataLength(true, buf);
+    ASSERT_EQ(ret, 0);
+    ret = exinfo.GetOrginExifDataLength(false, buf);
+    ASSERT_NE(ret, 0);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetOrginExifDataLength001 end";
+}
+
+/**
+ * @tc.name: GenerateDEArray001
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray001 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 0;
+    byteOrderedBuffer.GenerateDEArray();
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray001 end";
+}
+
+/**
+ * @tc.name: GenerateDEArray002
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray002 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 21;
+    byteOrderedBuffer.GenerateDEArray();
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray002 end";
+}
+
+/**
+ * @tc.name: ReadInt32001
+ * @tc.desc: ReadInt32
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ReadInt32001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadInt32001 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 1;
+    int32_t ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_EQ(ret, -1);
+    byteOrderedBuffer.bufferLength_ = 100;
+    byteOrderedBuffer.byteOrder_ = EXIF_BYTE_ORDER_MOTOROLA;
+    ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_NE(ret, -1);
+    byteOrderedBuffer.byteOrder_ = EXIF_BYTE_ORDER_INTEL;
+    ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_NE(ret, -1);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadInt32001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
