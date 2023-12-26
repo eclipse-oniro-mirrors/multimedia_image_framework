@@ -369,7 +369,9 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
         std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
-        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + ".dat";
+        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + "_pid" +
+        std::to_string(getpid()) + "_tid" + std::to_string(gettid()) + "_uniqueId" +
+        std::to_string(pixelMap->GetUniqueId()) + ".dat";
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled failed");
         return;
