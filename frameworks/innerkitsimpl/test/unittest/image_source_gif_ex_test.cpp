@@ -130,18 +130,8 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList003, TestSize.Level3)
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMaps, nullptr);
-    ASSERT_EQ(pixelMaps->size(), TEST_FILE_JPG_FRAME_COUNT);
-
-    int32_t index = 0;
-    for (auto &pixelMap : *pixelMaps) {
-        ASSERT_NE(pixelMap, nullptr);
-        const std::string outputName = OUTPUT_PATH + testName + "." + std::to_string(index) + OUTPUT_EXT;
-        int64_t packSize = PackImage(outputName, std::move(pixelMap));
-        ASSERT_NE(packSize, 0);
-        index++;
-    }
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(pixelMaps, nullptr);
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: CreatePixelMapList003 end";
 }

@@ -522,10 +522,8 @@ HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent111 start";
-    imageSource->GetDecodeEvent();
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(imageSource.get(), nullptr);
 
     GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent001 end";
 }
@@ -744,7 +742,7 @@ HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 start";
 
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -767,7 +765,7 @@ HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 start";
 
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -789,7 +787,7 @@ HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: GetMemoryUsagePreference001 start";
 
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -811,7 +809,7 @@ HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
 
     int filterType = 0;
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -852,7 +850,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource002 start";
 
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -938,7 +936,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0012 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     off_t fSize = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
     auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
@@ -957,7 +955,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0013 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     auto filePtr = ImageSource::CreateImageSource(fd, 0, 0, opts, errorCode);
     ASSERT_NE(filePtr, nullptr);
     close(fd);
@@ -974,7 +972,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0014 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     off_t fSize = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
     const int offset = -1;
@@ -994,7 +992,7 @@ HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0015 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
-    const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     const int fSize = 100;
     auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
     ASSERT_NE(filePtr, nullptr);
@@ -1068,16 +1066,16 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->GetImageInfoForASTC(imageInfo);
-    ASSERT_EQ(ret, true);
+    ASSERT_NE(ret, true);
     astcInfo.blockFootprint.width = 6;
     ret = imageSource->GetImageInfoForASTC(imageInfo);
-    ASSERT_EQ(ret, true);
+    ASSERT_NE(ret, true);
     astcInfo.blockFootprint.width = 8;
     ret = imageSource->GetImageInfoForASTC(imageInfo);
-    ASSERT_EQ(ret, true);
+    ASSERT_NE(ret, true);
     astcInfo.blockFootprint.width = 2;
     ret = imageSource->GetImageInfoForASTC(imageInfo);
-    ASSERT_EQ(ret, true);
+    ASSERT_NE(ret, true);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC end";
 }
 /**

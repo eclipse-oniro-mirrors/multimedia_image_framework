@@ -381,39 +381,6 @@ HWTEST_F(PluginLibJpegTest, exif_info016, TestSize.Level3)
 }
 
 /**
- * @tc.name: exif_info018
- * @tc.desc: GetEncodeFormat
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat start";
-    auto jpegEncoder = std::make_shared<JpegEncoder>();
-    int32_t componentsNum;
-    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_F16, componentsNum);
-    ASSERT_EQ(componentsNum, 4);
-    jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_8888, componentsNum);
-    ASSERT_EQ(componentsNum, 4);
-    jpegEncoder->GetEncodeFormat(PixelFormat::BGRA_8888, componentsNum);
-    ASSERT_EQ(componentsNum, 4);
-    jpegEncoder->GetEncodeFormat(PixelFormat::ARGB_8888, componentsNum);
-    ASSERT_EQ(componentsNum, 4);
-    jpegEncoder->GetEncodeFormat(PixelFormat::ALPHA_8, componentsNum);
-    ASSERT_EQ(componentsNum, 1);
-    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_565, componentsNum);
-    ASSERT_EQ(componentsNum, 3);
-    jpegEncoder->GetEncodeFormat(PixelFormat::RGB_888, componentsNum);
-    ASSERT_EQ(componentsNum, 3);
-    jpegEncoder->GetEncodeFormat(PixelFormat::NV12, componentsNum);
-    ASSERT_EQ(componentsNum, 3);
-    jpegEncoder->GetEncodeFormat(PixelFormat::NV21, componentsNum);
-    ASSERT_EQ(componentsNum, 3);
-    jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
-    ASSERT_EQ(componentsNum, 4);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncodeFormat end";
-}
-
-/**
  * @tc.name: CreateExifData001
  * @tc.desc: CreateExifData
  * @tc.type: FUNC

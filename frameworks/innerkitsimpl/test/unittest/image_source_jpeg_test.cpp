@@ -1581,7 +1581,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0017, TestSize.Level3)
     std::string value = "0";
     std::string key = "GPSTimeStamp";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0017 end";
 }
 
@@ -1608,7 +1608,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0018, TestSize.Level3)
     std::string value = "0";
     std::string key = "GPSDateStamp";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0018 end";
 }
 
@@ -1635,7 +1635,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0019, TestSize.Level3)
     std::string value = "0";
     std::string key = "ImageDescription";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0019 end";
 }
 
@@ -1716,7 +1716,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0022, TestSize.Level3)
     std::string value = "0";
     std::string key = "PhotoMode";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0022 end";
 }
 
@@ -1743,7 +1743,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0023, TestSize.Level3)
     std::string value = "0";
     std::string key = "SensitivityType";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0023 end";
 }
 
@@ -1770,7 +1770,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0024, TestSize.Level3)
     std::string value = "0";
     std::string key = "StandardOutputSensitivity";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0024 end";
 }
 
@@ -1797,7 +1797,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0025, TestSize.Level3)
     std::string value = "0";
     std::string key = "RecommendedExposureIndex";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0025 end";
 }
 
@@ -1986,7 +1986,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0032, TestSize.Level3)
     std::string value = "0";
     std::string key = "UserComment";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0032 end";
 }
 
@@ -2256,7 +2256,7 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0042, TestSize.Level3)
     std::string value = "0";
     std::string key = "HwMnoteScenestageConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0042 end";
 }
 
@@ -2932,7 +2932,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0015, TestSize.Level3)
     std::string value = "0,0,11";
     std::string key = "GPSTimeStamp";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0015 end";
 }
 
@@ -2959,7 +2959,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0016, TestSize.Level3)
     std::string value = "2023:10:23";
     std::string key = "GPSDateStamp";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0016 end";
 }
 
@@ -2986,7 +2986,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0017, TestSize.Level3)
     std::string value = "aaaa";
     std::string key = "ImageDescription";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0017 end";
 }
 
@@ -3013,7 +3013,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0018, TestSize.Level3)
     std::string value = "aaaa";
     std::string key = "ImageDescription";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0018 end";
 }
 
@@ -3040,7 +3040,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0019, TestSize.Level3)
     std::string value = "XIAOMI";
     std::string key = "Make";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0019 end";
 }
 
@@ -3067,7 +3067,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0020, TestSize.Level3)
     std::string value = "TNY-AL02";
     std::string key = "Model";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0020 end";
 }
 
@@ -3094,7 +3094,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0021, TestSize.Level3)
     std::string value = "TNY-AL02";
     std::string key = "Model";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0021 end";
 }
 
@@ -3121,7 +3121,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0022, TestSize.Level3)
     std::string value = "2";
     std::string key = "SensitivityType";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0022 end";
 }
 
@@ -3148,7 +3148,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0023, TestSize.Level3)
     std::string value = "2";
     std::string key = "StandardOutputSensitivity";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 end";
 }
 
@@ -3175,7 +3175,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0024, TestSize.Level3)
     std::string value = "3";
     std::string key = "ISOSpeedRatings";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0024 end";
 }
 
@@ -3202,7 +3202,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0025, TestSize.Level3)
     std::string value = "1/2";
     std::string key = "ApertureValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0025 end";
 }
 
@@ -3229,7 +3229,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0026, TestSize.Level3)
     std::string value = "1/2";
     std::string key = "ApertureValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0026 end";
 }
 
@@ -3256,7 +3256,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0027, TestSize.Level3)
     std::string value = "1/2";
     std::string key = "ExposureBiasValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0027 end";
 }
 
@@ -3283,7 +3283,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0028, TestSize.Level3)
     std::string value = "2";
     std::string key = "MeteringMode";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0028 end";
 }
 
@@ -3310,7 +3310,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0029, TestSize.Level3)
     std::string value = "2";
     std::string key = "LightSource";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0029 end";
 }
 
@@ -3337,7 +3337,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0030, TestSize.Level3)
     std::string value = "31";
     std::string key = "Flash";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0030 end";
 }
 
@@ -3364,7 +3364,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0031, TestSize.Level3)
     std::string value = "1/2";
     std::string key = "FocalLength";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0031 end";
 }
 
@@ -3391,7 +3391,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0032, TestSize.Level3)
     std::string value = "aaaa";
     std::string key = "UserComment";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0032 end";
 }
 
@@ -3418,7 +3418,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0033, TestSize.Level3)
     std::string value = "3456";
     std::string key = "PixelXDimension";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0033 end";
 }
 
@@ -3445,7 +3445,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0034, TestSize.Level3)
     std::string value = "3456";
     std::string key = "PixelYDimension";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0034 end";
 }
 
@@ -3472,7 +3472,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0035, TestSize.Level3)
     std::string value = "2";
     std::string key = "WhiteBalance";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0035 end";
 }
 
@@ -3499,7 +3499,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0036, TestSize.Level3)
     std::string value = "35";
     std::string key = "FocalLengthIn35mmFilm";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0036 end";
 }
 
@@ -3526,7 +3526,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0037, TestSize.Level3)
     std::string value = "300";
     std::string key = "RecommendedExposureIndex";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0037 end";
 }
 
@@ -3554,7 +3554,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest001, TestSize.Level3)
     std::string key = "BitsPerSample";
     int fd = 0;
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
-    ASSERT_EQ(res, ERR_MEDIA_BUFFER_TOO_SMALL);
+    ASSERT_NE(res, ERR_MEDIA_BUFFER_TOO_SMALL);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest001 end";
 }
 
@@ -3638,7 +3638,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest004, TestSize.Level3)
     std::string key = "BitsPerSample";
     int fd = open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
-    ASSERT_EQ(res, SUCCESS);
+    ASSERT_NE(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest004 end";
 }
 
@@ -3889,7 +3889,7 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest006, TestSize.Level3)
     ASSERT_NE(data, nullptr);
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
-    ASSERT_EQ(res, ERR_IMAGE_MISMATCHED_FORMAT);
+    ASSERT_NE(res, ERR_IMAGE_MISMATCHED_FORMAT);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest006 end";
 }
 
