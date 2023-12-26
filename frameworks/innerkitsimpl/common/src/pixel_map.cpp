@@ -247,7 +247,6 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create useCustomFormat enter");
     int offset = info.offset_;
     int32_t stride = info.stride_;
     bool useCustomFormat = info.flag_;
@@ -296,6 +295,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
     dstPixelMap->SetEditable(opts.editable);
     MakePixelMap(dstPixels, fd, dstPixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
 
@@ -519,6 +519,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         return nullptr;
     }
     dstPixelMap->SetEditable(opts.editable);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
 
