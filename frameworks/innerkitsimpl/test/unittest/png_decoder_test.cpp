@@ -1519,5 +1519,118 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest013, TestSize.Level3)
     ASSERT_EQ(result, 0);
     GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest013 end";
 }
+
+/**
+ * @tc.name: DecodeTest005
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest005 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DecodeContext context;
+    pngDecoder->pngStructPtr_ = nullptr;
+    uint32_t result = pngDecoder->Decode(0, context);
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest005 end";
+}
+
+/**
+ * @tc.name: DecodeTest006
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest006 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    DecodeContext context;
+    int size = 1000;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    pngDecoder->SetSource(*streamPtr.release());
+    pngDecoder->state_ = PngDecodingState::IMAGE_ERROR;
+    uint32_t result = pngDecoder->Decode(0, context);
+    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest006 end";
+}
+
+/**
+ * @tc.name: AllocOutputBuffer003
+ * @tc.desc: Test of AllocOutputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, AllocOutputBuffer003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ImagePlugin::DecodeContext context;
+    context.allocatorType = Media::AllocatorType::DEFAULT;
+    auto ret = pngDecoder->AllocOutputBuffer(context);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer003 end";
+}
+
+/**
+ * @tc.name: AllocOutputBuffer004
+ * @tc.desc: Test of AllocOutputBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, AllocOutputBuffer004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer004 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ImagePlugin::DecodeContext context;
+    context.allocatorType = Media::AllocatorType::DMA_ALLOC;
+    pngDecoder->pngImageInfo_.rowDataSize = 1;
+    pngDecoder->pngImageInfo_.height = 1;
+    auto ret = pngDecoder->AllocOutputBuffer(context);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "PngDecoderTest: AllocOutputBuffer004 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest006
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest006 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    ProgDecodeContext context;
+    pngDecoder->pngStructPtr_ = nullptr;
+    context.decodeContext.allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    uint32_t result = pngDecoder->PromoteIncrementalDecode(0, context);
+    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest006 end";
+}
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest007
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest007 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    ProgDecodeContext context;
+    context.decodeContext.pixelsBuffer.buffer  = malloc(1);
+    pngDecoder->state_ = PngDecodingState::IMAGE_DECODING;
+    uint32_t result = pngDecoder->PromoteIncrementalDecode(0, context);
+    ASSERT_NE(result, ERR_IMAGE_MALLOC_ABNORMAL);
+    free(context.decodeContext.pixelsBuffer.buffer);
+    context.decodeContext.pixelsBuffer.buffer = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest007 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
