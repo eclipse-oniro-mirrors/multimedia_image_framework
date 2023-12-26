@@ -1632,5 +1632,60 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest007, TestSize.Level3)
     context.decodeContext.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest007 end";
 }
+
+/**
+ * @tc.name: GetImageSizeTest008
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetImageSizeTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest008 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    pngDecoder->pngStructPtr_ = nullptr;
+    pngDecoder->pngInfoPtr_ = nullptr;
+    ImagePlugin::PlSize plSize;
+    uint32_t result =pngDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest008 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest009
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetImageSizeTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest009 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(true);
+    pngDecoder->SetSource(*mock.get());
+    ImagePlugin::PlSize plSize;
+    pngDecoder->state_ = PngDecodingState::BASE_INFO_PARSED;
+    uint32_t result = pngDecoder->GetImageSize(0, plSize);
+    ASSERT_EQ(result, 0);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest009 end";
+}
+
+/**
+ * @tc.name: PushAllToDecode003
+ * @tc.desc: Test of PushAllToDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(true);
+    pngDecoder->SetSource(*mock.get());
+    size_t bufferSize = 1;
+    size_t length = -1;
+    uint32_t ret = pngDecoder->PushAllToDecode(mock.get(), bufferSize, length);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE); //ERR_IMAGE_GET_DATA_ABNORMAL
+    GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
