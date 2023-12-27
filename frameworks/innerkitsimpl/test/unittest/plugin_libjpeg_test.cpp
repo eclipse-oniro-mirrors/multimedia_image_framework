@@ -1672,10 +1672,10 @@ HWTEST_F(PluginLibJpegTest, DeinterweaveTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: DeinterweaveTest001 start";
     auto jpegEncoder = std::make_shared<JpegEncoder>();
-    auto PixelFormat = std::make_shared<PixelFormat>();
-    uint8_t *uvPlane = new uint8_t;
+    auto pixelFormat = std::make_shared<PixelFormat>();
     uint8_t *uvPlane = new uint8_t;
     uint8_t *uPlane = new uint8_t;
+    uint8_t *vPlane = new uint8_t;
     uint32_t curRow = 1;
     uint32_t width = 8;
     uint32_t height = 19;
@@ -1684,8 +1684,8 @@ HWTEST_F(PluginLibJpegTest, DeinterweaveTest001, TestSize.Level3)
     jpegEncoder->AddImage(*pixelMaps);
     jpegEncoder->Deinterweave(uvPlane, uPlane, vPlane, curRow, width, height);
     delete uvPlane;
-    delete vPlane;
     delete uPlane;
+    delete vPlane;
     delete pixelMap;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: DeinterweaveTest001 end";
 }
