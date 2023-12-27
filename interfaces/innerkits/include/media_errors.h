@@ -146,6 +146,7 @@ const uint32_t IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED = BASE_MEDIA_ERR_OFFSET + 1
 
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
+const int32_t COMMON_ERR_INVALID_PARAMETER = 401; // Common error，Invalid parameter
 }  // namespace Media
 }  // namespace OHOS
 #endif  // INTERFACES_INNERKITS_INCLUDE_MEDIA_ERRORS_H
