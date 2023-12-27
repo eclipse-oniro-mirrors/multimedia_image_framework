@@ -1724,5 +1724,25 @@ HWTEST_F(PngDecoderTest, PushAllToDecode003, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE); //ERR_IMAGE_GET_DATA_ABNORMAL
     GTEST_LOG_(INFO) << "PngDecoderTest: PushAllToDecode003 end";
 }
+
+/**
+ * @tc.name: IncrementalRead004
+ * @tc.desc: Test of IncrementalRead
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, IncrementalRead004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead004 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    uint32_t desiredSize = 5;
+    DataStreamBuffer outData;
+    outData.dataSize = 1;
+    uint32_t ret = pngDecoder->IncrementalRead(mock.get(), desiredSize, outData);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead004 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
