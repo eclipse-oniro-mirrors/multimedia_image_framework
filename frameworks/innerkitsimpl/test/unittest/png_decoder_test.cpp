@@ -1634,6 +1634,43 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest007, TestSize.Level3)
 }
 
 /**
+ * @tc.name: PromoteIncrementalDecodeTest008
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest008 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    pngDecoder->SetSource(*mock.get());
+    ProgDecodeContext context;
+    pngDecoder->state_ = PngDecodingState::IMAGE_ERROR;
+    uint32_t result = pngDecoder->PromoteIncrementalDecode(0, context);
+    ASSERT_NE(result, ERR_MEDIA_INVALID_OPERATION);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest008 end";
+}
+
+/**
+ * @tc.name: GetDecodeFormat003
+ * @tc.desc: Test of GetDecodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetDecodeFormat003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat003 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    PlPixelFormat format = PlPixelFormat::ALPHA_8;
+    PlPixelFormat outputFormat;
+    PlAlphaType alphaType;
+    pngDecoder->pngImageInfo_.bitDepth = 16;
+    uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat003 end";
+}
+
+/**
  * @tc.name: GetImageSizeTest008
  * @tc.desc: Test of GetImageSize
  * @tc.type: FUNC
