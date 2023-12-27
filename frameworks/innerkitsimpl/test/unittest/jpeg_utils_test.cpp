@@ -108,5 +108,81 @@ HWTEST_F(JpegUtilsTest, TermDstStreamTest001, TestSize.Level3)
     ImagePlugin::TermDstStream(cinfo);
     GTEST_LOG_(INFO) << "JpegUtilsTest: TermDstStreamTest001 end";
 }
+
+/**
+ * @tc.name: DoubleToStringTest001
+ * @tc.desc: Test of DoubleToString
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, DoubleToStringTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: DoubleToStringTest001 start";
+    double *ptr = NULL;
+    std::string ret = ImagePlugin::DoubleToString(*ptr);
+    EXPECT_EQ(ret, "");
+    double num = 128;
+    std::string result = ImagePlugin::DoubleToString(num);
+    EXPECT_EQ(result, "128.000000");
+    GTEST_LOG_(INFO) << "JpegUtilsTest: DoubleToStringTest001 end";
+}
+
+/**
+ * @tc.name: ErrorExitTest001
+ * @tc.desc: Test of ErrorExit
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, ErrorExitTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: ErrorExitTest001 start";
+    j_commmon_ptr dinfo = nullptr;
+    ImagePlugin::ErrorExit(dinfo);
+    EXPECT_EQ(dinfo, nullptr);
+    GTEST_LOG_(INFO) << "JpegUtilsTest: ErrorExitTest001 end";
+}
+
+/**
+ * @tc.name: OutputErrorMessageTest001
+ * @tc.desc: Test of OutputErrorMessage
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, OutputErrorMessageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: OutputErrorMessageTest001 start";
+    j_commmon_ptr dinfo = nullptr;
+    ImagePlugin::OutputErrorMessage(dinfo);
+    EXPECT_EQ(dinfo, nullptr);
+    GTEST_LOG_(INFO) << "JpegUtilsTest: OutputErrorMessageTest001 end";
+}
+
+/**
+ * @tc.name: InitSrcStreamTest001
+ * @tc.desc: Test of InitSrcStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, InitSrcStreamTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: InitSrcStreamTest001 start";
+    j_decompress_ptr dinfo = nullptr;
+    ImagePlugin::InitSrcStream(dinfo);
+    EXPECT_EQ(dinfo, nullptr);
+    GTEST_LOG_(INFO) << "JpegUtilsTest: InitSrcStreamTest001 end";
+}
+
+/**
+ * @tc.name: SkipInputDataTest002
+ * @tc.desc: Test of SkipInputData
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegUtilsTest, SkipInputDataTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataTest002 start";
+    long numBytes = 0;
+    j_decompress_ptr dinfo = (j_decompress_ptr)malloc(sizeof(j_decompress_struct));
+    dinfo->src = (JpegSrcMgr *)malloc(sizeof(JpegSrcMgr));
+    JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
+    src->inputStream = (InputDataStream *)malloc(sizeof(InputDataStream));
+    ImagePlugin::SkipInputData(dinfo, numBytes);
+    GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataTest002 end";
+}
 }
 }
