@@ -296,6 +296,33 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
+static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOptions *param, uint8_t *buffer)
+{
+    bool ret = true;
+    if ((inData == nullptr) || (param == nullptr) || (buffer == nullptr)) {
+        HiLog::Error(LABEL, "astc Please check TryAstcEncBasedOnCl input!");
+        return false;
+    }
+    std::shared_ptr<ImageCompressor> instance = ImageCompressor::GetInstance();
+    if (instance == nullptr) {
+        HiLog::Error(LABEL, "astc class ImageCompressor create failed!");
+        return false;
+    }
+    if (!(instance -> CreateKernel())) {
+        HiLog::Error(LABEL, "astc Create kernel error !");
+        ret = false;
+    } else {
+        if (instance->TextureEncodeCL(inData, stride, param->width_, param->height_, buffer)) {
+            ret = true;
+        } else {
+            HiLog::Error(LABEL, "astc Create TextureEncodeCL error !");
+            ret = false;
+        }
+    }
+    instance->ReleaseResource();
+    return ret;
+}
+
 uint32_t AstcCodec::ASTCEncode()
 {
     ImageInfo imageInfo;
@@ -314,17 +341,14 @@ uint32_t AstcCodec::ASTCEncode()
 
     if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
-        std::shared_ptr<ImageCompressor> instance = ImageCompressor::GetInstance();
-        if (!(instance -> CreateKernel())) {
-            HiLog::Error(LABEL, "Create kernel error !");
+        HiLog::Info(LABEL, "astc hardware encode begin");
+        if (TryAstcEncBasedOnCl(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
+            astcPixelMap_->GetRowStride(), &param, astcOutput_->GetAddr())) {
+            hardwareFlag = true;
+            HiLog::Info(LABEL, "astc hardware encode success!");
         } else {
-            if (instance->TextureEncodeCL(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
-                astcPixelMap_->GetRowStride(), param.width_, param.height_, astcOutput_->GetAddr())) {
-                hardwareFlag = true;
-            }
+            HiLog::Info(LABEL, "astc hardware encode failed!");
         }
-        instance->ReleaseResource();
-        HiLog::Info(LABEL, "astc hardware encode finished");
     }
     if (!hardwareFlag) {
         uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
@@ -332,6 +356,7 @@ uint32_t AstcCodec::ASTCEncode()
             HiLog::Error(LABEL, "AstcSoftwareEncode failed");
             return ERROR;
         }
+        HiLog::Info(LABEL, "astc software encode success!");
     }
     HiLog::Info(LABEL, "astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
         hardwareFlag, enableQualityCheck, param.privateProfile_);
