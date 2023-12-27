@@ -1356,5 +1356,268 @@ HWTEST_F(PluginLibJpegTest, ParseIFDPointerTag002, TestSize.Level3)
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseIFDPointerTag002 end";
 }
+
+/**
+ * @tc.name: GetOrginExifDataLength001
+ * @tc.desc: GetOrginExifDataLength
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetOrginExifDataLength001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetOrginExifDataLength001 start";
+    EXIFInfo exinfo;
+    unsigned char buf[10] = "testtest";
+    unsigned int ret = exinfo.GetOrginExifDataLength(true, buf);
+    ASSERT_EQ(ret, 0);
+    ret = exinfo.GetOrginExifDataLength(false, buf);
+    ASSERT_NE(ret, 0);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetOrginExifDataLength001 end";
+}
+
+/**
+ * @tc.name: GenerateDEArray001
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray001 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 0;
+    byteOrderedBuffer.GenerateDEArray();
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray001 end";
+}
+
+/**
+ * @tc.name: GenerateDEArray002
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray002 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 21;
+    byteOrderedBuffer.GenerateDEArray();
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray002 end";
+}
+
+/**
+ * @tc.name: ReadInt32001
+ * @tc.desc: ReadInt32
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ReadInt32001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadInt32001 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 1;
+    int32_t ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_EQ(ret, -1);
+    byteOrderedBuffer.bufferLength_ = 100;
+    byteOrderedBuffer.byteOrder_ = EXIF_BYTE_ORDER_MOTOROLA;
+    ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_NE(ret, -1);
+    byteOrderedBuffer.byteOrder_ = EXIF_BYTE_ORDER_INTEL;
+    ret = byteOrderedBuffer.ReadInt32();
+    ASSERT_NE(ret, -1);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ReadInt32001 end";
+}
+
+/**
+ * @tc.name: CheckExifEntryValid002
+ * @tc.desc: CheckExifEntryValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CheckExifEntryValid002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid002 start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_BITS_PER_SAMPLE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_IMAGE_LENGTH);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_0, EXIF_TAG_IMAGE_WIDTH);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_TIME);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_FNUMBER);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_SCENE_TYPE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_EXIF, EXIF_TAG_COMPRESSED_BITS_PER_PIXEL);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValid(EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE_REF);
+    ASSERT_EQ(ret, true);
+    const ExifIfd ifd = EXIF_IFD_COUNT;
+    ret = exinfo.CheckExifEntryValid(ifd, EXIF_TAG_GPS_DATE_STAMP);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValid002 end";
+}
+
+/**
+ * @tc.name: SetExifTagValuesEx002
+ * @tc.desc: SetExifTagValuesEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetExifTagValuesEx002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValuesEx002 start";
+    EXIFInfo exinfo;
+    const std::string val = "test";
+    exinfo.SetExifTagValuesEx(EXIF_TAG_LIGHT_SOURCE, val);
+    ASSERT_EQ(exinfo.lightSource_, val);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetExifTagValuesEx002 end";
+}
+
+/**
+ * @tc.name: CheckExifEntryValidEx001
+ * @tc.desc: CheckExifEntryValidEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, CheckExifEntryValidEx001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx001 start";
+    EXIFInfo exinfo;
+    bool ret;
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_0, EXIF_TAG_DATE_TIME);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_0, EXIF_TAG_IMAGE_DESCRIPTION);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_0, EXIF_TAG_MAKE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_0, EXIF_TAG_MODEL);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, static_cast<ExifTag>(0x8830));
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, static_cast<ExifTag>(0x8831));
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, static_cast<ExifTag>(0x8832));
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_APERTURE_VALUE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_EXPOSURE_BIAS_VALUE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_METERING_MODE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_LIGHT_SOURCE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_FLASH);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_USER_COMMENT);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_PIXEL_X_DIMENSION);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_PIXEL_Y_DIMENSION);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_WHITE_BALANCE);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_GPS, EXIF_TAG_GPS_TIME_STAMP);
+    ASSERT_EQ(ret, true);
+    ret = exinfo.CheckExifEntryValidEx(EXIF_IFD_GPS, EXIF_TAG_GPS_DATE_STAMP);
+    ASSERT_EQ(ret, true);
+    const ExifIfd ifd = EXIF_IFD_COUNT;
+    ret = exinfo.CheckExifEntryValidEx(ifd, EXIF_TAG_GPS_DATE_STAMP);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx001 end";
+}
+
+/**
+ * @tc.name: GetExifData001
+ * @tc.desc: GetExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifData001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 start";
+    EXIFInfo exinfo;
+    std::string value = "test";
+    const std::string name = "DateTimeOriginalForMedia";
+    uint32_t ret;
+    ret = exinfo.GetExifData(name, value);
+    ASSERT_NE(ret, Media::ERR_MEDIA_STATUS_ABNORMAL);
+    const std::string name2 = "OrientationInt";
+    ret = exinfo.GetExifData(name2, value);
+    ASSERT_NE(ret, Media::ERR_MEDIA_STATUS_ABNORMAL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 end";
+}
+
+/**
+ * @tc.name: ModifyExifData001
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData001 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    std::string path = "test";
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, path);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData001 end";
+}
+
+/**
+ * @tc.name: ModifyExifData002
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData002 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    const int fd = 0;
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, fd);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData002 end";
+}
+
+/**
+ * @tc.name: ModifyExifData003
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData003 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    unsigned char data[2];
+    uint32_t size = 2;
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, data, size);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

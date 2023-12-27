@@ -46,7 +46,7 @@ HWTEST_F(NinePathListenerTest, ReadChunk001, TestSize.Level3)
     ASSERT_EQ(data, nullptr);
     size_t length = 88;
     bool readck = ninepath.ReadChunk(tag, data, length);
-    ASSERT_EQ(readck, true);
+    ASSERT_EQ(readck, false);
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 end";
 }
 

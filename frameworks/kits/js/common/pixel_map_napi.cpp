@@ -592,13 +592,27 @@ napi_value AttachPixelMapFunc(napi_env env, void *value, void *)
     napi_status status;
 
     if (PixelMapNapi::GetConstructor() == nullptr) {
+        HiLog::Info(LABEL, "PixelMapNapi::GetConstructor() is nullptr");
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
         PixelMapNapi::Init(env, exports);
     }
-    napi_value globalValue = nullptr;
+    napi_value globalValue;
+    napi_get_global(env, &globalValue);
     status = napi_get_named_property(env, globalValue, CLASS_NAME.c_str(), &constructor);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
+    if (!IMG_IS_OK(status)) {
+        HiLog::Info(LABEL, "napi_get_named_property failed requireNapi in");
+        napi_value func;
+        napi_get_named_property(env, globalValue, "requireNapi", &func);
+
+        napi_value imageInfo;
+        napi_create_string_utf8(env, "multimedia.image", NAPI_AUTO_LENGTH, &imageInfo);
+        napi_value funcArgv[1] = { imageInfo };
+        napi_value returnValue;
+        napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
+        status = napi_get_named_property(env, globalValue, CLASS_NAME.c_str(), &constructor);
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, HiLog::Error(LABEL, "napi_get_named_property error"));
+    }
 
     std::shared_ptr<PixelMap> attachPixelMap = pixelNapi->GetPixelNapiInner();
     if (attachPixelMap == nullptr) {

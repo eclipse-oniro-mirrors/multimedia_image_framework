@@ -61,7 +61,6 @@ struct ImageEnum {
 
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"CAMERA_APP_INNER", 4, ""},
-    {"YCBCR_422_SP", 1000, ""},
     {"JPEG", 2000, ""},
 };
 
@@ -307,12 +306,11 @@ napi_value ImageReceiverNapi::JSCreateImageReceiver(napi_env env, napi_callback_
 
     std::string errMsg;
     if (!parseImageReceiverArgs(env, info, inputArgs, errMsg)) {
-        return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg), errMsg);
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, errMsg);
     }
 
     if (!checkFormat(inputArgs.args[PARAM2])) {
-        return ImageNapiUtils::ThrowExceptionError(env,
-            static_cast<int32_t>(napi_invalid_arg), "Invalid type");
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Invalid type");
     }
 
     status = napi_get_reference_value(env, sConstructor_, &constructor);
