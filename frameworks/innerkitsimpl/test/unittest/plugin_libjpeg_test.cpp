@@ -1544,5 +1544,80 @@ HWTEST_F(PluginLibJpegTest, CheckExifEntryValidEx001, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: CheckExifEntryValidEx001 end";
 }
+
+/**
+ * @tc.name: GetExifData001
+ * @tc.desc: GetExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifData001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 start";
+    EXIFInfo exinfo;
+    std::string value = "test";
+    const std::string name = "DateTimeOriginalForMedia";
+    uint32_t ret;
+    ret = exinfo.GetExifData(name, value);
+    ASSERT_NE(ret, Media::ERR_MEDIA_STATUS_ABNORMAL);
+    const std::string name2 = "OrientationInt";
+    ret = exinfo.GetExifData(name2, value);
+    ASSERT_NE(ret, Media::ERR_MEDIA_STATUS_ABNORMAL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData001 end";
+}
+
+/**
+ * @tc.name: ModifyExifData001
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData001 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    std::string path = "test";
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, path);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData001 end";
+}
+
+/**
+ * @tc.name: ModifyExifData002
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData002 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    const int fd = 0;
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, fd);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData002 end";
+}
+
+/**
+ * @tc.name: ModifyExifData003
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ModifyExifData003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData003 start";
+    EXIFInfo exinfo;
+    const std::string value = "test";
+    const std::string name = "test";
+    unsigned char data[2];
+    uint32_t size = 2;
+    uint32_t ret;
+    ret = exinfo.ModifyExifData(name, value, data, size);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ModifyExifData003 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
