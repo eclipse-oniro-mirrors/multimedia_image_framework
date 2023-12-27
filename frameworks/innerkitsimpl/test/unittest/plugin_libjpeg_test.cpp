@@ -1594,7 +1594,7 @@ HWTEST_F(PluginLibJpegTest, ModifyExifData002, TestSize.Level3)
     EXIFInfo exinfo;
     const std::string value = "test";
     const std::string name = "test";
-    const int fd = 0; 
+    const int fd = 0;
     uint32_t ret;
     ret = exinfo.ModifyExifData(name, value, fd);
     ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
@@ -1612,7 +1612,7 @@ HWTEST_F(PluginLibJpegTest, ModifyExifData003, TestSize.Level3)
     EXIFInfo exinfo;
     const std::string value = "test";
     const std::string name = "test";
-    unsigned char data[2]; 
+    unsigned char data[2];
     uint32_t size = 2;
     uint32_t ret;
     ret = exinfo.ModifyExifData(name, value, data, size);
