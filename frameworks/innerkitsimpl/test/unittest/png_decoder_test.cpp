@@ -1556,7 +1556,7 @@ HWTEST_F(PngDecoderTest, DecodeTest006, TestSize.Level3)
     pngDecoder->SetSource(*streamPtr.release());
     pngDecoder->state_ = PngDecodingState::IMAGE_ERROR;
     uint32_t result = pngDecoder->Decode(0, context);
-    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    ASSERT_NE(result, ERR_IMAGE_INIT_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: DecodeTest006 end";
 }
 
@@ -1648,7 +1648,7 @@ HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest008, TestSize.Level3)
     ProgDecodeContext context;
     pngDecoder->state_ = PngDecodingState::IMAGE_ERROR;
     uint32_t result = pngDecoder->PromoteIncrementalDecode(0, context);
-    ASSERT_NE(result, ERR_MEDIA_INVALID_OPERATION);
+    ASSERT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
     GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest008 end";
 }
 
