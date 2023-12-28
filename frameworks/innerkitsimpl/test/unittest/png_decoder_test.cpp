@@ -1813,8 +1813,8 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode003, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     pngDecoder->inputStreamPtr_ = mock.get();
     uint32_t ret = pngDecoder->DoOneTimeDecode(context);
-    ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);//ERR_IMAGE_DECODE_ABNORMAL
-    free( context.pixelsBuffer.buffer);
+    ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
+    free(context.pixelsBuffer.buffer);
     context.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 end";
 }
