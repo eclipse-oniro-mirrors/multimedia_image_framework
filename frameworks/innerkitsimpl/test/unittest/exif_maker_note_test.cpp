@@ -576,8 +576,8 @@ HWTEST_F(ExifMakerNoteTest, GetDataTest003, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest003 start";
     ExifMakerNote exifMakerNote;
     const std::vector<unsigned char> buffer(5);
-    size_t offset = 2;
-    size_t count = 2;
+    size_t offset = 3;
+    size_t count = 0;
     std::vector<unsigned char> value;
     bool result = exifMakerNote.GetData(buffer, offset, count, value);
     ASSERT_EQ(result, false);
