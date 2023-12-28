@@ -134,7 +134,7 @@ HWTEST_F(JpegUtilsTest, DoubleToStringTest001, TestSize.Level3)
 HWTEST_F(JpegUtilsTest, ErrorExitTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegUtilsTest: ErrorExitTest001 start";
-    j_commmon_ptr dinfo = nullptr;
+    j_common_ptr dinfo = nullptr;
     ImagePlugin::ErrorExit(dinfo);
     EXPECT_EQ(dinfo, nullptr);
     GTEST_LOG_(INFO) << "JpegUtilsTest: ErrorExitTest001 end";
@@ -148,7 +148,7 @@ HWTEST_F(JpegUtilsTest, ErrorExitTest001, TestSize.Level3)
 HWTEST_F(JpegUtilsTest, OutputErrorMessageTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegUtilsTest: OutputErrorMessageTest001 start";
-    j_commmon_ptr dinfo = nullptr;
+    j_common_ptr dinfo = nullptr;
     ImagePlugin::OutputErrorMessage(dinfo);
     EXPECT_EQ(dinfo, nullptr);
     GTEST_LOG_(INFO) << "JpegUtilsTest: OutputErrorMessageTest001 end";
@@ -177,7 +177,7 @@ HWTEST_F(JpegUtilsTest, SkipInputDataTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegUtilsTest: SkipInputDataTest002 start";
     long numBytes = 0;
-    j_decompress_ptr dinfo = (j_decompress_ptr)malloc(sizeof(j_decompress_struct));
+    j_decompress_ptr dinfo = (j_decompress_ptr)malloc(sizeof(jpeg_decompress_struct));
     dinfo->src = (JpegSrcMgr *)malloc(sizeof(JpegSrcMgr));
     JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
     src->inputStream = (InputDataStream *)malloc(sizeof(InputDataStream));
