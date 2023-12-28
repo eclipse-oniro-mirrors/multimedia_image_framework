@@ -1644,6 +1644,8 @@ HWTEST_F(PluginLibJpegTest, GetEncoderFormatTest002, TestSize.Level3)
     ASSERT_EQ(result, JCS_YCbCr);
     result = jpegEncoder->GetEncodeFormat(PixelFormat::CMYK, componentsNum);
     ASSERT_EQ(result, JCS_CMYK);
+    result = jpegEncoder->GetEncodeFormat(PixelFormat::UNKNOWN, componentsNum);
+    ASSERT_EQ(result, JCS_UNKNOWN);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetEncoderFormatTest002 end";
 }
 
