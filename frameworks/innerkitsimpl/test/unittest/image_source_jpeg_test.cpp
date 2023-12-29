@@ -1578,9 +1578,11 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0017, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
-    std::string value = "0";
+    std::string value = "0:0:11";
     std::string key = "GPSTimeStamp";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0017 end";
 }
@@ -1605,9 +1607,11 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0018, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
-    std::string value = "0";
+    std::string value = "2023:12:01";
     std::string key = "GPSDateStamp";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0018 end";
 }
@@ -1632,9 +1636,11 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0019, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
-    std::string value = "0";
+    std::string value = "this is a test picture";
     std::string key = "ImageDescription";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0019 end";
 }
@@ -1715,7 +1721,9 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0022, TestSize.Level3)
     uint32_t index = 0;
     std::string value = "0";
     std::string key = "PhotoMode";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0022 end";
 }
@@ -1742,7 +1750,9 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0023, TestSize.Level3)
     uint32_t index = 0;
     std::string value = "0";
     std::string key = "SensitivityType";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0023 end";
 }
@@ -1769,7 +1779,9 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0024, TestSize.Level3)
     uint32_t index = 0;
     std::string value = "0";
     std::string key = "StandardOutputSensitivity";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0024 end";
 }
@@ -1794,9 +1806,11 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0025, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
-    std::string value = "0";
+    std::string value = "100";
     std::string key = "RecommendedExposureIndex";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0025 end";
 }
@@ -1985,7 +1999,9 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0032, TestSize.Level3)
     uint32_t index = 0;
     std::string value = "0";
     std::string key = "UserComment";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0032 end";
 }
@@ -2254,8 +2270,10 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0042, TestSize.Level3)
 
     uint32_t index = 0;
     std::string value = "0";
-    std::string key = "HwMnoteScenestageConf";
-    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    std::string key = "HwMnoteSceneStageConf";
+    uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
+    ASSERT_EQ(res, SUCCESS);
+    res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0042 end";
 }
@@ -2929,7 +2947,8 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0015, TestSize.Level3)
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
-    std::string value = "0,0,11";
+    // GPSTimeStamp is like "xx:xx:xx"
+    std::string value = "0:0:11";
     std::string key = "GPSTimeStamp";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
