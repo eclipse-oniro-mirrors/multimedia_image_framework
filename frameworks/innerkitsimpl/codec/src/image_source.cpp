@@ -1254,13 +1254,11 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             HiLog::Error(LABEL, "[ImageSource]image source data error ERR_IMAGE_SOURCE_DATA_INCOMPLETE.");
         }
     }
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+
     if (GetFormatExtended(format) == SUCCESS) {
         return SUCCESS;
     }
-#else
-    HiLog::Debug(LABEL, "[ImageSource]GetEncodedFormat by format agent plugin");
-#endif
+
     for (auto iter = formatAgentMap_.begin(); iter != formatAgentMap_.end(); ++iter) {
         string curFormat = iter->first;
         if (iter == hintIter || curFormat == InnerFormat::RAW_FORMAT) {

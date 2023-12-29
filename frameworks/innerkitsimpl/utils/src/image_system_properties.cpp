@@ -32,7 +32,7 @@ bool ImageSystemProperties::GetSkiaEnabled()
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.skdecode.enabled", true);
 #else
-    return false;
+    return true;
 #endif
 }
 
