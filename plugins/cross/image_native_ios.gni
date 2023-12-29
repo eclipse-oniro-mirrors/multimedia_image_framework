@@ -16,7 +16,10 @@ import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 import("//third_party/flutter/flutter_config.gni")
 
-image_native_ios_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
+image_native_ios_cflags = [
+  "-DIMAGE_DEBUG_FLAG",
+  "-DIMAGE_COLORSPACE_FLAG",
+]
 
 image_native_ios_sources = [
   # plugin_manager

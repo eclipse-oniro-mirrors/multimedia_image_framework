@@ -21,8 +21,8 @@
 #include "image_pixel_map_napi.h"
 #include "image_trace.h"
 #include "log_tags.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "color_space_object_convertor.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
 #endif
@@ -86,9 +86,7 @@ struct PixelMapAsyncContext {
     double yArg = 0;
     bool xBarg = false;
     bool yBarg = false;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
-#endif
     std::string surfaceId;
 };
 
@@ -2319,9 +2317,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
         "Pixelmap has crossed threads . SetColorSpace failed"),
         HiLog::Error(LABEL, "Pixelmap has crossed threads . SetColorSpace failed"));
 #ifdef IMAGE_COLORSPACE_FLAG
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, nVal.argv[NUM_0]);
-#endif
     if (nVal.context->colorSpace == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
@@ -2394,9 +2390,7 @@ static void ParseColorSpaceVal(napi_env env, napi_value val, PixelMapAsyncContex
     }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, val);
-#endif
     if (context->colorSpace == nullptr) {
         context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
