@@ -116,7 +116,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver003, TestSize.Level3)
  */
 HWTEST_F(ImageReceiverTest, ImageReceiver004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 start111";
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 start";
     InitializationOptions opts;
     opts.size.width = RECEIVER_TEST_WIDTH;
     opts.size.height = RECEIVER_TEST_HEIGHT;
@@ -128,7 +128,7 @@ HWTEST_F(ImageReceiverTest, ImageReceiver004, TestSize.Level3)
     ASSERT_NE(fd, 0);
     int32_t res = imageReceiver->SaveBufferAsImage(fd, opts);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 end111";
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ImageReceiver004 end";
 }
 
 /**
