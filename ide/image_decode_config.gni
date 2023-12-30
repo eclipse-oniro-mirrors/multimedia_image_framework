@@ -57,17 +57,10 @@ resource_management_subsystem =
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia
 
-if (image_use_new_skia) {
-  skia_root = "//third_party"
-  skia_deps_root = skia_root
-  skia_core = [ "$skia_deps_root/skia:skia_core" ]
-  skia_skcms = [ "$skia_deps_root/skia:skcms" ]
-} else {
-  skia_root = "//third_party/flutter"
-  skia_deps_root = "$skia_root/build"
-  skia_core = [ "$skia_deps_root/skia:ace_skia_core" ]
-  skia_skcms = [ "$skia_deps_root/skia:ace_skcms" ]
-}
+skia_root = "//third_party"
+skia_deps_root = skia_root
+skia_core = [ "$skia_deps_root/skia:skia_core" ]
+skia_skcms = [ "$skia_deps_root/skia:skcms" ]
 
 if (use_clang_android) {
   if (image_use_new_skia) {

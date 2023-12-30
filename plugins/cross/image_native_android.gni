@@ -14,7 +14,6 @@
 import("//build/ohos.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
-import("//third_party/flutter/flutter_config.gni")
 
 image_native_android_cflags = [
   "-DIMAGE_DEBUG_FLAG",
@@ -40,11 +39,11 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
 
   # jpeg
+  "$skia_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/incremental_pixel_map.cpp",
-  "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
 
   # image_native
   "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
@@ -138,7 +137,7 @@ image_native_android_include_dirs = [
   "$skia_root/skia/include/codec",
   "$skia_root/skia",
   "$skia_root/skia/include/core",
-  "//third_party/flutter/skia/third_party/skcms",
+  "$skia_root/skia/third_party/skcms",
   "//commonlibrary/c_utils/base/include",
 
   # image_native
@@ -163,14 +162,14 @@ image_native_android_include_dirs = [
   # webp
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
-  "//third_party/flutter/skia/third_party/externals/libwebp/src",
+  "$skia_root/skia/third_party/externals/libwebp/src",
   "$skia_root/skia/include/encode",
   "$skia_root/skia/src/ports/skia_ohos",
   "$skia_root/skia/src/ports",
   "$skia_root/skia/src/images",
   "//third_party/expat/lib",
   "$skia_root/skia/include/private",
-  "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
+  "$skia_root/skia/third_party/externals/freetype/include/freetype",
 
   # svg
   "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
@@ -190,8 +189,8 @@ image_native_android_include_dirs = [
   # jpeg
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-  "//third_party/flutter/skia/third_party/libjpeg-turbo",
-  "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+  "$skia_root/skia/third_party/libjpeg-turbo",
+  "$skia_root/skia/third_party/externals/libjpeg-turbo",
   "//third_party/libexif",
 
   # gif
@@ -231,12 +230,12 @@ image_native_android_deps = [
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
 
   # jpeg
-  "//third_party/flutter/build/libjpeg:ace_libjpeg",
+  "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
 
   # gif
-  "//third_party/flutter/build/libpng:ace_libpng",
   "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
+  "//third_party/skia/third_party/libpng:libpng",
 
   # raw
   "//third_party/skia/third_party/piex",
@@ -244,18 +243,6 @@ image_native_android_deps = [
   # formatagent
   # png
 ]
-
-if (image_use_new_skia) {
-  image_native_android_deps -= [
-    "//third_party/flutter/build/libjpeg:ace_libjpeg",
-    "//third_party/flutter/build/libpng:ace_libpng",
-  ]
-
-  image_native_android_deps += [
-    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
-    "//third_party/skia/third_party/libpng:libpng",
-  ]
-}
 
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform

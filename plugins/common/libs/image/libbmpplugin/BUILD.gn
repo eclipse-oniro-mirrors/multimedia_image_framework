@@ -44,7 +44,7 @@ ohos_shared_library("bmpplugin") {
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/skia/third_party/skcms",
   ]
   if (use_mingw_win) {
     defines = image_decode_windows_defines

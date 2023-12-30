@@ -37,7 +37,7 @@ ohos_shared_library("webpplugin") {
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//third_party/flutter/skia/third_party/externals/libwebp/src",
+    "//third_party/skia/third_party/externals/libwebp/src",
     "$skia_root/skia/include/core",
     "$skia_root/skia/include/encode",
     "$skia_root/skia",
@@ -46,7 +46,7 @@ ohos_shared_library("webpplugin") {
     "$skia_root/skia/src/images",
     "//third_party/expat/lib",
     "$skia_root/skia/include/private",
-    "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
+    "//third_party/skia/third_party/externals/freetype/include/freetype",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "${graphic_subsystem}/interfaces/inner_api/surface",
   ]

@@ -782,7 +782,7 @@ ohos_unittest("webpplugintest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//third_party/flutter/skia/third_party/externals/libwebp/src",
+    "//third_party/skia/third_party/externals/libwebp/src",
   ]
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/plugin_server_test.cpp",
@@ -816,13 +816,13 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/skia/third_party/skcms",
     "//third_party/libexif",
   ]
 
@@ -833,10 +833,10 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-    "//third_party/flutter/build/libjpeg:ace_libjpeg",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
     "//third_party/libexif:libexif",
+    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
   ]
   deps += skia_skcms
   deps += skia_platform
