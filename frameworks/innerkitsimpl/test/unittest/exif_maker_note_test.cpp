@@ -31,6 +31,7 @@ using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace ImagePlugin {
+constexpr unsigned char HW_MNOTE_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0' };
 constexpr unsigned char EXIF_HEADER[] = {'E', 'x', 'i', 'f', '\0', '\0'};
 constexpr unsigned char EXIF_TAIL[] = {'e', 'x', 'p', 'o', 'r', 't', 's', 'c', 't', 'e', 's', 't', '\0'};
 constexpr unsigned char EXIF_TCL[] = {'f', 'd', 'e', 'b'};
@@ -652,6 +653,79 @@ HWTEST_F(ExifMakerNoteTest, FindExifLocationTest004, TestSize.Level3)
     bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest004 end";
+}
+
+/**
+ * @tc.name: FindJpegAPP1Test003
+ * @tc.desc: Test of FindJpegAPP1
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test003 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char array[] = {0xff, 0xd8, 0xe1, 0xe1};
+    const unsigned char *data = array;
+    uint32_t size = 5;
+    const unsigned char *&newData = data;
+    uint32_t newSize = 0;
+    bool result = exifMakerNote.FindJpegAPP1(data, size, newData, newSize);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test003 end";
+}
+
+/**
+ * @tc.name: FindJpegAPP1Test004
+ * @tc.desc: Test of FindJpegAPP1
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test004 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char array[] = {0xff, 0xd8, 0xef, 0x00, 0xff};
+    const unsigned char *data = array;
+    uint32_t size = 5;
+    const unsigned char *&newData = data;
+    uint32_t newSize = 0;
+    bool result = exifMakerNote.FindJpegAPP1(data, size, newData, newSize);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test004 end";
+}
+
+/**
+ * @tc.name: FindJpegAPP1Test005
+ * @tc.desc: Test of FindJpegAPP1
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, FindJpegAPP1Test005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test005 start";
+    ExifMakerNote exifMakerNote;
+    unsigned char array[] = {0xff, 0xd8, 0xef, 0x00, 0x00};
+    const unsigned char *data = array;
+    uint32_t size = 5;
+    const unsigned char *&newData = data;
+    uint32_t newSize = 0;
+    bool result = exifMakerNote.FindJpegAPP1(data, size, newData, newSize);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindJpegAPP1Test005 end";
+}
+
+/**
+ * @tc.name: IsHwMakerNoteTest005
+ * @tc.desc: Test of IsHwMakerNote
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest00 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char *data[] = HW_MNOTE_HEADER;
+    uint32_t size = 20;
+    bool result = exifMakerNote.IsHwMakerNote(data, size);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest005 end";
 }
 }
 }
