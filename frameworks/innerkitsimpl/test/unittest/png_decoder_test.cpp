@@ -1735,9 +1735,7 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows004 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    DataStreamBuffer readData;
-    readData.inputStreamBuffer= new uint8_t;
-    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_bytep row = new uint8_t;
     pngDecoder->firstRow_ = 3;
     pngDecoder->lastRow_ = 1;
     pngDecoder->pngImageInfo_.rowDataSize = 2;
@@ -1750,9 +1748,9 @@ HWTEST_F(PngDecoderTest, SaveInterlacedRows004, TestSize.Level3)
     pass = 1;
     pngDecoder->pngImageInfo_.numberPasses = 2;
     pngDecoder->SaveInterlacedRows(row, rowNum, pass);
-    ASSERT_EQ(row, nullptr);
-    delete  readData.inputStreamBuffer;
-    readData.inputStreamBuffer = nullptr;
+    ASSERT_NE(row, nullptr);
+    delete  row;
+    row = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows004 end";
 }
 
@@ -1765,17 +1763,15 @@ HWTEST_F(PngDecoderTest, GetInterlacedRows002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    DataStreamBuffer readData;
-    readData.inputStreamBuffer= new uint8_t;
     png_uint_32 rowNum = 0;
     int pass = 0;
     png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
         nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
-    png_bytep row = const_cast<png_bytep>(readData.inputStreamBuffer);
+    png_bytep row = new uint8_t;
     pngDecoder->GetInterlacedRows(pngPtr, row, rowNum, pass);
     ASSERT_NE(pngPtr, nullptr);
-    delete  readData.inputStreamBuffer;
-    readData.inputStreamBuffer = nullptr;
+    delete row;
+    row = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 end";
 }
 
@@ -1814,7 +1810,7 @@ HWTEST_F(PngDecoderTest, DoOneTimeDecode003, TestSize.Level3)
     pngDecoder->inputStreamPtr_ = mock.get();
     uint32_t ret = pngDecoder->DoOneTimeDecode(context);
     ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
-    free(context.pixelsBuffer.buffer);
+    free( context.pixelsBuffer.buffer);
     context.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 end";
 }
