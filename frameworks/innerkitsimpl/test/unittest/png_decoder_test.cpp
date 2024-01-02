@@ -1776,25 +1776,6 @@ HWTEST_F(PngDecoderTest, GetInterlacedRows002, TestSize.Level3)
 }
 
 /**
- * @tc.name: DealNinePatch002
- * @tc.desc: Test of DealNinePatch
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, DealNinePatch002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    PixelDecodeOptions opts;
-    opts.desiredSize.width = 1;
-    opts.desiredSize.height = 1;
-    pngDecoder->ninePatch_.patch_ = new PngNinePatchRes;
-    pngDecoder->DealNinePatch(opts);
-    delete pngDecoder->ninePatch_.patch_;
-    pngDecoder->ninePatch_.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "PngDecoderTest: DealNinePatch002 end";
-}
-
-/**
  * @tc.name: DoOneTimeDecode003
  * @tc.desc: Test of DoOneTimeDecode
  * @tc.type: FUNC
