@@ -600,5 +600,58 @@ HWTEST_F(ExifMakerNoteTest, DumpTest003, TestSize.Level3)
     ASSERT_EQ(result, "00");
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest003 end";
 }
+
+/**
+ * @tc.name: GetDataTest004
+ * @tc.desc: Test of GetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetDataTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest004 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> buffer(5);
+    size_t offset = 1;
+    size_t count = 3;
+    std::vector<unsigned char> value;
+    bool result = exifMakerNote.GetData(buffer, offset, count, value);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataTest004 end";
+}
+
+/**
+ * @tc.name: DumpTest004
+ * @tc.desc: Test of Dump
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, DumpTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest004 start";
+    auto ExifMakerNote = std::make_shared<ExifMakerNote::ExifItem>();
+    std::string info = "information";
+    ExifMakerNote::ExifItem item;
+    item.data.reserve(0);
+    ExifByteOrder order = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
+    ExifMakerNote->Dump(info, item, order);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest004 end";
+}
+
+/**
+ * @tc.name: FindExifLocationTest004
+ * @tc.desc: Test of FindExifLocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, FindExifLocationTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest004 start";
+    ExifMakerNote exifMakerNote;
+    const unsigned char *data = EXIF_HEADER;
+    uint32_t size = 15;
+    const unsigned char *&newData = data;
+    uint32_t newSize = 6;
+    bool result = exifMakerNote.FindExifLocation(data, size, newData, newSize);
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: FindExifLocationTest004 end";
+}
 }
 }
