@@ -945,5 +945,58 @@ HWTEST_F(ExifMakerNoteTest, GetDataAndMoveTest002, TestSize.Level3)
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataAndMoveTest002 end";
 }
+
+/**
+ * @tc.name: GetDataAndMoveTest002
+ * @tc.desc: Test of GetDataAndMove
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, GetDataAndMoveTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataAndMoveTest002 start";
+    ExifMakerNote exifMakerNote;
+    size_t offset = 1;
+    size_t count = 0;
+    std::vector<unsigned char> value;
+    bool result = exifMakerNote.GetDataAndMove(offset, count, value);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataAndMoveTest002 end";
+}
+
+/**
+ * @tc.name: DumpTest006
+ * @tc.desc: Test of Dump
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, DumpTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest006 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> data = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};  
+    uint32_t offset = 1;  
+    uint32_t sum = 3;  
+    std::string expectedOutput = "34 56";  
+    std::string result = ExifMakerNote::Dump(data, offset, sum);  
+    EXPECT_EQ(result, actualOutput);  
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest006 end";
+}
+
+/**
+ * @tc.name: DumpTest007
+ * @tc.desc: Test of Dump
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, DumpTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest007 start";
+    ExifMakerNote exifMakerNote;
+    const std::vector<unsigned char> data = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0};  
+    uint32_t offset = 0;  
+    uint32_t sum = 2;  
+    std::string expectedOutput = "1234";  
+    std::string result = ExifMakerNote::Dump(data, offset, sum);  
+    EXPECT_EQ(result, actualOutput);  
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest007 end";
+}
 }
 }
