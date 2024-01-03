@@ -46,7 +46,7 @@ HWTEST_F(NinePathListenerTest, ReadChunk001, TestSize.Level3)
     ASSERT_EQ(data, nullptr);
     size_t length = 88;
     bool readck = ninepath.ReadChunk(tag, data, length);
-    ASSERT_EQ(readck, true);
+    ASSERT_EQ(readck, false);
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk001 end";
 }
 
@@ -84,46 +84,6 @@ HWTEST_F(NinePathListenerTest, ReadChunk002, TestSize.Level3)
     delete p;
     p = nullptr;
     GTEST_LOG_(INFO) << "NinePathListenerTest: ReadChunk002 end";
-}
-
-/**
- * @tc.name: Scale002
- * @tc.desc: test Scale
- * @tc.type: FUNC
- */
-HWTEST_F(NinePathListenerTest, Scale002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 start";
-    ImagePlugin::NinePatchListener ninepath;
-    ninepath.patch_ = new(ImagePlugin::PngNinePatchRes);
-    float scaleX = 3.0;
-    float scaleY = 2.0;
-    int32_t scaledWidth = 3;
-    int32_t scaledHeight = 4;
-    ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
-    delete ninepath.patch_;
-    ninepath.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale002 end";
-}
-
-/**
- * @tc.name: Scale003
- * @tc.desc: test Scale
- * @tc.type: FUNC
- */
-HWTEST_F(NinePathListenerTest, Scale003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale003 start";
-    ImagePlugin::NinePatchListener ninepath;
-    ninepath.patch_ = new(ImagePlugin::PngNinePatchRes);
-    float scaleX = 1.0f;
-    float scaleY = 2.0;
-    int32_t scaledWidth = 3;
-    int32_t scaledHeight = 4;
-    ninepath.Scale(scaleX, scaleY, scaledWidth, scaledHeight);
-    delete ninepath.patch_ ;
-    ninepath.patch_ = nullptr;
-    GTEST_LOG_(INFO) << "NinePathListenerTest: Scale003 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

@@ -14,9 +14,11 @@
 import("//build/ohos.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
-import("//third_party/flutter/flutter_config.gni")
 
-image_native_ios_cflags = [ "-DIMAGE_DEBUG_FLAG" ]
+image_native_ios_cflags = [
+  "-DIMAGE_DEBUG_FLAG",
+  "-DIMAGE_COLORSPACE_FLAG",
+]
 
 image_native_ios_sources = [
   # plugin_manager
@@ -37,7 +39,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer/gst_plugin_fw.cpp",
 
   # webp
-  "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+  "$skia_root/skia/third_party/externals/libjpeg-turbo/jdicc.c",
 
   # image_native
   "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
@@ -139,7 +141,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   "//foundation/graphic/graphic_2d/utils/color_manager/export",
-  "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+  "$skia_root/skia/third_party/externals/libjpeg-turbo",
   "$skia_root/skia/include/codec",
   "$skia_root/skia",
   "$skia_root/skia/include/core",
@@ -148,18 +150,18 @@ image_native_ios_include_dirs = [
   "//commonlibrary/c_utils/base/include",
   "//foundation/multimedia/image_framework/mock/native/include/secure",
   "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-  "//third_party/flutter/skia/third_party/skcms",
+  "$skia_root/skia/third_party/skcms",
 
   # webp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
-  "//third_party/flutter/skia/third_party/externals/libwebp/src",
+  "$skia_root/skia/third_party/externals/libwebp/src",
   "$skia_root/skia/include/encode",
   "$skia_root/skia/src/ports/skia_ohos",
   "$skia_root/skia/src/ports",
   "$skia_root/skia/src/images",
   "//third_party/expat/lib",
   "$skia_root/skia/include/private",
-  "//third_party/flutter/skia/third_party/externals/freetype/include/freetype",
+  "$skia_root/skia/third_party/externals/freetype/include/freetype",
 
   # bmp
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
@@ -186,7 +188,7 @@ image_native_ios_include_dirs = [
   "//third_party/giflib",
 
   # jpeg
-  "//third_party/flutter/skia/third_party/libjpeg-turbo",
+  "$skia_root/skia/third_party/libjpeg-turbo",
   "//third_party/libexif",
 
   # image_native
@@ -220,29 +222,18 @@ image_native_ios_deps = [
   "//foundation/multimedia/image_framework/mock/native:log_mock_static",
 
   # jpeg
-  "//third_party/flutter/build/libjpeg:ace_libjpeg",
+  "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
 
-  # png
   #"//third_party/libpng:png_static",
   # gif
+  # png
   "//third_party/giflib:gif_static",
   "//third_party/libexif:exif_static",
+  "//third_party/skia/third_party/libpng:libpng",
 
   # raw
   "//third_party/skia/third_party/piex",
 ]
-
-if (image_use_new_skia) {
-  image_native_ios_deps -= [
-    "//third_party/flutter/build/libjpeg:ace_libjpeg",
-    #"//third_party/flutter/build/libpng:ace_libpng",
-  ]
-
-  image_native_ios_deps += [
-    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
-    "//third_party/skia/third_party/libpng:libpng",
-  ]
-}
 
 image_native_ios_deps += skia_skcms
 image_native_ios_deps += skia_platform

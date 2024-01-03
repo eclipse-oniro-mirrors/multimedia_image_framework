@@ -14,7 +14,6 @@
 import("//build/ohos.gni")
 import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
-import("//third_party/flutter/flutter_config.gni")
 
 ohos_shared_library("jpegplugin") {
   if (!use_clang_android && !use_clang_ios) {
@@ -53,9 +52,9 @@ ohos_shared_library("jpegplugin") {
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/skia/third_party/skcms",
     "//third_party/libexif",
   ]
 
@@ -63,15 +62,15 @@ ohos_shared_library("jpegplugin") {
     defines = image_decode_windows_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/flutter/skia/third_party/libjpeg-turbo",
-      "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+      "//third_party/skia/third_party/libjpeg-turbo",
+      "//third_party/skia/third_party/externals/libjpeg-turbo",
     ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-      "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/libexif:libexif",
+      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
     deps += skia_skcms
     deps += skia_platform
@@ -79,15 +78,15 @@ ohos_shared_library("jpegplugin") {
     defines = image_decode_mac_defines
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
-      "//third_party/flutter/skia/third_party/libjpeg-turbo",
-      "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+      "//third_party/skia/third_party/libjpeg-turbo",
+      "//third_party/skia/third_party/externals/libjpeg-turbo",
     ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-      "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/libexif:libexif",
+      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
     deps += skia_skcms
     deps += skia_platform
@@ -97,15 +96,15 @@ ohos_shared_library("jpegplugin") {
     include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     sources += [
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
-      "//third_party/flutter/skia/third_party/externals/libjpeg-turbo/jdicc.c",
+      "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
     ]
     deps = [
-      #"//third_party/flutter/skia/third_party/libjpeg-turbo:libjpeg",
+      #"//third_party/skia/third_party/libjpeg-turbo:libjpeg",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/flutter/build/libjpeg:ace_libjpeg",
       "//third_party/libexif:libexif",
+      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
     deps += skia_skcms
     deps += skia_platform
@@ -113,12 +112,12 @@ ohos_shared_library("jpegplugin") {
     if (DUAL_ADAPTER) {
     } else {
       deps += [
-        "//third_party/flutter/build/libjpeg:ace_libjpeg",
         "//third_party/libexif:libexif",
+        "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
       ]
       include_dirs += [
-        "//third_party/flutter/skia/third_party/libjpeg-turbo",
-        "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+        "//third_party/skia/third_party/libjpeg-turbo",
+        "//third_party/skia/third_party/externals/libjpeg-turbo",
       ]
     }
 

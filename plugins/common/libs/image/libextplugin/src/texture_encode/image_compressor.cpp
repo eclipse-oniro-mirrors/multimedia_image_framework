@@ -1275,15 +1275,15 @@ std::shared_ptr<ImageCompressor> ImageCompressor::GetInstance()
 {
     if (instance_ == nullptr) {
         std::lock_guard<std::mutex> lock(instanceMutex_);
-        if (instance_ == nullptr) {
-            instance_.reset(new ImageCompressor());
-            instance_->Init();
+        instance_.reset(new ImageCompressor());
+        if (!instance_->Init()) {
+            instance_ = nullptr;
         }
     }
     return instance_;
 }
 
-void ImageCompressor::Init()
+bool ImageCompressor::Init()
 {
     context_= nullptr;
     kernel_ = nullptr;
@@ -1291,10 +1291,12 @@ void ImageCompressor::Init()
     if (switch_) {
         clOk_ = OHOS::InitOpenCL();
         if (!clOk_) {
-            HiLog::Error(LABEL, "InitOpenCL error !");
+            HiLog::Error(LABEL, "astc InitOpenCL error !");
+            return false;
         }
         InitPartition();
     }
+    return true;
 }
 
 bool ImageCompressor::CanCompress()

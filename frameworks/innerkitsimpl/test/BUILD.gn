@@ -782,7 +782,7 @@ ohos_unittest("webpplugintest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//third_party/flutter/skia/third_party/externals/libwebp/src",
+    "//third_party/skia/third_party/externals/libwebp/src",
   ]
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/plugin_server_test.cpp",
@@ -816,13 +816,13 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",
-    "//third_party/flutter/skia/third_party/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/flutter/skia/third_party/skcms",
+    "//third_party/skia/third_party/libjpeg-turbo",
+    "//third_party/skia/third_party/externals/libjpeg-turbo",
+    "//third_party/skia/third_party/skcms",
     "//third_party/libexif",
   ]
 
@@ -833,10 +833,10 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-    "//third_party/flutter/build/libjpeg:ace_libjpeg",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
     "//third_party/libexif:libexif",
+    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
   ]
   deps += skia_skcms
   deps += skia_platform
@@ -1109,6 +1109,49 @@ ohos_unittest("pixelastctest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
+ohos_unittest("textureencodetest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/texture_encode",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/stream/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
+    "${image_subsystem}/../../../drivers/peripheral/base/",
+    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
+    "${image_subsystem}/../../../third_party/skia/",
+    "${image_subsystem}/../../../third_party/skia/include/codec/",
+    "${image_subsystem}/../../../third_party/skia/include/core/",
+    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
+    "${image_subsystem}/../../../third_party/astc-encoder/Source",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest",
+  ]
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_util.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_texture_encode_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/astc-encoder:astc_encoder_shared",
+    "${image_subsystem}/../../../third_party/opencl-headers:libcl",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:exifhelper",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
+    "${image_subsystem}/plugins/manager:pluginmanager",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1140,6 +1183,7 @@ group("unittest") {
     ":rawdecodertest",
     ":receivertest",
     ":streamtest",
+    ":textureencodetest",
     ":transformtest",
     ":webpplugintest",
   ]

@@ -247,7 +247,6 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create useCustomFormat enter");
     int offset = info.offset_;
     int32_t stride = info.stride_;
     bool useCustomFormat = info.flag_;
@@ -296,6 +295,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
     dstPixelMap->SetEditable(opts.editable);
     MakePixelMap(dstPixels, fd, dstPixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
 
@@ -519,6 +519,7 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
         return nullptr;
     }
     dstPixelMap->SetEditable(opts.editable);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
 
@@ -1692,6 +1693,12 @@ bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
                      allocatorType_);
         return false;
     }
+
+    if (!parcel.WriteInt32(static_cast<int32_t>(grColorSpace_ ?
+            grColorSpace_->GetColorSpaceName() : ERR_MEDIA_INVALID_VALUE))) {
+        HiLog::Error(LABEL, "write pixel map grColorSpace to parcel failed.");
+        return false;
+    }
     return true;
 }
 
@@ -1909,6 +1916,12 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     pixelMap->SetAstc(isAstc);
 
     AllocatorType allocType = static_cast<AllocatorType>(parcel.ReadInt32());
+    int32_t csm = parcel.ReadInt32();
+    if (csm != ERR_MEDIA_INVALID_VALUE) {
+        OHOS::ColorManager::ColorSpaceName colorSpaceName = static_cast<OHOS::ColorManager::ColorSpaceName>(csm);
+        OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
+        pixelMap->InnerSetColorSpace(grColorSpace);
+    }
     int32_t rowDataSize = parcel.ReadInt32();
     int32_t bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
@@ -1987,7 +2000,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
             pixelMap->freePixelMapProc_(base, context, bufferSize);
         }
         ReleaseMemory(allocType, base, context, bufferSize);
-        if (context != nullptr) {
+        if (allocType == AllocatorType::SHARE_MEM_ALLOC && context != nullptr) {
             delete static_cast<int32_t *>(context);
         }
         delete pixelMap;

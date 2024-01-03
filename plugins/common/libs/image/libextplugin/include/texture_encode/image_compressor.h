@@ -58,7 +58,7 @@ private:
 
     bool clOk_;
     bool switch_;
-    void Init();
+    bool Init();
 
     static const int32_t maxSize_ = MAX_WIDTH_HEIGHT;
 
