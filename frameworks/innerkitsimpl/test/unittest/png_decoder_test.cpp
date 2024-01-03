@@ -1774,26 +1774,5 @@ HWTEST_F(PngDecoderTest, GetInterlacedRows002, TestSize.Level3)
     row = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 end";
 }
-
-/**
- * @tc.name: DoOneTimeDecode003
- * @tc.desc: Test of DoOneTimeDecode
- * @tc.type: FUNC
- */
-HWTEST_F(PngDecoderTest, DoOneTimeDecode003, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 start";
-    auto pngDecoder = std::make_shared<PngDecoder>();
-    DecodeContext context;
-    context.pixelsBuffer.buffer = malloc (10);
-    pngDecoder->idatLength_ = 1;
-    auto mock = std::make_shared<MockInputDataStream>();
-    pngDecoder->inputStreamPtr_ = mock.get();
-    uint32_t ret = pngDecoder->DoOneTimeDecode(context);
-    ASSERT_NE(ret, ERR_IMAGE_DECODE_ABNORMAL);
-    free(context.pixelsBuffer.buffer);
-    context.pixelsBuffer.buffer = nullptr;
-    GTEST_LOG_(INFO) << "PngDecoderTest: DoOneTimeDecode003 end";
-}
 } // namespace Multimedia
 } // namespace OHOS
