@@ -949,20 +949,50 @@ HWTEST_F(ExifMakerNoteTest, GetDataAndMoveTest002, TestSize.Level3)
 }
 
 /**
- * @tc.name: GetDataAndMoveTest002
- * @tc.desc: Test of GetDataAndMove
+ * @tc.name: ParserItemTest002
+ * @tc.desc: Test of ParserItem
  * @tc.type: FUNC
  */
-HWTEST_F(ExifMakerNoteTest, GetDataAndMoveTest002, TestSize.Level3)
+HWTEST_F(ExifMakerNoteTest, ParserItemTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataAndMoveTest002 start";
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest002 start";
     ExifMakerNote exifMakerNote;
-    size_t offset = 1;
-    size_t count = 0;
-    std::vector<unsigned char> value;
-    bool result = exifMakerNote.GetDataAndMove(offset, count, value);
+    exifMakerNote.makerNote_.push_back('a');
+    exifMakerNote.makerNote_.push_back('b');
+    exifMakerNote.makerNote_.push_back('c');
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserItem(offset, ifd, deep);
     ASSERT_EQ(result, false);
-    GTEST_LOG_(INFO) << "ExifMakerNoteTest: GetDataAndMoveTest002 end";
+    exifMakerNote.makerNote_.push_back('d');
+    exifMakerNote.makerNote_.push_back('e');
+    result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, false);
+    exifMakerNote.tiff_offset_ = 2;
+    result = exifMakerNote.ParserItem(offset, ifd, deep);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserItemTest002 end";
+}
+
+/**
+ * @tc.name: ParserIFDTest002
+ * @tc.desc: Test of ParserIFD
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExifMakerNoteTest, ParserIFDTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest002 start";
+    ExifMakerNote exifMakerNote;
+    exifMakerNote.makerNote_.push_back('a');
+    exifMakerNote.makerNote_.push_back('b');
+    exifMakerNote.makerNote_.push_back('c');
+    uint32_t offset = 0;
+    uint32_t ifd = 0;
+    uint32_t deep = 0;
+    bool result = exifMakerNote.ParserIFD(offset, ifd, deep);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserIFDTest002 end";
 }
 }
 }
