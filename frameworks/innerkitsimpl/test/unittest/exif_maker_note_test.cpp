@@ -664,7 +664,7 @@ HWTEST_F(ExifMakerNoteTest, DumpTest005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ExifMakerNoteTest: DumpTest005 start";
     ExifMakerNote exifMakerNote;
-    const std::vector<unsigned char> data = { 0x12, 0x34 };  
+    const std::vector<unsigned char> data = { 0x12, 0x34 };
     uint32_t offset = -2;
     uint32_t sum = 2;
     std::string expectedOutput = "";
