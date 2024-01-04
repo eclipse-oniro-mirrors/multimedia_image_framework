@@ -1725,5 +1725,54 @@ HWTEST_F(PngDecoderTest, IncrementalRead004, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "PngDecoderTest: IncrementalRead004 end";
 }
+
+/**
+ * @tc.name: SaveInterlacedRows004
+ * @tc.desc: Test of SaveInterlacedRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SaveInterlacedRows004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows004 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_bytep row = new uint8_t;
+    pngDecoder->firstRow_ = 3;
+    pngDecoder->lastRow_ = 1;
+    pngDecoder->pngImageInfo_.rowDataSize = 2;
+    png_uint_32 rowNum = 2;
+    int pass = 0;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    pass = 1;
+    pngDecoder->outputRowsNum_ = 1;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    pass = 1;
+    pngDecoder->pngImageInfo_.numberPasses = 2;
+    pngDecoder->SaveInterlacedRows(row, rowNum, pass);
+    ASSERT_NE(row, nullptr);
+    delete  row;
+    row = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: SaveInterlacedRows004 end";
+}
+
+/**
+ * @tc.name: GetInterlacedRows002
+ * @tc.desc: Test of GetInterlacedRows
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, GetInterlacedRows002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    png_uint_32 rowNum = 0;
+    int pass = 0;
+    png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+        nullptr, pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    png_bytep row = new uint8_t;
+    pngDecoder->GetInterlacedRows(pngPtr, row, rowNum, pass);
+    ASSERT_NE(pngPtr, nullptr);
+    delete row;
+    row = nullptr;
+    GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
