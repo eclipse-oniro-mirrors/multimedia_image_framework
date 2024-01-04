@@ -100,7 +100,7 @@ struct PixelDecodeOptions {
     bool editable = false;
     PlFillColor plFillColor;
     PlSVGResize plSVGResize;
-    PlColorSpaceInfo plDesiredColorSpace;
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> plDesiredColorSpace = nullptr;
 };
 
 class AbsImageDecoder {

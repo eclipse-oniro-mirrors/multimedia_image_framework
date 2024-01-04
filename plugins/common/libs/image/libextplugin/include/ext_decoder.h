@@ -84,6 +84,7 @@ private:
     SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
     uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
+    uint32_t CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts);
     void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -96,6 +97,9 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     uint32_t gifCacheIndex_ = 0;
+#ifdef IMAGE_COLORSPACE_FLAG
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
+#endif
 
     // hardware
     OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;

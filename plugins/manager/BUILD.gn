@@ -143,6 +143,7 @@ if (use_clang_ios) {
 
       external_deps = [
         "c_utils:utils",
+        "graphic_2d:color_manager",
         "hilog:libhilog",
       ]
     }
@@ -225,6 +226,7 @@ ohos_static_library("pluginmanager_static") {
 
     external_deps = [
       "c_utils:utils",
+      "graphic_2d:color_manager",
       "hilog:libhilog",
     ]
   }
