@@ -16,6 +16,7 @@
 #include "ext_decoder.h"
 
 #include <algorithm>
+#include <map>
 
 #include "ext_pixel_convert.h"
 #include "hilog/log.h"
@@ -39,11 +40,23 @@ namespace {
     constexpr static size_t SIZE_ZERO = 0;
     constexpr static uint32_t DEFAULT_SAMPLE_SIZE = 1;
     constexpr static uint32_t NO_EXIF_TAG = 1;
+    constexpr static uint32_t OFFSET_0 = 0;
+    constexpr static uint32_t OFFSET_1 = 1;
+    constexpr static uint32_t OFFSET_2 = 2;
+    constexpr static uint32_t OFFSET_3 = 3;
+    constexpr static uint32_t OFFSET_5 = 5;
+    constexpr static uint32_t SHIFT_BITS_8 = 8;
+    constexpr static uint32_t SHIFT_BITS_16 = 16;
+    constexpr static uint32_t SHIFT_BITS_24 = 24;
+    constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
+    constexpr static size_t SIZE_1 = 1;
+    constexpr static size_t SIZE_4 = 4;
     constexpr static int HARDWARE_MIN_DIM = 512;
     constexpr static int HARDWARE_MAX_DIM = 8192;
     constexpr static float HALF = 0.5;
     constexpr static float QUARTER = 0.25;
     constexpr static float ONE_EIGHTH = 0.125;
+    constexpr static uint64_t ICC_HEADER_SIZE = 132;
 }
 
 namespace OHOS {
@@ -397,16 +410,34 @@ static inline bool IsValidCrop(const PlRect &crop, SkImageInfo &info, SkIRect &o
 
 static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
 {
-    if (!opts.plDesiredColorSpace.isValidColorSpace) {
+    if (opts.plDesiredColorSpace == nullptr) {
         return srcInfo.refColorSpace();
     }
-    auto xyzSize = PlColorSpaceInfo::XYZ_SIZE * PlColorSpaceInfo::XYZ_SIZE * sizeof(float);
-    skcms_Matrix3x3 skXYZ;
-    memcpy_s(&skXYZ, xyzSize, opts.plDesiredColorSpace.xyz, xyzSize);
-    auto transferFnSize = PlColorSpaceInfo::TRANSFER_FN_SIZE * sizeof(float);
-    skcms_TransferFunction skTransferFun;
-    memcpy_s(&skTransferFun, transferFnSize, opts.plDesiredColorSpace.transferFn, transferFnSize);
-    return SkColorSpace::MakeRGB(skTransferFun, skXYZ);
+    return opts.plDesiredColorSpace->ToSkColorSpace();
+}
+
+uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
+{
+    if (ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel())) {
+        HiLog::Error(LABEL, "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
+                     dstInfo_.width(), dstInfo_.height());
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (!IsValidCrop(opts.CropRect, info_, dstSubset_)) {
+        HiLog::Error(LABEL,
+            "Invalid crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
+            dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    dstOptions_.fFrameIndex = index;
+#ifdef IMAGE_COLORSPACE_FLAG
+    dstColorSpace_ = opts.plDesiredColorSpace;
+#endif
+    if (IsSupportCropOnDecode(dstSubset_)) {
+        dstOptions_.fSubset = &dstSubset_;
+    }
+    return SUCCESS;
 }
 
 uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
@@ -444,21 +475,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         dstInfo_ = SkImageInfo::Make(info_.width(), info_.height(),
             desireColor, desireAlpha, getDesiredColorSpace(info_, opts));
     }
-    if (ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel())) {
-        HiLog::Error(LABEL, "SetDecodeOptions failed, width:%{public}d, height:%{public}d is too large",
-                     dstInfo_.width(), dstInfo_.height());
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    dstOptions_.fFrameIndex = index;
-
-    if (!IsValidCrop(opts.CropRect, info_, dstSubset_)) {
-        HiLog::Error(LABEL,
-            "Invalid crop rect xy [%{public}d x %{public}d], wh [%{public}d x %{public}d]",
-            dstSubset_.left(), dstSubset_.top(), dstSubset_.width(), dstSubset_.height());
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    if (IsSupportCropOnDecode(dstSubset_)) {
-        dstOptions_.fSubset = &dstSubset_;
+    auto resCode = CheckDecodeOptions(index, opts);
+    if (resCode != SUCCESS) {
+        return resCode;
     }
 
     info.size.width = dstInfo_.width();
@@ -902,14 +921,108 @@ SkColorType ExtDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
+static uint32_t u8ToU32(const uint8_t* p)
+{
+    return (p[OFFSET_0] << SHIFT_BITS_24) | (p[OFFSET_1] << SHIFT_BITS_16) |
+        (p[OFFSET_2] << SHIFT_BITS_8) | p[OFFSET_3];
+}
+
+struct ICCTag {
+    uint8_t signature[SIZE_4];
+    uint8_t offset[SIZE_4];
+    uint8_t size[SIZE_4];
+};
+
+struct ColorSpaceNameEnum {
+    std::string desc;
+    OHOS::ColorManager::ColorSpaceName name;
+};
+
+static std::vector<ColorSpaceNameEnum> sColorSpaceNamedMap = {
+    {"Display P3", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"sRGB EOTF with DCI-P3 Color Gamut", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"DCI-P3 D65 Gamut with sRGB Transfer", OHOS::ColorManager::ColorSpaceName::DISPLAY_P3},
+    {"Adobe RGB (1998)", OHOS::ColorManager::ColorSpaceName::ADOBE_RGB},
+    {"DCI P3", OHOS::ColorManager::ColorSpaceName::DCI_P3},
+    {"sRGB", OHOS::ColorManager::ColorSpaceName::SRGB}
+    /*{"BT.2020", OHOS::ColorManager::ColorSpaceName::BT2020}*/
+};
+
+static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorManager::ColorSpaceName &name)
+{
+    if (buf == nullptr || size <= OFFSET_5) {
+        return false;
+    }
+    std::vector<char> desc;
+    // We need skip desc type
+    for (uint32_t i = OFFSET_5; i < size; i++) {
+        if (buf[i] != '\0') {
+            desc.push_back(buf[i]);
+        }
+    }
+    if (desc.size() <= SIZE_1) {
+        HiLog::Info(LABEL, "empty buffer");
+        return false;
+    }
+    std::string descText(desc.begin() + OFFSET_1, desc.end());
+    for (auto nameEnum : sColorSpaceNamedMap) {
+        if (descText.find(nameEnum.desc) == std::string::npos) {
+            continue;
+        }
+        name = nameEnum.name;
+        return true;
+    }
+    HiLog::Error(LABEL, "Failed to match desc [%{public}s]", descText.c_str());
+    return false;
+}
+
+static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
+{
+    if (profile == nullptr || profile->buffer == nullptr) {
+        HiLog::Info(LABEL, "profile is nullptr");
+        return false;
+    }
+    auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
+    for (uint32_t i = SIZE_ZERO; i < profile->tag_count; i++) {
+        auto signature = u8ToU32(tags[i].signature);
+        if (signature != DESC_SIGNATURE) {
+            continue;
+        }
+        auto size = u8ToU32(tags[i].size);
+        auto offset = u8ToU32(tags[i].offset);
+        if (size <= SIZE_ZERO || offset >= profile->size) {
+            continue;
+        }
+        auto buffer = u8ToU32(tags[i].offset) + profile->buffer;
+        if (MatchColorSpaceName(buffer, size, name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
 {
+    if (dstColorSpace_ != nullptr) {
+        return *dstColorSpace_;
+    }
     auto skColorSpace = dstInfo_.isEmpty() ? info_.refColorSpace() : dstInfo_.refColorSpace();
-    return OHOS::ColorManager::ColorSpace(skColorSpace);
+    OHOS::ColorManager::ColorSpaceName name = OHOS::ColorManager::ColorSpaceName::CUSTOM;
+    if (codec_ != nullptr) {
+        auto profile = codec_->getICCProfile();
+        if (profile != nullptr) {
+            HiLog::Info(LABEL, "profile got !!!!");
+            GetColorSpaceName(profile, name);
+        }
+    }
+    return OHOS::ColorManager::ColorSpace(skColorSpace, name);
 }
 
 bool ExtDecoder::IsSupportICCProfile()
 {
+    if (dstColorSpace_ != nullptr) {
+        return true;
+    }
     if (info_.isEmpty()) {
         return false;
     }
