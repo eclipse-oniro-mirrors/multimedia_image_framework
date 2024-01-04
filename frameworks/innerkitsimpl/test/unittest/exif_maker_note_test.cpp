@@ -822,9 +822,9 @@ HWTEST_F(ExifMakerNoteTest, SetValueTest001, TestSize.Level3)
  * @tc.desc: Test of ParserMakerNote
  * @tc.type: FUNC
  */
-HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest002, TestSize.Level3)
+HWTEST_F(ExifMakerNoteTest, ParserMakerNoteTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest002 start";
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest002 start";
     ExifMakerNote exifMakerNote;
     unsigned char array[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0',
         'M', 'M', 0x00, 0x2A, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00 };
@@ -832,7 +832,7 @@ HWTEST_F(ExifMakerNoteTest, IsHwMakerNoteTest002, TestSize.Level3)
     uint32_t size = 20;
     uint32_t result = exifMakerNote.ParserMakerNote(data, size);
     ASSERT_EQ(result, Media::SUCCESS);
-    GTEST_LOG_(INFO) << "ExifMakerNoteTest: IsHwMakerNoteTest002 end";
+    GTEST_LOG_(INFO) << "ExifMakerNoteTest: ParserMakerNoteTest002 end";
 }
 
 /**
