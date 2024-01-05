@@ -22,9 +22,7 @@
 #include "string_ex.h"
 #include "image_trace.h"
 #include "hitrace_meter.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "color_space_object_convertor.h"
-#endif
 
 using OHOS::HiviewDFX::HiLog;
 namespace {

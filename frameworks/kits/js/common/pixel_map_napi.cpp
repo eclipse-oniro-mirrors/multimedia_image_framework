@@ -21,14 +21,14 @@
 #include "image_pixel_map_napi.h"
 #include "image_trace.h"
 #include "log_tags.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "color_space_object_convertor.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
+#include "pixel_map_from_surface.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
-#include "pixel_map_from_surface.h"
 
 using OHOS::HiviewDFX::HiLog;
 namespace {
@@ -86,9 +86,7 @@ struct PixelMapAsyncContext {
     double yArg = 0;
     bool xBarg = false;
     bool yBarg = false;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
-#endif
     std::string surfaceId;
 };
 
@@ -377,7 +375,9 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
+#endif
     };
 
     napi_value constructor = nullptr;
@@ -763,6 +763,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
     return result;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -877,6 +878,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
         nullptr, HiLog::Error(LABEL, "fail to create async work"));
     return result;
 }
+#endif
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap)
 {
@@ -2305,9 +2307,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
         "Pixelmap has crossed threads . SetColorSpace failed"),
         HiLog::Error(LABEL, "Pixelmap has crossed threads . SetColorSpace failed"));
 #ifdef IMAGE_COLORSPACE_FLAG
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     nVal.context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, nVal.argv[NUM_0]);
-#endif
     if (nVal.context->colorSpace == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
@@ -2364,12 +2364,16 @@ static void ApplyColorSpaceExec(napi_env env, PixelMapAsyncContext* context)
         HiLog::Debug(LABEL, "ApplyColorSpace has failed. do nothing");
         return;
     }
+#ifdef IMAGE_COLORSPACE_FLAG
     if (context->rPixelMap == nullptr || context->colorSpace == nullptr) {
         context->status = ERR_IMAGE_INIT_ABNORMAL;
         HiLog::Error(LABEL, "ApplyColorSpace Null native ref");
         return;
     }
     context->status = context->rPixelMap->ApplyColorSpace(*(context->colorSpace));
+#else
+    context->status = ERR_IMAGE_DATA_UNSUPPORT;
+#endif
 }
 
 static void ParseColorSpaceVal(napi_env env, napi_value val, PixelMapAsyncContext* context)
@@ -2380,14 +2384,12 @@ static void ParseColorSpaceVal(napi_env env, napi_value val, PixelMapAsyncContex
     }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     context->colorSpace = ColorManager::GetColorSpaceByJSObject(env, val);
-#endif
     if (context->colorSpace == nullptr) {
         context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
 #else
-    Val.context->status = ERR_IMAGE_DATA_UNSUPPORT;
+    context->status = ERR_IMAGE_DATA_UNSUPPORT;
 #endif
 }
 

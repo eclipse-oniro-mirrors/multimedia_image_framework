@@ -168,16 +168,24 @@ ohos_static_library("image_utils_static") {
     ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
-    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
+    include_dirs += [
+      "$image_subsystem/mock/native/include/log",
+      "//third_party/bounds_checking_function/include",
+    ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
-    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
+    include_dirs += [
+      "$image_subsystem/mock/native/include/log",
+      "//third_party/bounds_checking_function/include",
+    ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     deps = [
