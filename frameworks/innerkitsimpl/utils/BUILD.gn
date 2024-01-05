@@ -113,7 +113,7 @@ if (use_clang_ios) {
       external_deps = [
         "c_utils:utils",
         "graphic_2d:color_manager",
-        "graphic_2d:surface",
+        "graphic_surface:surface",
         "hilog:libhilog",
         "hitrace:hitrace_meter",
       ]

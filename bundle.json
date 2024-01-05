@@ -28,6 +28,7 @@
         "components": [
           "c_utils",
           "graphic_2d",
+          "graphic_surface",
           "hichecker",
           "hitrace",
           "hilog",

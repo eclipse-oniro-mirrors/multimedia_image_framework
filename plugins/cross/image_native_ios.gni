@@ -204,7 +204,7 @@ image_native_ios_include_dirs = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
   "//foundation/multimedia/image_framework/interfaces/kits/native/include",
   "//utils/jni/jnikit/include",
-  "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
+  "//foundation/graphic/graphic_surface/interfaces/inner_api/surface",
   "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
   "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager/color_space_object_convertor",
   "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
