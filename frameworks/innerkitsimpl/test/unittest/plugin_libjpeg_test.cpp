@@ -1743,5 +1743,130 @@ HWTEST_F(PluginLibJpegTest, ParseExifData001, TestSize.Level3)
     free(fileBuf);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseExifData001 end";
 }
+
+/**
+ * @tc.name: ByteOrderedBuffer001
+ * @tc.desc: ByteOrderedBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ByteOrderedBuffer001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ByteOrderedBuffer001 start";
+    uint8_t buf[20];
+    buf[12] = 'M';
+    buf[13] = 'M';
+    ByteOrderedBuffer byteOrderedBuffer(buf, 20);
+    ASSERT_EQ(byteOrderedBuffer.byteOrder_, EXIF_BYTE_ORDER_MOTOROLA);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ByteOrderedBuffer001 end";
+}
+
+/**
+ * @tc.name: ByteOrderedBuffer002
+ * @tc.desc: ByteOrderedBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ByteOrderedBuffer002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ByteOrderedBuffer002 start";
+    uint8_t buf[20];
+    buf[12] = 'M';
+    buf[13] = 'x';
+    ByteOrderedBuffer byteOrderedBuffer(buf, 20);
+    ASSERT_EQ(byteOrderedBuffer.byteOrder_, EXIF_BYTE_ORDER_INTEL);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ByteOrderedBuffer002 end";
+}
+
+/**
+ * @tc.name: SetDEDataByteCount002
+ * @tc.desc: SetDEDataByteCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetDEDataByteCount002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount002 start";
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteorder(buf, 10);
+    uint16_t dataFormat = byteorder.ReadUnsignedShort();
+    int32_t numberOfComponents = byteorder.ReadInt32();
+    uint32_t byteCount = 0;
+    bool ret = byteorder.SetDEDataByteCount(0xa436, dataFormat, numberOfComponents, byteCount);
+    ASSERT_EQ(ret, false);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetDEDataByteCount002 end";
+}
+
+/**
+ * @tc.name: GenerateDEArray003
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray003 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.bufferLength_ = 1;
+    byteOrderedBuffer.GenerateDEArray();
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray003 end";
+}
+
+/**
+ * @tc.name: ParseExifData002
+ * @tc.desc: ParseExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, ParseExifData002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseExifData002 start";
+    EXIFInfo exinfo;
+    unsigned char *buf = nullptr;
+    unsigned len = 1000;
+    exinfo.exifData_ = exif_data_new();
+    exinfo.imageFileDirectory_ = EXIF_IFD_COUNT;
+    int ret = exinfo.ParseExifData(buf, len);
+    ASSERT_NE(ret, 10001);
+    exif_data_unref(exinfo.exifData_);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: ParseExifData002 end";
+}
+
+/**
+ * @tc.name: UpdateCacheExifData002
+ * @tc.desc: UpdateCacheExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, UpdateCacheExifData002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData002 start";
+    EXIFInfo exinfo;
+    FILE *file = fopen("/data/local/tmp/image/testtest.txt", "w+");
+    exinfo.UpdateCacheExifData(file);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: UpdateCacheExifData002 end";
+}
+
+/**
+ * @tc.name: GetAreaFromExifEntries002
+ * @tc.desc: GetAreaFromExifEntries
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetAreaFromExifEntries002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries002 start";
+    EXIFInfo exinfo;
+    const uint8_t *buf = new uint8_t;
+    ByteOrderedBuffer byteOrderedBuffer(buf, 10);
+    byteOrderedBuffer.GenerateDEArray();
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    DirectoryEntry Direc;
+    Direc.ifd = EXIF_IFD_GPS;
+    byteOrderedBuffer.directoryEntryArray_.push_back(Direc);
+    exinfo.GetAreaFromExifEntries(1, byteOrderedBuffer.directoryEntryArray_, ranges);
+    delete buf;
+    buf = nullptr;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
