@@ -263,13 +263,14 @@ bool ImagePacker::GetEncoderPlugin(const PackOption &option)
     if (encoder != nullptr) {
         encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
     } else {
-        HiLog::Error(LABEL, "GetEncoderPlugin get extencoder plugin failed.");
+        HiLog::Error(LABEL, "GetEncoderPlugin get ext_encoder plugin failed.");
     }
     encoder = GetEncoder(pluginServer_, option.format);
     if (encoder != nullptr) {
         encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
     } else {
-        HiLog::Error(LABEL, "GetEncoderPlugin get %{public}s plugin failed.", option.format.c_str());
+        HiLog::Info(LABEL, "GetEncoderPlugin get %{public}s plugin failed, use ext_encoder plugin",
+            option.format.c_str());
     }
     return encoders_.size() != SIZE_ZERO;
 }

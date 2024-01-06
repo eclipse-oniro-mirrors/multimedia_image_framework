@@ -51,7 +51,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 {
     string realPath;
     if (!PathToRealPath(pathName, realPath)) {
-        HiLog::Error(LABEL, "[FileSourceStream]input the file path exception.");
+        HiLog::Error(LABEL, "[FileSourceStream]input the file path exception, pathName=%{public}s", pathName.c_str());
         return nullptr;
     }
     size_t size = 0;
