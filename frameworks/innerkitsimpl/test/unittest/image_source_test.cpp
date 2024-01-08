@@ -1081,7 +1081,7 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test GetSourceDecodingState****
+ * @tc.desc: test GetSourceDecodingState
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
@@ -1108,7 +1108,7 @@ HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
 
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test GetData****
+ * @tc.desc: test GetData
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
@@ -1126,7 +1126,7 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test GetData****
+ * @tc.desc: test GetData
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
@@ -1143,7 +1143,7 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test GetFormatExtended****
+ * @tc.desc: test GetFormatExtended
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
@@ -1154,13 +1154,13 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
     auto ret = imageSource->GetFormatExtended(format);
-    ASSERT_NE(ret, SUCCESS);
+    ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
 }
 
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test DecodeSourceInfo****
+ * @tc.desc: test DecodeSourceInfo
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
@@ -1177,7 +1177,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test DecodeSourceInfo****
+ * @tc.desc: test DecodeSourceInfo
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
@@ -1196,7 +1196,7 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test InitMainDecoder****
+ * @tc.desc: test InitMainDecoder
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
@@ -1211,7 +1211,7 @@ HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test AddIncrementalContextteDecoder****
+ * @tc.desc: test AddIncrementalContextteDecoder
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
@@ -1228,7 +1228,7 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test ImageSizeChange****
+ * @tc.desc: test ImageSizeChange
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
@@ -1247,7 +1247,7 @@ HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
 }
 /**
  * @tc.name: CreateImageSource0015
- * @tc.desc: test IsASTC****
+ * @tc.desc: test IsASTC
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
