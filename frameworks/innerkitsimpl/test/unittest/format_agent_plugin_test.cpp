@@ -671,8 +671,7 @@ HWTEST_F(FormatAgentPluginTest, read_byte001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_byte001 start";
     auto formatAgent = std::make_shared<ImagePlugin::WbmpFormatAgent>();
-    uint8_t *stream = new uint8_t;
-    *stream = 1;
+    uint8_t *stream = new uint8_t(1);
     uint8_t value = 1;
     uint32_t offset = 1;
     uint32_t dataSize = 0;
@@ -694,8 +693,7 @@ HWTEST_F(FormatAgentPluginTest, read_mbf001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_mbf001 start";
     ImagePlugin::WbmpFormatAgent formatAgent;
-    uint8_t *stream = new uint8_t;
-    *stream = 1;
+    uint8_t *stream = new uint8_t(1);
     uint64_t value = 1;
     uint32_t offset = 1;
     uint32_t dataSize = 0;
