@@ -54,7 +54,7 @@ private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
     static std::string GetLocalTime();
-    static std::string GetPixelMapStr(PixelMap* pixelMap);
+    static std::string GetPixelMapName(PixelMap* pixelMap);
 };
 } // namespace Media
 } // namespace OHOS
