@@ -1485,7 +1485,6 @@ HWTEST_F(PixelMapTest, CopyPixMapToDst, TestSize.Level3)
     pixelMap->imageInfo_.size.height = 2;
     bool ret = pixelMap->CopyPixMapToDst(source, dstPixels, fd, bufferSize);
     ASSERT_EQ(ret, false);
-     delete colors;
     GTEST_LOG_(INFO) << "ImagePixelMapTest: CopyPixMapToDst  end";
 }
 }
