@@ -661,5 +661,49 @@ HWTEST_F(FormatAgentPluginTest, WebpFormatAgentPluginTest0045, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: WebpFormatAgentPluginTest005 end";
 }
+
+/**
+ * @tc.name: read_byte001
+ * @tc.desc: Webp read_byte
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, read_byte001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_byte001 start";
+    auto formatAgent = std::make_shared<ImagePlugin::WbmpFormatAgent>();
+    uint8_t *stream = new uint8_t(1);
+    uint8_t value = 1;
+    uint32_t offset = 1;
+    uint32_t dataSize = 0;
+    bool ret = formatAgent->read_byte(stream, value, offset, dataSize);
+    ASSERT_EQ(ret, false);
+    ret = formatAgent->read_byte(stream, value, offset, 20);
+    ASSERT_EQ(ret, true);
+    delete stream;
+    stream = nullptr;
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_byte001 end";
+}
+
+/**
+ * @tc.name: read_mbf001
+ * @tc.desc: Webp read_mbf
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, read_mbf001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_mbf001 start";
+    ImagePlugin::WbmpFormatAgent formatAgent;
+    uint8_t *stream = new uint8_t(1);
+    uint64_t value = 1;
+    uint32_t offset = 1;
+    uint32_t dataSize = 0;
+    bool ret = formatAgent.read_mbf(stream, value, offset, dataSize);
+    ASSERT_EQ(ret, false);
+    ret = formatAgent.read_mbf(stream, value, offset, 2);
+    ASSERT_EQ(ret, true);
+    delete stream;
+    stream = nullptr;
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_mbf001 end";
+}
 }
 }
