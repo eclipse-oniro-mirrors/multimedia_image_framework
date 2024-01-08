@@ -296,31 +296,34 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
-static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOptions *param, uint8_t *buffer)
+static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOptions *param,
+    uint8_t *buffer, const std::string clBinPath)
 {
-    bool ret = true;
+    ClAstcHandle *astcClEncoder = nullptr;
     if ((inData == nullptr) || (param == nullptr) || (buffer == nullptr)) {
         HiLog::Error(LABEL, "astc Please check TryAstcEncBasedOnCl input!");
         return false;
     }
-    std::shared_ptr<ImageCompressor> instance = ImageCompressor::GetInstance();
-    if (instance == nullptr) {
-        HiLog::Error(LABEL, "astc class ImageCompressor create failed!");
+    if (AstcClCreate(&astcClEncoder, clBinPath) != CL_ASTC_ENC_SUCCESS) {
+        HiLog::Error(LABEL, "astc AstcClCreate failed!");
         return false;
     }
-    if (!(instance -> CreateKernel())) {
-        HiLog::Error(LABEL, "astc Create kernel error !");
-        ret = false;
-    } else {
-        if (instance->TextureEncodeCL(inData, stride, param->width_, param->height_, buffer)) {
-            ret = true;
-        } else {
-            HiLog::Error(LABEL, "astc Create TextureEncodeCL error !");
-            ret = false;
-        }
+    ClAstcImageOption imageIn;
+    if (AstcClFillImage(&imageIn, inData, stride, param->width_, param->height_) != CL_ASTC_ENC_SUCCESS) {
+        HiLog::Error(LABEL, "astc AstcClFillImage failed!");
+        AstcClClose(astcClEncoder);
+        return false;
     }
-    instance->ReleaseResource();
-    return ret;
+    if (AstcClEncImage(astcClEncoder, &imageIn, buffer) != CL_ASTC_ENC_SUCCESS) {
+        HiLog::Error(LABEL, "astc AstcClEncImage failed!");
+        AstcClClose(astcClEncoder);
+        return false;
+    }
+    if (AstcClClose(astcClEncoder) != CL_ASTC_ENC_SUCCESS) {
+        HiLog::Error(LABEL, "astc AstcClClose failed!");
+        return false;
+    }
+    return true;
 }
 
 uint32_t AstcCodec::ASTCEncode()
@@ -342,8 +345,9 @@ uint32_t AstcCodec::ASTCEncode()
     if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         HiLog::Info(LABEL, "astc hardware encode begin");
+        std::string clBinPath = "/data/local/tmp/astcKernelBin.bin";
         if (TryAstcEncBasedOnCl(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
-            astcPixelMap_->GetRowStride(), &param, astcOutput_->GetAddr())) {
+            astcPixelMap_->GetRowStride(), &param, astcOutput_->GetAddr(), clBinPath)) {
             hardwareFlag = true;
             HiLog::Info(LABEL, "astc hardware encode success!");
         } else {

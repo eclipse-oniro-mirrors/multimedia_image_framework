@@ -13,4 +13,3 @@
 
 [cfi]
 src:*image_compressor.cpp
-src:*astc_utils.cpp
