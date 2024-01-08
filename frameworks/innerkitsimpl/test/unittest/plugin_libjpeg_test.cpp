@@ -13,10 +13,13 @@
  * limitations under the License.
  */
 #include <gtest/gtest.h>
+#define IMAGE_COLORSPACE_FLAG
 #define private public
 #include <fcntl.h>
 #include "buffer_source_stream.h"
 #include "exif_info.h"
+#include "plugin_export.h"
+#include "icc_profile_info.h"
 #include "jpeg_decoder.h"
 #include "jpeg_encoder.h"
 #include "media_errors.h"
@@ -1601,6 +1604,8 @@ HWTEST_F(PluginLibJpegTest, GetEncoderFormatTest002, TestSize.Level3)
     int32_t componentsNum;
     J_COLOR_SPACE result = jpegEncoder->GetEncodeFormat(PixelFormat::RGBA_F16, componentsNum);
     ASSERT_EQ(result, JCS_EXT_RGBA);
+    result = jpegEncoder->GetEncodeFormat(PixelFormat::BGRA_8888, componentsNum);
+    ASSERT_EQ(result, JCS_EXT_BGRA);
     result = jpegEncoder->GetEncodeFormat(PixelFormat::ARGB_8888, componentsNum);
     ASSERT_EQ(result, JCS_EXT_ARGB);
     result = jpegEncoder->GetEncodeFormat(PixelFormat::ALPHA_8, componentsNum);
@@ -1867,6 +1872,52 @@ HWTEST_F(PluginLibJpegTest, GetAreaFromExifEntries002, TestSize.Level3)
     delete buf;
     buf = nullptr;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetAreaFromExifEntries002 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: PluginExternalCreate
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginExportTest: PluginExternalCreateTest001 start";
+    string className = "";
+    OHOS::MultimediaPlugin::PluginClassBase *result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "PluginExportTest: PluginExternalCreateTest001 end";
+}
+
+/**
+ * @tc.name: getGrColorSpaceTest001
+ * @tc.desc: getGrColorSpace
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, getGrColorSpaceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IccProfileInfoTest: getGrColorSpaceTest001 start";
+    ICCProfileInfo iccProfileInfo;
+    iccProfileInfo.getGrColorSpace();
+    GTEST_LOG_(INFO) << "IccProfileInfoTest: getGrColorSpaceTest001 end";
+}
+
+/**
+ * @tc.name: PackingICCProfileTest001
+ * @tc.desc: PackingICCProfile
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, PackingICCProfileTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IccProfileInfoTest: PackingICCProfileTest001 start";
+    ICCProfileInfo iccProfileInfo;
+    j_compress_ptr cinfo = nullptr;
+    const SkImageInfo info;
+    uint32_t result = iccProfileInfo.PackingICCProfile(cinfo, info);
+    ASSERT_EQ(result, OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED);
+    GTEST_LOG_(INFO) << "IccProfileInfoTest: PackingICCProfileTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
