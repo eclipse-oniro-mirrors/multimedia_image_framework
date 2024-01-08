@@ -41,6 +41,12 @@ constexpr uint32_t SVG_FILL_COLOR_ATTR_WIDTH = 6;
 constexpr uint32_t SVG_FILL_COLOR_MASK = 0xFFFFFF;
 const std::string SVG_FILL_COLOR_ATTR = "fill";
 static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
+static constexpr float FLOAT_HALF = 0.5f;
+
+static inline uint32_t Float2UInt32(float val)
+{
+    return static_cast<uint32_t>(val + FLOAT_HALF);
+}
 
 bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 {
@@ -389,8 +395,8 @@ bool SvgDecoder::AllocBuffer(DecodeContext &context)
             HiLog::Error(LABEL, "[AllocBuffer] size is empty.");
             return false;
         }
-        uint32_t width = static_cast<uint32_t>(svgSize.width());
-        uint32_t height = static_cast<uint32_t>(svgSize.height());
+        uint32_t width = Float2UInt32(svgSize.width());
+        uint32_t height = Float2UInt32(svgSize.height());
         uint64_t byteCount = static_cast<uint64_t>(width) * height * SVG_BYTES_PER_PIXEL;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             ret = AllocShareBuffer(context, byteCount);
@@ -474,8 +480,8 @@ bool SvgDecoder::BuildDom()
         return false;
     }
 
-    auto width = static_cast<uint32_t>(svgSize_.width());
-    auto height = static_cast<uint32_t>(svgSize_.height());
+    auto width = Float2UInt32(svgSize_.width());
+    auto height = Float2UInt32(svgSize_.height());
 
     HiLog::Debug(LABEL, "[BuildDom] OUT size=(%{public}u, %{public}u)", width, height);
     return true;
@@ -528,8 +534,8 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         svgDom_->setResizePercentage(DEFAULT_RESIZE_PERCENTAGE * scaleFitDesired);
     }
 
-    opts_.desiredSize.width = static_cast<uint32_t>(svgDom_->containerSize().width());
-    opts_.desiredSize.height = static_cast<uint32_t>(svgDom_->containerSize().height());
+    opts_.desiredSize.width = Float2UInt32(svgDom_->containerSize().width());
+    opts_.desiredSize.height = Float2UInt32(svgDom_->containerSize().height());
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
@@ -559,8 +565,8 @@ uint32_t SvgDecoder::DoGetImageSize(uint32_t index, PlSize &size)
         return Media::ERROR;
     }
 
-    size.width = static_cast<uint32_t>(svgSize.width());
-    size.height = static_cast<uint32_t>(svgSize.height());
+    size.width = Float2UInt32(svgSize.width());
+    size.height = Float2UInt32(svgSize.height());
 
     HiLog::Debug(LABEL, "[DoGetImageSize] OUT size=(%{public}u, %{public}u)", size.width, size.height);
     return Media::SUCCESS;
