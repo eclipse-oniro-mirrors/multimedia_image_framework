@@ -52,6 +52,7 @@ int64_t JpegHardwareDecoder::LifeSpanTimer::GetCurrentTimeInUs()
 
 JpegHardwareDecoder::JpegHardwareDecoder()
 {
+    inputBuffer_.fenceFd = -1;
     hwDecoder_ = ICodecImage::Get();
     bufferMgr_ = IDisplayBuffer::Get();
 }
