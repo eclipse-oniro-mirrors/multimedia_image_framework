@@ -179,6 +179,7 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
 
 uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
 {
+    ImageUtils::DumpPixelMapBeforeEncode(pixelMap);
     ImageTrace imageTrace("ImagePacker::AddImage by pixelMap");
     return DoEncodingFunc([this, &pixelMap](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddImage(pixelMap);
@@ -228,7 +229,6 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 uint32_t ImagePacker::FinalizePacking()
 {
     ImageTrace imageTrace("ImagePacker::FinalizePacking");
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap_);
     return DoEncodingFunc([](ImagePlugin::AbsImageEncoder* encoder) {
         auto res = encoder->FinalizeEncode();
         if (res != SUCCESS) {

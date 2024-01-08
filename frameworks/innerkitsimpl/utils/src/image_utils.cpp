@@ -366,17 +366,29 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
     }
 
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
-    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
-        std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
-        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + "_pid" +
-        std::to_string(getpid()) + "_tid" + std::to_string(gettid()) + "_uniqueId" +
-        std::to_string(pixelMap->GetUniqueId()) + ".dat";
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled failed");
         return;
     }
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled success, path = %{public}s", fileName.c_str());
+}
+
+void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
+{
+    if (!ImageSystemProperties::GetDumpImageEnabled()) {
+        return;
+    }
+    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode start");
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_beforeEncode" + GetPixelMapName(&pixelMap) +
+        ".dat";
+    int32_t totalSize = pixelMap.GetRowStride() * pixelMap.GetHeight();
+    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap.GetPixels()), totalSize)) {
+        HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode failed");
+        return;
+    }
+    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode success, path = %{public}s", fileName.c_str());
 }
 
 void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix)
@@ -416,6 +428,22 @@ std::string ImageUtils::GetLocalTime()
     int millSecondWidth = 3;
     ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
     return ss.str();
+}
+
+std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
+{
+    if (!pixelMap) {
+        HiLog::Error(LABEL, "ImageUtils::GetPixelMapName error, pixelMap is null");
+        return "";
+    }
+    std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
+        "_h" + std::to_string(pixelMap->GetHeight()) +
+        "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
+        "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
+        "_pid" + std::to_string(getpid()) +
+        "_tid" + std::to_string(gettid()) +
+        "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
+    return pixelMapStr;
 }
 } // namespace Media
 } // namespace OHOS

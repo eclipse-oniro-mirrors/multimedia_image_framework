@@ -764,6 +764,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             listener->OnEvent((int)DecodeEvent::EVENT_COMPLETE_DECODE);
         }
     }
+    // not ext decode, dump pixelMap while decoding svg here
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
     return pixelMap;
 }
 

@@ -47,12 +47,14 @@ public:
     static int32_t SurfaceBuffer_Reference(void* buffer);
     static int32_t SurfaceBuffer_Unreference(void* buffer);
     static void DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap);
+    static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat");
 
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
     static std::string GetLocalTime();
+    static std::string GetPixelMapName(PixelMap* pixelMap);
 };
 } // namespace Media
 } // namespace OHOS
