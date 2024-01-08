@@ -16,8 +16,9 @@
 #include "image_source.h"
 
 #include <algorithm>
-#include <vector>
+#include <chrono>
 #include <cstring>
+#include <vector>
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -244,7 +245,8 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
             streamPtr = FileSourceStream::CreateSourceStream(pathName);
         }
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create file path source stream. pathName=%s", pathName.c_str());
+            HiLog::Error(LABEL, "[ImageSource]failed to create file path source stream. pathName=%{public}s",
+                pathName.c_str());
         }
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by path");
@@ -486,10 +488,17 @@ DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info
     return context;
 }
 
+uint64_t ImageSource::GetNowTimeMicroSeconds()
+{
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageTrace imageTrace("CreatePixelMapExtended");
+    uint64_t decodeStartTime = GetNowTimeMicroSeconds();
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
@@ -534,8 +543,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d)", opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-        info.size.height);
+        "imageSize: (%{public}d, %{public}d), cost %{public}lu us", opts.desiredSize.width, opts.desiredSize.height,
+        info.size.width, info.size.height, static_cast<unsigned long int>(GetNowTimeMicroSeconds() - decodeStartTime));
     return pixelMap;
 }
 
