@@ -142,6 +142,8 @@ private:
         const std::vector<ExifRational> &exifRationals);
     bool SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
         const std::vector<std::string> &dataVec);
+    uint32_t GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
+        unsigned char **fileBuf);
 
 private:
     ExifIfd imageFileDirectory_;

@@ -580,39 +580,52 @@ void EXIFInfo::SetExifTagValuesEx(const ExifTag &tag, const std::string &value)
     }
 }
 
-uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value, const std::string &path)
+uint32_t EXIFInfo::GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
+    unsigned char **fileBuf)
 {
-    FILE *file = fopen(path.c_str(), "rb");
-    if (file == nullptr) {
+    *file = fopen(path.c_str(), "rb");
+    if (*file == nullptr) {
         HiLog::Debug(LABEL, "Error creating file %{public}s", path.c_str());
         return Media::ERR_MEDIA_IO_ABNORMAL;
     }
 
     // read jpeg file to buff
-    unsigned long fileLength = GetFileSize(file);
+    fileLength = GetFileSize(*file);
     if (fileLength == 0 || fileLength > MAX_FILE_SIZE) {
         HiLog::Debug(LABEL, "Get file size failed.");
-        (void)fclose(file);
+        (void)fclose(*file);
         return Media::ERR_MEDIA_BUFFER_TOO_SMALL;
     }
 
-    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
-    if (fileBuf == nullptr) {
+    *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    if (*fileBuf == nullptr) {
         HiLog::Debug(LABEL, "Allocate buf for %{public}s failed.", path.c_str());
-        (void)fclose(file);
+        (void)fclose(*file);
         return Media::ERR_IMAGE_MALLOC_ABNORMAL;
     }
 
-    if (fread(fileBuf, fileLength, 1, file) != 1) {
+    if (fread(*fileBuf, fileLength, 1, *file) != 1) {
         HiLog::Debug(LABEL, "Read %{public}s failed.", path.c_str());
-        ReleaseSource(&fileBuf, &file);
+        ReleaseSource(fileBuf, file);
         return Media::ERR_MEDIA_READ_PARCEL_FAIL;
     }
 
-    if (!(fileBuf[0] == 0xFF && fileBuf[1] == 0xD8)) {
+    if (!((*fileBuf)[0] == 0xFF && (*fileBuf)[1] == 0xD8)) {
         HiLog::Debug(LABEL, "%{public}s is not jpeg file.", path.c_str());
-        ReleaseSource(&fileBuf, &file);
+        ReleaseSource(fileBuf, file);
         return Media::ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+    return Media::SUCCESS;
+}
+
+uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value, const std::string &path)
+{
+    FILE *file = nullptr;
+    unsigned long fileLength;
+    unsigned char *fileBuf = nullptr;
+    uint32_t res = GetFileInfoByPath(path, &file, fileLength, &fileBuf);
+    if (res != Media::SUCCESS) {
+        return res;
     }
 
     ExifData *ptrExifData = nullptr;
