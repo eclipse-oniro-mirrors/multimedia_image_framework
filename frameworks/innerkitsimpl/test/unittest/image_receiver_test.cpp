@@ -434,11 +434,11 @@ HWTEST_F(ImageReceiverTest, SaveSTPTest001, TestSize.Level3)
     imageReceiver = ImageReceiver::CreateImageReceiver(
         RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ASSERT_NE(imageReceiver, nullptr);
-    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer1 = nullptr;
-    ASSERT_EQ(surfacebuffer, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
+    ASSERT_EQ(surfaceBuffer, nullptr);
     int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fd, 0);
-    int32_t res = imageReceiver->SaveBufferAsImage(fd, surfaceBuffer1, opts);
+    int32_t res = imageReceiver->SaveBufferAsImage(fd, surfaceBuffer, opts);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: SaveSTPTest001 end";
 }
