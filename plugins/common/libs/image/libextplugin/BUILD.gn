@@ -34,9 +34,9 @@ ohos_static_library("exifhelper") {
   include_dirs = [
     "../libjpegplugin/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${third_party_root}/libexif",
+    "//third_party/libexif",
   ]
-  deps = [ "${third_party_root}/libexif:libexif" ]
+  deps = [ "//third_party/libexif:libexif" ]
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
@@ -104,10 +104,7 @@ ohos_shared_library("textureEncoderCL") {
       blocklist = "./cfi_blocklist.txt"
     }
   }
-  sources = [
-    "src/texture_encode/astc_utils.cpp",
-    "src/texture_encode/image_compressor.cpp",
-  ]
+  sources = [ "src/texture_encode/image_compressor.cpp" ]
   configs = [
     ":plugins_includes",
     ":skia_includes",
