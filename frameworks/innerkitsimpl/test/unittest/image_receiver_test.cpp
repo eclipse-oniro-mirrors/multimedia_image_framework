@@ -455,7 +455,7 @@ HWTEST_F(ImageReceiverTest, getSurfaceByIdTest001, TestSize.Level3)
     imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     std::string id;
-    sptr<Surface> surfacebuffer = imageReceiver->getSurfaceById(id);
+    OHOS::sptr<OHOS::Surface> surfacebuffer = imageReceiver->getSurfaceById(id);
     ASSERT_EQ(surfacebuffer, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: getSurfaceByIdTest001 end";
 }
