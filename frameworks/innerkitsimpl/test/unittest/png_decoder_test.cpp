@@ -1774,5 +1774,48 @@ HWTEST_F(PngDecoderTest, GetInterlacedRows002, TestSize.Level3)
     row = nullptr;
     GTEST_LOG_(INFO) << "PngDecoderTest: GetInterlacedRows002 end";
 }
+
+/**
+ * @tc.name: PromoteIncrementalDecodeTest009
+ * @tc.desc: Test of PromoteIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, PromoteIncrementalDecodeTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest009 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    pngDecoder->pngStructPtr_ = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr,
+        pngDecoder->PngErrorExit, pngDecoder->PngWarning);
+    pngDecoder->pngInfoPtr_ = png_create_info_struct(pngDecoder->pngStructPtr_);
+    ProgDecodeContext context;
+    pngDecoder->pngImageInfo_.rowDataSize = 0;
+    pngDecoder->pngImageInfo_.height = 0;
+    pngDecoder->state_ = PngDecodingState::IMAGE_DECODING;
+    context.decodeContext.pixelsBuffer.buffer = nullptr;
+    context.decodeContext.allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    uint32_t result = pngDecoder->PromoteIncrementalDecode(0, context);
+    ASSERT_EQ(result, ERR_IMAGE_MALLOC_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: PromoteIncrementalDecodeTest009 end";
+}
+
+/**
+ * @tc.name: DecodeHeader001
+ * @tc.desc: Test of DecodeHeader
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, DecodeHeader001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeHeader001 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    pngDecoder->inputStreamPtr_ = mock.get();
+    mock->returnValue_ = true;
+    pngDecoder->decodeHeadFlag_ = true;
+    pngDecoder->pngImageInfo_.width = 0;
+    pngDecoder->pngImageInfo_.height = 0;
+    uint32_t result = pngDecoder->DecodeHeader();
+    ASSERT_EQ(result, ERR_IMAGE_GET_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: DecodeHeader001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
