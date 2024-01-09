@@ -144,6 +144,7 @@ private:
         const std::vector<std::string> &dataVec);
     uint32_t GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
         unsigned char **fileBuf);
+    uint32_t GetFileInfoByFd(int localFd, FILE **file, unsigned long &fileLength, unsigned char **fileBuf);
 
 private:
     ExifIfd imageFileDirectory_;
