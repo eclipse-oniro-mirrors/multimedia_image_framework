@@ -34,7 +34,7 @@ public:
     static napi_value CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
     static std::shared_ptr<PixelMap> GetPixelMap(napi_env env, napi_value pixelmap);
     std::shared_ptr<PixelMap>* GetPixelMap();
-    std::shared_ptr<PixelMap>& GetPixelNapiInner()
+    std::shared_ptr<PixelMap> GetPixelNapiInner()
     {
         return nativePixelMap_;
     }
@@ -135,13 +135,14 @@ public:
     bool Insert(const uint32_t &key, const std::shared_ptr<PixelMap> &value)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (!IsEmpty() && Find(key)) map_.erase(key);
+        if (!IsEmpty() && (map_.find(key) != map_.end())) map_.erase(key);
         auto ret = map_.insert(std::pair<uint32_t, std::shared_ptr<PixelMap>>(key, value));
         return ret.second;
     }
 
     bool Find(const uint32_t &key)
     {
+        std::lock_guard<std::mutex> lock(mutex_);
         auto it = map_.find(key);
         return it != map_.end() ? true : false;
     }
@@ -149,7 +150,7 @@ public:
     void Erase(const uint32_t &key)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (Find(key)) {
+        if (map_.find(key) != map_.end()) {
             map_.erase(key);
         }
         return;
