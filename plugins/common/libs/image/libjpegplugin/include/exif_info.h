@@ -145,6 +145,7 @@ private:
     uint32_t GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
         unsigned char **fileBuf);
     uint32_t GetFileInfoByFd(int localFd, FILE **file, unsigned long &fileLength, unsigned char **fileBuf);
+    void ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, unsigned char* exifDataBuf);
 
 private:
     ExifIfd imageFileDirectory_;

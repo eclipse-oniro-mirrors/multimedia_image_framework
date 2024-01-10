@@ -826,82 +826,67 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     uint32_t index = 0;
     if (sizeof(EXIF_HEADER) >= size) {
         HiLog::Debug(LABEL, "There is not enough space for EXIF header!");
-        free(tempBuf);
-        tempBuf = nullptr;
-        exif_data_unref(ptrExifData);
-        ReleaseExifDataBuffer(exifDataBuf);
+        ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
 
     for (size_t i = 0; i < sizeof(EXIF_HEADER); i++) {
-        tempBuf[index] = EXIF_HEADER[i];
-        index += 1;
+        tempBuf[index++] = EXIF_HEADER[i];
     }
 
     // Write EXIF block length in big-endian order
     unsigned char highBit = static_cast<unsigned char>((exifDataBufLength + LENGTH_OFFSET_2) >> MOVE_OFFSET_8);
     if (index >= size) {
         HiLog::Debug(LABEL, "There is not enough space for writing EXIF block length!");
-        free(tempBuf);
-        tempBuf = nullptr;
-        exif_data_unref(ptrExifData);
-        ReleaseExifDataBuffer(exifDataBuf);
+        ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
-    tempBuf[index] = highBit;
-    index += 1;
+    tempBuf[index++] = highBit;
 
     unsigned char lowBit = static_cast<unsigned char>((exifDataBufLength + LENGTH_OFFSET_2) & 0xff);
     if (index >= size) {
         HiLog::Debug(LABEL, "There is not enough space for writing EXIF block length!");
-        free(tempBuf);
-        tempBuf = nullptr;
-        exif_data_unref(ptrExifData);
-        ReleaseExifDataBuffer(exifDataBuf);
+        ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
-    tempBuf[index] = lowBit;
-    index += 1;
+    tempBuf[index++] = lowBit;
 
     // Write EXIF data block
     if ((index +  exifDataBufLength) >= size) {
         HiLog::Debug(LABEL, "There is not enough space for writing EXIF data block!");
-        free(tempBuf);
-        tempBuf = nullptr;
-        exif_data_unref(ptrExifData);
-        ReleaseExifDataBuffer(exifDataBuf);
+        ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
     for (unsigned int i = 0; i < exifDataBufLength; i++) {
-        tempBuf[index] = exifDataBuf[i];
-        index += 1;
+        tempBuf[index++] = exifDataBuf[i];
     }
 
     // Write JPEG image data, skipping the non-EXIF header
     if ((index + size - orginExifDataLength - sizeof(EXIF_HEADER) - MOVE_OFFSET_8) > size) {
         HiLog::Debug(LABEL, "There is not enough space for writing JPEG image data!");
-        free(tempBuf);
-        tempBuf = nullptr;
-        exif_data_unref(ptrExifData);
-        ReleaseExifDataBuffer(exifDataBuf);
+        ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
         return Media::ERR_MEDIA_OUT_OF_RANGE;
     }
 
     for (unsigned int i = 0; i < (size - orginExifDataLength - sizeof(EXIF_HEADER)); i++) {
-        tempBuf[index] = data[orginExifDataLength + sizeof(EXIF_HEADER) + i];
-        index += 1;
+        tempBuf[index++] = data[orginExifDataLength + sizeof(EXIF_HEADER) + i];
     }
 
-    for (unsigned int i = 0; i < size; i++) {
-        data[i] = tempBuf[i];
-    }
+    memcpy(data, tempBuf, size);
 
     ParseExifData(data, static_cast<unsigned int>(index));
-    free(tempBuf);
-    tempBuf = nullptr;
+    ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);
+    return Media::SUCCESS;
+}
+
+void EXIFInfo::ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, unsigned char* exifDataBuf)
+{
+    if (tempBuf != nullptr) {
+        free(tempBuf);
+        tempBuf = nullptr;
+    }
     exif_data_unref(ptrExifData);
     ReleaseExifDataBuffer(exifDataBuf);
-    return Media::SUCCESS;
 }
 
 ExifEntry* EXIFInfo::InitExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag)
