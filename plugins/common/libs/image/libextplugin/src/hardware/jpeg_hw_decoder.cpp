@@ -252,10 +252,14 @@ bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataSt
         JPEG_HW_LOGE("failed to allocate input buffer, err=%{public}d", ret);
         return false;
     }
-    srcStream->Seek(0);
     BufferHandle *inputBufferHandle = inputBuffer_.buffer->GetBufferHandle();
+    if (inputBufferHandle == nullptr) {
+        JPEG_HW_LOGE("inputBufferHandle is nullptr");
+        return false;
+    }
     bufferMgr_->Mmap(*inputBufferHandle);
     (void)bufferMgr_->InvalidateCache(*inputBufferHandle);
+    srcStream->Seek(0);
     uint32_t readSize = 0;
     bool flag = srcStream->Read(static_cast<uint32_t>(fileSize), static_cast<uint8_t*>(inputBufferHandle->virAddr),
                                 static_cast<uint32_t>(inputBufferHandle->size), readSize);
