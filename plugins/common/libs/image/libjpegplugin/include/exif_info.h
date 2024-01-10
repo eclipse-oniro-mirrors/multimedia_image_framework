@@ -136,8 +136,12 @@ private:
     bool CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag);
     bool CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag);
     void GetAreaFromExifEntries(const int &privacyType,
-                                const std::vector<DirectoryEntry> &entryArray,
-                                std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+        const std::vector<DirectoryEntry> &entryArray,
+        std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    bool SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
+        const std::vector<ExifRational> &exifRationals);
+    bool SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
+        const std::vector<std::string> &dataVec);
 
 private:
     ExifIfd imageFileDirectory_;
