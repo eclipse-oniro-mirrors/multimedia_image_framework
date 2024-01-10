@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "bmp_format_agent.h"
@@ -87,6 +87,74 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat003, TestSize.Level3)
     bool res = heifFormatAgent.CheckFormat(headerData, dataSize);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat003 end";
+}
+
+/**
+ * @tc.name: IsHeif64001
+ * @tc.desc: IsHeif64
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, IsHeif64001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64001 start";
+    HeifFormatAgent heifFormatAgent;
+    void *buffer = malloc(4);
+    size_t bytesRead = 1;
+    int64_t offset = 1;
+    uint64_t chunkSize = 1;
+    bool res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
+    ASSERT_EQ(res, false);
+    bytesRead = 20;
+    offset = 16;
+    res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
+    ASSERT_EQ(res, false);
+    free(buffer);
+    buffer = nullptr;
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64001 end";
+}
+
+/**
+ * @tc.name: IsHeif64002
+ * @tc.desc: IsHeif64
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, IsHeif64002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64002 start";
+    HeifFormatAgent heifFormatAgent;
+    void *buffer = malloc(4);
+    size_t bytesRead = 1;
+    int64_t offset = 1;
+    uint64_t chunkSize = 2;
+    bool res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
+    ASSERT_EQ(res, false);
+    chunkSize = 10;
+    res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
+    ASSERT_EQ(res, true);
+    free(buffer);
+    buffer = nullptr;
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64002 end";
+}
+
+/**
+ * @tc.name: CheckFormat004
+ * @tc.desc: CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, CheckFormat004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat004 start";
+    HeifFormatAgent heifFormatAgent;
+    void *headerData = malloc(4);
+    uint32_t dataSize = 9;
+    bool res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(res, false);
+    dataSize = 20;
+    res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(res, false);
+    free(headerData);
+    headerData = nullptr;
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat004 end";
 }
 }
 }
