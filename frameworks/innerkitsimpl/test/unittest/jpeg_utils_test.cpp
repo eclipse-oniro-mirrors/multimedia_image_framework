@@ -117,9 +117,6 @@ HWTEST_F(JpegUtilsTest, TermDstStreamTest001, TestSize.Level3)
 HWTEST_F(JpegUtilsTest, DoubleToStringTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegUtilsTest: DoubleToStringTest001 start";
-    double *ptr = NULL;
-    std::string ret = ImagePlugin::DoubleToString(*ptr);
-    EXPECT_EQ(ret, "");
     double num = 128;
     std::string result = ImagePlugin::DoubleToString(num);
     EXPECT_EQ(result, "128.000000");
