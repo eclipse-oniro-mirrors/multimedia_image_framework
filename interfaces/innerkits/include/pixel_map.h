@@ -327,7 +327,10 @@ private:
 
     static void ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size);
     bool WriteImageData(Parcel &parcel, size_t size) const;
+    bool WriteAshmemDataToParcel(Parcel &parcel, size_t size) const;
     static uint8_t *ReadImageData(Parcel &parcel, int32_t size);
+    static uint8_t *ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
     bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
