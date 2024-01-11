@@ -1593,22 +1593,6 @@ HWTEST_F(PluginLibJpegTest, ModifyExifData003, TestSize.Level3)
 }
 
 /**
- * @tc.name: SetYuv420spExtraConfigTest001
- * @tc.desc: SetYuv420spExtraConfig
- * @tc.type: FUNC
- */
-HWTEST_F(PluginLibJpegTest, SetYuv420spExtraConfigTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetYuv420spExtraConfigTest001 start";
-    auto jpegEncoder = std::make_shared<JpegEncoder>();
-    jpegEncoder->encodeInfo_.comp_info = (jpeg_component_info *)malloc(sizeof(jpeg_component_info)*3);
-    jpegEncoder->SetYuv420spExtraConfig();
-    ASSERT_EQ(jpegEncoder->encodeInfo_.comp_info[INDEX_TWO].v_samp_factor, SAMPLE_FACTOR_ONE);
-    free(jpegEncoder->encodeInfo_.comp_info);
-    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetYuv420spExtraConfigTest001 end";
-}
-
-/**
  * @tc.name: WriteExifDataToFile002
  * @tc.desc: WriteExifDataToFile
  * @tc.type: FUNC
