@@ -31,8 +31,6 @@ namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_NULL_JPEG_PATH = "/data/local/tmp/image/test_null.jpg";
 static const std::string IMAGE_INPUT_TXT_PATH = "/data/local/tmp/image/test.txt";
-constexpr uint8_t SAMPLE_FACTOR_ONE = 1;
-constexpr uint8_t INDEX_TWO = 2;
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
