@@ -29,7 +29,7 @@ ExtWStream::ExtWStream(OutputDataStream *stream) : stream_(stream)
 {
 }
 
-bool ExtWStream::write(const void* buffer, size_t size)
+bool ExtWStream::write(const void* buffer, size_t size) __attribute__((no_sanitize("cfi")))
 {
     if (stream_ == nullptr) {
         HiLog::Error(LABEL, "ExtWStream::write stream is nullptr");
