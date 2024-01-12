@@ -186,13 +186,6 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
     }
 }
 
-bool CheckConvertParmas(const ImageInfo &src, const ImageInfo &dst)
-{
-    return src.size.width == dst.size.width &&
-        src.size.height == dst.size.height &&
-        src.alphaType == dst.alphaType;
-}
-
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 {
     if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
@@ -270,7 +263,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
-        HiLog::Error(LABEL, "check pixelMap pointer fail");
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
@@ -283,8 +275,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         return nullptr;
     }
     Position dstPosition;
-    if (!CheckConvertParmas(srcImageInfo, dstImageInfo) &&
-        !PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
+    if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
         static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
         dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
         HiLog::Error(LABEL, "pixel convert in adapter failed.");
