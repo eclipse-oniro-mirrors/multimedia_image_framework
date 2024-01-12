@@ -23,7 +23,7 @@
 #include "image/image_plugin_type.h"
 #include "image_log.h"
 #include "image_utils.h"
-#include "image_source_util.h"
+#include "../image_source_util.h"
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
 #include "media_errors.h"

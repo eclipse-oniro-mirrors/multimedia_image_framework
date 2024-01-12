@@ -23,7 +23,7 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
-#include "image_source_util.h"
+#include "../image_source_util.h"
 
 using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;

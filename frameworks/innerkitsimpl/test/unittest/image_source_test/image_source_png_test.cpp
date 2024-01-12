@@ -19,7 +19,7 @@
 #include "hilog/log.h"
 #include "image_packer.h"
 #include "image_source.h"
-#include "image_source_util.h"
+#include "../image_source_util.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "incremental_pixel_map.h"
@@ -31,161 +31,129 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
-
 namespace OHOS {
 namespace Multimedia {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceWebpTest"
+    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourcePngTest"
 };
 static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
-static const std::string IMAGE_INPUT_WEBP_PATH = "/data/local/tmp/image/test_large.webp";
-static const std::string IMAGE_INPUT_HW_JPEG_PATH = "/data/local/tmp/image/test_hw.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_FILE_PATH = "/data/test/test_webp_file.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_BUFFER_PATH = "/data/test/test_webp_buffer.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_ISTREAM_PATH = "/data/test/test_webp_istream.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_INC_PATH = "/data/test/test_webp_inc.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_FILE1_PATH = "/data/test/test_webp_file1.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_FILE2_PATH = "/data/test/test_webp_file2.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC1_PATH = "/data/test/test_webp_inc1.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME1_PATH = "/data/test/test_webp_onetime1.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH = "/data/test/test_webp_inc2.jpg";
-static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH = "/data/test/test_webp_onetime2.jpg";
 
-class ImageSourceWebpTest : public testing::Test {
+class ImageSourcePngTest : public testing::Test {
 public:
-    ImageSourceWebpTest() {}
-    ~ImageSourceWebpTest() {}
+    ImageSourcePngTest() {}
+    ~ImageSourcePngTest() {}
 };
 
 /**
- * @tc.name: WebpImageDecode001
- * @tc.desc: Decode webp image from file source stream
+ * @tc.name: PngImageDecode001
+ * @tc.desc: Decode png image from file source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode001, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode001, TestSize.Level3)
 {
     /**
-     * @tc.steps: step1. create image source by correct webp file path and jpeg format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/webp";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    /**
-     * @tc.steps: step2. get support decode image format.
-     * @tc.expected: step2. get support format info success.
-     */
-    std::set<string> formats;
-    uint32_t ret = imageSource->GetSupportedFormats(formats);
-    ASSERT_EQ(ret, SUCCESS);
-    /**
-     * @tc.steps: step3. decode image source to pixel map by default decode options.
-     * @tc.expected: step3. decode image source to pixel map success.
-     */
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    /**
-     * @tc.steps: step4. get image source information.
-     * @tc.expected: step4. get image source information success and source state is parsed.
-     */
-    SourceInfo sourceInfo = imageSource->GetSourceInfo(errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_EQ(sourceInfo.state, SourceInfoState::FILE_INFO_PARSED);
-    /**
-     * @tc.steps: step5. compress the pixel map to jpeg file.
-     * @tc.expected: step5. pack pixel map success and the jpeg compress file.
-     */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_FILE_PATH, std::move(pixelMap));
-    ASSERT_NE(packSize, 0);
-}
-
-/**
- * @tc.name: WebpImageDecode002
- * @tc.desc: Create image source by correct webp file path and wrong format hit.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode002, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by correct webp file path and default format hit.
-     * @tc.expected: step1. create image source success.
-     */
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
-    /**
-     * @tc.steps: step2. get image info from input image.
-     * @tc.expected: step2. get image info success.
-     */
-    ImageInfo imageInfo;
-    uint32_t ret = imageSource->GetImageInfo(0, imageInfo);
-    ASSERT_EQ(ret, SUCCESS);
-    ret = imageSource->GetImageInfo(imageInfo);
-    ASSERT_EQ(imageInfo.size.width, 588);
-    ASSERT_EQ(imageInfo.size.height, 662);
-}
-
-/**
- * @tc.name: WebpImageDecode003
- * @tc.desc: Create image source by correct webp file path and wrong format hit.
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode003, TestSize.Level3)
-{
-    /**
-     * @tc.steps: step1. create image source by correct webp file path and wrong format hit.
+     * @tc.steps: step1. create image source by correct png file path and png format hit.
      * @tc.expected: step1. create image source success.
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/png";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    /**
+     * @tc.steps: step3. compress the pixel map to png file.
+     * @tc.expected: step3. pack pixel map success and the png compress file size equals to PNG_PACK_SIZE.
+     */
+    int64_t packSize = PackImage("/data/local/tmp/image/test_file.png", std::move(pixelMap));
+    ASSERT_NE(packSize, 0);
+}
+
+/**
+ * @tc.name: PngImageDecode002
+ * @tc.desc: Create image source by correct png file path and wrong format hit.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngImageDecode002, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct png file path and default format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 }
 
 /**
- * @tc.name: WebpImageDecode004
- * @tc.desc: Create image source by wrong webp file path and default format hit.
+ * @tc.name: PngImageDecode003
+ * @tc.desc: Create image source by correct png file path and wrong format hit.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode004, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode003, TestSize.Level3)
 {
     /**
-     * @tc.steps: step1. create image source by wrong webp file path and default format hit.
+     * @tc.steps: step1. create image source by correct png file path and wrong format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/png";
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+}
+
+/**
+ * @tc.name: PngImageDecode004
+ * @tc.desc: Create image source by wrong png file path and default format hit.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngImageDecode004, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by wrong png file path and default format hit.
      * @tc.expected: step1. create image source error.
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource("/data/jpeg/test.webp", opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/png/test.png", opts, errorCode);
     ASSERT_EQ(errorCode, ERR_IMAGE_SOURCE_DATA);
     ASSERT_EQ(imageSource.get(), nullptr);
 }
 
 /**
- * @tc.name: WebpImageDecode005
- * @tc.desc: Decode webp image from buffer source stream
+ * @tc.name: PngImageDecode005
+ * @tc.desc: Decode png image from buffer source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode005, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode005, TestSize.Level3)
 {
     /**
      * @tc.steps: step1. create image source by buffer source stream and default format hit
      * @tc.expected: step1. create image source success.
      */
     size_t bufferSize = 0;
-    bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
+    bool ret = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(ret, true);
     uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
-    ret = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
+    ret = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(ret, true);
     uint32_t errorCode = 0;
     SourceOptions opts;
@@ -200,38 +168,29 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode005, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-
-    ImageInfo imageInfo;
-    pixelMap->GetImageInfo(imageInfo);
-    decodeOpts.CropRect = { imageInfo.size.width - 1, imageInfo.size.height - 1, 1, 1 };
-    std::unique_ptr<PixelMap> cropPixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    cropPixelMap->GetImageInfo(imageInfo);
-    ASSERT_EQ(imageInfo.size.width, 1);
-    ASSERT_EQ(imageInfo.size.height, 1);
+    ImagePacker imagePacker;
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
-     * @tc.expected: step3. pack pixel map success and the jpeg compress file size.
+     * @tc.expected: step3. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
      */
-    ImagePacker imagePacker;
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_BUFFER_PATH, std::move(pixelMap));
+    int64_t packSize = PackImage("/data/local/tmp/image/test_file.jpg", std::move(pixelMap));
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
 
 /**
- * @tc.name: WebpImageDecode006
- * @tc.desc: Decode webp image from istream source stream
+ * @tc.name: PngImageDecode006
+ * @tc.desc: Decode png image from istream source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode006, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode006, TestSize.Level3)
 {
     /**
      * @tc.steps: step1. create image source by istream source stream and default format hit
      * @tc.expected: step1. create image source success.
      */
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open(IMAGE_INPUT_WEBP_PATH, std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test.png", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -245,32 +204,34 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode006, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
     /**
-     * @tc.steps: step3. compress the pixel map to jpeg file.
-     * @tc.expected: step3. pack pixel map success and the jpeg compress file size.
+     * @tc.steps: step3. compress the pixel map to png file.
+     * @tc.expected: step3. pack pixel map success and the png compress file size equals to PNG_PACK_SIZE.
      */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_ISTREAM_PATH, std::move(pixelMap));
+    int64_t packSize = PackImage("/data/test_istream.png", std::move(pixelMap));
     ASSERT_NE(packSize, 0);
 }
 
 /**
- * @tc.name: WebpImageDecode007
- * @tc.desc: Decode webp image from incremental source stream
+ * @tc.name: PngImageDecode007
+ * @tc.desc: Decode png image from incremental source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode007, TestSize.Level3)
 {
     /**
      * @tc.steps: step1. create image source by incremental source stream and default format hit
      * @tc.expected: step1. create image source success.
      */
     size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
+    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
     uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
+    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
@@ -284,8 +245,6 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
      * @tc.expected: step2. decode image source to pixel map success.
      */
     DecodeOptions decodeOpts;
-    decodeOpts.desiredSize.height = 1024;
-    decodeOpts.desiredSize.width = 512;
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     uint32_t updateSize = 0;
     srand(time(nullptr));
@@ -299,6 +258,8 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
         uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
         ASSERT_EQ(ret, SUCCESS);
         uint8_t decodeProgress = 0;
+        HiLog::Debug(LABEL_TEST, "updateOnceSize:%{public}u,updateSize:%{public}u,bufferSize:%{public}zu",
+                     updateOnceSize, updateSize, bufferSize);
         incPixelMap->PromoteDecoding(decodeProgress);
         updateSize += updateOnceSize;
         usleep(DEFAULT_DELAY_UTIME);
@@ -306,29 +267,31 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode007, TestSize.Level3)
     incPixelMap->DetachFromDecoding();
     IncrementalDecodingStatus status = incPixelMap->GetDecodingStatus();
     ASSERT_EQ(status.decodingProgress, 100);
+
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
-     * @tc.expected: step3. pack pixel map success and the jpeg compress file size.
+     * @tc.expected: step3. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
      */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_INC_PATH, std::move(incPixelMap));
+    int64_t packSize = PackImage("/data/local/tmp/image/test_file.jpg", std::move(incPixelMap));
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
 
 /**
- * @tc.name: WebpImageDecode008
- * @tc.desc: Decode webp image multiple times from one ImageSource
+ * @tc.name: PngImageDecode008
+ * @tc.desc: Decode png image multiple times from one ImageSource
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode008, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode008, TestSize.Level3)
 {
     /**
-     * @tc.steps: step1. create image source by webp file path.
+     * @tc.steps: step1. create image source by png file path.
      * @tc.expected: step1. create image source success.
      */
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     /**
@@ -347,32 +310,32 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode008, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap1.get(), nullptr);
     /**
-     * @tc.steps: step4. compress the pixel map to jpeg file.
-     * @tc.expected: step4. pack pixel map success and the jpeg compress file size.
+     * @tc.steps: step4. compress the pixlel map to jpeg file.
+     * @tc.expected: step4. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
      */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_FILE1_PATH, std::move(pixelMap1));
+    int64_t packSize = PackImage("/data/local/tmp/image/test_png_file1.jpg", std::move(pixelMap1));
     ASSERT_NE(packSize, 0);
-    packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_FILE2_PATH, std::move(pixelMap2));
+    packSize = PackImage("/data/local/tmp/image/test_png_file2.jpg", std::move(pixelMap2));
     ASSERT_NE(packSize, 0);
 }
 
 /**
- * @tc.name: WebpImageDecode009
- * @tc.desc: Decode webp image by incremental mode and then decode again by one-time mode.
+ * @tc.name: PngImageDecode009
+ * @tc.desc: Decode png image by incremental mode and then decode again by one-time mode.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode009, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode009, TestSize.Level3)
 {
     /**
      * @tc.steps: step1. create image source by incremental source stream and default format hit
      * @tc.expected: step1. create image source success.
      */
     size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
+    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
     uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
+    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
@@ -386,8 +349,6 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode009, TestSize.Level3)
      * @tc.expected: step2. decode image source to pixel map success.
      */
     DecodeOptions decodeOpts;
-    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
-    decodeOpts.rotateDegrees = 180;
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     uint32_t updateSize = 0;
     srand(time(nullptr));
@@ -417,32 +378,32 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode009, TestSize.Level3)
     ASSERT_NE(pixelMap1.get(), nullptr);
     /**
      * @tc.steps: step4. compress the pixel map to jpeg file.
-     * @tc.expected: step4. pack pixel map success and the jpeg compress file size.
+     * @tc.expected: step4. pack bitmap success and the jpeg compress file size equals to PNG_PACK_SIZE.
      */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_INC1_PATH, std::move(incPixelMap));
+    int64_t packSize = PackImage("/data/local/tmp/image/test_png_inc1.jpg", std::move(incPixelMap));
     ASSERT_NE(packSize, 0);
-    packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_ONETIME1_PATH, std::move(pixelMap1));
+    packSize = PackImage("/data/local/tmp/image/test_png_onetime1.jpg", std::move(pixelMap1));
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
 
 /**
- * @tc.name: WebpImageDecode010
- * @tc.desc: Decode webp image by one-time mode and then decode again by incremental mode.
+ * @tc.name: PngImageDecode010
+ * @tc.desc: Decode jpeg image by one-time mode and then decode again by incremental mode.
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageDecode010, TestSize.Level3)
 {
     /**
      * @tc.steps: step1. create image source by incremental source stream and default format hit
      * @tc.expected: step1. create image source success.
      */
     size_t bufferSize = 0;
-    bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_WEBP_PATH, bufferSize);
+    bool fileRet = ImageUtils::GetFileSize("/data/local/tmp/image/test.png", bufferSize);
     ASSERT_EQ(fileRet, true);
     uint8_t *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     ASSERT_NE(buffer, nullptr);
-    fileRet = ReadFileToBuffer(IMAGE_INPUT_WEBP_PATH, buffer, bufferSize);
+    fileRet = ReadFileToBuffer("/data/local/tmp/image/test.png", buffer, bufferSize);
     ASSERT_EQ(fileRet, true);
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
@@ -455,6 +416,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
      * @tc.expected: step2. update success.
      */
     uint32_t updateSize = 0;
+    srand(time(nullptr));
     bool isCompleted = false;
     while (updateSize < bufferSize) {
         uint32_t updateOnceSize = rand() % 1024;
@@ -465,6 +427,7 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
         uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
         ASSERT_EQ(ret, SUCCESS);
         updateSize += updateOnceSize;
+        usleep(DEFAULT_DELAY_UTIME);
     }
 
     /**
@@ -488,28 +451,28 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
     ASSERT_EQ(status.decodingProgress, 100);
     /**
      * @tc.steps: step4. compress the pixel map to jpeg file.
-     * @tc.expected: step4. pack pixel map success and the jpeg compress file size.
+     * @tc.expected: step4. pack pixel map success and the jpeg compress file size equals to PNG_PACK_SIZE.
      */
-    int64_t packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH, std::move(incPixelMap));
+    int64_t packSize = PackImage("/data/local/tmp/image/test_png_inc2.jpg", std::move(incPixelMap));
     ASSERT_NE(packSize, 0);
-    packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH, std::move(pixelMap1));
+    packSize = PackImage("/data/local/tmp/image/test_png_onetime2.jpg", std::move(pixelMap1));
     ASSERT_NE(packSize, 0);
     free(buffer);
 }
 
 /**
- * @tc.name: WebpImageCrop001
- * @tc.desc: Crop webp image from istream source stream
+ * @tc.name: PngImageCrop001
+ * @tc.desc: Crop png image from istream source stream
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceWebpTest, WebpImageCrop001, TestSize.Level3)
+HWTEST_F(ImageSourcePngTest, PngImageCrop001, TestSize.Level3)
 {
     /**
-     * @tc.steps: step1. create webp image source by istream source stream and default format hit
-     * @tc.expected: step1. create webp image source success.
+     * @tc.steps: step1. create png image source by istream source stream and default format hit
+     * @tc.expected: step1. create png image source success.
      */
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
-    fs->open("/data/local/tmp/image/test_large.webp", std::fstream::binary | std::fstream::in);
+    fs->open("/data/local/tmp/image/test.png", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
     ASSERT_EQ(isOpen, true);
     uint32_t errorCode = 0;
@@ -518,23 +481,126 @@ HWTEST_F(ImageSourceWebpTest, WebpImageCrop001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     /**
-     * @tc.steps: step2. crop jpg image source to pixel map crop options
-     * @tc.expected: step2. crop jpg image source to pixel map success.
+     * @tc.steps: step2. crop png image source to pixel map crop options
+     * @tc.expected: step2. crop png image source to pixel map success.
      */
     DecodeOptions decodeOpts;
     decodeOpts.CropRect.top = 3;
-    decodeOpts.CropRect.width = 151;
+    decodeOpts.CropRect.width = 200;
     decodeOpts.CropRect.left = 3;
-    decodeOpts.CropRect.height = 183;
-    decodeOpts.desiredSize.width = 200;
-    decodeOpts.desiredSize.height = 300;
-    decodeOpts.rotateDegrees = 90;
+    decodeOpts.CropRect.height = 40;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(200, pixelMap->GetWidth());
-    EXPECT_EQ(300, pixelMap->GetHeight());
+    EXPECT_EQ(40, pixelMap->GetHeight());
+}
+/**
+ * @tc.name: PngNinePatch001
+ * @tc.desc: Decoding nine-patch picture
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngNinePatch001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create png image source by istream source stream and default format hit
+     * @tc.expected: step1. create png image source success.
+     */
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.9.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode png image source to pixel map
+     * @tc.expected: step2. decode png image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+
+    /**
+     * @tc.steps: step3. get png nine patch info
+     * @tc.expected: step3. get png nine patch info success.
+     */
+    const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
+}
+
+/**
+ * @tc.name: PngNinePatch002
+ * @tc.desc: Decoding non-nine-patch picture
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngNinePatch002, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create png image source by istream source stream and default format hit
+     * @tc.expected: step1. create png image source success.
+     */
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode png image source to pixel map
+     * @tc.expected: step2. decode png image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+
+    /**
+     * @tc.steps: step3. get png nine patch info
+     * @tc.expected: step3. get png nine patch info failed.
+     */
+    const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
+}
+
+/**
+ * @tc.name: PngNinePatch003
+ * @tc.desc: Decoding nine-patch picture with scale and pixelformat convert
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourcePngTest, PngNinePatch003, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create png image source by istream source stream and default format hit
+     * @tc.expected: step1. create png image source success.
+     */
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.9.png", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. scale and convert pixelformat png image source to pixel map
+     * @tc.expected: step2. scale and convert pixelformat png image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize = { 186, 160 };
+    decodeOpts.desiredPixelFormat = PixelFormat::RGB_565;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+
+    /**
+     * @tc.steps: step3. get png nine patch info
+     * @tc.expected: step3. get png nine patch info success.
+     */
+    const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
+    ASSERT_EQ(ninePatch.ninePatch, nullptr);
 }
 } // namespace Multimedia
 } // namespace OHOS

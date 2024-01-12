@@ -20,7 +20,7 @@
 #include "image_utils.h"
 #include "image_source.h"
 #include "pixel_map.h"
-#include "image_source_util.h"
+#include "../image_source_util.h"
 #include "media_errors.h"
 #include "bmp_format_agent.h"
 #include "gif_format_agent.h"

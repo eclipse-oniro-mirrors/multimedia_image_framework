@@ -14,7 +14,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "image_source_util.h"
+#include "../image_source_util.h"
 #include "log_tags.h"
 #include "media_errors.h"
 
