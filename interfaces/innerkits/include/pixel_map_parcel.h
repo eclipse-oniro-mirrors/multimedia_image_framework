@@ -24,8 +24,10 @@ namespace Media {
 class PixelMapParcel {
 public:
     static std::unique_ptr<PixelMap> CreateFromParcel(OHOS::MessageParcel& data);
+    static uint8_t *ReadHeapDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize);
+    static uint8_t *ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int32_t bufferSize, int32_t*& context);
     static bool WriteToParcel(PixelMap* pixelMap, OHOS::MessageParcel& data);
-
+    static bool WriteImageInfo(PixelMap* pixelMap, OHOS::MessageParcel& data);
 private:
     static void ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size);
 };
