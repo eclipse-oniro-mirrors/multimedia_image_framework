@@ -552,5 +552,157 @@ HWTEST_F(BmpDecoderTest, ConvertToColorTypeTest, TestSize.Level3)
     ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGB_888, outputFormat), kRGBA_8888_SkColorType);
     GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToColorTypeTest end";
 }
+
+/**
+ * @tc.name: GetImageSizeTest008
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, GetImageSizeTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest008 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint32_t index = 0;
+    ImagePlugin::PlSize plSize;
+    bmpDecoder->state_ = BmpDecodingState::IMAGE_DECODING;
+    uint32_t result = bmpDecoder->GetImageSize(index, plSize);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest008 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptionsTest007
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest007 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint32_t index = 0;
+    const PixelDecodeOptions opts;
+    PlImageInfo info;
+    bmpDecoder->state_ = BmpDecodingState::IMAGE_DECODING;
+    uint32_t result = bmpDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_HEAD_ABNORMAL);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest007 end";
+}
+
+/**
+ * @tc.name: SetShareMemBufferTest001
+ * @tc.desc: Test of SetShareMemBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetShareMemBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetShareMemBufferTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint64_t byteCount = 0;
+    DecodeContext context;
+    uint32_t result = bmpDecoder->SetShareMemBuffer(byteCount, context);
+    ASSERT_EQ(result, ERR_SHAMEM_DATA_ABNORMAL);
+    byteCount = 4;
+    result = bmpDecoder->SetShareMemBuffer(byteCount, context);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetShareMemBufferTest001 end";
+}
+
+/**
+ * @tc.name: SetContextPixelsBufferTest001
+ * @tc.desc: Test of SetContextPixelsBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetContextPixelsBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetContextPixelsBufferTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint64_t byteCount = 0;
+    DecodeContext context;
+    SkImageInfo dstInfo;
+    uint32_t result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_SHAMEM_DATA_ABNORMAL);
+    context.allocatorType = Media::AllocatorType::DMA_ALLOC;
+    result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_DMA_NOT_EXIST);
+    context.allocatorType = Media::AllocatorType::CUSTOM_ALLOC;
+    result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_MEDIA_INVALID_VALUE);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetContextPixelsBufferTest001 end";
+}
+
+/**
+ * @tc.name: DmaMemAllocTest001
+ * @tc.desc: Test of DmaMemAlloc
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, DmaMemAllocTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DmaMemAllocTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint64_t byteCount = 0;
+    DecodeContext context;
+    SkImageInfo dstInfo;
+    context.allocatorType = Media::AllocatorType::DMA_ALLOC;
+    uint32_t result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_DMA_NOT_EXIST);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DmaMemAllocTest001 end";
+}
+
+/**
+ * @tc.name: SetBufferTest001
+ * @tc.desc: Test of SetBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetBufferTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint64_t byteCount = 0;
+    DecodeContext context;
+    SkImageInfo dstInfo;
+    context.allocatorType = Media::AllocatorType::CUSTOM_ALLOC;
+    uint32_t result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_MEDIA_INVALID_VALUE);
+    byteCount = -1;
+    result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, ERR_IMAGE_MALLOC_ABNORMAL);
+    byteCount = 3;
+    result = bmpDecoder->SetContextPixelsBuffer(byteCount, context, dstInfo);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetBufferTest001 end";
+}
+
+/**
+ * @tc.name: DecodeTest005
+ * @tc.desc: Test of Decode
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, DecodeTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest005 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint32_t index = 1;
+    DecodeContext context;
+    uint32_t result = bmpDecoder->Decode(index, context);
+    ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
+    index = 0;
+    result = bmpDecoder->Decode(index, context);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeTest005 end";
+}
+
+/**
+ * @tc.name: DecodeHeaderTest001
+ * @tc.desc: Test of DecodeHeader
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, DecodeHeaderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeHeaderTest001 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    bool result = bmpDecoder->DecodeHeader();
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeHeaderTest001 end";
+}
 }
 }
