@@ -14,6 +14,7 @@
  */
  
 #include <gtest/gtest.h>
+#define private public
 #include <fstream>
 #include "image_receiver.h"
 #include "image_packer.h"
@@ -364,6 +365,114 @@ HWTEST_F(ImageReceiverTest, SaveBufferAsImage001, TestSize.Level3)
     int32_t res = imageReceiver->SaveBufferAsImage(fd, buffer, opts);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageReceiverTest: SaveBufferAsImage001 end";
+}
+
+/**
+ * @tc.name: GetBufferProcessorTest001
+ * @tc.desc: test GetBufferProcessor
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, GetBufferProcessorTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: GetBufferProcessorTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    std::shared_ptr<IBufferProcessor> surfacebuffer = imageReceiver->GetBufferProcessor();
+    ASSERT_EQ(surfacebuffer, imageReceiver->bufferProcessor_);
+    ASSERT_NE(nullptr, imageReceiver->bufferProcessor_);
+    imageReceiver->bufferProcessor_ = nullptr;
+    surfacebuffer = imageReceiver->GetBufferProcessor();
+    GTEST_LOG_(INFO) << "ImageReceiverTest: GetBufferProcessorTest001 end";
+}
+
+/**
+ * @tc.name: NextNativeImageTest001
+ * @tc.desc: test NextNativeImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, NextNativeImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: NextNativeImageTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    std::shared_ptr<NativeImage> surfacebuffer = imageReceiver->NextNativeImage();
+    ASSERT_EQ(surfacebuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: NextNativeImageTest001 end";
+}
+
+/**
+ * @tc.name: LastNativeImageTest001
+ * @tc.desc: test LastNativeImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, LastNativeImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: LastNativeImageTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    std::shared_ptr<NativeImage> surfacebuffer = imageReceiver->LastNativeImage();
+    ASSERT_EQ(surfacebuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: LastNativeImageTest001 end";
+}
+
+/**
+ * @tc.name: SaveSTPTest001
+ * @tc.desc: test SaveSTP
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, SaveSTPTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SaveSTPTest001 start";
+    InitializationOptions opts;
+    opts.size.width = RECEIVER_TEST_WIDTH;
+    opts.size.height = RECEIVER_TEST_HEIGHT;
+    opts.editable = true;
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(
+        RECEIVER_TEST_WIDTH, RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    ASSERT_NE(imageReceiver, nullptr);
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
+    ASSERT_EQ(surfaceBuffer, nullptr);
+    int fd = open("/data/receiver/Receiver_buffer7.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, 0);
+    int32_t res = imageReceiver->SaveBufferAsImage(fd, surfaceBuffer, opts);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: SaveSTPTest001 end";
+}
+
+/**
+ * @tc.name: getSurfaceByIdTest001
+ * @tc.desc: test getSurfaceById
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, getSurfaceByIdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: getSurfaceByIdTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    std::string id;
+    auto surfacebuffer = imageReceiver->getSurfaceById(id);
+    ASSERT_EQ(surfacebuffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageReceiverTest: getSurfaceByIdTest001 end";
+}
+
+/**
+ * @tc.name: ReleaseReceiverTest001
+ * @tc.desc: test ReleaseReceiver
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageReceiverTest, ReleaseReceiverTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ReleaseReceiverTest001 start";
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    imageReceiver->ReleaseReceiver();
+    GTEST_LOG_(INFO) << "ImageReceiverTest: ReleaseReceiverTest001 end";
 }
 }
 }
