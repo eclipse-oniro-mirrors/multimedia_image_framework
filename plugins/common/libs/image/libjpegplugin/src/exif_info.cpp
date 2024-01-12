@@ -872,7 +872,9 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
         tempBuf[index++] = data[orginExifDataLength + sizeof(EXIF_HEADER) + i];
     }
 
-    memcpy(data, tempBuf, size);
+    for (unsigned int i = 0; i < size; i++) {
+        data[i] = tempBuf[i];
+    }
 
     ParseExifData(data, static_cast<unsigned int>(index));
     ReleaseExifData(tempBuf, ptrExifData, exifDataBuf);

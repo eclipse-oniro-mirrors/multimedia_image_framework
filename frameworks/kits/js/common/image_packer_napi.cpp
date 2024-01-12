@@ -370,10 +370,25 @@ static int64_t parseBufferSize(napi_env env, napi_value root)
     return tmpNumber;
 }
 
+static bool parsePackOptionOfQuality(napi_env env, napi_value root, PackOption* opts)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "quality", tmpNumber)) {
+        HiLog::Error(LABEL, "No quality in pack option");
+        return false;
+    }
+    if (tmpNumber > SIZE) {
+        HiLog::Error(LABEL, "Invalid quality");
+        opts->quality = BYTE_FULL;
+    } else {
+        opts->quality = static_cast<uint8_t>(tmpNumber & 0xff);
+    }
+    return true;
+}
+
 static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
 {
     napi_value tmpValue = nullptr;
-    uint32_t tmpNumber = 0;
 
     if (!GET_NODE_BY_NAME(root, "format", tmpValue)) {
         HiLog::Error(LABEL, "No format in pack option");
@@ -417,18 +432,7 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
         return false;
     }
     HiLog::Debug(LABEL, "parsePackOptions format:[%{public}s]", opts->format.c_str());
-
-    if (!GET_UINT32_BY_NAME(root, "quality", tmpNumber)) {
-        HiLog::Error(LABEL, "No quality in pack option");
-        return false;
-    }
-    if (tmpNumber > SIZE) {
-        HiLog::Error(LABEL, "Invalid quality");
-        opts->quality = BYTE_FULL;
-    } else {
-        opts->quality = static_cast<uint8_t>(tmpNumber & 0xff);
-    }
-    return true;
+    return parsePackOptionOfQuality(env, root, opts);
 }
 
 static int32_t ParserPackingArgumentType(napi_env env, napi_value argv)

@@ -327,10 +327,8 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
                 ic.result, IMAGE_ERR("empty native creator"));
         }
     }
-    if (args.async != CreatorCallType::GETTER) {
-        if (!args.queryArgs(args, ic)) {
-            return ic.result;
-        }
+    if (args.async != CreatorCallType::GETTER && !args.queryArgs(args, ic)) {
+        return ic.result;
     }
     if (args.async == CreatorCallType::ASYNC) {
         if (args.asyncLater) {
