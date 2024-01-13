@@ -552,10 +552,8 @@ bool ExtDecoder::ResetCodec()
 uint32_t ExtDecoder::DoHardWareDecode(DecodeContext &context)
 {
     if (HardWareDecode(context) == SUCCESS) {
-        HiLog::Info(LABEL, "hardware decode success.");
         return SUCCESS;
     }
-    HiLog::Warn(LABEL, "jpeg hardware decode failed, turn to software decode");
     return ERROR;
 }
 #endif
@@ -724,7 +722,6 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     orgImgSize_.height = info_.height();
 
     if (!CheckContext(dstInfo_)) {
-        HiLog::Error(LABEL, "hardware decode not support this decode option.");
         return ERROR;
     }
 
