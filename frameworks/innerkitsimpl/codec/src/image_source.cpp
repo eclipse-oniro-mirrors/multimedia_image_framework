@@ -133,6 +133,7 @@ static const uint8_t ASTC_HEADER_DIM_Y = 10;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
+uint64_t ImageSource::imageId_ = 0;
 
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
