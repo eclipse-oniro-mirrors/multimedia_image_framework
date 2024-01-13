@@ -122,7 +122,7 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
-static const uint64_t NUM_one_million = 1000000;
+static const uint64_t NUM_ONE_MILLION = 1000000;
 static const int DMA_SIZE = 512;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -310,7 +310,7 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    imageId_ = GetNowTimeMicroSeconds() % NUM_one_million;
+    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
     HiLog::Info(LABEL, "[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
         opts.desiredSize.width, opts.desiredSize.height);

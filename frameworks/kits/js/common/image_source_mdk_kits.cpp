@@ -305,7 +305,8 @@ static int32_t ImageSourceNapiCreateFromData(struct ImageSourceArgs* args)
 
 static bool isValidRawFile(RawFileDescriptor &rawFile)
 {
-    return rawFile.fd != INVALID_FD && rawFile.start >= SIZE_ZERO && rawFile.length > SIZE_ZERO;
+    return rawFile.fd != INVALID_FD && rawFile.start >= static_cast<long>(SIZE_ZERO) &&
+        rawFile.length > static_cast<long>(SIZE_ZERO);
 }
 
 static int32_t ImageSourceNapiCreateFromRawFile(struct ImageSourceArgs* args)

@@ -269,7 +269,7 @@ bool ImagePacker::GetEncoderPlugin(const PackOption &option)
     if (encoder != nullptr) {
         encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
     } else {
-        HiLog::Info(LABEL, "GetEncoderPlugin get %{public}s plugin failed, use ext_encoder plugin",
+        HiLog::Debug(LABEL, "GetEncoderPlugin get %{public}s plugin failed, use ext_encoder plugin",
             option.format.c_str());
     }
     return encoders_.size() != SIZE_ZERO;
