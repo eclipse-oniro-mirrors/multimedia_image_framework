@@ -146,6 +146,7 @@ private:
         unsigned char **fileBuf);
     uint32_t GetFileInfoByFd(int localFd, FILE **file, unsigned long &fileLength, unsigned char **fileBuf);
     void ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, unsigned char* exifDataBuf);
+    uint32_t CheckInputDataValid(unsigned char *data, uint32_t size);
 
 private:
     ExifIfd imageFileDirectory_;

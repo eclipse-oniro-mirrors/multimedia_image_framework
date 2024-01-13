@@ -761,8 +761,7 @@ void ReleaseExifDataBuffer(unsigned char* exifDataBuf)
     }
 }
 
-uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
-    unsigned char *data, uint32_t size)
+uint32_t EXIFInfo::CheckInputDataValid(unsigned char *data, uint32_t size)
 {
     if (data == nullptr) {
         HiLog::Debug(LABEL, "buffer is nullptr.");
@@ -777,6 +776,16 @@ uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
     if (!(data[0] == 0xFF && data[1] == 0xD8)) {
         HiLog::Debug(LABEL, "This is not jpeg file.");
         return Media::ERR_IMAGE_MISMATCHED_FORMAT;
+    }
+    return Media::SUCCESS;
+}
+
+uint32_t EXIFInfo::ModifyExifData(const ExifTag &tag, const std::string &value,
+    unsigned char *data, uint32_t size)
+{
+    uint32_t checkInputRes = CheckInputDataValid(data, size);
+    if (checkInputRes != Media::SUCCESS) {
+        return checkInputRes;
     }
 
     ExifData *ptrExifData = nullptr;
@@ -2176,42 +2185,22 @@ bool EXIFInfo::CheckExifEntryValid(const ExifIfd &ifd, const ExifTag &tag)
 
 bool EXIFInfo::CheckExifEntryValidEx(const ExifIfd &ifd, const ExifTag &tag)
 {
+    static std::vector<ExifTag> ifd0TagVec{EXIF_TAG_DATE_TIME, EXIF_TAG_IMAGE_DESCRIPTION, EXIF_TAG_MAKE,
+        EXIF_TAG_MODEL};
+    static std::vector<ExifTag> ifdExifTagVec{TAG_SENSITIVITY_TYPE, TAG_STANDARD_OUTPUT_SENSITIVITY,
+        TAG_RECOMMENDED_EXPOSURE_INDEX, EXIF_TAG_APERTURE_VALUE, EXIF_TAG_EXPOSURE_BIAS_VALUE, EXIF_TAG_METERING_MODE,
+        EXIF_TAG_LIGHT_SOURCE, EXIF_TAG_FLASH, EXIF_TAG_FOCAL_LENGTH, EXIF_TAG_USER_COMMENT, EXIF_TAG_PIXEL_X_DIMENSION,
+        EXIF_TAG_PIXEL_Y_DIMENSION, EXIF_TAG_WHITE_BALANCE, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM};
     bool ret = false;
     switch (ifd) {
         case EXIF_IFD_0: {
-            if (tag == EXIF_TAG_DATE_TIME ||
-                tag == EXIF_TAG_IMAGE_DESCRIPTION ||
-                tag == EXIF_TAG_MAKE ||
-                tag == EXIF_TAG_MODEL) {
-                ret = true;
-            }
-            break;
+            return std::find(ifd0TagVec.begin(), ifd0TagVec.end(), tag) != ifd0TagVec.end();
         }
         case EXIF_IFD_EXIF: {
-            if (tag == TAG_SENSITIVITY_TYPE ||
-                tag == TAG_STANDARD_OUTPUT_SENSITIVITY ||
-                tag == TAG_RECOMMENDED_EXPOSURE_INDEX ||
-                tag == EXIF_TAG_APERTURE_VALUE ||
-                tag == EXIF_TAG_EXPOSURE_BIAS_VALUE ||
-                tag == EXIF_TAG_METERING_MODE ||
-                tag == EXIF_TAG_LIGHT_SOURCE ||
-                tag == EXIF_TAG_FLASH ||
-                tag == EXIF_TAG_FOCAL_LENGTH ||
-                tag == EXIF_TAG_USER_COMMENT ||
-                tag == EXIF_TAG_PIXEL_X_DIMENSION ||
-                tag == EXIF_TAG_PIXEL_Y_DIMENSION ||
-                tag == EXIF_TAG_WHITE_BALANCE ||
-                tag == EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM) {
-                ret = true;
-            }
-            break;
+            return std::find(ifdExifTagVec.begin(), ifdExifTagVec.end(), tag) != ifdExifTagVec.end();
         }
         case EXIF_IFD_GPS: {
-            if (tag == EXIF_TAG_GPS_TIME_STAMP ||
-                tag == EXIF_TAG_GPS_DATE_STAMP) {
-                ret = true;
-            }
-            break;
+            return tag == EXIF_TAG_GPS_TIME_STAMP || tag == EXIF_TAG_GPS_DATE_STAMP;
         }
         default:
             break;
