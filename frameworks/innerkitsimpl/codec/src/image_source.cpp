@@ -545,10 +545,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, imageId_ is %{public}lu, desiredSize:"
-        "(%{public}d, %{public}d), imageSize: (%{public}d, %{public}d), cost %{public}lu us",
-        static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-        info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
+        "imageSize: (%{public}d, %{public}d), cost %{public}lu us", opts.desiredSize.width, opts.desiredSize.height,
+        info.size.width, info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     return pixelMap;
 }
 
