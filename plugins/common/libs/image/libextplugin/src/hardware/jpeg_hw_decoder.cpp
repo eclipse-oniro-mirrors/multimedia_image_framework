@@ -88,7 +88,7 @@ bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFor
         if (!cap.isSoftwareCodec && cap.role == CODEC_IMAGE_JPEG && cap.type == CODEC_IMAGE_TYPE_DECODER &&
             srcImgSize.width >= cap.minWidth && srcImgSize.width <= cap.maxWidth &&
             srcImgSize.height >= cap.minHeight && srcImgSize.height <= cap.maxHeight) {
-            JPEG_HW_LOGI("decoder(%{public}s) selected", cap.name.c_str());
+            JPEG_HW_LOGD("decoder(%{public}s) selected", cap.name.c_str());
             return true;
         }
     }
@@ -100,7 +100,7 @@ uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStrea
                                      PlSize srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
 {
     LifeSpanTimer decodeTimer("jpeg hardware decode");
-    JPEG_HW_LOGI("jpeg hardware decode start: img=[%{public}ux%{public}u], sampleSize=%{public}u",
+    JPEG_HW_LOGD("jpeg hardware decode start: img=[%{public}ux%{public}u], sampleSize=%{public}u",
                  srcImgSize.width, srcImgSize.height, sampleSize);
     if (hwDecoder_ == nullptr || bufferMgr_ == nullptr) {
         JPEG_HW_LOGE("failed to get hardware decoder or failed to get buffer manager!");
