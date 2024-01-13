@@ -176,6 +176,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
 {
     ImageTrace imageTrace(traceName);
     HiLog::Debug(LABEL, "[ImageSource]DoImageSourceCreate IN.");
+    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
@@ -310,7 +311,6 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
     HiLog::Info(LABEL, "[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
         opts.desiredSize.width, opts.desiredSize.height);
