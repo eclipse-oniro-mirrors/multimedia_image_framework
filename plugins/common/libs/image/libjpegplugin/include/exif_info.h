@@ -130,6 +130,17 @@ private:
     ExifByteOrder GetExifByteOrder(const bool &isNewExifData, unsigned char *buf);
     bool CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
         ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfBitsPerSample(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, int sepSize);
+    bool CreateExifEntryOfGpsTimeStamp(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfCompressedBitsPerPixel(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    ExifIfd GetExifIfdByExifTag(const ExifTag &tag);
+    ExifFormat GetExifFormatByExifTag(const ExifTag &tag);
+    std::string GetExifNameByExifTag(const ExifTag &tag);
     bool WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLength, unsigned long fileLength,
         unsigned char *buf, FILE *fp);
     void UpdateCacheExifData(FILE *fp);
