@@ -133,7 +133,6 @@ static const uint8_t ASTC_HEADER_DIM_Y = 10;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
-uint64_t ImageSource::imageId_ = 0;
 
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
@@ -177,7 +176,6 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
 {
     ImageTrace imageTrace(traceName);
     HiLog::Debug(LABEL, "[ImageSource]DoImageSourceCreate IN.");
-    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
@@ -1094,6 +1092,7 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
     sourceOptions_.pixelFormat = opts.pixelFormat;
     sourceOptions_.size.width = opts.size.width;
     sourceOptions_.size.height = opts.size.height;
+    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
 }
 
 ImageSource::FormatAgentMap ImageSource::InitClass()
