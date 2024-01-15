@@ -625,7 +625,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     } else if (opts_.rotateNewDegrees != INT_ZERO) {
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     if (opts_.desiredSize.height != pixelMap->GetHeight() ||
         opts_.desiredSize.width != pixelMap->GetWidth()) {
         float xScale = static_cast<float>(opts_.desiredSize.width)/pixelMap->GetWidth();
@@ -634,7 +634,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
             return nullptr;
         }
         // dump pixelMap after resize
-        ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+        ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     }
     pixelMap->SetEditable(saveEditable);
     return pixelMap;
@@ -767,7 +767,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
     // not ext decode, dump pixelMap while decoding svg here
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     return pixelMap;
 }
 
@@ -2184,7 +2184,7 @@ void ImageSource::DumpInputData(const std::string& fileSuffix)
     uint8_t* data = sourceStreamPtr_->GetDataPtr();
     size_t size = sourceStreamPtr_->GetStreamSize();
 
-    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix);
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix, imageId_);
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
