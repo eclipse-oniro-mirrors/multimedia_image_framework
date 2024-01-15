@@ -355,7 +355,7 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
-void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
+void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId)
 {
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
@@ -366,7 +366,8 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
     }
 
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
-    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + GetPixelMapName(pixelMap.get()) + ".dat";
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
+        GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled failed");
@@ -391,13 +392,14 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode success, path = %{public}s", fileName.c_str());
 }
 
-void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix)
+void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
+    const std::string& fileSuffix, uint64_t imageId)
 {
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
     }
-    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_data_total" + std::to_string(totalSize) +
-        "." + fileSuffix;
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
+        "_data_total" + std::to_string(totalSize) + "." + fileSuffix;
     if (SUCCESS != SaveDataToFile(fileName, data, totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled failed");
         return;

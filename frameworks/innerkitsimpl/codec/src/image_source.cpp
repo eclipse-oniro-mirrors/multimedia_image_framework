@@ -122,6 +122,7 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
+static const uint64_t NUM_ONE_MILLION = 1000000;
 static const int DMA_SIZE = 512;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -309,8 +310,9 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    HiLog::Info(LABEL, "[ImageSource]CreatePixelMapEx desiredPixelFormat:%{public}d, desiredSize:"
-        "(%{public}d, %{public}d)", opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
+    HiLog::Info(LABEL, "[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
+        "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
+        opts.desiredSize.width, opts.desiredSize.height);
 
 #if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
     if (isAstc_) {
@@ -544,7 +546,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     }
     HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
         "imageSize: (%{public}d, %{public}d), cost %{public}lu us", opts.desiredSize.width, opts.desiredSize.height,
-        info.size.width, info.size.height, static_cast<unsigned long int>(GetNowTimeMicroSeconds() - decodeStartTime));
+        info.size.width, info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     return pixelMap;
 }
 
@@ -623,7 +625,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     } else if (opts_.rotateNewDegrees != INT_ZERO) {
         pixelMap->rotate(opts_.rotateNewDegrees);
     }
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     if (opts_.desiredSize.height != pixelMap->GetHeight() ||
         opts_.desiredSize.width != pixelMap->GetWidth()) {
         float xScale = static_cast<float>(opts_.desiredSize.width)/pixelMap->GetWidth();
@@ -632,7 +634,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
             return nullptr;
         }
         // dump pixelMap after resize
-        ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+        ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     }
     pixelMap->SetEditable(saveEditable);
     return pixelMap;
@@ -765,7 +767,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
     // not ext decode, dump pixelMap while decoding svg here
-    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap);
+    ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId_);
     return pixelMap;
 }
 
@@ -1090,6 +1092,7 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
     sourceOptions_.pixelFormat = opts.pixelFormat;
     sourceOptions_.size.width = opts.size.width;
     sourceOptions_.size.height = opts.size.height;
+    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
 }
 
 ImageSource::FormatAgentMap ImageSource::InitClass()
@@ -2181,7 +2184,7 @@ void ImageSource::DumpInputData(const std::string& fileSuffix)
     uint8_t* data = sourceStreamPtr_->GetDataPtr();
     size_t size = sourceStreamPtr_->GetStreamSize();
 
-    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix);
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(data), size, fileSuffix, imageId_);
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP

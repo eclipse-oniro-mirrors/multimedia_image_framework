@@ -289,6 +289,7 @@ private:
     bool hasDesiredSizeOptions = false;
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
     bool isAstc_ = false;
+    uint64_t imageId_; // generated from the last six bits of the current timestamp
 };
 } // namespace Media
 } // namespace OHOS
