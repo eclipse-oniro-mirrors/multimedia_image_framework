@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define private public
 #include <gtest/gtest.h>
 #include "buffer_source_stream.h"
 #include "raw_decoder.h"
@@ -674,6 +675,95 @@ HWTEST_F(RawDecoderTest, DoDecode, TestSize.Level3)
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "RawDecoderTest: DoDecode end";
+}
+
+/**
+ * @tc.name: DecodeTest003
+ * @tc.desc: Test of DoDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DecodeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DecodeTest003 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    DecodeContext context;
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::IMAGE_DECODING;
+    uint32_t result = rawDecoder->DoDecode(index, context);
+    ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DecodeTest003 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptions007
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, SetDecodeOptions007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptions007 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::IMAGE_DECODING;
+    rawDecoder->jpegDecoder_ = nullptr;
+    uint32_t result = rawDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptions007 end";
+}
+
+/**
+ * @tc.name: GetImageSize007
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, GetImageSize007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptions007 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PlSize size;
+    rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::BASE_INFO_PARSED;
+    rawDecoder->jpegDecoder_ = nullptr;
+    uint32_t result = rawDecoder->GetImageSize(index, size);
+    ASSERT_EQ(result, 0);
+    GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptions007 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptions001
+ * @tc.desc: Test of DoSetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoSetDecodeOptions001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptions001 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->jpegDecoder_ = nullptr;
+    uint32_t result = rawDecoder->DoSetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptions001 end";
+}
+
+/**
+ * @tc.name: DoGetImageSize001
+ * @tc.desc: Test of DoGetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoGetImageSize001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize001 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PlSize size;
+    rawDecoder->jpegDecoder_ = nullptr;
+    uint32_t result = rawDecoder->DoGetImageSize(index, size);
+    ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize001 end";
 }
 }
 }
