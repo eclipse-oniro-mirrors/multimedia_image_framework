@@ -56,7 +56,7 @@ void PixelMapFromSurface::Clear() noexcept
     }
 }
 
-bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &surface)
+bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &surface, const Rect &srcRect)
 {
     // private func, surface is not nullptr.
     sptr<SyncFence> fence;
@@ -75,6 +75,20 @@ bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &
             ret);
         return false;
     }
+
+    int bufferWidth = surfaceBuffer_->GetWidth();
+    int bufferHeight = surfaceBuffer_->GetHeight();
+    if (srcRect.width > bufferWidth || srcRect.height > bufferHeight ||
+        srcRect.left >= bufferWidth || srcRect.top >= bufferHeight ||
+        srcRect.left + srcRect.width > bufferWidth || srcRect.top + srcRect.height > bufferHeight) {
+        HiLog::Error(LABEL,
+            "CreatePixelMapFromSurface: invalid argument: srcRect[%{public}d, %{public}d, %{public}d, %{public}d],"
+            "bufferSize:[%{public}d, %{public}d]",
+            srcRect.left, srcRect.top, srcRect.width, srcRect.height,
+            surfaceBuffer_->GetWidth(), surfaceBuffer_->GetHeight());
+        return false;
+    }
+
     if (fence != nullptr) {
         fence->Wait(3000); // wait at most 3000ms
     }
@@ -162,15 +176,22 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
 
 std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const Rect &srcRect)
 {
+    if (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0) {
+        HiLog::Error(LABEL,
+            "CreatePixelMapFromSurface: invalid argument: srcRect[%{public}d, %{public}d, %{public}d, %{public}d]",
+            srcRect.left, srcRect.top, srcRect.width, srcRect.height);
+        return nullptr;
+    }
+
     Clear();
     sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
     if (surface == nullptr) {
         HiLog::Error(LABEL,
-            "CreatePixelMapFromSurface: can't find surface for surfaceId: {public}%" PRIu64 ".", surfaceId);
+            "CreatePixelMapFromSurface: can't find surface for surfaceId: %{public}" PRIu64 ".", surfaceId);
         return nullptr;
     }
 
-    if (!GetNativeWindowBufferFromSurface(surface)) {
+    if (!GetNativeWindowBufferFromSurface(surface, srcRect)) {
         return nullptr;
     }
 
