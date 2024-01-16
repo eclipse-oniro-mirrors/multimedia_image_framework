@@ -1400,7 +1400,7 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         return ConvertGpsDataToRationals(longVec, longRational) &&
                SetGpsRationals(data, ptrEntry, order, tag, longRational);
     } else if (std::find(vector3.begin(), vector3.end(), tag) != vector3.end()) {
-        CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", CONSTANT_2);
+        return CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", CONSTANT_2);
     } else if (tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
         return CreateExifEntryOfCompressedBitsPerPixel(tag, data, value, order, ptrEntry);
     } else if (tag == EXIF_TAG_GPS_TIME_STAMP) {
