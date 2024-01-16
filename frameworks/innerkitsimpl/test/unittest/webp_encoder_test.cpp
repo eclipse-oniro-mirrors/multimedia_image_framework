@@ -774,7 +774,7 @@ HWTEST_F(WebpEncoderTest, DoTransformMemcpy001, TestSize.Level3)
     result = webpEncoder->DoTransformMemcpy(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, true);
     delete dst;
-    delete pixelMap.data_; 
+    delete pixelMap.data_;
     GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformMemcpy001 end";
 }
 
@@ -798,7 +798,7 @@ HWTEST_F(WebpEncoderTest, DoTransformRGBX001, TestSize.Level3)
     result = webpEncoder->DoTransformRGBX(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
     delete dst;
-    delete pixelMap.data_; 
+    delete pixelMap.data_;
     GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRGBX001 end";
 }
 
@@ -822,7 +822,7 @@ HWTEST_F(WebpEncoderTest, DoTransformRgbA001, TestSize.Level3)
     result = webpEncoder->DoTransformRgbA(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
     delete dst;
-    delete pixelMap.data_; 
+    delete pixelMap.data_;
     GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRgbA001 end";
 }
 
@@ -846,7 +846,7 @@ HWTEST_F(WebpEncoderTest, DoTransformBGRX001, TestSize.Level3)
     result = webpEncoder->DoTransformBGRX(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
     delete dst;
-    delete pixelMap.data_; 
+    delete pixelMap.data_;
     GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRX001 end";
 }
 
@@ -870,7 +870,7 @@ HWTEST_F(WebpEncoderTest, DoTransformBGRA001, TestSize.Level3)
     result = webpEncoder->DoTransformBGRA(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
     delete dst;
-    delete pixelMap.data_; 
+    delete pixelMap.data_;
     GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRA001 end";
 }
 }
