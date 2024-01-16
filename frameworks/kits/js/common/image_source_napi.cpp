@@ -1319,6 +1319,13 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     return context;
 }
 
+static bool IsDoubleString(const std::string &str)
+{
+    char* end = nullptr;
+    double number = std::strtod(str.c_str(), &end);
+    return end != str.c_str() && *end == '\0' && number != HUGE_VAL;
+}
+
 static bool CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
 {
     if (IsSameTextStr(key, "BitsPerSample")) {
@@ -1351,14 +1358,14 @@ static bool CheckExifDataValue(const std::string &key, const std::string &value,
     } else if (IsSameTextStr(key, "GPSLatitude") || IsSameTextStr(key, "GPSLongitude")) {
         std::vector<std::string> gpsVec;
         SplitStr(value, ",", gpsVec);
-        if (gpsVec.size() != NUM_2) {
+        if (gpsVec.size() != NUM_2 && gpsVec.size() != NUM_3) {
             errorInfo = "GPSLatitude or GPSLongitude has invalid exif value: ";
             errorInfo.append(value);
             return false;
         }
 
         for (size_t i = 0; i < gpsVec.size(); i++) {
-            if (!IsNumericStr(gpsVec[i])) {
+            if (!IsDoubleString(gpsVec[i])) {
                 errorInfo = "GPSLatitude or GPSLongitude has invalid exif value: ";
                 errorInfo.append(gpsVec[i]);
                 return false;

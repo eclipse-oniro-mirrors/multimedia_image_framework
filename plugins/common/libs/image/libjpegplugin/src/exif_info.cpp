@@ -54,6 +54,12 @@ namespace {
     static constexpr int CONSTANT_3 = 3;
     static constexpr int CONSTANT_4 = 4;
     static constexpr unsigned long MAX_FILE_SIZE = 1000 * 1000 * 1000;
+    static constexpr unsigned long GPS_DIGIT_NUMBER = 1e6;
+    static constexpr uint32_t GPS_DMS_COUNT = 3;
+    static constexpr double GPS_MAX_LATITUDE = 90.0;
+    static constexpr double GPS_MIN_LATITUDE = 0.0;
+    static constexpr double GPS_MAX_LONGITUDE = 180.0;
+    static constexpr double GPS_MIN_LONGITUDE = 0.0;
     static constexpr uint32_t ERROR_PARSE_EXIF_FAILED = 1;
     static constexpr uint32_t ERROR_NO_EXIF_TAGS = 2;
     static constexpr ExifTag TAG_SENSITIVITY_TYPE = static_cast<ExifTag>(0x8830);
@@ -1099,6 +1105,98 @@ static void ExifIntValueByFormat(unsigned char *b, ExifByteOrder order, ExifForm
     }
 }
 
+static bool ConvertStringToDouble(const std::string &str, double &number)
+{
+    char* end = nullptr;
+    number = std::strtod(str.c_str(), &end);
+    return end != str.c_str() && *end == '\0' && number != HUGE_VAL;
+}
+
+static bool IsValidGpsData(const std::vector<std::string> &dataVec, const ExifTag &tag)
+{
+    if (dataVec.size() != CONSTANT_3 || (tag != EXIF_TAG_GPS_LATITUDE && tag != EXIF_TAG_GPS_LONGITUDE)) {
+        HiLog::Debug(LABEL, "Gps dms data size is invalid.");
+        return false;
+    }
+    double degree = 0.0;
+    double minute = 0.0;
+    double second = 0.0;
+    if (!ConvertStringToDouble(dataVec[CONSTANT_0], degree) ||
+        !ConvertStringToDouble(dataVec[CONSTANT_1], minute) ||
+        !ConvertStringToDouble(dataVec[CONSTANT_2], second)) {
+        HiLog::Error(LABEL, "Convert gps data to double type failed.");
+        return false;
+    }
+    constexpr uint32_t timePeriod = 60;
+    double latOrLong = degree + minute / timePeriod + second / (timePeriod * timePeriod);
+    if ((tag == EXIF_TAG_GPS_LATITUDE && (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE)) ||
+        (tag == EXIF_TAG_GPS_LONGITUDE && (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE))) {
+        HiLog::Debug(LABEL, "Gps latitude or longitude is out of range.");
+        return false;
+    }
+    return true;
+}
+
+static bool ConvertGpsDataToRationals(const std::vector<std::string> &dataVec,
+    std::vector<ExifRational> &exifRationals)
+{
+    if (!(dataVec.size() == CONSTANT_3 && exifRationals.size() == CONSTANT_3)) {
+        HiLog::Debug(LABEL, "Data size is invalid.");
+        return false;
+    }
+
+    int32_t degree = static_cast<int32_t>(atoi(dataVec[CONSTANT_0].c_str()));
+    int32_t minute = static_cast<int32_t>(atoi(dataVec[CONSTANT_1].c_str()));
+    double secondDouble = 0.0;
+    ConvertStringToDouble(dataVec[CONSTANT_2], secondDouble);
+    int32_t second = static_cast<int32_t>(secondDouble * GPS_DIGIT_NUMBER);
+
+    exifRationals[CONSTANT_0].numerator = static_cast<ExifSLong>(degree);
+    exifRationals[CONSTANT_0].denominator = static_cast<ExifSLong>(1);
+    exifRationals[CONSTANT_1].numerator = static_cast<ExifSLong>(minute);
+    exifRationals[CONSTANT_1].denominator = static_cast<ExifSLong>(1);
+    exifRationals[CONSTANT_2].numerator = static_cast<ExifSLong>(second);
+    exifRationals[CONSTANT_2].denominator = static_cast<ExifSLong>(GPS_DIGIT_NUMBER);
+    return true;
+}
+
+bool EXIFInfo::SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order,
+    const ExifTag &tag, const std::vector<ExifRational> &exifRationals)
+{
+    if (exifRationals.size() != CONSTANT_3) {
+        HiLog::Debug(LABEL, "ExifRationals size is invalid.");
+        return false;
+    }
+    *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_24, EXIF_FORMAT_RATIONAL);
+    if ((*ptrEntry) == nullptr) {
+        HiLog::Debug(LABEL, "Get exif entry failed.");
+        return false;
+    }
+    exif_set_rational((*ptrEntry)->data, order, exifRationals[CONSTANT_0]);
+    exif_set_rational((*ptrEntry)->data + MOVE_OFFSET_8, order, exifRationals[CONSTANT_1]);
+    exif_set_rational((*ptrEntry)->data + MOVE_OFFSET_16, order, exifRationals[CONSTANT_2]);
+    return true;
+}
+
+bool EXIFInfo::SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
+    const std::vector<std::string> &dataVec)
+{
+    if (dataVec.size() != CONSTANT_2) {
+        HiLog::Debug(LABEL, "Gps degree data size is invalid.");
+        return false;
+    }
+    ExifRational exifRational;
+    exifRational.numerator = static_cast<ExifSLong>(atoi(dataVec[CONSTANT_0].c_str()));
+    exifRational.denominator = static_cast<ExifSLong>(atoi(dataVec[CONSTANT_1].c_str()));
+    *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_8, EXIF_FORMAT_RATIONAL);
+    if ((*ptrEntry) == nullptr) {
+        HiLog::Debug(LABEL, "Get exif entry failed.");
+        return false;
+    }
+    exif_set_rational((*ptrEntry)->data, order, exifRational);
+    return true;
+}
+
 bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
@@ -1166,42 +1264,32 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         case EXIF_TAG_GPS_LATITUDE: {
             std::vector<std::string> latVec;
             SplitStr(value, ",", latVec);
-            if (latVec.size() != CONSTANT_2) {
+            if (latVec.size() == CONSTANT_2) {
+                return SetGpsDegreeRational(data, ptrEntry, order, EXIF_TAG_GPS_LATITUDE, latVec);
+            }
+            if (latVec.size() != CONSTANT_3 || !IsValidGpsData(latVec, tag)) {
                 HiLog::Debug(LABEL, "GPS_LATITUDE Invalid value %{public}s", value.c_str());
                 return false;
             }
 
-            ExifRational latRational;
-            latRational.numerator = static_cast<ExifSLong>(atoi(latVec[0].c_str()));
-            latRational.denominator = static_cast<ExifSLong>(atoi(latVec[1].c_str()));
-            *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE,
-                sizeof(latRational), EXIF_FORMAT_RATIONAL);
-            if ((*ptrEntry) == nullptr) {
-                HiLog::Debug(LABEL, "Get exif entry failed.");
-                return false;
-            }
-            exif_set_rational((*ptrEntry)->data, order, latRational);
-            break;
+            std::vector<ExifRational> latRational(GPS_DMS_COUNT);
+            return ConvertGpsDataToRationals(latVec, latRational) &&
+                SetGpsRationals(data, ptrEntry, order, EXIF_TAG_GPS_LATITUDE, latRational);
         }
         case EXIF_TAG_GPS_LONGITUDE: {
             std::vector<std::string> longVec;
             SplitStr(value, ",", longVec);
-            if (longVec.size() != CONSTANT_2) {
+            if (longVec.size() == CONSTANT_2) {
+                return SetGpsDegreeRational(data, ptrEntry, order, EXIF_TAG_GPS_LONGITUDE, longVec);
+            }
+            if (longVec.size() != CONSTANT_3 || !IsValidGpsData(longVec, tag)) {
                 HiLog::Debug(LABEL, "GPS_LONGITUDE Invalid value %{public}s", value.c_str());
                 return false;
             }
 
-            ExifRational longRational;
-            longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
-            longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
-            *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LONGITUDE,
-                sizeof(longRational), EXIF_FORMAT_RATIONAL);
-            if ((*ptrEntry) == nullptr) {
-                HiLog::Debug(LABEL, "Get exif entry failed.");
-                return false;
-            }
-            exif_set_rational((*ptrEntry)->data, order, longRational);
-            break;
+            std::vector<ExifRational> longRational(GPS_DMS_COUNT);
+            return ConvertGpsDataToRationals(longVec, longRational) &&
+                SetGpsRationals(data, ptrEntry, order, EXIF_TAG_GPS_LONGITUDE, longRational);
         }
         case EXIF_TAG_GPS_LATITUDE_REF: {
             *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE_REF,
