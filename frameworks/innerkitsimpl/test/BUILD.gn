@@ -1159,6 +1159,32 @@ ohos_unittest("textureencodetest") {
   ]
 }
 
+ohos_unittest("eglimagetest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${graphic_subsystem}/frameworks/surface/include",
+    "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "//third_party/googletest/googletest/include",
+  ]
+  sources = [ "unittest/egl_image_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+    "graphic_2d:libgl",
+    "graphic_2d:surface",
+    "hilog:libhilog",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1168,6 +1194,7 @@ group("unittest") {
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
+    ":eglimagetest",
     ":exifmakernotetest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",

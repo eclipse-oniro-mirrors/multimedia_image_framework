@@ -56,6 +56,16 @@ public:
         return grContext_;
     }
 
+    EGLConfig GetEGLConfig() const
+    {
+        return config_;
+    }
+
+    EGLContext GetEGLContext() const
+    {
+        return eglContext_;
+    }
+
     EGLDisplay GetEGLDisplay() const
     {
         return eglDisplay_;

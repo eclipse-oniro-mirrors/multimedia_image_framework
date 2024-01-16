@@ -41,7 +41,7 @@ public:
     void operator=(const PixelMapFromSurface &&) = delete;
 
 private:
-    bool GetNativeWindowBufferFromSurface(const sptr<Surface> &surface);
+    bool GetNativeWindowBufferFromSurface(const sptr<Surface> &surface, const Rect &srcRect);
     bool CreateEGLImage();
     bool DrawImage(const Rect &srcRect);
     void Clear() noexcept;
