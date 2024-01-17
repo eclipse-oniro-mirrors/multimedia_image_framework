@@ -17,6 +17,7 @@
 #include "webp_encoder.h"
 #include "image_source.h"
 #include "buffer_packer_stream.h"
+#include "media_errors.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -708,6 +709,161 @@ HWTEST_F(WebpEncoderTest, MakeImageInfoTest002, TestSize.Level3)
     Media::ColorSpace cs = ColorSpace::EXTENDED_SRGB;
     encoder.MakeImageInfo(width, height, pf, at, cs);
     GTEST_LOG_(INFO) << "WebpEncoderTest: MakeImageInfoTest002 end";
+}
+
+/**
+ * @tc.name: DoTransform001
+ * @tc.desc: Test of DoTransform
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransform001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransform001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
+    pixelMap.imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    pixelMap.imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::NV21;
+    result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransform001 end";
+}
+
+/**
+ * @tc.name: DoEncodeForICC001
+ * @tc.desc: Test of DoEncodeForICC
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoEncodeForICC001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoEncodeForICC001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    uint32_t result = webpEncoder->DoEncodeForICC(pixelMap);
+    ASSERT_EQ(result, ERROR);
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoEncodeForICC001 end";
+}
+
+/**
+ * @tc.name: DoTransformMemcpy001
+ * @tc.desc: Test of DoTransformMemcpy
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransformMemcpy001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformMemcpy001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransformMemcpy(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    dst = new char;
+    pixelMap.data_ = new uint8_t;
+    result = webpEncoder->DoTransformMemcpy(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, true);
+    delete dst;
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformMemcpy001 end";
+}
+
+/**
+ * @tc.name: DoTransformRGBX001
+ * @tc.desc: Test of DoTransformRGBX
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransformRGBX001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRGBX001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransformRGBX(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    dst = new char;
+    pixelMap.data_ = new uint8_t;
+    result = webpEncoder->DoTransformRGBX(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    delete dst;
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRGBX001 end";
+}
+
+/**
+ * @tc.name: DoTransformRgbA001
+ * @tc.desc: Test of DoTransformRgbA
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransformRgbA001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRgbA001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransformRgbA(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    dst = new char;
+    pixelMap.data_ = new uint8_t;
+    result = webpEncoder->DoTransformRgbA(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    delete dst;
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformRgbA001 end";
+}
+
+/**
+ * @tc.name: DoTransformBGRX001
+ * @tc.desc: Test of DoTransformBGRX
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransformBGRX001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRX001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransformBGRX(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    dst = new char;
+    pixelMap.data_ = new uint8_t;
+    result = webpEncoder->DoTransformBGRX(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    delete dst;
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRX001 end";
+}
+
+/**
+ * @tc.name: DoTransformBGRA001
+ * @tc.desc: Test of DoTransformBGRA
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpEncoderTest, DoTransformBGRA001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRA001 start";
+    auto webpEncoder = std::make_shared<WebpEncoder>();
+    Media::PixelMap pixelMap;
+    char* dst = nullptr;
+    int componentsNum = 0;
+    bool result = webpEncoder->DoTransformBGRA(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    dst = new char;
+    pixelMap.data_ = new uint8_t;
+    result = webpEncoder->DoTransformBGRA(pixelMap, dst, componentsNum);
+    ASSERT_EQ(result, false);
+    delete dst;
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "WebpEncoderTest: DoTransformBGRA001 end";
 }
 }
 }
