@@ -728,11 +728,9 @@ HWTEST_F(WebpEncoderTest, DoTransform001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     pixelMap.imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     pixelMap.imageInfo_.pixelFormat = PixelFormat::NV21;
     result = webpEncoder->DoTransform(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
@@ -768,7 +766,6 @@ HWTEST_F(WebpEncoderTest, DoTransformMemcpy001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransformMemcpy(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     dst = new char;
     pixelMap.data_ = new uint8_t;
     result = webpEncoder->DoTransformMemcpy(pixelMap, dst, componentsNum);
@@ -792,7 +789,6 @@ HWTEST_F(WebpEncoderTest, DoTransformRGBX001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransformRGBX(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     dst = new char;
     pixelMap.data_ = new uint8_t;
     result = webpEncoder->DoTransformRGBX(pixelMap, dst, componentsNum);
@@ -816,7 +812,6 @@ HWTEST_F(WebpEncoderTest, DoTransformRgbA001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransformRgbA(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     dst = new char;
     pixelMap.data_ = new uint8_t;
     result = webpEncoder->DoTransformRgbA(pixelMap, dst, componentsNum);
@@ -840,7 +835,6 @@ HWTEST_F(WebpEncoderTest, DoTransformBGRX001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransformBGRX(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     dst = new char;
     pixelMap.data_ = new uint8_t;
     result = webpEncoder->DoTransformBGRX(pixelMap, dst, componentsNum);
@@ -864,7 +858,6 @@ HWTEST_F(WebpEncoderTest, DoTransformBGRA001, TestSize.Level3)
     int componentsNum = 0;
     bool result = webpEncoder->DoTransformBGRA(pixelMap, dst, componentsNum);
     ASSERT_EQ(result, false);
-
     dst = new char;
     pixelMap.data_ = new uint8_t;
     result = webpEncoder->DoTransformBGRA(pixelMap, dst, componentsNum);
