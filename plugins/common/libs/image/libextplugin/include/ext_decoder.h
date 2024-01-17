@@ -96,7 +96,7 @@ private:
     int32_t frameCount_ = 0;
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
-    uint32_t gifCacheIndex_ = 0;
+    int gifCacheIndex_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
 #endif
