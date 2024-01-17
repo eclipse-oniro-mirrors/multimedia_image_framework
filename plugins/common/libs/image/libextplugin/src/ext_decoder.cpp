@@ -51,7 +51,7 @@ namespace {
     constexpr static uint32_t DESC_SIGNATURE = 0x64657363;
     constexpr static size_t SIZE_1 = 1;
     constexpr static size_t SIZE_4 = 4;
-    constexpr static int HARDWARE_MIN_DIM = 512;
+    constexpr static int HARDWARE_MIN_DIM = 1024;
     constexpr static int HARDWARE_MAX_DIM = 8192;
     constexpr static float HALF = 0.5;
     constexpr static float QUARTER = 0.25;
