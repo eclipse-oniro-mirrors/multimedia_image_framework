@@ -17,7 +17,6 @@
 #include "webp_encoder.h"
 #include "image_source.h"
 #include "buffer_packer_stream.h"
-#include "image_type.h"
 #include "media_errors.h"
 
 using namespace testing::ext;
