@@ -42,7 +42,7 @@ namespace {
 namespace OHOS {
 namespace Media {
 thread_local napi_ref ImageSourceNapi::sConstructor_ = nullptr;
-std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
+thread_local std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
 std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSource";
 static const std::string FILE_URL_PREFIX = "file://";
@@ -466,6 +466,9 @@ napi_value ImageSourceNapi::Constructor(napi_env env, napi_callback_info info)
         if (pImgSrcNapi != nullptr) {
             pImgSrcNapi->env_ = env;
             pImgSrcNapi->nativeImgSrc = sImgSrc_;
+            if (pImgSrcNapi->nativeImgSrc == nullptr) {
+                HiLog::Error(LABEL, "Failed to set nativeImageSource with null. Maybe a reentrancy error");
+            }
             pImgSrcNapi->navIncPixelMap_ = sIncPixelMap_;
             sIncPixelMap_ = nullptr;
             sImgSrc_ = nullptr;
