@@ -135,14 +135,14 @@ ohos_unittest("imagesourcetest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/manager/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
@@ -381,11 +381,11 @@ ohos_unittest("imagecolorspacetest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/manager/include",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
@@ -452,13 +452,13 @@ ohos_unittest("formatagentplugintest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "$image_subsystem/frameworks/innerkitsimpl/common/include",
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/common/libs/image/formatagentplugin/include",
+    "$image_subsystem/plugins/manager/include",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
@@ -707,14 +707,14 @@ ohos_unittest("streamtest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
-    "//foundation/multimedia/image_framework/plugins/manager/include",
+    "$image_subsystem/frameworks/innerkitsimpl/common/include",
+    "$image_subsystem/frameworks/innerkitsimpl/converter/include",
+    "$image_subsystem/frameworks/innerkitsimpl/stream/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/common/libs/image/formatagentplugin/include",
+    "$image_subsystem/plugins/manager/include",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
