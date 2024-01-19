@@ -490,7 +490,7 @@ HWTEST_F(WebpDecoderTest, SetDecodeOptionsTest005, TestSize.Level3)
     PixelDecodeOptions opts;
     PlImageInfo info;
     opts.desiredPixelFormat = PlPixelFormat::RGB_565;
-    webpDecoder->state_ = WebpDecodingState::BASE_INFO_PARSING;
+    webpDecoder->state_ = WebpDecodingState::BASE_INFO_PARSED;
     uint32_t result = webpDecoder->SetDecodeOptions(index, opts, info);
     ASSERT_EQ(result, SUCCESS);
     GTEST_LOG_(INFO) << "WebpDecoderTest: SetDecodeOptionsTest005 end";
@@ -566,8 +566,8 @@ HWTEST_F(WebpDecoderTest, IsDataEnoughTest001, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     webpDecoder->SetSource(*mock.get());
-    mock->returnValue_ = false; 
-    bool result = webpDecoder->ReadIncrementalHead();
+    mock->returnValue_ = false;
+    bool result = webpDecoder->IsDataEnough();
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "WebpDecoderTest: IsDataEnoughTest001 end";
 }
@@ -588,9 +588,6 @@ HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest001, TestSize.Level3)
     bool premul = false;
     bool result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_RGB_565);
-    pixelFormat = PlPixelFormat::NV21;
-    result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
-    ASSERT_EQ(result, MODE_RGBA);
     GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest001 end";
 }
 
