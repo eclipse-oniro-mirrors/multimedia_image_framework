@@ -586,8 +586,11 @@ HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest001, TestSize.Level3)
     webpDecoder->SetSource(*mock.get());
     PlPixelFormat pixelFormat = PlPixelFormat::RGB_565;
     bool premul = false;
-    bool result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
+    uint32_t result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_RGB_565);
+    pixelFormat = PlPixelFormat::NV21;
+    result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
+    ASSERT_EQ(result, MODE_RGBA);
     GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest001 end";
 }
 
