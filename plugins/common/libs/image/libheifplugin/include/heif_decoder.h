@@ -41,6 +41,7 @@ public:
 private:
     DISALLOW_COPY_AND_MOVE(HeifDecoder);
     bool AllocHeapBuffer(DecodeContext &context);
+    bool AllocShareMem(DecodeContext &context, uint64_t byteCount);
     bool IsHeifImageParaValid(PlSize heifSize, uint32_t bytesPerPixel);
     std::unique_ptr<HeifDecoderInterface> heifDecoderInterface_ = nullptr;
     PlSize heifSize_;

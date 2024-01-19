@@ -130,6 +130,17 @@ private:
     ExifByteOrder GetExifByteOrder(const bool &isNewExifData, unsigned char *buf);
     bool CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
         ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfBitsPerSample(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, int sepSize);
+    bool CreateExifEntryOfGpsTimeStamp(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfCompressedBitsPerPixel(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    ExifIfd GetExifIfdByExifTag(const ExifTag &tag);
+    ExifFormat GetExifFormatByExifTag(const ExifTag &tag);
+    std::string GetExifNameByExifTag(const ExifTag &tag);
     bool WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLength, unsigned long fileLength,
         unsigned char *buf, FILE *fp);
     void UpdateCacheExifData(FILE *fp);
@@ -142,6 +153,11 @@ private:
         const std::vector<ExifRational> &exifRationals);
     bool SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
         const std::vector<std::string> &dataVec);
+    uint32_t GetFileInfoByPath(const std::string &path, FILE **file, unsigned long &fileLength,
+        unsigned char **fileBuf);
+    uint32_t GetFileInfoByFd(int localFd, FILE **file, unsigned long &fileLength, unsigned char **fileBuf);
+    void ReleaseExifData(unsigned char *tempBuf, ExifData *ptrExifData, unsigned char* exifDataBuf);
+    uint32_t CheckInputDataValid(unsigned char *data, uint32_t size);
 
 private:
     ExifIfd imageFileDirectory_;

@@ -128,36 +128,7 @@ bool HeifDecoder::AllocHeapBuffer(DecodeContext &context)
         }
         uint64_t byteCount = static_cast<uint64_t>(heifSize_.width) * heifSize_.height * bytesPerPixel_;
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
-            uint32_t id = context.pixelmapUniqueId_;
-            std::string name = "HEIF RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
-            int fd = AshmemCreate(name.c_str(), byteCount);
-            if (fd < 0) {
-                return false;
-            }
-            int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-            if (result < 0) {
-                ::close(fd);
-                return false;
-            }
-            void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-            if (ptr == MAP_FAILED) {
-                ::close(fd);
-                return false;
-            }
-            context.pixelsBuffer.buffer = ptr;
-            void *fdBuffer = new int32_t();
-            if (fdBuffer == nullptr) {
-                HiLog::Error(LABEL, "new fdBuffer fail");
-                ::munmap(ptr, byteCount);
-                ::close(fd);
-                context.pixelsBuffer.buffer = nullptr;
-                return false;
-            }
-            *static_cast<int32_t *>(fdBuffer) = fd;
-            context.pixelsBuffer.context = fdBuffer;
-            context.pixelsBuffer.bufferSize = byteCount;
-            context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
-            context.freeFunc = nullptr;
+            return AllocShareMem(context, byteCount);
         } else {
             void *outputBuffer = malloc(byteCount);
             if (outputBuffer == nullptr) {
@@ -178,6 +149,41 @@ bool HeifDecoder::AllocHeapBuffer(DecodeContext &context)
             context.freeFunc = nullptr;
         }
     }
+    return true;
+}
+
+bool HeifDecoder::AllocShareMem(DecodeContext &context, uint64_t byteCount)
+{
+    uint32_t id = context.pixelmapUniqueId_;
+    std::string name = "HEIF RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
+    int fd = AshmemCreate(name.c_str(), byteCount);
+    if (fd < 0) {
+        return false;
+    }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        ::close(fd);
+        return false;
+    }
+    void* ptr = ::mmap(nullptr, byteCount, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED) {
+        ::close(fd);
+        return false;
+    }
+    context.pixelsBuffer.buffer = ptr;
+    void *fdBuffer = new int32_t();
+    if (fdBuffer == nullptr) {
+        HiLog::Error(LABEL, "new fdBuffer fail");
+        ::munmap(ptr, byteCount);
+        ::close(fd);
+        context.pixelsBuffer.buffer = nullptr;
+        return false;
+    }
+    *static_cast<int32_t *>(fdBuffer) = fd;
+    context.pixelsBuffer.context = fdBuffer;
+    context.pixelsBuffer.bufferSize = byteCount;
+    context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    context.freeFunc = nullptr;
     return true;
 }
 

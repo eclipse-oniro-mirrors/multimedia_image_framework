@@ -186,31 +186,22 @@ bool WebpEncoder::DoTransform(Media::PixelMap &pixelMap, char* dst, int componen
         pixelFormat, alphaType, componentsNum);
 
     if ((pixelFormat == PixelFormat::RGBA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_8888, OPAQUE");
         return DoTransformRGBX(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGBA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_8888, UNPREMUL");
         return DoTransformMemcpy(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGBA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_8888, PREMUL");
         return DoTransformRgbA(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::BGRA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
-        HiLog::Debug(LABEL, "DoTransform, BGRA_8888, OPAQUE");
         return DoTransformBGRX(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::BGRA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, BGRA_8888, UNPREMUL");
         return DoTransformBGRA(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::BGRA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, BGRA_8888, PREMUL");
         return DoTransformBgrA(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGBA_F16) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_F16, OPAQUE");
         return DoTransformF16To8888(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGBA_F16) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_F16, UNPREMUL");
         return DoTransformF16To8888(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGBA_F16) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL)) {
-        HiLog::Debug(LABEL, "DoTransform, RGBA_F16, PREMUL");
         return DoTransformF16pTo8888(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::ARGB_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
         return DoTransformArgbToRgb(pixelMap, dst, componentsNum);

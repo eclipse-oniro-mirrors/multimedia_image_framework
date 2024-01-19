@@ -1329,23 +1329,29 @@ static bool IsDoubleString(const std::string &str)
     return end != str.c_str() && *end == '\0' && number != HUGE_VAL;
 }
 
+static bool CheckExifDataValueOfBitsPerSample(const std::string &key, const std::string &value, std::string &errorInfo)
+{
+    std::vector<std::string> bitsVec;
+    SplitStr(value, ",", bitsVec);
+    if (bitsVec.size() > NUM_3) {
+        errorInfo = "BitsPerSample has invalid exif value: ";
+        errorInfo.append(value);
+        return false;
+    }
+    for (size_t i = 0; i < bitsVec.size(); i++) {
+        if (!IsNumericStr(bitsVec[i])) {
+            errorInfo = "BitsPerSample has invalid exif value: ";
+            errorInfo.append(bitsVec[i]);
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
 {
     if (IsSameTextStr(key, "BitsPerSample")) {
-        std::vector<std::string> bitsVec;
-        SplitStr(value, ",", bitsVec);
-        if (bitsVec.size() > NUM_3) {
-            errorInfo = "BitsPerSample has invalid exif value: ";
-            errorInfo.append(value);
-            return false;
-        }
-        for (size_t i = 0; i < bitsVec.size(); i++) {
-            if (!IsNumericStr(bitsVec[i])) {
-                errorInfo = "BitsPerSample has invalid exif value: ";
-                errorInfo.append(bitsVec[i]);
-                return false;
-            }
-        }
+        return CheckExifDataValueOfBitsPerSample(key, value, errorInfo);
     } else if (IsSameTextStr(key, "Orientation")) {
         if (!IsNumericStr(value) || atoi(value.c_str()) < 1 || static_cast<uint32_t>(atoi(value.c_str())) > NUM_8) {
             errorInfo = "Orientation has invalid exif value: ";
