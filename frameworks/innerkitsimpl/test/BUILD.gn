@@ -136,6 +136,7 @@ ohos_unittest("imagesourcetest") {
 
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
@@ -381,6 +382,7 @@ ohos_unittest("imagecolorspacetest") {
 
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
@@ -452,6 +454,7 @@ ohos_unittest("formatagentplugintest") {
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
@@ -707,6 +710,7 @@ ohos_unittest("streamtest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
+    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
@@ -1123,8 +1127,9 @@ ohos_unittest("textureencodetest") {
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/texture_encode",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/frameworks/innerkitsimpl/stream/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${graphic_subsystem}/interfaces/inner_api/surface",
     "${image_subsystem}/../../../drivers/peripheral/base/",
     "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",

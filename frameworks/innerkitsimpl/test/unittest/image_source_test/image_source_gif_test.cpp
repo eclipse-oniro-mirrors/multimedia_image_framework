@@ -19,7 +19,7 @@
 #include "hilog/log.h"
 #include "image_packer.h"
 #include "image_source.h"
-#include "../image_source_util.h"
+#include "image_source_util.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "incremental_pixel_map.h"

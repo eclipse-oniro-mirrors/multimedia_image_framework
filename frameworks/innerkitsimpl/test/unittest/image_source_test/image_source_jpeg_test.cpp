@@ -27,7 +27,7 @@
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_receiver.h"
-#include "../image_source_util.h"
+#include "image_source_util.h"
 #include "file_source_stream.h"
 #include "graphic_common.h"
 #include "image_receiver_manager.h"
