@@ -648,7 +648,7 @@ HWTEST_F(WebpDecoderTest, AllocOutputBufferTest001, TestSize.Level3)
     bool isIncremental = false;
     context.pixelsBuffer.buffer = nullptr;
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
-    bool result = webpDecoder->PreDecodeProc(context, config, isIncremental);
+    bool result = webpDecoder->AllocOutputBuffer(context, isIncremental);
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "WebpDecoderTest: AllocOutputBufferTest001 end";
 }
