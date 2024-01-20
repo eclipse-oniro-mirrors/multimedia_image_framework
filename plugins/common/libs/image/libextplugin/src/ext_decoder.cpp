@@ -994,7 +994,7 @@ static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorMa
 static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManager::ColorSpaceName &name)
 {
     if (profile == nullptr || profile->buffer == nullptr) {
-        HiLog::Info(LABEL, "profile is nullptr");
+        HiLog::Debug(LABEL, "profile is nullptr");
         return false;
     }
     auto tags = reinterpret_cast<const ICCTag*>(profile->buffer + ICC_HEADER_SIZE);
@@ -1026,7 +1026,7 @@ OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
     if (codec_ != nullptr) {
         auto profile = codec_->getICCProfile();
         if (profile != nullptr) {
-            HiLog::Info(LABEL, "profile got !!!!");
+            HiLog::Debug(LABEL, "profile got !!!!");
             GetColorSpaceName(profile, name);
         }
     }
