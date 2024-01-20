@@ -996,6 +996,16 @@ ExifEntry* EXIFInfo::CreateExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag,
     return exifEntry;
 }
 
+ExifEntry* EXIFInfo::GetExifTag(ExifData *exif, ExifIfd ifd, ExifTag tag, size_t len)
+{
+    ExifEntry *exifEntry;
+    if ((exifEntry = exif_content_get_entry(exif->ifd[ifd], tag)) != nullptr) {
+        EXIFInfoBufferCheck(exifEntry, len);
+        return exifEntry;
+    }
+    return nullptr;
+}
+
 unsigned long EXIFInfo::GetFileSize(FILE *fp)
 {
     long int position;
@@ -1188,7 +1198,7 @@ bool EXIFInfo::SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrd
         HiLog::Debug(LABEL, "ExifRationals size is invalid.");
         return false;
     }
-    *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_24, EXIF_FORMAT_RATIONAL);
+    *ptrEntry = GetExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_24);
     if ((*ptrEntry) == nullptr) {
         HiLog::Debug(LABEL, "Get exif entry failed.");
         return false;
