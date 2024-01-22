@@ -788,7 +788,7 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
     } else {
-        context->status = ERROR;
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
 }
 
@@ -805,7 +805,7 @@ void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status s
     }
 
     if (!IMG_IS_OK(status)) {
-        context->status = ERROR;
+        context->status = ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         HiLog::Error(LABEL, "New instance could not be obtained");
         napi_get_undefined(env, &result);
     }
