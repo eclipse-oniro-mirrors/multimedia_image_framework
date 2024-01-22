@@ -778,6 +778,8 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
         } else {
             SetRowStride(pixelBytes_ * info.size.width);
         }
+#else
+        SetRowStride(pixelBytes_ * info.size.width);
 #endif
         rowDataSize_ = pixelBytes_ * info.size.width;
     }
