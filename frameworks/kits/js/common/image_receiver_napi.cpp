@@ -906,6 +906,7 @@ static void Callback(uv_work_t *work, int status)
             napi_handle_scope scope = nullptr;
             napi_open_handle_scope(context->env, &scope);
             if (scope == nullptr) {
+                delete work;
                 return;
             }
             napi_create_uint32(context->env, SUCCESS, &result[0]);
