@@ -1288,6 +1288,8 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             return SUCCESS;
         } else if (result == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
             streamIncomplete = true;
+        } else {
+            return result; // unsuccess result,direct return
         }
     }
 
