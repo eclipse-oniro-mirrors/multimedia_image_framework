@@ -1260,7 +1260,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
             return SUCCESS;
         } else {
-            HiLog::Error(LABEL, "[ImageSource]image source checkFormatHint error, type: %{public}d",ret);
+            HiLog::Error(LABEL, "[ImageSource]image source checkFormatHint error, type: %{public}d", ret);
             return ret;
         }
     }
@@ -1283,7 +1283,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             format = iter->first;
             return SUCCESS;
         } else {
-            HiLog::Error(LABEL, "[ImageSource]image source checkEncodedFormat error, type: %{public}d",result);
+            HiLog::Error(LABEL, "[ImageSource]image source checkEncodedFormat error, type: %{public}d", result);
             return result; // unsuccess result,direct return
         }
     }
