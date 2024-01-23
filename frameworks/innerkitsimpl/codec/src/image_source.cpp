@@ -1260,7 +1260,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             format = hintIter->first;
             HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
             return SUCCESS;
-        } else if (ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+        } else {
             HiLog::Error(LABEL, "[ImageSource]checkFormatHint error, type: %{public}d", ret);
             return ret;
         }
@@ -1283,18 +1283,13 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             HiLog::Info(LABEL, "[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
             format = iter->first;
             return SUCCESS;
-        } else if (ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+        } else {
             HiLog::Error(LABEL, "[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
             return ret;
         }
     }
 
-    if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-        HiLog::Error(LABEL, "[ImageSource]image source incomplete.");
-        return ret;
-    }
-
-    // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT
+    // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT case
     format = InnerFormat::RAW_FORMAT;
     HiLog::Info(LABEL, "[ImageSource]image default to raw format.");
     return SUCCESS;
