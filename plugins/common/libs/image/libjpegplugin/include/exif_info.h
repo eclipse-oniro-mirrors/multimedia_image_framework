@@ -134,10 +134,12 @@ private:
     bool CreateExifEntryOfBitsPerSample(const ExifTag &tag, ExifData *data, const std::string &value,
         ExifByteOrder order, ExifEntry **ptrEntry);
     bool CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data, const std::string &value,
-        ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, int sepSize);
+        ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, size_t sepSize);
     bool CreateExifEntryOfGpsTimeStamp(const ExifTag &tag, ExifData *data, const std::string &value,
         ExifByteOrder order, ExifEntry **ptrEntry);
     bool CreateExifEntryOfCompressedBitsPerPixel(const ExifTag &tag, ExifData *data, const std::string &value,
+        ExifByteOrder order, ExifEntry **ptrEntry);
+    bool CreateExifEntryOfGpsLatitudeOrLongitude(const ExifTag &tag, ExifData *data, const std::string &value,
         ExifByteOrder order, ExifEntry **ptrEntry);
     ExifIfd GetExifIfdByExifTag(const ExifTag &tag);
     ExifFormat GetExifFormatByExifTag(const ExifTag &tag);
