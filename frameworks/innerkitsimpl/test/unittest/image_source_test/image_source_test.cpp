@@ -1262,5 +1262,253 @@ HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImageSourceTest: IsASTC end";
 }
+
+/**
+ * @tc.name: CreateImageSourceTest001
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSourceTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    const std::string pathName;
+    std::unique_ptr<ImageSource> ret = ImageSource::CreateImageSource(pathName, opts, errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest001 end";
+}
+
+/**
+ * @tc.name: CreateImageSourceTest002
+ * @tc.desc: test CreateImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreateImageSourceTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest002 start";
+    const int fd = -1;
+    const SourceOptions opts;
+    uint32_t errorCode = 0;
+    std::unique_ptr<ImageSource> ret = ImageSource::CreateImageSource(fd, opts, errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest002 end";
+}
+
+/**
+ * @tc.name: GetValidImageStatusTest001
+ * @tc.desc: test GetValidImageStatus
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetValidImageStatusTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetValidImageStatusTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint32_t index = 0;
+    ImageDecodingStatus imageDecodingStatus1;
+    ImageDecodingStatus imageDecodingStatus2;
+    imageSource->imageStatusMap_.insert(std::make_pair(0, imageDecodingStatus1));
+    imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
+    ImageSource::ImageStatusMap::iterator ret = imageSource->GetValidImageStatus(index, errorCode);
+    ASSERT_EQ(ret, imageSource->imageStatusMap_.end());
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetValidImageStatusTest001 end";
+}
+
+/**
+ * @tc.name: GetFilterAreaTest002
+ * @tc.desc: test GetFilterArea
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetFilterAreaTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterAreaTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    int privacyType = 0;
+    std::vector<std::pair<uint32_t, uint32_t>> ranges;
+    ImageDecodingStatus imageDecodingStatus1;
+    ImageDecodingStatus imageDecodingStatus2;
+    imageSource->imageStatusMap_.insert(std::make_pair(0, imageDecodingStatus1));
+    imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
+    uint32_t ret = imageSource->GetFilterArea(privacyType, ranges);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterAreaTest002 end";
+}
+
+/**
+ * @tc.name: GetFinalOutputStepTest001
+ * @tc.desc: test GetFinalOutputStep
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetFinalOutputStepTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions opt;
+    PixelMap pixelMap;
+    bool hasNinePatch = true;
+    opt.desiredPixelFormat = PixelFormat::ARGB_8888;
+    opt.rotateDegrees = 1;
+    FinalOutputStep ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
+    ASSERT_EQ(ret, FinalOutputStep::ROTATE_CHANGE);
+    opt.rotateDegrees = 0;
+    ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
+    ASSERT_EQ(ret, FinalOutputStep::CONVERT_CHANGE);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest001 end";
+}
+
+/**
+ * @tc.name: GetFinalOutputStepTest002
+ * @tc.desc: test GetFinalOutputStep
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetFinalOutputStepTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeOptions opt;
+    PixelMap pixelMap;
+    bool hasNinePatch = true;
+    opt.desiredPixelFormat = PixelFormat::ARGB_8888;
+    pixelMap.imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    pixelMap.imageInfo_.size.height = 1;
+    pixelMap.imageInfo_.size.width = 1;
+    opt.desiredSize.width = 2;
+    opt.desiredSize.height = 2;
+    FinalOutputStep ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
+    ASSERT_EQ(ret, FinalOutputStep::SIZE_CHANGE);
+    pixelMap.imageInfo_.size.height = 0;
+    pixelMap.imageInfo_.size.width = 0;
+    opt.desiredSize.width = 0;
+    opt.desiredSize.height = 0;
+    hasNinePatch = false;
+    pixelMap.imageInfo_.baseDensity = 1;
+    opt.fitDensity = 2;
+    ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
+    ASSERT_EQ(ret, FinalOutputStep::DENSITY_CHANGE);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest002 end";
+}
+
+/**
+ * @tc.name: ImageConverChangeTest001
+ * @tc.desc: test ImageConverChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ImageConverChangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    Rect cropRect;
+    ImageInfo desImageInfo;
+    ImageInfo srcImageInfo;
+    desImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    bool ret = imageSource->ImageConverChange(cropRect, desImageInfo, srcImageInfo);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest001 end";
+}
+
+/**
+ * @tc.name: ImageConverChangeTest002
+ * @tc.desc: test ImageConverChange
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ImageConverChangeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    Rect cropRect;
+    ImageInfo desImageInfo;
+    ImageInfo srcImageInfo;
+    bool ret = imageSource->ImageConverChange(cropRect, desImageInfo, srcImageInfo);
+    ASSERT_EQ(ret, false);
+    cropRect.top = 3;
+    ret = imageSource->ImageConverChange(cropRect, desImageInfo, srcImageInfo);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest002 end";
+}
+
+/**
+ * @tc.name: DecodeBase64Test001
+ * @tc.desc: test DecodeBase64
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeBase64Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBase64Test001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    const char* value = "data:image/";
+    const uint8_t *data = reinterpret_cast<const uint8_t *>(value);
+    uint32_t size = 0;
+    std::unique_ptr<SourceStream> ret = imageSource->DecodeBase64(data, size);
+    ASSERT_EQ(ret, nullptr);
+    size = 13;
+    ret = imageSource->DecodeBase64(data, size);
+    ASSERT_EQ(ret, nullptr);
+    value = "data:image/\0;base64,";
+    data = reinterpret_cast<const uint8_t *>(value);
+    ret = imageSource->DecodeBase64(data, size);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBase64Test001 end";
+}
+
+/**
+ * @tc.name: ConvertYUV420ToRGBATest001
+ * @tc.desc: test ConvertYUV420ToRGBA
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ConvertYUV420ToRGBATest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertYUV420ToRGBATest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint8_t *data = nullptr;
+    uint32_t size = 0;
+    bool isSupportOdd = false;
+    bool isAddUV = false;
+    uint32_t error = 0;
+    imageSource->sourceOptions_.size.width = 1;
+    bool ret = imageSource->ConvertYUV420ToRGBA(data, size, isSupportOdd, isAddUV, error);
+    ASSERT_EQ(ret, false);
+    isSupportOdd = true;
+    imageSource->sourceOptions_.size.height = 0;
+    ret = imageSource->ConvertYUV420ToRGBA(data, size, isSupportOdd, isAddUV, error);
+    ASSERT_EQ(ret, true);
+    imageSource->sourceOptions_.size.height = 5;
+    data = new uint8_t;
+    ret = imageSource->ConvertYUV420ToRGBA(data, size, isSupportOdd, isAddUV, error);
+    ASSERT_EQ(ret, true);
+    delete data;
+    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertYUV420ToRGBATest001 end";
+}
+
+/**
+ * @tc.name: CreatePixelMapForYUVTest001
+ * @tc.desc: test CreatePixelMapForYUV
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CreatePixelMapForYUVTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    std::unique_ptr<PixelMap> ret = imageSource->CreatePixelMapForYUV(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

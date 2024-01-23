@@ -15,7 +15,7 @@
 #include <gtest/gtest.h>
 
 #define private public
-
+#include "plugin_export.h"
 #include "bmp_decoder.h"
 #include "buffer_source_stream.h"
 #include "image_packer.h"
@@ -703,6 +703,74 @@ HWTEST_F(BmpDecoderTest, DecodeHeaderTest001, TestSize.Level3)
     bool result = bmpDecoder->DecodeHeader();
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "BmpDecoderTest: DecodeHeaderTest001 end";
+}
+
+/**
+ * @tc.name: readTest001
+ * @tc.desc: Test of read
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, readTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: readTest001 start";
+    auto bmpStream = std::make_shared<BmpStream>();
+    void *buffer = nullptr;
+    size_t size = 0;
+    size_t result = bmpStream->read(buffer, size);
+    ASSERT_EQ(result, 0);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: readTest001 end";
+}
+
+/**
+ * @tc.name: peekTest001
+ * @tc.desc: Test of peek
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, peekTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: peekTest001 start";
+    auto bmpStream = std::make_shared<BmpStream>();
+    void *buffer = nullptr;
+    size_t size = 0;
+    size_t result = bmpStream->peek(buffer, size);
+    ASSERT_EQ(result, 0);
+    bmpStream->inputStream_ = (ImagePlugin::InputDataStream *)malloc(sizeof(ImagePlugin::InputDataStream));
+    result = bmpStream->peek(buffer, size);
+    ASSERT_EQ(result, 0);
+    free(bmpStream->inputStream_);
+    bmpStream->inputStream_ = NULL;
+    GTEST_LOG_(INFO) << "BmpDecoderTest: peekTest001 end";
+}
+
+/**
+ * @tc.name: isAtEndTest001
+ * @tc.desc: Test of isAtEnd
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, isAtEndTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: isAtEndTest001 start";
+    auto bmpStream = std::make_shared<BmpStream>();
+    bool result = bmpStream->isAtEnd();
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: isAtEndTest001 end";
+}
+
+/**
+ * @tc.name: PluginExternalCreateTest001
+ * @tc.desc: Test of PluginExternalCreate
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PluginExternalCreateTest001 start";
+    std::string className;
+    auto result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    className = "#ImplClassType";
+    result = PluginExternalCreate(className);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: PluginExternalCreateTest001 end";
 }
 }
 }
