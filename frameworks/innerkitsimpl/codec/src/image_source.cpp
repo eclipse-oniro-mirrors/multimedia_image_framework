@@ -1252,22 +1252,9 @@ uint32_t ImageSource::GetFormatExtended(string &format)
 
 uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
 {
-    // bool streamIncomplete = false;
     auto hintIter = formatAgentMap_.end();
     if (!formatHint.empty()) {
         uint32_t ret = CheckFormatHint(formatHint, hintIter);
-        // if (ret == ERR_IMAGE_SOURCE_DATA) {
-        //     HiLog::Error(LABEL, "[ImageSource]image source data error.");
-        //     return ret;
-        // } else if (ret == SUCCESS) {
-        //     format = hintIter->first;
-        //     HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
-        //     return SUCCESS;
-        // } else if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-        //     streamIncomplete = true;
-        //     HiLog::Error(LABEL, "[ImageSource]image source data error ERR_IMAGE_SOURCE_DATA_INCOMPLETE.");
-        // }
-
         if (ret == SUCCESS) {
             format = hintIter->first;
             HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
@@ -1300,11 +1287,6 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             return result; // unsuccess result,direct return
         }
     }
-
-    // if (streamIncomplete) {
-    //     HiLog::Error(LABEL, "[ImageSource]image source incomplete.");
-    //     return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
-    // }
 
     // default return raw image
     format = InnerFormat::RAW_FORMAT;
