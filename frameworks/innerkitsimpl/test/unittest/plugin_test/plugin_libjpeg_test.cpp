@@ -1653,6 +1653,59 @@ HWTEST_F(PluginLibJpegTest, CreateExifTag001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetExifTag001
+ * @tc.desc: GetExifTagTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifTag001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifTag001 start";
+    EXIFInfo exinfo;
+    ExifEntry *ptrEntry = nullptr;
+    ExifData *data;
+    FILE *file = fopen("/data/local/tmp/image/test_noexit.jpg", "rb+");
+    ASSERT_NE(file, nullptr);
+    unsigned long fileLength = exinfo.GetFileSize(file);
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    bool isNewExifData = false;
+    exinfo.CreateExifData(fileBuf, fileLength, &data, isNewExifData);
+    ptrEntry = exinfo.GetExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, 20);
+
+    // There is no latitude exif in test_noexit.jpg, modify failed
+    ASSERT_EQ(ptrEntry, nullptr);
+    free(fileBuf);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifTag001 end";
+}
+
+/**
+ * @tc.name: GetExifTag002
+ * @tc.desc: GetExifTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifTag002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifTag002 start";
+    EXIFInfo exinfo;
+    ExifEntry *ptrEntry = nullptr;
+    ExifData *data;
+    FILE *file = fopen("/data/local/tmp/image/test_exif.jpg", "rb+");
+    ASSERT_NE(file, nullptr);
+    unsigned long fileLength = exinfo.GetFileSize(file);
+    unsigned char *fileBuf = static_cast<unsigned char *>(malloc(fileLength));
+    bool isNewExifData = false;
+    (void)fseek(file, 0L, 0);
+    int ret = fread(fileBuf, fileLength, 1, file);
+    ASSERT_EQ(ret, 1);
+    exinfo.CreateExifData(fileBuf, fileLength, &data, isNewExifData);
+    ptrEntry = exinfo.GetExifTag(data, EXIF_IFD_GPS, EXIF_TAG_GPS_LATITUDE, 20);
+
+    // There is latitude exif in test_exif.jpg, modify succeeded
+    ASSERT_NE(ptrEntry, nullptr);
+    free(fileBuf);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifTag002 end";
+}
+
+/**
  * @tc.name: ParseExifData001
  * @tc.desc: ParseExifData
  * @tc.type: FUNC
