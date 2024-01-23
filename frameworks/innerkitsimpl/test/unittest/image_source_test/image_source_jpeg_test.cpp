@@ -1641,7 +1641,8 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0022, TestSize.Level3)
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    //由于图片中没有PhotoMode这个exif信息。所以返回Media::ERR_MEDIA_VALUE_INVALID
+    ASSERT_EQ(res, Media::ERR_MEDIA_VALUE_INVALID);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0022 end";
 }
 
@@ -1716,7 +1717,8 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0025, TestSize.Level3)
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(res, SUCCESS);
+    //由于图片中没有RecommendedExposureIndex这个exif信息。所以返回Media::ERR_MEDIA_VALUE_INVALID
+    ASSERT_EQ(res, Media::ERR_MEDIA_VALUE_INVALID);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0025 end";
 }
 
@@ -3222,9 +3224,10 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest001, TestSize.Level3)
     CreateImageSourceFromFilePath(imageSource);
 
     uint32_t index = 0;
-    std::string value = "0";
+    std::string value = "9, 9, 9";
     std::string key = "BitsPerSample";
-    int fd = 0;
+    //要返回ERR_MEDIA_BUFFER_TOO_SMALL需要文件大小为空或者大小超过最大值，这里取空
+    int fd = open("/data/local/tmp/image/test_1111.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, ERR_MEDIA_BUFFER_TOO_SMALL);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest001 end";
