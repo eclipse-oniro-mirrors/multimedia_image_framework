@@ -12,12 +12,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "image_compressor.h"
+
 #include <cmath>
+
 #include "securec.h"
 #include "media_errors.h"
 #include "hilog/log.h"
 #include "log_tags.h"
-#include "image_compressor.h"
 
 using namespace OHOS::HiviewDFX;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ClAstcEnc" };
@@ -35,6 +38,7 @@ constexpr uint8_t BYTES_MASK = 0xFF;
 constexpr uint8_t STRIDE_RGBA_LOG2 = 2;
 constexpr uint8_t GLOBAL_WH_NUM_CL = 2;
 constexpr size_t MAX_MALLOC_BYTES = 10000000; // max 10MB
+constexpr size_t WORK_GROUP_SIZE = 8;
 
 const char *g_programSource = R"(
 // Notice: the code from line 42 to line 1266 is openCL language
@@ -1227,13 +1231,17 @@ uint4 EncodeBlock(float4* texels, float4 texelsMean, int blockID, __global uint*
 void GotTexelFromImage(read_only image2d_t inputImage, float4 texels[BLOCK_SIZE],
     int width, int height, float4 *texelMean)
 {
-    const int2 pos = (int2)(get_global_id(INT_ZERO), get_global_id(INT_ONE));
-    for (int i = START_INDEX; i < DIM; ++i) {
-        for (int j = START_INDEX; j < DIM; ++j) {
+    int2 pos = (int2)(get_global_id(0), get_global_id(1));
+    pos.x *= DIM;
+    pos.y *= DIM;
+    for (int i = 0; i < DIM; ++i) {
+        for (int j = 0; j < DIM; ++j) {
             int2 pixelPos = pos + (int2)(j, i);
-            if (pixelPos.x > width || pixelPos.y > height) {
-                texels[i * DIM + j] = (float4)(PIXEL_MAX_VALUE);
-                continue;
+            if (pixelPos.x >= width) {
+                pixelPos.x = width - 1;
+            }
+            if (pixelPos.y >= height) {
+                pixelPos.y = height - 1;
             }
             float4 texel = read_imagef(inputImage, pixelPos);
             texels[i * DIM + j] = texel * PIXEL_MAX_VALUE;
@@ -1242,22 +1250,17 @@ void GotTexelFromImage(read_only image2d_t inputImage, float4 texels[BLOCK_SIZE]
     }
 }
 
-kernel void AstcCl(read_only image2d_t inputImage, __global uint4* astcArr, __global uint* errs)
+kernel void AstcCl(read_only image2d_t inputImage, __global uint4* astcArr, __global uint* errs,
+    int width, int height)
 {
-    int width = get_global_size(INT_ZERO);
-    int height = get_global_size(INT_ONE);
-    const int2 local_id = (int2)(get_local_id(INT_ZERO), get_local_id(INT_ONE));
-    if (local_id.x == INT_ZERO && local_id.y == INT_ZERO) {
-        int blockNumX = (width + DIM - INT_ONE) / DIM;
-        int blockNumY = (height + DIM - INT_ONE) / DIM;
-        const int2 group = (int2)(get_group_id(INT_ZERO), get_group_id(INT_ONE));
-        int blockID = group.y * blockNumX + group.x;
-        float4 texels[BLOCK_SIZE];
-        float4 texelMean = (float4)(FLOAT_ZERO);
-        GotTexelFromImage(inputImage, texels, width, height, &texelMean);
-        texelMean = texelMean / ((float)(BLOCK_SIZE));
-        astcArr[blockID] = EncodeBlock(texels, texelMean, blockID, errs);
-    }
+    const int2 globalSize = (int2)(get_global_size(0), get_global_size(1));
+    const int2 globalId = (int2)(get_global_id(0), get_global_id(1));
+    int blockID = globalId.y * globalSize.x + globalId.x;
+    float4 texels[BLOCK_SIZE];
+    float4 texelMean = 0;
+    GotTexelFromImage(inputImage, texels, width, height, &texelMean);
+    texelMean = texelMean / ((float)(BLOCK_SIZE));
+    astcArr[blockID] = EncodeBlock(texels, texelMean, blockID, errs);
 }
 )";
 
@@ -1353,7 +1356,7 @@ static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string clBinPath)
 
 static CL_ASTC_STATUS BuildProgramAndCreateKernel(cl_program program, ClAstcHandle *clAstcHandle)
 {
-    cl_int clRet = clBuildProgram(program, 1, &clAstcHandle->deviceID, nullptr, nullptr, nullptr);
+    cl_int clRet = clBuildProgram(program, 1, &clAstcHandle->deviceID, "-cl-std=CL3.0", nullptr, nullptr);
     if (clRet != CL_SUCCESS) {
         HiLog::Error(LABEL, "astc clBuildProgram failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
@@ -1603,7 +1606,7 @@ static CL_ASTC_STATUS ClCreateBufferAndImage(const ClAstcImageOption *imageIn,
     return CL_ASTC_ENC_SUCCESS;
 }
 
-static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObjEnc *encObj, int width, int height)
+static CL_ASTC_STATUS ClKernelArgSet(ClAstcHandle *clAstcHandle, ClAstcObjEnc *encObj, int width, int height)
 {
     int32_t kernelId = 0;
     cl_int clRet = clSetKernelArg(clAstcHandle->kernel, kernelId++, sizeof(cl_mem), &encObj->inputImage);
@@ -1621,12 +1624,46 @@ static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObj
         HiLog::Error(LABEL, "astc clSetKernelArg errBuffer failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
     }
-    size_t local[] = {DIM, DIM};
+    clRet = clSetKernelArg(clAstcHandle->kernel, kernelId++, sizeof(int), &width);
+    if (clRet != CL_SUCCESS) {
+        HiLog::Error(LABEL, "astc clSetKernelArg width failed ret %{public}d!", clRet);
+        return CL_ASTC_ENC_FAILED;
+    }
+    clRet = clSetKernelArg(clAstcHandle->kernel, kernelId++, sizeof(int), &height);
+    if (clRet != CL_SUCCESS) {
+        HiLog::Error(LABEL, "astc clSetKernelArg height failed ret %{public}d!", clRet);
+        return CL_ASTC_ENC_FAILED;
+    }
+    return CL_ASTC_ENC_SUCCESS;
+}
+
+static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObjEnc *encObj, int width, int height)
+{
+    if (ClKernelArgSet(clAstcHandle, encObj, width, height) != CL_ASTC_ENC_SUCCESS) {
+        HiLog::Error(LABEL, "astc ClKernelArgSet failed!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    size_t local[] = {WORK_GROUP_SIZE, WORK_GROUP_SIZE};
     size_t global[GLOBAL_WH_NUM_CL];
-    global[0] = (width % local[0] == 0 ? width : (width + local[0] - width % local[0]));
-    global[1] = (height % local[1] == 0 ? height : (height + local[1] - height % local[1]));
-    clRet = clEnqueueNDRangeKernel(clAstcHandle->queue, clAstcHandle->kernel, GLOBAL_WH_NUM_CL, NULL, global, local,
-        0, NULL, NULL);
+    global[0] = (width + DIM - 1) / DIM;
+    global[1] = (height + DIM - 1) / DIM;
+    size_t localMax;
+    cl_int clRet = clGetKernelWorkGroupInfo(clAstcHandle->kernel, clAstcHandle->deviceID, CL_KERNEL_WORK_GROUP_SIZE,
+        sizeof(size_t), &localMax, nullptr);
+    if ((clRet != CL_SUCCESS) || localMax <= 0) {
+        HiLog::Error(LABEL, "astc clGetKernelWorkGroupInfo failed ret %{public}d!", clRet);
+        return CL_ASTC_ENC_FAILED;
+    }
+    while (local[0] * local[1] > localMax) {
+        local[0]--;
+        local[1]--;
+    }
+    if ((local[0] < 1) || (local[1] < 1)) {
+        HiLog::Error(LABEL, "astc ClKernelArgSetAndRun local set failed!");
+        return CL_ASTC_ENC_FAILED;
+    }
+    clRet = clEnqueueNDRangeKernel(clAstcHandle->queue, clAstcHandle->kernel, GLOBAL_WH_NUM_CL, nullptr, global, local,
+        0, nullptr, nullptr);
     if (clRet != CL_SUCCESS) {
         HiLog::Error(LABEL, "astc clEnqueueNDRangeKernel failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
