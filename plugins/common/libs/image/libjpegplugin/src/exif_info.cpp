@@ -1304,7 +1304,7 @@ std::string EXIFInfo::GetExifNameByExifTag(const ExifTag &tag)
     return "";
 }
 bool EXIFInfo::CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data, const std::string &value,
-    ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, int sepSize)
+    ExifByteOrder order, ExifEntry **ptrEntry, const std::string& separator, size_t sepSize)
 {
     std::vector<std::string> longVec;
     SplitStr(value, separator, longVec);
@@ -1363,6 +1363,24 @@ bool EXIFInfo::CreateExifEntryOfCompressedBitsPerPixel(const ExifTag &tag, ExifD
     return true;
 }
 
+bool EXIFInfo::CreateExifEntryOfGpsLatitudeOrLongitude(const ExifTag &tag, ExifData *data, const std::string &value,
+    ExifByteOrder order, ExifEntry **ptrEntry)
+{
+    std::vector<std::string> longVec;
+    SplitStr(value, ",", longVec);
+    if (longVec.size() == CONSTANT_2) {
+        return SetGpsDegreeRational(data, ptrEntry, order, tag, longVec);
+    }
+    if (longVec.size() != CONSTANT_3 || !IsValidGpsData(longVec, tag)) {
+        HiLog::Debug(LABEL, "%{public}s Invalid value %{public}s", GetExifNameByExifTag(tag).c_str(),
+            value.c_str());
+        return false;
+    }
+    std::vector<ExifRational> longRational(GPS_DMS_COUNT);
+    return ConvertGpsDataToRationals(longVec, longRational) &&
+        SetGpsRationals(data, ptrEntry, order, tag, longRational);
+}
+
 bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::string &value,
     ExifByteOrder order, ExifEntry **ptrEntry)
 {
@@ -1396,21 +1414,9 @@ bool EXIFInfo::CreateExifEntry(const ExifTag &tag, ExifData *data, const std::st
         }
         return true;
     } else if (tag == EXIF_TAG_GPS_LATITUDE || tag == EXIF_TAG_GPS_LONGITUDE) {
-        std::vector<std::string> longVec;
-        SplitStr(value, ",", longVec);
-        if (longVec.size() == CONSTANT_2) {
-            return SetGpsDegreeRational(data, ptrEntry, order, tag, longVec);
-        }
-        if (longVec.size() != CONSTANT_3 || !IsValidGpsData(longVec, tag)) {
-            HiLog::Debug(LABEL, "%{public}s Invalid value %{public}s", GetExifNameByExifTag(tag).c_str(),
-                value.c_str());
-            return false;
-        }
-        std::vector<ExifRational> longRational(GPS_DMS_COUNT);
-        return ConvertGpsDataToRationals(longVec, longRational) &&
-               SetGpsRationals(data, ptrEntry, order, tag, longRational);
+        return CreateExifEntryOfGpsLatitudeOrLongitude(tag, data, value, order, ptrEntry);
     } else if (std::find(vector3.begin(), vector3.end(), tag) != vector3.end()) {
-        return CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", CONSTANT_2);
+        return CreateExifEntryOfRationalExif(tag, data, value, order, ptrEntry, "/", static_cast<size_t>(CONSTANT_2));
     } else if (tag == EXIF_TAG_COMPRESSED_BITS_PER_PIXEL) {
         return CreateExifEntryOfCompressedBitsPerPixel(tag, data, value, order, ptrEntry);
     } else if (tag == EXIF_TAG_GPS_TIME_STAMP) {
