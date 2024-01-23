@@ -1252,15 +1252,16 @@ uint32_t ImageSource::GetFormatExtended(string &format)
 
 uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
 {
+    uint32_t ret;
     auto hintIter = formatAgentMap_.end();
     if (!formatHint.empty()) {
-        uint32_t ret = CheckFormatHint(formatHint, hintIter);
+        ret = CheckFormatHint(formatHint, hintIter);
         if (ret == SUCCESS) {
             format = hintIter->first;
             HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
             return SUCCESS;
-        } else {
-            HiLog::Error(LABEL, "[ImageSource]image source checkFormatHint error, type: %{public}d", ret);
+        } else if (ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+            HiLog::Error(LABEL, "[ImageSource]checkFormatHint error, type: %{public}d", ret);
             return ret;
         }
     }
@@ -1275,20 +1276,25 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             continue;  // has been checked before.
         }
         AbsImageFormatAgent *agent = iter->second;
-        auto result = CheckEncodedFormat(*agent);
-        if (result == ERR_IMAGE_MISMATCHED_FORMAT) {
+        ret = CheckEncodedFormat(*agent);
+        if (ret == ERR_IMAGE_MISMATCHED_FORMAT) {
             continue;
         } else if (result == SUCCESS) {
             HiLog::Info(LABEL, "[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
             format = iter->first;
             return SUCCESS;
-        } else {
-            HiLog::Error(LABEL, "[ImageSource]image source checkEncodedFormat error, type: %{public}d", result);
-            return result; // unsuccess result,direct return
+        } else if (ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+            HiLog::Error(LABEL, "[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
+            return ret;
         }
     }
 
-    // default return raw image
+    if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
+        HiLog::Error(LABEL, "[ImageSource]image source incomplete.");
+        return ret;
+    }
+
+    // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT
     format = InnerFormat::RAW_FORMAT;
     HiLog::Info(LABEL, "[ImageSource]image default to raw format.");
     return SUCCESS;
