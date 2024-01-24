@@ -927,14 +927,14 @@ HWTEST_F(PostProcTest, PostProcTest0039, TestSize.Level3)
     ImageInfo srcImageInfo;
     PostProc postProc;
     dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
-    ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
     ASSERT_EQ(ret, ERR_IMAGE_CROP);
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
     dstImageInfo.size.width = 1;
     dstImageInfo.size.height = 1;
     srcImageInfo.pixelFormat = PixelFormat::UNKNOWN;
     postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
-    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
     ASSERT_EQ(ret, ERR_IMAGE_CROP);
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0039 end";
 }
