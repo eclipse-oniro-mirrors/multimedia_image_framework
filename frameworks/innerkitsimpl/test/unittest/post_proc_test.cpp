@@ -899,9 +899,9 @@ HWTEST_F(PostProcTest, PostProcTest0038, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0038 start";
     Rect cropRect;
-    ImageInfo dstImageInfo; 
+    ImageInfo dstImageInfo;
     PixelMap pixelMap;
-    int32_t pixelBytes = 0; 
+    int32_t pixelBytes = 0;
     ScanlineFilter scanlineFilter;
     PostProc postProc;
     postProc.decodeOpts_.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
