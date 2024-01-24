@@ -1279,7 +1279,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
         ret = CheckEncodedFormat(*agent);
         if (ret == ERR_IMAGE_MISMATCHED_FORMAT) {
             continue;
-        } else if (result == SUCCESS) {
+        } else if (ret == SUCCESS) {
             HiLog::Info(LABEL, "[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
             format = iter->first;
             return SUCCESS;
