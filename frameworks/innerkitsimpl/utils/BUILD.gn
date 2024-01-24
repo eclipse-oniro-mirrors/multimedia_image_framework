@@ -39,8 +39,6 @@ if (use_clang_ios) {
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-
-      # "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     ]
 
     #relative_install_dir = "module/multimedia"
