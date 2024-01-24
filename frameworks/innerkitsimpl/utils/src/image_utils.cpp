@@ -41,6 +41,9 @@
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
+#ifdef IOS_PLATFORM
+#include <sys/syscall.h>
+#endif
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #else
@@ -367,11 +370,19 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap)
 
     HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
+#ifdef IOS_PLATFORM
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
+        std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
+        std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + "_pid" +
+        std::to_string(getpid()) + "_tid" + std::to_string(syscall(SYS_thread_selfid)) + "_uniqueId" +
+        std::to_string(pixelMap->GetUniqueId()) + ".dat";
+#else
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_pixelMap_w" +
         std::to_string(pixelMap->GetWidth()) + "_h" + std::to_string(pixelMap->GetHeight()) + "_rowStride" +
         std::to_string(pixelMap->GetRowStride()) + "_total" + std::to_string(totalSize) + "_pid" +
         std::to_string(getpid()) + "_tid" + std::to_string(gettid()) + "_uniqueId" +
         std::to_string(pixelMap->GetUniqueId()) + ".dat";
+#endif
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled failed");
         return;

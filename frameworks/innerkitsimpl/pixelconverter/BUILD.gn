@@ -160,6 +160,7 @@ if (use_clang_ios) {
       deps += skia_platform
     } else if (use_clang_android) {
       deps = [
+        "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
 
@@ -201,11 +202,13 @@ ohos_static_library("pixelconvertadapter_static") {
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
     deps = [
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     deps += skia_platform
   } else if (use_clang_android) {
     deps = [
+      "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     deps += skia_platform
