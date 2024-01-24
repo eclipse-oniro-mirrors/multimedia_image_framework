@@ -65,7 +65,9 @@ namespace {
     static constexpr ExifTag TAG_SENSITIVITY_TYPE = static_cast<ExifTag>(0x8830);
     static constexpr ExifTag TAG_STANDARD_OUTPUT_SENSITIVITY = static_cast<ExifTag>(0x8831);
     static constexpr ExifTag TAG_RECOMMENDED_EXPOSURE_INDEX = static_cast<ExifTag>(0x8832);
-    static constexpr size_t SIZE_ONE = 1;
+    static constexpr size_t SIZE_1 = 1;
+    static constexpr size_t SIZE_2 = 2;
+    static constexpr size_t SIZE_3 = 3;
 
     /* raw EXIF header data */
     static const unsigned char EXIF_HEADER[] = {
@@ -1145,7 +1147,7 @@ static bool ConvertStringToDouble(const std::string &str, double &number)
 
 static bool IsValidGpsData(const std::vector<std::string> &dataVec, const ExifTag &tag)
 {
-    if (dataVec.size() != CONSTANT_3 || (tag != EXIF_TAG_GPS_LATITUDE && tag != EXIF_TAG_GPS_LONGITUDE)) {
+    if (dataVec.size() != SIZE_3 || (tag != EXIF_TAG_GPS_LATITUDE && tag != EXIF_TAG_GPS_LONGITUDE)) {
         HiLog::Debug(LABEL, "Gps dms data size is invalid.");
         return false;
     }
@@ -1171,7 +1173,7 @@ static bool IsValidGpsData(const std::vector<std::string> &dataVec, const ExifTa
 static bool ConvertGpsDataToRationals(const std::vector<std::string> &dataVec,
     std::vector<ExifRational> &exifRationals)
 {
-    if (!(dataVec.size() == CONSTANT_3 && exifRationals.size() == CONSTANT_3)) {
+    if (!(dataVec.size() == SIZE_3 && exifRationals.size() == SIZE_3)) {
         HiLog::Debug(LABEL, "Data size is invalid.");
         return false;
     }
@@ -1194,7 +1196,7 @@ static bool ConvertGpsDataToRationals(const std::vector<std::string> &dataVec,
 bool EXIFInfo::SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order,
     const ExifTag &tag, const std::vector<ExifRational> &exifRationals)
 {
-    if (exifRationals.size() != CONSTANT_3) {
+    if (exifRationals.size() != SIZE_3) {
         HiLog::Debug(LABEL, "ExifRationals size is invalid.");
         return false;
     }
@@ -1212,7 +1214,7 @@ bool EXIFInfo::SetGpsRationals(ExifData *data, ExifEntry **ptrEntry, ExifByteOrd
 bool EXIFInfo::SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifByteOrder order, const ExifTag &tag,
     const std::vector<std::string> &dataVec)
 {
-    if (dataVec.size() != CONSTANT_2) {
+    if (dataVec.size() != SIZE_2) {
         HiLog::Debug(LABEL, "Gps degree data size is invalid.");
         return false;
     }
@@ -1966,10 +1968,10 @@ static void NumSplit(std::string &src, std::vector<std::string> &out)
             if (splitSize != 0) {
                 res.push_back(src.substr(last, splitSize));
             }
-            last = i + SIZE_ONE;
+            last = i + SIZE_1;
         }
     }
-    if (last <= (src.size() - SIZE_ONE)) {
+    if (last <= (src.size() - SIZE_1)) {
         res.push_back(src.substr(last));
     }
     for (size_t i = 0; i < res.size() && i < out.size(); i++) {
@@ -1980,7 +1982,7 @@ static void NumSplit(std::string &src, std::vector<std::string> &out)
 static std::string JoinStr(std::vector<std::string> &in, const std::string &delim)
 {
     std::string res = "";
-    for (size_t i = 0; i < (in.size() - SIZE_ONE); i++) {
+    for (size_t i = 0; i < (in.size() - SIZE_1); i++) {
         res.append(in[i]).append(delim);
     }
     res.append(in.back());
