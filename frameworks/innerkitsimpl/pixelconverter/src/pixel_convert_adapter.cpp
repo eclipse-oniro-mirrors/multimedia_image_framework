@@ -17,7 +17,7 @@
 
 #include <map>
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColor.h"
@@ -25,17 +25,20 @@
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPixmap.h"
-#include "log_tags.h"
 #ifdef _WIN32
 #include <iomanip>
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PixelConvertAdapter"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "PixelConvertAdapter" };
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -62,7 +65,7 @@ static SkColorType PixelFormatConvert(const PixelFormat &pixelFormat)
 static void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        HiLog::Error(LABEL, "Pixel count must multiple of 4.");
+        IMAGE_LOGE("Pixel count must multiple of 4.");
         return;
     }
     uint8_t *src = srcPixels;
@@ -81,7 +84,7 @@ static void ARGBToRGBA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
 static void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        HiLog::Error(LABEL, "Pixel count must multiple of 4.");
+        IMAGE_LOGE("Pixel count must multiple of 4.");
         return;
     }
     uint8_t *src = srcPixels;
@@ -100,7 +103,7 @@ static void RGBAToARGB(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCoun
 static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        HiLog::Error(LABEL, "Pixel count must multiple of 4.");
+        IMAGE_LOGE("Pixel count must multiple of 4.");
         return;
     }
     const uint8_t *src = srcPixels;
@@ -118,7 +121,7 @@ static void RGBxToRGB(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
 static void RGBToRGBx(const uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_3 != NUM_0) {
-        HiLog::Error(LABEL, "Pixel count must multiple of 3.");
+        IMAGE_LOGE("Pixel count must multiple of 3.");
         return;
     }
     const uint8_t *src = srcPixels;
@@ -150,7 +153,7 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
 {
     // basic valid check, other parameters valid check in writePixels method
     if (srcPixels == nullptr || dstPixels == nullptr) {
-        HiLog::Error(LABEL, "src or dst pixels invalid.");
+        IMAGE_LOGE("src or dst pixels invalid.");
         return false;
     }
 
@@ -182,11 +185,11 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
 
     SkBitmap dstBitmap;
     if (!dstBitmap.installPixels(dstImageInfo, dstPixels, dstRowBytes)) {
-        HiLog::Error(LABEL, "WritePixelsConvert dst bitmap install pixels failed.");
+        IMAGE_LOGE("WritePixelsConvert dst bitmap install pixels failed.");
         return false;
     }
     if (!dstBitmap.writePixels(srcPixmap, dstPos.x, dstPos.y)) {
-        HiLog::Error(LABEL, "WritePixelsConvert dst bitmap write pixels by source failed.");
+        IMAGE_LOGE("WritePixelsConvert dst bitmap write pixels by source failed.");
         return false;
     }
 
@@ -206,7 +209,7 @@ bool PixelConvertAdapter::ReadPixelsConvert(const void *srcPixels, const Positio
 {
     // basic valid check, other parameters valid check in readPixels method
     if (srcPixels == nullptr || dstPixels == nullptr) {
-        HiLog::Error(LABEL, "src or dst pixels invalid.");
+        IMAGE_LOGE("src or dst pixels invalid.");
         return false;
     }
     SkAlphaType srcAlphaType = static_cast<SkAlphaType>(srcInfo.alphaType);
@@ -218,11 +221,11 @@ bool PixelConvertAdapter::ReadPixelsConvert(const void *srcPixels, const Positio
 
     SkBitmap srcBitmap;
     if (!srcBitmap.installPixels(srcImageInfo, const_cast<void *>(srcPixels), srcRowBytes)) {
-        HiLog::Error(LABEL, "ReadPixelsConvert src bitmap install pixels failed.");
+        IMAGE_LOGE("ReadPixelsConvert src bitmap install pixels failed.");
         return false;
     }
     if (!srcBitmap.readPixels(dstImageInfo, dstPixels, dstRowBytes, srcPos.x, srcPos.y)) {
-        HiLog::Error(LABEL, "ReadPixelsConvert read dst pixels from source failed.");
+        IMAGE_LOGE("ReadPixelsConvert read dst pixels from source failed.");
         return false;
     }
     return true;
@@ -232,7 +235,7 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
                                       uint32_t color)
 {
     if (srcPixels == nullptr) {
-        HiLog::Error(LABEL, "srcPixels is null.");
+        IMAGE_LOGE("srcPixels is null.");
         return false;
     }
     SkAlphaType srcAlphaType = static_cast<SkAlphaType>(srcInfo.alphaType);
@@ -240,7 +243,7 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
     SkImageInfo srcImageInfo = SkImageInfo::Make(srcInfo.size.width, srcInfo.size.height, srcColorType, srcAlphaType);
     SkBitmap srcBitmap;
     if (!srcBitmap.installPixels(srcImageInfo, const_cast<void *>(srcPixels), srcRowBytes)) {
-        HiLog::Error(LABEL, "ReadPixelsConvert src bitmap install pixels failed.");
+        IMAGE_LOGE("ReadPixelsConvert src bitmap install pixels failed.");
         return false;
     }
     const SkColor4f skColor = SkColor4f::FromColor(color);

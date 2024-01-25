@@ -15,14 +15,17 @@
 
 #include "my_pixel_map.h"
 #include "media_errors.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_pixel_map_napi.h"
-#include "log_tags.h"
 
-using OHOS::HiviewDFX::HiLog;
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "MyPixelMapNapiTest"
+
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "MyPixelMapNapiTest"};
 constexpr uint32_t TEST_ARG_SUM = 1;
 }
 namespace OHOS {
@@ -52,32 +55,32 @@ napi_value MyPixelMap::Init(napi_env env, napi_value exports)
 
     if (napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH, Constructor, nullptr, IMG_ARRAY_SIZE(props),
         props, &constructor) != napi_ok) {
-        HiLog::Error(LABEL, "define class fail");
+        IMAGE_LOGE("define class fail");
         return nullptr;
     }
 
     if (napi_create_reference(env, constructor, 1, &sConstructor_) != napi_ok) {
-        HiLog::Error(LABEL, "create reference fail");
+        IMAGE_LOGE("create reference fail");
         return nullptr;
     }
 
     if (napi_set_named_property(env, exports, CLASS_NAME.c_str(), constructor) != napi_ok) {
-        HiLog::Error(LABEL, "set named property fail");
+        IMAGE_LOGE("set named property fail");
         return nullptr;
     }
 
     if (napi_define_properties(env, exports, IMG_ARRAY_SIZE(static_prop), static_prop) != napi_ok) {
-        HiLog::Error(LABEL, "define properties fail");
+        IMAGE_LOGE("define properties fail");
         return nullptr;
     }
 
-    HiLog::Debug(LABEL, "Init success");
+    IMAGE_LOGD("Init success");
     return exports;
 }
 
 napi_value MyPixelMap::Constructor(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "Constructor IN");
+    IMAGE_LOGD("Constructor IN");
     napi_value undefineVar = nullptr;
     napi_get_undefined(env, &undefineVar);
 
@@ -87,13 +90,13 @@ napi_value MyPixelMap::Constructor(napi_env env, napi_callback_info info)
 
     napi_get_cb_info(env, info, nullptr, nullptr, &thisVar, nullptr);
 
-    HiLog::Debug(LABEL, "Constructor OUT");
+    IMAGE_LOGD("Constructor OUT");
     return thisVar;
 }
 
 napi_value MyPixelMap::TestGetImageInfo(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "TestGetImageInfo IN");
+    IMAGE_LOGD("TestGetImageInfo IN");
 
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -105,23 +108,23 @@ napi_value MyPixelMap::TestGetImageInfo(napi_env env, napi_callback_info info)
 
     status = napi_get_cb_info(env, info, &argCount, argValue, &thisVar, nullptr);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "napi_get_cb_info fail");
+        IMAGE_LOGE("napi_get_cb_info fail");
     }
 
-    HiLog::Debug(LABEL, "OH_GetImageInfo Test|Begin");
+    IMAGE_LOGD("OH_GetImageInfo Test|Begin");
     OhosPixelMapInfo pixelMapInfo;
     int32_t res = OH_GetImageInfo(env, argValue[0], &pixelMapInfo);
-    HiLog::Debug(LABEL, "OH_GetImageInfo Test|End, res=%{public}d", res);
-    HiLog::Debug(LABEL, "OH_GetImageInfo, w=%{public}u, h=%{public}u, r=%{public}u, f=%{public}d",
+    IMAGE_LOGD("OH_GetImageInfo Test|End, res=%{public}d", res);
+    IMAGE_LOGD("OH_GetImageInfo, w=%{public}u, h=%{public}u, r=%{public}u, f=%{public}d",
         pixelMapInfo.width, pixelMapInfo.height, pixelMapInfo.rowSize, pixelMapInfo.pixelFormat);
 
-    HiLog::Debug(LABEL, "TestGetImageInfo OUT");
+    IMAGE_LOGD("TestGetImageInfo OUT");
     return result;
 }
 
 napi_value MyPixelMap::TestAccessPixels(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "TestAccessPixels IN");
+    IMAGE_LOGD("TestAccessPixels IN");
 
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -133,21 +136,21 @@ napi_value MyPixelMap::TestAccessPixels(napi_env env, napi_callback_info info)
 
     status = napi_get_cb_info(env, info, &argCount, argValue, &thisVar, nullptr);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "napi_get_cb_info fail");
+        IMAGE_LOGE("napi_get_cb_info fail");
     }
 
-    HiLog::Debug(LABEL, "OH_AccessPixels Test|Begin");
+    IMAGE_LOGD("OH_AccessPixels Test|Begin");
     void* addrPtr = nullptr;
     int32_t res = OH_AccessPixels(env, argValue[0], &addrPtr);
-    HiLog::Debug(LABEL, "OH_AccessPixels Test|End, res=%{public}d", res);
+    IMAGE_LOGD("OH_AccessPixels Test|End, res=%{public}d", res);
 
-    HiLog::Debug(LABEL, "TestAccessPixels OUT");
+    IMAGE_LOGD("TestAccessPixels OUT");
     return result;
 }
 
 napi_value MyPixelMap::TestUnAccessPixels(napi_env env, napi_callback_info info)
 {
-    HiLog::Debug(LABEL, "TestUnAccessPixels IN");
+    IMAGE_LOGD("TestUnAccessPixels IN");
 
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -159,14 +162,14 @@ napi_value MyPixelMap::TestUnAccessPixels(napi_env env, napi_callback_info info)
 
     status = napi_get_cb_info(env, info, &argCount, argValue, &thisVar, nullptr);
     if (status != napi_ok) {
-        HiLog::Error(LABEL, "napi_get_cb_info fail");
+        IMAGE_LOGE("napi_get_cb_info fail");
     }
 
-    HiLog::Debug(LABEL, "OH_UnAccessPixels Test|Begin");
+    IMAGE_LOGD("OH_UnAccessPixels Test|Begin");
     int32_t res = OH_UnAccessPixels(env, argValue[0]);
-    HiLog::Debug(LABEL, "OH_UnAccessPixels Test|End, res=%{public}d", res);
+    IMAGE_LOGD("OH_UnAccessPixels Test|End, res=%{public}d", res);
 
-    HiLog::Debug(LABEL, "TestUnAccessPixels OUT");
+    IMAGE_LOGD("TestUnAccessPixels OUT");
     return result;
 }
 
@@ -175,7 +178,7 @@ napi_value MyPixelMap::TestUnAccessPixels(napi_env env, napi_callback_info info)
  */
 static napi_value Export(napi_env env, napi_value exports)
 {
-    HiLog::Info(LABEL, "MyPixelMap CALL");
+    IMAGE_LOGI("MyPixelMap CALL");
     MyPixelMap::Init(env, exports);
     return exports;
 }

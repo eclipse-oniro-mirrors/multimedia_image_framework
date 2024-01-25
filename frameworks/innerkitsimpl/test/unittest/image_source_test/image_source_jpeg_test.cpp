@@ -17,13 +17,12 @@
 #include <fstream>
 #include <fcntl.h>
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "incremental_pixel_map.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_receiver.h"
@@ -32,16 +31,18 @@
 #include "graphic_common.h"
 #include "image_receiver_manager.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourceJpegTest"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
 namespace Multimedia {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceJpegTest"
-};
 static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_INPUT_HW_JPEG_PATH = "/data/local/tmp/image/test_hw.jpg";
@@ -257,7 +258,7 @@ HWTEST_F(ImageSourceJpegTest, TC036, TestSize.Level3)
     decodeOpts.desiredSize.height = 400;
     decodeOpts.rotateDegrees = 90;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(200, pixelMap->GetWidth());
@@ -987,7 +988,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageDecode011, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, status);
-    HiLog::Debug(LABEL_TEST, "create pixel map ret=%{public}u.", status);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", status);
     ASSERT_EQ(status, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 
@@ -1042,7 +1043,7 @@ HWTEST_F(ImageSourceJpegTest, JpgImageCrop001, TestSize.Level3)
     decodeOpts.desiredSize.height = 400;
     decodeOpts.rotateDegrees = 90;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(200, pixelMap->GetWidth());
@@ -1073,7 +1074,7 @@ HWTEST_F(ImageSourceJpegTest, JpegImageHwDecode001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map ret=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map ret=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     /**

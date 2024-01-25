@@ -15,13 +15,16 @@
 
 #include "render_context.h"
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PixelMap"
 
 namespace OHOS {
 namespace Media {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "PixelMap" };
-using namespace OHOS::HiviewDFX;
 
 RenderContext::RenderContext()
 {}
@@ -48,19 +51,19 @@ bool RenderContext::InitEGLContext()
 {
     eglDisplay_ = eglGetPlatformDisplay(EGL_PLATFORM_OHOS_KHR, EGL_DEFAULT_DISPLAY, nullptr);
     if (eglDisplay_ == EGL_NO_DISPLAY) {
-        HiLog::Error(LABEL, "RenderContext::Init: eglGetDisplay error: ");
+        IMAGE_LOGE("RenderContext::Init: eglGetDisplay error: ");
         return false;
     }
 
     EGLint major = 0;
     EGLint minor = 0;
     if (eglInitialize(eglDisplay_, &major, &minor) == EGL_FALSE) {
-        HiLog::Error(LABEL, "Failed to initialize EGLDisplay");
+        IMAGE_LOGE("Failed to initialize EGLDisplay");
         return false;
     }
 
     if (eglBindAPI(EGL_OPENGL_ES_API) == EGL_FALSE) {
-        HiLog::Error(LABEL, "Failed to bind OpenGL ES API");
+        IMAGE_LOGE("Failed to bind OpenGL ES API");
         return false;
     }
 
@@ -71,14 +74,14 @@ bool RenderContext::InitEGLContext()
 
     ret = eglChooseConfig(eglDisplay_, configAttribs, &config_, 1, &count);
     if (!(ret && static_cast<unsigned int>(count) >= 1)) {
-        HiLog::Error(LABEL, "Failed to eglChooseConfig");
+        IMAGE_LOGE("Failed to eglChooseConfig");
         return false;
     }
 
     static const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
     eglContext_ = eglCreateContext(eglDisplay_, config_, EGL_NO_CONTEXT, contextAttribs);
     if (eglContext_ == EGL_NO_CONTEXT) {
-        HiLog::Error(LABEL, "Failed to create egl context %{public}x", eglGetError());
+        IMAGE_LOGE("Failed to create egl context %{public}x", eglGetError());
         return false;
     }
 
@@ -96,8 +99,7 @@ bool RenderContext::CreatePbufferSurface()
         EGLint attribs[] = {EGL_WIDTH, 1, EGL_HEIGHT, 1, EGL_NONE};
         pbufferSurface_ = eglCreatePbufferSurface(eglDisplay_, config_, attribs);
         if (pbufferSurface_ == EGL_NO_SURFACE) {
-            HiLog::Error(
-                LABEL,
+            IMAGE_LOGE(
                 "RenderContext::CreatePbufferSurface failed, error is %{public}x",
                 eglGetError());
             return false;
@@ -116,8 +118,7 @@ void RenderContext::MakeCurrent(EGLSurface surface) const
     if (eglMakeCurrent(eglDisplay_, currSurface, currSurface, eglContext_) != EGL_TRUE) {
         EGLint surfaceId = -1;
         eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
-        HiLog::Error(
-            LABEL,
+        IMAGE_LOGE(
             "RenderContext::MakeCurrent failed for eglSurface %{public}d, error is %{public}x",
             surfaceId,
             eglGetError());
@@ -128,7 +129,7 @@ bool RenderContext::InitGrContext()
 {
     sk_sp<const GrGLInterface> glInterface(GrGLCreateNativeInterface());
     if (glInterface == nullptr) {
-        HiLog::Error(LABEL, "SetUpGrContext failed to make native interface");
+        IMAGE_LOGE("SetUpGrContext failed to make native interface");
         return false;
     }
 
@@ -151,8 +152,7 @@ void RenderContext::Clear() noexcept
     if (pbufferSurface_ != EGL_NO_SURFACE) {
         EGLBoolean ret = eglDestroySurface(eglDisplay_, pbufferSurface_);
         if (ret != EGL_TRUE) {
-            HiLog::Error(LABEL, "RenderContext::Clear() failed to destroy pbuffer surface, error is %{public}x.",
-                eglGetError());
+            IMAGE_LOGE("RenderContext::Clear() failed to destroy pbuffer surface, error is %{public}x.", eglGetError());
         }
         pbufferSurface_ = EGL_NO_SURFACE;
     }

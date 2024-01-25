@@ -16,14 +16,11 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include <cmath>
-#include <log_tags.h>
-#include "hilog/log.h"
 #include "securec.h"
 #include "memory.h"
 #include "nine_patch_listener.h"
 
 using namespace testing::ext;
-using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Multimedia {
 class NinePathListenerTest : public testing::Test {

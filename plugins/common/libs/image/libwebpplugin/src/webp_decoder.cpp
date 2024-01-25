@@ -15,9 +15,8 @@
 
 #include "webp_decoder.h"
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
@@ -25,15 +24,19 @@
 #include "surface_buffer.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "WebpDecoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
 using namespace MultiMedia;
 
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "WebpDecoder" };
 constexpr int32_t WEBP_IMAGE_NUM = 1;
 constexpr int32_t EXTERNAL_MEMORY = 1;
 constexpr size_t DECODE_VP8CHUNK_MIN_SIZE = 4096;
@@ -56,11 +59,11 @@ void WebpDecoder::SetSource(InputDataStream &sourceStream)
 uint32_t WebpDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     if (index >= WEBP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "image size:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
+        IMAGE_LOGE("image size:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < WebpDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "get image size failed for state %{public}d.", state_);
+        IMAGE_LOGE("get image size failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= WebpDecodingState::BASE_INFO_PARSED) {
@@ -70,7 +73,7 @@ uint32_t WebpDecoder::GetImageSize(uint32_t index, PlSize &size)
 
     uint32_t ret = DecodeHeader();
     if (ret != SUCCESS) {
-        HiLog::Debug(LABEL, "decode header error on get image ret:%{public}u.", ret);
+        IMAGE_LOGD("decode header error on get image ret:%{public}u.", ret);
         return ret;
     }
     size = webpSize_;
@@ -80,11 +83,11 @@ uint32_t WebpDecoder::GetImageSize(uint32_t index, PlSize &size)
 uint32_t WebpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     if (index >= WEBP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "set option:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
+        IMAGE_LOGE("set option:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < WebpDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "set decode option failed for state %{public}d.", state_);
+        IMAGE_LOGE("set decode option failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= WebpDecodingState::IMAGE_DECODING) {
@@ -94,7 +97,7 @@ uint32_t WebpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
     if (state_ < WebpDecodingState::BASE_INFO_PARSED) {
         uint32_t ret = DecodeHeader();
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "decode header error on set decode options:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on set decode options:%{public}u.", ret);
             state_ = WebpDecodingState::BASE_INFO_PARSING;
             return ret;
         }
@@ -124,18 +127,18 @@ uint32_t WebpDecoder::Decode(uint32_t index, DecodeContext &context)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif
     if (index >= WEBP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
+        IMAGE_LOGE("decode:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < WebpDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "set decode option failed for state %{public}d.", state_);
+        IMAGE_LOGE("set decode option failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ > WebpDecodingState::IMAGE_DECODING) {
         FinishOldDecompress();
         uint32_t ret = DecodeHeader();
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "decode header error on set decode options:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on set decode options:%{public}u.", ret);
             state_ = WebpDecodingState::BASE_INFO_PARSING;
             return ret;
         }
@@ -156,17 +159,17 @@ uint32_t WebpDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext
 {
     context.totalProcessProgress = 0;
     if (index >= WEBP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "incremental:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
+        IMAGE_LOGE("incremental:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     if (state_ != WebpDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "incremental decode failed for state %{public}d.", state_);
+        IMAGE_LOGE("incremental decode failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
 
     if (!IsDataEnough()) {
-        HiLog::Debug(LABEL, "increment data not enough, need next data.");
+        IMAGE_LOGD("increment data not enough, need next data.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     return DoIncrementalDecode(context);
@@ -180,7 +183,7 @@ uint32_t WebpDecoder::DecodeHeader()
             state_ = WebpDecodingState::BASE_INFO_PARSING;
         } else {
             state_ = WebpDecodingState::SOURCE_INITED;
-            HiLog::Error(LABEL, "decode image head failed, ret:%{public}u.", ret);
+            IMAGE_LOGE("decode image head failed, ret:%{public}u.", ret);
         }
         return ret;
     }
@@ -194,11 +197,11 @@ uint32_t WebpDecoder::ReadIncrementalHead()
     if (stremSize >= DECODE_VP8CHUNK_MIN_SIZE || stream_->IsStreamCompleted()) {
         stream_->Seek(0);
         if (!stream_->Read(stream_->GetStreamSize(), dataBuffer_)) {
-            HiLog::Error(LABEL, "read data fail.");
+            IMAGE_LOGE("read data fail.");
             return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
         if (dataBuffer_.inputStreamBuffer == nullptr || dataBuffer_.dataSize == 0) {
-            HiLog::Error(LABEL, "inputStreamBuffer is null or data size is %{public}u.", dataBuffer_.dataSize);
+            IMAGE_LOGE("inputStreamBuffer is null or data size is %{public}u.", dataBuffer_.dataSize);
             return ERR_IMAGE_GET_DATA_ABNORMAL;
         }
 
@@ -207,12 +210,12 @@ uint32_t WebpDecoder::ReadIncrementalHead()
         int32_t ret = WebPGetInfo(dataBuffer_.inputStreamBuffer, dataBuffer_.bufferSize, &width, &height);
         if (ret == 0 || (width == 0 && height == 0)) {
             // may be incomplete data
-            HiLog::Error(LABEL, "get width and height fail.");
+            IMAGE_LOGE("get width and height fail.");
             return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
 
         if (width < 0 || height < 0) {
-            HiLog::Error(LABEL, "width and height invalid, width:%{public}d, height:%{public}d.", width, height);
+            IMAGE_LOGE("width and height invalid, width:%{public}d, height:%{public}d.", width, height);
             return ERR_IMAGE_INVALID_PARAMETER;
         }
         webpSize_.width = static_cast<uint32_t>(width);
@@ -274,7 +277,7 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
 {
     WebPDecoderConfig config;
     if (!PreDecodeProc(context, config, false)) {
-        HiLog::Error(LABEL, "prepare common decode failed.");
+        IMAGE_LOGE("prepare common decode failed.");
         state_ = WebpDecodingState::IMAGE_ERROR;
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
@@ -282,7 +285,7 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
     TAutoCallProc<WebPDecBuffer, WebPFreeDecBuffer> webpOutput(&config.output);
     TAutoCallProc<WebPIDecoder, WebPIDelete> idec(WebPINewDecoder(&config.output));
     if (idec == nullptr) {
-        HiLog::Error(LABEL, "common decode:idec is null.");
+        IMAGE_LOGE("common decode:idec is null.");
         state_ = WebpDecodingState::IMAGE_ERROR;
         return ERR_IMAGE_DECODE_FAILED;
     }
@@ -295,11 +298,11 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
     if (status == VP8_STATUS_SUSPENDED && opts_.allowPartialImage) {
         state_ = WebpDecodingState::IMAGE_PARTIAL;
         context.ifPartialOutput = true;
-        HiLog::Info(LABEL, "this is partial image data to decode.");
+        IMAGE_LOGI("this is partial image data to decode.");
         return SUCCESS;
     }
 
-    HiLog::Error(LABEL, "decode image data failed, status:%{public}d.", status);
+    IMAGE_LOGE("decode image data failed, status:%{public}d.", status);
     state_ = WebpDecodingState::IMAGE_ERROR;
     return ERR_IMAGE_DECODE_FAILED;
 }
@@ -308,37 +311,37 @@ uint32_t WebpDecoder::DoIncrementalDecode(ProgDecodeContext &context)
 {
     WebPDecoderConfig config;
     if (!PreDecodeProc(context.decodeContext, config, true)) {
-        HiLog::Error(LABEL, "prepare increment decode failed.");
+        IMAGE_LOGE("prepare increment decode failed.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
 
     TAutoCallProc<WebPDecBuffer, WebPFreeDecBuffer> webpOutput(&config.output);
     TAutoCallProc<WebPIDecoder, WebPIDelete> idec(WebPINewDecoder(&config.output));
     if (idec == nullptr) {
-        HiLog::Error(LABEL, "incremental code:idec is null.");
+        IMAGE_LOGE("incremental code:idec is null.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 
     dataBuffer_ = { nullptr, 0, 0 };
     stream_->Seek(0);
     if (!stream_->Read(stream_->GetStreamSize(), dataBuffer_)) {
-        HiLog::Error(LABEL, "incremental:read data failed.");
+        IMAGE_LOGE("incremental:read data failed.");
         return ERR_IMAGE_DECODE_FAILED;
     }
     if (dataBuffer_.inputStreamBuffer == nullptr || dataBuffer_.dataSize == 0) {
-        HiLog::Error(LABEL, "incremental:data is null.");
+        IMAGE_LOGE("incremental:data is null.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 
     VP8StatusCode status = WebPIUpdate(idec, dataBuffer_.inputStreamBuffer, static_cast<size_t>(dataBuffer_.dataSize));
     if (status != VP8_STATUS_OK && status != VP8_STATUS_SUSPENDED) {
-        HiLog::Error(LABEL, "incremental:webp status exception,status:%{public}d.", status);
+        IMAGE_LOGE("incremental:webp status exception,status:%{public}d.", status);
         return ERR_IMAGE_DECODE_FAILED;
     }
     if (status == VP8_STATUS_SUSPENDED) {
         int32_t curHeight = 0;
         if (WebPIDecGetRGB(idec, &curHeight, nullptr, nullptr, nullptr) == nullptr) {
-            HiLog::Debug(LABEL, "refresh image failed, current height:%{public}d.", curHeight);
+            IMAGE_LOGD("refresh image failed, current height:%{public}d.", curHeight);
         }
         if (curHeight > 0 && webpSize_.height != 0) {
             context.totalProcessProgress =
@@ -365,11 +368,11 @@ void WebpDecoder::InitWebpOutput(const DecodeContext &context, WebPDecBuffer &ou
 bool WebpDecoder::PreDecodeProc(DecodeContext &context, WebPDecoderConfig &config, bool isIncremental)
 {
     if (WebPInitDecoderConfig(&config) == 0) {
-        HiLog::Error(LABEL, "init config failed.");
+        IMAGE_LOGE("init config failed.");
         return false;
     }
     if (!AllocOutputBuffer(context, isIncremental)) {
-        HiLog::Error(LABEL, "get pixels memory failed.");
+        IMAGE_LOGE("get pixels memory failed.");
         return false;
     }
 
@@ -387,7 +390,7 @@ void WebpDecoder::Reset()
 static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
     uint32_t id = context.pixelmapUniqueId_;
@@ -409,7 +412,7 @@ static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount
     context.pixelsBuffer.buffer = ptr;
     void *fdBuffer = new int32_t();
     if (fdBuffer == nullptr) {
-        HiLog::Error(LABEL, "malloc fdBuffer fail");
+        IMAGE_LOGE("malloc fdBuffer fail");
         ::munmap(ptr, byteCount);
         ::close(fd);
         context.pixelsBuffer.buffer = nullptr;
@@ -427,26 +430,26 @@ static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount
 static bool HeapMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
 {
     if (byteCount == 0 || byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "Invalid value of byteCount");
+        IMAGE_LOGE("Invalid value of byteCount");
         return false;
     }
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
-        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
+        IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.",
             static_cast<unsigned long long>(byteCount));
         return false;
     }
 #ifdef _WIN32
     errno_t backRet = memset_s(outputBuffer, 0, byteCount);
     if (backRet != EOK) {
-        HiLog::Error(LABEL, "memset buffer failed.", backRet);
+        IMAGE_LOGE("memset buffer failed.", backRet);
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
     }
 #else
     if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-        HiLog::Error(LABEL, "memset buffer failed.");
+        IMAGE_LOGE("memset buffer failed.");
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
@@ -463,7 +466,7 @@ static bool HeapMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
 static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, const PlSize &webpSize)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
@@ -479,13 +482,13 @@ static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, c
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
-        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
         return false;
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
-        HiLog::Error(LABEL, "NativeBufferReference failed");
+        IMAGE_LOGE("NativeBufferReference failed");
         return false;
     }
 

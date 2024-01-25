@@ -20,11 +20,9 @@
 #include <functional>
 #include "__tree"
 #include "cstdint"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
+#include "image_log.h"
 #include "iosfwd"
 #include "iterator"
-#include "log_tags.h"
 #include "new"
 #include "plugin_errors.h"
 #ifndef _WIN32
@@ -36,13 +34,16 @@
 #include "string"
 #include "type_traits"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "AttrData"
+
 namespace OHOS {
 namespace MultimediaPlugin {
 using std::set;
 using std::string;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "AttrData" };
 
 AttrData::AttrData() : type_(AttrDataType::ATTR_DATA_NULL)
 {}
@@ -61,7 +62,7 @@ AttrData::AttrData(const string &value) : type_(AttrDataType::ATTR_DATA_STRING)
 {
     value_.stringValue = new (std::nothrow) string(value);
     if (value_.stringValue == nullptr) {
-        HiLog::Error(LABEL, "AttrData: alloc stringValue result null!");
+        IMAGE_LOGE("AttrData: alloc stringValue result null!");
         type_ = AttrDataType::ATTR_DATA_NULL;
     }
 }
@@ -70,7 +71,7 @@ AttrData::AttrData(string &&value) : type_(AttrDataType::ATTR_DATA_STRING)
 {
     value_.stringValue = new (std::nothrow) string(std::move(value));
     if (value_.stringValue == nullptr) {
-        HiLog::Error(LABEL, "AttrData: alloc stringValue result null!");
+        IMAGE_LOGE("AttrData: alloc stringValue result null!");
         type_ = AttrDataType::ATTR_DATA_NULL;
     }
 }
@@ -117,7 +118,7 @@ AttrData::AttrData(const AttrData &data)
             break;
         }
         default: {
-            HiLog::Debug(LABEL, "AttrData: null or unexpected type in copy constructor: %{public}d.", data.type_);
+            IMAGE_LOGD("AttrData: null or unexpected type in copy constructor: %{public}d.", data.type_);
             type_ = AttrDataType::ATTR_DATA_NULL;
         }
     }
@@ -130,7 +131,7 @@ AttrData::AttrData(AttrData &&data) noexcept
         data.type_ = AttrDataType::ATTR_DATA_NULL;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
-        HiLog::Error(LABEL, "memcpy error in assignment operator!");
+        IMAGE_LOGE("memcpy error in assignment operator!");
     }
 }
 
@@ -149,7 +150,7 @@ AttrData &AttrData::operator=(const AttrData &data)
         temp.type_ = AttrDataType::ATTR_DATA_NULL;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
-        HiLog::Error(LABEL, "memcpy error in assignment operator!");
+        IMAGE_LOGE("memcpy error in assignment operator!");
     }
 
     return *this;
@@ -168,7 +169,7 @@ AttrData &AttrData::operator=(AttrData &&data) noexcept
         data.type_ = AttrDataType::ATTR_DATA_NULL;
     } else {
         type_ = AttrDataType::ATTR_DATA_NULL;
-        HiLog::Error(LABEL, "memcpy error in assignment operator!");
+        IMAGE_LOGE("memcpy error in assignment operator!");
     }
 
     return *this;
@@ -197,7 +198,7 @@ uint32_t AttrData::SetData(const string &value)
 
     string *newValue = new (std::nothrow) string(value);
     if (newValue == nullptr) {
-        HiLog::Error(LABEL, "SetData: alloc string result null!");
+        IMAGE_LOGE("SetData: alloc string result null!");
         return ERR_INTERNAL;
     }
 
@@ -216,7 +217,7 @@ uint32_t AttrData::SetData(string &&value)
 
     string *newValue = new (std::nothrow) string(std::move(value));
     if (newValue == nullptr) {
-        HiLog::Error(LABEL, "SetData: alloc string result null!");
+        IMAGE_LOGE("SetData: alloc string result null!");
         return ERR_INTERNAL;
     }
 
@@ -229,8 +230,8 @@ uint32_t AttrData::SetData(string &&value)
 uint32_t AttrData::SetData(uint32_t lowerBound, uint32_t upperBound)
 {
     if (lowerBound > upperBound) {
-        HiLog::Error(LABEL, "SetData: lowerBound is upper than upperBound, lower: %{public}u, upper: %{public}u.",
-                     lowerBound, upperBound);
+        IMAGE_LOGE("SetData: lowerBound is upper than upperBound, lower: %{public}u, upper: %{public}u.",
+            lowerBound, upperBound);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -267,7 +268,7 @@ void AttrData::ClearData()
         }
         default: {
             // do nothing
-            HiLog::Debug(LABEL, "ClearData: do nothing for type %{public}d.", type_);
+            IMAGE_LOGD("ClearData: do nothing for type %{public}d.", type_);
             break;
         }
     }
@@ -280,7 +281,7 @@ uint32_t AttrData::InsertSet(uint32_t value)
     if (type_ == AttrDataType::ATTR_DATA_NULL) {
         value_.uint32Set = new (std::nothrow) set<uint32_t>({ value });
         if (value_.uint32Set == nullptr) {
-            HiLog::Error(LABEL, "InsertSet: alloc uint32Set result null!");
+            IMAGE_LOGE("InsertSet: alloc uint32Set result null!");
             return ERR_INTERNAL;
         }
 
@@ -289,13 +290,13 @@ uint32_t AttrData::InsertSet(uint32_t value)
     }
 
     if (type_ != AttrDataType::ATTR_DATA_UINT32_SET) {
-        HiLog::Error(LABEL, "InsertSet: AttrData type is not uint32Set or null, type: %{public}d.", type_);
+        IMAGE_LOGE("InsertSet: AttrData type is not uint32Set or null, type: %{public}d.", type_);
         return ERR_UNSUPPORTED;
     }
 
     auto result = value_.uint32Set->insert(value);
     if (!result.second) {
-        HiLog::Error(LABEL, "InsertSet: set insert error!");
+        IMAGE_LOGE("InsertSet: set insert error!");
         return ERR_GENERAL;
     }
 
@@ -307,7 +308,7 @@ uint32_t AttrData::InsertSet(const string &value)
     if (type_ == AttrDataType::ATTR_DATA_NULL) {
         value_.stringSet = new (std::nothrow) set<string>({ value });
         if (value_.stringSet == nullptr) {
-            HiLog::Error(LABEL, "InsertSet: alloc stringSet result null!");
+            IMAGE_LOGE("InsertSet: alloc stringSet result null!");
             return ERR_INTERNAL;
         }
 
@@ -316,13 +317,13 @@ uint32_t AttrData::InsertSet(const string &value)
     }
 
     if (type_ != AttrDataType::ATTR_DATA_STRING_SET) {
-        HiLog::Error(LABEL, "InsertSet: AttrData type is not stringSet or null, type: %{public}d.", type_);
+        IMAGE_LOGE("InsertSet: AttrData type is not stringSet or null, type: %{public}d.", type_);
         return ERR_UNSUPPORTED;
     }
 
     auto result = value_.stringSet->insert(value);
     if (!result.second) {
-        HiLog::Error(LABEL, "InsertSet: set insert error!");
+        IMAGE_LOGE("InsertSet: set insert error!");
         return ERR_INTERNAL;
     }
 
@@ -334,7 +335,7 @@ uint32_t AttrData::InsertSet(string &&value)
     if (type_ == AttrDataType::ATTR_DATA_NULL) {
         value_.stringSet = new (std::nothrow) set<string>;
         if (value_.stringSet == nullptr) {
-            HiLog::Error(LABEL, "InsertSet: alloc stringSet result null!");
+            IMAGE_LOGE("InsertSet: alloc stringSet result null!");
             return ERR_INTERNAL;
         }
 
@@ -342,7 +343,7 @@ uint32_t AttrData::InsertSet(string &&value)
         if (!result.second) {
             delete value_.stringSet;
             value_.stringSet = nullptr;
-            HiLog::Error(LABEL, "InsertSet: set insert error!");
+            IMAGE_LOGE("InsertSet: set insert error!");
             return ERR_INTERNAL;
         }
 
@@ -351,13 +352,13 @@ uint32_t AttrData::InsertSet(string &&value)
     }
 
     if (type_ != AttrDataType::ATTR_DATA_STRING_SET) {
-        HiLog::Error(LABEL, "InsertSet: AttrData type is not stringSet or null, type: %{public}d.", type_);
+        IMAGE_LOGE("InsertSet: AttrData type is not stringSet or null, type: %{public}d.", type_);
         return ERR_UNSUPPORTED;
     }
 
     auto result = value_.stringSet->insert(std::move(value));
     if (!result.second) {
-        HiLog::Error(LABEL, "InsertSet: set insert error!");
+        IMAGE_LOGE("InsertSet: set insert error!");
         return ERR_INTERNAL;
     }
 
@@ -367,7 +368,7 @@ uint32_t AttrData::InsertSet(string &&value)
 bool AttrData::InRange(bool value) const
 {
     if (type_ != AttrDataType::ATTR_DATA_BOOL) {
-        HiLog::Error(LABEL, "InRange: comparison of bool type with non-bool type: %{public}d.", type_);
+        IMAGE_LOGE("InRange: comparison of bool type with non-bool type: %{public}d.", type_);
         return false;
     }
 
@@ -387,7 +388,7 @@ bool AttrData::InRange(uint32_t value) const
             return InRangeUint32Range(value);
         }
         default: {
-            HiLog::Error(LABEL, "InRange: comparison of uint32 type with non-uint32 type: %{public}d.", type_);
+            IMAGE_LOGE("InRange: comparison of uint32 type with non-uint32 type: %{public}d.", type_);
             return false;
         }
     }
@@ -403,7 +404,7 @@ bool AttrData::InRange(const string &value) const
             return value_.stringSet->find(value) != value_.stringSet->end();
         }
         default: {
-            HiLog::Error(LABEL, "InRange: comparison of string type with non-string type: %{public}d.", type_);
+            IMAGE_LOGE("InRange: comparison of string type with non-string type: %{public}d.", type_);
             return false;
         }
     }
@@ -434,7 +435,7 @@ bool AttrData::InRange(const AttrData &data) const
             return InRange(data.value_.uint32Rang);
         }
         default: {
-            HiLog::Error(LABEL, "InRange: unexpected AttrData type: %{public}d.", data.type_);
+            IMAGE_LOGE("InRange: unexpected AttrData type: %{public}d.", data.type_);
             return false;
         }
     }
@@ -455,7 +456,7 @@ uint32_t AttrData::GetMinValue(uint32_t &value) const
         case AttrDataType::ATTR_DATA_UINT32_SET: {
             auto iter = value_.uint32Set->begin();
             if (iter == value_.uint32Set->end()) {
-                HiLog::Error(LABEL, "GetMinValue: uint32Set is empty.");
+                IMAGE_LOGE("GetMinValue: uint32Set is empty.");
                 return ERR_GENERAL;
             }
             value = *iter;
@@ -466,7 +467,7 @@ uint32_t AttrData::GetMinValue(uint32_t &value) const
             return SUCCESS;
         }
         default: {
-            HiLog::Error(LABEL, "GetMinValue: invalid data type for uint32: %{public}d.", type_);
+            IMAGE_LOGE("GetMinValue: invalid data type for uint32: %{public}d.", type_);
             return ERR_INVALID_PARAMETER;
         }
     }
@@ -482,7 +483,7 @@ uint32_t AttrData::GetMaxValue(uint32_t &value) const
         case AttrDataType::ATTR_DATA_UINT32_SET: {
             auto iter = value_.uint32Set->rbegin();
             if (iter == value_.uint32Set->rend()) {
-                HiLog::Error(LABEL, "GetMaxValue: GetMaxValue: uint32Set is empty.");
+                IMAGE_LOGE("GetMaxValue: GetMaxValue: uint32Set is empty.");
                 return ERR_GENERAL;
             }
 
@@ -494,7 +495,7 @@ uint32_t AttrData::GetMaxValue(uint32_t &value) const
             return SUCCESS;
         }
         default: {
-            HiLog::Error(LABEL, "GetMaxValue: invalid data type for uint32: %{public}d.", type_);
+            IMAGE_LOGE("GetMaxValue: invalid data type for uint32: %{public}d.", type_);
             return ERR_INVALID_PARAMETER;
         }
     }
@@ -510,7 +511,7 @@ uint32_t AttrData::GetMinValue(const string *&value) const
         case AttrDataType::ATTR_DATA_STRING_SET: {
             auto iter = value_.stringSet->begin();
             if (iter == value_.stringSet->end()) {
-                HiLog::Error(LABEL, "GetMinValue: stringSet is empty.");
+                IMAGE_LOGE("GetMinValue: stringSet is empty.");
                 return ERR_GENERAL;
             }
 
@@ -518,7 +519,7 @@ uint32_t AttrData::GetMinValue(const string *&value) const
             return SUCCESS;
         }
         default: {
-            HiLog::Error(LABEL, "GetMinValue: invalid data type for string: %{public}d.", type_);
+            IMAGE_LOGE("GetMinValue: invalid data type for string: %{public}d.", type_);
             return ERR_INVALID_PARAMETER;
         }
     }
@@ -534,7 +535,7 @@ uint32_t AttrData::GetMaxValue(const string *&value) const
         case AttrDataType::ATTR_DATA_STRING_SET: {
             auto iter = value_.stringSet->rbegin();
             if (iter == value_.stringSet->rend()) {
-                HiLog::Error(LABEL, "GetMaxValue: stringSet is empty.");
+                IMAGE_LOGE("GetMaxValue: stringSet is empty.");
                 return ERR_GENERAL;
             }
 
@@ -542,7 +543,7 @@ uint32_t AttrData::GetMaxValue(const string *&value) const
             return SUCCESS;
         }
         default: {
-            HiLog::Error(LABEL, "GetMaxValue: invalid data type for string: %{public}d.", type_);
+            IMAGE_LOGE("GetMaxValue: invalid data type for string: %{public}d.", type_);
             return ERR_INVALID_PARAMETER;
         }
     }
@@ -551,7 +552,7 @@ uint32_t AttrData::GetMaxValue(const string *&value) const
 uint32_t AttrData::GetValue(bool &value) const
 {
     if (type_ != AttrDataType::ATTR_DATA_BOOL) {
-        HiLog::Error(LABEL, "Get uint32 value: not a bool AttrData type: %{public}d.", type_);
+        IMAGE_LOGE("Get uint32 value: not a bool AttrData type: %{public}d.", type_);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -562,7 +563,7 @@ uint32_t AttrData::GetValue(bool &value) const
 uint32_t AttrData::GetValue(uint32_t &value) const
 {
     if (type_ != AttrDataType::ATTR_DATA_UINT32) {
-        HiLog::Error(LABEL, "Get uint32 value: not a uint32 AttrData type: %{public}d.", type_);
+        IMAGE_LOGE("Get uint32 value: not a uint32 AttrData type: %{public}d.", type_);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -573,7 +574,7 @@ uint32_t AttrData::GetValue(uint32_t &value) const
 uint32_t AttrData::GetValue(string &value) const
 {
     if (type_ != AttrDataType::ATTR_DATA_STRING) {
-        HiLog::Error(LABEL, "Get string value by reference: not a string AttrData type: %{public}d.", type_);
+        IMAGE_LOGE("Get string value by reference: not a string AttrData type: %{public}d.", type_);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -584,7 +585,7 @@ uint32_t AttrData::GetValue(string &value) const
 uint32_t AttrData::GetValue(const string *&value) const
 {
     if (type_ != AttrDataType::ATTR_DATA_STRING) {
-        HiLog::Error(LABEL, "Get string value: not a string AttrData type: %{public}d.", type_);
+        IMAGE_LOGE("Get string value: not a string AttrData type: %{public}d.", type_);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -597,7 +598,7 @@ uint32_t AttrData::InitStringAttrData(const AttrData &data)
 {
     value_.stringValue = new (std::nothrow) string(*(data.value_.stringValue));
     if (value_.stringValue == nullptr) {
-        HiLog::Error(LABEL, "InitStringAttrData: alloc stringValue result null!");
+        IMAGE_LOGE("InitStringAttrData: alloc stringValue result null!");
         type_ = AttrDataType::ATTR_DATA_NULL;
         return ERR_INTERNAL;
     }
@@ -609,7 +610,7 @@ uint32_t AttrData::InitUint32SetAttrData(const AttrData &data)
 {
     value_.uint32Set = new (std::nothrow) set<uint32_t>(*(data.value_.uint32Set));
     if (value_.uint32Set == nullptr) {
-        HiLog::Error(LABEL, "InitUint32SetAttrData: alloc uint32Set result null!");
+        IMAGE_LOGE("InitUint32SetAttrData: alloc uint32Set result null!");
         type_ = AttrDataType::ATTR_DATA_NULL;
         return ERR_INTERNAL;
     }
@@ -621,7 +622,7 @@ uint32_t AttrData::InitStringSetAttrData(const AttrData &data)
 {
     value_.stringSet = new (std::nothrow) set<string>(*(data.value_.stringSet));
     if (value_.stringSet == nullptr) {
-        HiLog::Error(LABEL, "InitStringSetAttrData: alloc stringSet result null!");
+        IMAGE_LOGE("InitStringSetAttrData: alloc stringSet result null!");
         type_ = AttrDataType::ATTR_DATA_NULL;
         return ERR_INTERNAL;
     }
@@ -652,7 +653,7 @@ bool AttrData::InRange(const set<uint32_t> &uint32Set) const
 bool AttrData::InRange(const set<string> &stringSet) const
 {
     if (stringSet.empty()) {
-        HiLog::Debug(LABEL, "InRange: empty set of parameter.");
+        IMAGE_LOGD("InRange: empty set of parameter.");
         return false;
     }
 

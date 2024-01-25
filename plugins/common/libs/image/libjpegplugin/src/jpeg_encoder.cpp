@@ -17,18 +17,22 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
-#include "hilog/log.h"
+#include "image_log.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImageInfo.h"
 #include "jerror.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_convert.h"
 #include "src/images/SkImageEncoderFns.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "JpegEncoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
 
@@ -49,7 +53,6 @@ constexpr uint8_t INDEX_ZERO = 0;
 constexpr uint8_t INDEX_ONE = 1;
 constexpr uint8_t INDEX_TWO = 2;
 constexpr uint8_t SHIFT_MASK = 1;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JpegEncoder" };
 
 JpegDstMgr::JpegDstMgr(OutputDataStream *stream) : outputStream(stream)
 {
@@ -67,7 +70,7 @@ JpegEncoder::JpegEncoder() : dstMgr_(nullptr)
     encodeInfo_.err = jpeg_std_error(&jerr_);
     jerr_.error_exit = ErrorExit;
     if (encodeInfo_.err == nullptr) {
-        HiLog::Error(LABEL, "create jpeg encoder failed.");
+        IMAGE_LOGE("create jpeg encoder failed.");
         return;
     }
     encodeInfo_.err->output_message = &OutputErrorMessage;
@@ -126,7 +129,7 @@ J_COLOR_SPACE JpegEncoder::GetEncodeFormat(PixelFormat format, int32_t &componen
             break;
         }
         default: {
-            HiLog::Error(LABEL, "encode format:[%{public}d] is unsupported!", format);
+            IMAGE_LOGE("encode format:[%{public}d] is unsupported!", format);
             break;
         }
     }
@@ -137,7 +140,7 @@ J_COLOR_SPACE JpegEncoder::GetEncodeFormat(PixelFormat format, int32_t &componen
 uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
 {
     if (pixelMaps_.size() >= JPEG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "add pixel map out of range:[%{public}u].", JPEG_IMAGE_NUM);
+        IMAGE_LOGE("add pixel map out of range:[%{public}u].", JPEG_IMAGE_NUM);
         return ERR_IMAGE_ADD_PIXEL_MAP_FAILED;
     }
     pixelMaps_.push_back(&pixelMap);
@@ -148,12 +151,12 @@ uint32_t JpegEncoder::FinalizeEncode()
 {
     uint32_t errorCode = SetCommonConfig();
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "set jpeg compress struct failed:%{public}u.", errorCode);
+        IMAGE_LOGE("set jpeg compress struct failed:%{public}u.", errorCode);
         return errorCode;
     }
     const uint8_t *data = pixelMaps_[0]->GetPixels();
     if (data == nullptr) {
-        HiLog::Error(LABEL, "encode image buffer is null.");
+        IMAGE_LOGE("encode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     PixelFormat pixelFormat = pixelMaps_[0]->GetPixelFormat();
@@ -167,7 +170,7 @@ uint32_t JpegEncoder::FinalizeEncode()
         errorCode = SequenceEncoder(data);
     }
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "encode jpeg failed:%{public}u.", errorCode);
+        IMAGE_LOGE("encode jpeg failed:%{public}u.", errorCode);
     }
     return errorCode;
 }
@@ -175,11 +178,11 @@ uint32_t JpegEncoder::FinalizeEncode()
 uint32_t JpegEncoder::SetCommonConfig()
 {
     if (pixelMaps_.empty()) {
-        HiLog::Error(LABEL, "encode image failed, no pixel map input.");
+        IMAGE_LOGE("encode image failed, no pixel map input.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "encode image error, set config failed.");
+        IMAGE_LOGE("encode image error, set config failed.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     encodeInfo_.image_width = pixelMaps_[0]->GetWidth();
@@ -187,12 +190,11 @@ uint32_t JpegEncoder::SetCommonConfig()
     PixelFormat pixelFormat = pixelMaps_[0]->GetPixelFormat();
     encodeInfo_.in_color_space = GetEncodeFormat(pixelFormat, encodeInfo_.input_components);
     if (encodeInfo_.in_color_space == JCS_UNKNOWN) {
-        HiLog::Error(LABEL, "set input jpeg color space invalid.");
+        IMAGE_LOGE("set input jpeg color space invalid.");
         return ERR_IMAGE_UNKNOWN_FORMAT;
     }
-    HiLog::Debug(LABEL, "width=%{public}u, height=%{public}u, colorspace=%{public}d, components=%{public}d.",
-                 encodeInfo_.image_width, encodeInfo_.image_height, encodeInfo_.in_color_space,
-                 encodeInfo_.input_components);
+    IMAGE_LOGD("width=%{public}u, height=%{public}u, colorspace=%{public}d, components=%{public}d.",
+        encodeInfo_.image_width, encodeInfo_.image_height, encodeInfo_.in_color_space, encodeInfo_.input_components);
     jpeg_set_defaults(&encodeInfo_);
     int32_t quality = encodeOpts_.quality;
     jpeg_set_quality(&encodeInfo_, quality, TRUE);
@@ -202,7 +204,7 @@ uint32_t JpegEncoder::SetCommonConfig()
 uint32_t JpegEncoder::SequenceEncoder(const uint8_t *data)
 {
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "encode image error.");
+        IMAGE_LOGE("encode image error.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     jpeg_start_compress(&encodeInfo_, TRUE);
@@ -222,7 +224,7 @@ uint32_t JpegEncoder::SequenceEncoder(const uint8_t *data)
         skImageInfo = SkImageInfo::Make(width, height, ct, at, skColorSpace);
         uint32_t iccPackedresult = iccProfileInfo_.PackingICCProfile(&encodeInfo_, skImageInfo);
         if (iccPackedresult == OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED) {
-            HiLog::Error(LABEL, "encode image icc error.");
+            IMAGE_LOGE("encode image icc error.");
             return iccPackedresult;
         }
     }
@@ -266,12 +268,12 @@ uint32_t JpegEncoder::Yuv420spEncoder(const uint8_t *data)
     uint8_t *uvPlane = const_cast<uint8_t *>(data + yPlaneSize);
     auto uPlane = std::make_unique<uint8_t[]>((width >> SHIFT_MASK) * UV_SAMPLE_ROW);
     if (uPlane == nullptr) {
-        HiLog::Error(LABEL, "allocate uPlane memory failed.");
+        IMAGE_LOGE("allocate uPlane memory failed.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     auto vPlane = std::make_unique<uint8_t[]>((width >> SHIFT_MASK) * UV_SAMPLE_ROW);
     if (vPlane == nullptr) {
-        HiLog::Error(LABEL, "allocate vPlane memory failed.");
+        IMAGE_LOGE("allocate vPlane memory failed.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     while (encodeInfo_.next_scanline < height) {
@@ -320,7 +322,7 @@ void JpegEncoder::Deinterweave(uint8_t *uvPlane, uint8_t *uPlane, uint8_t *vPlan
 uint32_t JpegEncoder::RGBAF16Encoder(const uint8_t *data)
 {
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "encode image error.");
+        IMAGE_LOGE("encode image error.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     jpeg_start_compress(&encodeInfo_, TRUE);
@@ -344,9 +346,9 @@ uint32_t JpegEncoder::RGBAF16Encoder(const uint8_t *data)
 
 uint32_t JpegEncoder::RGB565Encoder(const uint8_t *data)
 {
-    HiLog::Debug(LABEL, "RGB565Encoder IN.");
+    IMAGE_LOGD("RGB565Encoder IN.");
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "encode image error.");
+        IMAGE_LOGE("encode image error.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
@@ -375,7 +377,7 @@ uint32_t JpegEncoder::RGB565Encoder(const uint8_t *data)
     }
 
     jpeg_finish_compress(&encodeInfo_);
-    HiLog::Debug(LABEL, "RGB565Encoder OUT.");
+    IMAGE_LOGD("RGB565Encoder OUT.");
     return SUCCESS;
 }
 

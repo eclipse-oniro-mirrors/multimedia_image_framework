@@ -55,14 +55,14 @@ static ImplClassMap implClassMap = {
 #define PLUGIN_EXPORT_DEFAULT_EXTERNAL_START() \
 bool PluginExternalStart() \
 {                                                               \
-    PLUGIN_LOG_D("call PluginExternalStart() in package: %{public}s.", PACKAGE_NAME.c_str()); \
+    IMAGE_LOGD("call PluginExternalStart() in package: %{public}s.", PACKAGE_NAME.c_str()); \
     return true;                                             \
 }
 
 #define PLUGIN_EXPORT_DEFAULT_EXTERNAL_STOP() \
 void PluginExternalStop() \
 {                                                              \
-    PLUGIN_LOG_D("call PluginExternalStop() in package: %{public}s.", PACKAGE_NAME.c_str()); \
+    IMAGE_LOGD("call PluginExternalStop() in package: %{public}s.", PACKAGE_NAME.c_str()); \
     return;                                                    \
 }
 #endif // PLUGIN_UTILS_H

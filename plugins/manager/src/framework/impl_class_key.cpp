@@ -14,23 +14,23 @@
  */
 
 #include "impl_class_key.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
+#include "image_log.h"
 #include "impl_class.h"
 #include "iosfwd"
-#include "log_tags.h"
 #include "string"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ImplClassKey"
 
 namespace OHOS {
 namespace MultimediaPlugin {
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ImplClassKey" };
-
 void ImplClassKey::OnObjectDestroy()
 {
-    HiLog::Debug(LABEL, "destroy object: className: %{public}s, packageName: %{public}s,",
-                 implClass_.GetClassName().c_str(), implClass_.GetPackageName().c_str());
+    IMAGE_LOGD("destroy object: className: %{public}s, packageName: %{public}s,",
+        implClass_.GetClassName().c_str(), implClass_.GetPackageName().c_str());
 
     implClass_.OnObjectDestroy();
 }

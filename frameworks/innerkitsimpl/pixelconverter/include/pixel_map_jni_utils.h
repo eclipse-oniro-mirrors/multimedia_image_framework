@@ -16,9 +16,8 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_PIXELCONVERTER_INCLUDE_PIXEL_MAP_JNI_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_PIXELCONVERTER_INCLUDE_PIXEL_MAP_JNI_UTILS_H
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "jkit_utils.h"
-#include "log_tags.h"
 
 namespace OHOS {
 namespace Media {

@@ -15,25 +15,28 @@
 
 #include "bmp_stream.h"
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "BmpStream"
 
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "BmpStream" };
 BmpStream::BmpStream(InputDataStream *stream) : inputStream_(stream) {}
 
 size_t BmpStream::read(void *buffer, size_t size)
 {
     if (inputStream_ == nullptr) {
-        HiLog::Error(LABEL, "read failed, inputStream_ is null");
+        IMAGE_LOGE("read failed, inputStream_ is null");
         return 0;
     }
     if (buffer == nullptr) {
         size_t curPosition = static_cast<size_t>(inputStream_->Tell());
         if (!inputStream_->Seek(curPosition + size)) {
-            HiLog::Error(LABEL, "read failed, curpositon=%{public}zu, skip size=%{public}zu", curPosition, size);
+            IMAGE_LOGE("read failed, curpositon=%{public}zu, skip size=%{public}zu", curPosition, size);
             return 0;
         }
         return size;
@@ -42,7 +45,7 @@ size_t BmpStream::read(void *buffer, size_t size)
     uint32_t bufferSize = desireSize;
     uint32_t readSize = desireSize;
     if (!inputStream_->Read(desireSize, static_cast<uint8_t *>(buffer), bufferSize, readSize)) {
-        HiLog::Error(LABEL, "read failed, desire read size=%{public}u", desireSize);
+        IMAGE_LOGE("read failed, desire read size=%{public}u", desireSize);
         return 0;
     }
     return readSize;
@@ -51,18 +54,18 @@ size_t BmpStream::read(void *buffer, size_t size)
 size_t BmpStream::peek(void *buffer, size_t size) const
 {
     if (inputStream_ == nullptr) {
-        HiLog::Error(LABEL, "peek failed, inputStream_ is null");
+        IMAGE_LOGE("peek failed, inputStream_ is null");
         return 0;
     }
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "peek failed, output buffer is null");
+        IMAGE_LOGE("peek failed, output buffer is null");
         return 0;
     }
     uint32_t desireSize = static_cast<uint32_t>(size);
     uint32_t bufferSize = desireSize;
     uint32_t readSize = desireSize;
     if (!inputStream_->Peek(desireSize, static_cast<uint8_t *>(buffer), bufferSize, readSize)) {
-        HiLog::Error(LABEL, "peek failed, desire peek size=%{public}u", desireSize);
+        IMAGE_LOGE("peek failed, desire peek size=%{public}u", desireSize);
         return 0;
     }
     return readSize;
@@ -71,7 +74,7 @@ size_t BmpStream::peek(void *buffer, size_t size) const
 bool BmpStream::isAtEnd() const
 {
     if (inputStream_ == nullptr) {
-        HiLog::Error(LABEL, "get stream status failed, inputStream_ is null.");
+        IMAGE_LOGE("get stream status failed, inputStream_ is null.");
         return false;
     }
     size_t size = inputStream_->GetStreamSize();

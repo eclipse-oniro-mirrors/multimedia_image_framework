@@ -14,16 +14,20 @@
  */
 
 #include "heif_format_agent.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+
+#include "image_log.h"
 #include "plugin_service.h"
 #include "string"
 #include "securec.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "HeifFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 
 const std::string FORMAT_TYPE = "image/heif";
@@ -37,7 +41,6 @@ constexpr uint32_t TIMES_SEVEN = 7;
 constexpr uint32_t TIMES_FIVE = 5;
 constexpr uint32_t TIMES_THREE = 3;
 constexpr uint32_t TIMES_TWO = 2;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "HeifFormatAgent" };
 
 std::string HeifFormatAgent::GetFormatType()
 {
@@ -52,18 +55,18 @@ uint32_t HeifFormatAgent::GetHeaderSize()
 bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
-        HiLog::Error(LABEL, "check format failed: header data is null.");
+        IMAGE_LOGE("check format failed: header data is null.");
         return false;
     }
     // Any valid ftyp box should have at least 8 bytes.
     if (dataSize < HEADER_LEAST_SIZE) {
-        HiLog::Error(LABEL, "data size[%{public}u] less than eight.", dataSize);
+        IMAGE_LOGE("data size[%{public}u] less than eight.", dataSize);
         return false;
     }
 
     uint32_t tmpBuff[HEADER_SIZE];
     if (memcpy_s(tmpBuff, HEADER_SIZE, headerData, dataSize) != 0) {
-        HiLog::Error(LABEL, "memcpy headerData data size:[%{public}d] error.", dataSize);
+        IMAGE_LOGE("memcpy headerData data size:[%{public}d] error.", dataSize);
         return false;
     }
 
@@ -71,7 +74,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     uint64_t chunkSize = EndianSwap32(ptr[0]);  // first item
     uint32_t chunkType = EndianSwap32(ptr[1]);  // second item
     if (chunkType != Fourcc('f', 't', 'y', 'p')) {
-        HiLog::Error(LABEL, "head type is not ftyp.");
+        IMAGE_LOGE("head type is not ftyp.");
         return false;
     }
 
@@ -83,7 +86,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     // It should at least have major brand (4-byte) and minor version (4-bytes).
     // The rest of the chunk (if any) is a list of (4-byte) compatible brands.
     if (chunkDataSize < HEADER_LEAST_SIZE) {
-        HiLog::Error(LABEL, "chunk data size [%{public}lld] less than eight.", static_cast<long long>(chunkDataSize));
+        IMAGE_LOGE("chunk data size [%{public}lld] less than eight.", static_cast<long long>(chunkDataSize));
         return false;
     }
     uint32_t numCompatibleBrands = (chunkDataSize - OFFSET_SIZE) / sizeof(uint32_t);
@@ -101,7 +104,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
             }
         }
     }
-    HiLog::Info(LABEL, "check heif format failed.");
+    IMAGE_LOGI("check heif format failed.");
     return false;
 }
 
@@ -112,21 +115,20 @@ bool HeifFormatAgent::IsHeif64(const void *buffer, const size_t bytesRead, int64
         // This indicates that the next 8 bytes represent the chunk size,
         // and chunk data comes after that.
         if (bytesRead < HEADER_NEXT_SIZE) {
-            HiLog::Error(LABEL, "bytes read [%{public}zd] less than sixteen.", bytesRead);
+            IMAGE_LOGE("bytes read [%{public}zd] less than sixteen.", bytesRead);
             return false;
         }
         auto *chunkSizePtr = static_cast<const uint64_t *>(buffer) + (offset / sizeof(uint64_t));
         chunkSize = EndianSwap64(*chunkSizePtr);
         if (chunkSize < HEADER_NEXT_SIZE) {
             // The smallest valid chunk is 16 bytes long in this case.
-            HiLog::Error(LABEL, "chunk size [%{public}llu] less than sixteen.",
-                         static_cast<unsigned long long>(chunkSize));
+            IMAGE_LOGE("chunk size [%{public}llu] less than sixteen.", static_cast<unsigned long long>(chunkSize));
             return false;
         }
         offset += OFFSET_SIZE;
     } else if (chunkSize < HEADER_LEAST_SIZE) {
         // The smallest valid chunk is 8 bytes long.
-        HiLog::Error(LABEL, "chunk size [%{public}llu] less than eight.", static_cast<unsigned long long>(chunkSize));
+        IMAGE_LOGE("chunk size [%{public}llu] less than eight.", static_cast<unsigned long long>(chunkSize));
         return false;
     }
 

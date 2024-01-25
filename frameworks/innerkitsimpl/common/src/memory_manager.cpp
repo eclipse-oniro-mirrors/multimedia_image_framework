@@ -17,9 +17,8 @@
 
 #include <cerrno>
 #include <unistd.h>
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
 
@@ -30,10 +29,14 @@
 #define SUPPORT_SHARED_MEMORY
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "MemoryManager"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "MemoryManager" };
 static const size_t SIZE_ZERO = 0;
 static const int LINUX_SUCCESS = 0;
 // Define pixel map malloc max size 600MB
@@ -41,18 +44,18 @@ constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 
 uint32_t HeapMemory::Create()
 {
-    HiLog::Debug(LABEL, "HeapMemory::Create IN");
+    IMAGE_LOGD("HeapMemory::Create IN");
     if (data.data != nullptr) {
-        HiLog::Debug(LABEL, "HeapMemory::Create has created");
+        IMAGE_LOGD("HeapMemory::Create has created");
         return SUCCESS;
     }
     if (data.size == 0 || data.size > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "HeapMemory::Create Invalid value of bufferSize");
+        IMAGE_LOGE("HeapMemory::Create Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     data.data = static_cast<uint8_t *>(malloc(data.size));
     if (data.data == nullptr) {
-        HiLog::Error(LABEL, "HeapMemory::Create malloc buffer failed");
+        IMAGE_LOGE("HeapMemory::Create malloc buffer failed");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
 #if defined(IOS_PLATFORM) || defined(A_PLATFORM)
@@ -64,9 +67,9 @@ uint32_t HeapMemory::Create()
 uint32_t HeapMemory::Release()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    HiLog::Debug(LABEL, "HeapMemory::Release IN");
+    IMAGE_LOGD("HeapMemory::Release IN");
     if (data.data == nullptr) {
-        HiLog::Info(LABEL, "HeapMemory::Release nullptr data");
+        IMAGE_LOGI("HeapMemory::Release nullptr data");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     free(data.data);
@@ -90,27 +93,27 @@ static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_
 uint32_t SharedMemory::Create()
 {
 #ifdef SUPPORT_SHARED_MEMORY
-    HiLog::Debug(LABEL, "SharedMemory::Create IN tag %{public}s, data size %{public}zu",
+    IMAGE_LOGD("SharedMemory::Create IN tag %{public}s, data size %{public}zu",
         (data.tag == nullptr)?"nullptr":data.tag, data.size);
 
     if (data.tag == nullptr || data.size == SIZE_ZERO) {
-        HiLog::Error(LABEL, "SharedMemory::Create tag is nullptr or data size %{public}zu", data.size);
+        IMAGE_LOGE("SharedMemory::Create tag is nullptr or data size %{public}zu", data.size);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto fdPtr = std::make_unique<int>();
     *fdPtr = AshmemCreate(data.tag, data.size);
     if (*fdPtr < 0) {
-        HiLog::Error(LABEL, "SharedMemory::Create AshmemCreate fd:[%{public}d].", *fdPtr);
+        IMAGE_LOGE("SharedMemory::Create AshmemCreate fd:[%{public}d].", *fdPtr);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (AshmemSetProt(*fdPtr, PROT_READ | PROT_WRITE) < LINUX_SUCCESS) {
-        HiLog::Error(LABEL, "SharedMemory::Create AshmemSetProt errno %{public}d.", errno);
+        IMAGE_LOGE("SharedMemory::Create AshmemSetProt errno %{public}d.", errno);
         ReleaseSharedMemory(fdPtr.get());
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     data.data = ::mmap(nullptr, data.size, PROT_READ | PROT_WRITE, MAP_SHARED, *fdPtr, 0);
     if (data.data == MAP_FAILED) {
-        HiLog::Error(LABEL, "SharedMemory::Create mmap failed, errno:%{public}d", errno);
+        IMAGE_LOGE("SharedMemory::Create mmap failed, errno:%{public}d", errno);
         ReleaseSharedMemory(fdPtr.get(), static_cast<uint8_t*>(data.data), data.size);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
@@ -118,7 +121,7 @@ uint32_t SharedMemory::Create()
     extend.data = fdPtr.release();
     return SUCCESS;
 #else
-    HiLog::Error(LABEL, "SharedMemory::Create unsupported");
+    IMAGE_LOGE("SharedMemory::Create unsupported");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
 }
@@ -126,7 +129,7 @@ uint32_t SharedMemory::Create()
 uint32_t SharedMemory::Release()
 {
 #ifdef SUPPORT_SHARED_MEMORY
-    HiLog::Debug(LABEL, "SharedMemory::Release IN");
+    IMAGE_LOGD("SharedMemory::Release IN");
     ReleaseSharedMemory(static_cast<int*>(extend.data), static_cast<uint8_t*>(data.data), data.size);
     data.data = nullptr;
     data.size = SIZE_ZERO;
@@ -137,7 +140,7 @@ uint32_t SharedMemory::Release()
     }
     return SUCCESS;
 #else
-    HiLog::Error(LABEL, "SharedMemory::Release unsupported");
+    IMAGE_LOGE("SharedMemory::Release unsupported");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
 }
@@ -145,7 +148,7 @@ uint32_t SharedMemory::Release()
 uint32_t DmaMemory::Create()
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
@@ -161,13 +164,13 @@ uint32_t DmaMemory::Create()
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
-        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
         return ERR_DMA_NOT_EXIST;
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
-        HiLog::Error(LABEL, "NativeBufferReference failed");
+        IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
     data.data = static_cast<uint8_t*>(sb->GetVirAddr());
@@ -180,7 +183,7 @@ uint32_t DmaMemory::Create()
 uint32_t DmaMemory::Release()
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem release");
+    IMAGE_LOGE("Unsupport dma mem release");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     data.data = nullptr;
@@ -188,7 +191,7 @@ uint32_t DmaMemory::Release()
     if (extend.data != nullptr) {
         int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(extend.data));
         if (err != OHOS::GSERROR_OK) {
-            HiLog::Error(LABEL, "NativeBufferReference failed");
+            IMAGE_LOGE("NativeBufferReference failed");
             return ERR_DMA_DATA_ABNORMAL;
         }
         extend.data = nullptr;
@@ -215,7 +218,7 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
             res = std::make_unique<DmaMemory>();
             break;
         case AllocatorType::CUSTOM_ALLOC:
-            HiLog::Error(LABEL, "MemoryManager::CreateMemory unsupported CUSTOM_ALLOC now");
+            IMAGE_LOGE("MemoryManager::CreateMemory unsupported CUSTOM_ALLOC now");
             return nullptr;
         case AllocatorType::DEFAULT:
         case AllocatorType::HEAP_ALLOC:
@@ -224,7 +227,7 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
             break;
     }
     if (res == nullptr) {
-        HiLog::Error(LABEL, "MemoryManager::CreateMemory unsupported %{public}d", type);
+        IMAGE_LOGE("MemoryManager::CreateMemory unsupported %{public}d", type);
         return nullptr;
     }
     res->data.data = data.data;

@@ -16,14 +16,18 @@
 #include "image_napi.h"
 
 #include "napi/native_node_api.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "media_errors.h"
 #include "image_format.h"
 #include "image_napi_utils.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageNapi"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageNapi"};
     constexpr int NUM0 = 0;
     constexpr int NUM1 = 1;
     constexpr int NUM2 = 2;
@@ -32,7 +36,6 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-using OHOS::HiviewDFX::HiLog;
 struct ImageAsyncContext {
     napi_env env = nullptr;
     napi_async_work work = nullptr;
@@ -560,7 +563,7 @@ static bool BuildJsComponentObject(napi_env env, int32_t type, uint8_t* buffer,
 static void TestGetComponentCallBack(napi_env env, napi_status status, ImageAsyncContext* context)
 {
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Invalid input context");
+        IMAGE_ERR("Invalid input context");
         return;
     }
     napi_value result;
@@ -590,13 +593,13 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncC
     }
 
     if (context == nullptr) {
-        HiLog::Error(LABEL, "Invalid input context");
+        IMAGE_ERR("Invalid input context");
         return;
     }
     context->status = ERROR;
     NativeComponent* component = context->component;
     if (component == nullptr) {
-        HiLog::Error(LABEL, "Invalid component");
+        IMAGE_ERR("Invalid component");
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -609,7 +612,7 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncC
     }
 
     if (buffer == nullptr || component->size == NUM0) {
-        HiLog::Error(LABEL, "Invalid buffer");
+        IMAGE_ERR("Invalid buffer");
         CommonCallbackRoutine(env, context, result);
         return;
     }
@@ -617,7 +620,7 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncC
     if (BuildJsComponentObject(env, context->componentType, buffer, component, &result)) {
         context->status = SUCCESS;
     } else {
-        HiLog::Error(LABEL, "napi_create_arraybuffer failed!");
+        IMAGE_ERR("napi_create_arraybuffer failed!");
     }
 
     IMAGE_FUNCTION_OUT();
@@ -626,13 +629,13 @@ static void JsGetComponentCallBack(napi_env env, napi_status status, ImageAsyncC
 static void JsGetComponentExec(napi_env env, ImageAsyncContext* context)
 {
     if (context == nullptr || context->napi == nullptr) {
-        HiLog::Error(LABEL, "Invalid input context");
+        IMAGE_ERR("Invalid input context");
         return;
     }
 
     auto native = context->napi->GetNative();
     if (native == nullptr) {
-        HiLog::Error(LABEL, "Empty native");
+        IMAGE_ERR("Empty native");
         return;
     }
     context->component = native->GetComponent(context->componentType);
