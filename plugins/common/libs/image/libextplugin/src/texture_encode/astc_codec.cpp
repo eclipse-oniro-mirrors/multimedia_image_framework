@@ -15,19 +15,20 @@
 
 #include "astc_codec.h"
 #include "image_compressor.h"
+#include "image_log.h"
 #include "image_system_properties.h"
 #include "securec.h"
 #include "media_errors.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "AstcCodec"
 
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace Media;
-namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "AstcCodec"};
-}
 
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MASK = 0xFF;
@@ -41,7 +42,7 @@ constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 fo
 uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap)
 {
     if (outputStream == nullptr || pixelMap == nullptr) {
-        HiLog::Error(LABEL, "input data is nullptr.");
+        IMAGE_LOGE("input data is nullptr.");
         return ERROR;
     }
     astcOutput_ = outputStream;
@@ -54,7 +55,7 @@ uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOption
 uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions *encodeParams, size_t size)
 {
     if ((encodeParams == nullptr) || (header == nullptr) || size < ASTC_HEADER_SIZE) {
-        HiLog::Error(LABEL, "header is nullptr or encodeParams is nullptr or header_size is error");
+        IMAGE_LOGE("header is nullptr or encodeParams is nullptr or header_size is error");
         return ERROR;
     }
     uint8_t *tmp = header;
@@ -80,7 +81,7 @@ uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions 
 uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
 {
     if ((work == nullptr) || (option == nullptr)) {
-        HiLog::Error(LABEL, "astc input work or option is nullptr.");
+        IMAGE_LOGE("astc input work or option is nullptr.");
         return ERROR;
     }
     unsigned int blockX = option->blockX_;
@@ -92,13 +93,13 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
     if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
-        HiLog::Error(LABEL, "ERROR: block size is invalid");
+        IMAGE_LOGE("ERROR: block size is invalid");
         return ERROR;
     } else if (status == ASTCENC_ERR_BAD_CPU_FLOAT) {
-        HiLog::Error(LABEL, "ERROR: astcenc must not be compiled with fast-math");
+        IMAGE_LOGE("ERROR: astcenc must not be compiled with fast-math");
         return ERROR;
     } else if (status != ASTCENC_SUCCESS) {
-        HiLog::Error(LABEL, "ERROR: config failed");
+        IMAGE_LOGE("ERROR: config failed");
         return ERROR;
     }
     work->config.privateProfile = option->privateProfile_;
@@ -170,7 +171,7 @@ bool CheckQuality(int32_t *mseIn[RGBA_COM], int blockNum, int blockXYZ)
         double mseRgb = static_cast<double>(mseTotal[RGBA_COM] / (blockNum * blockXYZ * (RGBA_COM - 1)));
         psnr[RGBA_COM] = LOG_BASE * log(static_cast<double>(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
     }
-    HiLog::Debug(LABEL, "astc psnr r%{public}f g%{public}f b%{public}f a%{public}f rgb%{public}f",
+    IMAGE_LOGD("astc psnr r%{public}f g%{public}f b%{public}f a%{public}f rgb%{public}f",
         psnr[R_COM], psnr[G_COM], psnr[B_COM], psnr[A_COM],
         psnr[RGBA_COM]);
     return (psnr[R_COM] > threshold[R_COM]) && (psnr[G_COM] > threshold[G_COM])
@@ -225,7 +226,7 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
         for (int i = R_COM; i < RGBA_COM; i++) {
             work->mse[i] = (int32_t *)calloc(blockNum, sizeof(int32_t));
             if (!work->mse[i]) {
-                HiLog::Error(LABEL, "quality control calloc failed");
+                IMAGE_LOGE("quality control calloc failed");
                 return false;
             }
         }
@@ -249,7 +250,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         return ERROR;
     }
     if (InitAstcencConfig(&work, &param) != SUCCESS) {
-        HiLog::Error(LABEL, "astc InitAstcencConfig failed");
+        IMAGE_LOGE("astc InitAstcencConfig failed");
         FreeMem(&work);
         return ERROR;
     }
@@ -258,7 +259,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
     size_t size;
     astcOutput_->GetCapicity(size);
     if (GenAstcHeader(work.data_out_, work.image_, &param, size) != SUCCESS) {
-        HiLog::Error(LABEL, "astc GenAstcHeader failed");
+        IMAGE_LOGE("astc GenAstcHeader failed");
         FreeMem(&work);
         return ERROR;
     }
@@ -274,7 +275,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
 #else
     if (ASTCENC_SUCCESS != work.error_) {
 #endif
-        HiLog::Error(LABEL, "astc compress failed");
+        IMAGE_LOGE("astc compress failed");
         FreeMem(&work);
         return ERROR;
     }
@@ -301,26 +302,26 @@ static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOp
 {
     ClAstcHandle *astcClEncoder = nullptr;
     if ((inData == nullptr) || (param == nullptr) || (buffer == nullptr)) {
-        HiLog::Error(LABEL, "astc Please check TryAstcEncBasedOnCl input!");
+        IMAGE_LOGE("astc Please check TryAstcEncBasedOnCl input!");
         return false;
     }
     if (AstcClCreate(&astcClEncoder, clBinPath) != CL_ASTC_ENC_SUCCESS) {
-        HiLog::Error(LABEL, "astc AstcClCreate failed!");
+        IMAGE_LOGE("astc AstcClCreate failed!");
         return false;
     }
     ClAstcImageOption imageIn;
     if (AstcClFillImage(&imageIn, inData, stride, param->width_, param->height_) != CL_ASTC_ENC_SUCCESS) {
-        HiLog::Error(LABEL, "astc AstcClFillImage failed!");
+        IMAGE_LOGE("astc AstcClFillImage failed!");
         AstcClClose(astcClEncoder);
         return false;
     }
     if (AstcClEncImage(astcClEncoder, &imageIn, buffer) != CL_ASTC_ENC_SUCCESS) {
-        HiLog::Error(LABEL, "astc AstcClEncImage failed!");
+        IMAGE_LOGE("astc AstcClEncImage failed!");
         AstcClClose(astcClEncoder);
         return false;
     }
     if (AstcClClose(astcClEncoder) != CL_ASTC_ENC_SUCCESS) {
-        HiLog::Error(LABEL, "astc AstcClClose failed!");
+        IMAGE_LOGE("astc AstcClClose failed!");
         return false;
     }
     return true;
@@ -344,25 +345,25 @@ uint32_t AstcCodec::ASTCEncode()
 
     if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
-        HiLog::Info(LABEL, "astc hardware encode begin");
+        IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/data/local/tmp/astcKernelBin.bin";
         if (TryAstcEncBasedOnCl(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
             astcPixelMap_->GetRowStride(), &param, astcOutput_->GetAddr(), clBinPath)) {
             hardwareFlag = true;
-            HiLog::Info(LABEL, "astc hardware encode success!");
+            IMAGE_LOGI("astc hardware encode success!");
         } else {
-            HiLog::Info(LABEL, "astc hardware encode failed!");
+            IMAGE_LOGI("astc hardware encode failed!");
         }
     }
     if (!hardwareFlag) {
         uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
         if (res != SUCCESS) {
-            HiLog::Error(LABEL, "AstcSoftwareEncode failed");
+            IMAGE_LOGE("AstcSoftwareEncode failed");
             return ERROR;
         }
-        HiLog::Info(LABEL, "astc software encode success!");
+        IMAGE_LOGI("astc software encode success!");
     }
-    HiLog::Info(LABEL, "astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
+    IMAGE_LOGI("astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
         hardwareFlag, enableQualityCheck, param.privateProfile_);
     astcOutput_->SetOffset(outSize);
     return SUCCESS;

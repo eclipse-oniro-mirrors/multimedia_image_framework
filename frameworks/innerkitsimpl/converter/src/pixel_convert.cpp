@@ -18,14 +18,17 @@
 #include <map>
 #include <mutex>
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PixelConvert"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "PixelConvert" };
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 constexpr bool IS_LITTLE_ENDIAN = true;
 #else
@@ -1061,14 +1064,14 @@ PixelConvert::PixelConvert(ProcFuncType funcPtr, ProcFuncExtension extension, bo
 std::unique_ptr<PixelConvert> PixelConvert::Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo)
 {
     if (srcInfo.pixelFormat == PixelFormat::UNKNOWN || dstInfo.pixelFormat == PixelFormat::UNKNOWN) {
-        HiLog::Error(LABEL, "source or destination pixel format unknown");
+        IMAGE_LOGE("source or destination pixel format unknown");
         return nullptr;
     }
     uint32_t srcFormat = static_cast<uint32_t>(srcInfo.pixelFormat);
     uint32_t dstFormat = static_cast<uint32_t>(dstInfo.pixelFormat);
     ProcFuncType funcPtr = GetProcFuncType(srcFormat, dstFormat);
     if (funcPtr == nullptr) {
-        HiLog::Error(LABEL, "not found convert function. pixelFormat %{public}u -> %{public}u", srcFormat, dstFormat);
+        IMAGE_LOGE("not found convert function. pixelFormat %{public}u -> %{public}u", srcFormat, dstFormat);
         return nullptr;
     }
     ProcFuncExtension extension;
@@ -1083,7 +1086,7 @@ std::unique_ptr<PixelConvert> PixelConvert::Create(const ImageInfo &srcInfo, con
 AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType)
 {
     if (srcType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || dstType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        HiLog::Debug(LABEL, "source or destination alpha type unknown");
+        IMAGE_LOGD("source or destination alpha type unknown");
         return AlphaConvertType::NO_CONVERT;
     }
     if ((srcType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL) && (dstType == AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL)) {
@@ -1104,11 +1107,11 @@ AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, con
 void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum)
 {
     if ((destinationPixels == nullptr) || (sourcePixels == nullptr)) {
-        HiLog::Error(LABEL, "destinationPixel or sourcePixel is null");
+        IMAGE_LOGE("destinationPixel or sourcePixel is null");
         return;
     }
     if (!isNeedConvert_) {
-        HiLog::Debug(LABEL, "no need convert");
+        IMAGE_LOGD("no need convert");
         return;
     }
     procFunc_(destinationPixels, sourcePixels, sourcePixelsNum, procFuncExtension_);

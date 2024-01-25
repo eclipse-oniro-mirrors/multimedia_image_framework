@@ -15,14 +15,19 @@
 
 #include "impl_class.h"
 #include <algorithm>
-#include "hilog/log.h"
+#include "image_log.h"
 #include "impl_class_key.h"
 #include "json_helper.h"
-#include "log_tags.h"
 #include "plugin.h"
 #include "plugin_class_base.h"
 #include "plugin_common_type.h"
 #include "plugin_export.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ImplClass"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -34,9 +39,6 @@ using std::shared_ptr;
 using std::size_t;
 using std::string;
 using std::weak_ptr;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ImplClass" };
 string ImplClass::emptyString_;
 
 ImplClass::ImplClass() : selfKey_(*this)
@@ -46,37 +48,37 @@ uint32_t ImplClass::Register(const weak_ptr<Plugin> &plugin, const json &classIn
 {
     if (state_ != ClassState::CLASS_STATE_UNREGISTER) {
         // repeat registration
-        HiLog::Info(LABEL, "repeat registration.");
+        IMAGE_LOGI("repeat registration.");
         return ERR_INTERNAL;
     }
 
     if (JsonHelper::GetStringValue(classInfo, "className", className_) != SUCCESS) {
-        HiLog::Error(LABEL, "read className failed.");
+        IMAGE_LOGE("read className failed.");
         return ERR_INVALID_PARAMETER;
     }
-    HiLog::Debug(LABEL, "register class: %{public}s.", className_.c_str());
+    IMAGE_LOGD("register class: %{public}s.", className_.c_str());
 
     if (!AnalysisServices(classInfo)) {
-        HiLog::Error(LABEL, "failed to analysis services for class %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to analysis services for class %{public}s.", className_.c_str());
         return ERR_INVALID_PARAMETER;
     }
 
     uint32_t result = JsonHelper::GetUint16Value(classInfo, "priority", priority_);
     if (result != SUCCESS) {
         if (result != ERR_NO_TARGET) {
-            HiLog::Error(LABEL, "read priority failed, result: %{public}u.", result);
+            IMAGE_LOGE("read priority failed, result: %{public}u.", result);
             return ERR_INVALID_PARAMETER;
         }
         // priority is optional, and default zero.
         priority_ = 0;
     }
-    HiLog::Debug(LABEL, "get class priority: %{public}u.", priority_);
+    IMAGE_LOGD("get class priority: %{public}u.", priority_);
 
     if (!AnalysisMaxInstance(classInfo)) {
-        HiLog::Error(LABEL, "failed to analysis maxInstance for class %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to analysis maxInstance for class %{public}s.", className_.c_str());
         return ERR_INVALID_PARAMETER;
     }
-    HiLog::Debug(LABEL, "get class maxInstance: %{public}u.", maxInstance_);
+    IMAGE_LOGD("get class maxInstance: %{public}u.", maxInstance_);
 
     if (JsonHelper::CheckElementExistence(classInfo, "capabilities") == SUCCESS) {
         capability_.SetCapability(classInfo["capabilities"]);
@@ -90,23 +92,22 @@ PluginClassBase *ImplClass::CreateObject(uint32_t &errorCode)
 {
     errorCode = ERR_INTERNAL;
     if (state_ != ClassState::CLASS_STATE_REGISTERED) {
-        HiLog::Error(LABEL, "failed to create for unregistered, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to create for unregistered, className: %{public}s.", className_.c_str());
         return nullptr;
     }
 
     auto sharedPlugin = pluginRef_.lock();
     if (sharedPlugin == nullptr) {
-        HiLog::Error(LABEL, "failed to dereference Plugin, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to dereference Plugin, className: %{public}s.", className_.c_str());
         return nullptr;
     }
 
-    HiLog::Debug(LABEL, "create object, className: %{public}s.", className_.c_str());
+    IMAGE_LOGD("create object, className: %{public}s.", className_.c_str());
 
     std::unique_lock<std::recursive_mutex> guard(dynDataLock_);
     if (maxInstance_ != INSTANCE_NO_LIMIT_NUM && instanceNum_ >= maxInstance_) {
-        HiLog::Error(LABEL, "failed to create for limit, currentNum: %{public}u, maxNum: %{public}u, \
-                     className: %{public}s.",
-                     instanceNum_, maxInstance_, className_.c_str());
+        IMAGE_LOGE("failed to create for limit, currentNum: %{public}u, maxNum: %{public}u, \
+            className: %{public}s.", instanceNum_, maxInstance_, className_.c_str());
         guard.unlock();
         errorCode = ERR_INSTANCE_LIMIT;
         return nullptr;
@@ -120,7 +121,7 @@ PluginClassBase *ImplClass::CreateObject(uint32_t &errorCode)
 
     PluginClassBase *object = DoCreateObject(sharedPlugin);
     if (object == nullptr) {
-        HiLog::Error(LABEL, "create object result null, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("create object result null, className: %{public}s.", className_.c_str());
         if (instanceNum_ == 0) {
             sharedPlugin->DeRef();
         }
@@ -128,7 +129,7 @@ PluginClassBase *ImplClass::CreateObject(uint32_t &errorCode)
     }
 
     ++instanceNum_;
-    HiLog::Debug(LABEL, "create object success, InstanceNum: %{public}u.", instanceNum_);
+    IMAGE_LOGD("create object success, InstanceNum: %{public}u.", instanceNum_);
     guard.unlock();
 
     errorCode = SUCCESS;
@@ -152,15 +153,13 @@ const string &ImplClass::GetClassName() const
 const string &ImplClass::GetPackageName() const
 {
     if (state_ != ClassState::CLASS_STATE_REGISTERED) {
-        HiLog::Error(LABEL, "get package name, className: %{public}s, state error: %{public}d.", className_.c_str(),
-                     state_);
+        IMAGE_LOGE("get package name, className: %{public}s, state error: %{public}d.", className_.c_str(), state_);
         return emptyString_;
     }
 
     auto sharedPlugin = pluginRef_.lock();
     if (sharedPlugin == nullptr) {
-        HiLog::Error(LABEL, "get package name, failed to dereference Plugin, className: %{public}s.",
-                     className_.c_str());
+        IMAGE_LOGE("get package name, failed to dereference Plugin, className: %{public}s.", className_.c_str());
         return emptyString_;
     }
 
@@ -169,14 +168,14 @@ const string &ImplClass::GetPackageName() const
 
 bool ImplClass::IsSupport(uint16_t interfaceID) const
 {
-    HiLog::Debug(LABEL, "search for support iid: %{public}u, className: %{public}s.", interfaceID, className_.c_str());
+    IMAGE_LOGD("search for support iid: %{public}u, className: %{public}s.", interfaceID, className_.c_str());
     for (uint32_t serviceFlag : services_) {
         if (MakeIID(serviceFlag) == interfaceID) {
             return true;
         }
     }
 
-    HiLog::Debug(LABEL, "there is no matching interfaceID");
+    IMAGE_LOGD("there is no matching interfaceID");
     return false;
 }
 
@@ -186,8 +185,7 @@ void ImplClass::OnObjectDestroy()
     // the process context can guarantee that this will not happen.
     // the judgment statement here is for protection and positioning purposes only.
     if (state_ != ClassState::CLASS_STATE_REGISTERED) {
-        HiLog::Error(LABEL, "failed to destroy object because class unregistered, className: %{public}s.",
-                     className_.c_str());
+        IMAGE_LOGE("failed to destroy object because class unregistered, className: %{public}s.", className_.c_str());
         return;
     }
 
@@ -195,7 +193,7 @@ void ImplClass::OnObjectDestroy()
     // this situation does not happen in design.
     if (instanceNum_ == 0) {
         guard.unlock();
-        HiLog::Error(LABEL, "destroy object while instanceNum is zero.");
+        IMAGE_LOGE("destroy object while instanceNum is zero.");
         return;
     }
 
@@ -205,17 +203,17 @@ void ImplClass::OnObjectDestroy()
     // this situation does not happen in design.
     if (sharedPlugin == nullptr) {
         guard.unlock();
-        HiLog::Error(LABEL, "destroy object failed because failed to dereference Plugin, className: %{public}s.",
-                     className_.c_str());
+        IMAGE_LOGE("destroy object failed because failed to dereference Plugin, className: %{public}s.",
+            className_.c_str());
         return;
     }
 
-    HiLog::Debug(LABEL, "destroy object: className: %{public}s", className_.c_str());
+    IMAGE_LOGD("destroy object: className: %{public}s", className_.c_str());
     if (instanceNum_ == 0) {
         sharedPlugin->DeRef();
     }
 
-    HiLog::Debug(LABEL, "destroy object success, InstanceNum: %{public}u.", instanceNum_);
+    IMAGE_LOGD("destroy object success, InstanceNum: %{public}u.", instanceNum_);
 }
 
 const set<uint32_t> &ImplClass::GetServices() const
@@ -247,10 +245,10 @@ bool ImplClass::AnalysisServices(const json &classInfo)
 {
     size_t serviceNum;
     if (JsonHelper::GetArraySize(classInfo, "services", serviceNum) != SUCCESS) {
-        HiLog::Error(LABEL, "read array size of services failed.");
+        IMAGE_LOGE("read array size of services failed.");
         return false;
     }
-    HiLog::Debug(LABEL, "class service num: %{public}zu.", serviceNum);
+    IMAGE_LOGD("class service num: %{public}zu.", serviceNum);
 
     uint16_t interfaceID;
 #ifndef PLUGIN_FLAG_RTTI_ENABLE
@@ -262,13 +260,13 @@ bool ImplClass::AnalysisServices(const json &classInfo)
     for (size_t i = 0; i < serviceNum; i++) {
         const json &serviceInfo = servicesInfo[i];
         if (JsonHelper::GetUint16Value(serviceInfo, "interfaceID", interfaceID) != SUCCESS) {
-            HiLog::Error(LABEL, "read interfaceID failed at %{public}zu.", i);
+            IMAGE_LOGE("read interfaceID failed at %{public}zu.", i);
 #ifndef PLUGIN_FLAG_RTTI_ENABLE
             // when -frtti is not enable, to ensure correct base class side-to-side conversion, we require that
             // the plugin class inherit only one service interface class and the PluginClassBase class,
             // while the location of the service interface class is in front of the PluginClassBase.
             // below, we check only one business interface class is allowed to inherit.
-            HiLog::Error(LABEL, "no valid service info or encounter the risk of more than one business \
+            IMAGE_LOGE("no valid service info or encounter the risk of more than one business \
                                 interface base class.");
             return false;
 #else
@@ -279,7 +277,7 @@ bool ImplClass::AnalysisServices(const json &classInfo)
 #ifndef PLUGIN_FLAG_RTTI_ENABLE
         // check only one business interface class is allowed to inherit.
         if (lastInterfaceID != UINT32_MAX_VALUE && lastInterfaceID != interfaceID) {
-            HiLog::Error(LABEL, "more than one business interface base class.");
+            IMAGE_LOGE("more than one business interface base class.");
             return false;
         }
         lastInterfaceID = interfaceID;
@@ -287,14 +285,14 @@ bool ImplClass::AnalysisServices(const json &classInfo)
         uint32_t result = JsonHelper::GetUint16Value(serviceInfo, "serviceType", serviceType);
         if (result != SUCCESS) {
             if (result != ERR_NO_TARGET) {
-                HiLog::Error(LABEL, "read serviceType failed at %{public}zu.", i);
+                IMAGE_LOGE("read serviceType failed at %{public}zu.", i);
                 continue;
             }
             // serviceType is optional, and default zero.
             serviceType = 0;
         }
 
-        HiLog::Debug(LABEL, "insert service iid: %{public}hu, serviceType: %{public}hu.", interfaceID, serviceType);
+        IMAGE_LOGD("insert service iid: %{public}hu, serviceType: %{public}hu.", interfaceID, serviceType);
         services_.insert(MakeServiceFlag(interfaceID, serviceType));
         serviceAdded = true;
     }
@@ -306,16 +304,16 @@ bool ImplClass::AnalysisMaxInstance(const json &classInfo)
 {
     uint32_t result = JsonHelper::GetUint16Value(classInfo, "maxInstance", maxInstance_);
     if (result == SUCCESS) {
-        HiLog::Debug(LABEL, "class maxInstance num: %{public}u.", maxInstance_);
+        IMAGE_LOGD("class maxInstance num: %{public}u.", maxInstance_);
         if (maxInstance_ == 0) {
-            HiLog::Error(LABEL, "class maxInstance num is invalid zero.");
+            IMAGE_LOGE("class maxInstance num is invalid zero.");
             return false;
         }
         return true;
     }
 
     if (result != ERR_NO_TARGET) {
-        HiLog::Error(LABEL, "read maxInstance failed.");
+        IMAGE_LOGE("read maxInstance failed.");
         return false;
     }
 
@@ -335,13 +333,13 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
     // so it is reread every time here.
     PluginCreateFunc factory = plugin->GetCreateFunc();
     if (factory == nullptr) {
-        HiLog::Error(LABEL, "failed to get create func, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to get create func, className: %{public}s.", className_.c_str());
         return nullptr;
     }
 
     PluginClassBase *pluginBaseObj = CfiFactory(factory, className_);
     if (pluginBaseObj == nullptr) {
-        HiLog::Error(LABEL, "create object result null, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("create object result null, className: %{public}s.", className_.c_str());
         return nullptr;
     }
 
@@ -353,15 +351,14 @@ PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
     void *obj = dynamic_cast<void *>(pluginBaseObj);  // adjust pointer position when multiple inheritance.
     if (obj == pluginBaseObj) {
         // PluginClassBase is the first base class, not allowed.
-        HiLog::Error(LABEL, "service interface class is not the first base class. className: %{public}s.",
-                     className_.c_str());
+        IMAGE_LOGE("service interface class is not the first base class. className: %{public}s.", className_.c_str());
         delete pluginBaseObj;
         return nullptr;
     }
 #endif
 
     if (pluginBaseObj->SetImplClassKey(selfKey_) != PluginClassBase::MAGIC_CODE) {
-        HiLog::Error(LABEL, "failed to set key, className: %{public}s.", className_.c_str());
+        IMAGE_LOGE("failed to set key, className: %{public}s.", className_.c_str());
         delete pluginBaseObj;
         return nullptr;
     }

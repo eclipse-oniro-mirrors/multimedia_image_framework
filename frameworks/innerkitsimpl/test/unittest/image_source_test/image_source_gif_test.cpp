@@ -16,28 +16,28 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_source_util.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "incremental_pixel_map.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourceGifTest"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
 namespace Multimedia {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceGifTest"
-};
-
 class ImageSourceGifTest : public testing::Test {
 public:
     ImageSourceGifTest() {}
@@ -120,7 +120,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode004, TestSize.Level3)
     DecodeOptions decodeOpts;
     decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create bitmap code=%{public}d.", errorCode);
+    IMAGE_LOGD("create bitmap code=%{public}d.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     /**
@@ -135,7 +135,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode004, TestSize.Level3)
     uint8_t red = pixelMap->GetARGB32ColorR(color);
     uint8_t green = pixelMap->GetARGB32ColorG(color);
     uint8_t blue = pixelMap->GetARGB32ColorB(color);
-    HiLog::Debug(LABEL_TEST, "point:[%u, %u] ARGB:[%u, %u, %u, %u]", posX, posY, alpha, red, green, blue);
+    IMAGE_LOGD("point:[%u, %u] ARGB:[%u, %u, %u, %u]", posX, posY, alpha, red, green, blue);
     EXPECT_EQ(255, alpha);
     EXPECT_EQ(244, red);
     EXPECT_EQ(63, green);
@@ -183,7 +183,7 @@ HWTEST_F(ImageSourceGifTest, GifImageDecode005, TestSize.Level3)
     uint8_t green = pixelMap->GetARGB32ColorG(color);
     uint8_t blue = pixelMap->GetARGB32ColorB(color);
     uint8_t alpha = pixelMap->GetARGB32ColorA(color);
-    HiLog::Debug(LABEL_TEST, "point:[%u, %u] RGBA:[%u, %u, %u, %u]", posX, posY, red, green, blue, alpha);
+    IMAGE_LOGD("point:[%u, %u] RGBA:[%u, %u, %u, %u]", posX, posY, red, green, blue, alpha);
     EXPECT_EQ(255, alpha);
     EXPECT_EQ(244, red);
     EXPECT_EQ(63, green);

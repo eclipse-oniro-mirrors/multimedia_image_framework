@@ -15,15 +15,17 @@
 
 #include "jpeg_utils.h"
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "securec.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "JpegUtils"
 
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JpegUtils" };
 
 // these functions are called by libjpeg-turbo third_party library, no need check input parameter.
 // for error manager
@@ -46,7 +48,7 @@ void OutputErrorMessage(j_common_ptr dinfo)
     }
     char buffer[JMSG_LENGTH_MAX] = { 0 };
     dinfo->err->format_message(dinfo, buffer);
-    HiLog::Error(LABEL, "libjpeg error %{public}d <%{public}s>.", dinfo->err->msg_code, buffer);
+    IMAGE_LOGE("libjpeg error %{public}d <%{public}s>.", dinfo->err->msg_code, buffer);
 }
 
 // for source manager
@@ -54,7 +56,7 @@ void OutputErrorMessage(j_common_ptr dinfo)
 void InitSrcStream(j_decompress_ptr dinfo) __attribute__((no_sanitize("cfi")))
 {
     if ((dinfo == nullptr) || (dinfo->src == nullptr)) {
-        HiLog::Error(LABEL, "init source stream error.");
+        IMAGE_LOGE("init source stream error.");
         return;
     }
     JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
@@ -66,12 +68,12 @@ void InitSrcStream(j_decompress_ptr dinfo) __attribute__((no_sanitize("cfi")))
 boolean FillInputBuffer(j_decompress_ptr dinfo)
 {
     if (dinfo == nullptr) {
-        HiLog::Error(LABEL, "fill input buffer error, decompress struct is null.");
+        IMAGE_LOGE("fill input buffer error, decompress struct is null.");
         return FALSE;
     }
     JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
     if ((src == nullptr) || (src->inputStream == nullptr)) {
-        HiLog::Error(LABEL, "fill input buffer error, source stream is null.");
+        IMAGE_LOGE("fill input buffer error, source stream is null.");
         ERREXIT(dinfo, JERR_FILE_READ);
         return FALSE;
     }
@@ -82,14 +84,14 @@ boolean FillInputBuffer(j_decompress_ptr dinfo)
     }
     src->inputStream->Seek(preReadPos);
     if (!src->inputStream->Read(src->bufferSize, src->streamData)) {
-        HiLog::Error(LABEL, "fill input buffer error, read source stream failed.");
+        IMAGE_LOGE("fill input buffer error, read source stream failed.");
         return FALSE;
     }
     if (!src->inputStream->IsStreamCompleted() && src->streamData.dataSize < JPEG_BUFFER_SIZE) {
         uint32_t curr = src->inputStream->Tell();
         src->inputStream->Seek(curr - src->streamData.dataSize);
-        HiLog::Debug(LABEL, "fill input buffer seekTo=%{public}u, rewindSize=%{public}u.",
-                     curr - src->streamData.dataSize, src->streamData.dataSize);
+        IMAGE_LOGD("fill input buffer seekTo=%{public}u, rewindSize=%{public}u.",
+            curr - src->streamData.dataSize, src->streamData.dataSize);
         return FALSE;
     }
     src->next_input_byte = src->streamData.inputStreamBuffer;
@@ -101,12 +103,12 @@ boolean FillInputBuffer(j_decompress_ptr dinfo)
 void SkipInputData(j_decompress_ptr dinfo, long numBytes)
 {
     if (dinfo == nullptr) {
-        HiLog::Error(LABEL, "skip input buffer error, decompress struct is null.");
+        IMAGE_LOGE("skip input buffer error, decompress struct is null.");
         return;
     }
     JpegSrcMgr *src = static_cast<JpegSrcMgr *>(dinfo->src);
     if ((src == nullptr) || (src->inputStream == nullptr)) {
-        HiLog::Error(LABEL, "skip input buffer error, source stream is null.");
+        IMAGE_LOGE("skip input buffer error, source stream is null.");
         ERREXIT(dinfo, JERR_FILE_READ);
         return;
     }
@@ -115,11 +117,11 @@ void SkipInputData(j_decompress_ptr dinfo, long numBytes)
         size_t bytesToSkip = bytes - src->bytes_in_buffer;
         uint32_t nowOffset = src->inputStream->Tell();
         if (bytesToSkip > src->inputStream->GetStreamSize() - nowOffset) {
-            HiLog::Error(LABEL, "skip data:%{public}zu larger than current offset:%{public}u.", bytesToSkip, nowOffset);
+            IMAGE_LOGE("skip data:%{public}zu larger than current offset:%{public}u.", bytesToSkip, nowOffset);
             return;
         }
         if (!src->inputStream->Seek(nowOffset + bytesToSkip)) {
-            HiLog::Error(LABEL, "skip data:%{public}zu fail, current offset:%{public}u.", bytesToSkip, nowOffset);
+            IMAGE_LOGE("skip data:%{public}zu fail, current offset:%{public}u.", bytesToSkip, nowOffset);
             ERREXIT(dinfo, JERR_FILE_READ);
             return;
         }
@@ -140,7 +142,7 @@ void TermSrcStream(j_decompress_ptr dinfo)
 void InitDstStream(j_compress_ptr cinfo)
 {
     if ((cinfo == nullptr) || (cinfo->dest == nullptr)) {
-        HiLog::Error(LABEL, "init destination stream error.");
+        IMAGE_LOGE("init destination stream error.");
         return;
     }
     JpegDstMgr *dest = static_cast<JpegDstMgr *>(cinfo->dest);
@@ -152,17 +154,17 @@ void InitDstStream(j_compress_ptr cinfo)
 boolean EmptyOutputBuffer(j_compress_ptr cinfo)
 {
     if (cinfo == nullptr) {
-        HiLog::Error(LABEL, "write output buffer error, compress struct is null.");
+        IMAGE_LOGE("write output buffer error, compress struct is null.");
         return FALSE;
     }
     JpegDstMgr *dest = static_cast<JpegDstMgr *>(cinfo->dest);
     if ((dest == nullptr) || (dest->outputStream == nullptr)) {
-        HiLog::Error(LABEL, "write output buffer error, dest stream is null.");
+        IMAGE_LOGE("write output buffer error, dest stream is null.");
         ERREXIT(cinfo, JERR_FILE_WRITE);
         return FALSE;
     }
     if (!dest->outputStream->Write(dest->buffer, dest->bufferSize)) {
-        HiLog::Error(LABEL, "write output buffer error, write dest stream failed.");
+        IMAGE_LOGE("write output buffer error, write dest stream failed.");
         ERREXIT(cinfo, JERR_FILE_WRITE);
         return FALSE;
     }
@@ -175,19 +177,19 @@ boolean EmptyOutputBuffer(j_compress_ptr cinfo)
 void TermDstStream(j_compress_ptr cinfo)
 {
     if (cinfo == nullptr) {
-        HiLog::Error(LABEL, "term output buffer error, compress struct is null.");
+        IMAGE_LOGE("term output buffer error, compress struct is null.");
         return;
     }
     JpegDstMgr *dest = static_cast<JpegDstMgr *>(cinfo->dest);
     if ((dest == nullptr) || (dest->outputStream == nullptr)) {
-        HiLog::Error(LABEL, "term output buffer error, dest stream is null.");
+        IMAGE_LOGE("term output buffer error, dest stream is null.");
         ERREXIT(cinfo, JERR_FILE_WRITE);
         return;
     }
     size_t size = dest->bufferSize - dest->free_in_buffer;
     if (size > 0) {
         if (!dest->outputStream->Write(dest->buffer, size)) {
-            HiLog::Error(LABEL, "term output buffer error, write dest stream size:%{public}zu failed.", size);
+            IMAGE_LOGE("term output buffer error, write dest stream size:%{public}zu failed.", size);
             ERREXIT(cinfo, JERR_FILE_WRITE);
             return;
         }

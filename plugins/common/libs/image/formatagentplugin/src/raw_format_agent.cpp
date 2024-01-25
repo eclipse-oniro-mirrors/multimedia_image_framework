@@ -14,16 +14,20 @@
  */
 
 #include "raw_format_agent.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
+
+#include "image_log.h"
 #include "image_plugin_type.h"
-#include "log_tags.h"
 #include "plugin_service.h"
 #include "string"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "RawFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 
@@ -41,7 +45,6 @@ using namespace MultimediaPlugin;
 */
 const std::string FORMAT_TYPE = "image/x-raw";
 constexpr uint32_t HEADER_SIZE = 0;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "RawFormatAgent" };
 
 std::string RawFormatAgent::GetFormatType()
 {
@@ -55,7 +58,7 @@ uint32_t RawFormatAgent::GetHeaderSize()
 
 bool RawFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
-    HiLog::Info(LABEL, "RawFormatAgent now pass all image format. dataSize = [%{public}d]", dataSize);
+    IMAGE_LOGI("RawFormatAgent now pass all image format. dataSize = [%{public}d]", dataSize);
     return true;
 }
 } // namespace ImagePlugin

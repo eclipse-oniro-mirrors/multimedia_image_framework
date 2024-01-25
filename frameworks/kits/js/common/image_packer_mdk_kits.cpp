@@ -16,18 +16,21 @@
 #include "image_packer_mdk_kits.h"
 
 #include <map>
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImagePackerMdk"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImagePackerMdk"};
     constexpr size_t SIZE_ZERO = 0;
     constexpr int INVALID_FD = -1;
 }
 
 namespace OHOS {
 namespace Media {
-using OHOS::HiviewDFX::HiLog;
 using ImagePackerNativeFunc = int32_t (*)(struct ImagePackerArgs* args);
 
 enum class PackingSourceType : int32_t {
@@ -44,7 +47,7 @@ static bool IsInstanceOf(napi_env env, napi_value value, napi_value global, cons
 {
     napi_value constructor = nullptr;
     if (napi_get_named_property(env, global, type, &constructor) != napi_ok) {
-        HiLog::Error(LABEL, "Get constructor property failed!");
+        IMAGE_LOGE("Get constructor property failed!");
         return false;
     }
 
@@ -59,34 +62,34 @@ static PackingSourceType ParserPackingArgumentType(napi_env env, napi_value sour
 {
     napi_value global = nullptr;
     if (napi_get_global(env, &global) != napi_ok) {
-        HiLog::Error(LABEL, "Get global property failed!");
+        IMAGE_LOGE("Get global property failed!");
         return PackingSourceType::TYPE_INVALID;
     }
 
     if (IsInstanceOf(env, source, global, "ImageSource")) {
-        HiLog::Debug(LABEL, "This is ImageSource!");
+        IMAGE_LOGD("This is ImageSource!");
         return PackingSourceType::TYPE_IMAGE_SOURCE;
     } else if (IsInstanceOf(env, source, global, "PixelMap")) {
-        HiLog::Debug(LABEL, "This is PixelMap!");
+        IMAGE_LOGD("This is PixelMap!");
         return PackingSourceType::TYPE_PIXEL_MAP;
     }
 
-    HiLog::Error(LABEL, "Invalid type!");
+    IMAGE_LOGE("Invalid type!");
     return PackingSourceType::TYPE_INVALID;
 }
 
 static int32_t ImagePackerNapiCreate(struct ImagePackerArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr || args->outVal == nullptr) {
-        HiLog::Error(LABEL, "ImagePackerNapiCreate bad parameter");
+        IMAGE_LOGE("ImagePackerNapiCreate bad parameter");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outVal) = ImagePackerNapi::CreateImagePacker(args->inEnv, nullptr);
     if (*(args->outVal) == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreate native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreate native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImagePackerNapiCreate success");
+    IMAGE_LOGD("ImagePackerNapiCreate success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -114,7 +117,7 @@ static int32_t DoStartPacking(std::shared_ptr<ImagePacker> &packer, struct Image
     } else if (args->inNum0 > INVALID_FD) {
         return packer->StartPacking(args->inNum0, option);
     }
-    HiLog::Error(LABEL, "DoNativePacking StartPacking failed");
+    IMAGE_LOGE("DoNativePacking StartPacking failed");
     return IMAGE_RESULT_BAD_PARAMETER;
 }
 
@@ -130,7 +133,7 @@ static int32_t DoAddImage(std::shared_ptr<ImagePacker> &packer,
         if (image != nullptr) {
             return packer->AddImage(*image);
         } else {
-            HiLog::Error(LABEL, "DoNativePacking get image source native failed");
+            IMAGE_LOGE("DoNativePacking get image source native failed");
             return IMAGE_RESULT_BAD_PARAMETER;
         }
     } else if (type == PackingSourceType::TYPE_PIXEL_MAP) {
@@ -138,11 +141,11 @@ static int32_t DoAddImage(std::shared_ptr<ImagePacker> &packer,
         if (pixel != nullptr) {
             return packer->AddImage(*pixel);
         } else {
-            HiLog::Error(LABEL, "DoNativePacking get pixelmap native failed");
+            IMAGE_LOGE("DoNativePacking get pixelmap native failed");
             return IMAGE_RESULT_BAD_PARAMETER;
         }
     }
-    HiLog::Error(LABEL, "DoNativePacking unsupport packing source type %{public}d", type);
+    IMAGE_LOGE("DoNativePacking unsupport packing source type %{public}d", type);
     return IMAGE_RESULT_BAD_PARAMETER;
 }
 
@@ -158,17 +161,17 @@ static int32_t DoNativePacking(struct ImagePackerArgs* args)
     }
     auto nativeImagePacker = ImagePackerNapi::GetNative(args->inNapi);
     if (nativeImagePacker == nullptr) {
-        HiLog::Error(LABEL, "DoNativePacking get native failed");
+        IMAGE_LOGE("DoNativePacking get native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     int32_t res = DoStartPacking(nativeImagePacker, args);
     if (res != IMAGE_RESULT_SUCCESS) {
-        HiLog::Error(LABEL, "DoNativePacking StartPacking failed");
+        IMAGE_LOGE("DoNativePacking StartPacking failed");
         return res;
     }
     res = DoAddImage(nativeImagePacker, type, args);
     if (res != IMAGE_RESULT_SUCCESS) {
-        HiLog::Error(LABEL, "DoNativePacking AddImage failed");
+        IMAGE_LOGE("DoNativePacking AddImage failed");
         return res;
     }
     int64_t packedSize = SIZE_ZERO;
@@ -184,7 +187,7 @@ static int32_t ImagePackerNapiPackToData(struct ImagePackerArgs* args)
         args->inNapi == nullptr || args->inVal == nullptr ||
         args->inOpts == nullptr || args->outData == nullptr ||
         args->dataSize == nullptr || *(args->dataSize) == SIZE_ZERO) {
-        HiLog::Error(LABEL, "ImagePackerNapiPackToData bad parameter");
+        IMAGE_LOGE("ImagePackerNapiPackToData bad parameter");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return DoNativePacking(args);
@@ -195,7 +198,7 @@ static int32_t ImagePackerNapiPackToFile(struct ImagePackerArgs* args)
     if (args == nullptr || args->inEnv == nullptr ||
         args->inNapi == nullptr || args->inVal == nullptr ||
         args->inOpts == nullptr || args->inNum0 <= INVALID_FD) {
-        HiLog::Error(LABEL, "ImagePackerNapiPackToFile bad parameter");
+        IMAGE_LOGE("ImagePackerNapiPackToFile bad parameter");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return DoNativePacking(args);

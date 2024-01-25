@@ -14,16 +14,19 @@
  */
 
 #include "ext_stream.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ExtStream"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtStream"};
     constexpr static size_t SIZE_ZERO = 0;
 }
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 struct InputStream {
     uint8_t* buf;
     uint32_t size;
@@ -49,7 +52,7 @@ static size_t Skip(InputDataStream *stream, size_t size)
     uint32_t cur = stream->Tell();
     uint32_t seek = cur + static_cast<uint32_t>(size);
     if (!stream->Seek(seek)) {
-        HiLog::Error(LABEL, "skip failed, curpositon, skip size.");
+        IMAGE_LOGE("skip failed, curpositon, skip size.");
         return SIZE_ZERO;
     }
     return size;
@@ -71,7 +74,7 @@ size_t ExtStream::read(void *buffer, size_t size)
         desiredSize = stream_->GetStreamSize();
     }
     if (!stream_->Read(desiredSize, buf.buf, buf.size, buf.resSize)) {
-        HiLog::Error(LABEL, "read failed, desire read size=%{public}u", buf.resSize);
+        IMAGE_LOGE("read failed, desire read size=%{public}u", buf.resSize);
         return 0;
     }
     return static_cast<size_t>(buf.resSize);
@@ -83,13 +86,13 @@ size_t ExtStream::peek(void *buffer, size_t size) const
         return SIZE_ZERO;
     }
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "peek failed, output buffer is null");
+        IMAGE_LOGE("peek failed, output buffer is null");
         return SIZE_ZERO;
     }
     InputStream buf;
     InputStreamInit(buf, static_cast<uint8_t *>(buffer), size);
     if (!stream_->Peek(buf.size, buf.buf, buf.size, buf.resSize)) {
-        HiLog::Error(LABEL, "peek failed, desire read size=%{public}u", buf.resSize);
+        IMAGE_LOGE("peek failed, desire read size=%{public}u", buf.resSize);
         return 0;
     }
     return static_cast<size_t>(buf.resSize);

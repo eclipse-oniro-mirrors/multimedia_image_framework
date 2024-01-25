@@ -18,14 +18,17 @@
 #include <cerrno>
 
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "FilePackerStream"
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "FilePackerStream" };
 
 FilePackerStream::FilePackerStream(const std::string &filePath)
 {
@@ -42,20 +45,20 @@ FilePackerStream::FilePackerStream(const std::string &filePath)
     std::string realPath;
     if (!ImageUtils::PathToRealPath(dirPath, realPath)) {
         file_ = nullptr;
-        HiLog::Error(LABEL, "convert to real path failed.");
+        IMAGE_LOGE("convert to real path failed.");
         return;
     }
 
     if (!ForceCreateDirectory(realPath)) {
         file_ = nullptr;
-        HiLog::Error(LABEL, "create directory failed.");
+        IMAGE_LOGE("create directory failed.");
         return;
     }
 
     std::string fullPath = realPath + "/" + fileName;
     file_ = fopen(fullPath.c_str(), "wb");
     if (file_ == nullptr) {
-        HiLog::Error(LABEL, "fopen file failed, error:%{public}d", errno);
+        IMAGE_LOGE("fopen file failed, error:%{public}d", errno);
         return;
     }
 }
@@ -63,7 +66,7 @@ FilePackerStream::FilePackerStream(const int fd)
 {
     file_ = fdopen(fd, "wb");
     if (file_ == nullptr) {
-        HiLog::Error(LABEL, "fopen file failed, error:%{public}d", errno);
+        IMAGE_LOGE("fopen file failed, error:%{public}d", errno);
         return;
     }
 }
@@ -78,15 +81,15 @@ FilePackerStream::~FilePackerStream()
 bool FilePackerStream::Write(const uint8_t *buffer, uint32_t size)
 {
     if ((buffer == nullptr) || (size == 0)) {
-        HiLog::Error(LABEL, "input parameter invalid.");
+        IMAGE_LOGE("input parameter invalid.");
         return false;
     }
     if (file_ == nullptr) {
-        HiLog::Error(LABEL, "output file is null.");
+        IMAGE_LOGE("output file is null.");
         return false;
     }
     if (fwrite(buffer, sizeof(uint8_t), size, file_) != size) {
-        HiLog::Error(LABEL, "write %{public}u bytes failed.", size);
+        IMAGE_LOGE("write %{public}u bytes failed.", size);
         fclose(file_);
         file_ = nullptr;
         return false;

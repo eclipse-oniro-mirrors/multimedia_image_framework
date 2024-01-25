@@ -16,26 +16,27 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_source_util.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "incremental_pixel_map.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourcePngTest"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 namespace OHOS {
 namespace Multimedia {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourcePngTest"
-};
 static constexpr uint32_t DEFAULT_DELAY_UTIME = 10000;  // 10 ms.
 
 class ImageSourcePngTest : public testing::Test {
@@ -68,7 +69,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     /**
@@ -204,7 +205,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode006, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     /**
@@ -258,7 +259,7 @@ HWTEST_F(ImageSourcePngTest, PngImageDecode007, TestSize.Level3)
         uint32_t ret = imageSource->UpdateData(buffer + updateSize, updateOnceSize, isCompleted);
         ASSERT_EQ(ret, SUCCESS);
         uint8_t decodeProgress = 0;
-        HiLog::Debug(LABEL_TEST, "updateOnceSize:%{public}u,updateSize:%{public}u,bufferSize:%{public}zu",
+        IMAGE_LOGD("updateOnceSize:%{public}u,updateSize:%{public}u,bufferSize:%{public}zu",
                      updateOnceSize, updateSize, bufferSize);
         incPixelMap->PromoteDecoding(decodeProgress);
         updateSize += updateOnceSize;
@@ -490,7 +491,7 @@ HWTEST_F(ImageSourcePngTest, PngImageCrop001, TestSize.Level3)
     decodeOpts.CropRect.left = 3;
     decodeOpts.CropRect.height = 40;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(200, pixelMap->GetWidth());

@@ -21,8 +21,6 @@
 #include <string>
 #include "abs_image_decoder.h"
 #include "gif_lib.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"

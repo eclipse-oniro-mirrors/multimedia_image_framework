@@ -14,11 +14,16 @@
  */
 
 #include "impl_class_mgr.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "impl_class.h"
-#include "log_tags.h"
 #include "plugin.h"
 #include "plugin_class_base.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ImplClassMgr"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -31,37 +36,34 @@ using std::set;
 using std::shared_ptr;
 using std::string;
 using std::weak_ptr;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ImplClassMgr" };
 
 uint32_t ImplClassMgr::AddClass(weak_ptr<Plugin> &plugin, const json &classInfo)
 {
     shared_ptr<ImplClass> implClass = std::make_shared<ImplClass>();
     if (implClass == nullptr) {
-        HiLog::Error(LABEL, "AddClass: failed to create ImplClass.");
+        IMAGE_LOGE("AddClass: failed to create ImplClass.");
         return ERR_INTERNAL;
     }
 
     auto ret = implClass->Register(plugin, classInfo);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "AddClass: failed to register impClass.ERRNO: %{public}u.", ret);
+        IMAGE_LOGE("AddClass: failed to register impClass.ERRNO: %{public}u.", ret);
         return ret;
     }
 
     const string &key = implClass->GetClassName();
     if (key.empty()) {
-        HiLog::Error(LABEL, "AddClass: empty className.");
+        IMAGE_LOGE("AddClass: empty className.");
         return ERR_INTERNAL;
     }
 
-    HiLog::Debug(LABEL, "AddClass: insert Class: %{public}s.", key.c_str());
+    IMAGE_LOGD("AddClass: insert Class: %{public}s.", key.c_str());
     classMultimap_.insert(NameClassMultimap::value_type(&key, implClass));
 
     // for fast search by service flag
     const set<uint32_t> &services = implClass->GetServices();
     for (const uint32_t &srv : services) {
-        HiLog::Debug(LABEL, "AddClass: insert service: %{public}u.", srv);
+        IMAGE_LOGD("AddClass: insert service: %{public}u.", srv);
         srvSearchMultimap_.insert(ServiceClassMultimap::value_type(srv, implClass));
     }
 
@@ -94,12 +96,12 @@ void ImplClassMgr::DeleteClass(const weak_ptr<Plugin> &plugin)
 
 PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, const string &className, uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "create object iid: %{public}hu, className: %{public}s.", interfaceID, className.c_str());
+    IMAGE_LOGD("create object iid: %{public}hu, className: %{public}s.", interfaceID, className.c_str());
 
     NameClassMultimap::iterator iter = classMultimap_.lower_bound(&className);
     NameClassMultimap::iterator endIter = classMultimap_.upper_bound(&className);
     if (iter == endIter) {
-        HiLog::Error(LABEL, "failed to find matching class by className: %{public}s.", className.c_str());
+        IMAGE_LOGE("failed to find matching class by className: %{public}s.", className.c_str());
         errorCode = ERR_MATCHING_PLUGIN;
         return nullptr;
     }
@@ -111,8 +113,8 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, const string &
     }
 
     // no this class
-    HiLog::Error(LABEL, "failed to find matching class for iid: %{public}hu, className: %{public}s.", interfaceID,
-                 className.c_str());
+    IMAGE_LOGE("failed to find matching class for iid: %{public}hu, className: %{public}s.", interfaceID,
+        className.c_str());
     errorCode = ERR_MATCHING_PLUGIN;
     return nullptr;
 }
@@ -124,7 +126,7 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, uint16_t servi
     uint32_t serviceFlag = ImplClass::MakeServiceFlag(interfaceID, serviceType);
     list<shared_ptr<ImplClass>> candidates;
 
-    HiLog::Debug(LABEL, "create object iid: %{public}u, serviceType: %{public}u.", interfaceID, serviceType);
+    IMAGE_LOGD("create object iid: %{public}u, serviceType: %{public}u.", interfaceID, serviceType);
 
     auto iter = srvSearchMultimap_.lower_bound(serviceFlag);
     auto endIter = srvSearchMultimap_.upper_bound(serviceFlag);
@@ -138,12 +140,12 @@ PluginClassBase *ImplClassMgr::CreateObject(uint16_t interfaceID, uint16_t servi
 
     shared_ptr<ImplClass> target = SearchByPriority(candidates, priorityScheme);
     if (target == nullptr) {
-        HiLog::Debug(LABEL, "failed to find class by priority.");
+        IMAGE_LOGD("failed to find class by priority.");
         errorCode = ERR_MATCHING_PLUGIN;
         return nullptr;
     }
 
-    HiLog::Debug(LABEL, "search by priority result, className: %{public}s.", target->GetClassName().c_str());
+    IMAGE_LOGD("search by priority result, className: %{public}s.", target->GetClassName().c_str());
     return target->CreateObject(errorCode);
 }
 
@@ -154,12 +156,12 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
     // get service flag by interfaceID and serviceType
     uint32_t serviceFlag = ImplClass::MakeServiceFlag(interfaceID, serviceType);
 
-    HiLog::Debug(LABEL, "get classinfo iid: %{public}u, serviceType: %{public}u.", interfaceID, serviceType);
+    IMAGE_LOGD("get classinfo iid: %{public}u, serviceType: %{public}u.", interfaceID, serviceType);
     auto iter = srvSearchMultimap_.lower_bound(serviceFlag);
     auto endIter = srvSearchMultimap_.upper_bound(serviceFlag);
     if (iter == endIter) {
-        HiLog::Error(LABEL, "failed to get class by serviceFlag, iid: %{public}u, serviceType: %{public}u.",
-                     interfaceID, serviceType);
+        IMAGE_LOGE("failed to get class by serviceFlag, iid: %{public}u, serviceType: %{public}u.",
+            interfaceID, serviceType);
         return ERR_MATCHING_PLUGIN;
     }
 
@@ -169,8 +171,7 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
             continue;
         }
         // after multiple filtering, there are only a few instances here, which will not cause massive logs.
-        HiLog::Debug(LABEL, "found by serviceFlag & capabilities, className: %{public}s.",
-                     temp->GetClassName().c_str());
+        IMAGE_LOGD("found by serviceFlag & capabilities, className: %{public}s.", temp->GetClassName().c_str());
         ClassInfo classInfo;
         classInfo.packageName = temp->GetPackageName();
         classInfo.className = temp->GetClassName();
@@ -180,8 +181,8 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
     }
 
     if (classesInfo.empty()) {
-        HiLog::Error(LABEL, "failed to get class by capabilities, iid: %{public}u, serviceType: %{public}u.",
-                     interfaceID, serviceType);
+        IMAGE_LOGE("failed to get class by capabilities, iid: %{public}u, serviceType: %{public}u.", interfaceID,
+            serviceType);
         return ERR_MATCHING_PLUGIN;
     }
 
@@ -190,7 +191,7 @@ uint32_t ImplClassMgr::ImplClassMgrGetClassInfo(uint16_t interfaceID, uint16_t s
 
 shared_ptr<ImplClass> ImplClassMgr::GetImplClass(const string &packageName, const string &className)
 {
-    HiLog::Debug(LABEL, "search ImplClass, className: %{public}s.", className.c_str());
+    IMAGE_LOGD("search ImplClass, className: %{public}s.", className.c_str());
     shared_ptr<ImplClass> implClass = nullptr;
     auto iter = classMultimap_.lower_bound(&className);
     auto endIter = classMultimap_.upper_bound(&className);
@@ -202,7 +203,7 @@ shared_ptr<ImplClass> ImplClassMgr::GetImplClass(const string &packageName, cons
     }
 
     if (implClass == nullptr) {
-        HiLog::Error(LABEL, "failed to get ImplClass, className: %{public}s.", className.c_str());
+        IMAGE_LOGE("failed to get ImplClass, className: %{public}s.", className.c_str());
     }
 
     return implClass;
@@ -220,7 +221,7 @@ shared_ptr<ImplClass> ImplClassMgr::SearchByPriority(const list<shared_ptr<ImplC
 {
     auto size = candidates.size();
     if (size == 0) {  // 0 means class no candidate,  return empty directly.
-        HiLog::Debug(LABEL, "SearchByPriority: candidates size is zero.");
+        IMAGE_LOGD("SearchByPriority: candidates size is zero.");
         return nullptr;
     }
 
@@ -279,7 +280,7 @@ shared_ptr<ImplClass> ImplClassMgr::SearchByPriority(const list<shared_ptr<ImplC
 shared_ptr<ImplClass> ImplClassMgr::SearchSimplePriority(const list<shared_ptr<ImplClass>> &candidates)
 {
     if (candidates.size() == 0) {
-        HiLog::Error(LABEL, "SearchSimplePriority: candidates size is zero.");
+        IMAGE_LOGE("SearchSimplePriority: candidates size is zero.");
         return nullptr;
     }
     auto targetIter = candidates.begin();
@@ -297,8 +298,8 @@ shared_ptr<ImplClass> ImplClassMgr::SearchSimplePriority(const list<shared_ptr<I
 uint32_t ImplClassMgr::ComparePriority(const AttrData &lhs, const AttrData &rhs, PriorityType type)
 {
     if (lhs.GetType() != rhs.GetType()) {
-        HiLog::Error(LABEL, "compare between different types, %{public}d and %{public}d.", lhs.GetType(),
-                     rhs.GetType());
+        IMAGE_LOGE("compare between different types, %{public}d and %{public}d.", lhs.GetType(),
+            rhs.GetType());
         return ERR_COMP_ERROR;
     }
 
@@ -319,7 +320,7 @@ uint32_t ImplClassMgr::ComparePriority(const AttrData &lhs, const AttrData &rhs,
             return CompareStringPriority(lhs, rhs, type);
         }
         default: {
-            HiLog::Error(LABEL, "invalid data type: %{public}d.", lhs.GetType());
+            IMAGE_LOGE("invalid data type: %{public}d.", lhs.GetType());
             return ERR_COMP_ERROR;
         }
     }
@@ -332,7 +333,7 @@ uint32_t ImplClassMgr::CompareBoolPriority(const AttrData &lhs, const AttrData &
     bool rhsValue = false;
 
     if ((lhs.GetValue(lhsValue) != SUCCESS) || (rhs.GetValue(rhsValue) != SUCCESS)) {
-        HiLog::Error(LABEL, "CompareBoolPriority: failed to get attribute value.");
+        IMAGE_LOGE("CompareBoolPriority: failed to get attribute value.");
         return ERR_COMP_ERROR;
     }
 
@@ -372,7 +373,7 @@ uint32_t ImplClassMgr::CompareUint32Priority(const AttrData &lhs, const AttrData
 
     if (type == PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING) {
         if ((lhs.GetMinValue(lhsValue) != SUCCESS) || (rhs.GetMinValue(rhsValue) != SUCCESS)) {
-            HiLog::Error(LABEL, "CompareUint32Priority: failed to get attribute min value.");
+            IMAGE_LOGE("CompareUint32Priority: failed to get attribute min value.");
             return ERR_COMP_ERROR;
         }
 
@@ -388,7 +389,7 @@ uint32_t ImplClassMgr::CompareUint32Priority(const AttrData &lhs, const AttrData
     }
 
     if ((lhs.GetMaxValue(lhsValue) != SUCCESS) || (rhs.GetMaxValue(rhsValue) != SUCCESS)) {
-        HiLog::Error(LABEL, "CompareUint32Priority: failed to get attribute max value.");
+        IMAGE_LOGE("CompareUint32Priority: failed to get attribute max value.");
         return ERR_COMP_ERROR;
     }
 
@@ -410,7 +411,7 @@ uint32_t ImplClassMgr::CompareStringPriority(const AttrData &lhs, const AttrData
 
     if (type == PriorityType::PRIORITY_ORDER_BY_ATTR_ASCENDING) {
         if ((lhs.GetMinValue(lhsValue) != SUCCESS) || (rhs.GetMinValue(rhsValue) != SUCCESS)) {
-            HiLog::Error(LABEL, "CompareStringPriority: failed to get attribute min value.");
+            IMAGE_LOGE("CompareStringPriority: failed to get attribute min value.");
             return ERR_COMP_ERROR;
         }
 
@@ -426,7 +427,7 @@ uint32_t ImplClassMgr::CompareStringPriority(const AttrData &lhs, const AttrData
     }
 
     if ((lhs.GetMaxValue(lhsValue) != SUCCESS) || (rhs.GetMaxValue(rhsValue) != SUCCESS)) {
-        HiLog::Error(LABEL, "CompareStringPriority: failed to get attribute max value.");
+        IMAGE_LOGE("CompareStringPriority: failed to get attribute max value.");
 
         return ERR_COMP_ERROR;
     }

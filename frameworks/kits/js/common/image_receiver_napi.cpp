@@ -16,24 +16,24 @@
 #include "image_receiver_napi.h"
 #include <uv.h>
 #include "media_errors.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_napi_utils.h"
-#include "image_receiver_context.h"
 #include "image_napi.h"
+#include "image_receiver_context.h"
 #include "image_receiver_manager.h"
-#include "log_tags.h"
 
-using OHOS::HiviewDFX::HiLog;
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageReceiverNapi"
+
 using std::string;
 using std::shared_ptr;
 using std::unique_ptr;
 using std::vector;
 using std::make_shared;
 using std::make_unique;
-
-namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageReceiverNapi"};
-}
 
 namespace OHOS {
 namespace Media {

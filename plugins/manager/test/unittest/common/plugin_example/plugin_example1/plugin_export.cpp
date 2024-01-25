@@ -15,22 +15,25 @@
 
 #include "plugin_export.h"
 #include <map>
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "plugin_class_base.h"
 #include "plugin_utils.h"
 #include "cloud_label_detector.h"
 #include "label_detector.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "plugin_example1"
 
 // this file shows how to write plugin_export.cpp file directly.
 // but this file can also be simplified using the code elements provided by plugin_utils.h,
 // see plugin_example2 and plugin_example3.
 using std::map;
 using std::string;
-using namespace OHOS::HiviewDFX;
 
 static const string PACKAGE_NAME = "plugin_example1";
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "plugin_example1" };
 using ImplClassMap = map<const string, PluginObjectCreatorFunc>;
 
 static ImplClassMap implClassMap = {
@@ -40,7 +43,7 @@ static ImplClassMap implClassMap = {
 
 bool PluginExternalStart()
 {
-    HiLog::Debug(LABEL, "call PluginExternalStart() in package: %{public}s.", PACKAGE_NAME.c_str());
+    IMAGE_LOGD("call PluginExternalStart() in package: %{public}s.", PACKAGE_NAME.c_str());
     // in this example we don't have to do anything,
     // but you may need to do some preparations below for your plugin...
     return true;
@@ -48,7 +51,7 @@ bool PluginExternalStart()
 
 void PluginExternalStop()
 {
-    HiLog::Debug(LABEL, "call PluginExternalStop() in package: %{public}s.", PACKAGE_NAME.c_str());
+    IMAGE_LOGD("call PluginExternalStop() in package: %{public}s.", PACKAGE_NAME.c_str());
     // in this example we don't have to do anything,
     // but you may need to do some cleaning work below for your plugin...
     return;
@@ -56,20 +59,20 @@ void PluginExternalStop()
 
 OHOS::MultimediaPlugin::PluginClassBase *PluginExternalCreate(const string &className)
 {
-    HiLog::Debug(LABEL, "PluginExternalCreate: create object for package: %{public}s, class: %{public}s.",
-                 PACKAGE_NAME.c_str(), className.c_str());
+    IMAGE_LOGD("PluginExternalCreate: create object for package: %{public}s, class: %{public}s.",
+        PACKAGE_NAME.c_str(), className.c_str());
 
     auto iter = implClassMap.find(className);
     if (iter == implClassMap.end()) {
-        HiLog::Error(LABEL, "PluginExternalCreate: failed to find class: %{public}s, in package: %{public}s.",
-                     className.c_str(), PACKAGE_NAME.c_str());
+        IMAGE_LOGE("PluginExternalCreate: failed to find class: %{public}s, in package: %{public}s.",
+            className.c_str(), PACKAGE_NAME.c_str());
         return nullptr;
     }
 
     auto creator = iter->second;
     if (creator == nullptr) {
-        HiLog::Error(LABEL, "PluginExternalCreate: null creator for class: %{public}s, in package: %{public}s.",
-                     className.c_str(), PACKAGE_NAME.c_str());
+        IMAGE_LOGE("PluginExternalCreate: null creator for class: %{public}s, in package: %{public}s.",
+            className.c_str(), PACKAGE_NAME.c_str());
         return nullptr;
     }
 

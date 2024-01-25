@@ -15,16 +15,19 @@
 
 #include "istream_source_stream.h"
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "IstreamSourceStream"
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace ImagePlugin;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "IstreamSourceStream" };
 
 IstreamSourceStream::IstreamSourceStream(unique_ptr<istream> inputStream, size_t size, size_t original, size_t offset)
     : inputStream_(move(inputStream)), streamSize_(size), streamOriginalOffset_(original), streamOffset_(offset)
@@ -39,16 +42,16 @@ std::unique_ptr<IstreamSourceStream> IstreamSourceStream::CreateSourceStream(uni
 {
     if ((inputStream == nullptr) || (inputStream->rdbuf() == nullptr) ||
         inputStream.get() == nullptr) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]input parameter exception.");
+        IMAGE_LOGE("[IstreamSourceStream]input parameter exception.");
         return nullptr;
     }
     size_t streamSize = 0;
     if (!ImageUtils::GetInputStreamSize(*(inputStream.get()), streamSize)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]Get the input stream exception.");
+        IMAGE_LOGE("[IstreamSourceStream]Get the input stream exception.");
         return nullptr;
     }
     if (streamSize == 0) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]input stream size exception.");
+        IMAGE_LOGE("[IstreamSourceStream]input stream size exception.");
         return nullptr;
     }
     size_t original = inputStream->tellg();
@@ -59,11 +62,11 @@ std::unique_ptr<IstreamSourceStream> IstreamSourceStream::CreateSourceStream(uni
 bool IstreamSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]read stream input parameter exception.");
+        IMAGE_LOGE("[IstreamSourceStream]read stream input parameter exception.");
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]read fail.");
+        IMAGE_LOGE("[IstreamSourceStream]read fail.");
         return false;
     }
     streamOffset_ += outData.dataSize;
@@ -73,11 +76,11 @@ bool IstreamSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 bool IstreamSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]peek stream input parameter exception.");
+        IMAGE_LOGE("[IstreamSourceStream]peek stream input parameter exception.");
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]peek fail.");
+        IMAGE_LOGE("[IstreamSourceStream]peek fail.");
         return false;
     }
     inputStream_->seekg(streamOffset_);
@@ -87,12 +90,12 @@ bool IstreamSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 bool IstreamSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]input the parameter exception, desiredSize:%{public}u,"
+        IMAGE_LOGE("[IstreamSourceStream]input the parameter exception, desiredSize:%{public}u,"
             "bufferSize:%{public}u.", desiredSize, bufferSize);
         return false;
     }
     if (!GetData(desiredSize, outBuffer, bufferSize, readSize)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]read fail.");
+        IMAGE_LOGE("[IstreamSourceStream]read fail.");
         return false;
     }
     streamOffset_ += readSize;
@@ -102,12 +105,12 @@ bool IstreamSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_
 bool IstreamSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]input the parameter exception, desiredSize:%{public}u,"
+        IMAGE_LOGE("[IstreamSourceStream]input the parameter exception, desiredSize:%{public}u,"
             "bufferSize:%{public}u.", desiredSize, bufferSize);
         return false;
     }
     if (!GetData(desiredSize, outBuffer, bufferSize, readSize)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]peek fail.");
+        IMAGE_LOGE("[IstreamSourceStream]peek fail.");
         return false;
     }
     inputStream_->seekg(streamOffset_);
@@ -117,7 +120,7 @@ bool IstreamSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_
 bool IstreamSourceStream::Seek(uint32_t position)
 {
     if (position > streamSize_) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]Seek the position error, position:%{public}u,"
+        IMAGE_LOGE("[IstreamSourceStream]Seek the position error, position:%{public}u,"
             "streamSize_:%{public}zu.", position, streamSize_);
         return false;
     }
@@ -135,7 +138,7 @@ uint32_t IstreamSourceStream::Tell()
 bool IstreamSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (streamSize_ == 0 || streamOffset_ >= streamSize_) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]get source data fail. streamSize:%{public}zu,"
+        IMAGE_LOGE("[IstreamSourceStream]get source data fail. streamSize:%{public}zu,"
             "streamOffset:%{public}zu.", streamSize_, streamOffset_);
         return false;
     }
@@ -143,7 +146,7 @@ bool IstreamSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint
         desiredSize = (streamSize_ - streamOffset_);
     }
     if (!inputStream_->read(reinterpret_cast<char *>(outBuffer), desiredSize)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]read the inputstream fail.");
+        IMAGE_LOGE("[IstreamSourceStream]read the inputstream fail.");
         return false;
     }
     readSize = desiredSize;
@@ -153,19 +156,19 @@ bool IstreamSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint
 bool IstreamSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (streamSize_ == 0 || streamOffset_ >= streamSize_) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]get source data fail. streamSize:%{public}zu,"
+        IMAGE_LOGE("[IstreamSourceStream]get source data fail. streamSize:%{public}zu,"
             "streamOffset:%{public}zu.", streamSize_, streamOffset_);
         return false;
     }
 
     if (desiredSize == 0 || desiredSize > MALLOC_MAX_LENTH) {
-        HiLog::Error(LABEL, "IstreamSourceStream]Invalid value, desiredSize out of size.");
+        IMAGE_LOGE("IstreamSourceStream]Invalid value, desiredSize out of size.");
         return false;
     }
     ResetReadBuffer();
     databuffer_ = static_cast<uint8_t *>(malloc(desiredSize));
     if (databuffer_ == nullptr) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]malloc the output data buffer fail.");
+        IMAGE_LOGE("[IstreamSourceStream]malloc the output data buffer fail.");
         return false;
     }
     outData.bufferSize = desiredSize;
@@ -174,7 +177,7 @@ bool IstreamSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outDat
     }
     inputStream_->seekg(streamOffset_);
     if (!inputStream_->read(reinterpret_cast<char *>(databuffer_), desiredSize)) {
-        HiLog::Error(LABEL, "[IstreamSourceStream]read the inputstream fail.");
+        IMAGE_LOGE("[IstreamSourceStream]read the inputstream fail.");
         free(databuffer_);
         databuffer_ = nullptr;
         return false;

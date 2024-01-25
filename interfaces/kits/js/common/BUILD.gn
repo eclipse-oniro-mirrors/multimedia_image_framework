@@ -175,7 +175,10 @@ if (use_clang_ios) {
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
     ]
 
-    external_deps = [ "napi:ace_napi" ]
+    external_deps = [
+      "hilog:libhilog",
+      "napi:ace_napi",
+    ]
 
     output_name = "libimage"
     relative_install_dir = "module/multimedia"
@@ -211,6 +214,7 @@ if (use_clang_ios) {
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
     ]
+    external_deps = []
 
     if (use_clang_android) {
       defines = image_decode_android_defines
@@ -239,9 +243,10 @@ if (use_clang_ios) {
         "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
         "$image_subsystem/interfaces/innerkits:image_native",
       ]
+      external_deps += [ "hilog:libhilog" ]
     }
 
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_2d:color_space_object_convertor",

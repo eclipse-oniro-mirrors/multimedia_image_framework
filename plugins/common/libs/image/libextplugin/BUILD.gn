@@ -33,6 +33,7 @@ ohos_static_library("exifhelper") {
   ]
   include_dirs = [
     "../libjpegplugin/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
     "//third_party/libexif",
   ]
@@ -106,6 +107,7 @@ ohos_shared_library("textureEncoderCL") {
   }
   sources = [ "src/texture_encode/image_compressor.cpp" ]
   include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
     "include/texture_encode",
   ]
