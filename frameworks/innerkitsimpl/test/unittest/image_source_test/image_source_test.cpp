@@ -1967,17 +1967,17 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
             return true;
         }
     };
-    A *a_ptr1 = new A;
-    A *a_ptr2 = new A;
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", a_ptr1));
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", a_ptr2));
+    A *aPtr1 = new A;
+    A *aPtr2 = new A;
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", aPtr1));
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", aPtr2));
     imageSource->sourceStreamPtr_ = nullptr;
     ret = imageSource->CheckFormatHint(formatHint, formatIter);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    free(a_ptr1);
-    free(a_ptr2);
-    a_ptr1 = NULL;
-    a_ptr2 = NULL;
+    free(aPtr1);
+    free(aPtr2);
+    aPtr1 = NULL;
+    aPtr2 = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
 }
 
@@ -2017,10 +2017,12 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
             event = 0;
         }
     };
-    A *a_Ptr = new A;
-    imageSource->decodeListeners_.insert(a_Ptr);
-    imageSource->RemoveDecodeListener(a_Ptr);
+    A *aPtr = new A;
+    imageSource->decodeListeners_.insert(aPtr);
+    imageSource->RemoveDecodeListener(aPtr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
+    free(aPtr);
+    aPtr = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
 
@@ -2044,9 +2046,11 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
             event = 0;
         }
     };
-    A *a_Ptr = new A;
-    imageSource->AddDecodeListener(a_Ptr);
+    A *aPtr = new A;
+    imageSource->AddDecodeListener(aPtr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
+    free(aPtr);
+    aPtr = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
 } // namespace Multimedia
