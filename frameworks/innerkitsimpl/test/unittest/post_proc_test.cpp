@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "post_proc.h"
@@ -847,6 +847,96 @@ HWTEST_F(PostProcTest, PostProcTest0036, TestSize.Level3)
     errorCode = postProc.DecodePostProc(decodeOpts, *(pixelMap.get()), finalOutputStep);
     ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0036 end";
+}
+
+/**
+ * @tc.name: PostProcTest0037
+ * @tc.desc: test CenterScale
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0037, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0037 start";
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.CropRect.top = 3;
+    decodeOpts.CropRect.width = 100;
+    decodeOpts.CropRect.left = 3;
+    decodeOpts.CropRect.height = 200;
+    decodeOpts.desiredSize.width = 200;
+    decodeOpts.desiredSize.height = 400;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    pixelMap->imageInfo_.size.width = 1;
+    pixelMap->imageInfo_.size.height = 1;
+    pixelMap->isAstc_ = true;
+
+    PostProc postProc;
+    Size size;
+    size.width = 2;
+    size.height = 2;
+    bool ret = postProc.CenterScale(size, *(pixelMap.get()));
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0037 end";
+}
+
+/**
+ * @tc.name: PostProcTest0038
+ * @tc.desc: test CheckScanlineFilter
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0038, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0038 start";
+    Rect cropRect;
+    ImageInfo dstImageInfo;
+    PixelMap pixelMap;
+    int32_t pixelBytes = 0;
+    ScanlineFilter scanlineFilter;
+    PostProc postProc;
+    postProc.decodeOpts_.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    uint32_t ret = postProc.CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+    postProc.decodeOpts_.allocatorType = AllocatorType::DEFAULT;
+    dstImageInfo.size.width = 0;
+    ret = postProc.CheckScanlineFilter(cropRect, dstImageInfo, pixelMap, pixelBytes, scanlineFilter);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0038 end";
+}
+
+/**
+ * @tc.name: PostProcTest0039
+ * @tc.desc: test PixelConvertProc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, PostProcTest0039, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0039 start";
+    ImageInfo dstImageInfo;
+    PixelMap pixelMap;
+    ImageInfo srcImageInfo;
+    PostProc postProc;
+    dstImageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    uint32_t ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+    dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
+    dstImageInfo.size.width = 1;
+    dstImageInfo.size.height = 1;
+    srcImageInfo.pixelFormat = PixelFormat::UNKNOWN;
+    postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
+    ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
+    ASSERT_EQ(ret, ERR_IMAGE_CROP);
+    GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0039 end";
 }
 }
 }
