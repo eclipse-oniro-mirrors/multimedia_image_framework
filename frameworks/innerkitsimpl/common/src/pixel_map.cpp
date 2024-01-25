@@ -803,7 +803,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
     }
 
     if (allocatorType_ == AllocatorType::HEAP_ALLOC &&
-        ((static_cast<uint64_t>(pixelBytes_) * info.size.width) > PIXEL_MAP_MAX_RAM_SIZE)) {
+        ((static_cast<uint64_t>(pixelBytes_) * info.size.width * info.size.height) > PIXEL_MAP_MAX_RAM_SIZE)) {
         ResetPixelMap();
         HiLog::Error(LABEL, "image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
