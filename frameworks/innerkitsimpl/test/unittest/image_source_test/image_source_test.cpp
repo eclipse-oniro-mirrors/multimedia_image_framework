@@ -1681,8 +1681,8 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
         }
     };
     A *a_Ptr = new A;
-    imageSource->decodeListeners_.insert(a_ptr);
-    imageSource->RemoveDecodeListener(a_ptr);
+    imageSource->decodeListeners_.insert(a_Ptr);
+    imageSource->RemoveDecodeListener(a_Ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
     free(a_Ptr);
     a_Ptr = NULL;
@@ -1710,7 +1710,7 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
         }
     };
     A *a_Ptr = new A;
-    imageSource->AddDecodeListener(a_ptr);
+    imageSource->AddDecodeListener(a_Ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
     free(a_Ptr);
     a_Ptr = NULL;
