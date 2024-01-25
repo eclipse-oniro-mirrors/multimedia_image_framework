@@ -1811,5 +1811,207 @@ HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest008 end";
 }
+
+/**
+ * @tc.name: IsSupportGenAstcTest001
+ * @tc.desc: test IsSupportGenAstc
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsSupportGenAstcTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportGenAstcTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    bool ret = imageSource->IsSupportGenAstc();
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportGenAstcTest001 end";
+}
+
+/**
+ * @tc.name: GetDelayTimeTest001
+ * @tc.desc: test GetDelayTime
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDelayTimeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDelayTimeTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    auto ret = imageSource->GetDelayTime(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDelayTimeTest001 end";
+}
+
+/**
+ * @tc.name: DecodeSourceInfoTest001
+ * @tc.desc: test DecodeSourceInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, DecodeSourceInfoTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfoTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    bool isAcquiredImageNum = true;
+    imageSource->decodeState_ = SourceDecodingState::FORMAT_RECOGNIZED;
+    imageSource->sourceInfo_.encodedFormat = "image/astc";
+    uint32_t ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfoTest001 end";
+}
+
+/**
+ * @tc.name: OnSourceUnresolvedTest001
+ * @tc.desc: test OnSourceUnresolved
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, OnSourceUnresolvedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceUnresolvedTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    imageSource->isAstc_ = true;
+    uint32_t ret = imageSource->OnSourceUnresolved();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceUnresolvedTest001 end";
+}
+
+/**
+ * @tc.name: GetFormatExtendedTest001
+ * @tc.desc: test GetFormatExtended
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetFormatExtendedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtendedTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    std::string format;
+    uint32_t result = SUCCESS;
+    imageSource->mainDecoder_ = std::unique_ptr<ImagePlugin::AbsImageDecoder>(imageSource->CreateDecoder(result));
+    uint32_t ret = imageSource->GetFormatExtended(format);
+    ASSERT_EQ(ret, SUCCESS);
+    imageSource->mainDecoder_ = nullptr;
+    imageSource->sourceStreamPtr_ = nullptr;
+    ret = imageSource->GetFormatExtended(format);
+    ASSERT_EQ(ret, ERR_MEDIA_NULL_POINTER);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtendedTest001 end";
+}
+
+/**
+ * @tc.name: CheckFormatHintTest001
+ * @tc.desc: test CheckFormatHint
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    std::string formatHint = "a";
+    auto formatIter = imageSource->formatAgentMap_.begin();
+    uint32_t ret = imageSource->CheckFormatHint(formatHint, formatIter);
+    ASSERT_EQ(ret, ERROR);
+
+    class A : public ImagePlugin::AbsImageFormatAgent {
+    public:
+        std::string GetFormatType() {
+            return "A";
+        }
+        uint32_t GetHeaderSize() {
+            return 0;
+        }
+        bool CheckFormat(const void *headerData, uint32_t dataSize) {
+            return true;
+        }
+    };
+    A *a_ptr1 = new A;
+    A *a_ptr2 = new A;
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", a_ptr1));
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", a_ptr2));
+    imageSource->sourceStreamPtr_ = nullptr;
+    ret = imageSource->CheckFormatHint(formatHint, formatIter);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    free(a_ptr1);
+    free(a_ptr2);
+    a_ptr1 = NULL;
+    a_ptr2 = NULL;
+    GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
+}
+
+/**
+ * @tc.name: IsStreamCompletedTest001
+ * @tc.desc: test IsStreamCompleted
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, IsStreamCompletedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsStreamCompletedTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    bool ret = imageSource->IsStreamCompleted();
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: IsStreamCompletedTest001 end";
+}
+
+/**
+ * @tc.name: RemoveDecodeListenerTest002
+ * @tc.desc: test RemoveDecodeListener
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeListener *listener = nullptr;
+    imageSource->RemoveDecodeListener(listener);
+
+    class A : public DecodeListener {
+    public:
+        void OnEvent(int event) {
+            event = 0;
+        }
+    };
+    A *a_ptr = new A;
+    imageSource->decodeListeners_.insert(a_ptr);
+    imageSource->RemoveDecodeListener(a_ptr);
+    ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
+    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
+}
+
+/**
+ * @tc.name: AddDecodeListenerTest002
+ * @tc.desc: test AddDecodeListener
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    DecodeListener *listener = nullptr;
+    imageSource->AddDecodeListener(listener);
+
+    class A : public DecodeListener {
+    public:
+        void OnEvent(int event) {
+            event = 0;
+        }
+    };
+    A *a_ptr = new A;
+    imageSource->AddDecodeListener(a_ptr);
+    ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
