@@ -1967,15 +1967,17 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
             return true;
         }
     };
-    A *a_Ptr1 = new A;
-    A *a_Ptr2 = new A;
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", a_Ptr1));
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", a_Ptr2));
+    A *a_ptr1 = new A;
+    A *a_ptr2 = new A;
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", a_ptr1));
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", a_ptr2));
     imageSource->sourceStreamPtr_ = nullptr;
     ret = imageSource->CheckFormatHint(formatHint, formatIter);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    delete mockAbsImageFormatAgent1;
-    delete mockAbsImageFormatAgent2;
+    free(a_ptr1);
+    free(a_ptr2);
+    a_ptr1 = NULL;
+    a_ptr2 = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
 }
 
@@ -2008,9 +2010,16 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->RemoveDecodeListener(listener);
-    std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
-    imageSource->decodeListeners_.insert(mockDecodeListener.get());
-    imageSource->RemoveDecodeListener(mockDecodeListener.get());
+
+    class A : public DecodeListener {
+    public:
+        void OnEvent(int event) {
+            event = 0;
+        }
+    };
+    A *a_ptr = new A;
+    imageSource->decodeListeners_.insert(a_ptr);
+    imageSource->RemoveDecodeListener(a_ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
     GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
@@ -2028,8 +2037,15 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->AddDecodeListener(listener);
-    std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
-    imageSource->AddDecodeListener(mockDecodeListener.get());
+
+    class A : public DecodeListener {
+    public:
+        void OnEvent(int event) {
+            event = 0;
+        }
+    };
+    A *a_ptr = new A;
+    imageSource->AddDecodeListener(a_ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
     GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
