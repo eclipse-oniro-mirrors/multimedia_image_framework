@@ -2017,9 +2017,9 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
             event = 0;
         }
     };
-    A *a_ptr = new A;
-    imageSource->decodeListeners_.insert(a_ptr);
-    imageSource->RemoveDecodeListener(a_ptr);
+    A *a_Ptr = new A;
+    imageSource->decodeListeners_.insert(a_Ptr);
+    imageSource->RemoveDecodeListener(a_Ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
     GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
@@ -2044,8 +2044,8 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
             event = 0;
         }
     };
-    A *a_ptr = new A;
-    imageSource->AddDecodeListener(a_ptr);
+    A *a_Ptr = new A;
+    imageSource->AddDecodeListener(a_Ptr);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
     GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
