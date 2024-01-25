@@ -40,7 +40,8 @@ public:
     bool CenterScale(const Size &size, PixelMap &pixelMap);
     static CropValue GetCropValue(const Rect &rect, const Size &size);
     static CropValue ValidCropValue(Rect &rect, const Size &size);
-
+    bool ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap,
+        const AntiAliasingOption &option = AntiAliasingOption::NONE);
 private:
     static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     static uint8_t *AllocDmaMemory(const Size &size, const uint64_t bufferSize,
