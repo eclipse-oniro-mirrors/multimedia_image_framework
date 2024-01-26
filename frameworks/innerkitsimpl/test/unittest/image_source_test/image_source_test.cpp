@@ -52,7 +52,7 @@ public:
 class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
 public:
     MockAbsImageFormatAgent() = default;
-    virtual ~MockAbsImageFormatAgent() {}
+    ~MockAbsImageFormatAgent() {}
 
     std::string GetFormatType() override
     {
@@ -82,7 +82,7 @@ public:
         returnVoid_ = event;
     }
 private:
-    int returnVoid_;
+    int returnVoid_ = 0;
 };
 
 /**
@@ -1954,30 +1954,19 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
     auto formatIter = imageSource->formatAgentMap_.begin();
     uint32_t ret = imageSource->CheckFormatHint(formatHint, formatIter);
     ASSERT_EQ(ret, ERROR);
-
-    class A : public ImagePlugin::AbsImageFormatAgent {
-    public:
-        std::string GetFormatType() {
-            return "A";
-        }
-        uint32_t GetHeaderSize() {
-            return 0;
-        }
-        bool CheckFormat(const void *headerData, uint32_t dataSize) {
-            return true;
-        }
-    };
-    A *aPtr1 = new A;
-    A *aPtr2 = new A;
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("a", aPtr1));
-    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>("b", aPtr2));
+    MockAbsImageFormatAgent *mockAbsImageFormatAgent1 = new MockAbsImageFormatAgent;
+    MockAbsImageFormatAgent *mockAbsImageFormatAgent2 = new MockAbsImageFormatAgent;
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>
+        ("a", mockAbsImageFormatAgent1));
+    imageSource->formatAgentMap_.insert(pair<std::string, ImagePlugin::AbsImageFormatAgent *>
+        ("b", mockAbsImageFormatAgent2));
     imageSource->sourceStreamPtr_ = nullptr;
     ret = imageSource->CheckFormatHint(formatHint, formatIter);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    free(aPtr1);
-    free(aPtr2);
-    aPtr1 = NULL;
-    aPtr2 = NULL;
+    free(mockAbsImageFormatAgent1);
+    free(mockAbsImageFormatAgent2);
+    mockAbsImageFormatAgent1 = NULL;
+    mockAbsImageFormatAgent2 = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
 }
 
@@ -2010,19 +1999,12 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->RemoveDecodeListener(listener);
-
-    class A : public DecodeListener {
-    public:
-        void OnEvent(int event) {
-            event = 0;
-        }
-    };
-    A *aPtr = new A;
-    imageSource->decodeListeners_.insert(aPtr);
-    imageSource->RemoveDecodeListener(aPtr);
+    MockDecodeListener * mockDecodeListener = new MockDecodeListener;
+    imageSource->decodeListeners_.insert(mockDecodeListener);
+    imageSource->RemoveDecodeListener(mockDecodeListener);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
-    free(aPtr);
-    aPtr = NULL;
+    free(mockDecodeListener);
+    mockDecodeListener = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
 
@@ -2039,18 +2021,11 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->AddDecodeListener(listener);
-
-    class A : public DecodeListener {
-    public:
-        void OnEvent(int event) {
-            event = 0;
-        }
-    };
-    A *aPtr = new A;
-    imageSource->AddDecodeListener(aPtr);
+    MockDecodeListener * mockDecodeListener = new MockDecodeListener;
+    imageSource->AddDecodeListener(mockDecodeListener);
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
-    free(aPtr);
-    aPtr = NULL;
+    free(mockDecodeListener);
+    mockDecodeListener = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
 } // namespace Multimedia
