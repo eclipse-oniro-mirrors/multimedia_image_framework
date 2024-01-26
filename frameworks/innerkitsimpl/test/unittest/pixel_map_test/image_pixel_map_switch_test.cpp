@@ -155,8 +155,8 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest004, TestSize.Level3)
      * @tc.expected: step1. The new pixelmap is not null.
      */
     InitializationOptions opts;
-    opts.size.width = 102400;
-    opts.size.height = 102400;
+    opts.size.width = 700 * 1024 * 1024;
+    opts.size.height = 700 * 1024 * 1024;
     opts.pixelFormat = PixelFormat::ARGB_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
 
@@ -712,8 +712,8 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest025, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest025 start";
 
     InitializationOptions opts;
-    opts.size.width = 102400;
-    opts.size.height = 102400;
+    opts.size.width = 700 * 1024 * 1024;
+    opts.size.height = 700 * 1024 * 1024;
     opts.pixelFormat = PixelFormat::RGBA_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
 
@@ -733,8 +733,8 @@ HWTEST_F(ImagePixelMapSwitchTest, ImagePixelMapSwitchTest026, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapSwitchTest: ImagePixelMapSwitchTest026 start";
 
     InitializationOptions opts;
-    opts.size.width = 102400;
-    opts.size.height = 102400;
+    opts.size.width = 700 * 1024 * 1024;
+    opts.size.height = 700 * 1024 * 1024;
     opts.pixelFormat = PixelFormat::BGRA_8888;
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
 

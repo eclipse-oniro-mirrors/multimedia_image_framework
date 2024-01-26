@@ -305,6 +305,10 @@ HWTEST_F(PixelMapTest, PixelMapTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest006 start";
     std::unique_ptr<PixelMap> pixelMap1 = std::make_unique<PixelMap>();
+    void *dstPixels = nullptr;
+    void *fdBuffer = nullptr;
+    uint32_t bufferSize = pixelMap1->GetByteCount();
+    pixelMap1->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     ImageInfo info1;
     info1.size.width = INT32_MAX;
     info1.size.height = 300;
