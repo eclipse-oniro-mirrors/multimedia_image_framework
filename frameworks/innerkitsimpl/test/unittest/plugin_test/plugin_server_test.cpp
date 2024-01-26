@@ -150,5 +150,42 @@ HWTEST_F(PluginServerTest, AnalyzeFWTyper002, TestSize.Level3)
     ASSERT_EQ(result, PluginFWType::PLUGIN_FW_GSTREAMER);
     GTEST_LOG_(INFO) << "PluginServerTest: AnalyzeFWTyper002 end";
 }
+
+/**
+ * @tc.name: PluginServerGetClassInfo001
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, PluginServerGetClassInfo001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: PluginServerGetClassInfo001 start";
+    PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
+    uint16_t interfaceID = 1;
+    uint16_t serviceType = 1;
+    const map<std::string, AttrData> capabilities;
+    ClassInfo info;
+    vector<ClassInfo> classesinfo;
+    classesinfo.push_back(info);
+    uint32_t ret = pluginServer.PluginServerGetClassInfo(interfaceID, serviceType, capabilities, classesinfo);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginServerTest: PluginServerGetClassInfo001 end";
+}
+
+/**
+ * @tc.name: Register002
+ * @tc.desc: Verify that the plugin management module supports the basic scenario of
+ *           registering and managing one plugin package in one directory.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, Register002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: Register002 start";
+    PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
+    vector<string> pluginPaths;
+    uint32_t ret = pluginServer.Register(std::move(pluginPaths));
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "PluginServerTest: Register002 end";
+}
 }
 }
