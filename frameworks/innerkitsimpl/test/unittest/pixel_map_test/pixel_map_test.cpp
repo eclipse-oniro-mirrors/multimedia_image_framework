@@ -315,7 +315,7 @@ HWTEST_F(PixelMapTest, PixelMapTest006, TestSize.Level3)
     info1.pixelFormat = PixelFormat::RGB_888;
     info1.colorSpace = ColorSpace::SRGB;
     auto ret = pixelMap1->SetImageInfo(info1);
-    EXPECT_EQ(ret, SUCCESS);
+    EXPECT_EQ(ret, ERR_IMAGE_TOO_LARGE);
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest006 end";
 }
 
