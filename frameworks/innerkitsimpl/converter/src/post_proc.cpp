@@ -772,7 +772,8 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     } else {
         dstRowStride = desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     }
-    SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height, pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
+    SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
+        pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
     auto res = sws_scale(swsContext, &srcPixels, &srcRowStride, 0, srcHeight, &dstPixels, &dstRowStride);
     if (!res) {
         sws_freeContext(swsContext);
