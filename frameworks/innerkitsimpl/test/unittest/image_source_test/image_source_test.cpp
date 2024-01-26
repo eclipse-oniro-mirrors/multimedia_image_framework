@@ -49,6 +49,42 @@ public:
     ~ImageSourceTest() {}
 };
 
+class MockAbsImageFormatAgent : public ImagePlugin::AbsImageFormatAgent {
+public:
+    MockAbsImageFormatAgent() = default;
+    virtual ~MockAbsImageFormatAgent() {}
+
+    std::string GetFormatType() override
+    {
+        return returnString_;
+    }
+    uint32_t GetHeaderSize() override
+    {
+        return returnValue_;
+    }
+    bool CheckFormat(const void *headerData, uint32_t dataSize) override
+    {
+        return returnBool_;
+    }
+private:
+    std::string returnString_ = "";
+    uint32_t returnValue_ = 0;
+    bool returnBool_ = false;
+};
+
+class MockDecodeListener : public DecodeListener {
+public:
+    MockDecodeListener() = default;
+    ~MockDecodeListener() {}
+
+    void OnEvent(int event) override
+    {
+        returnVoid_ = event;
+    }
+private:
+    int returnVoid_;
+};
+
 /**
  * @tc.name: GetSupportedFormats001
  * @tc.desc: test GetSupportedFormats
@@ -1938,10 +1974,8 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
     imageSource->sourceStreamPtr_ = nullptr;
     ret = imageSource->CheckFormatHint(formatHint, formatIter);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    free(a_Ptr1);
-    free(a_Ptr2);
-    a_Ptr1 = NULL;
-    a_Ptr2 = NULL;
+    delete mockAbsImageFormatAgent1;
+    delete mockAbsImageFormatAgent2;
     GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
 }
 
@@ -1974,19 +2008,10 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->RemoveDecodeListener(listener);
-
-    class A : public DecodeListener {
-    public:
-        void OnEvent(int event) {
-            event = 0;
-        }
-    };
-    A *a_Ptr = new A;
-    imageSource->decodeListeners_.insert(a_Ptr);
-    imageSource->RemoveDecodeListener(a_Ptr);
+    std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
+    imageSource->decodeListeners_.insert(mockDecodeListener.get());
+    imageSource->RemoveDecodeListener(mockDecodeListener.get());
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
-    free(a_Ptr);
-    a_Ptr = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
 
@@ -2003,18 +2028,9 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     DecodeListener *listener = nullptr;
     imageSource->AddDecodeListener(listener);
-
-    class A : public DecodeListener {
-    public:
-        void OnEvent(int event) {
-            event = 0;
-        }
-    };
-    A *a_Ptr = new A;
-    imageSource->AddDecodeListener(a_Ptr);
+    std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
+    imageSource->AddDecodeListener(mockDecodeListener.get());
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
-    free(a_Ptr);
-    a_Ptr = NULL;
     GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
 } // namespace Multimedia
