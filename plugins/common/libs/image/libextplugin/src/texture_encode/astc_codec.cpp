@@ -361,9 +361,9 @@ uint32_t AstcCodec::ASTCEncode()
             IMAGE_LOGE("AstcSoftwareEncode failed");
             return ERROR;
         }
-        IMAGE_LOGI("astc software encode success!");
+        IMAGE_LOGD("astc software encode success!");
     }
-    IMAGE_LOGI("astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
+    IMAGE_LOGD("astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
         hardwareFlag, enableQualityCheck, param.privateProfile_);
     astcOutput_->SetOffset(outSize);
     return SUCCESS;
