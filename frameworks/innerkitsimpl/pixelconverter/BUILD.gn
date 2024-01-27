@@ -23,6 +23,7 @@ config("pixelconvertadapter_public_config") {
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/communication/ipc/utils/include",
     "//foundation/multimedia/media_utils_lite/interfaces/kits",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "$skia_root/skia/include/core",
     "$skia_root/skia/include/encode",
     "$skia_root/skia",
@@ -172,6 +173,7 @@ if (use_clang_ios) {
       external_deps = [
         "c_utils:utils",
         "graphic_2d:color_manager",
+        "hilog:libhilog",
       ]
     }
 

@@ -14,21 +14,25 @@
  */
 
 #include "webp_format_agent.h"
+
 #include <cstring>
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+
+#include "image_log.h"
 #include "plugin_service.h"
 #include "sched.h"
 #include "string"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "WebpFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "WebpFormatAgent" };
 const std::string FORMAT_TYPE = "image/webp";
 constexpr size_t WEBP_MINIMUM_LENGTH = 14;
 const char *WEBP_HEADER_PRE = "RIFF";
@@ -50,7 +54,7 @@ uint32_t WebpFormatAgent::GetHeaderSize()
 bool WebpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr || dataSize == 0) {
-        HiLog::Error(LABEL, "check format input parameter abnormal.");
+        IMAGE_LOGE("check format input parameter abnormal.");
         return false;
     }
 

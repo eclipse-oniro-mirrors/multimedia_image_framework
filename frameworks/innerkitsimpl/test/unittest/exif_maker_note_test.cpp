@@ -19,8 +19,6 @@
 #include "exif_maker_note.h"
 #include "securec.h"
 #include "string_ex.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "exif_info.h"
 #include "jpeg_decoder.h"
@@ -28,7 +26,6 @@
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace ImagePlugin {
 constexpr unsigned char HW_MNOTE_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0' };

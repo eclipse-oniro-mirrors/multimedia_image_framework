@@ -19,8 +19,6 @@
 #include <memory>
 #include "abs_image_decoder.h"
 #include "heif_decoder_wrapper.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 

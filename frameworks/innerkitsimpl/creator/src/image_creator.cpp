@@ -15,19 +15,22 @@
 
 #include "image_creator.h"
 
-#include "hilog/log.h"
 #include "image_creator_buffer_processor.h"
 #include "image_creator_manager.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_utils.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "imageCreator"
 
 namespace OHOS {
 namespace Media {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageCreator"};
 std::map<uint8_t*, ImageCreator*> ImageCreator::bufferCreatorMap_;
-using namespace OHOS::HiviewDFX;
 ImageCreator::~ImageCreator()
 {
     if (iraContext_ != nullptr) {
@@ -42,7 +45,7 @@ ImageCreator::~ImageCreator()
 
 GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
 {
-    HiLog::Info(LABEL, "OnBufferRelease");
+    IMAGE_LOGI("OnBufferRelease");
     if (buffer == nullptr) {
         return GSERROR_NO_ENTRY;
     }
@@ -52,7 +55,7 @@ GSError ImageCreator::OnBufferRelease(sptr<SurfaceBuffer> &buffer)
     }
     auto icr = iter->second;
     if (icr->surfaceBufferReleaseListener_ == nullptr) {
-        HiLog::Info(LABEL, "empty icr");
+        IMAGE_LOGI("empty icr");
         return GSERROR_NO_ENTRY;
     }
     icr->surfaceBufferReleaseListener_->OnSurfaceBufferRelease();
@@ -68,7 +71,7 @@ std::shared_ptr<ImageCreatorContext> ImageCreatorContext ::CreateImageCreatorCon
 
 void ImageCreatorSurfaceListener ::OnBufferAvailable()
 {
-    HiLog::Debug(LABEL, "CreatorBufferAvailable");
+    IMAGE_LOGD("CreatorBufferAvailable");
     if (ic_->surfaceBufferAvaliableListener_ != nullptr) {
         ic_->surfaceBufferAvaliableListener_->OnSurfaceBufferAvaliable();
     }
@@ -81,7 +84,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     iva->iraContext_ = ImageCreatorContext::CreateImageCreatorContext();
     iva->creatorConsumerSurface_ = IConsumerSurface::Create();
     if (iva->creatorConsumerSurface_ == nullptr) {
-        HiLog::Debug(LABEL, "SurfaceAsConsumer == nullptr");
+        IMAGE_LOGD("SurfaceAsConsumer == nullptr");
         return iva;
     }
     iva->creatorConsumerSurface_->SetDefaultWidthAndHeight(width, height);
@@ -94,7 +97,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     iva->creatorProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
     iva->creatorProducerSurface_->SetQueueSize(capicity);
     if (iva->creatorProducerSurface_ == nullptr) {
-        HiLog::Debug(LABEL, "SurfaceAsProducer == nullptr");
+        IMAGE_LOGD("SurfaceAsProducer == nullptr");
         return iva;
     }
     iva->iraContext_->SetCreatorBufferConsumer(iva->creatorConsumerSurface_);
@@ -113,7 +116,7 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
 
 int64_t CreatorPackImage(uint8_t *tempBuffer, uint32_t bufferSize, std::unique_ptr<PixelMap> pixelMap)
 {
-    HiLog::Debug(LABEL, "PackImage");
+    IMAGE_LOGD("PackImage");
     ImagePacker imagePacker;
     PackOption option;
     option.format = ImageReceiver::OPTION_FORMAT;
@@ -123,16 +126,16 @@ int64_t CreatorPackImage(uint8_t *tempBuffer, uint32_t bufferSize, std::unique_p
 
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "image packer get supported format failed, ret=%{public}u.", ret);
+        IMAGE_LOGE("image packer get supported format failed, ret=%{public}u.", ret);
         return 0;
     } else {
-        HiLog::Debug(LABEL, "SUCCESS");
+        IMAGE_LOGD("SUCCESS");
     }
     imagePacker.StartPacking(tempBuffer, bufferSize, option);
     imagePacker.AddImage(*pixelMap);
     int64_t packedSize = 0;
     imagePacker.FinalizePacking(packedSize);
-    HiLog::Info(LABEL, "packedSize=%{public}lld.", static_cast<long long>(packedSize));
+    IMAGE_LOGI("packedSize=%{public}lld.", static_cast<long long>(packedSize));
     return packedSize;
 }
 static const int BIT4 = 4;
@@ -148,13 +151,13 @@ static void dumpBuffer(const uint8_t* tempBuffer, int64_t size)
         ss.push_back(xx[tempBuffer[i]&BIT4_MASK]);
         if (i % PRINT_WIDTH == PRINT_WIDTH_MOD) {
             ss.push_back('\0');
-            HiLog::Info(LABEL, "buffer[%{public}d] = [%{public}s]", i, ss.data());
+            IMAGE_LOGI("buffer[%{public}d] = [%{public}s]", i, ss.data());
             ss.clear();
             ss.resize(0);
         }
     }
     ss.push_back('\0');
-    HiLog::Info(LABEL, "buffer[LAST] = [%{public}s]", ss.data());
+    IMAGE_LOGI("buffer[LAST] = [%{public}s]", ss.data());
     ss.clear();
     ss.resize(0);
 }
@@ -167,10 +170,10 @@ int32_t ImageCreator::SaveSTP(uint32_t *buffer,
     if (pixelMap.get() != nullptr) {
         ImageInfo imageInfo;
         pixelMap->GetImageInfo(imageInfo);
-        HiLog::Debug(LABEL, "create pixel map imageInfo.size.width=%{public}u.",
+        IMAGE_LOGD("create pixel map imageInfo.size.width=%{public}u.",
             imageInfo.size.width);
     } else {
-        HiLog::Error(LABEL, "pixelMap.get() == nullptr");
+        IMAGE_LOGE("pixelMap.get() == nullptr");
         return ERR_MEDIA_INVALID_VALUE;
     }
     ImagePacker imagePacker;
@@ -199,18 +202,18 @@ static void ReleaseBuffer(AllocatorType allocatorType, uint8_t **buffer)
 static bool AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
 {
     if (bufferSize == 0 || bufferSize > MALLOC_MAX_LENTH) {
-        HiLog::Error(LABEL, "[PostProc]Invalid value of bufferSize");
+        IMAGE_LOGE("[PostProc]Invalid value of bufferSize");
         return false;
     }
     *buffer = static_cast<uint8_t *>(malloc(bufferSize));
     if (*buffer == nullptr) {
-        HiLog::Error(LABEL, "[PostProc]alloc covert color buffersize[%{public}llu] failed.",
+        IMAGE_LOGE("[PostProc]alloc covert color buffersize[%{public}llu] failed.",
             static_cast<unsigned long long>(bufferSize));
         return false;
     }
     errno_t errRet = memset_s(*buffer, bufferSize, 0, bufferSize);
     if (errRet != EOK) {
-        HiLog::Error(LABEL, "[PostProc]memset convertData fail, errorCode = %{public}d", errRet);
+        IMAGE_LOGE("[PostProc]memset convertData fail, errorCode = %{public}d", errRet);
         ReleaseBuffer(AllocatorType::HEAP_ALLOC, buffer);
         return false;
     }
@@ -226,14 +229,14 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
         uint8_t *addr2 = nullptr;
         int32_t size = buffer->GetSize();
         if (!AllocHeapBuffer(size, &addr2)) {
-            HiLog::Error(LABEL, "AllocHeapBuffer failed");
+            IMAGE_LOGE("AllocHeapBuffer failed");
             return ERR_MEDIA_INVALID_VALUE;
         }
         errorcode = SaveSTP(addr, addr2, static_cast<uint32_t>(size), initializationOpts);
         (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
-        HiLog::Info(LABEL, "start release");
+        IMAGE_LOGI("start release");
     } else {
-        HiLog::Debug(LABEL, "SaveBufferAsImage buffer == nullptr");
+        IMAGE_LOGD("SaveBufferAsImage buffer == nullptr");
     }
     return errorcode;
 }
@@ -254,7 +257,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
     if (surfaceError == SURFACE_ERROR_OK) {
         iraContext_->currentCreatorBuffer_ = buffer;
     } else {
-        HiLog::Debug(LABEL, "error : request buffer is null");
+        IMAGE_LOGD("error : request buffer is null");
     }
     if (buffer != nullptr && buffer->GetVirAddr() != nullptr) {
         bufferCreatorMap_.insert(
@@ -265,16 +268,16 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageCreator::DequeueImage()
 
 void ImageCreator::QueueImage(OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
 {
-    HiLog::Info(LABEL, "start Queue Image");
+    IMAGE_LOGI("start Queue Image");
     int32_t flushFence = -1;
     BufferFlushConfig config;
     config.damage.w = iraContext_->GetWidth();
     config.damage.h = iraContext_->GetHeight();
     sptr<Surface> creatorSurface = iraContext_->GetCreatorBufferProducer();
     SurfaceError surfaceError = creatorSurface->FlushBuffer(buffer, flushFence, config);
-    HiLog::Info(LABEL, "finish Queue Image");
+    IMAGE_LOGI("finish Queue Image");
     if (surfaceError != SURFACE_ERROR_OK) {
-        HiLog::Debug(LABEL, "Queue fail");
+        IMAGE_LOGD("Queue fail");
     }
 }
 sptr<IConsumerSurface> ImageCreator::GetCreatorSurface()
@@ -286,7 +289,7 @@ sptr<IConsumerSurface> ImageCreator::getSurfaceById(std::string id)
 {
     ImageCreatorManager& imageCreatorManager = ImageCreatorManager::getInstance();
     sptr<IConsumerSurface> surface = imageCreatorManager.GetSurfaceByKeyId(id);
-    HiLog::Debug(LABEL, "getSurfaceByCreatorId");
+    IMAGE_LOGD("getSurfaceByCreatorId");
     return surface;
 }
 void ImageCreator::ReleaseCreator()

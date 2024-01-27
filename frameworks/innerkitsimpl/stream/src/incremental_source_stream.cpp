@@ -17,20 +17,23 @@
 
 #include <algorithm>
 #include <vector>
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
 #include "memory.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "IncrementalSourceStream"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace ImagePlugin;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "IncrementalSourceStream" };
 
 IncrementalSourceStream::IncrementalSourceStream(IncrementalMode mode)
     : incrementalMode_(mode), isFinalize_(false), dataSize_(0), dataOffset_(0)
@@ -38,14 +41,14 @@ IncrementalSourceStream::IncrementalSourceStream(IncrementalMode mode)
 
 unique_ptr<IncrementalSourceStream> IncrementalSourceStream::CreateSourceStream(IncrementalMode mode)
 {
-    HiLog::Debug(LABEL, "[IncrementalSourceStream]mode:%{public}d.", mode);
+    IMAGE_LOGD("[IncrementalSourceStream]mode:%{public}d.", mode);
     return (unique_ptr<IncrementalSourceStream>(new IncrementalSourceStream(mode)));
 }
 
 bool IncrementalSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (!Peek(desiredSize, outData)) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]read fail.");
+        IMAGE_LOGE("[IncrementalSourceStream]read fail.");
         return false;
     }
     dataOffset_ += outData.dataSize;
@@ -55,11 +58,11 @@ bool IncrementalSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outDa
 bool IncrementalSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]input the parameter exception.");
+        IMAGE_LOGE("[IncrementalSourceStream]input the parameter exception.");
         return false;
     }
     if (sourceData_.empty() || dataSize_ == 0 || dataOffset_ >= dataSize_) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]source data exception. dataSize_:%{public}zu,"
+        IMAGE_LOGE("[IncrementalSourceStream]source data exception. dataSize_:%{public}zu,"
             "dataOffset_:%{public}zu.", dataSize_, dataOffset_);
         return false;
     }
@@ -69,7 +72,7 @@ bool IncrementalSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outDa
     }
     outData.dataSize = desiredSize;
     outData.inputStreamBuffer = sourceData_.data() + dataOffset_;
-    HiLog::Debug(LABEL, "[IncrementalSourceStream]Peek end. desiredSize:%{public}u, offset:%{public}zu,"
+    IMAGE_LOGD("[IncrementalSourceStream]Peek end. desiredSize:%{public}u, offset:%{public}zu,"
         "dataSize_:%{public}zu,dataOffset_:%{public}zu.", desiredSize, dataOffset_, dataSize_, dataOffset_);
     return true;
 }
@@ -77,7 +80,7 @@ bool IncrementalSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outDa
 bool IncrementalSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (!Peek(desiredSize, outBuffer, bufferSize, readSize)) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]read fail.");
+        IMAGE_LOGE("[IncrementalSourceStream]read fail.");
         return false;
     }
     dataOffset_ += readSize;
@@ -87,12 +90,12 @@ bool IncrementalSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uin
 bool IncrementalSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]input parameter exception, desiredSize:%{public}u,"
+        IMAGE_LOGE("[IncrementalSourceStream]input parameter exception, desiredSize:%{public}u,"
             "bufferSize:%{public}u.", desiredSize, bufferSize);
         return false;
     }
     if (sourceData_.empty() || dataSize_ == 0 || dataOffset_ >= dataSize_) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]source data exception. dataSize_:%{public}zu,"
+        IMAGE_LOGE("[IncrementalSourceStream]source data exception. dataSize_:%{public}zu,"
             "dataOffset_:%{public}zu.", dataSize_, dataOffset_);
         return false;
     }
@@ -101,7 +104,7 @@ bool IncrementalSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uin
     }
     errno_t ret = memcpy_s(outBuffer, bufferSize, sourceData_.data() + dataOffset_, desiredSize);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
+        IMAGE_LOGE("[IncrementalSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
             "offset:%{public}zu, desiredSize:%{public}u, dataSize:%{public}zu.", ret, bufferSize, dataOffset_,
             desiredSize, dataSize_);
         return false;
@@ -118,7 +121,7 @@ uint32_t IncrementalSourceStream::Tell()
 bool IncrementalSourceStream::Seek(uint32_t position)
 {
     if (position >= dataSize_) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]Seek the position greater than the Data Size.");
+        IMAGE_LOGE("[IncrementalSourceStream]Seek the position greater than the Data Size.");
         return false;
     }
     dataOffset_ = position;
@@ -128,11 +131,11 @@ bool IncrementalSourceStream::Seek(uint32_t position)
 uint32_t IncrementalSourceStream::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
     if (data == nullptr) {
-        HiLog::Error(LABEL, "[IncrementalSourceStream]input the parameter exception.");
+        IMAGE_LOGE("[IncrementalSourceStream]input the parameter exception.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (size == 0) {
-        HiLog::Debug(LABEL, "[IncrementalSourceStream]no need to update data.");
+        IMAGE_LOGD("[IncrementalSourceStream]no need to update data.");
         return SUCCESS;
     }
     if (incrementalMode_ == IncrementalMode::INCREMENTAL_DATA) {

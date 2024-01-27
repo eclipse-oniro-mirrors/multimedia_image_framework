@@ -43,6 +43,7 @@ ohos_shared_library("imageformatagent") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
   ]
 
   if (use_mingw_win) {
@@ -74,7 +75,6 @@ ohos_shared_library("imageformatagent") {
       "hilog:libhilog",
     ]
   }
-
   part_name = "image_framework"
 
   subsystem_name = "multimedia"

@@ -13,38 +13,40 @@
  * limitations under the License.
  */
 #include "raw_stream.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "RawStream"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
-namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "RawStream" };
-}
 
 RawStream::RawStream(InputDataStream &sourceStream)
 {
-    HiLog::Debug(LABEL, "create IN");
+    IMAGE_LOGD("create IN");
 
     inputStream_ = &sourceStream;
 
-    HiLog::Debug(LABEL, "create OUT");
+    IMAGE_LOGD("create OUT");
 }
 
 RawStream::~RawStream()
 {
-    HiLog::Debug(LABEL, "release IN");
+    IMAGE_LOGD("release IN");
 
     inputStream_ = nullptr;
 
-    HiLog::Debug(LABEL, "release OUT");
+    IMAGE_LOGD("release OUT");
 }
 
 // api for piex::StreamInterface
 piex::Error RawStream::GetData(const size_t offset, const size_t length, uint8_t* data)
 {
     if (inputStream_ == nullptr) {
-        HiLog::Error(LABEL, "GetData, InputStream is null");
+        IMAGE_LOGE("GetData, InputStream is null");
         return piex::kUnsupported;
     }
 
@@ -53,24 +55,24 @@ piex::Error RawStream::GetData(const size_t offset, const size_t length, uint8_t
 
     if (inputStream_->Tell() != u32Offset) {
         if (!inputStream_->Seek(u32Offset)) {
-            HiLog::Error(LABEL, "GetData, seek fail");
+            IMAGE_LOGE("GetData, seek fail");
             return piex::kFail;
         }
 
         if (inputStream_->Tell() != u32Offset) {
-            HiLog::Error(LABEL, "GetData, seeked fail");
+            IMAGE_LOGE("GetData, seeked fail");
             return piex::kFail;
         }
     }
 
     uint32_t readSize = 0;
     if (!inputStream_->Read(u32Length, data, u32Length, readSize)) {
-        HiLog::Error(LABEL, "GetData, read fail");
+        IMAGE_LOGE("GetData, read fail");
         return piex::kFail;
     }
 
     if (readSize != u32Length) {
-        HiLog::Error(LABEL, "GetData, read want:%{public}u, real:%{public}u", u32Length, readSize);
+        IMAGE_LOGE("GetData, read want:%{public}u, real:%{public}u", u32Length, readSize);
         return piex::kFail;
     }
 

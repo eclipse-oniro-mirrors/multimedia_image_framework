@@ -18,12 +18,10 @@
 
 #include "astc_codec.h"
 #include "buffer_packer_stream.h"
-#include "hilog/log.h"
 #include "image_compressor.h"
 #include "image_source_util.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 
 using namespace testing::ext;

@@ -19,6 +19,11 @@
 #include "hilog/log_cpp.h"
 #include "ostream"
 
+int HiLogPrint(LogType type, LogLevel level, unsigned int domain, const char *tag, const char *fmt, ...)
+{
+    return 0;
+}
+
 namespace OHOS {
 namespace HiviewDFX {
 using namespace std;

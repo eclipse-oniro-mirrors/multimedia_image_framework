@@ -14,16 +14,18 @@
  */
 
 #include "incremental_pixel_map.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_source.h"
-#include "log_tags.h"
 #include "media_errors.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "IncrementalPixelMap"
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
-
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "IncrementalPixelMap" };
 
 static IncrementalDecodingState ConvertImageStateToIncrementalState(ImageDecodingState imageState)
 {
@@ -50,7 +52,7 @@ static IncrementalDecodingState ConvertImageStateToIncrementalState(ImageDecodin
             return IncrementalDecodingState::IMAGE_DECODED;
         }
         default: {
-            HiLog::Error(LABEL, "unexpected imageState %{public}d.", imageState);
+            IMAGE_LOGE("unexpected imageState %{public}d.", imageState);
             return IncrementalDecodingState::UNRESOLVED;
         }
     }
@@ -77,11 +79,11 @@ uint32_t IncrementalPixelMap::PromoteDecoding(uint8_t &decodeProgress)
     if (imageSource_ == nullptr) {
         if (decodingStatus_.state == IncrementalDecodingState::BASE_INFO_ERROR ||
             decodingStatus_.state == IncrementalDecodingState::IMAGE_ERROR) {
-            HiLog::Error(LABEL, "promote decode failed for state %{public}d, errorDetail %{public}u.",
-                         decodingStatus_.state, decodingStatus_.errorDetail);
+            IMAGE_LOGE("promote decode failed for state %{public}d, errorDetail %{public}u.", decodingStatus_.state,
+                decodingStatus_.errorDetail);
             return decodingStatus_.errorDetail;
         }
-        HiLog::Error(LABEL, "promote decode failed or terminated, image source is null.");
+        IMAGE_LOGE("promote decode failed or terminated, image source is null.");
         return ERR_IMAGE_SOURCE_DATA;
     }
     ImageDecodingState imageState = ImageDecodingState::UNRESOLVED;
@@ -94,7 +96,7 @@ uint32_t IncrementalPixelMap::PromoteDecoding(uint8_t &decodeProgress)
     if (ret != SUCCESS && ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         DetachSource();
         decodingStatus_.errorDetail = ret;
-        HiLog::Error(LABEL, "promote decode failed, ret=%{public}u.", ret);
+        IMAGE_LOGE("promote decode failed, ret=%{public}u.", ret);
     }
     if (ret == SUCCESS) {
         DetachSource();

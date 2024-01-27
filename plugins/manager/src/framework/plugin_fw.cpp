@@ -14,12 +14,17 @@
  */
 
 #include "plugin_fw.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "singleton.h"
-#include "log_tags.h"
 #include "impl_class_mgr.h"
 #include "plugin_info_lock.h"
 #include "plugin_mgr.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PluginFw"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -29,13 +34,10 @@ using std::vector;
 using OHOS::Utils::RWLock;
 using OHOS::Utils::UniqueReadGuard;
 using OHOS::Utils::UniqueWriteGuard;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PluginFw" };
 
 uint32_t PluginFw::Register(const vector<string> &canonicalPaths)
 {
-    HiLog::Debug(LABEL, "plugin register.");
+    IMAGE_LOGD("plugin register.");
     // Use the read-write lock to mutually exclusive write plugin information and read plugin information operations,
     // where Register() plays the write role.
     UniqueWriteGuard<RWLock> lk(DelayedRefSingleton<PluginInfoLock>::GetInstance().rwLock_);

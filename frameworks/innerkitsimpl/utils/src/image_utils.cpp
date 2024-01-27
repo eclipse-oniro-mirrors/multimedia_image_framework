@@ -26,8 +26,7 @@
 #include <sstream>
 
 #include "__config"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "ios"
 #include "istream"
 #include "media_errors.h"
@@ -47,13 +46,17 @@
 #include "refbase.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "imageUtils"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace MultimediaPlugin;
 
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "imageUtils" };
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -74,13 +77,13 @@ static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
 {
     if (pathName.empty()) {
-        HiLog::Error(LABEL, "[ImageUtil]input parameter exception.");
+        IMAGE_LOGE("[ImageUtil]input parameter exception.");
         return false;
     }
     struct stat statbuf;
     int ret = stat(pathName.c_str(), &statbuf);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[ImageUtil]get the file size failed, ret:%{public}d, errno:%{public}d.", ret, errno);
+        IMAGE_LOGE("[ImageUtil]get the file size failed, ret:%{public}d, errno:%{public}d.", ret, errno);
         return false;
     }
     size = statbuf.st_size;
@@ -97,7 +100,7 @@ bool ImageUtils::GetFileSize(const int fd, size_t &size)
 
     int ret = fstat(fd, &statbuf);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[ImageUtil]get the file size failed, ret:%{public}d, errno:%{public}d.", ret, errno);
+        IMAGE_LOGE("[ImageUtil]get the file size failed, ret:%{public}d, errno:%{public}d.", ret, errno);
         return false;
     }
     size = statbuf.st_size;
@@ -107,7 +110,7 @@ bool ImageUtils::GetFileSize(const int fd, size_t &size)
 bool ImageUtils::GetInputStreamSize(istream &inputStream, size_t &size)
 {
     if (inputStream.rdbuf() == nullptr) {
-        HiLog::Error(LABEL, "[ImageUtil]input parameter exception.");
+        IMAGE_LOGE("[ImageUtil]input parameter exception.");
         return false;
     }
     size_t original = inputStream.tellg();
@@ -149,7 +152,7 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
             pixelBytes = ASTC_4X4_BYTES;
             break;
         default:
-            HiLog::Error(LABEL, "[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.",
+            IMAGE_LOGE("[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.",
                 static_cast<int32_t>(pixelFormat));
             break;
     }
@@ -170,10 +173,10 @@ uint32_t ImageUtils::RegisterPluginServer()
     PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
     uint32_t result = pluginServer.Register(std::move(pluginPaths));
     if (result != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+        IMAGE_LOGE("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
     } else {
         g_pluginRegistered = true;
-        HiLog::Info(LABEL, "[ImageUtil]success to register plugin server");
+        IMAGE_LOGI("[ImageUtil]success to register plugin server");
     }
     return result;
 }
@@ -183,7 +186,7 @@ PluginServer& ImageUtils::GetPluginServer()
     if (!g_pluginRegistered) {
         uint32_t result = RegisterPluginServer();
         if (result != SUCCESS) {
-            HiLog::Info(LABEL, "[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
+            IMAGE_LOGI("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
         }
     }
     return DelayedRefSingleton<PluginServer>::GetInstance();
@@ -192,12 +195,12 @@ PluginServer& ImageUtils::GetPluginServer()
 bool ImageUtils::PathToRealPath(const string &path, string &realPath)
 {
     if (path.empty()) {
-        HiLog::Error(LABEL, "path is empty!");
+        IMAGE_LOGE("path is empty!");
         return false;
     }
 
     if ((path.length() >= PATH_MAX)) {
-        HiLog::Error(LABEL, "path len is error, the len is: [%{public}lu]", static_cast<unsigned long>(path.length()));
+        IMAGE_LOGE("path len is error, the len is: [%{public}lu]", static_cast<unsigned long>(path.length()));
         return false;
     }
 
@@ -205,11 +208,11 @@ bool ImageUtils::PathToRealPath(const string &path, string &realPath)
 
 #ifdef _WIN32
     if (_fullpath(tmpPath, path.c_str(), path.length()) == nullptr) {
-        HiLog::Warn(LABEL, "path to _fullpath error");
+        IMAGE_LOGW("path to _fullpath error");
     }
 #else
     if (realpath(path.c_str(), tmpPath) == nullptr) {
-        HiLog::Error(LABEL, "path to realpath is nullptr");
+        IMAGE_LOGE("path to realpath is nullptr");
         return false;
     }
 #endif
@@ -249,7 +252,7 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV12:
         case PixelFormat::CMYK:
         default: {
-            HiLog::Error(LABEL, "GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
+            IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
             return AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
         }
     }
@@ -260,11 +263,11 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 {
     if (info.size.width <= 0 || info.size.height <= 0 || info.size.width > MAX_DIMENSION ||
         info.size.height > MAX_DIMENSION) {
-        HiLog::Error(LABEL, "width(%{public}d) or height(%{public}d) is invalid.", info.size.width, info.size.height);
+        IMAGE_LOGE("width(%{public}d) or height(%{public}d) is invalid.", info.size.width, info.size.height);
         return false;
     }
     if (info.pixelFormat == PixelFormat::UNKNOWN || info.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        HiLog::Error(LABEL, "check pixelformat and alphatype is invalid.");
+        IMAGE_LOGE("check pixelformat and alphatype is invalid.");
         return false;
     }
     return true;
@@ -273,12 +276,12 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
 {
     if (width == 0 || bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "param is 0");
+        IMAGE_LOGE("param is 0");
         return true;
     }
     int64_t rowSize = static_cast<int64_t>(width) * bytesPerPixel;
     if ((rowSize / width) != bytesPerPixel) {
-        HiLog::Error(LABEL, "width * bytesPerPixel overflow!");
+        IMAGE_LOGE("width * bytesPerPixel overflow!");
         return true;
     }
     return false;
@@ -287,17 +290,17 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel)
 {
     if (width == 0 || height == 0 || bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "param is 0");
+        IMAGE_LOGE("param is 0");
         return true;
     }
     int64_t rectSize = static_cast<int64_t>(width) * height;
     if ((rectSize / width) != height) {
-        HiLog::Error(LABEL, "width * height overflow!");
+        IMAGE_LOGE("width * height overflow!");
         return true;
     }
     int64_t bufferSize = rectSize * bytesPerPixel;
     if ((bufferSize / bytesPerPixel) != rectSize) {
-        HiLog::Error(LABEL, "bytesPerPixel overflow!");
+        IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
     }
     return false;
@@ -306,7 +309,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
 static void ReversePixels(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byteCount)
 {
     if (byteCount % NUM_4 != NUM_0) {
-        HiLog::Error(LABEL, "Pixel count must multiple of 4.");
+        IMAGE_LOGE("Pixel count must multiple of 4.");
         return;
     }
     uint8_t *src = srcPixels;
@@ -336,7 +339,7 @@ void ImageUtils::ARGBToBGRA(uint8_t* srcPixels, uint8_t* dstPixels, uint32_t byt
 int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 {
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "parameter error, please check input parameter");
+        IMAGE_LOGE("parameter error, please check input parameter");
         return ERR_SURFACEBUFFER_REFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
@@ -347,7 +350,7 @@ int32_t ImageUtils::SurfaceBuffer_Reference(void* buffer)
 int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
 {
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "parameter error, please check input parameter");
+        IMAGE_LOGE("parameter error, please check input parameter");
         return ERR_SURFACEBUFFER_UNREFERENCE_FAILED;
     }
     OHOS::RefBase *ref = reinterpret_cast<OHOS::RefBase *>(buffer);
@@ -361,19 +364,19 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         return;
     }
     if (pixelMap == nullptr) {
-        HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
+        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
         return;
     }
 
-    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled start");
+    IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled start");
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
         GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
-        HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled failed");
+        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled failed");
         return;
     }
-    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapIfDumpEnabled success, path = %{public}s", fileName.c_str());
+    IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled success, path = %{public}s", fileName.c_str());
 }
 
 void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
@@ -381,15 +384,15 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
     }
-    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode start");
+    IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode start");
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_beforeEncode" + GetPixelMapName(&pixelMap) +
         ".dat";
     int32_t totalSize = pixelMap.GetRowStride() * pixelMap.GetHeight();
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap.GetPixels()), totalSize)) {
-        HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode failed");
+        IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode failed");
         return;
     }
-    HiLog::Info(LABEL, "ImageUtils::DumpPixelMapBeforeEncode success, path = %{public}s", fileName.c_str());
+    IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode success, path = %{public}s", fileName.c_str());
 }
 
 void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
@@ -401,17 +404,17 @@ void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
         "_data_total" + std::to_string(totalSize) + "." + fileSuffix;
     if (SUCCESS != SaveDataToFile(fileName, data, totalSize)) {
-        HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled failed");
+        IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled failed");
         return;
     }
-    HiLog::Info(LABEL, "ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
+    IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
 }
 
 uint32_t ImageUtils::SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize)
 {
     std::ofstream outFile(fileName, std::ofstream::out);
     if (!outFile.is_open()) {
-        HiLog::Info(LABEL, "ImageUtils::SaveDataToFile write error, path=%{public}s", fileName.c_str());
+        IMAGE_LOGI("ImageUtils::SaveDataToFile write error, path=%{public}s", fileName.c_str());
         return IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED;
     }
     outFile.write(data, totalSize);
@@ -435,7 +438,7 @@ std::string ImageUtils::GetLocalTime()
 std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
 {
     if (!pixelMap) {
-        HiLog::Error(LABEL, "ImageUtils::GetPixelMapName error, pixelMap is null");
+        IMAGE_LOGE("ImageUtils::GetPixelMapName error, pixelMap is null");
         return "";
     }
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +

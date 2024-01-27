@@ -19,8 +19,6 @@
 #include <vector>
 
 #include "abs_image_encoder.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "plugin_class_base.h"
 
 namespace OHOS {

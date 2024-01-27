@@ -16,22 +16,25 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include "abs_image_detector.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "plugin_server.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PluginManagerTest"
 
 using OHOS::DelayedRefSingleton;
 using std::string;
+
 using std::vector;
 using namespace testing::ext;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::MultimediaPlugin;
 using namespace OHOS::PluginExample;
 
 namespace OHOS {
 namespace Multimedia {
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PluginManagerTest" };
-
 class PluginManagerTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
@@ -348,7 +351,7 @@ HWTEST_F(PluginManagerTest, TestCreateByService001, TestSize.Level3)
 HWTEST_F(PluginManagerTest, TestCreateByService002, TestSize.Level3)
 {
     AbsImageDetector *unknownDetector = nullptr;
-    HiLog::Debug(LABEL, "[PluginManager_TestCreateByService_002] Start.");
+    IMAGE_LOGD("[PluginManager_TestCreateByService_002] Start.");
     PluginServer &pluginServer = DelayedRefSingleton<PluginServer>::GetInstance();
 
     /**
@@ -746,39 +749,39 @@ uint32_t PluginManagerTest::DoTestRegister003(PluginServer &pluginServer)
     string implClassName = "OHOS::PluginExample::CloudLabelDetector2";
     AbsImageDetector *cLabelDetector2 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetector2 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister003] cLabelDetector2 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister003] cLabelDetector2 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::LabelDetector3";
     labelDetector3 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (labelDetector3 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister003] labelDetector3 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister003] labelDetector3 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::CloudLabelDetector";
     cLabelDetector = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetector == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister003] cLabelDetector null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister003] cLabelDetector null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     result = cLabelDetector2->Process();
     if (result != "CloudLabelDetector2") {
-        HiLog::Error(LABEL, "[DoTestRegister003] result1 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister003] result1 check fail, result: %{public}s.", result.c_str());
         goto TEST_END;
     }
 
     result = labelDetector3->Process();
     if (result != "LabelDetector3") {
-        HiLog::Error(LABEL, "[DoTestRegister003] result2 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister003] result2 check fail, result: %{public}s.", result.c_str());
         goto TEST_END;
     }
 
     result = cLabelDetector->Process();
     if (result != "CloudLabelDetector") {
-        HiLog::Error(LABEL, "[DoTestRegister003] result3 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister003] result3 check fail, result: %{public}s.", result.c_str());
         goto TEST_END;
     }
     testRet = SUCCESS;
@@ -810,39 +813,39 @@ uint32_t PluginManagerTest::DoTestRegister004(PluginServer &pluginServer)
     string implClassName = "OHOS::PluginExample::CloudLabelDetector";
     AbsImageDetector *cLabelDetector = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetector == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister004] cLabelDetector null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister004] cLabelDetector null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::CloudLabelDetector2";
     cLabelDetector2 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetector2 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister004] cLabelDetector2 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister004] cLabelDetector2 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::LabelDetector3";
     labelDetector3 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (labelDetector3 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestRegister004] labelDetector3 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestRegister004] labelDetector3 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     result = cLabelDetector->Process();
     if (result != "CloudLabelDetector") {
-        HiLog::Error(LABEL, "[DoTestRegister004] result1 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister004] result1 check fail, result: %{public}s.", result.c_str());
         goto TEST_END;
     }
 
     result = cLabelDetector2->Process();
     if (result != "CloudLabelDetector2") {
-        HiLog::Error(LABEL, "[DoTestRegister004] result2 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister004] result2 check fail, result: %{public}s.", result.c_str());
         goto TEST_END;
     }
 
     result = labelDetector3->Process();
     if (result != "LabelDetector3") {
-        HiLog::Error(LABEL, "[DoTestRegister004] result3 check fail, result: %{public}s.", result.c_str());
+        IMAGE_LOGE("[DoTestRegister004] result3 check fail, result: %{public}s.", result.c_str());
         return ERR_GENERAL;
     }
     testRet = SUCCESS;
@@ -874,32 +877,28 @@ uint32_t PluginManagerTest::DoTestInstanceLimit001(PluginServer &pluginServer)
     string implClassName = "OHOS::PluginExample::LabelDetector";
     labelDetectorIns1 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (labelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[PluginManager_TestInstanceLimit_001] labelDetectorIns1 null. ERRNO: %{public}u.",
-                     errorCode);
+        IMAGE_LOGE("[PluginManager_TestInstanceLimit_001] labelDetectorIns1 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::CloudLabelDetector";
     cLabelDetectorIns1 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[PluginManager_TestInstanceLimit_001] cLabelDetectorIns1 null. ERRNO: %{public}u.",
-                     errorCode);
+        IMAGE_LOGE("[PluginManager_TestInstanceLimit_001] cLabelDetectorIns1 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::LabelDetector";
     labelDetectorIns2 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (labelDetectorIns2 == nullptr) {
-        HiLog::Error(LABEL, "[PluginManager_TestInstanceLimit_001] labelDetectorIns2 null. ERRNO: %{public}u.",
-                     errorCode);
+        IMAGE_LOGE("[PluginManager_TestInstanceLimit_001] labelDetectorIns2 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     implClassName = "OHOS::PluginExample::CloudLabelDetector";
     cLabelDetectorIns2 = pluginServer.CreateObject<AbsImageDetector>(implClassName, errorCode);
     if (cLabelDetectorIns2 == nullptr) {
-        HiLog::Error(LABEL, "[PluginManager_TestInstanceLimit_001] cLabelDetectorIns2 null. ERRNO: %{public}u.",
-                     errorCode);
+        IMAGE_LOGE("[PluginManager_TestInstanceLimit_001] cLabelDetectorIns2 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
     testRet = SUCCESS;
@@ -940,30 +939,30 @@ uint32_t PluginManagerTest::DoTestInstanceLimit003(PluginServer &pluginServer)
     AbsImageDetector *labelDetectorIns1 =
         pluginServer.CreateObject<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, errorCode);
     if (labelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] labelDetectorIns1 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] labelDetectorIns1 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     labelDetectorIns2 = pluginServer.CreateObject<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, errorCode);
     if (labelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] labelDetectorIns2 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] labelDetectorIns2 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     labelDetectorIns3 = pluginServer.CreateObject<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, errorCode);
     if (labelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] labelDetectorIns3 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] labelDetectorIns3 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     labelDetectorIns4 = pluginServer.CreateObject<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, errorCode);
     if (labelDetectorIns4 != nullptr) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] labelDetectorIns4 not null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] labelDetectorIns4 not null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
 
     if (errorCode != ERR_INSTANCE_LIMIT) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] unexpected errorCode: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] unexpected errorCode: %{public}u.", errorCode);
         goto TEST_END;
     }
 
@@ -977,7 +976,7 @@ uint32_t PluginManagerTest::DoTestInstanceLimit003(PluginServer &pluginServer)
 
     labelDetectorIns5 = pluginServer.CreateObject<AbsImageDetector>(AbsImageDetector::SERVICE_FACE, errorCode);
     if (labelDetectorIns1 == nullptr) {
-        HiLog::Error(LABEL, "[DoTestInstanceLimit003] labelDetectorIns5 null. ERRNO: %{public}u.", errorCode);
+        IMAGE_LOGE("[DoTestInstanceLimit003] labelDetectorIns5 null. ERRNO: %{public}u.", errorCode);
         goto TEST_END;
     }
     testRet = SUCCESS;

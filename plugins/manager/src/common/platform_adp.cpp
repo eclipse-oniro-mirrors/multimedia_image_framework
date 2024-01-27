@@ -18,19 +18,20 @@
 #include <dlfcn.h>
 #endif
 #include "directory_ex.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "string"
 #include "plugin_errors.h"
 #include "type_traits"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PlatformAdp"
+
 namespace OHOS {
 namespace MultimediaPlugin {
 using std::string;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PlatformAdp" };
 
 const string PlatformAdp::DIR_SEPARATOR = "/";
 const string PlatformAdp::LIBRARY_FILE_SUFFIX = "so";
@@ -71,14 +72,14 @@ uint32_t PlatformAdp::CheckAndNormalizePath(string &path)
 {
 #if !defined(_WIN32) && !defined(_APPLE)
     if (path.empty()) {
-        HiLog::Error(LABEL, "check path empty.");
+        IMAGE_LOGE("check path empty.");
         return ERR_GENERAL;
     }
 #endif
 
     string realPath;
     if (!PathToRealPath(path, realPath)) {
-        HiLog::Error(LABEL, "path to real path error.");
+        IMAGE_LOGE("path to real path error.");
         return ERR_GENERAL;
     }
 

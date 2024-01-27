@@ -20,7 +20,6 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
-#include "hilog/log.h"
 #include "image_plugin_type.h"
 #include "include/core/SkData.h"
 #include "include/core/SkColorSpace.h"
@@ -28,7 +27,6 @@
 #include "include/third_party/skcms/skcms.h"
 #include "jpeg_utils.h"
 #include "jpeglib.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "src/images/SkImageEncoderFns.h"
 namespace OHOS {

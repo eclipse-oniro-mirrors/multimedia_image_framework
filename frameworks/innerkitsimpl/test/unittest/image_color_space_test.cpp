@@ -20,19 +20,23 @@
 #include "color_space.h"
 #endif
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_packer.h"
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_source_util.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageColorSpaceTest"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
@@ -41,10 +45,6 @@ static const std::string IMAGE_INPUT_JPEG_INCLUDE_ICC_PATH = "/data/local/tmp/im
 static const std::string IMAGE_OUTPUT_JPEG_INCLUDE_ICC_PATH = "/data/test/test_jpeg_include_icc_profile.jpg";
 static const std::string IMAGE_INPUT_JPEG_NOT_INCLUDE_ICC_PATH = "/data/local/tmp/image/test.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_NOT_INCLUDE_ICC_PATH = "/data/test/test_jpeg_no_include_icc_profile.jpg";
-
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageColorSpaceTest"
-};
 
 class ImageColorSpaceTest : public testing::Test {
 public:
@@ -68,7 +68,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceDecode001, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_INCLUDE_ICC_PATH, opts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create image source error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create image source error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
@@ -79,7 +79,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceDecode001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -107,7 +107,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode001, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_INCLUDE_ICC_PATH, opts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create image source error code==%{public}u.", errorCode);
+    IMAGE_LOGD("create image source error code==%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
@@ -118,7 +118,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMapOne = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMapOne.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -176,7 +176,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceDecode002, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NOT_INCLUDE_ICC_PATH, opts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create image source error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create image source error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
@@ -187,7 +187,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceDecode002, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -212,7 +212,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode002, TestSize.Level3)
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_NOT_INCLUDE_ICC_PATH, opts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create image source error code==%{public}u.", errorCode);
+    IMAGE_LOGD("create image source error code==%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
@@ -223,7 +223,7 @@ HWTEST_F(ImageColorSpaceTest, JpegColorSpaceEncode002, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMapOne = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    HiLog::Debug(LABEL_TEST, "create pixel map error code=%{public}u.", errorCode);
+    IMAGE_LOGD("create pixel map error code=%{public}u.", errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMapOne.get(), nullptr);
 #ifdef IMAGE_COLORSPACE_FLAG

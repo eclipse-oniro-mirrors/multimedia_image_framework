@@ -19,7 +19,6 @@
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
-#include "hilog/log.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_source_util.h"

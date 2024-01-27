@@ -19,7 +19,6 @@
 #include "jpeg_decoder.h"
 
 using namespace testing::ext;
-using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace ImagePlugin {
 class JpegUtilsTest : public testing::Test {
