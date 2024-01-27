@@ -722,7 +722,7 @@ int GetInterpolation(const AntiAliasingOption &option)
             return SWS_BICUBIC;
         case AntiAliasingOption::HIGH:
             return SWS_AREA;
-        case AntiAliasingOption::FAST_BILINEAR:
+        case AntiAliasingOption::FAST_BILINEAER:
             return SWS_FAST_BILINEAR;
         case AntiAliasingOption::BICUBLIN:
             return SWS_BICUBLIN;
