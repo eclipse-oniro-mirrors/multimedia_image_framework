@@ -436,21 +436,8 @@ void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &
     }
 }
 
-unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOptions &opts)
-{
-    IMAGE_LOGD("PixelMap::Create4 enter");
-    Rect rect;
-    return Create(source, rect, opts);
-}
-
-unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts)
-{
-    int error;
-    return Create(source, srcRect, opts, error);
-}
-
-static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropType,
-    ImageInfo &dstImageInfo, Rect &sRect, ImageInfo &srcImageInfo)
+static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, const CropValue &cropType,
+    ImageInfo &dstImageInfo, const Rect &sRect, const ImageInfo &srcImageInfo)
 {
     dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
@@ -468,6 +455,19 @@ static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropT
         return IMAGE_RESULT_DATA_ABNORMAL;
     }
     return SUCCESS;
+}
+
+unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOptions &opts)
+{
+    IMAGE_LOGD("PixelMap::Create4 enter");
+    Rect rect;
+    return Create(source, rect, opts);
+}
+
+unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts)
+{
+    int error;
+    return Create(source, srcRect, opts, error);
 }
 
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
@@ -516,7 +516,6 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
-
 
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
@@ -1402,8 +1401,8 @@ bool PixelMap::IsStrideAlignment()
         IMAGE_LOGE("SetPixelsAddr error allocatorType_ %{public}d ", allocatorType_);
         return true;
     }
-    return false;
     IMAGE_LOGE("IsStrideAlignment error ");
+    return false;
 }
 
 AllocatorType PixelMap::GetAllocatorType()
