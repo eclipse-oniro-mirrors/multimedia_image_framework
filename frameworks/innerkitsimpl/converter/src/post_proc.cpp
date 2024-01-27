@@ -37,6 +37,13 @@
 #include "surface_buffer.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "libswscale/swscale.h"
+#ifdef __cplusplus
+};
+#endif
 namespace OHOS {
 namespace Media {
 using namespace std;
@@ -46,6 +53,16 @@ constexpr uint32_t NEED_NEXT = 1;
 constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
+
+static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
+    { PixelFormat::ALPHA_8, AVPixelFormat::AV_PIX_FMT_GRAY8 },
+    { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565BE },
+    { PixelFormat::RGB_888, AVPixelFormat::AV_PIX_FMT_RGB24 },
+    { PixelFormat::RGBA_8888, AVPixelFormat::AV_PIX_FMT_RGBA },
+    { PixelFormat::ARGB_8888, AVPixelFormat::AV_PIX_FMT_ARGB },
+    { PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA },
+    { PixelFormat::RGBA_F16, AVPixelFormat::AV_PIX_FMT_RGBA64BE },
+};
 
 uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap, FinalOutputStep finalOutputStep)
 {
@@ -680,6 +697,95 @@ void PostProc::SetScanlineCropAndConvert(const Rect &cropRect, ImageInfo &dstIma
         dstImageInfo.size = srcImageInfo.size;
     }
     scanlineFilter.SetSrcRegion(srcRect);
+}
+
+bool GetScaleFormat(const PixelFormat &format, AVPixelFormat &pixelFormat)
+{
+    if (format != PixelFormat::UNKNOWN) {
+        auto formatPair = PIXEL_FORMAT_MAP.find(format);
+        if (formatPair != PIXEL_FORMAT_MAP.end() && formatPair->second != 0) {
+            pixelFormat = formatPair->second;
+            return true;
+        }
+    }
+    return false;
+}
+
+int GetInterpolation(const AntiAliasingOption &option)
+{
+    switch (option) {
+        case AntiAliasingOption::NONE:
+            return SWS_POINT;
+        case AntiAliasingOption::LOW:
+            return SWS_BILINEAR;
+        case AntiAliasingOption::MEDIUM:
+            return SWS_BICUBIC;
+        case AntiAliasingOption::HIGH:
+            return SWS_AREA;
+        case AntiAliasingOption::FAST_BILINEAER:
+            return SWS_FAST_BILINEAR;
+        case AntiAliasingOption::BICUBLIN:
+            return SWS_BICUBLIN;
+        case AntiAliasingOption::GAUSS:
+            return SWS_GAUSS;
+        case AntiAliasingOption::SINC:
+            return SWS_SINC;
+        case AntiAliasingOption::LANCZOS:
+            return SWS_LANCZOS;
+        case AntiAliasingOption::SPLINE:
+            return SWS_SPLINE;
+        default:
+            return SWS_POINT;
+    }
+}
+
+bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
+{
+    ImageTrace imageTrace("PixelMap ScalePixelMapEx");
+    ImageInfo imgInfo;
+    pixelMap.GetImageInfo(imgInfo);
+    int32_t srcWidth = pixelMap.GetWidth();
+    int32_t srcHeight = pixelMap.GetHeight();
+    if (srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels()) {
+        HiLog::Error(LABEL, "pixelMap param is invalid, src width:%{public}d, height:%{public}d", srcWidth, srcHeight);
+        return false;
+    }
+    AVPixelFormat pixelFormat;
+    if (!GetScaleFormat(imgInfo.pixelFormat, pixelFormat)) {
+        HiLog::Error(LABEL, "pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);
+        return false;
+    }
+    uint32_t dstBufferSize = desiredSize.height * desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
+    auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType(), memoryData);
+    if (mem == nullptr) {
+        HiLog::Error(LABEL, "ScalePixelMapEx CreateMemory failed");
+        return false;
+    }
+
+    uint8_t *dstPixels = reinterpret_cast<uint8_t *>(mem->data.data);
+    const uint8_t *srcPixels = pixelMap.GetPixels();
+    int32_t srcRowStride = pixelMap.GetRowStride();
+    int32_t dstRowStride;
+    if (mem->GetType() == AllocatorType::DMA_ALLOC) {
+        dstRowStride = reinterpret_cast<SurfaceBuffer*>(mem->extend.data)->GetStride();
+    } else {
+        dstRowStride = desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    }
+    SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
+        pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
+    auto res = sws_scale(swsContext, &srcPixels, &srcRowStride, 0, srcHeight, &dstPixels, &dstRowStride);
+    if (!res) {
+        sws_freeContext(swsContext);
+        mem->Release();
+        HiLog::Error(LABEL, "sws_scale failed");
+        return false;
+    }
+    pixelMap.SetPixelsAddr(mem->data.data, mem->extend.data, dstBufferSize, mem->GetType(), nullptr);
+    imgInfo.size = desiredSize;
+    pixelMap.SetImageInfo(imgInfo, true);
+    sws_freeContext(swsContext);
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
