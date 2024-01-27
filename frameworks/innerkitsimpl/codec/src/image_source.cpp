@@ -126,7 +126,6 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
-static const uint64_t NUM_ONE_MILLION = 1000000;
 static const int DMA_SIZE = 512;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -314,7 +313,8 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    IMAGE_LOGI("[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
+    HiLogPrint(LogType::LOG_CORE, LogLevel::LOG_INFO, LOG_TAG_DOMAIN_ID_PLUGIN, "ImageSource",
+        "CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
         opts.desiredSize.width, opts.desiredSize.height);
 
@@ -520,8 +520,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index,
-            errorCode);
+        IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         return nullptr;
     }
     NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_HEADER_DECODE, &guard);
@@ -548,9 +547,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    IMAGE_LOGI("ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d), cost %{public}lu us", opts.desiredSize.width, opts.desiredSize.height,
-        info.size.width, info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
+        "imageSize: (%{public}d, %{public}d), cost %{public}lu us", static_cast<unsigned long>(imageId_),
+        opts.desiredSize.width, opts.desiredSize.height, info.size.width, info.size.height,
+        static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     return pixelMap;
 }
 
@@ -1096,7 +1096,7 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
     sourceOptions_.pixelFormat = opts.pixelFormat;
     sourceOptions_.size.width = opts.size.width;
     sourceOptions_.size.height = opts.size.height;
-    imageId_ = GetNowTimeMicroSeconds() % NUM_ONE_MILLION;
+    imageId_ = GetNowTimeMicroSeconds();
 }
 
 ImageSource::FormatAgentMap ImageSource::InitClass()
