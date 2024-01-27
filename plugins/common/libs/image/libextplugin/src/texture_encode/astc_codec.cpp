@@ -144,7 +144,7 @@ constexpr double LOG_BASE = 10.0;
 bool CheckQuality(int32_t *mseIn[RGBA_COM], int blockNum, int blockXYZ)
 {
     double psnr[RGBA_COM + 1];
-    double threshold[RGBA_COM + 1] = {THRESHOLD_R, THRESHOLD_G, THRESHOLD_B, THRESHOLD_A, THRESHOLD_RGB};
+    const double threshold[RGBA_COM + 1] = {THRESHOLD_R, THRESHOLD_G, THRESHOLD_B, THRESHOLD_A, THRESHOLD_RGB};
     uint64_t mseTotal[RGBA_COM + 1] = {0, 0, 0, 0, 0};
     for (int i = R_COM; i < RGBA_COM; i++) {
         int32_t *mse = mseIn[i];
@@ -224,7 +224,7 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
     work->calQualityEnable = enableQualityCheck;
     if (work->calQualityEnable) {
         for (int i = R_COM; i < RGBA_COM; i++) {
-            work->mse[i] = (int32_t *)calloc(blockNum, sizeof(int32_t));
+            work->mse[i] = static_cast<int32_t *>(calloc(blockNum, sizeof(int32_t)));
             if (!work->mse[i]) {
                 IMAGE_LOGE("quality control calloc failed");
                 return false;
@@ -232,7 +232,7 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
         }
     }
 #endif
-    work->image_.data = (void **)malloc(sizeof(void*) * work->image_.dim_z);
+    work->image_.data = static_cast<void **>(malloc(sizeof(void*) * work->image_.dim_z));
     if (!work->image_.data) {
         return false;
     }
@@ -298,7 +298,7 @@ static QualityProfile GetAstcQuality(int32_t quality)
 }
 
 static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOptions *param,
-    uint8_t *buffer, const std::string clBinPath)
+    uint8_t *buffer, const std::string &clBinPath)
 {
     ClAstcHandle *astcClEncoder = nullptr;
     if ((inData == nullptr) || (param == nullptr) || (buffer == nullptr)) {
