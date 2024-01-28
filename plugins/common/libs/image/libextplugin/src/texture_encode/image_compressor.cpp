@@ -1301,17 +1301,16 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
     }
     if (clAstcHandle != nullptr) {
         free(clAstcHandle);
-        clAstcHandle = nullptr;
     }
     return CL_ASTC_ENC_SUCCESS;
 }
 
-static bool CheckClBinIsExist(const std::string name)
+static bool CheckClBinIsExist(const std::string &name)
 {
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 
-static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string clBinPath)
+static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string &clBinPath)
 {
     size_t programBinarySizes;
     cl_int clRet = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(size_t), &programBinarySizes, NULL);
@@ -1323,7 +1322,7 @@ static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string clBinPath)
         HiLog::Error(LABEL, "astc clGetProgramInfo programBinarySizes %{public}zu too big!", programBinarySizes);
         return CL_ASTC_ENC_FAILED;
     }
-    uint8_t *programBinaries = (uint8_t *)malloc(programBinarySizes);
+    uint8_t *programBinaries = static_cast<uint8_t *>(malloc(programBinarySizes));
     if (programBinaries == nullptr) {
         HiLog::Error(LABEL, "astc programBinaries malloc failed!");
         return CL_ASTC_ENC_FAILED;
@@ -1369,7 +1368,7 @@ static CL_ASTC_STATUS BuildProgramAndCreateKernel(cl_program program, ClAstcHand
     return CL_ASTC_ENC_SUCCESS;
 }
 
-static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::string clBinPath)
+static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::string &clBinPath)
 {
     cl_int clRet;
     cl_program program = nullptr;
@@ -1417,7 +1416,7 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
     return CL_ASTC_ENC_SUCCESS;
 }
 
-static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::string clBinPath)
+static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::string &clBinPath)
 {
     if (!OHOS::InitOpenCL()) {
         HiLog::Error(LABEL, "astc InitOpenCL error!");
@@ -1454,16 +1453,16 @@ static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::
     return CL_ASTC_ENC_SUCCESS;
 }
 
-CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string clBinPath)
+CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string &clBinPath)
 {
-    ClAstcHandle *clAstcHandle = (ClAstcHandle *)calloc(1, sizeof(ClAstcHandle));
+    ClAstcHandle *clAstcHandle = static_cast<ClAstcHandle *>(calloc(1, sizeof(ClAstcHandle)));
     if (clAstcHandle == nullptr) {
         HiLog::Error(LABEL, "astc AstcClCreate handle calloc failed!");
         return CL_ASTC_ENC_FAILED;
     }
     *handle = clAstcHandle;
     size_t numMaxBlocks = ((MAX_WIDTH + DIM - 1) / DIM) * ((MAX_HEIGHT + DIM - 1) / DIM);
-    clAstcHandle->encObj.blockErrs_ = (uint32_t *)malloc(numMaxBlocks * sizeof(uint32_t)); // 8MB mem Max
+    clAstcHandle->encObj.blockErrs_ = static_cast<uint32_t *>(malloc((numMaxBlocks * sizeof(uint32_t)))); // 8MB mem Max
     if (clAstcHandle->encObj.blockErrs_ == nullptr) {
         HiLog::Error(LABEL, "astc blockErrs_ malloc failed!");
         AstcClClose(*handle);

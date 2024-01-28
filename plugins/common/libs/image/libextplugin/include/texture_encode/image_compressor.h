@@ -65,7 +65,7 @@ struct ClAstcHandle {
     ClAstcObjEnc encObj;
 };
 
-CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string clBinPath);
+CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const std::string &clBinPath);
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn, uint8_t *data,
     int32_t stride, int32_t width, int32_t height);
