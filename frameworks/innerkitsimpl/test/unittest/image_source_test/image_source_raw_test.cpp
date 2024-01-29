@@ -15,7 +15,6 @@
 
 #include <fstream>
 #include <gtest/gtest.h>
-#include "hilog/log.h"
 #include "directory_ex.h"
 #include "image_source_util.h"
 #include "image_packer.h"
@@ -27,7 +26,6 @@
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 
 namespace OHOS {
 namespace Multimedia {

@@ -14,23 +14,26 @@
  */
 
 #include "gif_format_agent.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+
+#include "image_log.h"
 #include "plugin_service.h"
 #include "sched.h"
 #include "string"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "GifFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 
 static const std::string FORMAT_TYPE = "image/gif";
 static const char GIF87_STAMP[] = "GIF87a";
 static const char GIF89_STAMP[] = "GIF89a";
 static const uint8_t GIF_STAMP_LEN = 6;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "GifFormatAgent" };
 
 std::string GifFormatAgent::GetFormatType()
 {
@@ -45,17 +48,17 @@ uint32_t GifFormatAgent::GetHeaderSize()
 bool GifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
-        HiLog::Error(LABEL, "check format failed: header data is null.");
+        IMAGE_LOGE("check format failed: header data is null.");
         return false;
     }
 
     if (dataSize < GIF_STAMP_LEN) {
-        HiLog::Error(LABEL, "read head size:[%{public}u] less than header size:[%{public}u].", dataSize, GIF_STAMP_LEN);
+        IMAGE_LOGE("read head size:[%{public}u] less than header size:[%{public}u].", dataSize, GIF_STAMP_LEN);
         return false;
     }
 
     if (memcmp(GIF87_STAMP, headerData, GIF_STAMP_LEN) != 0 && memcmp(GIF89_STAMP, headerData, GIF_STAMP_LEN) != 0) {
-        HiLog::Info(LABEL, "header stamp mismatch.");
+        IMAGE_LOGI("header stamp mismatch.");
         return false;
     }
     return true;

@@ -15,16 +15,20 @@
 
 
 #include "wbmp_format_agent.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
+
+#include "image_log.h"
 #include "image_plugin_type.h"
-#include "log_tags.h"
 #include "plugin_service.h"
 #include "string"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "WbmpFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 
@@ -33,12 +37,11 @@ constexpr uint32_t HEADER_SIZE = 32;
 constexpr uint8_t SHIF_BIT_MASK = 7;
 constexpr uint8_t LOW_BIT_MASK = 0x7F;
 constexpr uint8_t HIGH_BIT_MASK = 0x80;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "WbmpFormatAgent" };
 
 bool WbmpFormatAgent::read_byte(uint8_t *stream, uint8_t &value, uint32_t &offset, uint32_t dataSize)
 {
     if (offset >= dataSize) {
-        HiLog::Error(LABEL, "read_header data offset %{public}u. dataSize %{public}u", offset, dataSize);
+        IMAGE_LOGE("read_header data offset %{public}u. dataSize %{public}u", offset, dataSize);
         return false;
     }
     value = *(stream + offset);
@@ -73,24 +76,24 @@ bool WbmpFormatAgent::read_header(const void *stream, uint32_t dataSize)
     if (!read_byte(pData, data, offset, dataSize) || data != 0) { // unknown type
         return false;
     }
-    HiLog::Debug(LABEL, "read_header data %{public}d.", data);
+    IMAGE_LOGD("read_header data %{public}d.", data);
 
     if (!read_byte(pData, data, offset, dataSize) || (data & 0x9F)) { // skip fixed header
         return false;
     }
-    HiLog::Debug(LABEL, "read_header data %{public}d.", data);
+    IMAGE_LOGD("read_header data %{public}d.", data);
 
     uint64_t width;
     uint64_t height;
     if (!read_mbf(pData, width, offset, dataSize) || width > 0xFFFF || !width) {
         return false;
     }
-    HiLog::Debug(LABEL, "read_header width %{public}lld.", static_cast<long long>(width));
+    IMAGE_LOGD("read_header width %{public}lld.", static_cast<long long>(width));
 
     if (!read_mbf(pData, height, offset, dataSize) || height > 0xFFFF || !height) {
         return false;
     }
-    HiLog::Debug(LABEL, "read_header height %{public}lld.", static_cast<long long>(height));
+    IMAGE_LOGD("read_header height %{public}lld.", static_cast<long long>(height));
 
     return true;
 }
@@ -109,16 +112,16 @@ uint32_t WbmpFormatAgent::GetHeaderSize()
 bool WbmpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
-        HiLog::Error(LABEL, "check format failed: header data is null.");
+        IMAGE_LOGE("check format failed: header data is null.");
         return false;
     }
 
     if (!read_header(headerData, dataSize)) {
-        HiLog::Info(LABEL, "not wbmp image format.");
+        IMAGE_LOGI("not wbmp image format.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "wbmp image format ok.");
+    IMAGE_LOGD("wbmp image format ok.");
     return true;
 }
 } // namespace ImagePlugin

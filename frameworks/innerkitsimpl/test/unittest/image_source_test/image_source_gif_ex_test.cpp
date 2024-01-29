@@ -19,14 +19,18 @@
 #include "media_errors.h"
 #include "image_source.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourceGifExTest"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 using namespace OHOS::ImageSourceUtil;
 namespace OHOS {
 namespace Media {
 namespace {
-static constexpr HiLogLabel LABEL_TEST = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceGifExTest" };
 static const std::string INPUT_PATH = "/data/local/tmp/image/";
 static const std::string OUTPUT_PATH = "/data/local/tmp/image/output_";
 static const std::string OUTPUT_EXT = ".jpg";
@@ -168,7 +172,7 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime001, TestSize.Level3)
     ASSERT_EQ(delayTimes->size(), TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT);
 
     for (auto delayTime : *delayTimes) {
-        HiLog::Debug(LABEL_TEST, "delay time is %{public}u.", delayTime);
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
     }
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDelayTime001 end";
@@ -196,7 +200,7 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime002, TestSize.Level3)
     ASSERT_EQ(delayTimes->size(), TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
 
     for (auto delayTime : *delayTimes) {
-        HiLog::Debug(LABEL_TEST, "delay time is %{public}u.", delayTime);
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
     }
 
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDelayTime002 end";

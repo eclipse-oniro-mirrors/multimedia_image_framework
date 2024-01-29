@@ -25,6 +25,7 @@
 #include "astc_codec.h"
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
+#include "image_log.h"
 #include "image_type_converter.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -33,13 +34,15 @@
 #include "surface_buffer.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ExtEncoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace Media;
-namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "ExtEncoder"};
-}
 
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kBMP, "image/bmp"},
@@ -120,7 +123,7 @@ static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
         pixelMap->GetCapacity() < skInfo.computeMinByteSize()) {
         res = RGBToRGBx(pixelMap, skInfo, holder);
         if (res != SUCCESS) {
-            HiLog::Error(LABEL, "ExtEncoder::BuildSkBitmap pixel convert failed %{public}d", res);
+            IMAGE_LOGE("ExtEncoder::BuildSkBitmap pixel convert failed %{public}d", res);
             return res;
         }
         pixels = holder.buf.get();
@@ -133,7 +136,7 @@ static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
         rowStride = sbBuffer->GetStride();
     }
     if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
-        HiLog::Error(LABEL, "ExtEncoder::BuildSkBitmap to skbitmap failed");
+        IMAGE_LOGE("ExtEncoder::BuildSkBitmap to skbitmap failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     return res;
@@ -159,7 +162,7 @@ uint32_t ExtEncoder::FinalizeEncode()
             return IsSameTextStr(item.second, opts_.format);
     });
     if (iter == FORMAT_NAME.end()) {
-        HiLog::Error(LABEL, "ExtEncoder::FinalizeEncode unsupported format %{public}s", opts_.format.c_str());
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode unsupported format %{public}s", opts_.format.c_str());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     auto encodeFormat = iter->first;
@@ -167,12 +170,12 @@ uint32_t ExtEncoder::FinalizeEncode()
     TmpBufferHolder holder;
     auto errorCode = BuildSkBitmap(pixelmap_, bitmap, encodeFormat, holder);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "ExtEncoder::FinalizeEncode BuildSkBitmap failed");
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode BuildSkBitmap failed");
         return errorCode;
     }
     ExtWStream wStream(output_);
     if (!SkEncodeImage(&wStream, bitmap, iter->first, opts_.quality)) {
-        HiLog::Error(LABEL, "ExtEncoder::FinalizeEncode encode failed");
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode encode failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     return SUCCESS;

@@ -15,20 +15,24 @@
 
 #include "ostream_packer_stream.h"
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "OstreamPackerStream"
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "OstreamPackerStream"};
 
 OstreamPackerStream::OstreamPackerStream(std::ostream &outputStream) : outputStream_(&outputStream) {}
 
 bool OstreamPackerStream::Write(const uint8_t *buffer, uint32_t size)
 {
     if ((buffer == nullptr) || (size == 0)) {
-        HiLog::Error(LABEL, "input parameter invalid.");
+        IMAGE_LOGE("input parameter invalid.");
         return false;
     }
     outputStream_->write(reinterpret_cast<const char *>(buffer), size);

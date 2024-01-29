@@ -15,13 +15,17 @@
 
 #include "image_source_mdk_kits.h"
 #include <map>
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "media_errors.h"
 #include "securec.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSourceMdk"
+
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceMdk"};
     constexpr size_t SIZE_ZERO = 0;
     constexpr int32_t INVALID_FD = -1;
     constexpr uint32_t DEFAULT_INDEX = 0;
@@ -31,7 +35,6 @@ namespace {
 
 namespace OHOS {
 namespace Media {
-using OHOS::HiviewDFX::HiLog;
 using ImageSourceNapiFunc = int32_t (*)(struct ImageSourceArgs* args);
 #ifdef __cplusplus
 extern "C" {
@@ -97,7 +100,7 @@ static ImageSourceNapi* UnwrapNativeObject(napi_env env, napi_value value)
     napi_valuetype valueType;
     napi_typeof(env, value, &valueType);
     if (valueType != napi_object) {
-        HiLog::Error(LABEL, "UnwrapNativeObject value not a object");
+        IMAGE_LOGE("UnwrapNativeObject value not a object");
         return nullptr;
     }
     std::unique_ptr<ImageSourceNapi> napi = nullptr;
@@ -105,7 +108,7 @@ static ImageSourceNapi* UnwrapNativeObject(napi_env env, napi_value value)
     if ((status == napi_ok) && napi != nullptr) {
         return napi.release();
     }
-    HiLog::Error(LABEL, "UnwrapNativeObject unwrap error");
+    IMAGE_LOGE("UnwrapNativeObject unwrap error");
     return nullptr;
 }
 
@@ -113,7 +116,7 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
     struct OhosImageSourceOps* ops, std::shared_ptr<ImageSource> &result, ImageResource &resource)
 {
     if (source == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNativeCreate source nullptr");
+        IMAGE_LOGE("ImageSourceNativeCreate source nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
@@ -123,20 +126,20 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
     }
     std::unique_ptr<ImageSource> nativeImageSource = nullptr;
     if (source->uri != nullptr && source->uriSize != SIZE_ZERO) {
-        HiLog::Debug(LABEL, "ImageSourceNativeCreate by path");
+        IMAGE_LOGD("ImageSourceNativeCreate by path");
         std::string url(source->uri, source->uriSize);
-        HiLog::Debug(LABEL, "ImageSourceNativeCreate by path %{public}s", url.c_str());
+        IMAGE_LOGD("ImageSourceNativeCreate by path %{public}s", url.c_str());
         auto path = UrlToPath(url);
         nativeImageSource = ImageSource::CreateImageSource(path, opts, errorCode);
         resource.type = ImageResourceType::IMAGE_RESOURCE_PATH;
         resource.path = path;
     } else if (source->fd != INVALID_FD) {
-        HiLog::Debug(LABEL, "ImageSourceNativeCreate by fd");
+        IMAGE_LOGD("ImageSourceNativeCreate by fd");
         nativeImageSource = ImageSource::CreateImageSource(source->fd, opts, errorCode);
         resource.type = ImageResourceType::IMAGE_RESOURCE_FD;
         resource.fd = source->fd;
     } else if (source->buffer != nullptr && source->bufferSize != SIZE_ZERO) {
-        HiLog::Debug(LABEL, "ImageSourceNativeCreate by buffer");
+        IMAGE_LOGD("ImageSourceNativeCreate by buffer");
         nativeImageSource = ImageSource::CreateImageSource(source->buffer,
             source->bufferSize, opts, errorCode);
         resource.type = ImageResourceType::IMAGE_RESOURCE_BUFFER;
@@ -145,10 +148,10 @@ static int32_t ImageSourceNativeCreate(struct OhosImageSource* source,
     }
     if (nativeImageSource != nullptr) {
         result = std::move(nativeImageSource);
-        HiLog::Debug(LABEL, "ImageSourceNativeCreate success");
+        IMAGE_LOGD("ImageSourceNativeCreate success");
         return IMAGE_RESULT_SUCCESS;
     }
-    HiLog::Error(LABEL, "ImageSourceNativeCreate no match source");
+    IMAGE_LOGE("ImageSourceNativeCreate no match source");
     return IMAGE_RESULT_BAD_PARAMETER;
 }
 
@@ -157,12 +160,12 @@ static int32_t ImageSourceCreateNapi(napi_env env, napi_value* res,
     std::shared_ptr<IncrementalPixelMap> incrementalPixelMap, ImageResource* resource)
 {
     if (ImageSourceNapi::CreateImageSourceNapi(env, res) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceCreateNapi napi create failed");
+        IMAGE_LOGE("ImageSourceCreateNapi napi create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto napi = UnwrapNativeObject(env, *(res));
     if (napi == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceCreateNapi napi unwrap check failed");
+        IMAGE_LOGE("ImageSourceCreateNapi napi unwrap check failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
@@ -175,7 +178,7 @@ static int32_t ImageSourceCreateNapi(napi_env env, napi_value* res,
     if (resource != nullptr) {
         napi->SetImageResource(*resource);
     }
-    HiLog::Debug(LABEL, "ImageSourceCreateNapi success");
+    IMAGE_LOGD("ImageSourceCreateNapi success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -188,15 +191,15 @@ static int32_t ImageSourceNapiCreate(struct ImageSourceArgs* args)
     ImageResource resource;
     ImageSourceNativeCreate(args->source, args->sourceOps, imageSource, resource);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreate native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreate native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreate napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreate napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreate success");
+    IMAGE_LOGD("ImageSourceNapiCreate success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -209,12 +212,12 @@ static int32_t ImageSourceNapiCreateFromUri(struct ImageSourceArgs* args)
     if (args->sourceOps != nullptr) {
         ParseImageSourceOps(opts, args->sourceOps);
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri by path %{public}s", args->uri.c_str());
+    IMAGE_LOGD("ImageSourceNapiCreateFromUri by path %{public}s", args->uri.c_str());
     auto path = UrlToPath(args->uri);
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     if (nativeImageSource == nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri create failed:%{public}d", errorCode);
+        IMAGE_LOGD("ImageSourceNapiCreateFromUri create failed:%{public}d", errorCode);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageResource resource;
@@ -222,15 +225,15 @@ static int32_t ImageSourceNapiCreateFromUri(struct ImageSourceArgs* args)
     resource.path = path;
     std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromUri native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromUri native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromUri napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromUri napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromUri success");
+    IMAGE_LOGD("ImageSourceNapiCreateFromUri success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -243,11 +246,11 @@ static int32_t ImageSourceNapiCreateFromFd(struct ImageSourceArgs* args)
     if (args->sourceOps != nullptr) {
         ParseImageSourceOps(opts, args->sourceOps);
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd");
+    IMAGE_LOGD("ImageSourceNapiCreateFromFd");
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(args->fd, opts, errorCode);
     if (nativeImageSource == nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd create failed:%{public}d", errorCode);
+        IMAGE_LOGD("ImageSourceNapiCreateFromFd create failed:%{public}d", errorCode);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageResource resource;
@@ -255,15 +258,15 @@ static int32_t ImageSourceNapiCreateFromFd(struct ImageSourceArgs* args)
     resource.fd = args->fd;
     std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromFd native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromFd native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromFd napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromFd napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromFd success");
+    IMAGE_LOGD("ImageSourceNapiCreateFromFd success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -277,12 +280,12 @@ static int32_t ImageSourceNapiCreateFromData(struct ImageSourceArgs* args)
     if (args->sourceOps != nullptr) {
         ParseImageSourceOps(opts, args->sourceOps);
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData");
+    IMAGE_LOGD("ImageSourceNapiCreateFromData");
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
         args->dataArray.data, args->dataArray.dataSize, opts, errorCode);
     if (nativeImageSource == nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData create failed:%{public}d", errorCode);
+        IMAGE_LOGD("ImageSourceNapiCreateFromData create failed:%{public}d", errorCode);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageResource resource;
@@ -291,15 +294,15 @@ static int32_t ImageSourceNapiCreateFromData(struct ImageSourceArgs* args)
     resource.bufferSize = args->dataArray.dataSize;
     std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromData native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromData native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromData napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromData napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromData success");
+    IMAGE_LOGD("ImageSourceNapiCreateFromData success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -319,13 +322,13 @@ static int32_t ImageSourceNapiCreateFromRawFile(struct ImageSourceArgs* args)
         ParseImageSourceOps(opts, args->sourceOps);
     }
     RawFileDescriptor rawFile = args->rawFile;
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile");
+    IMAGE_LOGD("ImageSourceNapiCreateFromRawFile");
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     int32_t rawFileLength = rawFile.start + rawFile.length;
     std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
         rawFile.fd, rawFile.start, rawFileLength, opts, errorCode);
     if (nativeImageSource == nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile create failed:%{public}d", errorCode);
+        IMAGE_LOGD("ImageSourceNapiCreateFromRawFile create failed:%{public}d", errorCode);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageResource resource;
@@ -335,38 +338,38 @@ static int32_t ImageSourceNapiCreateFromRawFile(struct ImageSourceArgs* args)
     resource.fileLength = rawFileLength;
     std::shared_ptr<ImageSource> imageSource = std::move(nativeImageSource);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromRawFile native create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromRawFile native create failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal, imageSource, nullptr, &resource) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateFromRawFile napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateFromRawFile napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateFromRawFile success");
+    IMAGE_LOGD("ImageSourceNapiCreateFromRawFile success");
     return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental args or env is nullptr");
+        IMAGE_LOGE("ImageSourceNapiCreateIncremental args or env is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     IncrementalSourceOptions incOpts;
     if (args->sourceOps != nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreate ParseImageSourceOps");
+        IMAGE_LOGD("ImageSourceNapiCreate ParseImageSourceOps");
         ParseImageSourceOps(incOpts.sourceOptions, args->sourceOps);
     }
     incOpts.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
     if (imageSource == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental native imagesource failed");
+        IMAGE_LOGE("ImageSourceNapiCreateIncremental native imagesource failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (args->dataArray.data != nullptr && args->dataArray.dataSize > SIZE_ZERO) {
-        HiLog::Debug(LABEL, "ImageSourceNapiCreateIncremental update dataArray");
+        IMAGE_LOGD("ImageSourceNapiCreateIncremental update dataArray");
         imageSource->UpdateData(args->dataArray.data, args->dataArray.dataSize, false);
     }
     DecodeOptions decodeOpts;
@@ -378,41 +381,41 @@ static int32_t ImageSourceNapiCreateIncremental(struct ImageSourceArgs* args)
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(
         index, decodeOpts, errorCode);
     if (incPixelMap == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental native incremental pixelmap failed");
+        IMAGE_LOGE("ImageSourceNapiCreateIncremental native incremental pixelmap failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (ImageSourceCreateNapi(args->inEnv, args->outVal,
         std::move(imageSource), std::move(incPixelMap), nullptr) != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreateIncremental napi create failed");
+        IMAGE_LOGE("ImageSourceNapiCreateIncremental napi create failed");
         args->outVal = nullptr;
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreateIncremental success");
+    IMAGE_LOGD("ImageSourceNapiCreateIncremental success");
     return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
 {
     if (args == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats args is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetSupportedFormats args is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto formats = args->outFormats;
     if (formats == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats args or napi is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetSupportedFormats args or napi is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     std::set<std::string> formatSet;
     uint32_t errorCode = ImageSource::GetSupportedFormats(formatSet);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetSupportedFormats native failed");
+        IMAGE_LOGE("ImageSourceNapiGetSupportedFormats native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
 
     size_t formatCount = formatSet.size();
     if (formats->supportedFormatList == nullptr) {
         formats->size = formatCount;
-        HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats get count only Success");
+        IMAGE_LOGD("ImageSourceNapiGetSupportedFormats get count only Success");
         return IMAGE_RESULT_SUCCESS;
     } else {
         formatCount = formats->size;
@@ -425,7 +428,7 @@ static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
             break;
         }
         if (formatList[i] == nullptr || formatList[i]->format == nullptr) {
-            HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats nullptr format out buffer");
+            IMAGE_LOGD("ImageSourceNapiGetSupportedFormats nullptr format out buffer");
             return IMAGE_RESULT_BAD_PARAMETER;
         }
         memcpy_s(formatList[i]->format, formatList[i]->size, formatStr.c_str(), formatStr.size());
@@ -434,19 +437,19 @@ static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
         }
         i++;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiGetSupportedFormats Success");
+    IMAGE_LOGD("ImageSourceNapiGetSupportedFormats Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageSourceNapiUnwrap(struct ImageSourceArgs* args)
 {
     if (args == nullptr || args->inEnv == nullptr || args->inVal == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiUnwrap args or env is nullptr");
+        IMAGE_LOGE("ImageSourceNapiUnwrap args or env is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     args->napi = UnwrapNativeObject(args->inEnv, args->inVal);
     if (args->napi == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiUnwrap UnwrapNativeObject failed");
+        IMAGE_LOGE("ImageSourceNapiUnwrap UnwrapNativeObject failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return IMAGE_RESULT_SUCCESS;
@@ -456,7 +459,7 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->inEnv == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap args or napi is nullptr");
+        IMAGE_LOGE("ImageSourceNapiCreatePixelmap args or napi is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     std::shared_ptr<PixelMap> nativePixelMap = args->napi->GetIncrementalPixelMap();
@@ -468,22 +471,22 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
             ParseDecodingOps(decOps, args->decodingOps);
             index = args->decodingOps->index;
         }
-        HiLog::Debug(LABEL, "ImageSourceNapiCreatePixelmap CreatePixelMapEx");
+        IMAGE_LOGD("ImageSourceNapiCreatePixelmap CreatePixelMapEx");
         auto tmpPixelmap = native->CreatePixelMapEx(index, decOps, errorCode);
         if (tmpPixelmap != nullptr) {
             nativePixelMap = std::move(tmpPixelmap);
         }
     }
     if (nativePixelMap == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap native failed");
+        IMAGE_LOGE("ImageSourceNapiCreatePixelmap native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outVal) = PixelMapNapi::CreatePixelMap(args->inEnv, nativePixelMap);
     if (*(args->outVal) == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmap create pixelmap failed");
+        IMAGE_LOGE("ImageSourceNapiCreatePixelmap create pixelmap failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreatePixelmap Success");
+    IMAGE_LOGD("ImageSourceNapiCreatePixelmap Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -491,7 +494,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->inEnv == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmapList args or napi is nullptr");
+        IMAGE_LOGE("ImageSourceNapiCreatePixelmapList args or napi is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     DecodeOptions decOps;
@@ -501,7 +504,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
     }
     auto pixelMapList = native->CreatePixelMapList(decOps, errorCode);
     if (pixelMapList == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiCreatePixelmapList CreatePixelMapList failed");
+        IMAGE_LOGE("ImageSourceNapiCreatePixelmapList CreatePixelMapList failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     napi_create_array(args->inEnv, args->outVal);
@@ -511,7 +514,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
         napi_set_element(args->inEnv, *(args->outVal), i, napiPixelMap);
         i++;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiCreatePixelmapList Success");
+    IMAGE_LOGD("ImageSourceNapiCreatePixelmapList Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -519,19 +522,19 @@ static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attri
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->outDelayTimes == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime native image or out is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetDelayTime native image or out is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto outDelayTimes = args->outDelayTimes;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     auto delayTimes = native->GetDelayTime(errorCode);
     if (delayTimes == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime native failed");
+        IMAGE_LOGE("ImageSourceNapiGetDelayTime native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     size_t actCount = (*delayTimes).size();
     if (outDelayTimes->delayTimeList == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetDelayTime get times count only");
+        IMAGE_LOGE("ImageSourceNapiGetDelayTime get times count only");
         outDelayTimes->size = actCount;
         return IMAGE_RESULT_SUCCESS;
     }
@@ -541,7 +544,7 @@ static int32_t ImageSourceNapiGetDelayTime(struct ImageSourceArgs* args) __attri
     for (size_t i = SIZE_ZERO; i < actCount; i++) {
         outDelayTimes->delayTimeList[i] = (*delayTimes)[i];
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiGetDelayTime Success");
+    IMAGE_LOGD("ImageSourceNapiGetDelayTime Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -549,16 +552,16 @@ static int32_t ImageSourceNapiGetFrameCount(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr || args->outUint32 == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetFrameCount native image or out is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetFrameCount native image or out is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     *(args->outUint32) = native->GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetFrameCount native failed");
+        IMAGE_LOGE("ImageSourceNapiGetFrameCount native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiGetFrameCount Success");
+    IMAGE_LOGD("ImageSourceNapiGetFrameCount Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -566,22 +569,22 @@ static int32_t ImageSourceNapiGetImageInfo(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo native image is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetImageInfo native image is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto imageSourceInfo = args->outInfo;
     if (imageSourceInfo == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo image info is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetImageInfo image info is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ImageInfo imageInfo;
     uint32_t errorCode = native->GetImageInfo(args->inInt32, imageInfo);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageInfo native failed");
+        IMAGE_LOGE("ImageSourceNapiGetImageInfo native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     ParseImageSourceInfo(imageSourceInfo, imageInfo);
-    HiLog::Debug(LABEL, "ImageSourceNapiGetImageInfo Success");
+    IMAGE_LOGD("ImageSourceNapiGetImageInfo Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -590,28 +593,28 @@ static int32_t ImageSourceNapiGetImageProperty(
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty native image is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetImageProperty native image is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto propertyKey = args->inPropertyKey;
     auto propertyVal = args->propertyVal;
     if (propertyKey == nullptr || propertyKey->value == nullptr || propertyKey->size == SIZE_ZERO) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty key is empty");
+        IMAGE_LOGE("ImageSourceNapiGetImageProperty key is empty");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty out val is nullptr");
+        IMAGE_LOGE("ImageSourceNapiGetImageProperty out val is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     std::string key(propertyKey->value, propertyKey->size);
     std::string val;
     uint32_t errorCode = native->GetImagePropertyString(DEFAULT_INDEX, key, val);
     if (errorCode != SUCCESS || val.empty()) {
-        HiLog::Error(LABEL, "ImageSourceNapiGetImageProperty native failed");
+        IMAGE_LOGE("ImageSourceNapiGetImageProperty native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal->value == nullptr) {
-        HiLog::Debug(LABEL, "ImageSourceNapiGetImageProperty return size only");
+        IMAGE_LOGD("ImageSourceNapiGetImageProperty return size only");
         propertyVal->size = val.size();
         return IMAGE_RESULT_SUCCESS;
     }
@@ -619,7 +622,7 @@ static int32_t ImageSourceNapiGetImageProperty(
     if (propertyVal->size > val.size()) {
         propertyVal->size = val.size();
     }
-    HiLog::Debug(LABEL, "ImageSourceNapiGetImageProperty Success");
+    IMAGE_LOGD("ImageSourceNapiGetImageProperty Success");
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -629,28 +632,28 @@ static uint32_t NativePropertyModify(ImageSource* native, ImageResource &imageRe
     auto type = imageResource.type;
     uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
     if (type == ImageResourceType::IMAGE_RESOURCE_INVAILD) {
-        HiLog::Error(LABEL, "NativePropertyModify resource is invaild");
+        IMAGE_LOGE("NativePropertyModify resource is invaild");
         return IMAGE_RESULT_BAD_PARAMETER;
     } else if (type == ImageResourceType::IMAGE_RESOURCE_FD && imageResource.fd != INVALID_FD) {
-        HiLog::Debug(LABEL, "NativePropertyModify fd resource");
+        IMAGE_LOGD("NativePropertyModify fd resource");
         errorCode = native->ModifyImageProperty(DEFAULT_INDEX, key, val, imageResource.fd);
     } else if (type == ImageResourceType::IMAGE_RESOURCE_PATH && !imageResource.path.empty()) {
-        HiLog::Debug(LABEL, "NativePropertyModify path resource");
+        IMAGE_LOGD("NativePropertyModify path resource");
         errorCode = native->ModifyImageProperty(DEFAULT_INDEX, key, val, imageResource.path);
     } else if (type == ImageResourceType::IMAGE_RESOURCE_BUFFER &&
         imageResource.buffer != nullptr && imageResource.bufferSize > SIZE_ZERO) {
-        HiLog::Debug(LABEL, "NativePropertyModify buffer resource");
+        IMAGE_LOGD("NativePropertyModify buffer resource");
         errorCode = native->ModifyImageProperty(DEFAULT_INDEX, key, val,
             imageResource.buffer, imageResource.bufferSize);
     } else {
-        HiLog::Error(LABEL, "NativePropertyModify %{public}d resource error", type);
+        IMAGE_LOGE("NativePropertyModify %{public}d resource error", type);
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (errorCode == SUCCESS) {
-        HiLog::Debug(LABEL, "NativePropertyModify Success");
+        IMAGE_LOGD("NativePropertyModify Success");
         return IMAGE_RESULT_SUCCESS;
     }
-    HiLog::Error(LABEL, "NativePropertyModify native failed");
+    IMAGE_LOGE("NativePropertyModify native failed");
     return IMAGE_RESULT_BAD_PARAMETER;
 }
 
@@ -658,17 +661,17 @@ static int32_t ImageSourceNapiModifyImageProperty(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty native image is nullptr");
+        IMAGE_LOGE("ImageSourceNapiModifyImageProperty native image is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto propertyKey = args->inPropertyKey;
     auto propertyVal = args->propertyVal;
     if (propertyKey == nullptr || propertyKey->value == nullptr || propertyKey->size == SIZE_ZERO) {
-        HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty key is empty");
+        IMAGE_LOGE("ImageSourceNapiModifyImageProperty key is empty");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     if (propertyVal == nullptr || propertyVal->value == nullptr || propertyVal->size == SIZE_ZERO) {
-        HiLog::Error(LABEL, "ImageSourceNapiModifyImageProperty val is nullptr");
+        IMAGE_LOGE("ImageSourceNapiModifyImageProperty val is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     std::string key(propertyKey->value, propertyKey->size);
@@ -682,7 +685,7 @@ static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool com
 {
     auto incPixelMap = args->napi->GetIncrementalPixelMap();
     if (incPixelMap == nullptr) {
-        HiLog::Error(LABEL, "ProcessIncrementalPixelMap incremental pixelmap is nullptr");
+        IMAGE_LOGE("ProcessIncrementalPixelMap incremental pixelmap is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     uint8_t tmpProgress = 0;
@@ -691,7 +694,7 @@ static int32_t ProcessIncrementalPixelMap(struct ImageSourceArgs* args, bool com
         incPixelMap->DetachFromDecoding();
     }
     if (errCode != SUCCESS || (errCode == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && !completed)) {
-        HiLog::Error(LABEL, "ProcessIncrementalPixelMap promote decoding failed");
+        IMAGE_LOGE("ProcessIncrementalPixelMap promote decoding failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return IMAGE_RESULT_SUCCESS;
@@ -709,20 +712,20 @@ static int32_t ImageSourceNapiUpdateData(struct ImageSourceArgs* args)
 {
     auto native = GetNativeImageSource(args);
     if (native == nullptr) {
-        HiLog::Error(LABEL, "ImageSourceNapiUpdateData native image is nullptr");
+        IMAGE_LOGE("ImageSourceNapiUpdateData native image is nullptr");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     auto data = args->inUpdateData;
     if (data == nullptr || data->buffer == nullptr || data->bufferSize == SIZE_ZERO ||
         data->offset >= data->bufferSize) {
-        HiLog::Error(LABEL, "ImageSourceNapiUpdateData update data is empty");
+        IMAGE_LOGE("ImageSourceNapiUpdateData update data is empty");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     uint32_t actSize = MathMin((data->bufferSize - data->offset), data->updateLength);
     bool completed = data->isCompleted == INT8_TRUE;
     uint32_t errCode = native->UpdateData((data->buffer + data->offset), actSize, completed);
     if (errCode != SUCCESS) {
-        HiLog::Error(LABEL, "ImageSourceNapiUpdateData update native failed");
+        IMAGE_LOGE("ImageSourceNapiUpdateData update native failed");
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     return ProcessIncrementalPixelMap(args, completed);

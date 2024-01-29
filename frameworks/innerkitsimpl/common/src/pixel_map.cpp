@@ -17,6 +17,7 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "image_log.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_type_converter.h"
@@ -25,9 +26,7 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImage.h"
-#include "hilog/log.h"
 #include "hitrace_meter.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_convert_adapter.h"
 #include "pixel_map_utils.h"
@@ -54,11 +53,15 @@
 #include "surface_buffer.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PixelMap"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "PixelMap" };
 constexpr int32_t MAX_DIMENSION = INT32_MAX >> 2;
 constexpr uint8_t FOUR_BYTE_SHIFT = 2;
 constexpr int8_t INVALID_ALPHA_INDEX = -1;
@@ -84,7 +87,7 @@ std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
 {
-    HiLog::Debug(LABEL, "PixelMap::~PixelMap_id:%{public}d", GetUniqueId());
+    IMAGE_LOGD("PixelMap::~PixelMap_id:%{public}d", GetUniqueId());
     FreePixelMap();
 }
 
@@ -136,7 +139,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             break;
         }
         default: {
-            HiLog::Error(LABEL, "unknown allocator type:[%{public}d].", allocatorType_);
+            IMAGE_LOGE("unknown allocator type:[%{public}d].", allocatorType_);
             return;
         }
     }
@@ -170,11 +173,11 @@ void PixelMap::SetTransformered(bool isTransformered)
 void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
 {
     if (data_ != nullptr) {
-        HiLog::Debug(LABEL, "SetPixelsAddr release the existed data first");
+        IMAGE_LOGD("SetPixelsAddr release the existed data first");
         FreePixelMap();
     }
     if (type == AllocatorType::SHARE_MEM_ALLOC && context == nullptr) {
-        HiLog::Error(LABEL, "SetPixelsAddr error type %{public}d ", type);
+        IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
     }
     data_ = static_cast<uint8_t *>(addr);
     context_ = context;
@@ -189,13 +192,13 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 {
     if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
-        HiLog::Error(LABEL, "set image info fail");
+        IMAGE_LOGE("set image info fail");
         return false;
     }
     uint32_t bufferSize = pixelMap->GetByteCount();
     if (bufferSize == 0 || (pixelMap->GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
-        HiLog::Error(LABEL, "AllocSharedMemory parameter is zero");
+        IMAGE_LOGE("AllocSharedMemory parameter is zero");
         return false;
     }
     return true;
@@ -203,14 +206,14 @@ bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, const InitializationOptions &opts)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create1 enter");
+    IMAGE_LOGD("PixelMap::Create1 enter");
     return Create(colors, colorLength, 0, opts.size.width, opts);
 }
 
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
                                       const InitializationOptions &opts)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create2 enter");
+    IMAGE_LOGD("PixelMap::Create2 enter");
     return Create(colors, colorLength, 0, opts.size.width, opts, false);
 }
 
@@ -270,7 +273,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     uint32_t bufferSize = dstPixelMap->GetByteCount();
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
+        IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
@@ -278,7 +281,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
         static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
         dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
-        HiLog::Error(LABEL, "pixel convert in adapter failed.");
+        IMAGE_LOGE("pixel convert in adapter failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
         dstPixels = nullptr;
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
@@ -317,18 +320,18 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
     std::string name = "PixelMap RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(uniqueId);
     fd = AshmemCreate(name.c_str(), bufferSize);
     if (fd < 0) {
-        HiLog::Error(LABEL, "AllocSharedMemory fd error");
+        IMAGE_LOGE("AllocSharedMemory fd error");
         return nullptr;
     }
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
     if (result < 0) {
-        HiLog::Error(LABEL, "AshmemSetProt error");
+        IMAGE_LOGE("AshmemSetProt error");
         ::close(fd);
         return nullptr;
     }
     void* ptr = ::mmap(nullptr, bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
-        HiLog::Error(LABEL, "mmap error, errno: %{public}s, fd %{public}d, bufferSize %{public}lld",
+        IMAGE_LOGE("mmap error, errno: %{public}s, fd %{public}d, bufferSize %{public}lld",
             strerror(errno), fd, (long long)bufferSize);
         ::close(fd);
         return nullptr;
@@ -343,27 +346,27 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     const InitializationOptions &opts)
 {
     if (colors == nullptr || colorLength <= 0) {
-        HiLog::Error(LABEL, "colors invalid");
+        IMAGE_LOGE("colors invalid");
         return false;
     }
     int32_t dstWidth = opts.size.width;
     int32_t dstHeight = opts.size.height;
     if (dstWidth <= 0 || dstHeight <= 0) {
-        HiLog::Error(LABEL, "initial options size invalid");
+        IMAGE_LOGE("initial options size invalid");
         return false;
     }
     if (stride < dstWidth) {
-        HiLog::Error(LABEL, "stride: %{public}d must >= width: %{public}d", stride, dstWidth);
+        IMAGE_LOGE("stride: %{public}d must >= width: %{public}d", stride, dstWidth);
         return false;
     }
     if (stride > MAX_DIMENSION) {
-        HiLog::Error(LABEL, "stride %{public}d is out of range", stride);
+        IMAGE_LOGE("stride %{public}d is out of range", stride);
         return false;
     }
     int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * stride + offset;
     if (offset < 0 || static_cast<int64_t>(offset) + dstWidth > colorLength || lastLine + dstWidth > colorLength) {
-        HiLog::Error(LABEL, "colors length: %{public}u, offset: %{public}d, stride: %{public}d  is invalid",
-                     colorLength, offset, stride);
+        IMAGE_LOGE("colors length: %{public}u, offset: %{public}d, stride: %{public}d  is invalid",
+            colorLength, offset, stride);
         return false;
     }
     return true;
@@ -371,10 +374,10 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
 
 unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create3 enter");
+    IMAGE_LOGD("PixelMap::Create3 enter");
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
-        HiLog::Error(LABEL, "create pixelMap pointer fail");
+        IMAGE_LOGE("create pixelMap pointer fail");
         return nullptr;
     }
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
@@ -383,18 +386,18 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
-        HiLog::Error(LABEL, "set image info fail");
+        IMAGE_LOGE("set image info fail");
         return nullptr;
     }
     uint32_t bufferSize = dstPixelMap->GetByteCount();
     if (bufferSize == 0) {
-        HiLog::Error(LABEL, "calloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("calloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     int fd = 0;
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "allocate memory size %{public}u fail", bufferSize);
+        IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
         return nullptr;
     }
     // update alpha opaque
@@ -433,25 +436,12 @@ void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &
     }
 }
 
-unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOptions &opts)
-{
-    HiLog::Debug(LABEL, "PixelMap::Create4 enter");
-    Rect rect;
-    return Create(source, rect, opts);
-}
-
-unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts)
-{
-    int error;
-    return Create(source, srcRect, opts, error);
-}
-
-static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropType,
-    ImageInfo &dstImageInfo, Rect &sRect, ImageInfo &srcImageInfo)
+static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, const CropValue &cropType,
+    ImageInfo &dstImageInfo, const Rect &sRect, const ImageInfo &srcImageInfo)
 {
     dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
-        HiLog::Error(LABEL, "create pixelmap pointer fail");
+        IMAGE_LOGE("create pixelmap pointer fail");
         return IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
     }
 
@@ -467,17 +457,30 @@ static int32_t BuildPixelMap(unique_ptr<PixelMap> &dstPixelMap, CropValue &cropT
     return SUCCESS;
 }
 
+unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const InitializationOptions &opts)
+{
+    IMAGE_LOGD("PixelMap::Create4 enter");
+    Rect rect;
+    return Create(source, rect, opts);
+}
+
+unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts)
+{
+    int error;
+    return Create(source, srcRect, opts, error);
+}
+
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "PixelMap::Create5 enter");
+    IMAGE_LOGD("PixelMap::Create5 enter");
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
     PostProc postProc;
     Rect sRect = srcRect;
     CropValue cropType = PostProc::ValidCropValue(sRect, srcImageInfo.size);
     if (cropType == CropValue::INVALID) {
-        HiLog::Error(LABEL, "src crop range is invalid");
+        IMAGE_LOGE("src crop range is invalid");
         errorCode = IMAGE_RESULT_DECODE_FAILED;
         return nullptr;
     }
@@ -514,14 +517,13 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return dstPixelMap;
 }
 
-
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
     uint32_t bufferSize = dstPixelMap.GetByteCount();
     if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
-        HiLog::Error(LABEL, "SourceCropAndConvert  parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("SourceCropAndConvert  parameter bufferSize:[%{public}d] error.", bufferSize);
         return false;
     }
     int fd = 0;
@@ -532,17 +534,17 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstPixels = malloc(bufferSize);
     }
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
 
     if (memset_s(dstPixels, bufferSize, 0, bufferSize) != EOK) {
-        HiLog::Error(LABEL, "dstPixels memset_s failed.");
+        IMAGE_LOGE("dstPixels memset_s failed.");
     }
     Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
-        HiLog::Error(LABEL, "pixel convert in adapter failed.");
+        IMAGE_LOGE("pixel convert in adapter failed.");
         ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
         return false;
     }
@@ -570,13 +572,13 @@ bool PixelMap::ScalePixelMap(const Size &targetSize, const Size &dstSize, const 
     PostProc postProc;
     if (scaleMode == ScaleMode::FIT_TARGET_SIZE) {
         if (!postProc.ScalePixelMap(targetSize, dstPixelMap)) {
-            HiLog::Error(LABEL, "scale FIT_TARGET_SIZE fail");
+            IMAGE_LOGE("scale FIT_TARGET_SIZE fail");
             return false;
         }
     }
     if (scaleMode == ScaleMode::CENTER_CROP) {
         if (!postProc.CenterScale(targetSize, dstPixelMap)) {
-            HiLog::Error(LABEL, "scale CENTER_CROP fail");
+            IMAGE_LOGE("scale CENTER_CROP fail");
             return false;
         }
     }
@@ -609,7 +611,7 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint
             errno_t ret = memcpy_s(dstPixels, source.GetRowBytes(),
                                    source.GetPixels() + i * source.GetRowStride(), source.GetRowBytes());
             if (ret != 0) {
-                HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+                IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
                 ReleaseBuffer(AllocatorType::DMA_ALLOC, fd, bufferSize, &dstPixels);
                 return false;
             }
@@ -618,7 +620,7 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint
         }
     } else {
         if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
-            HiLog::Error(LABEL, "copy source memory size %{public}u fail", bufferSize);
+            IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
             ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
                           fd, bufferSize, &dstPixels);
             return false;
@@ -636,13 +638,13 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
 {
     uint32_t bufferSize = source.GetByteCount();
     if (source.GetPixels() == nullptr) {
-        HiLog::Error(LABEL, "source pixelMap data invalid");
+        IMAGE_LOGE("source pixelMap data invalid");
         error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
     if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
-        HiLog::Error(LABEL, "AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
@@ -654,7 +656,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         dstPixels = malloc(bufferSize);
     }
     if (dstPixels == nullptr) {
-        HiLog::Error(LABEL, "source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
+        IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
@@ -732,7 +734,7 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
             pixelBytes_ = ASTC_4x4_BYTES;
             break;
         default: {
-            HiLog::Error(LABEL, "pixel format:[%{public}d] not supported.", format);
+            IMAGE_LOGE("pixel format:[%{public}d] not supported.", format);
             return false;
         }
     }
@@ -759,7 +761,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
         rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
         SetRowStride(rowDataSize_);
-        HiLog::Info(LABEL, "ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
+        IMAGE_LOGI("ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
     } else if (info.pixelFormat == PixelFormat::ASTC_4x4) {
         rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_3) >> NUM_2) << NUM_2);
     } else if (info.pixelFormat == PixelFormat::ASTC_6x6) {
@@ -770,7 +772,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
-                HiLog::Error(LABEL, "set imageInfo failed, context_ is null");
+                IMAGE_LOGE("set imageInfo failed, context_ is null");
                 return ERR_IMAGE_DATA_ABNORMAL;
             }
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
@@ -789,7 +791,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
-        HiLog::Error(LABEL, "pixel map image info invalid.");
+        IMAGE_LOGE("pixel map image info invalid.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (!GetPixelFormatDetail(info.pixelFormat)) {
@@ -798,26 +800,26 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 
     if (pixelBytes_ <= 0) {
         ResetPixelMap();
-        HiLog::Error(LABEL, "pixel map bytes is invalid.");
+        IMAGE_LOGE("pixel map bytes is invalid.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
     if (allocatorType_ == AllocatorType::HEAP_ALLOC &&
-        ((static_cast<uint64_t>(pixelBytes_) * info.size.width) > PIXEL_MAP_MAX_RAM_SIZE)) {
+        ((static_cast<uint64_t>(pixelBytes_) * info.size.width * info.size.height) > PIXEL_MAP_MAX_RAM_SIZE)) {
         ResetPixelMap();
-        HiLog::Error(LABEL, "image size is out of range.");
+        IMAGE_LOGE("image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
     }
 
     if (SetRowDataSizeForImageInfo(info) != SUCCESS) {
-        HiLog::Error(LABEL, "pixel map set rowDataSize error.");
+        IMAGE_LOGE("pixel map set rowDataSize error.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
     if (rowDataSize_ != 0 && allocatorType_ == AllocatorType::HEAP_ALLOC &&
         info.size.height > (PIXEL_MAP_MAX_RAM_SIZE / rowDataSize_)) {
         ResetPixelMap();
-        HiLog::Error(LABEL, "pixel map byte count out of range.");
+        IMAGE_LOGE("pixel map byte count out of range.");
         return ERR_IMAGE_TOO_LARGE;
     }
     if (!isReused) {
@@ -830,8 +832,8 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
 {
     if (!CheckValidParam(x, y) || (pixelBytes_ != ALPHA_8_BYTES)) {
-        HiLog::Error(LABEL, "get addr8 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
-                     pixelBytes_);
+        IMAGE_LOGE("get addr8 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
+            pixelBytes_);
         return nullptr;
     }
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
@@ -844,8 +846,8 @@ const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
 const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
 {
     if (!CheckValidParam(x, y) || (pixelBytes_ != RGB_565_BYTES)) {
-        HiLog::Error(LABEL, "get addr16 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
-                     pixelBytes_);
+        IMAGE_LOGE("get addr16 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
+            pixelBytes_);
         return nullptr;
     }
     // convert uint8_t* to uint16_t*
@@ -859,8 +861,8 @@ const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
 const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
 {
     if (!CheckValidParam(x, y) || (pixelBytes_ != ARGB_8888_BYTES)) {
-        HiLog::Error(LABEL, "get addr32 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
-                     pixelBytes_);
+        IMAGE_LOGE("get addr32 pixel position:(%{public}d, %{public}d) pixel bytes:%{public}d invalid.", x, y,
+            pixelBytes_);
         return nullptr;
     }
     // convert uint8_t* to uint32_t*
@@ -874,7 +876,7 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
 const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 {
     if (!CheckValidParam(x, y)) {
-        HiLog::Error(LABEL, "input pixel position:(%{public}d, %{public}d) invalid.", x, y);
+        IMAGE_LOGE("input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
     }
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
@@ -887,12 +889,12 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
 bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 {
     if (colorProc_ == nullptr) {
-        HiLog::Error(LABEL, "pixel format not supported.");
+        IMAGE_LOGE("pixel format not supported.");
         return false;
     }
     const uint8_t *src = GetPixel(x, y);
     if (src == nullptr) {
-        HiLog::Error(LABEL, "get pixel color error.");
+        IMAGE_LOGE("get pixel color error.");
         return false;
     }
     // use founction point for frequently called interface
@@ -902,7 +904,7 @@ bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
 bool PixelMap::ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (inCount != outCount) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint8_t *src = in;
@@ -915,7 +917,7 @@ bool PixelMap::ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
 bool PixelMap::RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (((inCount / RGB_565_BYTES) != outCount) && ((inCount % RGB_565_BYTES) != 0)) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint16_t *src = reinterpret_cast<const uint16_t *>(in);
@@ -929,7 +931,7 @@ bool PixelMap::RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
 bool PixelMap::ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint32_t *src = reinterpret_cast<const uint32_t *>(in);
@@ -944,7 +946,7 @@ bool PixelMap::ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 bool PixelMap::RGBA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint32_t *src = reinterpret_cast<const uint32_t *>(in);
@@ -959,7 +961,7 @@ bool PixelMap::RGBA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 bool PixelMap::BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint32_t *src = reinterpret_cast<const uint32_t *>(in);
@@ -974,7 +976,7 @@ bool PixelMap::BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 bool PixelMap::RGB888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
     if (((inCount / RGB_888_BYTES) != outCount) && ((inCount % RGB_888_BYTES) != 0)) {
-        HiLog::Error(LABEL, "input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
+        IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
     }
     const uint8_t *src = in;
@@ -999,7 +1001,7 @@ int32_t PixelMap::GetRowBytes()
 
 int32_t PixelMap::GetByteCount()
 {
-    HiLog::Debug(LABEL, "GetByteCount");
+    IMAGE_LOGD("GetByteCount");
     return rowDataSize_ * imageInfo_.size.height;
 }
 
@@ -1076,18 +1078,18 @@ uint8_t PixelMap::GetARGB32ColorB(uint32_t color)
 bool PixelMap::IsSameImage(const PixelMap &other)
 {
     if (data_ == nullptr || other.data_ == nullptr) {
-        HiLog::Error(LABEL, "IsSameImage data_ is nullptr.");
+        IMAGE_LOGE("IsSameImage data_ is nullptr.");
         return false;
     }
     if (imageInfo_.size.width != other.imageInfo_.size.width ||
         imageInfo_.size.height != other.imageInfo_.size.height ||
         imageInfo_.pixelFormat != other.imageInfo_.pixelFormat || imageInfo_.alphaType != other.imageInfo_.alphaType) {
-        HiLog::Info(LABEL, "IsSameImage imageInfo is not same");
+        IMAGE_LOGI("IsSameImage imageInfo is not same");
         return false;
     }
     uint64_t size = static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height;
     if (memcmp(data_, other.data_, size) != 0) {
-        HiLog::Info(LABEL, "IsSameImage memcmp is not same");
+        IMAGE_LOGI("IsSameImage memcmp is not same");
         return false;
     }
     return true;
@@ -1097,16 +1099,16 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
     if (dst == nullptr) {
-        HiLog::Error(LABEL, "read pixels by buffer input dst address is null.");
+        IMAGE_LOGE("read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "read pixels by buffer current PixelMap data is null.");
+        IMAGE_LOGE("read pixels by buffer current PixelMap data is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (bufferSize < static_cast<uint64_t>(pixelsSize_)) {
-        HiLog::Error(LABEL, "read pixels by buffer input dst buffer(%{public}llu) < current pixelmap size(%{public}u).",
-                     static_cast<unsigned long long>(bufferSize), pixelsSize_);
+        IMAGE_LOGE("read pixels by buffer input dst buffer(%{public}llu) < current pixelmap size(%{public}u).",
+            static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
@@ -1114,7 +1116,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     for (int i = 0; i < imageInfo_.size.height; ++i) {
         errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
         if (ret != 0) {
-            HiLog::Error(LABEL, "read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
             return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
         dst += rowDataSize_; // Move the destination buffer pointer to the next row
@@ -1126,55 +1128,52 @@ bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
                                 const uint32_t &stride, const Rect &region)
 {
     if (dst == nullptr) {
-        HiLog::Error(LABEL, "CheckPixelsInput input dst address is null.");
+        IMAGE_LOGE("CheckPixelsInput input dst address is null.");
         return false;
     }
 
     if (bufferSize == 0) {
-        HiLog::Error(LABEL, "CheckPixelsInput input buffer size is 0.");
+        IMAGE_LOGE("CheckPixelsInput input buffer size is 0.");
         return false;
     }
 
     if (region.left < 0 || region.top < 0 || stride > numeric_limits<int32_t>::max() ||
         static_cast<uint64_t>(offset) > bufferSize) {
-        HiLog::Error(
-            LABEL,
+        IMAGE_LOGE(
             "CheckPixelsInput left(%{public}d) or top(%{public}d) or stride(%{public}u) or offset(%{public}u) < 0.",
             region.left, region.top, stride, offset);
         return false;
     }
     if (region.width <= 0 || region.height <= 0 || region.width > MAX_DIMENSION || region.height > MAX_DIMENSION) {
-        HiLog::Error(LABEL, "CheckPixelsInput width(%{public}d) or height(%{public}d) is < 0.", region.width,
-                     region.height);
+        IMAGE_LOGE("CheckPixelsInput width(%{public}d) or height(%{public}d) is < 0.", region.width, region.height);
         return false;
     }
     if (region.left > GetWidth() - region.width) {
-        HiLog::Error(LABEL, "CheckPixelsInput left(%{public}d) + width(%{public}d) is > pixelmap width(%{public}d).",
-                     region.left, region.width, GetWidth());
+        IMAGE_LOGE("CheckPixelsInput left(%{public}d) + width(%{public}d) is > pixelmap width(%{public}d).",
+            region.left, region.width, GetWidth());
         return false;
     }
     if (region.top > GetHeight() - region.height) {
-        HiLog::Error(LABEL, "CheckPixelsInput top(%{public}d) + height(%{public}d) is > pixelmap height(%{public}d).",
-                     region.top, region.height, GetHeight());
+        IMAGE_LOGE("CheckPixelsInput top(%{public}d) + height(%{public}d) is > pixelmap height(%{public}d).",
+            region.top, region.height, GetHeight());
         return false;
     }
     uint32_t regionStride = static_cast<uint32_t>(region.width) * 4;  // bytes count, need multiply by 4
     if (stride < regionStride) {
-        HiLog::Error(LABEL, "CheckPixelsInput stride(%{public}d) < width*4 (%{public}d).", stride, regionStride);
+        IMAGE_LOGE("CheckPixelsInput stride(%{public}d) < width*4 (%{public}d).", stride, regionStride);
         return false;
     }
 
     if (bufferSize < regionStride) {
-        HiLog::Error(LABEL, "CheckPixelsInput input buffer size is < width * 4.");
+        IMAGE_LOGE("CheckPixelsInput input buffer size is < width * 4.");
         return false;
     }
     uint64_t lastLinePos = offset + static_cast<uint64_t>(region.height - 1) * stride;  // "1" is except the last line.
     if (static_cast<uint64_t>(offset) > (bufferSize - regionStride) || lastLinePos > (bufferSize - regionStride)) {
-        HiLog::Error(LABEL,
-                     "CheckPixelsInput fail, height(%{public}d), width(%{public}d), lastLine(%{public}llu), "
-                     "offset(%{public}u), bufferSize:%{public}llu.",
-                     region.height, region.width, static_cast<unsigned long long>(lastLinePos), offset,
-                     static_cast<unsigned long long>(bufferSize));
+        IMAGE_LOGE(
+            "CheckPixelsInput fail, height(%{public}d), width(%{public}d), lastLine(%{public}llu), "
+            "offset(%{public}u), bufferSize:%{public}llu.", region.height, region.width,
+            static_cast<unsigned long long>(lastLinePos), offset, static_cast<unsigned long long>(bufferSize));
         return false;
     }
     return true;
@@ -1184,11 +1183,11 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
                               const Rect &region, uint8_t *dst)
 {
     if (!CheckPixelsInput(dst, bufferSize, offset, stride, region)) {
-        HiLog::Error(LABEL, "read pixels by rect input parameter fail.");
+        IMAGE_LOGE("read pixels by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "read pixels by rect this pixel data is null.");
+        IMAGE_LOGE("read pixels by rect this pixel data is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -1196,7 +1195,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     Position srcPosition { region.left, region.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, dst + offset, stride,
         dstImageInfo)) {
-        HiLog::Error(LABEL, "read pixels by rect call ReadPixelsConvert fail.");
+        IMAGE_LOGE("read pixels by rect call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return SUCCESS;
@@ -1205,11 +1204,11 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
 uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
 {
     if (pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()) {
-        HiLog::Error(LABEL, "read pixel by pos input invalid exception. [x(%{public}d), y(%{public}d)]", pos.x, pos.y);
+        IMAGE_LOGE("read pixel by pos input invalid exception. [x(%{public}d), y(%{public}d)]", pos.x, pos.y);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "read pixel by pos source data is null.");
+        IMAGE_LOGE("read pixel by pos source data is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -1218,7 +1217,7 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
     Position srcPosition { pos.x, pos.y };
     if (!PixelConvertAdapter::ReadPixelsConvert(data_, srcPosition, rowStride_, imageInfo_, &dst, dstRowBytes,
         dstImageInfo)) {
-        HiLog::Error(LABEL, "read pixel by pos call ReadPixelsConvert fail.");
+        IMAGE_LOGE("read pixel by pos call ReadPixelsConvert fail.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return SUCCESS;
@@ -1227,30 +1226,30 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
 uint32_t PixelMap::ResetConfig(const Size &size, const PixelFormat &format)
 {
     if (size.width <= 0 || size.height <= 0) {
-        HiLog::Error(LABEL, "ResetConfig reset input width(%{public}d) or height(%{public}d) is < 0.", size.width,
-                     size.height);
+        IMAGE_LOGE("ResetConfig reset input width(%{public}d) or height(%{public}d) is < 0.", size.width,
+            size.height);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint32_t bytesPerPixel = ImageUtils::GetPixelBytes(format);
     if (bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "ResetConfig get bytes by per pixel fail.");
+        IMAGE_LOGE("ResetConfig get bytes by per pixel fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint64_t dstSize = static_cast<uint64_t>(size.width) * size.height * bytesPerPixel;
     if (dstSize > static_cast<uint64_t>(pixelsSize_)) {
-        HiLog::Error(LABEL, "ResetConfig reset dstSize(%{public}llu) > current(%{public}u).",
-                     static_cast<unsigned long long>(dstSize), pixelsSize_);
+        IMAGE_LOGE("ResetConfig reset dstSize(%{public}llu) > current(%{public}u).",
+            static_cast<unsigned long long>(dstSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     AlphaType dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(GetAlphaType(), format);
     if (dstAlphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        HiLog::Error(LABEL, "ResetConfig Failed to get validate alpha type.");
+        IMAGE_LOGE("ResetConfig Failed to get validate alpha type.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     ImageInfo dstInfo = MakeImageInfo(size.width, size.height, format, dstAlphaType);
     uint32_t ret = SetImageInfo(dstInfo, true);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "ResetConfig call SetImageInfo Failed. ret:%{public}u", ret);
+        IMAGE_LOGE("ResetConfig call SetImageInfo Failed. ret:%{public}u", ret);
         return ERR_IMAGE_CONFIG_FAILED;
     }
     return SUCCESS;
@@ -1260,14 +1259,14 @@ bool PixelMap::SetAlphaType(const AlphaType &alphaType)
 {
     AlphaType type = ImageUtils::GetValidAlphaTypeByFormat(alphaType, imageInfo_.pixelFormat);
     if (type == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
-        HiLog::Error(LABEL, "SetAlphaType Failed to get validate alpha type.");
+        IMAGE_LOGE("SetAlphaType Failed to get validate alpha type.");
         return false;
     }
     ImageInfo dstInfo = imageInfo_;
     dstInfo.alphaType = type;
     uint32_t ret = SetImageInfo(dstInfo, true);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "SetAlphaType call SetImageInfo Failed. ret:%{public}u", ret);
+        IMAGE_LOGE("SetAlphaType call SetImageInfo Failed. ret:%{public}u", ret);
         return false;
     }
     return true;
@@ -1276,22 +1275,21 @@ bool PixelMap::SetAlphaType(const AlphaType &alphaType)
 uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
 {
     if (pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()) {
-        HiLog::Error(LABEL,
-                     "write pixel by pos but input position is invalid. [x(%{public}d), y(%{public}d)]"\
-                     "Width() %{public}d,  Height() %{public}d, ",
-                     pos.x, pos.y, GetWidth(), GetHeight());
+        IMAGE_LOGE(
+            "write pixel by pos but input position is invalid. [x(%{public}d), y(%{public}d)]"\
+            "Width() %{public}d,  Height() %{public}d, ", pos.x, pos.y, GetWidth(), GetHeight());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!IsEditable()) {
-        HiLog::Error(LABEL, "write pixel by pos pixelmap is not editable.");
+        IMAGE_LOGE("write pixel by pos pixelmap is not editable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
-        HiLog::Error(LABEL, "write pixel by pos current pixelmap image info is invalid.");
+        IMAGE_LOGE("write pixel by pos current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "write pixel by pos but current pixelmap data is nullptr.");
+        IMAGE_LOGE("write pixel by pos but current pixelmap data is nullptr.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     ImageInfo srcImageInfo =
@@ -1300,7 +1298,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
     Position dstPosition { pos.x, pos.y };  // source is per pixel.
     if (!PixelConvertAdapter::WritePixelsConvert(&color, srcRowBytes, srcImageInfo, data_, dstPosition, rowStride_,
         imageInfo_)) {
-        HiLog::Error(LABEL, "write pixel by pos call WritePixelsConvert fail.");
+        IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     return SUCCESS;
@@ -1310,24 +1308,24 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
                                const uint32_t &stride, const Rect &region)
 {
     if (!CheckPixelsInput(source, bufferSize, offset, stride, region)) {
-        HiLog::Error(LABEL, "write pixel by rect input parameter fail.");
+        IMAGE_LOGE("write pixel by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!IsEditable()) {
-        HiLog::Error(LABEL, "write pixel by rect pixelmap data is not editable.");
+        IMAGE_LOGE("write pixel by rect pixelmap data is not editable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
-        HiLog::Error(LABEL, "write pixel by rect current pixelmap image info is invalid.");
+        IMAGE_LOGE("write pixel by rect current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "write pixel by rect current pixel map data is null.");
+        IMAGE_LOGE("write pixel by rect current pixel map data is null.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     uint32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
     if (bytesPerPixel == 0) {
-        HiLog::Error(LABEL, "write pixel by rect get bytes by per pixel fail.");
+        IMAGE_LOGE("write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     Position dstPosition { region.left, region.top };
@@ -1335,7 +1333,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         MakeImageInfo(region.width, region.height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     if (!PixelConvertAdapter::WritePixelsConvert(source + offset, stride, srcInfo, data_, dstPosition, rowStride_,
         imageInfo_)) {
-        HiLog::Error(LABEL, "write pixel by rect call WritePixelsConvert fail.");
+        IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     return SUCCESS;
@@ -1345,20 +1343,20 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 {
     ImageTrace imageTrace("WritePixels");
     if (source == nullptr || bufferSize < static_cast<uint64_t>(pixelsSize_)) {
-        HiLog::Error(LABEL, "write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
-                     static_cast<unsigned long long>(bufferSize), pixelsSize_);
+        IMAGE_LOGE("write pixels by buffer source is nullptr or size(%{public}llu) < pixelSize(%{public}u).",
+            static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!IsEditable()) {
-        HiLog::Error(LABEL, "write pixels by buffer pixelmap data is not editable.");
+        IMAGE_LOGE("write pixels by buffer pixelmap data is not editable.");
         return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
-        HiLog::Error(LABEL, "write pixels by buffer current pixelmap image info is invalid.");
+        IMAGE_LOGE("write pixels by buffer current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "write pixels by buffer current pixelmap data is nullptr.");
+        IMAGE_LOGE("write pixels by buffer current pixelmap data is nullptr.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
@@ -1366,7 +1364,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         const uint8_t* sourceRow = source + i * rowDataSize_;
         errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
         if (ret != 0) {
-            HiLog::Error(LABEL, "write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
@@ -1376,21 +1374,21 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 bool PixelMap::WritePixels(const uint32_t &color)
 {
     if (!IsEditable()) {
-        HiLog::Error(LABEL, "erase pixels by color pixelmap data is not editable.");
+        IMAGE_LOGE("erase pixels by color pixelmap data is not editable.");
         return false;
     }
     if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
-        HiLog::Error(LABEL, "erase pixels by color current pixelmap image info is invalid.");
+        IMAGE_LOGE("erase pixels by color current pixelmap image info is invalid.");
         return false;
     }
     if (data_ == nullptr) {
-        HiLog::Error(LABEL, "erase pixels by color current pixel map data is null.");
+        IMAGE_LOGE("erase pixels by color current pixel map data is null.");
         return false;
     }
     ImageInfo srcInfo =
         MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, imageInfo_.alphaType);
     if (!PixelConvertAdapter::EraseBitmap(data_, rowStride_, srcInfo, color)) {
-        HiLog::Error(LABEL, "erase pixels by color call EraseBitmap fail.");
+        IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
     return true;
@@ -1398,13 +1396,13 @@ bool PixelMap::WritePixels(const uint32_t &color)
 
 bool PixelMap::IsStrideAlignment()
 {
-    HiLog::Error(LABEL, "IsStrideAlignment error ");
+    IMAGE_LOGE("IsStrideAlignment error ");
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        HiLog::Error(LABEL, "SetPixelsAddr error allocatorType_ %{public}d ", allocatorType_);
+        IMAGE_LOGE("SetPixelsAddr error allocatorType_ %{public}d ", allocatorType_);
         return true;
     }
+    IMAGE_LOGE("IsStrideAlignment error ");
     return false;
-    HiLog::Error(LABEL, "IsStrideAlignment error ");
 }
 
 AllocatorType PixelMap::GetAllocatorType()
@@ -1459,13 +1457,13 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     uint32_t id = GetUniqueId();
     std::string name = "Parcel ImageData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), size);
-    HiLog::Info(LABEL, "AshmemCreate:[%{public}d].", fd);
+    IMAGE_LOGI("AshmemCreate:[%{public}d].", fd);
     if (fd < 0) {
         return false;
     }
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    HiLog::Info(LABEL, "AshmemSetProt:[%{public}d].", result);
+    IMAGE_LOGI("AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
         ::close(fd);
         return false;
@@ -1473,30 +1471,30 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     void *ptr = ::mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
         ::close(fd);
-        HiLog::Error(LABEL, "WriteAshmemData map failed, errno:%{public}d", errno);
+        IMAGE_LOGE("WriteAshmemData map failed, errno:%{public}d", errno);
         return false;
     }
-    HiLog::Info(LABEL, "mmap success");
+    IMAGE_LOGI("mmap success");
 
     if (memcpy_s(ptr, size, data, size) != EOK) {
         ::munmap(ptr, size);
         ::close(fd);
-        HiLog::Error(LABEL, "WriteAshmemData memcpy_s error");
+        IMAGE_LOGE("WriteAshmemData memcpy_s error");
         return false;
     }
 
     if (!WriteFileDescriptor(parcel, fd)) {
         ::munmap(ptr, size);
         ::close(fd);
-        HiLog::Error(LABEL, "WriteAshmemData WriteFileDescriptor error");
+        IMAGE_LOGE("WriteAshmemData WriteFileDescriptor error");
         return false;
     }
-    HiLog::Debug(LABEL, "WriteAshmemData WriteFileDescriptor success");
+    IMAGE_LOGD("WriteAshmemData WriteFileDescriptor success");
     ::munmap(ptr, size);
     ::close(fd);
     return true;
 #endif
-    HiLog::Error(LABEL, "WriteAshmemData not support crossplatform");
+    IMAGE_LOGE("WriteAshmemData not support crossplatform");
     return false;
 }
 
@@ -1504,12 +1502,12 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
 {
     const uint8_t *data = data_;
     if (data == nullptr || size > MAX_IMAGEDATA_SIZE) {
-        HiLog::Error(LABEL, "WriteImageData failed, data is null or size bigger than 128M.");
+        IMAGE_LOGE("WriteImageData failed, data is null or size bigger than 128M.");
         return false;
     }
 
     if (!parcel.WriteInt32(size)) {
-        HiLog::Error(LABEL, "WriteImageData size failed.");
+        IMAGE_LOGE("WriteImageData size failed.");
         return false;
     }
     if (size <= MIN_IMAGEDATA_SIZE) {
@@ -1522,25 +1520,25 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
     if (bufferSize <= 0) {
-        HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
     const uint8_t *ptr = parcel.ReadUnpadBuffer(bufferSize);
     if (ptr == nullptr) {
-        HiLog::Error(LABEL, "read buffer from parcel failed, read buffer addr is null");
+        IMAGE_LOGE("read buffer from parcel failed, read buffer addr is null");
         return nullptr;
     }
 
     base = static_cast<uint8_t *>(malloc(bufferSize));
     if (base == nullptr) {
-        HiLog::Error(LABEL, "alloc output pixel memory size:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("alloc output pixel memory size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
         free(base);
         base = nullptr;
-        HiLog::Error(LABEL, "memcpy pixel data size:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     return base;
@@ -1551,32 +1549,32 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     uint8_t *base = nullptr;
     int fd = ReadFileDescriptor(parcel);
     if (fd < 0) {
-        HiLog::Error(LABEL, "read fd :[%{public}d] error", fd);
+        IMAGE_LOGE("read fd :[%{public}d] error", fd);
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "malloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("malloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
     void *ptr = ::mmap(nullptr, bufferSize, PROT_READ, MAP_SHARED, fd, 0);
     if (ptr == MAP_FAILED) {
         // do not close fd here. fd will be closed in FileDescriptor, ::close(fd)
-        HiLog::Error(LABEL, "ReadImageData map failed, errno:%{public}d", errno);
+        IMAGE_LOGE("ReadImageData map failed, errno:%{public}d", errno);
         return nullptr;
     }
 
     base = static_cast<uint8_t *>(malloc(bufferSize));
     if (base == nullptr) {
         ::munmap(ptr, bufferSize);
-        HiLog::Error(LABEL, "alloc output pixel memory size:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("alloc output pixel memory size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
     if (memcpy_s(base, bufferSize, ptr, bufferSize) != 0) {
         ::munmap(ptr, bufferSize);
         free(base);
         base = nullptr;
-        HiLog::Error(LABEL, "memcpy pixel data size:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("memcpy pixel data size:[%{public}d] error.", bufferSize);
         return nullptr;
     }
 
@@ -1634,27 +1632,27 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
 bool PixelMap::WriteImageInfo(Parcel &parcel) const
 {
     if (!parcel.WriteInt32(imageInfo_.size.width)) {
-        HiLog::Error(LABEL, "write image info width:[%{public}d] to parcel failed.", imageInfo_.size.width);
+        IMAGE_LOGE("write image info width:[%{public}d] to parcel failed.", imageInfo_.size.width);
         return false;
     }
     if (!parcel.WriteInt32(imageInfo_.size.height)) {
-        HiLog::Error(LABEL, "write image info height:[%{public}d] to parcel failed.", imageInfo_.size.height);
+        IMAGE_LOGE("write image info height:[%{public}d] to parcel failed.", imageInfo_.size.height);
         return false;
     }
     if (!parcel.WriteInt32(static_cast<int32_t>(imageInfo_.pixelFormat))) {
-        HiLog::Error(LABEL, "write image info pixel format:[%{public}d] to parcel failed.", imageInfo_.pixelFormat);
+        IMAGE_LOGE("write image info pixel format:[%{public}d] to parcel failed.", imageInfo_.pixelFormat);
         return false;
     }
     if (!parcel.WriteInt32(static_cast<int32_t>(imageInfo_.colorSpace))) {
-        HiLog::Error(LABEL, "write image info color space:[%{public}d] to parcel failed.", imageInfo_.colorSpace);
+        IMAGE_LOGE("write image info color space:[%{public}d] to parcel failed.", imageInfo_.colorSpace);
         return false;
     }
     if (!parcel.WriteInt32(static_cast<int32_t>(imageInfo_.alphaType))) {
-        HiLog::Error(LABEL, "write image info alpha type:[%{public}d] to parcel failed.", imageInfo_.alphaType);
+        IMAGE_LOGE("write image info alpha type:[%{public}d] to parcel failed.", imageInfo_.alphaType);
         return false;
     }
     if (!parcel.WriteInt32(imageInfo_.baseDensity)) {
-        HiLog::Error(LABEL, "write image info base density:[%{public}d] to parcel failed.", imageInfo_.baseDensity);
+        IMAGE_LOGE("write image info base density:[%{public}d] to parcel failed.", imageInfo_.baseDensity);
         return false;
     }
     return true;
@@ -1663,29 +1661,28 @@ bool PixelMap::WriteImageInfo(Parcel &parcel) const
 bool PixelMap::WriteInfoToParcel(Parcel &parcel) const
 {
     if (!WriteImageInfo(parcel)) {
-        HiLog::Error(LABEL, "write image info to parcel failed.");
+        IMAGE_LOGE("write image info to parcel failed.");
         return false;
     }
 
     if (!parcel.WriteBool(editable_)) {
-        HiLog::Error(LABEL, "write pixel map editable to parcel failed.");
+        IMAGE_LOGE("write pixel map editable to parcel failed.");
         return false;
     }
 
     if (!parcel.WriteBool(isAstc_)) {
-        HiLog::Error(LABEL, "write pixel map isAstc_ to parcel failed.");
+        IMAGE_LOGE("write pixel map isAstc_ to parcel failed.");
         return false;
     }
 
     if (!parcel.WriteInt32(static_cast<int32_t>(allocatorType_))) {
-        HiLog::Error(LABEL, "write pixel map allocator type:[%{public}d] to parcel failed.",
-                     allocatorType_);
+        IMAGE_LOGE("write pixel map allocator type:[%{public}d] to parcel failed.", allocatorType_);
         return false;
     }
 
     if (!parcel.WriteInt32(static_cast<int32_t>(grColorSpace_ ?
             grColorSpace_->GetColorSpaceName() : ERR_MEDIA_INVALID_VALUE))) {
-        HiLog::Error(LABEL, "write pixel map grColorSpace to parcel failed.");
+        IMAGE_LOGE("write pixel map grColorSpace to parcel failed.");
         return false;
     }
     return true;
@@ -1695,47 +1692,47 @@ bool PixelMap::WriteTransformDataToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
         if (!parcel.WriteFloat(static_cast<float>(transformData_.scaleX))) {
-            HiLog::Error(LABEL, "write scaleX:[%{public}f] to parcel failed.", transformData_.scaleX);
+            IMAGE_LOGE("write scaleX:[%{public}f] to parcel failed.", transformData_.scaleX);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.scaleY))) {
-            HiLog::Error(LABEL, "write scaleY:[%{public}f] to parcel failed.", transformData_.scaleY);
+            IMAGE_LOGE("write scaleY:[%{public}f] to parcel failed.", transformData_.scaleY);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.rotateD))) {
-            HiLog::Error(LABEL, "write rotateD:[%{public}f] to parcel failed.", transformData_.rotateD);
+            IMAGE_LOGE("write rotateD:[%{public}f] to parcel failed.", transformData_.rotateD);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.cropLeft))) {
-            HiLog::Error(LABEL, "write cropLeft:[%{public}f] to parcel failed.", transformData_.cropLeft);
+            IMAGE_LOGE("write cropLeft:[%{public}f] to parcel failed.", transformData_.cropLeft);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.cropTop))) {
-            HiLog::Error(LABEL, "write cropTop:[%{public}f] to parcel failed.", transformData_.cropTop);
+            IMAGE_LOGE("write cropTop:[%{public}f] to parcel failed.", transformData_.cropTop);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.cropWidth))) {
-            HiLog::Error(LABEL, "write cropWidth:[%{public}f] to parcel failed.", transformData_.cropWidth);
+            IMAGE_LOGE("write cropWidth:[%{public}f] to parcel failed.", transformData_.cropWidth);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.cropHeight))) {
-            HiLog::Error(LABEL, "write cropHeight:[%{public}f] to parcel failed.", transformData_.cropHeight);
+            IMAGE_LOGE("write cropHeight:[%{public}f] to parcel failed.", transformData_.cropHeight);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.translateX))) {
-            HiLog::Error(LABEL, "write translateX:[%{public}f] to parcel failed.", transformData_.translateX);
+            IMAGE_LOGE("write translateX:[%{public}f] to parcel failed.", transformData_.translateX);
             return false;
         }
         if (!parcel.WriteFloat(static_cast<float>(transformData_.translateY))) {
-            HiLog::Error(LABEL, "write translateY:[%{public}f] to parcel failed.", transformData_.translateY);
+            IMAGE_LOGE("write translateY:[%{public}f] to parcel failed.", transformData_.translateY);
             return false;
         }
         if (!parcel.WriteBool(static_cast<bool>(transformData_.flipX))) {
-            HiLog::Error(LABEL, "write astc transformData_.flipX to parcel failed.");
+            IMAGE_LOGE("write astc transformData_.flipX to parcel failed.");
             return false;
         }
         if (!parcel.WriteBool(static_cast<bool>(transformData_.flipY))) {
-            HiLog::Error(LABEL, "write astc transformData_.flipY to parcel failed.");
+            IMAGE_LOGE("write astc transformData_.flipY to parcel failed.");
             return false;
         }
     }
@@ -1746,11 +1743,11 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
         if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.width))) {
-            HiLog::Error(LABEL, "write astcrealSize_.width:[%{public}d] to parcel failed.", astcrealSize_.width);
+            IMAGE_LOGE("write astcrealSize_.width:[%{public}d] to parcel failed.", astcrealSize_.width);
             return false;
         }
         if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.height))) {
-            HiLog::Error(LABEL, "write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
+            IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
             return false;
         }
     }
@@ -1767,15 +1764,15 @@ bool PixelMap::Marshalling(Parcel &parcel) const
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
         static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
-        HiLog::Error(LABEL, "set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
+        IMAGE_LOGE("set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
         return false;
     }
     if (!WriteInfoToParcel(parcel)) {
-        HiLog::Error(LABEL, "write info to parcel failed.");
+        IMAGE_LOGE("write info to parcel failed.");
         return false;
     }
     if (!parcel.WriteInt32(static_cast<int32_t>(rowDataSize_))) {
-        HiLog::Error(LABEL, "write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
+        IMAGE_LOGE("write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
         return false;
     }
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
@@ -1786,12 +1783,12 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd < 0) {
-            HiLog::Error(LABEL, "write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
+            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
             return false;
         }
 
         if (!WriteFileDescriptor(parcel, *fd)) {
-            HiLog::Error(LABEL, "write pixel map fd:[%{public}d] to parcel failed.", *fd);
+            IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
             return false;
         }
     } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {
@@ -1802,23 +1799,23 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
-            HiLog::Error(LABEL, "write pixel map buffer to parcel failed.");
+            IMAGE_LOGE("write pixel map buffer to parcel failed.");
             return false;
         }
     }
 #else
     if (!WriteImageData(parcel, bufferSize)) {
-        HiLog::Error(LABEL, "write pixel map buffer to parcel failed.");
+        IMAGE_LOGE("write pixel map buffer to parcel failed.");
         return false;
     }
 #endif
     
     if (!WriteTransformDataToParcel(parcel)) {
-        HiLog::Error(LABEL, "write transformData to parcel failed.");
+        IMAGE_LOGE("write transformData to parcel failed.");
         return false;
     }
     if (!WriteAstcRealSizeToParcel(parcel)) {
-        HiLog::Error(LABEL, "write astcrealSize to parcel failed.");
+        IMAGE_LOGE("write astcrealSize to parcel failed.");
         return false;
     }
     return true;
@@ -1827,15 +1824,15 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
 {
     imgInfo.size.width = parcel.ReadInt32();
-    HiLog::Debug(LABEL, "read pixel map width:[%{public}d] to parcel.", imgInfo.size.width);
+    IMAGE_LOGD("read pixel map width:[%{public}d] to parcel.", imgInfo.size.width);
     imgInfo.size.height = parcel.ReadInt32();
-    HiLog::Debug(LABEL, "read pixel map height:[%{public}d] to parcel.", imgInfo.size.height);
+    IMAGE_LOGD("read pixel map height:[%{public}d] to parcel.", imgInfo.size.height);
     imgInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
-    HiLog::Debug(LABEL, "read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
+    IMAGE_LOGD("read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
     imgInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
-    HiLog::Debug(LABEL, "read pixel map colorSpace:[%{public}d] to parcel.", imgInfo.colorSpace);
+    IMAGE_LOGD("read pixel map colorSpace:[%{public}d] to parcel.", imgInfo.colorSpace);
     imgInfo.alphaType = static_cast<AlphaType>(parcel.ReadInt32());
-    HiLog::Debug(LABEL, "read pixel map alphaType:[%{public}d] to parcel.", imgInfo.alphaType);
+    IMAGE_LOGD("read pixel map alphaType:[%{public}d] to parcel.", imgInfo.alphaType);
     imgInfo.baseDensity = parcel.ReadInt32();
     return true;
 }
@@ -1876,7 +1873,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     PIXEL_MAP_ERR error;
     PixelMap* dstPixelMap = PixelMap::Unmarshalling(parcel, error);
     if (dstPixelMap == nullptr || error.errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
+        IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
             error.errorCode, error.errorInfo.c_str());
     }
     return dstPixelMap;
@@ -1892,7 +1889,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 
     ImageInfo imgInfo;
     if (!pixelMap->ReadImageInfo(parcel, imgInfo)) {
-        HiLog::Error(LABEL, "read imageInfo fail");
+        IMAGE_LOGE("read imageInfo fail");
         delete pixelMap;
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_READ_PIXELMAP_FAILED, "read pixelmap failed");
         return nullptr;
@@ -1916,12 +1913,12 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     if (bytesPerPixel == 0) {
         delete pixelMap;
-        HiLog::Error(LABEL, "unmarshalling get bytes by per pixel fail.");
+        IMAGE_LOGE("unmarshalling get bytes by per pixel fail.");
         return nullptr;
     }
     if ((!isAstc) && bufferSize != rowDataSize * imgInfo.size.height) {
         delete pixelMap;
-        HiLog::Error(LABEL, "unmarshalling bufferSize parcelling error");
+        IMAGE_LOGE("unmarshalling bufferSize parcelling error");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_BUFFER_SIZE_PARCEL_ERROR,
             "unmarshalling bufferSize parcelling error");
         return nullptr;
@@ -1932,7 +1929,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
-            HiLog::Error(LABEL, "fd < 0");
+            IMAGE_LOGE("fd < 0");
             delete pixelMap;
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             return nullptr;
@@ -1943,7 +1940,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
             if (ptr == MAP_FAILED) {
                 ::close(fd);
                 delete pixelMap;
-                HiLog::Error(LABEL, "shared memory map in memalloc failed, errno:%{public}d", errno);
+                IMAGE_LOGE("shared memory map in memalloc failed, errno:%{public}d", errno);
                 PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "shared memory map in memalloc failed");
                 return nullptr;
             }
@@ -1968,7 +1965,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     } else {
         base = ReadImageData(parcel, bufferSize);
         if (base == nullptr) {
-            HiLog::Error(LABEL, "get pixel memory size:[%{public}d] error.", bufferSize);
+            IMAGE_LOGE("get pixel memory size:[%{public}d] error.", bufferSize);
             delete pixelMap;
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return nullptr;
@@ -1977,7 +1974,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 #else
     base = ReadImageData(parcel, bufferSize);
     if (base == nullptr) {
-        HiLog::Error(LABEL, "get pixel memory size:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("get pixel memory size:[%{public}d] error.", bufferSize);
         delete pixelMap;
         return nullptr;
     }
@@ -1993,17 +1990,17 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
             delete static_cast<int32_t *>(context);
         }
         delete pixelMap;
-        HiLog::Error(LABEL, "create pixel map from parcel failed, set image info error.");
+        IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
         return nullptr;
     }
     pixelMap->SetPixelsAddr(base, context, bufferSize, allocType, nullptr);
     if (!pixelMap->ReadTransformData(parcel, pixelMap)) {
-        HiLog::Error(LABEL, "read transformData fail");
+        IMAGE_LOGE("read transformData fail");
         delete pixelMap;
         return nullptr;
     }
     if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
-        HiLog::Error(LABEL, "read astcrealSize fail");
+        IMAGE_LOGE("read astcrealSize fail");
         delete pixelMap;
         return nullptr;
     }
@@ -2018,7 +2015,7 @@ void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const
 uint8_t PixelMap::ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor)
 {
     if (static_cast<size_t>(cursor + 1) > buff.size()) {
-        HiLog::Error(LABEL, "ReadUint8 out of range");
+        IMAGE_LOGE("ReadUint8 out of range");
         return TLV_END;
     }
     return buff[cursor++];
@@ -2050,7 +2047,7 @@ int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
     int32_t item = 0;
     do {
         if (static_cast<size_t>(cursor + 1) > buff.size()) {
-            HiLog::Error(LABEL, "ReadVarint out of range");
+            IMAGE_LOGE("ReadVarint out of range");
             return static_cast<int32_t>(TLV_END);
         }
         item = int32_t(buff[cursor++]);
@@ -2080,16 +2077,16 @@ void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
 uint8_t *PixelMap::ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor)
 {
     if (size <= 0) {
-        HiLog::Error(LABEL, "pixel map tlv read data fail: invalid size[%{public}d]", size);
+        IMAGE_LOGE("pixel map tlv read data fail: invalid size[%{public}d]", size);
         return nullptr;
     }
     if (static_cast<size_t>(cursor + size) > buff.size()) {
-        HiLog::Error(LABEL, "ReadData out of range");
+        IMAGE_LOGE("ReadData out of range");
         return nullptr;
     }
     uint8_t *data = static_cast<uint8_t *>(malloc(size));
     if (data == nullptr) {
-        HiLog::Error(LABEL, "pixel map tlv read data fail: malloc memory size[%{public}d]", size);
+        IMAGE_LOGE("pixel map tlv read data fail: malloc memory size[%{public}d]", size);
         return nullptr;
     }
     for (int32_t offset = 0; offset < size; offset++) {
@@ -2128,7 +2125,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     if (data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
-        HiLog::Error(LABEL, "pixel map tlv encode fail: no data");
+        IMAGE_LOGE("pixel map tlv encode fail: no data");
         return false;
     }
     WriteVarint(buff, dataSize);
@@ -2143,7 +2140,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ReadVarint(buff, cursor);
         if (len <= 0 || static_cast<size_t>(cursor + len) > buff.size()) {
-            HiLog::Error(LABEL, "ReadTlvAttr out of range");
+            IMAGE_LOGE("ReadTlvAttr out of range");
             return;
         }
         switch (tag) {
@@ -2167,7 +2164,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_ALLOCATORTYPE:
                 type = ReadVarint(buff, cursor);
-                HiLog::Info(LABEL, "pixel alloctype: %{public}d", type);
+                IMAGE_LOGI("pixel alloctype: %{public}d", type);
                 break;
             case TLV_IMAGE_DATA:
                 size = len;
@@ -2175,7 +2172,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             default:
                 cursor += len; // skip unknown tag
-                HiLog::Warn(LABEL, "pixel map tlv decode warn: unknown tag[%{public}d]", tag);
+                IMAGE_LOGW("pixel map tlv decode warn: unknown tag[%{public}d]", tag);
                 break;
         }
     }
@@ -2185,7 +2182,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
 {
     PixelMap *pixelMap = new PixelMap();
     if (pixelMap == nullptr) {
-        HiLog::Error(LABEL, "pixel map tlv decode fail: new PixelMap error");
+        IMAGE_LOGE("pixel map tlv decode fail: new PixelMap error");
         return nullptr;
     }
     ImageInfo imageInfo;
@@ -2195,19 +2192,19 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data);
     if (data == nullptr) {
         delete pixelMap;
-        HiLog::Error(LABEL, "pixel map tlv decode fail: no data");
+        IMAGE_LOGE("pixel map tlv decode fail: no data");
         return nullptr;
     }
     uint32_t ret = pixelMap->SetImageInfo(imageInfo);
     if (ret != SUCCESS) {
         free(data);
         delete pixelMap;
-        HiLog::Error(LABEL, "pixel map tlv decode fail: set image info error[%{public}d]", ret);
+        IMAGE_LOGE("pixel map tlv decode fail: set image info error[%{public}d]", ret);
         return nullptr;
     }
     if (dataSize != pixelMap->GetByteCount()) {
         delete pixelMap;
-        HiLog::Error(LABEL, "pixel map tlv decode fail: dataSize not match");
+        IMAGE_LOGE("pixel map tlv decode fail: dataSize not match");
         return nullptr;
     }
     pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
@@ -2367,14 +2364,14 @@ uint32_t PixelMap::SetAlpha(const float percent)
     auto alphaType = GetAlphaType();
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
         alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "Could not set alpha on %{public}s",
             GetNamedAlphaType(alphaType).c_str());
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
     if (percent <= 0 || percent > 1) {
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "Set alpha input should (0 < input <= 1). Current input %{public}f",
             percent);
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -2385,14 +2382,14 @@ uint32_t PixelMap::SetAlpha(const float percent)
     uint32_t pixelsSize = GetByteCount();
     int8_t alphaIndex = GetAlphaIndex(pixelFormat);
     if (alphaIndex == INVALID_ALPHA_INDEX) {
-        HiLog::Error(LABEL, "Could not set alpha on %{public}s",
+        IMAGE_LOGE("Could not set alpha on %{public}s",
             GetNamedPixelFormat(pixelFormat).c_str());
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
     if ((pixelFormat == PixelFormat::ALPHA_8 && pixelBytes_ != ALPHA_BYTES) ||
         (pixelFormat == PixelFormat::RGBA_F16 && pixelBytes_ != RGBA_F16_BYTES)) {
-        HiLog::Error(LABEL, "Pixel format %{public}s mismatch pixelByte %{public}d",
+        IMAGE_LOGE("Pixel format %{public}s mismatch pixelByte %{public}d",
             GetNamedPixelFormat(pixelFormat).c_str(), pixelBytes_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -2424,8 +2421,8 @@ static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace
 {
     SkColorType colorType = ImageTypeConverter::ToSkColorType(info.pixelFormat);
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
-    HiLog::Debug(LABEL, "ToSkImageInfo w %{public}d, h %{public}d", info.size.width, info.size.height);
-    HiLog::Debug(LABEL,
+    IMAGE_LOGD("ToSkImageInfo w %{public}d, h %{public}d", info.size.width, info.size.height);
+    IMAGE_LOGD(
         "ToSkImageInfo pf %{public}s, at %{public}s, skpf %{public}s, skat %{public}s",
         ImageTypeConverter::ToName(info.pixelFormat).c_str(),
         ImageTypeConverter::ToName(info.alphaType).c_str(),
@@ -2472,7 +2469,7 @@ static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap
     uint64_t rowStride = srcInfo.info.minRowBytes();
     if (pixelmap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         if (pixelmap->GetFd() == nullptr) {
-            HiLog::Error(LABEL, "GenSrcTransInfo get surfacebuffer failed");
+            IMAGE_LOGE("GenSrcTransInfo get surfacebuffer failed");
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd());
         rowStride = sbBuffer->GetStride();
@@ -2508,7 +2505,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
 #endif
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
     if (dstMemory == nullptr) {
-        HiLog::Error(LABEL, "CreateMemory falied");
+        IMAGE_LOGE("CreateMemory falied");
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
@@ -2516,7 +2513,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
     uint64_t rowStride = dstInfo.info.minRowBytes();
     if (memoryInfo.allocType == AllocatorType::DMA_ALLOC) {
         if (memoryInfo.memory->extend.data == nullptr) {
-            HiLog::Error(LABEL, "GendstTransInfo get surfacebuffer failed");
+            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(memoryInfo.memory->extend.data);
         rowStride = sbBuffer->GetStride();
@@ -2571,7 +2568,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
-        HiLog::Error(LABEL, "GendstTransInfo dstMemory falied");
+        IMAGE_LOGE("GendstTransInfo dstMemory falied");
         this->errorCode = IMAGE_RESULT_DECODE_FAILED;
         return false;
     }
@@ -2609,7 +2606,7 @@ void PixelMap::scale(float xAxis, float yAxis)
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
-        HiLog::Error(LABEL, "scale falied");
+        IMAGE_LOGE("scale falied");
     }
 }
 
@@ -2619,7 +2616,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos, option)) {
-        HiLog::Error(LABEL, "scale falied");
+        IMAGE_LOGE("scale falied");
     }
 }
 
@@ -2629,7 +2626,7 @@ bool PixelMap::resize(float xAxis, float yAxis)
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
-        HiLog::Error(LABEL, "resize falied");
+        IMAGE_LOGE("resize falied");
         return false;
     }
     return true;
@@ -2641,7 +2638,7 @@ void PixelMap::translate(float xAxis, float yAxis)
     TransInfos infos;
     infos.matrix.setTranslate(xAxis, yAxis);
     if (!DoTranslation(infos)) {
-        HiLog::Error(LABEL, "translate falied");
+        IMAGE_LOGE("translate falied");
     }
 }
 
@@ -2651,7 +2648,7 @@ void PixelMap::rotate(float degrees)
     TransInfos infos;
     infos.matrix.setRotate(degrees);
     if (!DoTranslation(infos)) {
-        HiLog::Error(LABEL, "rotate falied");
+        IMAGE_LOGE("rotate falied");
     }
 }
 
@@ -2684,7 +2681,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     }
 
     if (!src.r.contains(dst.r)) {
-        HiLog::Error(LABEL, "Invalid crop rect");
+        IMAGE_LOGE("Invalid crop rect");
         return ERR_IMAGE_CROP;
     }
     dst.info = src.info.makeWH(dstIRect.width(), dstIRect.height());
@@ -2692,20 +2689,20 @@ uint32_t PixelMap::crop(const Rect &rect)
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
-        HiLog::Error(LABEL, "crop CreateMemory failed");
+        IMAGE_LOGE("crop CreateMemory failed");
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
-            HiLog::Error(LABEL, "GendstTransInfo get surfacebuffer failed");
+            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
         }
         rowStride = reinterpret_cast<SurfaceBuffer*>(m->extend.data)->GetStride();
     }
 #endif
     if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
-        HiLog::Error(LABEL, "ReadPixels failed");
+        IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
@@ -2774,13 +2771,13 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
         "Trans ImageData", {dst.info.width(), dst.info.height()}};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
-        HiLog::Error(LABEL, "applyColorSpace CreateMemory failed");
+        IMAGE_LOGE("applyColorSpace CreateMemory failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
     // Transfor pixels by readPixels
     if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, 0, 0)) {
         m->Release();
-        HiLog::Error(LABEL, "ReadPixels failed");
+        IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
     // Restore target infomation into pixelmap

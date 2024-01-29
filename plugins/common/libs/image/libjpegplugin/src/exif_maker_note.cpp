@@ -15,17 +15,21 @@
 #include "exif_maker_note.h"
 #include <memory>
 #include "exif_info.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "ExifMakerNote"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace HiviewDFX;
 using namespace Media;
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ExifMakerNote" };
 constexpr unsigned char EXIF_HEADER[] = {'E', 'x', 'i', 'f', '\0', '\0'};
 constexpr unsigned char HW_MNOTE_HEADER[] = { 'H', 'U', 'A', 'W', 'E', 'I', '\0', '\0' };
 constexpr unsigned char HW_MNOTE_TIFF_II[] = { 'I', 'I', 0x2A, 0x00, 0x08, 0x00, 0x00, 0x00 };
@@ -114,7 +118,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, const ExifByteOrder &
 {
     auto *exifData = exif_data_new();
     if (exifData == nullptr) {
-        HiLog::Error(LABEL, "GetValue, data is null.");
+        IMAGE_LOGE("GetValue, data is null.");
         return false;
     }
     exif_data_set_byte_order(exifData, order);
@@ -131,7 +135,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, ExifData *exifData,
 {
     auto *exifContent = exif_content_new();
     if (exifContent == nullptr) {
-        HiLog::Error(LABEL, "GetValue, content is null.");
+        IMAGE_LOGE("GetValue, content is null.");
         return false;
     }
 
@@ -153,7 +157,7 @@ bool ExifMakerNote::ExifItem::GetValue(std::string &value, ExifContent *exifCont
 {
     auto *exifEntry = exif_entry_new();
     if (exifEntry == nullptr) {
-        HiLog::Error(LABEL, "GetValue, item is null.");
+        IMAGE_LOGE("GetValue, item is null.");
         return false;
     }
 
@@ -202,11 +206,11 @@ void ExifMakerNote::ExifItem::Dump(const std::string &info, const ExifMakerNote:
 {
     uint32_t dataOrOffset = 0;
     if (!ExifMakerNote::GetUInt32(item.data, order, 0, dataOrOffset)) {
-        HiLog::Error(LABEL, "ExifMakerNote::ExifItem::Dump, GetUInt32 failed");
+        IMAGE_LOGE("ExifMakerNote::ExifItem::Dump, GetUInt32 failed");
         return;
     }
 
-    HiLog::Debug(LABEL, "%{public}s, "
+    IMAGE_LOGD("%{public}s, "
         "ifd=0x%{public}x, tag=0x%{public}04x, fmt=%{public}u, cnt=%{public}u, "
         "dataOrOffset=%{public}u(0x%{public}08x), data=[%{public}s]",
         info.c_str(),
@@ -226,24 +230,24 @@ ExifMakerNote::~ExifMakerNote()
 
 uint32_t ExifMakerNote::Parser(ExifData *exif, const unsigned char *data, uint32_t size)
 {
-    HiLog::Debug(LABEL, "Parser enter");
+    IMAGE_LOGD("Parser enter");
 
     bool moreCheck = false;
     uint32_t res = ParserMakerNote(exif, moreCheck);
     if ((res == Media::SUCCESS) || (!moreCheck)) {
-        HiLog::Debug(LABEL, "Parser leave");
+        IMAGE_LOGD("Parser leave");
         return Media::SUCCESS;
     }
 
     if ((data == nullptr) || (size < sizeof(EXIF_HEADER))) {
-        HiLog::Error(LABEL, "Parser leave. param invalid");
+        IMAGE_LOGE("Parser leave. param invalid");
         return Media::ERROR;
     }
 
     const unsigned char *newData = nullptr;
     uint32_t newSize = 0;
     if (!FindExifLocation(data, size, newData, newSize)) {
-        HiLog::Error(LABEL, "Parser leave. findExifLocation failed");
+        IMAGE_LOGE("Parser leave. findExifLocation failed");
         return Media::ERROR;
     }
 
@@ -258,69 +262,69 @@ uint32_t ExifMakerNote::Parser(ExifData *exif, const unsigned char *data, uint32
             continue;
         }
 
-        HiLog::Debug(LABEL, "Parser, find, ifd=%{public}u, tag=0x%{public}04x, fmt=%{public}u, "
+        IMAGE_LOGD("Parser, find, ifd=%{public}u, tag=0x%{public}04x, fmt=%{public}u, "
             "num=%{public}u, valueOffset=%{public}u, valueLength=%{public}u",
             de.ifd, de.tag, de.format, de.dataCounts, de.valueOffset, de.valueLength);
 
         if (ParserMakerNote(data + de.valueOffset, de.valueLength) == Media::SUCCESS) {
-            HiLog::Debug(LABEL, "Parser leave");
+            IMAGE_LOGD("Parser leave");
             return Media::SUCCESS;
         }
     }
 
-    HiLog::Debug(LABEL, "Parser leave");
+    IMAGE_LOGD("Parser leave");
     return Media::ERROR;
 }
 
 bool ExifMakerNote::FindExifLocation(const unsigned char *data, uint32_t size,
     const unsigned char *&newData, uint32_t &newSize)
 {
-    HiLog::Debug(LABEL, "FindExifLocation enter");
+    IMAGE_LOGD("FindExifLocation enter");
 
     if (size < sizeof(EXIF_HEADER)) {
-        HiLog::Error(LABEL, "FindExifLocation, small. size=%{public}u", size);
+        IMAGE_LOGE("FindExifLocation, small. size=%{public}u", size);
         return false;
     }
 
     const unsigned char *d = data;
     if (memcmp(d, EXIF_HEADER, sizeof(EXIF_HEADER)) != 0) {
         if (!FindJpegAPP1(d, size, d, size)) {
-            HiLog::Error(LABEL, "FindExifLocation leave, findJpegAPP1.");
+            IMAGE_LOGE("FindExifLocation leave, findJpegAPP1.");
             return false;
         }
 
         d++;
         size--;
         unsigned int len = (d[0] << 8) | d[1];
-        HiLog::Debug(LABEL, "FindExifLocation, len=%{public}u", len);
+        IMAGE_LOGD("FindExifLocation, len=%{public}u", len);
 
         d += JPEG_TAG_SIZE;
         size -= JPEG_TAG_SIZE;
     }
 
     if (size < EXIF_MIN_SIZE) {
-        HiLog::Error(LABEL, "FindExifLocation, small.");
+        IMAGE_LOGE("FindExifLocation, small.");
         return false;
     }
 
     if (memcmp(d, EXIF_HEADER, sizeof(EXIF_HEADER)) != 0) {
-        HiLog::Error(LABEL, "FindExifLocation, no found EXIF header");
+        IMAGE_LOGE("FindExifLocation, no found EXIF header");
         return false;
     }
 
-    HiLog::Debug(LABEL, "FindExifLocation, Found EXIF header");
+    IMAGE_LOGD("FindExifLocation, Found EXIF header");
 
     newData = d;
     newSize = size;
 
-    HiLog::Debug(LABEL, "FindExifLocation leave");
+    IMAGE_LOGD("FindExifLocation leave");
     return true;
 }
 
 bool ExifMakerNote::FindJpegAPP1(const unsigned char *data, uint32_t size,
     const unsigned char *&newData, uint32_t &newSize)
 {
-    HiLog::Debug(LABEL, "FindJpegAPP1 enter");
+    IMAGE_LOGD("FindJpegAPP1 enter");
 
     while (size >= JPEG_CHECK_MIN_SIZE) {
         while (size && (data[0] == 0xff)) {
@@ -343,7 +347,7 @@ bool ExifMakerNote::FindJpegAPP1(const unsigned char *data, uint32_t size,
             size--;
             unsigned int l = (data[0] << 8) | data[1];
             if (l > size) {
-                HiLog::Error(LABEL, "FindJpegAPP1, small.");
+                IMAGE_LOGE("FindJpegAPP1, small.");
                 return false;
             }
             data += l;
@@ -351,71 +355,71 @@ bool ExifMakerNote::FindJpegAPP1(const unsigned char *data, uint32_t size,
             continue;
         }
 
-        HiLog::Error(LABEL, "FindJpegAPP1, Unknown.");
+        IMAGE_LOGE("FindJpegAPP1, Unknown.");
         return false;
     }
 
     if (size < JPEG_CHECK_MIN_SIZE) {
-        HiLog::Error(LABEL, "FindJpegAPP1, small2.");
+        IMAGE_LOGE("FindJpegAPP1, small2.");
         return false;
     }
 
     newData = data;
     newSize = size;
 
-    HiLog::Debug(LABEL, "FindJpegAPP1 leave");
+    IMAGE_LOGD("FindJpegAPP1 leave");
     return true;
 }
 
 uint32_t ExifMakerNote::ParserMakerNote(ExifData* exif, bool &moreCheck)
 {
-    HiLog::Debug(LABEL, "ParserMakerNote enter");
+    IMAGE_LOGD("ParserMakerNote enter");
 
     moreCheck = false;
 
     if (exif == nullptr) {
-        HiLog::Fatal(LABEL, "ParserMakerNote, exif is null.");
+        IMAGE_LOGF("ParserMakerNote, exif is null.");
         return Media::ERROR;
     }
 
     auto *ee = exif_data_get_entry (exif, EXIF_TAG_MAKER_NOTE);
     auto *md = exif_data_get_mnote_data(exif);
     if ((ee == nullptr) || (md != nullptr)) {
-        HiLog::Debug(LABEL, "ParserMakerNote leave");
+        IMAGE_LOGD("ParserMakerNote leave");
         return Media::ERROR;
     }
 
-    HiLog::Info(LABEL, "need parser mnote.");
+    IMAGE_LOGI("need parser mnote.");
 
     if (ParserMakerNote(ee->data, ee->size) == Media::SUCCESS) {
-        HiLog::Debug(LABEL, "ParserMakerNote leave");
+        IMAGE_LOGD("ParserMakerNote leave");
         return Media::SUCCESS;
     }
 
     moreCheck = true;
 
-    HiLog::Debug(LABEL, "ParserMakerNote leave");
+    IMAGE_LOGD("ParserMakerNote leave");
     return Media::ERROR;
 }
 
 uint32_t ExifMakerNote::ParserMakerNote(const unsigned char *data, uint32_t size)
 {
-    HiLog::Debug(LABEL, "ParserMakerNote enter");
+    IMAGE_LOGD("ParserMakerNote enter");
 
     if (!IsHwMakerNote(data, size)) {
-        HiLog::Debug(LABEL, "ParserMakerNote leave");
+        IMAGE_LOGD("ParserMakerNote leave");
         return Media::ERROR;
     }
 
     makerNote_.resize(size);
     if (memcpy_s(makerNote_.data(), makerNote_.size(), data, size) != 0) {
-        HiLog::Error(LABEL, "memcpy error");
+        IMAGE_LOGE("memcpy error");
         return Media::ERROR;
     }
 
     ParserHwMakerNote();
 
-    HiLog::Debug(LABEL, "ParserMakerNote leave");
+    IMAGE_LOGD("ParserMakerNote leave");
     return Media::SUCCESS;
 }
 
@@ -426,22 +430,22 @@ bool ExifMakerNote::IsParsed() const
 
 bool ExifMakerNote::IsHwMakerNote(const unsigned char *data, uint32_t size)
 {
-    HiLog::Debug(LABEL, "IsHwMakerNote enter");
+    IMAGE_LOGD("IsHwMakerNote enter");
 
     tiff_offset_ = 0;
     ifd0_offset_ = 0;
 
     if (sizeof(HW_MNOTE_TIFF_II) != sizeof(HW_MNOTE_TIFF_MM)) {
-        HiLog::Fatal(LABEL, "IsHwMakerNote leave, same");
+        IMAGE_LOGF("IsHwMakerNote leave, same");
         return false;
     }
     if (size < (sizeof(HW_MNOTE_HEADER) + sizeof(HW_MNOTE_TIFF_II))) {
-        HiLog::Debug(LABEL, "IsHwMakerNote leave, size");
+        IMAGE_LOGD("IsHwMakerNote leave, size");
         return false;
     }
 
     if (memcmp(data, HW_MNOTE_HEADER, sizeof(HW_MNOTE_HEADER)) != 0) {
-        HiLog::Debug(LABEL, "IsHwMakerNote leave, hd");
+        IMAGE_LOGD("IsHwMakerNote leave, hd");
         return false;
     }
 
@@ -450,26 +454,26 @@ bool ExifMakerNote::IsHwMakerNote(const unsigned char *data, uint32_t size)
     if (memcmp((data + tiff_offset_), HW_MNOTE_TIFF_II, sizeof(HW_MNOTE_TIFF_II)) == 0) {
         order_ = ExifByteOrder::EXIF_BYTE_ORDER_INTEL;
         ifd0_offset_ = tiff_offset_ + sizeof(HW_MNOTE_TIFF_II);
-        HiLog::Debug(LABEL, "IsHwMakerNote leave, ii, tiff=%{public}u, ifd0=%{public}u", tiff_offset_, ifd0_offset_);
+        IMAGE_LOGD("IsHwMakerNote leave, ii, tiff=%{public}u, ifd0=%{public}u", tiff_offset_, ifd0_offset_);
         return true;
     }
 
     if (memcmp((data+ tiff_offset_), HW_MNOTE_TIFF_MM, sizeof(HW_MNOTE_TIFF_MM)) == 0) {
         order_ = ExifByteOrder::EXIF_BYTE_ORDER_MOTOROLA;
         ifd0_offset_ = tiff_offset_ + sizeof(HW_MNOTE_TIFF_MM);
-        HiLog::Debug(LABEL, "IsHwMakerNote leave, mm, tiff=%{public}u, ifd0=%{public}u", tiff_offset_, ifd0_offset_);
+        IMAGE_LOGD("IsHwMakerNote leave, mm, tiff=%{public}u, ifd0=%{public}u", tiff_offset_, ifd0_offset_);
         return true;
     }
 
-    HiLog::Error(LABEL, "byte order error");
+    IMAGE_LOGE("byte order error");
 
-    HiLog::Debug(LABEL, "IsHwMakerNote leave, order");
+    IMAGE_LOGD("IsHwMakerNote leave, order");
     return false;
 }
 
 bool ExifMakerNote::ParserHwMakerNote()
 {
-    HiLog::Debug(LABEL, "ParserHwMakerNote enter");
+    IMAGE_LOGD("ParserHwMakerNote enter");
 
     bool ret = ParserIFD(ifd0_offset_, HW_MNOTE_IFD_DEFAULT);
 
@@ -485,20 +489,20 @@ bool ExifMakerNote::ParserHwMakerNote()
         SetValue(entry, value);
     }
 
-    HiLog::Debug(LABEL, "ParserHwMakerNote leave, ret=%{public}u", ret);
+    IMAGE_LOGD("ParserHwMakerNote leave, ret=%{public}u", ret);
     return ret;
 }
 
 bool ExifMakerNote::ParserIFD(uint32_t offset, uint32_t ifd, uint32_t deep)
 {
-    HiLog::Debug(LABEL, "ParserIFD enter, offset=%{public}u, ifd=%{public}u, deep=%{public}u", offset, ifd, deep);
+    IMAGE_LOGD("ParserIFD enter, offset=%{public}u, ifd=%{public}u, deep=%{public}u", offset, ifd, deep);
 
     uint16_t count = 0;
     if (!GetUInt16AndMove(offset, count)) {
-        HiLog::Error(LABEL, "ParserIFD leave, count, false");
+        IMAGE_LOGE("ParserIFD leave, count, false");
         return false;
     }
-    HiLog::Debug(LABEL, "ParserIFD, count=%{public}u", count);
+    IMAGE_LOGD("ParserIFD, count=%{public}u", count);
 
     for (uint16_t i = 0; i < count; i++) {
         if (ParserItem(offset, ifd, deep)) {
@@ -506,22 +510,22 @@ bool ExifMakerNote::ParserIFD(uint32_t offset, uint32_t ifd, uint32_t deep)
             continue;
         }
 
-        HiLog::Error(LABEL, "ParserIFD leave, entry, false");
+        IMAGE_LOGE("ParserIFD leave, entry, false");
         return false;
     }
 
     if (memcmp(makerNote_.data() + offset, HW_MNOTE_IFD_TAIL, sizeof(HW_MNOTE_IFD_TAIL)) != 0) {
-        HiLog::Error(LABEL, "ParserIFD leave, tail, false");
+        IMAGE_LOGE("ParserIFD leave, tail, false");
         return false;
     }
 
-    HiLog::Debug(LABEL, "ParserIFD leave, true");
+    IMAGE_LOGD("ParserIFD leave, true");
     return true;
 }
 
 bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 {
-    HiLog::Debug(LABEL, "ParserItem enter, offset=%{public}u, deep=%{public}u, data=[%{public}s]",
+    IMAGE_LOGD("ParserItem enter, offset=%{public}u, deep=%{public}u, data=[%{public}s]",
         offset, deep, ExifMakerNote::Dump(makerNote_, offset, ENTRY_SIZE).c_str());
 
     uint16_t tag = 0;
@@ -529,19 +533,19 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
     uint32_t components = 0;
     uint32_t dataOrOffset = 0;
     if (!GetUInt16AndMove(offset, tag)) {
-        HiLog::Error(LABEL, "ParserItem leave, tag, false");
+        IMAGE_LOGE("ParserItem leave, tag, false");
         return false;
     }
     if (!GetUInt16AndMove(offset, format)) {
-        HiLog::Error(LABEL, "ParserItem leave, format, false");
+        IMAGE_LOGE("ParserItem leave, format, false");
         return false;
     }
     if (!GetUInt32AndMove(offset, components)) {
-        HiLog::Error(LABEL, "ParserItem leave, components, false");
+        IMAGE_LOGE("ParserItem leave, components, false");
         return false;
     }
     if (!GetUInt32(offset, dataOrOffset)) {
-        HiLog::Error(LABEL, "ParserItem leave, data, false");
+        IMAGE_LOGE("ParserItem leave, data, false");
         return false;
     }
 
@@ -555,18 +559,18 @@ bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
     back.Dump("ParserItem", order_);
 
     if (deep > 0) {
-        HiLog::Debug(LABEL, "ParserItem leave, deep=%{public}u", deep);
+        IMAGE_LOGD("ParserItem leave, deep=%{public}u", deep);
         return true;
     }
 
     if ((back.tag == HW_MNOTE_TAG_SCENE_INFO_OFFSET) || (back.tag ==  HW_MNOTE_TAG_FACE_INFO_OFFSET)) {
         if (!ParserIFD((tiff_offset_ + dataOrOffset), back.tag, (deep + 1))) {
-            HiLog::Error(LABEL, "ParserItem leave, ifd, false");
+            IMAGE_LOGE("ParserItem leave, ifd, false");
             return false;
         }
     }
 
-    HiLog::Debug(LABEL, "ParserItem leave");
+    IMAGE_LOGD("ParserItem leave");
     return true;
 }
 
@@ -627,7 +631,7 @@ bool ExifMakerNote::GetUInt16(const std::vector<unsigned char> &buffer, ExifByte
     size_t offset, uint16_t &value)
 {
     if ((offset + sizeof(uint16_t)) > buffer.size()) {
-        HiLog::Error(LABEL, "GetUInt16 check error.");
+        IMAGE_LOGE("GetUInt16 check error.");
         return false;
     }
     value = exif_get_short(buffer.data() + offset, order);
@@ -638,7 +642,7 @@ bool ExifMakerNote::GetUInt32(const std::vector<unsigned char> &buffer, ExifByte
     size_t offset, uint32_t &value)
 {
     if ((offset + sizeof(uint32_t)) > buffer.size()) {
-        HiLog::Error(LABEL, "GetUInt32 check error.");
+        IMAGE_LOGE("GetUInt32 check error.");
         return false;
     }
     value = exif_get_long(buffer.data() + offset, order);
@@ -649,13 +653,13 @@ bool ExifMakerNote::GetData(const std::vector<unsigned char> &buffer, size_t off
     std::vector<unsigned char> &value)
 {
     if ((offset + count) > buffer.size()) {
-        HiLog::Error(LABEL, "GetData check error.");
+        IMAGE_LOGE("GetData check error.");
         return false;
     }
 
     value.resize(count);
     if (memcpy_s(value.data(), count, buffer.data() + offset, count) != 0) {
-        HiLog::Error(LABEL, "GetData memcpy error.");
+        IMAGE_LOGE("GetData memcpy error.");
         return false;
     }
 
@@ -671,12 +675,12 @@ std::string ExifMakerNote::Dump(const std::vector<unsigned char> &data, uint32_t
     for (size_t loc = 0, cur = offset; ((loc < sum) && (cur < size)); loc++, cur++) {
         if (loc == 0) {
             if (sprintf_s(buffer, sizeof(buffer), "%02X", data[cur]) == -1) {
-                HiLog::Error(LABEL, "Dump sprintf error.");
+                IMAGE_LOGE("Dump sprintf error.");
                 break;
             }
         } else {
             if (sprintf_s(buffer, sizeof(buffer), " %02X", data[cur]) == -1) {
-                HiLog::Error(LABEL, "Dump sprintf error.");
+                IMAGE_LOGE("Dump sprintf error.");
                 break;
             }
         }

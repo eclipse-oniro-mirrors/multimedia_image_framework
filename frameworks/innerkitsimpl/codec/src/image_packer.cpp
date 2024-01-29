@@ -17,11 +17,10 @@
 
 #include "buffer_packer_stream.h"
 #include "file_packer_stream.h"
-#include "hilog/log.h"
 #include "image/abs_image_encoder.h"
+#include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
@@ -29,12 +28,16 @@
 #include "include/jpeg_encoder.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImagePacker"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImagePacker" };
 static constexpr uint8_t QUALITY_MAX = 100;
 const static std::string EXTENDED_ENCODER = "image/extended";
 static constexpr size_t SIZE_ZERO = 0;
@@ -48,7 +51,7 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
     uint32_t ret =
         pluginServer_.PluginServerGetClassInfo<AbsImageEncoder>(AbsImageEncoder::SERVICE_DEFAULT, classInfos);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "get class info from plugin server failed, ret:%{public}u.", ret);
+        IMAGE_LOGE("get class info from plugin server failed, ret:%{public}u.", ret);
         return ret;
     }
     for (auto &info : classInfos) {
@@ -60,7 +63,7 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
         AttrData &attr = iter->second;
         std::string format;
         if (attr.GetValue(format) != SUCCESS) {
-            HiLog::Error(LABEL, "attr data get format failed.");
+            IMAGE_LOGE("attr data get format failed.");
             continue;
         }
         formats.insert(format);
@@ -71,11 +74,11 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
 uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
 {
     if (packerStream_ == nullptr || packerStream_.get() == nullptr) {
-        HiLog::Error(LABEL, "make buffer packer stream failed.");
+        IMAGE_LOGE("make buffer packer stream failed.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (!GetEncoderPlugin(option)) {
-        HiLog::Error(LABEL, "StartPackingImpl get encoder plugin failed.");
+        IMAGE_LOGE("StartPackingImpl get encoder plugin failed.");
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     PlEncodeOptions plOpts;
@@ -89,18 +92,18 @@ uint32_t ImagePacker::StartPacking(uint8_t *outputData, uint32_t maxSize, const 
 {
     ImageTrace imageTrace("ImagePacker::StartPacking by outputData");
     if (!IsPackOptionValid(option)) {
-        HiLog::Error(LABEL, "array startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
-                     option.quality);
+        IMAGE_LOGE("array startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
+            option.quality);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     if (outputData == nullptr) {
-        HiLog::Error(LABEL, "output buffer is null.");
+        IMAGE_LOGE("output buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(outputData, maxSize);
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "make buffer packer stream failed.");
+        IMAGE_LOGE("make buffer packer stream failed.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     FreeOldPackerStream();
@@ -112,13 +115,13 @@ uint32_t ImagePacker::StartPacking(const std::string &filePath, const PackOption
 {
     ImageTrace imageTrace("ImagePacker::StartPacking by filePath");
     if (!IsPackOptionValid(option)) {
-        HiLog::Error(LABEL, "filepath startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
-                     option.quality);
+        IMAGE_LOGE("filepath startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
+            option.quality);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     FilePackerStream *stream = new (std::nothrow) FilePackerStream(filePath);
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "make file packer stream failed.");
+        IMAGE_LOGE("make file packer stream failed.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     FreeOldPackerStream();
@@ -130,13 +133,12 @@ uint32_t ImagePacker::StartPacking(const int &fd, const PackOption &option)
 {
     ImageTrace imageTrace("ImagePacker::StartPacking by fd");
     if (!IsPackOptionValid(option)) {
-        HiLog::Error(LABEL, "fd startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
-                     option.quality);
+        IMAGE_LOGE("fd startPacking option invalid %{public}s, %{public}u.", option.format.c_str(), option.quality);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     FilePackerStream *stream = new (std::nothrow) FilePackerStream(fd);
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "make file packer stream failed.");
+        IMAGE_LOGE("make file packer stream failed.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     FreeOldPackerStream();
@@ -148,13 +150,13 @@ uint32_t ImagePacker::StartPacking(std::ostream &outputStream, const PackOption 
 {
     ImageTrace imageTrace("ImagePacker::StartPacking by outputStream");
     if (!IsPackOptionValid(option)) {
-        HiLog::Error(LABEL, "outputStream startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
-                     option.quality);
+        IMAGE_LOGE("outputStream startPacking option invalid %{public}s, %{public}u.", option.format.c_str(),
+            option.quality);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     OstreamPackerStream *stream = new (std::nothrow) OstreamPackerStream(outputStream);
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "make ostream packer stream failed.");
+        IMAGE_LOGE("make ostream packer stream failed.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     FreeOldPackerStream();
@@ -170,8 +172,7 @@ uint32_t ImagePacker::StartPackingAdapter(PackerStream &outputStream, const Pack
     packerStream_ = std::unique_ptr<PackerStream>(&outputStream);
 
     if (!IsPackOptionValid(option)) {
-        HiLog::Error(LABEL, "packer stream option invalid %{public}s, %{public}u.", option.format.c_str(),
-                     option.quality);
+        IMAGE_LOGE("packer stream option invalid %{public}s, %{public}u.", option.format.c_str(), option.quality);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     return StartPackingImpl(option);
@@ -196,11 +197,11 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
     }
     pixelMap_ = source.CreatePixelMap(opts, ret);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "image source create pixel map failed.");
+        IMAGE_LOGE("image source create pixel map failed.");
         return ret;
     }
     if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
-        HiLog::Error(LABEL, "create the pixel map unique_ptr fail.");
+        IMAGE_LOGE("create the pixel map unique_ptr fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     return AddImage(*pixelMap_.get());
@@ -216,11 +217,11 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     }
     pixelMap_ = source.CreatePixelMap(index, opts, ret);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "image source create pixel map failed.");
+        IMAGE_LOGE("image source create pixel map failed.");
         return ret;
     }
     if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
-        HiLog::Error(LABEL, "create the pixel map unique_ptr fail.");
+        IMAGE_LOGE("create the pixel map unique_ptr fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     return AddImage(*pixelMap_.get());
@@ -232,7 +233,7 @@ uint32_t ImagePacker::FinalizePacking()
     return DoEncodingFunc([](ImagePlugin::AbsImageEncoder* encoder) {
         auto res = encoder->FinalizeEncode();
         if (res != SUCCESS) {
-            HiLog::Error(LABEL, "FinalizePacking failed %{public}d.", res);
+            IMAGE_LOGE("FinalizePacking failed %{public}d.", res);
         }
         return res;
         }, false);
@@ -258,18 +259,18 @@ static ImagePlugin::AbsImageEncoder* GetEncoder(PluginServer &pluginServer, std:
 bool ImagePacker::GetEncoderPlugin(const PackOption &option)
 {
     encoders_.clear();
-    HiLog::Debug(LABEL, "GetEncoderPlugin current encoder plugin size %{public}zu.", encoders_.size());
+    IMAGE_LOGD("GetEncoderPlugin current encoder plugin size %{public}zu.", encoders_.size());
     auto encoder = GetEncoder(pluginServer_, EXTENDED_ENCODER);
     if (encoder != nullptr) {
         encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
     } else {
-        HiLog::Error(LABEL, "GetEncoderPlugin get ext_encoder plugin failed.");
+        IMAGE_LOGE("GetEncoderPlugin get ext_encoder plugin failed.");
     }
     encoder = GetEncoder(pluginServer_, option.format);
     if (encoder != nullptr) {
         encoders_.emplace_back(std::unique_ptr<ImagePlugin::AbsImageEncoder>(encoder));
     } else {
-        HiLog::Debug(LABEL, "GetEncoderPlugin get %{public}s plugin failed, use ext_encoder plugin",
+        IMAGE_LOGD("GetEncoderPlugin get %{public}s plugin failed, use ext_encoder plugin",
             option.format.c_str());
     }
     return encoders_.size() != SIZE_ZERO;
@@ -297,7 +298,7 @@ bool ImagePacker::IsPackOptionValid(const PackOption &option)
 uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImageEncoder*)> func, bool forAll)
 {
     if (encoders_.size() == SIZE_ZERO) {
-        HiLog::Error(LABEL, "DoEncodingFunc encoders is empty.");
+        IMAGE_LOGE("DoEncodingFunc encoders is empty.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     std::vector<uint32_t> rets;
@@ -305,7 +306,7 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
     bool isSuccessOnce = false;
     for (size_t i = SIZE_ZERO; i < encoders_.size(); i++) {
         if (!forAll && isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc encoding successed, reset other encoder.");
+            IMAGE_LOGD("DoEncodingFunc encoding successed, reset other encoder.");
             encoders_.at(i).reset();
             continue;
         }
@@ -315,7 +316,7 @@ uint32_t ImagePacker::DoEncodingFunc(std::function<uint32_t(ImagePlugin::AbsImag
             isSuccessOnce = true;
         }
         if (!forAll && !isSuccessOnce) {
-            HiLog::Debug(LABEL, "DoEncodingFunc failed.");
+            IMAGE_LOGD("DoEncodingFunc failed.");
         }
     }
     if (isSuccessOnce) {

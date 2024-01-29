@@ -16,12 +16,10 @@
 #include <gtest/gtest.h>
 #include <sys/mman.h>
 
-#include "hilog/log.h"
 #include "native_window.h"
 #include "pixel_map_from_surface.h"
 
 using namespace testing::ext;
-using namespace OHOS::HiviewDFX;
 
 namespace OHOS {
 namespace Media {

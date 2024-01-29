@@ -19,9 +19,8 @@
 
 #include "directory_ex.h"
 #include "file_packer_stream.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 
 #if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
@@ -29,12 +28,16 @@
 #define SUPPORT_MMAP
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "FileSourceStream"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace ImagePlugin;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "FileSourceStream" };
 
 FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original)
     : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original)
@@ -42,7 +45,7 @@ FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, 
 
 FileSourceStream::~FileSourceStream()
 {
-    HiLog::Debug(LABEL, "[FileSourceStream]destructor enter.");
+    IMAGE_LOGD("[FileSourceStream]destructor enter.");
     fclose(filePtr_);
     ResetReadBuffer();
 }
@@ -51,22 +54,22 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 {
     string realPath;
     if (!PathToRealPath(pathName, realPath)) {
-        HiLog::Error(LABEL, "[FileSourceStream]input the file path exception, pathName=%{public}s", pathName.c_str());
+        IMAGE_LOGE("[FileSourceStream]input the file path exception, pathName=%{public}s", pathName.c_str());
         return nullptr;
     }
     size_t size = 0;
     if (!ImageUtils::GetFileSize(realPath, size)) {
-        HiLog::Error(LABEL, "[FileSourceStream]get the file size fail.");
+        IMAGE_LOGE("[FileSourceStream]get the file size fail.");
         return nullptr;
     }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
     if (filePtr == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]open file fail.");
+        IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
     int64_t offset = ftell(filePtr);
     if (offset < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]get the position fail.");
+        IMAGE_LOGE("[FileSourceStream]get the position fail.");
         fclose(filePtr);
         return nullptr;
     }
@@ -79,28 +82,28 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
 
     int dupFd = dup(fd);
     if (dupFd < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Fail to dup fd.");
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return nullptr;
     }
 
     if (!ImageUtils::GetFileSize(dupFd, size)) {
-        HiLog::Error(LABEL, "[FileSourceStream]get the file size fail.");
+        IMAGE_LOGE("[FileSourceStream]get the file size fail.");
         return nullptr;
     }
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]open file fail.");
+        IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
 
     int ret = fseek(filePtr, 0, SEEK_SET);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Go to 0 position fail, ret:%{public}d.", ret);
+        IMAGE_LOGE("[FileSourceStream]Go to 0 position fail, ret:%{public}d.", ret);
     }
 
     int64_t offset = ftell(filePtr);
     if (offset < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]get the position fail.");
+        IMAGE_LOGE("[FileSourceStream]get the position fail.");
         fclose(filePtr);
         return nullptr;
     }
@@ -112,19 +115,19 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
 {
     int dupFd = dup(fd);
     if (dupFd < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Fail to dup fd.");
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return nullptr;
     }
 
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]open file fail.");
+        IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
 
     int ret = fseek(filePtr, offset, SEEK_SET);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
+        IMAGE_LOGE("[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
         return nullptr;
     }
     return make_unique<FileSourceStream>(filePtr, length, offset, offset);
@@ -133,11 +136,11 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0 || filePtr_ == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]read stream input parameter exception.");
+        IMAGE_LOGE("[FileSourceStream]read stream input parameter exception.");
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        HiLog::Info(LABEL, "[FileSourceStream]read dataStreamBuffer fail.");
+        IMAGE_LOGI("[FileSourceStream]read dataStreamBuffer fail.");
         return false;
     }
     fileOffset_ += outData.dataSize;
@@ -147,16 +150,16 @@ bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
 bool FileSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (desiredSize == 0 || filePtr_ == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]peek stream input parameter exception.");
+        IMAGE_LOGE("[FileSourceStream]peek stream input parameter exception.");
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        HiLog::Info(LABEL, "[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}zu", desiredSize);
+        IMAGE_LOGI("[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}zu", desiredSize);
         return false;
     }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
+        IMAGE_LOGE("[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
         return false;
     }
     return true;
@@ -165,12 +168,12 @@ bool FileSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
 bool FileSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize || desiredSize > fileSize_) {
-        HiLog::Error(LABEL, "[FileSourceStream]input parameter exception, desiredSize:%{public}u,"
+        IMAGE_LOGE("[FileSourceStream]input parameter exception, desiredSize:%{public}u,"
             "bufferSize:%{public}u,fileSize_:%{public}zu.", desiredSize, bufferSize, fileSize_);
         return false;
     }
     if (!GetData(desiredSize, outBuffer, bufferSize, readSize)) {
-        HiLog::Info(LABEL, "[FileSourceStream]read outBuffer fail.");
+        IMAGE_LOGI("[FileSourceStream]read outBuffer fail.");
         return false;
     }
     fileOffset_ += readSize;
@@ -180,17 +183,17 @@ bool FileSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t b
 bool FileSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize || desiredSize > fileSize_) {
-        HiLog::Error(LABEL, "[FileSourceStream]input parameter exception, desiredSize:%{public}u,"
+        IMAGE_LOGE("[FileSourceStream]input parameter exception, desiredSize:%{public}u,"
             "bufferSize:%{public}u, fileSize_:%{public}zu.", desiredSize, bufferSize, fileSize_);
         return false;
     }
     if (!GetData(desiredSize, outBuffer, bufferSize, readSize)) {
-        HiLog::Info(LABEL, "[FileSourceStream]peek outBuffer fail.");
+        IMAGE_LOGI("[FileSourceStream]peek outBuffer fail.");
         return false;
     }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
+        IMAGE_LOGE("[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
         return false;
     }
     return true;
@@ -199,7 +202,7 @@ bool FileSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t b
 bool FileSourceStream::Seek(uint32_t position)
 {
     if (position > fileSize_) {
-        HiLog::Error(LABEL, "[FileSourceStream]Seek the position greater than the file size, position:%{public}u.",
+        IMAGE_LOGE("[FileSourceStream]Seek the position greater than the file size, position:%{public}u.",
             position);
         return false;
     }
@@ -207,7 +210,7 @@ bool FileSourceStream::Seek(uint32_t position)
     fileOffset_ = ((targetPosition < fileSize_) ? targetPosition : fileSize_);
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
     if (ret != 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]go to offset position fail, ret:%{public}d.", ret);
+        IMAGE_LOGE("[FileSourceStream]go to offset position fail, ret:%{public}d.", ret);
         return false;
     }
     return true;
@@ -221,7 +224,7 @@ uint32_t FileSourceStream::Tell()
 bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (fileSize_ == fileOffset_) {
-        HiLog::Error(LABEL, "[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
+        IMAGE_LOGE("[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
         return false;
     }
@@ -230,7 +233,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
     }
     size_t bytesRead = fread(outBuffer, sizeof(outBuffer[0]), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        HiLog::Info(LABEL, "[FileSourceStream]read outBuffer fail, bytesRead:%{public}zu", bytesRead);
+        IMAGE_LOGI("[FileSourceStream]read outBuffer fail, bytesRead:%{public}zu", bytesRead);
         return false;
     }
     readSize = desiredSize;
@@ -240,20 +243,20 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
 bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
 {
     if (fileSize_ == fileOffset_) {
-        HiLog::Error(LABEL, "[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
+        IMAGE_LOGE("[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
         return false;
     }
 
     if (desiredSize == 0 || desiredSize > MALLOC_MAX_LENTH) {
-        HiLog::Error(LABEL, "[FileSourceStream]Invalid value, desiredSize out of size.");
+        IMAGE_LOGE("[FileSourceStream]Invalid value, desiredSize out of size.");
         return false;
     }
 
     ResetReadBuffer();
     readBuffer_ = static_cast<uint8_t *>(malloc(desiredSize));
     if (readBuffer_ == nullptr) {
-        HiLog::Error(LABEL, "[FileSourceStream]malloc the desiredSize fail.");
+        IMAGE_LOGE("[FileSourceStream]malloc the desiredSize fail.");
         return false;
     }
     outData.bufferSize = desiredSize;
@@ -262,7 +265,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        HiLog::Info(LABEL, "[FileSourceStream]read dataStreamBuffer fail, bytesRead:%{public}zu", bytesRead);
+        IMAGE_LOGI("[FileSourceStream]read dataStreamBuffer fail, bytesRead:%{public}zu", bytesRead);
         free(readBuffer_);
         readBuffer_ = nullptr;
         return false;
@@ -281,12 +284,12 @@ static bool DupFd(FILE *f, int &res)
 {
     res = fileno(f);
     if (res < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Fail to fileno fd.");
+        IMAGE_LOGE("[FileSourceStream]Fail to fileno fd.");
         return false;
     }
     res = dup(res);
     if (res < 0) {
-        HiLog::Error(LABEL, "[FileSourceStream]Fail to dup fd.");
+        IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return false;
     }
     return true;
@@ -303,7 +306,7 @@ uint8_t *FileSourceStream::GetDataPtr()
     }
     auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, MAP_SHARED, mmapFd_, 0);
     if (mmptr == MAP_FAILED) {
-        HiLog::Error(LABEL, "[FileSourceStream] mmap failed, errno:%{public}d", errno);
+        IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;
     }
     fileData_ = static_cast<uint8_t*>(mmptr);
@@ -335,7 +338,7 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
 {
     int dupFd = -1;
     if (DupFd(filePtr_, dupFd)) {
-        HiLog::Error(LABEL, "[FileSourceStream] ToOutputDataStream fd failed");
+        IMAGE_LOGE("[FileSourceStream] ToOutputDataStream fd failed");
         return nullptr;
     }
     return new (std::nothrow) FilePackerStream(dupFd);

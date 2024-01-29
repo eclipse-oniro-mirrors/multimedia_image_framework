@@ -21,7 +21,6 @@
 #include "image_source.h"
 #include "image_type.h"
 #include "image_utils.h"
-#include "hilog/log.h"
 #include "image_receiver_manager.h"
 
 using namespace testing::ext;

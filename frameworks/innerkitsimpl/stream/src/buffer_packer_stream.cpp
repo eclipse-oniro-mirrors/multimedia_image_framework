@@ -15,14 +15,17 @@
 
 #include "buffer_packer_stream.h"
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "securec.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "BufferPackerStream"
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "BufferPackerStream"};
 
 BufferPackerStream::BufferPackerStream(uint8_t *outputData, uint32_t maxSize)
     : outputData_(outputData), maxSize_(maxSize)
@@ -31,21 +34,21 @@ BufferPackerStream::BufferPackerStream(uint8_t *outputData, uint32_t maxSize)
 bool BufferPackerStream::Write(const uint8_t *buffer, uint32_t size)
 {
     if ((buffer == nullptr) || (size == 0)) {
-        HiLog::Error(LABEL, "input parameter invalid.");
+        IMAGE_LOGE("input parameter invalid.");
         return false;
     }
     if (outputData_ == nullptr) {
-        HiLog::Error(LABEL, "output stream is null.");
+        IMAGE_LOGE("output stream is null.");
         return false;
     }
     uint32_t leftSize = maxSize_ - offset_;
     if (size > leftSize) {
-        HiLog::Error(LABEL, "write data:[%{public}lld] out of max size:[%{public}u].",
-                     static_cast<long long>(size + offset_), maxSize_);
+        IMAGE_LOGE("write data:[%{public}lld] out of max size:[%{public}u].",
+            static_cast<long long>(size + offset_), maxSize_);
         return false;
     }
     if (memcpy_s(outputData_ + offset_, leftSize, buffer, size) != EOK) {
-        HiLog::Error(LABEL, "memory copy failed.");
+        IMAGE_LOGE("memory copy failed.");
         return false;
     }
     offset_ += size;

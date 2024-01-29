@@ -94,9 +94,14 @@ ohos_copy("image_declaration") {
   module_install_name = ""
 }
 
+config("image_postproc_config") {
+  include_dirs = [ "//third_party/ffmpeg" ]
+}
+
 if (use_clang_android) {
   ohos_source_set("image_native") {
     public_configs = [ ":image_external_config" ]
+    configs = [ ":image_postproc_config" ]
     defines = image_decode_android_defines
     cflags = image_native_android_cflags
     sources = image_native_android_sources
@@ -108,6 +113,7 @@ if (use_clang_android) {
 } else if (use_clang_ios) {
   ohos_source_set("image_native") {
     public_configs = [ ":image_external_config" ]
+    configs = [ ":image_postproc_config" ]
     defines = image_decode_ios_defines
     cflags = image_native_ios_cflags
     include_dirs = image_native_ios_include_dirs
@@ -127,6 +133,7 @@ if (use_clang_android) {
       }
     }
     public_configs = [ ":image_external_config" ]
+    configs = [ ":image_postproc_config" ]
 
     cflags = [
       "-DIMAGE_DEBUG_FLAG",
@@ -211,10 +218,12 @@ if (use_clang_android) {
       } else {
         deps += [ "//third_party/libpng:libpng" ]
       }
+      deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
       external_deps = [
         "c_utils:utils",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
+        "hilog:libhilog",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
         "napi:ace_napi",
@@ -348,6 +357,7 @@ ohos_static_library("image_static") {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
+      "hilog:libhilog",
     ]
   }
   subsystem_name = "multimedia"

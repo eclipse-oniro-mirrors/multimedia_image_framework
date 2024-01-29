@@ -17,13 +17,18 @@
 #include <fstream>
 #include <sstream>
 #include "directory_ex.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "json.hpp"
 #include "json_helper.h"
-#include "log_tags.h"
 #include "platform_adp.h"
 #include "plugin.h"
 #include "plugin_metadata.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PluginMgr"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -34,9 +39,6 @@ using std::size_t;
 using std::string;
 using std::vector;
 using std::weak_ptr;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PluginMgr" };
 PlatformAdp &PluginMgr::platformAdp_ = DelayedRefSingleton<PlatformAdp>::GetInstance();
 
 uint32_t PluginMgr::Register(const vector<string> &canonicalPaths)
@@ -86,7 +88,7 @@ uint32_t PluginMgr::TraverseFiles(const string &canonicalPath)
     vector<string> strFiles;
     GetDirFiles(canonicalPath, strFiles);
     if (strFiles.empty()) {
-        HiLog::Error(LABEL, "failed to get dir files.");
+        IMAGE_LOGE("failed to get dir files.");
         return ERR_GENERAL;
     }
 
@@ -100,7 +102,7 @@ uint32_t PluginMgr::TraverseFiles(const string &canonicalPath)
     }
 
     if (noTarget) {
-        HiLog::Warn(LABEL, "there is no plugin meta file in path.");
+        IMAGE_LOGW("there is no plugin meta file in path.");
         return ERR_NO_TARGET;
     }
 
@@ -127,7 +129,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
 
     ifstream metadata(candidateFile);
     if (!metadata) {
-        HiLog::Error(LABEL, "failed to open metadata file.");
+        IMAGE_LOGE("failed to open metadata file.");
         return false;
     }
 
@@ -135,7 +137,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
     metadata >> root;
     metadata.close();
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
-        HiLog::Error(LABEL, "read libraryPath failed.");
+        IMAGE_LOGE("read libraryPath failed.");
         return false;
     }
 
@@ -145,7 +147,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
 
     fileExt = ExtractFileExt(libraryPath);
     if (fileExt != libraryFileSuffix) {
-        HiLog::Error(LABEL, "invalid library suffix.");
+        IMAGE_LOGE("invalid library suffix.");
         return false;
     }
 
@@ -160,7 +162,7 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
 
     string realPath;
     if (!PathToRealPath(libraryPath, realPath)) {
-        HiLog::Error(LABEL, "library path to real path error.");
+        IMAGE_LOGE("library path to real path error.");
         return false;
     }
 
@@ -173,38 +175,38 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
     auto iter = plugins_.find(&libraryPath);
     if (iter != plugins_.end()) {
         // already registered before, just skip it.
-        HiLog::Debug(LABEL, "the libraryPath has already been registered before.");
+        IMAGE_LOGD("the libraryPath has already been registered before.");
         return ERR_GENERAL;
     }
 
     ifstream metadata(metadataPath);
     if (!metadata) {
-        HiLog::Error(LABEL, "failed to open metadata file.");
+        IMAGE_LOGE("failed to open metadata file.");
         return ERR_GENERAL;
     }
 
     auto plugin = std::make_shared<Plugin>();
     if (plugin == nullptr) {
-        HiLog::Error(LABEL, "failed to create Plugin.");
+        IMAGE_LOGE("failed to create Plugin.");
         return ERR_INTERNAL;
     }
 
     weak_ptr<Plugin> weakPtr = plugin;
     auto regRet = plugin->Register(metadata, std::move(libraryPath), weakPtr);
     if (regRet != SUCCESS) {
-        HiLog::Error(LABEL, "failed to register plugin,ERRNO: %{public}u.", regRet);
+        IMAGE_LOGE("failed to register plugin,ERRNO: %{public}u.", regRet);
         return regRet;
     }
 
     const std::string &key = plugin->GetLibraryPath();
     if (key.empty()) {
-        HiLog::Error(LABEL, "get empty libraryPath.");
+        IMAGE_LOGE("get empty libraryPath.");
         return ERR_INTERNAL;
     }
 
     auto insertRet = plugins_.insert(PluginMap::value_type(&key, std::move(plugin)));
     if (!insertRet.second) {
-        HiLog::Error(LABEL, "failed to insert Plugin");
+        IMAGE_LOGE("failed to insert Plugin");
         return ERR_INTERNAL;
     }
 
@@ -216,20 +218,20 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
     string libraryPath;
     json root = nlohmann::json::parse(metadataJson);
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
-        HiLog::Error(LABEL, "read libraryPath failed.");
+        IMAGE_LOGE("read libraryPath failed.");
         return false;
     }
 
     auto iter = plugins_.find(&libraryPath);
     if (iter != plugins_.end()) {
         // already registered before, just skip it.
-        HiLog::Debug(LABEL, "the libraryPath has already been registered before.");
+        IMAGE_LOGD("the libraryPath has already been registered before.");
         return ERR_GENERAL;
     }
 
     istringstream metadata(metadataJson);
     if (!metadata) {
-        HiLog::Error(LABEL, "failed to read metadata.");
+        IMAGE_LOGE("failed to read metadata.");
         return ERR_GENERAL;
     }
 
@@ -237,19 +239,19 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
     weak_ptr<Plugin> weakPtr = crossPlugin;
     auto regRet = crossPlugin->Register(metadata, std::move(libraryPath), weakPtr);
     if (regRet != SUCCESS) {
-        HiLog::Error(LABEL, "failed to register plugin,ERRNO: %{public}u.", regRet);
+        IMAGE_LOGE("failed to register plugin,ERRNO: %{public}u.", regRet);
         return regRet;
     }
 
     const std::string &key = crossPlugin->GetLibraryPath();
     if (key.empty()) {
-        HiLog::Error(LABEL, "get empty libraryPath.");
+        IMAGE_LOGE("get empty libraryPath.");
         return ERR_INTERNAL;
     }
 
     auto insertRet = plugins_.insert(PluginMap::value_type(&key, std::move(crossPlugin)));
     if (!insertRet.second) {
-        HiLog::Error(LABEL, "failed to insert Plugin");
+        IMAGE_LOGE("failed to insert Plugin");
         return ERR_INTERNAL;
     }
 

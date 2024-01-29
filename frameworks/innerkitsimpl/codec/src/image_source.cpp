@@ -28,6 +28,7 @@
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
+#include "image_log.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "incremental_source_stream.h"
@@ -50,14 +51,17 @@
 #endif
 #include "string_ex.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageSource"
+
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
-
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSource" };
 
 static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
@@ -136,14 +140,14 @@ ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
-    HiLog::Debug(LABEL, "[ImageSource]get supported image type.");
+    IMAGE_LOGD("[ImageSource]get supported image type.");
 
     formats.clear();
     vector<ClassInfo> classInfos;
     uint32_t ret = pluginServer_.PluginServerGetClassInfo<AbsImageDecoder>(AbsImageDecoder::SERVICE_DEFAULT,
                                                                            classInfos);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]get class info from plugin server failed, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get class info from plugin server failed, ret:%{public}u.", ret);
         return ret;
     }
 
@@ -157,7 +161,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
         AttrData &attr = iter->second;
         const string *format = nullptr;
         if (attr.GetValue(format) != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]attr data get format failed.");
+            IMAGE_LOGE("[ImageSource]attr data get format failed.");
             continue;
         }
 
@@ -175,7 +179,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
     const SourceOptions &opts, uint32_t &errorCode, const string traceName)
 {
     ImageTrace imageTrace(traceName);
-    HiLog::Debug(LABEL, "[ImageSource]DoImageSourceCreate IN.");
+    IMAGE_LOGD("[ImageSource]DoImageSourceCreate IN.");
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
@@ -184,7 +188,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
 
     auto sourcePtr = new (std::nothrow) ImageSource(std::move(streamPtr), opts);
     if (sourcePtr == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]failed to create ImageSource.");
+        IMAGE_LOGE("[ImageSource]failed to create ImageSource.");
         return nullptr;
     }
     auto imageSource = unique_ptr<ImageSource>(sourcePtr);
@@ -200,11 +204,11 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(
 unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is,
     const SourceOptions &opts, uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create Imagesource with stream.");
+    IMAGE_LOGD("[ImageSource]create Imagesource with stream.");
     return DoImageSourceCreate([&is]() {
         auto stream = IstreamSourceStream::CreateSourceStream(move(is));
         if (stream == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create istream source stream.");
+            IMAGE_LOGE("[ImageSource]failed to create istream source stream.");
         }
         return stream;
         }, opts, errorCode, "CreateImageSource by istream");
@@ -213,10 +217,10 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is,
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint32_t size,
     const SourceOptions &opts, uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create Imagesource with buffer.");
+    IMAGE_LOGD("[ImageSource]create Imagesource with buffer.");
 
     if (data == nullptr || size == 0) {
-        HiLog::Error(LABEL, "[ImageSource]parameter error.");
+        IMAGE_LOGE("[ImageSource]parameter error.");
         errorCode = ERR_MEDIA_INVALID_PARAM;
         return nullptr;
     }
@@ -226,7 +230,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
             streamPtr = BufferSourceStream::CreateSourceStream(data, size);
         }
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create buffer source stream.");
+            IMAGE_LOGE("[ImageSource]failed to create buffer source stream.");
         }
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by data");
@@ -235,9 +239,9 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathName, const SourceOptions &opts,
                                                        uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create Imagesource with pathName.");
+    IMAGE_LOGD("[ImageSource]create Imagesource with pathName.");
     if (pathName.size() == SIZE_ZERO) {
-        HiLog::Error(LABEL, "[ImageSource]parameter error.");
+        IMAGE_LOGE("[ImageSource]parameter error.");
         return nullptr;
     }
     return DoImageSourceCreate([&pathName]() {
@@ -246,7 +250,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
             streamPtr = FileSourceStream::CreateSourceStream(pathName);
         }
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create file path source stream. pathName=%{public}s",
+            IMAGE_LOGE("[ImageSource]failed to create file path source stream. pathName=%{public}s",
                 pathName.c_str());
         }
         return streamPtr;
@@ -256,11 +260,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const SourceOptions &opts,
                                                        uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create Imagesource with fd.");
+    IMAGE_LOGD("[ImageSource]create Imagesource with fd.");
     return DoImageSourceCreate([&fd]() {
         auto streamPtr = FileSourceStream::CreateSourceStream(fd);
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create file fd source stream.");
+            IMAGE_LOGE("[ImageSource]failed to create file fd source stream.");
         }
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by fd");
@@ -269,11 +273,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const Sourc
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t offset,
     int32_t length, const SourceOptions &opts, uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create Imagesource with fd offset and length.");
+    IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
     return DoImageSourceCreate([&fd, offset, length]() {
         auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create file fd source stream.");
+            IMAGE_LOGE("[ImageSource]failed to create file fd source stream.");
         }
         return streamPtr;
         }, opts, errorCode, "CreateImageSource by fd offset and length");
@@ -282,11 +286,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
 unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
                                                                   uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]create incremental ImageSource.");
+    IMAGE_LOGD("[ImageSource]create incremental ImageSource.");
     auto sourcePtr = DoImageSourceCreate([&opts]() {
         auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
         if (streamPtr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]failed to create incremental source stream.");
+            IMAGE_LOGE("[ImageSource]failed to create incremental source stream.");
         }
         return streamPtr;
     }, opts.sourceOptions, errorCode, "CreateImageSource by fd");
@@ -310,7 +314,7 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    HiLog::Info(LABEL, "[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
+    IMAGE_LOGI("[ImageSource]CreatePixelMapEx imageId_ is %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
         opts.desiredSize.width, opts.desiredSize.height);
 
@@ -456,7 +460,7 @@ bool IsWidthAligned(const int32_t &width)
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
     // used for test surfacebuffer
@@ -481,7 +485,7 @@ DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info
         context.allocatorType = opts.allocatorType;
     } else {
         if (preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) {
-            HiLog::Debug(LABEL, "[ImageSource] allocatorType is DMA_ALLOC");
+            IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
@@ -505,7 +509,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
-        HiLog::Error(LABEL, "[ImageSource]get image info failed, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
@@ -516,7 +520,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index,
+        IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index,
             errorCode);
         return nullptr;
     }
@@ -531,7 +535,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     guard.unlock();
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
@@ -544,7 +548,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    HiLog::Info(LABEL, "ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
+    IMAGE_LOGI("ImageSource::CreatePixelMapExtended success, desiredSize: (%{public}d, %{public}d),"
         "imageSize: (%{public}d, %{public}d), cost %{public}lu us", opts.desiredSize.width, opts.desiredSize.height,
         info.size.width, info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
     return pixelMap;
@@ -594,7 +598,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     pixelMap->SetPixelsAddr(addrInfos.addr, addrInfos.context, addrInfos.size, addrInfos.type, addrInfos.func);
     errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()), opts_.fitDensity, true);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         return nullptr;
     }
     auto saveEditable = pixelMap->IsEditable();
@@ -612,7 +616,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
         GetValidCropRect(opts_.CropRect, plInfo, crop);
         errorCode = pixelMap->crop(crop);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
+            IMAGE_LOGE("[ImageSource]CropRect pixelmap fail, ret:%{public}u.", errorCode);
             return nullptr;
         }
         if (!hasDesiredSizeOptions) {
@@ -651,7 +655,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     auto iter = GetValidImageStatus(index, errorCode);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
         return nullptr;
     }
     if (ImageSystemProperties::GetSkiaEnabled()) {
@@ -663,13 +667,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]image decode plugin is null.");
+        IMAGE_LOGE("[ImageSource]image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return nullptr;
     }
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr || pixelMap.get() == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]create the pixel map unique_ptr fail.");
+        IMAGE_LOGE("[ImageSource]create the pixel map unique_ptr fail.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
@@ -677,7 +681,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index,
+        IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index,
             errorCode);
         return nullptr;
     }
@@ -695,7 +699,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     PostProc::ValidCropValue(opts_.CropRect, size);
     errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()));
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         return nullptr;
     }
 
@@ -705,7 +709,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     if (!useSkia) {
         bool hasNinePatch = mainDecoder_->HasProperty(NINE_PATCH);
         finalOutputStep = GetFinalOutputStep(opts_, *(pixelMap.get()), hasNinePatch);
-        HiLog::Debug(LABEL, "[ImageSource]finalOutputStep:%{public}d. opts.allocatorType %{public}d",
+        IMAGE_LOGD("[ImageSource]finalOutputStep:%{public}d. opts.allocatorType %{public}d",
             finalOutputStep, opts_.allocatorType);
 
         if (finalOutputStep == FinalOutputStep::NO_CHANGE) {
@@ -729,7 +733,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
     guard.unlock();
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         if (context.pixelsBuffer.buffer != nullptr) {
             if (context.freeFunc != nullptr) {
                 context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
@@ -776,7 +780,7 @@ unique_ptr<IncrementalPixelMap> ImageSource::CreateIncrementalPixelMap(uint32_t 
 {
     IncrementalPixelMap *incPixelMapPtr = new (std::nothrow) IncrementalPixelMap(index, opts, this);
     if (incPixelMapPtr == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]create the incremental pixel map unique_ptr fail.");
+        IMAGE_LOGE("[ImageSource]create the incremental pixel map unique_ptr fail.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
@@ -794,23 +798,23 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
     opts_ = opts;
     auto imageStatusIter = GetValidImageStatus(index, ret);
     if (imageStatusIter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on promote decoding, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on promote decoding, ret:%{public}u.", ret);
         return ret;
     }
     auto incrementalRecordIter = incDecodingMap_.find(&pixelMap);
     if (incrementalRecordIter == incDecodingMap_.end()) {
         ret = AddIncrementalContext(pixelMap, incrementalRecordIter);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]failed to add context on incremental decoding, ret:%{public}u.", ret);
+            IMAGE_LOGE("[ImageSource]failed to add context on incremental decoding, ret:%{public}u.", ret);
             return ret;
         }
     }
     if (incrementalRecordIter->second.IncrementalState == ImageDecodingState::BASE_INFO_PARSED) {
-        HiLog::Debug(LABEL, "[ImageSource]promote decode : set decode options.");
+        IMAGE_LOGD("[ImageSource]promote decode : set decode options.");
         ImagePlugin::PlImageInfo plInfo;
         ret = SetDecodeOptions(incrementalRecordIter->second.decoder, index, opts_, plInfo);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]set decode options error (image index:%{public}u), ret:%{public}u.",
+            IMAGE_LOGE("[ImageSource]set decode options error (image index:%{public}u), ret:%{public}u.",
                 index, ret);
             return ret;
         }
@@ -831,7 +835,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
         PostProc::ValidCropValue(opts_.CropRect, size);
         ret = UpdatePixelMapInfo(opts_, plInfo, pixelMap);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]update pixelmap info error (image index:%{public}u), ret:%{public}u.",
+            IMAGE_LOGE("[ImageSource]update pixelmap info error (image index:%{public}u), ret:%{public}u.",
                 index, ret);
             return ret;
         }
@@ -863,7 +867,7 @@ uint32_t ImageSource::PromoteDecoding(uint32_t index, const DecodeOptions &opts,
     state = incrementalRecordIter->second.IncrementalState;
     decodeProgress = incrementalRecordIter->second.decodingProgress;
     if (incrementalRecordIter->second.IncrementalState == ImageDecodingState::IMAGE_ERROR) {
-        HiLog::Error(LABEL, "[ImageSource]invalid imageState %{public}d on incremental decoding.",
+        IMAGE_LOGE("[ImageSource]invalid imageState %{public}d on incremental decoding.",
             incrementalRecordIter->second.IncrementalState);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
@@ -889,7 +893,7 @@ void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
     if (sourceStreamPtr_ == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]image source update data, source stream is null.");
+        IMAGE_LOGE("[ImageSource]image source update data, source stream is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     std::lock_guard<std::mutex> guard(decodingMutex_);
@@ -912,12 +916,12 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     auto iter = GetValidImageStatus(index, ret);
     if (iter == imageStatusMap_.end()) {
         guard.unlock();
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
         return ret;
     }
     ImageInfo &info = (iter->second).imageInfo;
     if (info.size.width == 0 || info.size.height == 0) {
-        HiLog::Error(LABEL, "[ImageSource]get the image size fail on get image info, width:%{public}d,"
+        IMAGE_LOGE("[ImageSource]get the image size fail on get image info, width:%{public}d,"
             "height:%{public}d.", info.size.width, info.size.height);
         return ERR_IMAGE_DECODE_FAILED;
     }
@@ -933,12 +937,12 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
         return ret;
     }
     ret = mainDecoder_->ModifyImageProperty(index, key, value, path);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
+        IMAGE_LOGE("[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -951,12 +955,12 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
         return ret;
     }
     ret = mainDecoder_->ModifyImageProperty(index, key, value, fd);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
+        IMAGE_LOGE("[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -969,12 +973,12 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on modify image property, ret:%{public}u.", ret);
         return ret;
     }
     ret = mainDecoder_->ModifyImageProperty(index, key, value, data, size);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
+        IMAGE_LOGE("[ImageSource] ModifyImageProperty fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -986,13 +990,13 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on get image property, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get image property, ret:%{public}u.", ret);
         return ret;
     }
 
     ret = mainDecoder_->GetImagePropertyInt(index, key, value);
     if (ret != SUCCESS) {
-        HiLog::Debug(LABEL, "[ImageSource] GetImagePropertyInt fail, ret:%{public}u", ret);
+        IMAGE_LOGD("[ImageSource] GetImagePropertyInt fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -1004,12 +1008,12 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on get image property, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get image property, ret:%{public}u.", ret);
         return ret;
     }
     ret = mainDecoder_->GetImagePropertyString(index, key, value);
     if (ret != SUCCESS) {
-        HiLog::Debug(LABEL, "[ImageSource] GetImagePropertyString fail, ret:%{public}u", ret);
+        IMAGE_LOGD("[ImageSource] GetImagePropertyString fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -1048,7 +1052,7 @@ void ImageSource::UnRegisterListener(PeerListener *listener)
 void ImageSource::AddDecodeListener(DecodeListener *listener)
 {
     if (listener == nullptr) {
-        HiLog::Error(LABEL, "AddDecodeListener listener null");
+        IMAGE_LOGE("AddDecodeListener listener null");
         return;
     }
     std::lock_guard<std::mutex> guard(listenerMutex_);
@@ -1058,7 +1062,7 @@ void ImageSource::AddDecodeListener(DecodeListener *listener)
 void ImageSource::RemoveDecodeListener(DecodeListener *listener)
 {
     if (listener == nullptr) {
-        HiLog::Error(LABEL, "RemoveDecodeListener listener null");
+        IMAGE_LOGE("RemoveDecodeListener listener null");
         return;
     }
     std::lock_guard<std::mutex> guard(listenerMutex_);
@@ -1070,7 +1074,7 @@ void ImageSource::RemoveDecodeListener(DecodeListener *listener)
 
 ImageSource::~ImageSource()
 {
-    HiLog::Debug(LABEL, "ImageSource destructor enter");
+    IMAGE_LOGD("ImageSource destructor enter");
     std::lock_guard<std::mutex> guard(listenerMutex_);
     for (const auto &listener : listeners_) {
         listener->OnPeerDestory();
@@ -1110,7 +1114,7 @@ ImageSource::FormatAgentMap ImageSource::InitClass()
         AttrData &attr = iter->second;
         string format;
         if (SUCCESS != attr.GetValue(format)) {
-            HiLog::Error(LABEL, "[ImageSource]attr data get format:[%{public}s] failed.", format.c_str());
+            IMAGE_LOGE("[ImageSource]attr data get format:[%{public}s] failed.", format.c_str());
             continue;
         }
         formats.insert(move(format));
@@ -1139,7 +1143,7 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
         return res;
     }
     if (!agent.CheckFormat(outData.inputStreamBuffer, size)) {
-        HiLog::Error(LABEL, "[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
+        IMAGE_LOGE("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     return SUCCESS;
@@ -1148,15 +1152,15 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
 uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t size)
 {
     if (sourceStreamPtr_ == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]check image format, source stream is null.");
+        IMAGE_LOGE("[ImageSource]check image format, source stream is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!sourceStreamPtr_->Peek(size, outData)) {
-        HiLog::Error(LABEL, "[ImageSource]stream peek the data fail, desiredSize:%{public}zu", size);
+        IMAGE_LOGE("[ImageSource]stream peek the data fail, desiredSize:%{public}zu", size);
         return ERR_IMAGE_SOURCE_DATA;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
-        HiLog::Error(LABEL, "[ImageSource]the outData is incomplete.");
+        IMAGE_LOGE("[ImageSource]the outData is incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     return SUCCESS;
@@ -1167,14 +1171,14 @@ uint32_t ImageSource::CheckFormatHint(const string &formatHint, FormatAgentMap::
     uint32_t ret = ERROR;
     formatIter = formatAgentMap_.find(formatHint);
     if (formatIter == formatAgentMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]check input format fail.");
+        IMAGE_LOGE("[ImageSource]check input format fail.");
         return ret;
     }
     AbsImageFormatAgent *agent = formatIter->second;
     ret = CheckEncodedFormat(*agent);
     if (ret != SUCCESS) {
         if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-            HiLog::Error(LABEL, "[ImageSource]image source incomplete.");
+            IMAGE_LOGE("[ImageSource]image source incomplete.");
         }
         return ret;
     }
@@ -1188,12 +1192,12 @@ AbsImageDecoder *DoCreateDecoder(std::string codecFormat,
     for (const auto &capability : capabilities) {
         std::string x = "undefined";
         capability.second.GetValue(x);
-        HiLog::Debug(LABEL, "[ImageSource] capabilities [%{public}s],[%{public}s]",
+        IMAGE_LOGD("[ImageSource] capabilities [%{public}s],[%{public}s]",
             capability.first.c_str(), x.c_str());
     }
     auto decoder = pluginServer.CreateObject<AbsImageDecoder>(AbsImageDecoder::SERVICE_DEFAULT, capabilities);
     if (decoder == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]failed to create decoder object.");
+        IMAGE_LOGE("[ImageSource]failed to create decoder object.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return nullptr;
     }
@@ -1210,7 +1214,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
 
     if (sourceStreamPtr_ == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]sourceStreamPtr_ is null");
+        IMAGE_LOGE("[ImageSource]sourceStreamPtr_ is null");
         return ERR_MEDIA_NULL_POINTER;
     }
 
@@ -1219,13 +1223,13 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     auto codec = DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *sourceStreamPtr_,
         errorCode);
     if (errorCode != SUCCESS || codec == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]No extended decoder.");
+        IMAGE_LOGE("[ImageSource]No extended decoder.");
         return errorCode;
     }
     const static string EXT_ENCODED_FORMAT_KEY = "EncodedFormat";
     auto decoderPtr = unique_ptr<AbsImageDecoder>(codec);
     if (decoderPtr == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]decoderPtr null");
+        IMAGE_LOGE("[ImageSource]decoderPtr null");
         return ERR_MEDIA_NULL_POINTER;
     }
     ProgDecodeContext context;
@@ -1235,12 +1239,12 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]Extended get format failed %{public}d.", errorCode);
+        IMAGE_LOGE("[ImageSource]Extended get format failed %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
     
     if (!ImageSystemProperties::GetSkiaEnabled()) {
-        HiLog::Debug(LABEL, "[ImageSource]Extended close SK decode");
+        IMAGE_LOGD("[ImageSource]Extended close SK decode");
         if (format != "image/gif") {
             sourceStreamPtr_->Seek(imageType);
             return ERR_MEDIA_DATA_UNSUPPORT;
@@ -1258,10 +1262,10 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
         ret = CheckFormatHint(formatHint, hintIter);
         if (ret == SUCCESS) {
             format = hintIter->first;
-            HiLog::Debug(LABEL, "[ImageSource]check input image format success, format:%{public}s.", format.c_str());
+            IMAGE_LOGD("[ImageSource]check input image format success, format:%{public}s.", format.c_str());
             return SUCCESS;
         } else {
-            HiLog::Error(LABEL, "[ImageSource]checkFormatHint error, type: %{public}d", ret);
+            IMAGE_LOGE("[ImageSource]checkFormatHint error, type: %{public}d", ret);
             return ret;
         }
     }
@@ -1280,18 +1284,18 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
         if (ret == ERR_IMAGE_MISMATCHED_FORMAT) {
             continue;
         } else if (ret == SUCCESS) {
-            HiLog::Info(LABEL, "[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
+            IMAGE_LOGI("[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
             format = iter->first;
             return SUCCESS;
         } else {
-            HiLog::Error(LABEL, "[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
+            IMAGE_LOGE("[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
             return ret;
         }
     }
 
     // default return raw image, ERR_IMAGE_MISMATCHED_FORMAT case
     format = InnerFormat::RAW_FORMAT;
-    HiLog::Info(LABEL, "[ImageSource]image default to raw format.");
+    IMAGE_LOGI("[ImageSource]image default to raw format.");
     return SUCCESS;
 }
 
@@ -1301,7 +1305,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
     if (ret != SUCCESS) {
         sourceInfo_.state = SourceInfoState::UNSUPPORTED_FORMAT;
         decodeState_ = SourceDecodingState::UNSUPPORTED_FORMAT;
-        HiLog::Error(LABEL, "[ImageSource]image decode error, ret:[%{public}u].", ret);
+        IMAGE_LOGE("[ImageSource]image decode error, ret:[%{public}u].", ret);
         return ret;
     }
 
@@ -1311,7 +1315,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
     if (ret == SUCCESS) {
         // update new format
         sourceInfo_.encodedFormat = value;
-        HiLog::Info(LABEL, "[ImageSource] update new format, value:%{public}s", value.c_str());
+        IMAGE_LOGI("[ImageSource] update new format, value:%{public}s", value.c_str());
     }
 
     if (isAcquiredImageNum) {
@@ -1319,12 +1323,12 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
         if (ret != SUCCESS) {
             if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
                 sourceInfo_.state = SourceInfoState::SOURCE_INCOMPLETE;
-                HiLog::Error(LABEL, "[ImageSource]image source data incomplete.");
+                IMAGE_LOGE("[ImageSource]image source data incomplete.");
                 return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
             }
             sourceInfo_.state = SourceInfoState::FILE_INFO_ERROR;
             decodeState_ = SourceDecodingState::FILE_INFO_ERROR;
-            HiLog::Error(LABEL, "[ImageSource]image source error.");
+            IMAGE_LOGE("[ImageSource]image source error.");
             return ret;
         }
     }
@@ -1342,18 +1346,18 @@ uint32_t ImageSource::OnSourceUnresolved()
         auto ret = GetEncodedFormat(sourceInfo_.encodedFormat, formatResult);
         if (ret != SUCCESS) {
             if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-                HiLog::Error(LABEL, "[ImageSource]image source incomplete.");
+                IMAGE_LOGE("[ImageSource]image source incomplete.");
                 sourceInfo_.state = SourceInfoState::SOURCE_INCOMPLETE;
                 return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
             } else if (ret == ERR_IMAGE_UNKNOWN_FORMAT) {
-                HiLog::Error(LABEL, "[ImageSource]image unknown format.");
+                IMAGE_LOGE("[ImageSource]image unknown format.");
                 sourceInfo_.state = SourceInfoState::UNKNOWN_FORMAT;
                 decodeState_ = SourceDecodingState::UNKNOWN_FORMAT;
                 return ERR_IMAGE_UNKNOWN_FORMAT;
             }
             sourceInfo_.state = SourceInfoState::SOURCE_ERROR;
             decodeState_ = SourceDecodingState::SOURCE_ERROR;
-            HiLog::Error(LABEL, "[ImageSource]image source error.");
+            IMAGE_LOGE("[ImageSource]image source error.");
             return ret;
         }
     }
@@ -1403,7 +1407,7 @@ uint32_t ImageSource::DecodeSourceInfo(bool isAcquiredImageNum)
     if (decodeState_ == SourceDecodingState::UNRESOLVED) {
         ret = OnSourceUnresolved();
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
+            IMAGE_LOGE("[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
             return ret;
         }
     }
@@ -1414,13 +1418,13 @@ uint32_t ImageSource::DecodeSourceInfo(bool isAcquiredImageNum)
         } else {
             ret = OnSourceRecognized(isAcquiredImageNum);
             if (ret != SUCCESS) {
-                HiLog::Error(LABEL, "[ImageSource]recognized source: get source info failed, ret:[%{public}d].", ret);
+                IMAGE_LOGE("[ImageSource]recognized source: get source info failed, ret:[%{public}d].", ret);
                 return ret;
             }
         }
         return SUCCESS;
     }
-    HiLog::Error(LABEL, "[ImageSource]invalid source state %{public}d on decode source info.", decodeState_);
+    IMAGE_LOGE("[ImageSource]invalid source state %{public}d on decode source info.", decodeState_);
     ret = GetSourceDecodingState(decodeState_);
     return ret;
 }
@@ -1429,7 +1433,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
 {
     uint32_t ret = DecodeSourceInfo(false);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]decode the image fail, ret:%{public}d.", ret);
+        IMAGE_LOGE("[ImageSource]decode the image fail, ret:%{public}d.", ret);
         return ret;
     }
     if (sourceInfo_.encodedFormat == InnerFormat::ASTC_FORMAT) {
@@ -1442,12 +1446,12 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
             iter = result.first;
             return SUCCESS;
         } else {
-            HiLog::Error(LABEL, "[ImageSource] decode astc image info failed.");
+            IMAGE_LOGE("[ImageSource] decode astc image info failed.");
             return ERR_IMAGE_DECODE_FAILED;
         }
     }
     if (mainDecoder_ == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]get image size, image decode plugin is null.");
+        IMAGE_LOGE("[ImageSource]get image size, image decode plugin is null.");
         return ERR_IMAGE_PLUGIN_CREATE_FAILED;
     }
     ImagePlugin::PlSize size;
@@ -1461,14 +1465,14 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         iter = result.first;
         return SUCCESS;
     } else if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-        HiLog::Error(LABEL, "[ImageSource]source data incomplete.");
+        IMAGE_LOGE("[ImageSource]source data incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     } else {
         ImageDecodingStatus status;
         status.imageState = ImageDecodingState::BASE_INFO_ERROR;
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
-        HiLog::Error(LABEL, "[ImageSource]decode the image info fail.");
+        IMAGE_LOGE("[ImageSource]decode the image info fail.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 }
@@ -1517,14 +1521,14 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
     plOptions.desiredPixelFormat = plDesiredFormat;
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
+        IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
             "ret:%{public}u.", index, ret);
         return ret;
     }
     auto iter = imageStatusMap_.find(index);
     if (iter != imageStatusMap_.end()) {
         ImageInfo &info = (iter->second).imageInfo;
-        HiLog::Debug(LABEL, "[ImageSource]SetDecodeOptions plInfo.pixelFormat %{public}d", plInfo.pixelFormat);
+        IMAGE_LOGD("[ImageSource]SetDecodeOptions plInfo.pixelFormat %{public}d", plInfo.pixelFormat);
 
         PlPixelFormat format = plInfo.pixelFormat;
         auto find_item = std::find_if(PIXEL_FORMAT_MAP.begin(), PIXEL_FORMAT_MAP.end(),
@@ -1534,7 +1538,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         if (find_item != PIXEL_FORMAT_MAP.end()) {
             info.pixelFormat = (*find_item).first;
         }
-        HiLog::Debug(LABEL, "[ImageSource]SetDecodeOptions info.pixelFormat %{public}d", info.pixelFormat);
+        IMAGE_LOGD("[ImageSource]SetDecodeOptions info.pixelFormat %{public}d", info.pixelFormat);
     }
     return SUCCESS;
 }
@@ -1619,11 +1623,11 @@ ImageSource::ImageStatusMap::iterator ImageSource::GetValidImageStatus(uint32_t 
     if (iter == imageStatusMap_.end()) {
         errorCode = DecodeImageInfo(index, iter);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
+            IMAGE_LOGE("[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
             return imageStatusMap_.end();
         }
     } else if (iter->second.imageState < ImageDecodingState::BASE_INFO_PARSED) {
-        HiLog::Error(LABEL, "[ImageSource]invalid imageState %{public}d on get image status.", iter->second.imageState);
+        IMAGE_LOGE("[ImageSource]invalid imageState %{public}d on get image status.", iter->second.imageState);
         errorCode = ERR_IMAGE_DECODE_FAILED;
         return imageStatusMap_.end();
     }
@@ -1642,7 +1646,7 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
         context.decoder = std::unique_ptr<ImagePlugin::AbsImageDecoder>(CreateDecoder(ret));
     }
     if (context.decoder == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]failed to create decoder on add incremental context, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]failed to create decoder on add incremental context, ret:%{public}u.", ret);
         return ret;
     }
     // mainDecoder has parsed base info in DecodeImageInfo();
@@ -1655,7 +1659,7 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
 uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions &opts, PixelMap &pixelMap,
                                             IncrementalDecodingContext &recordContext)
 {
-    HiLog::Debug(LABEL, "[ImageSource]do incremental decoding: begin.");
+    IMAGE_LOGD("[ImageSource]do incremental decoding: begin.");
     uint8_t *pixelAddr = static_cast<uint8_t *>(pixelMap.GetWritablePixels());
     ProgDecodeContext context;
     context.decodeContext.pixelsBuffer.buffer = pixelAddr;
@@ -1665,16 +1669,16 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
                                context.decodeContext.pixelsBuffer.bufferSize, context.decodeContext.allocatorType,
                                context.decodeContext.freeFunc);
     }
-    HiLog::Debug(LABEL, "[ImageSource]do incremental decoding progress:%{public}u.", context.totalProcessProgress);
+    IMAGE_LOGD("[ImageSource]do incremental decoding progress:%{public}u.", context.totalProcessProgress);
     recordContext.decodingProgress = context.totalProcessProgress;
     if (ret != SUCCESS && ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_ERROR;
-        HiLog::Error(LABEL, "[ImageSource]do incremental decoding source fail, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]do incremental decoding source fail, ret:%{public}u.", ret);
         return ret;
     }
     if (ret == SUCCESS) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_DECODED;
-        HiLog::Info(LABEL, "[ImageSource]do incremental decoding success.");
+        IMAGE_LOGI("[ImageSource]do incremental decoding success.");
     }
     return ret;
 }
@@ -1700,12 +1704,12 @@ uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pai
     uint32_t ret;
     auto iter = GetValidImageStatus(0, ret);
     if (iter == imageStatusMap_.end()) {
-        HiLog::Error(LABEL, "[ImageSource]get valid image status fail on get filter area, ret:%{public}u.", ret);
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get filter area, ret:%{public}u.", ret);
         return ret;
     }
     ret = mainDecoder_->GetFilterArea(privacyType, ranges);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource] GetFilterArea fail, ret:%{public}u", ret);
+        IMAGE_LOGE("[ImageSource] GetFilterArea fail, ret:%{public}u", ret);
         return ret;
     }
     return SUCCESS;
@@ -1789,10 +1793,10 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
     }
     CropValue value = PostProc::GetCropValue(cropRect, srcImageInfo.size);
     if (value == CropValue::NOCROP && !hasPixelConvert) {
-        HiLog::Debug(LABEL, "[ImageSource]no need crop and pixel convert.");
+        IMAGE_LOGD("[ImageSource]no need crop and pixel convert.");
         return false;
     } else if (value == CropValue::INVALID) {
-        HiLog::Error(LABEL, "[ImageSource]invalid corp region, top:%{public}d, left:%{public}d, "
+        IMAGE_LOGE("[ImageSource]invalid corp region, top:%{public}d, left:%{public}d, "
             "width:%{public}d, height:%{public}d", cropRect.top, cropRect.left, cropRect.width, cropRect.height);
         return false;
     }
@@ -1802,45 +1806,45 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
 {
     if (size < IMAGE_URL_PREFIX.size() ||
         ::memcmp(data, IMAGE_URL_PREFIX.c_str(), IMAGE_URL_PREFIX.size()) != INT_ZERO) {
-        HiLog::Debug(LABEL, "[ImageSource]Base64 image header mismatch.");
+        IMAGE_LOGD("[ImageSource]Base64 image header mismatch.");
         return nullptr;
     }
     const char* data1 = reinterpret_cast<const char*>(data);
     auto sub = ::strstr(data1, BASE64_URL_PREFIX.c_str());
     if (sub == nullptr) {
-        HiLog::Info(LABEL, "[ImageSource]Base64 mismatch.");
+        IMAGE_LOGI("[ImageSource]Base64 mismatch.");
         return nullptr;
     }
     sub = sub + BASE64_URL_PREFIX.size();
     uint32_t subSize = size - (sub - data1);
-    HiLog::Debug(LABEL, "[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.",
+    IMAGE_LOGD("[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.",
         data, sub, subSize);
 #ifdef NEW_SKIA
     size_t outputLen = 0;
     SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
     if (error != SkBase64::Error::kNoError) {
-        HiLog::Error(LABEL, "[ImageSource]Base64 decode get out size failed.");
+        IMAGE_LOGE("[ImageSource]Base64 decode get out size failed.");
         return nullptr;
     }
 
     sk_sp<SkData> resData = SkData::MakeUninitialized(outputLen);
     error = SkBase64::Decode(sub, subSize, resData->writable_data(), &outputLen);
     if (error != SkBase64::Error::kNoError) {
-        HiLog::Error(LABEL, "[ImageSource]Base64 decode get data failed.");
+        IMAGE_LOGE("[ImageSource]Base64 decode get data failed.");
         return nullptr;
     }
-    HiLog::Debug(LABEL, "[ImageSource][NewSkia]Create BufferSource from decoded base64 string.");
+    IMAGE_LOGD("[ImageSource][NewSkia]Create BufferSource from decoded base64 string.");
     auto imageData = static_cast<const uint8_t*>(resData->data());
     return BufferSourceStream::CreateSourceStream(imageData, resData->size());
 #else
     SkBase64 base64Decoder;
     if (base64Decoder.decode(sub, subSize) != SkBase64::kNoError) {
-        HiLog::Error(LABEL, "[ImageSource]base64 image decode failed!");
+        IMAGE_LOGE("[ImageSource]base64 image decode failed!");
         return nullptr;
     }
     auto base64Data = base64Decoder.getData();
     const uint8_t* imageData = reinterpret_cast<uint8_t*>(base64Data);
-    HiLog::Debug(LABEL, "[ImageSource]Create BufferSource from decoded base64 string.");
+    IMAGE_LOGD("[ImageSource]Create BufferSource from decoded base64 string.");
     auto result = BufferSourceStream::CreateSourceStream(imageData, base64Decoder.getDataSize());
     if (base64Data != nullptr) {
         delete[] base64Data;
@@ -1879,10 +1883,10 @@ static inline uint8_t FloatToUint8(float f)
 bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size,
     bool isSupportOdd, bool isAddUV, uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]ConvertYUV420ToRGBA IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
+    IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
         "%{public}d)", sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
     if ((!isSupportOdd) && (sourceOptions_.size.width & 1) == 1) {
-        HiLog::Error(LABEL, "[ImageSource]ConvertYUV420ToRGBA odd width, %{public}d", sourceOptions_.size.width);
+        IMAGE_LOGE("[ImageSource]ConvertYUV420ToRGBA odd width, %{public}d", sourceOptions_.size.width);
         errorCode = ERR_IMAGE_DATA_UNSUPPORT;
         return false;
     }
@@ -1894,7 +1898,7 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size,
     const size_t yuvSize = sourceStreamPtr_->GetStreamSize();
     const size_t ubase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV12) ? 0 : 1);
     const size_t vbase = width * height + ((sourceOptions_.pixelFormat == PixelFormat::NV12) ? 1 : 0);
-    HiLog::Debug(LABEL, "[ImageSource]ConvertYUV420ToRGBA uvbase:(%{public}zu, %{public}zu),"
+    IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA uvbase:(%{public}zu, %{public}zu),"
         "width:(%{public}zu, %{public}zu)", ubase, vbase, width, uvwidth);
 
     for (size_t h = 0; h < height; h++) {
@@ -1922,19 +1926,19 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size,
             }
         }
     }
-    HiLog::Debug(LABEL, "[ImageSource]ConvertYUV420ToRGBA OUT");
+    IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA OUT");
     return true;
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 {
-    HiLog::Debug(LABEL, "[ImageSource]CreatePixelMapForYUV IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
+    IMAGE_LOGD("[ImageSource]CreatePixelMapForYUV IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
         "%{public}d)", sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
     DumpInputData("yuv");
 
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr) {
-        HiLog::Error(LABEL, "[ImageSource]create the pixel map unique_ptr fail.");
+        IMAGE_LOGE("[ImageSource]create the pixel map unique_ptr fail.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
@@ -1947,14 +1951,14 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     errorCode = pixelMap->SetImageInfo(info);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         return nullptr;
     }
 
     size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
     auto buffer = malloc(bufferSize);
     if (buffer == nullptr) {
-        HiLog::Error(LABEL, "allocate memory size %{public}zu fail", bufferSize);
+        IMAGE_LOGE("allocate memory size %{public}zu fail", bufferSize);
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
@@ -1963,19 +1967,19 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
     if (!ConvertYUV420ToRGBA(static_cast<uint8_t *>(buffer), bufferSize, false, false, errorCode)) {
-        HiLog::Error(LABEL, "convert yuv420 to rgba issue, errorCode=%{public}u", errorCode);
+        IMAGE_LOGE("convert yuv420 to rgba issue, errorCode=%{public}u", errorCode);
         errorCode = ERROR;
         return nullptr;
     }
 
-    HiLog::Debug(LABEL, "[ImageSource]CreatePixelMapForYUV OUT");
+    IMAGE_LOGD("[ImageSource]CreatePixelMapForYUV OUT");
     return pixelMap;
 }
 
 bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
 {
     if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
-        HiLog::Error(LABEL, "[ImageSource]IsASTC fileData incorrect.");
+        IMAGE_LOGE("[ImageSource]IsASTC fileData incorrect.");
         return false;
     }
     unsigned int magicVal = static_cast<unsigned int>(fileData[0]) + (static_cast<unsigned int>(fileData[1]) << 8) +
@@ -1987,7 +1991,7 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo& imageInfo)
 {
     ASTCInfo astcInfo;
     if (!GetASTCInfo(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(), astcInfo)) {
-        HiLog::Error(LABEL, "[ImageSource] get astc image info failed.");
+        IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return false;
     }
     imageInfo.size = astcInfo.size;
@@ -2005,7 +2009,7 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo& imageInfo)
             break;
         }
         default:
-            HiLog::Error(LABEL, "[ImageSource]GetImageInfoForASTC pixelFormat is unknown.");
+            IMAGE_LOGE("[ImageSource]GetImageInfoForASTC pixelFormat is unknown.");
             imageInfo.pixelFormat = PixelFormat::UNKNOWN;
     }
     return true;
@@ -2024,13 +2028,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 
     ImageInfo info;
     if (!GetImageInfoForASTC(info)) {
-        HiLog::Error(LABEL, "[ImageSource] get astc image info failed.");
+        IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return nullptr;
     }
     errorCode = pixelAstc->SetImageInfo(info);
     pixelAstc->SetAstcRealSize(info.size);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
         return nullptr;
     }
     pixelAstc->SetEditable(false);
@@ -2043,18 +2047,18 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
     } else if (sourceStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
         int fd = AshmemCreate("CreatePixelMapForASTC Data", fileSize);
         if (fd < 0) {
-            HiLog::Error(LABEL, "[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
+            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
             return nullptr;
         }
         int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
         if (result < 0) {
-            HiLog::Error(LABEL, "[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
+            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
             ::close(fd);
             return nullptr;
         }
         void* ptr = ::mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
         if (ptr == MAP_FAILED || ptr == nullptr) {
-            HiLog::Error(LABEL, "[ImageSource]CreatePixelMapForASTC data is nullptr.");
+            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
             ::close(fd);
             return nullptr;
         }
@@ -2072,7 +2076,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo& astcInfo)
 {
     if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
-        HiLog::Error(LABEL, "[ImageSource]GetASTCInfo fileData incorrect.");
+        IMAGE_LOGE("[ImageSource]GetASTCInfo fileData incorrect.");
         return false;
     }
     astcInfo.size.width = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
@@ -2092,7 +2096,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
     DumpInputData();
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]CreatePixelMapList get frame count error.");
+        IMAGE_LOGE("[ImageSource]CreatePixelMapList get frame count error.");
         return nullptr;
     }
 
@@ -2100,7 +2104,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
     for (uint32_t index = 0; index < frameCount; index++) {
         auto pixelMap = CreatePixelMap(index, opts, errorCode);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]CreatePixelMapList create PixelMap error. index=%{public}u", index);
+            IMAGE_LOGE("[ImageSource]CreatePixelMapList create PixelMap error. index=%{public}u", index);
             return nullptr;
         }
         pixelMaps->push_back(std::move(pixelMap));
@@ -2115,7 +2119,7 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]GetDelayTime get frame sum error.");
+        IMAGE_LOGE("[ImageSource]GetDelayTime get frame sum error.");
         return nullptr;
     }
 
@@ -2125,17 +2129,17 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
         string delayTimeStr;
         errorCode = mainDecoder_->GetImagePropertyString(index, GIF_IMAGE_DELAY_TIME, delayTimeStr);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[ImageSource]GetDelayTime get delay time issue. index=%{public}u", index);
+            IMAGE_LOGE("[ImageSource]GetDelayTime get delay time issue. index=%{public}u", index);
             return nullptr;
         }
         if (!IsNumericStr(delayTimeStr)) {
-            HiLog::Error(LABEL, "[ImageSource]GetDelayTime not a numeric string. delayTimeStr=%{public}s",
+            IMAGE_LOGE("[ImageSource]GetDelayTime not a numeric string. delayTimeStr=%{public}s",
                 delayTimeStr.c_str());
             return nullptr;
         }
         int delayTime = 0;
         if (!StrToInt(delayTimeStr, delayTime)) {
-            HiLog::Error(LABEL, "[ImageSource]GetDelayTime to int fail. delayTimeStr=%{public}s", delayTimeStr.c_str());
+            IMAGE_LOGE("[ImageSource]GetDelayTime to int fail. delayTimeStr=%{public}s", delayTimeStr.c_str());
             return nullptr;
         }
         delayTimes->push_back(delayTime);
@@ -2150,12 +2154,12 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 {
     uint32_t frameCount = GetSourceInfo(errorCode).topLevelImageNum;
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]GetFrameCount get source info error.");
+        IMAGE_LOGE("[ImageSource]GetFrameCount get source info error.");
         return 0;
     }
 
     if (InitMainDecoder() != SUCCESS) {
-        HiLog::Error(LABEL, "[ImageSource]GetFrameCount image decode plugin is null.");
+        IMAGE_LOGE("[ImageSource]GetFrameCount image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return 0;
     }
@@ -2170,7 +2174,7 @@ void ImageSource::DumpInputData(const std::string& fileSuffix)
     }
 
     if (sourceStreamPtr_ == nullptr) {
-        HiLog::Info(LABEL, "ImageSource::DumpInputData failed, streamPtr is null");
+        IMAGE_LOGI("ImageSource::DumpInputData failed, streamPtr is null");
         return;
     }
 

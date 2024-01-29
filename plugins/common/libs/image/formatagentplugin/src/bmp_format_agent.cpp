@@ -14,18 +14,21 @@
  */
 
 #include "bmp_format_agent.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+
+#include "image_log.h"
 #include "plugin_service.h"
 #include "sched.h"
 #include "string"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "BmpFormatAgent"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "BmpFormatAgent" };
 namespace {
 const std::string FORMAT_TYPE = "image/bmp";
 constexpr uint8_t BMP_HEADER[] = { 0x42, 0x4D };
@@ -44,17 +47,17 @@ uint32_t BmpFormatAgent::GetHeaderSize()
 bool BmpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
-        HiLog::Error(LABEL, "check format failed: header data is null.");
+        IMAGE_LOGE("check format failed: header data is null.");
         return false;
     }
     uint32_t headerSize = sizeof(BMP_HEADER);
     if (dataSize < headerSize) {
-        HiLog::Error(LABEL, "read head size:[%{public}u] less than header size:[%{public}u].", dataSize, headerSize);
+        IMAGE_LOGE("read head size:[%{public}u] less than header size:[%{public}u].", dataSize, headerSize);
         return false;
     }
 
     if (memcmp(headerData, BMP_HEADER, headerSize) != 0) {
-        HiLog::Info(LABEL, "header stamp mismatch.");
+        IMAGE_LOGI("header stamp mismatch.");
         return false;
     }
     return true;

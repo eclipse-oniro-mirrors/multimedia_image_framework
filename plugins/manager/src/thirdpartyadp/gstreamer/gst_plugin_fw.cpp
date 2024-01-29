@@ -15,12 +15,16 @@
 
 #include "gst_plugin_fw.h"
 #include "__mutex_base"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "map"
 #include "plugin_errors.h"
 #include "vector"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "GstPluginFw"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -28,14 +32,11 @@ using std::map;
 using std::mutex;
 using std::string;
 using std::vector;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "GstPluginFw" };
 
 uint32_t GstPluginFw::Register(const vector<string> &canonicalPaths)
 {
     (void) canonicalPaths;
-    HiLog::Debug(LABEL, "register called.");
+    IMAGE_LOGD("register called.");
     return SUCCESS;
 }
 
@@ -43,7 +44,7 @@ PluginClassBase *GstPluginFw::CreateObject(uint16_t interfaceID, const string &c
 {
     (void) interfaceID;
     (void) className;
-    HiLog::Debug(LABEL, "CreateObject by name called.");
+    IMAGE_LOGD("CreateObject by name called.");
     errorCode = ERR_MATCHING_PLUGIN;
 
     return nullptr;
@@ -57,7 +58,7 @@ PluginClassBase *GstPluginFw::CreateObject(uint16_t interfaceID, uint16_t servic
     (void) serviceType;
     (void) capabilities;
     (void) priorityScheme;
-    HiLog::Debug(LABEL, "CreateObject by serviceType called.");
+    IMAGE_LOGD("CreateObject by serviceType called.");
     errorCode = ERR_MATCHING_PLUGIN;
 
     return nullptr;
@@ -71,7 +72,7 @@ uint32_t GstPluginFw::GstPluginFwGetClassInfo(uint16_t interfaceID, uint16_t ser
     (void) serviceType;
     (void) capabilities;
     (void) classesInfo;
-    HiLog::Debug(LABEL, "GetClassInfo by serviceType called.");
+    IMAGE_LOGD("GetClassInfo by serviceType called.");
     return ERR_MATCHING_PLUGIN;
 }
 

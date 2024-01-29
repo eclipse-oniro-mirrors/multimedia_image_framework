@@ -393,7 +393,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap007, TestSize.Level3)
     info.pixelFormat = PixelFormat::ARGB_8888;
     info.colorSpace = ColorSpace::SRGB;
     EXPECT_EQ(pixelMap.SetImageInfo(info), SUCCESS);
-    EXPECT_EQ(pixelMap.GetHeight(), info.size.width);
+    EXPECT_EQ(pixelMap.GetHeight(), info.size.height);
     EXPECT_EQ(pixelMap.GetWidth(), info.size.width);
     EXPECT_NE(pixelMap.GetByteCount(), 0);
     uint8_t *data = const_cast<uint8_t *>(pixelMap.GetPixels());

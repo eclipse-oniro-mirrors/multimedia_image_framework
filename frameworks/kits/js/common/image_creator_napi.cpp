@@ -16,14 +16,12 @@
 #include "image_creator_napi.h"
 #include <uv.h>
 #include "media_errors.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_creator_context.h"
 #include "image_napi.h"
 #include "image_creator_manager.h"
-#include "log_tags.h"
 
-using OHOS::HiviewDFX::HiLog;
 using std::string;
 using std::shared_ptr;
 using std::unique_ptr;
@@ -31,8 +29,13 @@ using std::vector;
 using std::make_shared;
 using std::make_unique;
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "ImageCreatorNapi"
+
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageCreatorNapi"};
     constexpr int32_t TEST_WIDTH = 8192;
     constexpr int32_t TEST_HEIGHT = 8;
     constexpr int32_t TEST_FORMAT = 4;
@@ -161,7 +164,7 @@ napi_value ImageCreatorNapi::Init(napi_env env, napi_value exports)
         IMAGE_ERR("define properties fail")
     );
 
-    HiLog::Debug(LABEL, "Init success");
+    IMAGE_DEBUG("Init success");
 
     IMAGE_FUNCTION_OUT();
     return exports;
