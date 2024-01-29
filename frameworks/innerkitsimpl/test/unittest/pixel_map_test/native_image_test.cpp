@@ -149,5 +149,77 @@ HWTEST_F(NativeImageTest, SplitSurfaceToComponent, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponent end";
 }
+
+/**
+ * @tc.name: CreateComponent001
+ * @tc.desc: CreateComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, CreateComponent001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: CreateComponent001 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    int32_t type = 1;
+    size_t size = 0;
+    int32_t row = 1;
+    int32_t pixel = 1;
+    uint8_t *vir = nullptr;
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(buffer, release);
+    NativeComponent *native = new(NativeComponent);
+    image.components_.insert(std::make_pair(1, native));
+    NativeComponent* ret = image.CreateComponent(type, size, row, pixel, vir);
+    ASSERT_NE(ret, nullptr);
+    ret = image.CreateComponent(2, size, row, pixel, vir);
+    ASSERT_EQ(ret, nullptr);
+    size = 1;
+    vir = new(uint8_t);
+    ret = image.CreateComponent(type, size, row, pixel, vir);
+    ASSERT_NE(ret, nullptr);
+    delete(vir);
+    vir = nullptr;
+    delete(native);
+    native = nullptr;
+    GTEST_LOG_(INFO) << "NativeImageTest: CreateComponent001 end";
+}
+
+/**
+ * @tc.name: GetCachedComponent001
+ * @tc.desc: GetCachedComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetCachedComponent001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetCachedComponent001 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(buffer, release);
+    NativeComponent* ret = image.GetCachedComponent(1);
+    ASSERT_EQ(ret, nullptr);
+    NativeComponent *native = new(NativeComponent);
+    image.components_.insert(std::make_pair(1, native));
+    ret = image.GetCachedComponent(1);
+    ASSERT_NE(ret, nullptr);
+    delete(native);
+    native = nullptr;
+    GTEST_LOG_(INFO) << "NativeImageTest: GetCachedComponent001 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponent001
+ * @tc.desc: SplitYUV422SPComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponent001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent001 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> release = nullptr;
+    NativeImage image(buffer, release);
+    image.buffer_ = nullptr;
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_NULL_POINTER);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponent001 end";
+}
 }
 }
