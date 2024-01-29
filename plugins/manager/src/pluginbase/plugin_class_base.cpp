@@ -16,15 +16,16 @@
 #include "plugin_class_base.h"
 #include <cstdint>
 #include "abs_impl_class_key.h"
-#include "hilog/log_c.h"
-#include "hilog/log_cpp.h"
-#include "log_tags.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PluginClassBase"
 
 namespace OHOS {
 namespace MultimediaPlugin {
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PluginClassBase" };
 
 PluginClassBase::~PluginClassBase()
 {
@@ -32,7 +33,7 @@ PluginClassBase::~PluginClassBase()
     // the process context can guarantee that this will not happen.
     // the judgment statement here is for protection and positioning purposes only.
     if (implClassKey_ == nullptr) {
-        HiLog::Error(LABEL, "release class base, null implClassKey.");
+        IMAGE_LOGE("release class base, null implClassKey.");
         return;
     }
 

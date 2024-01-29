@@ -13,18 +13,25 @@
  * limitations under the License.
  */
 #include "icc_profile_info.h"
+
 #include <algorithm>
 #include <cstdio>
 #include <cstddef>
 #include <unistd.h>
+
+#include "image_log.h"
 #include "securec.h"
 #include "jerror.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "IccProfile"
 
 namespace OHOS {
 namespace ImagePlugin {
 namespace {
-    using namespace OHOS::HiviewDFX;
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "IccProfile" };
     static constexpr uint32_t ICC_MARKER = JPEG_APP0 + 2;
     static constexpr uint32_t ICC_MARKER_HEADER_SIZE = 14;
     static constexpr uint8_t ICC_SIGNATURE[] = {
@@ -42,7 +49,7 @@ ICCProfileInfo::~ICCProfileInfo()
 #ifdef IMAGE_COLORSPACE_FLAG
 sk_sp<SkData> ICCProfileInfo::GetICCData(j_decompress_ptr cinfo)
 {
-    HiLog::Info(LABEL, "%{public}s begin", __func__);
+    IMAGE_LOGI("%{public}s begin", __func__);
     unsigned char *icc_profile = NULL;
     unsigned int icc_data_len = 0;
     bool isReadIccProfile = false;
@@ -52,7 +59,7 @@ sk_sp<SkData> ICCProfileInfo::GetICCData(j_decompress_ptr cinfo)
         // copy ICC profile data
         data = SkData::MakeWithCopy(icc_profile, icc_data_len);
     } else {
-        HiLog::Error(LABEL, "ERROR: jpeg_read_icc_profile failed!");
+        IMAGE_LOGE("ERROR: jpeg_read_icc_profile failed!");
     }
 
     // clean up
@@ -62,7 +69,7 @@ sk_sp<SkData> ICCProfileInfo::GetICCData(j_decompress_ptr cinfo)
 
 uint32_t ICCProfileInfo::ParsingICCProfile(j_decompress_ptr cinfo)
 {
-    HiLog::Info(LABEL, "%{public}s begin", __func__);
+    IMAGE_LOGI("%{public}s begin", __func__);
 
     // read icc data to skdata
     sk_sp<SkData> profile = GetICCData(cinfo);
@@ -81,7 +88,7 @@ uint32_t ICCProfileInfo::ParsingICCProfile(j_decompress_ptr cinfo)
     if (skColorSpace != nullptr) {
         parseResult = OHOS::Media::SUCCESS;
     } else {
-        HiLog::Error(LABEL, "ERROR: ParsingICCProfile skColorSpace is Null!");
+        IMAGE_LOGE("ERROR: ParsingICCProfile skColorSpace is Null!");
     }
     grColorSpace_ = OHOS::ColorManager::ColorSpace(skColorSpace);
     return parseResult;
@@ -99,7 +106,7 @@ bool ICCProfileInfo::IsSupportICCProfile()
 
 uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageInfo& info)
 {
-    HiLog::Info(LABEL, "%{public}s begin", __func__);
+    IMAGE_LOGI("%{public}s begin", __func__);
     uint32_t packingResult = OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED;
 
     // write colorspace to SKData
@@ -120,7 +127,7 @@ uint32_t ICCProfileInfo::PackingICCProfile(j_compress_ptr cinfo, const SkImageIn
         jpeg_write_marker(cinfo, ICC_MARKER, jpegMarkerData->bytes(), jpegMarkerData->size());
         packingResult = OHOS::Media::SUCCESS;
     } else {
-        HiLog::Error(LABEL, "ERROR: PackingICCProfile icc profile is Null!");
+        IMAGE_LOGE("ERROR: PackingICCProfile icc profile is Null!");
     }
     return packingResult;
 }

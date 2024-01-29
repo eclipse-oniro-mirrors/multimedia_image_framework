@@ -15,21 +15,24 @@
 
 #include "bmp_decoder.h"
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "securec.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "BmpDecoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace Media;
 using namespace std;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "BmpDecoder" };
 namespace {
 constexpr uint32_t BMP_IMAGE_NUM = 1;
 }
@@ -53,11 +56,11 @@ void BmpDecoder::Reset()
 uint32_t BmpDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     if (index >= BMP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "GetImageSize failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
+        IMAGE_LOGE("GetImageSize failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < BmpDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "GetImageSize failed, invalid state:%{public}d", state_);
+        IMAGE_LOGE("GetImageSize failed, invalid state:%{public}d", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= BmpDecodingState::BASE_INFO_PARSED) {
@@ -66,7 +69,7 @@ uint32_t BmpDecoder::GetImageSize(uint32_t index, PlSize &size)
         return SUCCESS;
     }
     if (!DecodeHeader()) {
-        HiLog::Error(LABEL, "GetImageSize failed, decode header failed, state=%{public}d", state_);
+        IMAGE_LOGE("GetImageSize failed, decode header failed, state=%{public}d", state_);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
     size.width = info_.width();
@@ -78,12 +81,12 @@ uint32_t BmpDecoder::GetImageSize(uint32_t index, PlSize &size)
 uint32_t BmpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     if (index >= BMP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "SetDecodeOptions failed, invalid index:%{public}u, range:%{public}u", index,
-                     BMP_IMAGE_NUM);
+        IMAGE_LOGE("SetDecodeOptions failed, invalid index:%{public}u, range:%{public}u", index,
+            BMP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < BmpDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "SetDecodeOptions failed, invalid state %{public}d", state_);
+        IMAGE_LOGE("SetDecodeOptions failed, invalid state %{public}d", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= BmpDecodingState::IMAGE_DECODING) {
@@ -92,7 +95,7 @@ uint32_t BmpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     if (state_ < BmpDecodingState::BASE_INFO_PARSED) {
         if (!DecodeHeader()) {
-            HiLog::Error(LABEL, "GetImageSize failed, decode header failed, state=%{public}d", state_);
+            IMAGE_LOGE("GetImageSize failed, decode header failed, state=%{public}d", state_);
             return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
         }
         state_ = BmpDecodingState::BASE_INFO_PARSED;
@@ -145,7 +148,7 @@ uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &contex
 static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo &dstInfo)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
@@ -161,13 +164,13 @@ static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo 
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
-        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
         return ERR_DMA_NOT_EXIST;
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
-        HiLog::Error(LABEL, "NativeBufferReference failed");
+        IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
@@ -183,25 +186,25 @@ uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
         if (byteCount == 0) {
-            HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
+            IMAGE_LOGE("Decode failed, byteCount is invalid value");
             return ERR_MEDIA_INVALID_VALUE;
         }
         void *outputBuffer = malloc(byteCount);
         if (outputBuffer == nullptr) {
-            HiLog::Error(LABEL, "Decode failed, alloc output buffer size:[%{public}llu] error",
-                         static_cast<unsigned long long>(byteCount));
+            IMAGE_LOGE("Decode failed, alloc output buffer size:[%{public}llu] error",
+                static_cast<unsigned long long>(byteCount));
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #ifdef  _WIN32
         if (memset_s(outputBuffer, 0, byteCount) != EOK) {
-            HiLog::Error(LABEL, "Decode failed, memset buffer failed", backRet);
+            IMAGE_LOGE("Decode failed, memset buffer failed", backRet);
             free(outputBuffer);
             outputBuffer = nullptr;
             return ERR_IMAGE_DECODE_FAILED;
         }
 #else
         if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-            HiLog::Error(LABEL, "Decode failed, memset buffer failed");
+            IMAGE_LOGE("Decode failed, memset buffer failed");
             free(outputBuffer);
             outputBuffer = nullptr;
             return ERR_IMAGE_DECODE_FAILED;
@@ -220,25 +223,25 @@ uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 uint32_t SetBufferForPlatform(uint64_t byteCount, DecodeContext &context)
 {
     if (byteCount == 0) {
-        HiLog::Error(LABEL, "Decode failed, byteCount is invalid value");
+        IMAGE_LOGE("Decode failed, byteCount is invalid value");
         return ERR_MEDIA_INVALID_VALUE;
     }
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
-        HiLog::Error(LABEL, "Decode failed, alloc output buffer size:[%{public}llu] error",
-                     static_cast<unsigned long long>(byteCount));
+        IMAGE_LOGE("Decode failed, alloc output buffer size:[%{public}llu] error",
+            static_cast<unsigned long long>(byteCount));
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
 #ifdef _WIN32
     if (memset_s(outputBuffer, 0, byteCount) != EOK) {
-        HiLog::Error(LABEL, "Decode failed, memset buffer failed", backRet);
+        IMAGE_LOGE("Decode failed, memset buffer failed", backRet);
         free(outputBuffer);
         outputBuffer = nullptr;
         return ERR_IMAGE_DECODE_FAILED;
     }
 #else
     if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-        HiLog::Error(LABEL, "Decode failed, memset buffer failed");
+        IMAGE_LOGE("Decode failed, memset buffer failed");
         free(outputBuffer);
         outputBuffer = nullptr;
         return ERR_IMAGE_DECODE_FAILED;
@@ -283,22 +286,22 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
 uint32_t BmpDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     if (index >= BMP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "Decode failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
+        IMAGE_LOGE("Decode failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (codec_ == nullptr) {
-        HiLog::Error(LABEL, "Decode failed, codec is null");
+        IMAGE_LOGE("Decode failed, codec is null");
         return ERR_IMAGE_DECODE_FAILED;
     }
     if (state_ != BmpDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "Decode failed, invalid state %{public}d", state_);
+        IMAGE_LOGE("Decode failed, invalid state %{public}d", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
 
     SkImageInfo dstInfo = info_.makeColorType(desireColor_);
     if (ImageUtils::CheckMulOverflow(dstInfo.width(), dstInfo.height(), dstInfo.bytesPerPixel())) {
-        HiLog::Error(LABEL, "Decode failed, width:%{public}d, height:%{public}d is too large",
-                     dstInfo.width(), dstInfo.height());
+        IMAGE_LOGE("Decode failed, width:%{public}d, height:%{public}d is too large",
+            dstInfo.width(), dstInfo.height());
         return ERR_IMAGE_DECODE_FAILED;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
@@ -312,7 +315,7 @@ uint32_t BmpDecoder::Decode(uint32_t index, DecodeContext &context)
     size_t rowBytes = dstInfo.width() * dstInfo.bytesPerPixel();
     SkCodec::Result ret = codec_->getPixels(dstInfo, dstBuffer, rowBytes);
     if (ret != SkCodec::kSuccess) {
-        HiLog::Error(LABEL, "Decode failed, get pixels failed, ret=%{public}d", ret);
+        IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
         state_ = BmpDecodingState::IMAGE_ERROR;
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
@@ -330,7 +333,7 @@ bool BmpDecoder::DecodeHeader()
 {
     codec_ = SkCodec::MakeFromStream(make_unique<BmpStream>(stream_));
     if (codec_ == nullptr) {
-        HiLog::Error(LABEL, "create codec from stream failed");
+        IMAGE_LOGE("create codec from stream failed");
         return false;
     }
     info_ = codec_->getInfo();
@@ -347,7 +350,7 @@ PlAlphaType BmpDecoder::ConvertToAlphaType(SkAlphaType alphaType)
         case kUnpremul_SkAlphaType:
             return PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
         default:
-            HiLog::Error(LABEL, "unknown alpha type:%{public}d", alphaType);
+            IMAGE_LOGE("unknown alpha type:%{public}d", alphaType);
             break;
     }
     return PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
@@ -384,7 +387,7 @@ SkColorType BmpDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &
             break;
         }
     }
-    HiLog::Debug(LABEL, "unsupported convert to format:%{public}d, set default RGBA", format);
+    IMAGE_LOGD("unsupported convert to format:%{public}d, set default RGBA", format);
     outputFormat = PlPixelFormat::RGBA_8888;
     return kRGBA_8888_SkColorType;
 }

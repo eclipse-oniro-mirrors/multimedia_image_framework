@@ -15,17 +15,22 @@
 
 #include "gif_decoder.h"
 
+#include "image_log.h"
 #include "image_utils.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "GifDecoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "GifDecoder" };
 
 namespace {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -73,28 +78,28 @@ void GifDecoder::SetSource(InputDataStream &sourceStream)
 uint32_t GifDecoder::GetTopLevelImageNum(uint32_t &num)
 {
     if (inputStreamPtr_ == nullptr) {
-        HiLog::Error(LABEL, "[GetTopLevelImageNum]set source need firstly");
+        IMAGE_LOGE("[GetTopLevelImageNum]set source need firstly");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (!inputStreamPtr_->IsStreamCompleted()) {
-        HiLog::Warn(LABEL, "[GetTopLevelImageNum]don't enough data to decode the frame number");
+        IMAGE_LOGW("[GetTopLevelImageNum]don't enough data to decode the frame number");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     uint32_t errorCode = CreateGifFileTypeIfNotExist();
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[GetTopLevelImageNum]create GifFileType pointer failed %{public}u", errorCode);
+        IMAGE_LOGE("[GetTopLevelImageNum]create GifFileType pointer failed %{public}u", errorCode);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (!isLoadAllFrame_) {
         errorCode = UpdateGifFileType(INT_MAX);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[GetTopLevelImageNum]update GifFileType pointer failed %{public}u", errorCode);
+            IMAGE_LOGE("[GetTopLevelImageNum]update GifFileType pointer failed %{public}u", errorCode);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
     }
     num = gifPtr_->ImageCount;
     if (num <= 0) {
-        HiLog::Error(LABEL, "[GetTopLevelImageNum]image frame number must be larger than 0");
+        IMAGE_LOGE("[GetTopLevelImageNum]image frame number must be larger than 0");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     return SUCCESS;
@@ -105,13 +110,13 @@ uint32_t GifDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     uint32_t errorCode = CheckIndex(index);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[GetImageSize]index %{public}u is invalid %{public}u", index, errorCode);
+        IMAGE_LOGE("[GetImageSize]index %{public}u is invalid %{public}u", index, errorCode);
         return errorCode;
     }
     const int32_t bgWidth = gifPtr_->SWidth;
     const int32_t bgHeight = gifPtr_->SHeight;
     if (bgWidth <= 0 || bgHeight <= 0) {
-        HiLog::Error(LABEL, "[GetImageSize]background size [%{public}d, %{public}d] is invalid", bgWidth, bgHeight);
+        IMAGE_LOGE("[GetImageSize]background size [%{public}d, %{public}d] is invalid", bgWidth, bgHeight);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     size.width = bgWidth;
@@ -123,7 +128,7 @@ uint32_t GifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 {
     uint32_t errorCode = GetImageSize(index, info.size);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[SetDecodeOptions]get image size failed %{public}u", errorCode);
+        IMAGE_LOGE("[SetDecodeOptions]get image size failed %{public}u", errorCode);
         return errorCode;
     }
     info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
@@ -140,7 +145,7 @@ uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
     PlSize imageSize;
     uint32_t errorCode = GetImageSize(index, imageSize);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[Decode]index %{public}u is invalid %{public}u", index, errorCode);
+        IMAGE_LOGE("[Decode]index %{public}u is invalid %{public}u", index, errorCode);
         return errorCode;
     }
     // compute start index and end index.
@@ -158,20 +163,20 @@ uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
         startIndex = 0;
         isOverlapped = false;
     }
-    HiLog::Debug(LABEL, "[Decode]start frame: %{public}u, last frame: %{public}u,"
-                 "last pixelMapIndex: %{public}d, isOverlapped: %{public}d",
-                 startIndex, endIndex, lastPixelMapIndex_, isOverlapped);
+    IMAGE_LOGD("[Decode]start frame: %{public}u, last frame: %{public}u,"
+        "last pixelMapIndex: %{public}d, isOverlapped: %{public}d",
+        startIndex, endIndex, lastPixelMapIndex_, isOverlapped);
 
     if (!isOverlapped) {
         errorCode = OverlapFrame(startIndex, endIndex);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[Decode]overlap frame failed %{public}u", errorCode);
+            IMAGE_LOGE("[Decode]overlap frame failed %{public}u", errorCode);
             return errorCode;
         }
     }
     errorCode = RedirectOutputBuffer(context);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[Decode]redirect output stream failed %{public}u", errorCode);
+        IMAGE_LOGE("[Decode]redirect output stream failed %{public}u", errorCode);
         return errorCode;
     }
     return SUCCESS;
@@ -204,13 +209,13 @@ uint32_t GifDecoder::CreateGifFileTypeIfNotExist()
     if (gifPtr_ == nullptr) {
         int32_t errorCode = Media::ERROR;
         if (inputStreamPtr_ == nullptr) {
-            HiLog::Error(LABEL, "[CreateGifFileTypeIfNotExist]set source need firstly");
+            IMAGE_LOGE("[CreateGifFileTypeIfNotExist]set source need firstly");
             return ERR_IMAGE_GET_DATA_ABNORMAL;
         }
         // DGifOpen will create GifFileType pointer and set header and screen desc
         gifPtr_ = DGifOpen(inputStreamPtr_, InputStreamReader, &errorCode);
         if (gifPtr_ == nullptr) {
-            HiLog::Error(LABEL, "[CreateGifFileTypeIfNotExist]open image error, %{public}d", errorCode);
+            IMAGE_LOGE("[CreateGifFileTypeIfNotExist]open image error, %{public}d", errorCode);
             inputStreamPtr_->Seek(0);
             savedFrameIndex_ = -1;
             return ERR_IMAGE_SOURCE_DATA;
@@ -224,20 +229,20 @@ int32_t GifDecoder::InputStreamReader(GifFileType *gif, GifByteType *bytes, int3
 {
     uint32_t dataSize = 0;
     if (gif == nullptr) {
-        HiLog::Error(LABEL, "[InputStreamReader]GifFileType pointer is null");
+        IMAGE_LOGE("[InputStreamReader]GifFileType pointer is null");
         return dataSize;
     }
     InputDataStream *inputStream = static_cast<InputDataStream *>(gif->UserData);
     if (inputStream == nullptr) {
-        HiLog::Error(LABEL, "[InputStreamReader]set source need firstly");
+        IMAGE_LOGE("[InputStreamReader]set source need firstly");
         return dataSize;
     }
     if (size <= 0) {
-        HiLog::Error(LABEL, "[InputStreamReader]callback size %{public}d is invalid", size);
+        IMAGE_LOGE("[InputStreamReader]callback size %{public}d is invalid", size);
         return dataSize;
     }
     if (bytes == nullptr) {
-        HiLog::Error(LABEL, "[InputStreamReader]callback buffer is null");
+        IMAGE_LOGE("[InputStreamReader]callback buffer is null");
         return dataSize;
     }
     inputStream->Read(size, bytes, size, dataSize);
@@ -247,25 +252,25 @@ int32_t GifDecoder::InputStreamReader(GifFileType *gif, GifByteType *bytes, int3
 uint32_t GifDecoder::CheckIndex(uint32_t index)
 {
     if (!inputStreamPtr_->IsStreamCompleted()) {
-        HiLog::Warn(LABEL, "[CheckIndex]don't enough data to decode the frame number");
+        IMAGE_LOGW("[CheckIndex]don't enough data to decode the frame number");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     uint32_t errorCode = CreateGifFileTypeIfNotExist();
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[CheckIndex]create GifFileType failed %{public}u", errorCode);
+        IMAGE_LOGE("[CheckIndex]create GifFileType failed %{public}u", errorCode);
         return errorCode;
     }
     int32_t updateFrameIndex = static_cast<int32_t>(index);
     if (!isLoadAllFrame_ && updateFrameIndex > savedFrameIndex_) {
         errorCode = UpdateGifFileType(updateFrameIndex);
         if (errorCode != SUCCESS) {
-            HiLog::Error(LABEL, "[CheckIndex]update saved frame to index %{public}u failed", index);
+            IMAGE_LOGE("[CheckIndex]update saved frame to index %{public}u failed", index);
             return errorCode;
         }
     }
     uint32_t frameNum = gifPtr_->ImageCount;
     if (index >= frameNum) {
-        HiLog::Error(LABEL, "[CheckIndex]index %{public}u out of frame range %{public}u", index, frameNum);
+        IMAGE_LOGE("[CheckIndex]index %{public}u out of frame range %{public}u", index, frameNum);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     return SUCCESS;
@@ -276,35 +281,33 @@ uint32_t GifDecoder::OverlapFrame(uint32_t startIndex, uint32_t endIndex)
     for (uint32_t frameIndex = startIndex; frameIndex <= endIndex; frameIndex++) {
         const SavedImage *savedImage = gifPtr_->SavedImages + frameIndex;
         if (savedImage == nullptr) {
-            HiLog::Error(LABEL, "[OverlapFrame]image frame %{public}u data is invalid", frameIndex);
+            IMAGE_LOGE("[OverlapFrame]image frame %{public}u data is invalid", frameIndex);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
         // acquire the frame graphices control information
         int32_t transColor = NO_TRANSPARENT_COLOR;
         int32_t disposalMode = DISPOSAL_UNSPECIFIED;
         GetTransparentAndDisposal(frameIndex, transColor, disposalMode);
-        HiLog::Debug(LABEL,
-                     "[OverlapFrame]frameIndex = %{public}u, transColor = %{public}d, "
-                     "disposalMode = %{public}d",
-                     frameIndex, transColor, disposalMode);
+        IMAGE_LOGD("[OverlapFrame]frameIndex = %{public}u, transColor = %{public}d, "
+            "disposalMode = %{public}d", frameIndex, transColor, disposalMode);
 
         if (frameIndex == 0 && AllocateLocalPixelMapBuffer() != SUCCESS) {
-            HiLog::Error(LABEL, "[OverlapFrame]first frame allocate local pixelmap buffer failed");
+            IMAGE_LOGE("[OverlapFrame]first frame allocate local pixelmap buffer failed");
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
         if (localPixelMapBuffer_ == nullptr) {
-            HiLog::Error(LABEL, "[OverlapFrame]local pixelmap is null, next frame can't overlap");
+            IMAGE_LOGE("[OverlapFrame]local pixelmap is null, next frame can't overlap");
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
         // current frame recover background
         if (frameIndex != 0 && disposalMode == DISPOSE_BACKGROUND &&
             DisposeBackground(frameIndex, savedImage) != SUCCESS) {
-            HiLog::Error(LABEL, "[OverlapFrame]dispose frame %{public}d background failed", frameIndex);
+            IMAGE_LOGE("[OverlapFrame]dispose frame %{public}d background failed", frameIndex);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
         if (disposalMode != DISPOSE_PREVIOUS &&
             PaddingData(savedImage, transColor) != SUCCESS) {
-            HiLog::Error(LABEL, "[OverlapFrame]dispose frame %{public}u data color failed", frameIndex);
+            IMAGE_LOGE("[OverlapFrame]dispose frame %{public}u data color failed", frameIndex);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
     }
@@ -322,7 +325,7 @@ uint32_t GifDecoder::DisposeBackground(uint32_t frameIndex, const SavedImage *cu
         return SUCCESS;
     }
     if (PaddingBgColor(curSavedImage) != SUCCESS) {
-        HiLog::Error(LABEL, "[DisposeBackground]padding frame %{public}u background color failed", frameIndex);
+        IMAGE_LOGE("[DisposeBackground]padding frame %{public}u background color failed", frameIndex);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     return SUCCESS;
@@ -346,25 +349,25 @@ uint32_t GifDecoder::AllocateLocalPixelMapBuffer()
         uint64_t pixelMapBufferSize = static_cast<uint64_t>(bgWidth * bgHeight * sizeof(uint32_t));
         // create local pixelmap buffer, next frame depends on the previous
         if (pixelMapBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-            HiLog::Error(LABEL, "[AllocateLocalPixelMapBuffer]pixelmap buffer size %{public}llu out of max size",
-                         static_cast<unsigned long long>(pixelMapBufferSize));
+            IMAGE_LOGE("[AllocateLocalPixelMapBuffer]pixelmap buffer size %{public}llu out of max size",
+                static_cast<unsigned long long>(pixelMapBufferSize));
             return ERR_IMAGE_TOO_LARGE;
         }
         localPixelMapBuffer_ = reinterpret_cast<uint32_t *>(malloc(pixelMapBufferSize));
         if (localPixelMapBuffer_ == nullptr) {
-            HiLog::Error(LABEL, "[AllocateLocalPixelMapBuffer]allocate local pixelmap buffer memory error");
+            IMAGE_LOGE("[AllocateLocalPixelMapBuffer]allocate local pixelmap buffer memory error");
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #ifdef _WIN32
         errno_t backRet = memset_s(localPixelMapBuffer_, bgColor_, pixelMapBufferSize);
         if (backRet != EOK) {
-            HiLog::Error(LABEL, "[DisposeFirstPixelMap]memset local pixelmap buffer background failed", backRet);
+            IMAGE_LOGE("[DisposeFirstPixelMap]memset local pixelmap buffer background failed", backRet);
             FreeLocalPixelMapBuffer();
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #else
         if (memset_s(localPixelMapBuffer_, pixelMapBufferSize, bgColor_, pixelMapBufferSize) != EOK) {
-            HiLog::Error(LABEL, "[DisposeFirstPixelMap]memset local pixelmap buffer background failed");
+            IMAGE_LOGE("[DisposeFirstPixelMap]memset local pixelmap buffer background failed");
             FreeLocalPixelMapBuffer();
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
@@ -396,10 +399,10 @@ uint32_t GifDecoder::PaddingBgColor(const SavedImage *savedImage)
         frameHeight = bgHeight - frameTop;
     }
     if (frameWidth < 0 || frameHeight < 0) {
-        HiLog::Error(LABEL, "[PaddingBgColor]frameWidth || frameHeight is abnormal,"
-                     "bgWidth:%{public}d, bgHeight:%{public}d, "
-                     "frameTop:%{public}d, frameLeft:%{public}d",
-                     bgWidth, bgHeight, frameTop, frameLeft);
+        IMAGE_LOGE("[PaddingBgColor]frameWidth || frameHeight is abnormal,"
+            "bgWidth:%{public}d, bgHeight:%{public}d, "
+            "frameTop:%{public}d, frameLeft:%{public}d",
+            bgWidth, bgHeight, frameTop, frameLeft);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     uint32_t *dstPixelMapBuffer = localPixelMapBuffer_ + frameTop * bgWidth + frameLeft;
@@ -408,12 +411,12 @@ uint32_t GifDecoder::PaddingBgColor(const SavedImage *savedImage)
 #ifdef _WIN32
         errno_t backRet = memset_s(dstPixelMapBuffer, bgColor_, lineBufferSize);
         if (backRet != EOK) {
-            HiLog::Error(LABEL, "[PaddingBgColor]memset local pixelmap buffer failed", backRet);
+            IMAGE_LOGE("[PaddingBgColor]memset local pixelmap buffer failed", backRet);
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #else
         if (memset_s(dstPixelMapBuffer, lineBufferSize, bgColor_, lineBufferSize) != EOK) {
-            HiLog::Error(LABEL, "[PaddingBgColor]memset local pixelmap buffer failed");
+            IMAGE_LOGE("[PaddingBgColor]memset local pixelmap buffer failed");
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
 #endif
@@ -429,14 +432,14 @@ uint32_t GifDecoder::PaddingData(const SavedImage *savedImage, int32_t transpare
         colorMap = savedImage->ImageDesc.ColorMap;  // local color map
     }
     if (colorMap == nullptr) {
-        HiLog::Error(LABEL, "[PaddingData]color map is null");
+        IMAGE_LOGE("[PaddingData]color map is null");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     int32_t colorCount = colorMap->ColorCount;
     int32_t bitsPerPixel = colorMap->BitsPerPixel;
     if ((bitsPerPixel < 0) || (colorCount != (1 << static_cast<uint32_t>(bitsPerPixel)))) {
-        HiLog::Error(LABEL, "[PaddingData]colormap is invalid, bitsPerPixel: %{public}d, colorCount: %{public}d",
-                     bitsPerPixel, colorCount);
+        IMAGE_LOGE("[PaddingData]colormap is invalid, bitsPerPixel: %{public}d, colorCount: %{public}d",
+            bitsPerPixel, colorCount);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
 
@@ -496,7 +499,7 @@ void GifDecoder::ParseBgColor()
 {
     const int32_t bgColorIndex = gifPtr_->SBackGroundColor;
     if (bgColorIndex < 0) {
-        HiLog::Warn(LABEL, "[ParseBgColor]bgColor index %{public}d is invalid, use default bgColor", bgColorIndex);
+        IMAGE_LOGW("[ParseBgColor]bgColor index %{public}d is invalid, use default bgColor", bgColorIndex);
         return;
     }
     const ColorMapObject *bgColorMap = gifPtr_->SColorMap;
@@ -510,18 +513,18 @@ constexpr size_t SIZE_ZERO = 0;
 
 static uint32_t HeapMemoryCreate(PlImageBuffer &plBuffer)
 {
-    HiLog::Debug(LABEL, "HeapMemoryCreate IN");
+    IMAGE_LOGD("HeapMemoryCreate IN");
     if (plBuffer.buffer != nullptr) {
-        HiLog::Debug(LABEL, "HeapMemoryCreate has created");
+        IMAGE_LOGD("HeapMemoryCreate has created");
         return SUCCESS;
     }
     if (plBuffer.bufferSize == 0 || plBuffer.bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        HiLog::Error(LABEL, "HeapMemoryCreate Invalid value of bufferSize");
+        IMAGE_LOGE("HeapMemoryCreate Invalid value of bufferSize");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto dataPtr = static_cast<uint8_t *>(malloc(plBuffer.bufferSize));
     if (dataPtr == nullptr) {
-        HiLog::Error(LABEL, "alloc buffer error");
+        IMAGE_LOGE("alloc buffer error");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     plBuffer.buffer = dataPtr;
@@ -531,9 +534,9 @@ static uint32_t HeapMemoryCreate(PlImageBuffer &plBuffer)
 
 static uint32_t HeapMemoryRelease(PlImageBuffer &plBuffer)
 {
-    HiLog::Debug(LABEL, "HeapMemoryRelease IN");
+    IMAGE_LOGD("HeapMemoryRelease IN");
     if (plBuffer.buffer == nullptr) {
-        HiLog::Error(LABEL, "HeapMemory::Release nullptr data");
+        IMAGE_LOGE("HeapMemory::Release nullptr data");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     free(plBuffer.buffer);
@@ -544,7 +547,7 @@ static uint32_t HeapMemoryRelease(PlImageBuffer &plBuffer)
 static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem alloc");
+    IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
@@ -560,13 +563,13 @@ static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
-        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
         return ERR_DMA_NOT_EXIST;
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
-        HiLog::Error(LABEL, "NativeBufferReference failed");
+        IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
     plBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
@@ -579,13 +582,13 @@ static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
 static uint32_t DmaMemoryRelease(PlImageBuffer &plBuffer)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
-    HiLog::Error(LABEL, "Unsupport dma mem release");
+    IMAGE_LOGE("Unsupport dma mem release");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     if (plBuffer.context != nullptr) {
         int32_t err = ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(plBuffer.context));
         if (err != OHOS::GSERROR_OK) {
-            HiLog::Error(LABEL, "NativeBufferUnReference failed");
+            IMAGE_LOGE("NativeBufferUnReference failed");
             return ERR_DMA_DATA_ABNORMAL;
         }
         plBuffer.buffer = nullptr;
@@ -608,24 +611,24 @@ static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_
 
 static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
 {
-    HiLog::Debug(LABEL, "SharedMemoryCreate IN data size %{public}u", plBuffer.bufferSize);
+    IMAGE_LOGD("SharedMemoryCreate IN data size %{public}u", plBuffer.bufferSize);
     if (plBuffer.bufferSize == SIZE_ZERO) {
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto fdPtr = std::make_unique<int>();
     *fdPtr = AshmemCreate("GIF RawData", plBuffer.bufferSize);
     if (*fdPtr < 0) {
-        HiLog::Error(LABEL, "SharedMemoryCreate AshmemCreate fd:[%{public}d].", *fdPtr);
+        IMAGE_LOGE("SharedMemoryCreate AshmemCreate fd:[%{public}d].", *fdPtr);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     if (AshmemSetProt(*fdPtr, PROT_READ | PROT_WRITE) < 0) {
-        HiLog::Error(LABEL, "SharedMemoryCreate AshmemSetProt errno %{public}d.", errno);
+        IMAGE_LOGE("SharedMemoryCreate AshmemSetProt errno %{public}d.", errno);
         ReleaseSharedMemory(fdPtr.get());
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     plBuffer.buffer = ::mmap(nullptr, plBuffer.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, *fdPtr, 0);
     if (plBuffer.buffer == MAP_FAILED) {
-        HiLog::Error(LABEL, "SharedMemoryCreate mmap failed, errno:%{public}d", errno);
+        IMAGE_LOGE("SharedMemoryCreate mmap failed, errno:%{public}d", errno);
         ReleaseSharedMemory(fdPtr.get(), static_cast<uint8_t*>(plBuffer.buffer), plBuffer.bufferSize);
         return ERR_IMAGE_DATA_ABNORMAL;
     }
@@ -636,7 +639,7 @@ static uint32_t SharedMemoryCreate(PlImageBuffer &plBuffer)
 
 static uint32_t SharedMemoryRelease(PlImageBuffer &plBuffer)
 {
-    HiLog::Debug(LABEL, "SharedMemoryRelease IN");
+    IMAGE_LOGD("SharedMemoryRelease IN");
     std::unique_ptr<int> fdPtr = std::unique_ptr<int>(static_cast<int*>(plBuffer.context));
     ReleaseSharedMemory(fdPtr.get(), static_cast<uint8_t*>(plBuffer.buffer), plBuffer.bufferSize);
     plBuffer.buffer = nullptr;
@@ -659,7 +662,7 @@ static uint32_t SharedMemoryRelease(PlImageBuffer &plBuffer)
 static uint32_t AllocMemory(DecodeContext &context, GifFileType *gifPtr)
 {
     if (context.pixelsBuffer.buffer != nullptr) {
-        HiLog::Debug(LABEL, "AllocMemory has created");
+        IMAGE_LOGD("AllocMemory has created");
         return SUCCESS;
     }
 
@@ -677,7 +680,7 @@ static uint32_t AllocMemory(DecodeContext &context, GifFileType *gifPtr)
 static uint32_t FreeMemory(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
-        HiLog::Debug(LABEL, "FreeMemory has freed");
+        IMAGE_LOGD("FreeMemory has freed");
         return SUCCESS;
     }
 
@@ -694,7 +697,7 @@ static uint32_t FreeMemory(DecodeContext &context)
 uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
 {
     if (localPixelMapBuffer_ == nullptr) {
-        HiLog::Error(LABEL, "[RedirectOutputBuffer]local pixelmap buffer is null, redirect failed");
+        IMAGE_LOGE("[RedirectOutputBuffer]local pixelmap buffer is null, redirect failed");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     int32_t bgWidth = gifPtr_->SWidth;
@@ -710,7 +713,7 @@ uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
     }
     if (memcpy_s(context.pixelsBuffer.buffer, context.pixelsBuffer.bufferSize,
         localPixelMapBuffer_, imageBufferSize) != 0) {
-        HiLog::Error(LABEL, "[RedirectOutputBuffer]memory copy size %{public}llu failed",
+        IMAGE_LOGE("[RedirectOutputBuffer]memory copy size %{public}llu failed",
             static_cast<unsigned long long>(imageBufferSize));
         FreeMemory(context);
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -722,7 +725,7 @@ uint32_t GifDecoder::GetImageDelayTime(uint32_t index, int32_t &value)
 {
     uint32_t errorCode = CheckIndex(index);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[GetImageDelayTime]index %{public}u is invalid", index);
+        IMAGE_LOGE("[GetImageDelayTime]index %{public}u is invalid", index);
         return errorCode;
     }
 
@@ -754,10 +757,10 @@ uint32_t GifDecoder::GetImageLoopCount(uint32_t index, int32_t &value)
 
 uint32_t GifDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
-    HiLog::Debug(LABEL, "[GetImagePropertyInt] enter gif plugin, key:%{public}s", key.c_str());
+    IMAGE_LOGD("[GetImagePropertyInt] enter gif plugin, key:%{public}s", key.c_str());
     uint32_t errorCode = CheckIndex(0);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[GetImagePropertyInt]index %{public}u is invalid", index);
+        IMAGE_LOGE("[GetImagePropertyInt]index %{public}u is invalid", index);
         return errorCode;
     }
 
@@ -766,7 +769,7 @@ uint32_t GifDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     } else if (key == GIF_IMAGE_LOOP_COUNT) {
         errorCode = GetImageLoopCount(0, value);
     } else {
-        HiLog::Error(LABEL, "[GetImagePropertyInt]key(%{public}s) not supported", key.c_str());
+        IMAGE_LOGE("[GetImagePropertyInt]key(%{public}s) not supported", key.c_str());
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
@@ -775,7 +778,7 @@ uint32_t GifDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
 
 uint32_t GifDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
-    HiLog::Debug(LABEL, "[GetImagePropertyString] enter, index:%{public}u, key:%{public}s", index, key.c_str());
+    IMAGE_LOGD("[GetImagePropertyString] enter, index:%{public}u, key:%{public}s", index, key.c_str());
 
     if (key != GIF_IMAGE_DELAY_TIME) {
         return AbsImageDecoder::GetImagePropertyString(index, key, value);
@@ -784,14 +787,14 @@ uint32_t GifDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     int32_t intValue = 0;
     uint32_t errorCode = GetImagePropertyInt(index, key, intValue);
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "[GetImagePropertyString] errorCode:%{public}u,"
+        IMAGE_LOGE("[GetImagePropertyString] errorCode:%{public}u,"
             " index:%{public}u, key:%{public}s", errorCode, index, key.c_str());
         return errorCode;
     }
 
     value = std::to_string(intValue);
 
-    HiLog::Debug(LABEL, "[GetImagePropertyString] leave, index:%{public}u, key:%{public}s, value:%{public}s",
+    IMAGE_LOGD("[GetImagePropertyString] leave, index:%{public}u, key:%{public}s, value:%{public}s",
         index, key.c_str(), value.c_str());
     return SUCCESS;
 }
@@ -799,7 +802,7 @@ uint32_t GifDecoder::GetImagePropertyString(uint32_t index, const std::string &k
 uint32_t GifDecoder::ParseFrameDetail()
 {
     if (DGifGetImageDesc(gifPtr_) == GIF_ERROR) {
-        HiLog::Error(LABEL, "[ParseFrameDetail]parse frame desc to gif pointer failed %{public}d", gifPtr_->Error);
+        IMAGE_LOGE("[ParseFrameDetail]parse frame desc to gif pointer failed %{public}d", gifPtr_->Error);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     // DGifGetImageDesc use malloc or reallocarray allocate savedImages memory and increase imageCount.
@@ -811,8 +814,8 @@ uint32_t GifDecoder::ParseFrameDetail()
     int32_t imageHeight = saveImagePtr->ImageDesc.Height;
     uint64_t imageSize = static_cast<uint64_t>(imageWidth * imageHeight);
     if (imageWidth <= 0 || imageHeight <= 0 || imageSize > SIZE_MAX) {
-        HiLog::Error(LABEL, "[ParseFrameDetail]check frame size[%{public}d, %{public}d] failed", imageWidth,
-                     imageHeight);
+        IMAGE_LOGE("[ParseFrameDetail]check frame size[%{public}d, %{public}d] failed", imageWidth,
+            imageHeight);
         // if error, imageCount go back and next time DGifGetImageDesc will retry.
         gifPtr_->ImageCount--;
         return ERR_IMAGE_DECODE_ABNORMAL;
@@ -826,7 +829,7 @@ uint32_t GifDecoder::ParseFrameDetail()
     }
     // set savedImage rasterBits
     if (SetSavedImageRasterBits(saveImagePtr, frameIndex, imageSize, imageWidth, imageHeight) != SUCCESS) {
-        HiLog::Error(LABEL, "[ParseFrameDetail] set saved image data failed");
+        IMAGE_LOGE("[ParseFrameDetail] set saved image data failed");
         GifFreeExtensions(&saveImagePtr->ExtensionBlockCount, &saveImagePtr->ExtensionBlocks);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
@@ -838,12 +841,12 @@ uint32_t GifDecoder::SetSavedImageRasterBits(SavedImage *saveImagePtr, int32_t f
 {
     if (saveImagePtr->RasterBits == nullptr) {
         if (imageSize == 0 || imageSize > PIXEL_MAP_MAX_RAM_SIZE) {
-            HiLog::Error(LABEL, "[SetSavedImageData]malloc frame %{public}d failed for invalid imagesize", frameIndex);
+            IMAGE_LOGE("[SetSavedImageData]malloc frame %{public}d failed for invalid imagesize", frameIndex);
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
         saveImagePtr->RasterBits = static_cast<GifPixelType *>(malloc(imageSize * sizeof(GifPixelType)));
         if (saveImagePtr->RasterBits == nullptr) {
-            HiLog::Error(LABEL, "[SetSavedImageData]malloc frame %{public}d rasterBits failed", frameIndex);
+            IMAGE_LOGE("[SetSavedImageData]malloc frame %{public}d rasterBits failed", frameIndex);
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
     }
@@ -852,16 +855,16 @@ uint32_t GifDecoder::SetSavedImageRasterBits(SavedImage *saveImagePtr, int32_t f
         for (int32_t i = 0; i < INTERLACED_PASSES; i++) {
             for (int32_t j = INTERLACED_OFFSET[i]; j < imageHeight; j += INTERLACED_INTERVAL[i]) {
                 if (DGifGetLine(gifPtr_, saveImagePtr->RasterBits + j * imageWidth, imageWidth) == GIF_ERROR) {
-                    HiLog::Error(LABEL, "[SetSavedImageData]interlace set frame %{public}d bits failed %{public}d",
-                                 frameIndex, gifPtr_->Error);
+                    IMAGE_LOGE("[SetSavedImageData]interlace set frame %{public}d bits failed %{public}d",
+                        frameIndex, gifPtr_->Error);
                     return ERR_IMAGE_DECODE_ABNORMAL;
                 }
             }
         }
     } else {
         if (DGifGetLine(gifPtr_, saveImagePtr->RasterBits, imageSize) == GIF_ERROR) {
-            HiLog::Error(LABEL, "[SetSavedImageData]normal set frame %{public}d bits failed %{public}d", frameIndex,
-                         gifPtr_->Error);
+            IMAGE_LOGE("[SetSavedImageData]normal set frame %{public}d bits failed %{public}d", frameIndex,
+                gifPtr_->Error);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
     }
@@ -873,25 +876,25 @@ uint32_t GifDecoder::ParseFrameExtension()
     GifByteType *extData = nullptr;
     int32_t extFunc = 0;
     if (DGifGetExtension(gifPtr_, &extFunc, &extData) == GIF_ERROR) {
-        HiLog::Error(LABEL, "[ParseFrameExtension]get extension failed %{public}d", gifPtr_->Error);
+        IMAGE_LOGE("[ParseFrameExtension]get extension failed %{public}d", gifPtr_->Error);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (extData == nullptr) {
         return SUCCESS;
     }
 
-    HiLog::Debug(LABEL, "[ParseFrameExtension] get extension:0x%{public}x", extFunc);
+    IMAGE_LOGD("[ParseFrameExtension] get extension:0x%{public}x", extFunc);
 
     if (GifAddExtensionBlock(&gifPtr_->ExtensionBlockCount, &gifPtr_->ExtensionBlocks, extFunc,
         extData[EXTENSION_LEN_INDEX], &extData[EXTENSION_DATA_INDEX]) == GIF_ERROR) {
-        HiLog::Error(LABEL, "[ParseFrameExtension]set extension to gif pointer failed");
+        IMAGE_LOGE("[ParseFrameExtension]set extension to gif pointer failed");
         // GifAddExtensionBlock will allocate memory, if error, free extension ready to retry
         GifFreeExtensions(&gifPtr_->ExtensionBlockCount, &gifPtr_->ExtensionBlocks);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     while (true) {
         if (DGifGetExtensionNext(gifPtr_, &extData) == GIF_ERROR) {
-            HiLog::Error(LABEL, "[ParseFrameExtension]get next extension failed %{public}d", gifPtr_->Error);
+            IMAGE_LOGE("[ParseFrameExtension]get next extension failed %{public}d", gifPtr_->Error);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
         if (extData == nullptr) {
@@ -900,7 +903,7 @@ uint32_t GifDecoder::ParseFrameExtension()
 
         if (GifAddExtensionBlock(&gifPtr_->ExtensionBlockCount, &gifPtr_->ExtensionBlocks, CONTINUE_EXT_FUNC_CODE,
             extData[EXTENSION_LEN_INDEX], &extData[EXTENSION_DATA_INDEX]) == GIF_ERROR) {
-            HiLog::Error(LABEL, "[ParseFrameExtension]set next extension to gif pointer failed");
+            IMAGE_LOGE("[ParseFrameExtension]set next extension to gif pointer failed");
             GifFreeExtensions(&gifPtr_->ExtensionBlockCount, &gifPtr_->ExtensionBlocks);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
@@ -910,14 +913,14 @@ uint32_t GifDecoder::ParseFrameExtension()
 
 uint32_t GifDecoder::UpdateGifFileType(int32_t updateFrameIndex)
 {
-    HiLog::Debug(LABEL, "[UpdateGifFileType]update %{public}d to %{public}d", savedFrameIndex_, updateFrameIndex);
+    IMAGE_LOGD("[UpdateGifFileType]update %{public}d to %{public}d", savedFrameIndex_, updateFrameIndex);
     uint32_t startPosition = inputStreamPtr_->Tell();
     GifRecordType recordType;
     gifPtr_->ExtensionBlocks = nullptr;
     gifPtr_->ExtensionBlockCount = 0;
     do {
         if (DGifGetRecordType(gifPtr_, &recordType) == GIF_ERROR) {
-            HiLog::Error(LABEL, "[UpdateGifFileType]parse file record type failed %{public}d", gifPtr_->Error);
+            IMAGE_LOGE("[UpdateGifFileType]parse file record type failed %{public}d", gifPtr_->Error);
             inputStreamPtr_->Seek(startPosition);
             return ERR_IMAGE_DECODE_ABNORMAL;
         }
@@ -925,14 +928,14 @@ uint32_t GifDecoder::UpdateGifFileType(int32_t updateFrameIndex)
         switch (recordType) {
             case EXTENSION_RECORD_TYPE:
                 if (ParseFrameExtension() != SUCCESS) {
-                    HiLog::Error(LABEL, "[UpdateGifFileType]parse frame extension failed");
+                    IMAGE_LOGE("[UpdateGifFileType]parse frame extension failed");
                     inputStreamPtr_->Seek(startPosition);
                     return ERR_IMAGE_DECODE_ABNORMAL;
                 }
                 break;
             case IMAGE_DESC_RECORD_TYPE:
                 if (ParseFrameDetail() != SUCCESS) {
-                    HiLog::Error(LABEL, "[UpdateGifFileType]parse frame detail failed");
+                    IMAGE_LOGE("[UpdateGifFileType]parse frame detail failed");
                     inputStreamPtr_->Seek(startPosition);
                     return ERR_IMAGE_DECODE_ABNORMAL;
                 }
@@ -940,7 +943,7 @@ uint32_t GifDecoder::UpdateGifFileType(int32_t updateFrameIndex)
                 startPosition = inputStreamPtr_->Tell();
                 break;
             case TERMINATE_RECORD_TYPE:
-                HiLog::Debug(LABEL, "[UpdateGifFileType]parse gif completed");
+                IMAGE_LOGD("[UpdateGifFileType]parse gif completed");
                 isLoadAllFrame_ = true;
                 break;
             default:
@@ -954,7 +957,7 @@ uint32_t GifDecoder::UpdateGifFileType(int32_t updateFrameIndex)
 
     if (gifPtr_->ImageCount <= 0) {
         gifPtr_->Error = D_GIF_ERR_NO_IMAG_DSCR;
-        HiLog::Error(LABEL, "[UpdateGifFileType]has no frame in gif block");
+        IMAGE_LOGE("[UpdateGifFileType]has no frame in gif block");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     return SUCCESS;

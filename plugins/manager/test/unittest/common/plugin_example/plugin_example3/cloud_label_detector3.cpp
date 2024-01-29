@@ -14,37 +14,39 @@
  */
 
 #include "cloud_label_detector3.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "plugin_utils.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "CloudLabelDetector3"
 
 namespace OHOS {
 namespace PluginExample {
 using std::string;
-using namespace OHOS::HiviewDFX;
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "CloudLabelDetector3" };
 const string CloudLabelDetector3::RESULT_STR = "CloudLabelDetector3";
 
 CloudLabelDetector3::CloudLabelDetector3()
 {
-    HiLog::Debug(LABEL, "call CloudLabelDetector3().");
+    IMAGE_LOGD("call CloudLabelDetector3().");
 }
 
 CloudLabelDetector3::~CloudLabelDetector3()
 {
-    HiLog::Debug(LABEL, "call ~CloudLabelDetector3().");
+    IMAGE_LOGD("call ~CloudLabelDetector3().");
 }
 
 bool CloudLabelDetector3::Prepare()
 {
-    HiLog::Debug(LABEL, "call Prepare().");
+    IMAGE_LOGD("call Prepare().");
     return true;
 }
 
 string CloudLabelDetector3::Process()
 {
-    HiLog::Debug(LABEL, "call Process().");
+    IMAGE_LOGD("call Process().");
     return RESULT_STR;
 }
 } // namespace PluginExample

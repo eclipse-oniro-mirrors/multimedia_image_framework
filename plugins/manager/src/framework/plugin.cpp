@@ -15,17 +15,22 @@
 
 #include "plugin.h"
 #include <utility>
-#include "hilog/log.h"
+#include "image_log.h"
 #include "impl_class_mgr.h"
 #include "json.hpp"
 #include "json_helper.h"
-#include "log_tags.h"
 #include "platform_adp.h"
 #include "singleton.h"
 #ifdef _WIN32
 #include <windows.h>
 HMODULE hDll = NULL;
 #endif
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "Plugin"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -36,7 +41,6 @@ using std::recursive_mutex;
 using std::size_t;
 using std::string;
 using std::weak_ptr;
-using namespace OHOS::HiviewDFX;
 
 enum class VersionParseStep : int32_t { STEP_MAJOR = 0, STEP_MINOR, STEP_MICRO, STEP_NANO, STEP_FINISHED };
 
@@ -46,8 +50,6 @@ struct VersionNum {
     uint16_t micro = 0;
     uint16_t nano = 0;
 };
-
-static constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "Plugin" };
 
 Plugin::Plugin()
     : platformAdp_(DelayedRefSingleton<PlatformAdp>::GetInstance()),
@@ -60,7 +62,7 @@ Plugin::~Plugin()
         // this situation does not happen in design.
         // the process context can guarantee that this will not happen.
         // the judgment statement here is for protection and positioning purposes only.
-        HiLog::Error(LABEL, "release plugin: refNum: %{public}u.", refNum_);
+        IMAGE_LOGE("release plugin: refNum: %{public}u.", refNum_);
     }
 
     implClassMgr_.DeleteClass(plugin_);
@@ -72,14 +74,14 @@ uint32_t Plugin::Register(istream &metadata, string &&libraryPath, weak_ptr<Plug
     std::unique_lock<std::recursive_mutex> guard(dynDataLock_);
     if (state_ != PluginState::PLUGIN_STATE_UNREGISTER) {
         guard.unlock();
-        HiLog::Info(LABEL, "repeat registration.");
+        IMAGE_LOGI("repeat registration.");
         return ERR_INTERNAL;
     }
 
     auto ret = RegisterMetadata(metadata, plugin);
     if (ret != SUCCESS) {
         guard.unlock();
-        HiLog::Error(LABEL, "failed to register metadata, ERRNO: %{public}u.", ret);
+        IMAGE_LOGE("failed to register metadata, ERRNO: %{public}u.", ret);
         return ret;
     }
 
@@ -102,7 +104,7 @@ uint32_t Plugin::Ref()
     if (state_ == PluginState::PLUGIN_STATE_REGISTERED) {
         if (ResolveLibrary() != SUCCESS) {
             guard.unlock();
-            HiLog::Error(LABEL, "failed to resolve library.");
+            IMAGE_LOGE("failed to resolve library.");
             return ERR_GENERAL;
         }
         state_ = PluginState::PLUGIN_STATE_RESOLVED;
@@ -112,7 +114,7 @@ uint32_t Plugin::Ref()
         // maybe asynchronous, or for reduce the locking time
         state_ = PluginState::PLUGIN_STATE_STARTING;
         if (!CfiStartFunc_(startFunc_)) {
-            HiLog::Error(LABEL, "failed to start plugin.");
+            IMAGE_LOGE("failed to start plugin.");
             FreeLibrary();
             state_ = PluginState::PLUGIN_STATE_REGISTERED;
             return ERR_GENERAL;
@@ -121,12 +123,12 @@ uint32_t Plugin::Ref()
     }
 
     if (state_ != PluginState::PLUGIN_STATE_ACTIVE) {
-        HiLog::Error(LABEL, "plugin ref: state error, state: %{public}d.", state_);
+        IMAGE_LOGE("plugin ref: state error, state: %{public}d.", state_);
         return ERR_GENERAL;
     }
 
     ++refNum_;
-    HiLog::Debug(LABEL, "plugin refNum: %{public}d.", refNum_);
+    IMAGE_LOGD("plugin refNum: %{public}d.", refNum_);
     return SUCCESS;
 }
 
@@ -138,12 +140,12 @@ void Plugin::DeRef()
         // the process context can guarantee that this will not happen.
         // the judgment statement here is for protection and positioning purposes only.
         guard.unlock();
-        HiLog::Error(LABEL, "DeRef while RefNum is zero.");
+        IMAGE_LOGE("DeRef while RefNum is zero.");
         return;
     }
 
     --refNum_;
-    HiLog::Debug(LABEL, "plugin refNum: %{public}d.", refNum_);
+    IMAGE_LOGD("plugin refNum: %{public}d.", refNum_);
 }
 
 void Plugin::Block()
@@ -167,7 +169,7 @@ PluginCreateFunc Plugin::GetCreateFunc()
     std::unique_lock<std::recursive_mutex> guard(dynDataLock_);
     if ((state_ != PluginState::PLUGIN_STATE_ACTIVE) || (refNum_ == 0)) {
         // In this case, we can't guarantee that the pointer is lasting valid.
-        HiLog::Error(LABEL, "failed to get create func, State: %{public}d, RefNum: %{public}u.", state_, refNum_);
+        IMAGE_LOGE("failed to get create func, State: %{public}d, RefNum: %{public}u.", state_, refNum_);
         return nullptr;
     }
 
@@ -194,7 +196,7 @@ uint32_t Plugin::ResolveLibrary()
 #ifdef _WIN32
     hDll = platformAdp_.AdpLoadLibrary(libraryPath_);
     if (hDll == NULL) {
-        HiLog::Error(LABEL, "failed to load library.");
+        IMAGE_LOGE("failed to load library.");
         return ERR_GENERAL;
     }
 
@@ -202,7 +204,7 @@ uint32_t Plugin::ResolveLibrary()
     stopFunc_ = (PluginStopFunc)platformAdp_.AdpGetSymAddress(hDll, pluginStopSymbol);
     createFunc_ = (PluginCreateFunc)platformAdp_.AdpGetSymAddress(hDll, pluginCreateSymbol);
     if (startFunc_ == NULL || stopFunc_ == NULL || createFunc_ == NULL) {
-        HiLog::Error(LABEL, "failed to get export symbol for the plugin.");
+        IMAGE_LOGE("failed to get export symbol for the plugin.");
         FreeLibrary();
         return ERR_GENERAL;
     }
@@ -216,7 +218,7 @@ uint32_t Plugin::ResolveLibrary()
 #else
     handle_ = platformAdp_.LoadLibrary(libraryPath_);
     if (handle_ == nullptr) {
-        HiLog::Error(LABEL, "failed to load library.");
+        IMAGE_LOGE("failed to load library.");
         return ERR_GENERAL;
     }
 
@@ -224,7 +226,7 @@ uint32_t Plugin::ResolveLibrary()
     stopFunc_ = (PluginStopFunc)platformAdp_.GetSymAddress(handle_, pluginStopSymbol);
     createFunc_ = (PluginCreateFunc)platformAdp_.GetSymAddress(handle_, pluginCreateSymbol);
     if (startFunc_ == nullptr || stopFunc_ == nullptr || createFunc_ == nullptr) {
-        HiLog::Error(LABEL, "failed to get export symbol for the plugin.");
+        IMAGE_LOGE("failed to get export symbol for the plugin.");
         FreeLibrary();
         return ERR_GENERAL;
     }
@@ -277,44 +279,43 @@ uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
     json root;
     metadata >> root;
     if (JsonHelper::GetStringValue(root, "packageName", packageName_) != SUCCESS) {
-        HiLog::Error(LABEL, "read packageName failed.");
+        IMAGE_LOGE("read packageName failed.");
         return ERR_INVALID_PARAMETER;
     }
 
     string targetVersion;
     if (JsonHelper::GetStringValue(root, "targetVersion", targetVersion) != SUCCESS) {
-        HiLog::Error(LABEL, "read targetVersion failed.");
+        IMAGE_LOGE("read targetVersion failed.");
         return ERR_INVALID_PARAMETER;
     }
     uint32_t ret = CheckTargetVersion(targetVersion);
     if (ret != SUCCESS) {
         // target version is not compatible
-        HiLog::Error(LABEL, "check targetVersion failed, Version: %{public}s, ERRNO: %{public}u.",
-                     targetVersion.c_str(), ret);
+        IMAGE_LOGE("check targetVersion failed, Version: %{public}s, ERRNO: %{public}u.", targetVersion.c_str(), ret);
         return ret;
     }
 
     if (JsonHelper::GetStringValue(root, "version", version_) != SUCCESS) {
-        HiLog::Error(LABEL, "read version failed.");
+        IMAGE_LOGE("read version failed.");
         return ERR_INVALID_PARAMETER;
     }
     VersionNum versionNum;
     ret = AnalyzeVersion(version_, versionNum);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "check version failed, Version: %{public}s, ERRNO: %{public}u.", version_.c_str(), ret);
+        IMAGE_LOGE("check version failed, Version: %{public}s, ERRNO: %{public}u.", version_.c_str(), ret);
         return ret;
     }
 
     size_t classNum;
     if (JsonHelper::GetArraySize(root, "classes", classNum) != SUCCESS) {
-        HiLog::Error(LABEL, "get array size of classes failed.");
+        IMAGE_LOGE("get array size of classes failed.");
         return ERR_INVALID_PARAMETER;
     }
-    HiLog::Debug(LABEL, "parse class num: %{public}zu.", classNum);
+    IMAGE_LOGD("parse class num: %{public}zu.", classNum);
     for (size_t i = 0; i < classNum; i++) {
         const json &classInfo = root["classes"][i];
         if (implClassMgr_.AddClass(plugin, classInfo) != SUCCESS) {
-            HiLog::Error(LABEL, "failed to add class, index: %{public}zu.", i);
+            IMAGE_LOGE("failed to add class, index: %{public}zu.", i);
             continue;
         }
     }
@@ -327,7 +328,7 @@ uint32_t Plugin::CheckTargetVersion(const string &targetVersion)
     VersionNum versionNum;
     auto ret = AnalyzeVersion(targetVersion, versionNum);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "failed to analyze version, ERRNO: %{public}u.", ret);
+        IMAGE_LOGE("failed to analyze version, ERRNO: %{public}u.", ret);
         return ret;
     }
 
@@ -344,20 +345,20 @@ uint32_t Plugin::AnalyzeVersion(const string &versionInfo, VersionNum &versionNu
     while (getline(versionInput, tmp, '.')) {
         auto ret = ExecuteVersionAnalysis(tmp, step, versionArray);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "failed to execute version analysis, ERRNO: %{public}u.", ret);
+            IMAGE_LOGE("failed to execute version analysis, ERRNO: %{public}u.", ret);
             return ret;
         }
     }
 
     if (step == VersionParseStep::STEP_NANO) {
         // we treat nano version as optional, and default 0.
-        HiLog::Debug(LABEL, "default nano version 0.");
+        IMAGE_LOGD("default nano version 0.");
         versionArray[VERSION_NANO_INDEX] = 0;
         step = VersionParseStep::STEP_FINISHED;
     }
 
     if (step != VersionParseStep::STEP_FINISHED) {
-        HiLog::Error(LABEL, "analysis version failed, step = %{public}d.", step);
+        IMAGE_LOGE("analysis version failed, step = %{public}d.", step);
         return ERR_INVALID_PARAMETER;
     }
 
@@ -366,8 +367,8 @@ uint32_t Plugin::AnalyzeVersion(const string &versionInfo, VersionNum &versionNu
     versionNum.micro = versionArray[VERSION_MICRO_INDEX];
     versionNum.nano = versionArray[VERSION_NANO_INDEX];
 
-    HiLog::Debug(LABEL, "analysis result: %{public}u.%{public}u.%{public}u.%{public}u.", versionNum.major,
-                 versionNum.minor, versionNum.micro, versionNum.nano);
+    IMAGE_LOGD("analysis result: %{public}u.%{public}u.%{public}u.%{public}u.", versionNum.major,
+        versionNum.minor, versionNum.micro, versionNum.nano);
 
     return SUCCESS;
 }
@@ -379,8 +380,7 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
         case VersionParseStep::STEP_MAJOR: {
             auto ret = GetUint16ValueFromDecimal(input, versionNum[VERSION_MAJOR_INDEX]);
             if (ret != SUCCESS) {
-                HiLog::Error(LABEL, "read major version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(),
-                             ret);
+                IMAGE_LOGE("read major version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(), ret);
                 return ret;
             }
             step = VersionParseStep::STEP_MINOR;
@@ -389,8 +389,7 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
         case VersionParseStep::STEP_MINOR: {
             auto ret = GetUint16ValueFromDecimal(input, versionNum[VERSION_MINOR_INDEX]);
             if (ret != SUCCESS) {
-                HiLog::Error(LABEL, "read minor version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(),
-                             ret);
+                IMAGE_LOGE("read minor version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(), ret);
                 return ret;
             }
             step = VersionParseStep::STEP_MICRO;
@@ -399,8 +398,7 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
         case VersionParseStep::STEP_MICRO: {
             auto ret = GetUint16ValueFromDecimal(input, versionNum[VERSION_MICRO_INDEX]);
             if (ret != SUCCESS) {
-                HiLog::Error(LABEL, "read micro version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(),
-                             ret);
+                IMAGE_LOGE("read micro version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(), ret);
                 return ret;
             }
             step = VersionParseStep::STEP_NANO;
@@ -409,15 +407,14 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
         case VersionParseStep::STEP_NANO: {
             auto ret = GetUint16ValueFromDecimal(input, versionNum[VERSION_NANO_INDEX]);
             if (ret != SUCCESS) {
-                HiLog::Error(LABEL, "read nano version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(),
-                             ret);
+                IMAGE_LOGE("read nano version failed, input: %{public}s, ERRNO: %{public}u.", input.c_str(), ret);
                 return ret;
             }
             step = VersionParseStep::STEP_FINISHED;
             break;
         }
         default: {
-            HiLog::Error(LABEL, "read redundant version data, input: %{public}s.", input.c_str());
+            IMAGE_LOGE("read redundant version data, input: %{public}s.", input.c_str());
             return ERR_INVALID_PARAMETER;
         }
     }
@@ -428,21 +425,21 @@ uint32_t Plugin::ExecuteVersionAnalysis(const string &input, VersionParseStep &s
 uint32_t Plugin::GetUint16ValueFromDecimal(const string &source, uint16_t &result)
 {
     if (source.empty() || source.size() > UINT16_MAX_DECIMAL_DIGITS) {
-        HiLog::Error(LABEL, "invalid string of uint16: %{public}s.", source.c_str());
+        IMAGE_LOGE("invalid string of uint16: %{public}s.", source.c_str());
         return ERR_INVALID_PARAMETER;
     }
 
     // determine if all characters are numbers.
     for (const auto &character : source) {
         if (character < '0' || character > '9') {
-            HiLog::Error(LABEL, "character out of the range of digital: %{public}s.", source.c_str());
+            IMAGE_LOGE("character out of the range of digital: %{public}s.", source.c_str());
             return ERR_INVALID_PARAMETER;
         }
     }
 
     unsigned long tmp = stoul(source);
     if (tmp > UINT16_MAX_VALUE) {
-        HiLog::Error(LABEL, "result out of the range of uint16: %{public}s.", source.c_str());
+        IMAGE_LOGE("result out of the range of uint16: %{public}s.", source.c_str());
         return ERR_INVALID_PARAMETER;
     }
 

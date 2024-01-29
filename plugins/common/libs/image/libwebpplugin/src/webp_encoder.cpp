@@ -14,17 +14,21 @@
  */
 #include "webp_encoder.h"
 #include "webp/mux.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 #include "media_errors.h"
 #include "pixel_convert_adapter.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "WebpEncoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "WebpEncoder" };
 constexpr uint32_t WEBP_IMAGE_NUM = 1;
 constexpr uint32_t COMPONENT_NUM_3 = 3;
 constexpr uint32_t COMPONENT_NUM_4 = 4;
@@ -32,7 +36,7 @@ constexpr uint32_t COMPONENT_NUM_4 = 4;
 
 static int StreamWriter(const uint8_t* data, size_t data_size, const WebPPicture* const picture)
 {
-    HiLog::Debug(LABEL, "StreamWriter data_size=%{public}zu", data_size);
+    IMAGE_LOGD("StreamWriter data_size=%{public}zu", data_size);
 
     auto webpEncoder = static_cast<WebpEncoder*>(picture->custom_ptr);
     return webpEncoder->Write(data, data_size) ? 1 : 0;
@@ -40,23 +44,23 @@ static int StreamWriter(const uint8_t* data, size_t data_size, const WebPPicture
 
 WebpEncoder::WebpEncoder()
 {
-    HiLog::Debug(LABEL, "create IN");
+    IMAGE_LOGD("create IN");
 
-    HiLog::Debug(LABEL, "create OUT");
+    IMAGE_LOGD("create OUT");
 }
 
 WebpEncoder::~WebpEncoder()
 {
-    HiLog::Debug(LABEL, "release IN");
+    IMAGE_LOGD("release IN");
 
     pixelMaps_.clear();
 
-    HiLog::Debug(LABEL, "release OUT");
+    IMAGE_LOGD("release OUT");
 }
 
 uint32_t WebpEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
 {
-    HiLog::Debug(LABEL, "StartEncode IN, quality=%{public}u, numberHint=%{public}u",
+    IMAGE_LOGD("StartEncode IN, quality=%{public}u, numberHint=%{public}u",
         option.quality, option.numberHint);
 
     pixelMaps_.clear();
@@ -64,35 +68,35 @@ uint32_t WebpEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOption
     outputStream_ = &outputStream;
     encodeOpts_ = option;
 
-    HiLog::Debug(LABEL, "StartEncode OUT");
+    IMAGE_LOGD("StartEncode OUT");
     return SUCCESS;
 }
 
 uint32_t WebpEncoder::AddImage(Media::PixelMap &pixelMap)
 {
-    HiLog::Debug(LABEL, "AddImage IN");
+    IMAGE_LOGD("AddImage IN");
 
     if (pixelMaps_.size() >= WEBP_IMAGE_NUM) {
-        HiLog::Error(LABEL, "AddImage, add pixel map out of range=%{public}u.", WEBP_IMAGE_NUM);
+        IMAGE_LOGE("AddImage, add pixel map out of range=%{public}u.", WEBP_IMAGE_NUM);
         return ERR_IMAGE_ADD_PIXEL_MAP_FAILED;
     }
 
     pixelMaps_.push_back(&pixelMap);
 
-    HiLog::Debug(LABEL, "AddImage OUT");
+    IMAGE_LOGD("AddImage OUT");
     return SUCCESS;
 }
 
 uint32_t WebpEncoder::FinalizeEncode()
 {
-    HiLog::Debug(LABEL, "FinalizeEncode IN");
+    IMAGE_LOGD("FinalizeEncode IN");
 
     if (pixelMaps_.empty()) {
-        HiLog::Error(LABEL, "FinalizeEncode, no pixel map input.");
+        IMAGE_LOGE("FinalizeEncode, no pixel map input.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    HiLog::Debug(LABEL, "FinalizeEncode, quality=%{public}u, numberHint=%{public}u",
+    IMAGE_LOGD("FinalizeEncode, quality=%{public}u, numberHint=%{public}u",
         encodeOpts_.quality, encodeOpts_.numberHint);
 
     uint32_t errorCode = ERROR;
@@ -103,29 +107,29 @@ uint32_t WebpEncoder::FinalizeEncode()
     WebPPictureInit(&webpPicture);
 
     errorCode = SetEncodeConfig(pixelMap, webpConfig, webpPicture);
-    HiLog::Debug(LABEL, "FinalizeEncode, config, %{public}u.", errorCode);
+    IMAGE_LOGD("FinalizeEncode, config, %{public}u.", errorCode);
 
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "FinalizeEncode, config failed=%{public}u.", errorCode);
+        IMAGE_LOGE("FinalizeEncode, config failed=%{public}u.", errorCode);
         WebPPictureFree(&webpPicture);
         return errorCode;
     }
 
     errorCode = DoEncode(pixelMap, webpConfig, webpPicture);
-    HiLog::Debug(LABEL, "FinalizeEncode, encode,%{public}u.", errorCode);
+    IMAGE_LOGD("FinalizeEncode, encode,%{public}u.", errorCode);
     WebPPictureFree(&webpPicture);
 
     if (errorCode != SUCCESS) {
-        HiLog::Error(LABEL, "FinalizeEncode, encode failed=%{public}u.", errorCode);
+        IMAGE_LOGE("FinalizeEncode, encode failed=%{public}u.", errorCode);
     }
 
-    HiLog::Debug(LABEL, "FinalizeEncode OUT");
+    IMAGE_LOGD("FinalizeEncode OUT");
     return errorCode;
 }
 
 bool WebpEncoder::Write(const uint8_t* data, size_t data_size)
 {
-    HiLog::Debug(LABEL, "Write data_size=%{public}zu, iccValid=%{public}d", data_size, iccValid_);
+    IMAGE_LOGD("Write data_size=%{public}zu, iccValid=%{public}d", data_size, iccValid_);
 
     if (iccValid_) {
         return memoryStream_.write(data, data_size);
@@ -137,40 +141,40 @@ bool WebpEncoder::Write(const uint8_t* data, size_t data_size)
 bool WebpEncoder::CheckEncodeFormat(Media::PixelMap &pixelMap)
 {
     PixelFormat pixelFormat = GetPixelFormat(pixelMap);
-    HiLog::Debug(LABEL, "CheckEncodeFormat, pixelFormat=%{public}u", pixelFormat);
+    IMAGE_LOGD("CheckEncodeFormat, pixelFormat=%{public}u", pixelFormat);
 
     switch (pixelFormat) {
         case PixelFormat::RGBA_8888: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, RGBA_8888");
+            IMAGE_LOGD("CheckEncodeFormat, RGBA_8888");
             return true;
         }
         case PixelFormat::BGRA_8888: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, BGRA_8888");
+            IMAGE_LOGD("CheckEncodeFormat, BGRA_8888");
             return true;
         }
         case PixelFormat::RGBA_F16: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, RGBA_F16");
+            IMAGE_LOGD("CheckEncodeFormat, RGBA_F16");
             return true;
         }
         case PixelFormat::ARGB_8888: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, ARGB_8888");
+            IMAGE_LOGD("CheckEncodeFormat, ARGB_8888");
             return true;
         }
         case PixelFormat::RGB_888: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, RGB_888");
+            IMAGE_LOGD("CheckEncodeFormat, RGB_888");
             return true;
         }
         case PixelFormat::RGB_565: {
             bool isOpaque = IsOpaque(pixelMap);
-            HiLog::Debug(LABEL, "CheckEncodeFormat, RGB_565, isOpaque=%{public}d", isOpaque);
+            IMAGE_LOGD("CheckEncodeFormat, RGB_565, isOpaque=%{public}d", isOpaque);
             return isOpaque;
         }
         case PixelFormat::ALPHA_8: {
-            HiLog::Debug(LABEL, "CheckEncodeFormat, ALPHA_8");
+            IMAGE_LOGD("CheckEncodeFormat, ALPHA_8");
             return true;
         }
         default: {
-            HiLog::Error(LABEL, "CheckEncodeFormat, pixelFormat=%{public}u", pixelFormat);
+            IMAGE_LOGE("CheckEncodeFormat, pixelFormat=%{public}u", pixelFormat);
             return false;
         }
     }
@@ -178,11 +182,11 @@ bool WebpEncoder::CheckEncodeFormat(Media::PixelMap &pixelMap)
 
 bool WebpEncoder::DoTransform(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransform IN");
+    IMAGE_LOGD("DoTransform IN");
 
     PixelFormat pixelFormat = GetPixelFormat(pixelMap);
     AlphaType alphaType = GetAlphaType(pixelMap);
-    HiLog::Debug(LABEL, "DoTransform, pixelFormat=%{public}u, alphaType=%{public}d, componentsNum=%{public}d",
+    IMAGE_LOGD("DoTransform, pixelFormat=%{public}u, alphaType=%{public}d, componentsNum=%{public}d",
         pixelFormat, alphaType, componentsNum);
 
     if ((pixelFormat == PixelFormat::RGBA_8888) && (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE)) {
@@ -212,28 +216,28 @@ bool WebpEncoder::DoTransform(Media::PixelMap &pixelMap, char* dst, int componen
     } else if (pixelFormat == PixelFormat::RGB_888) {
         return DoTransformMemcpy(pixelMap, dst, componentsNum);
     } else if ((pixelFormat == PixelFormat::RGB_565) && IsOpaque(pixelMap)) {
-        HiLog::Debug(LABEL, "DoTransform, RGB_565, Opaque");
+        IMAGE_LOGD("DoTransform, RGB_565, Opaque");
         return DoTransformRGB565(pixelMap, dst, componentsNum);
     } else if (pixelFormat == PixelFormat::ALPHA_8) {
-        HiLog::Debug(LABEL, "DoTransform, ALPHA_8");
+        IMAGE_LOGD("DoTransform, ALPHA_8");
         return DoTransformGray(pixelMap, dst, componentsNum);
     }
 
-    HiLog::Debug(LABEL, "DoTransform OUT");
+    IMAGE_LOGD("DoTransform OUT");
     return false;
 }
 
 uint32_t WebpEncoder::SetEncodeConfig(Media::PixelMap &pixelMap, WebPConfig &webpConfig, WebPPicture &webpPicture)
 {
-    HiLog::Debug(LABEL, "SetEncodeConfig IN");
+    IMAGE_LOGD("SetEncodeConfig IN");
 
     if (pixelMap.GetPixels() == nullptr) {
-        HiLog::Error(LABEL, "SetEncodeConfig, pixels invalid.");
+        IMAGE_LOGE("SetEncodeConfig, pixels invalid.");
         return ERROR;
     }
 
     if (!CheckEncodeFormat(pixelMap)) {
-        HiLog::Error(LABEL, "SetEncodeConfig, check invalid.");
+        IMAGE_LOGE("SetEncodeConfig, check invalid.");
         return ERR_IMAGE_UNKNOWN_FORMAT;
     }
 
@@ -242,10 +246,10 @@ uint32_t WebpEncoder::SetEncodeConfig(Media::PixelMap &pixelMap, WebPConfig &web
     } else {
         componentsNum_ = IsOpaque(pixelMap) ? COMPONENT_NUM_3 : COMPONENT_NUM_4;
     }
-    HiLog::Debug(LABEL, "SetEncodeConfig, componentsNum=%{public}u", componentsNum_);
+    IMAGE_LOGD("SetEncodeConfig, componentsNum=%{public}u", componentsNum_);
 
     if (!WebPConfigPreset(&webpConfig, WEBP_PRESET_DEFAULT, encodeOpts_.quality)) {
-        HiLog::Error(LABEL, "SetEncodeConfig, config preset issue.");
+        IMAGE_LOGE("SetEncodeConfig, config preset issue.");
         return ERROR;
     }
 
@@ -261,28 +265,28 @@ uint32_t WebpEncoder::SetEncodeConfig(Media::PixelMap &pixelMap, WebPConfig &web
     webpPicture.custom_ptr = static_cast<void*>(this);
 
     auto colorSpace = GetColorSpace(pixelMap);
-    HiLog::Debug(LABEL, "SetEncodeConfig, "
+    IMAGE_LOGD("SetEncodeConfig, "
         "width=%{public}u, height=%{public}u, colorspace=%{public}d, componentsNum=%{public}d.",
         webpPicture.width, webpPicture.height, colorSpace, componentsNum_);
 
-    HiLog::Debug(LABEL, "SetEncodeConfig OUT");
+    IMAGE_LOGD("SetEncodeConfig OUT");
     return SUCCESS;
 }
 
 uint32_t WebpEncoder::DoEncode(Media::PixelMap &pixelMap, WebPConfig &webpConfig, WebPPicture &webpPicture)
 {
-    HiLog::Debug(LABEL, "DoEncode IN");
+    IMAGE_LOGD("DoEncode IN");
 
     const int width = pixelMap.GetWidth();
     const int height = webpPicture.height;
     const int rgbStride = width * componentsNum_;
     const int rgbSize = rgbStride * height;
-    HiLog::Debug(LABEL, "DoEncode, width=%{public}d, height=%{public}d, componentsNum=%{public}d,"
+    IMAGE_LOGD("DoEncode, width=%{public}d, height=%{public}d, componentsNum=%{public}d,"
         " rgbStride=%{public}d, rgbSize=%{public}d", width, height, componentsNum_, rgbStride, rgbSize);
 
     std::unique_ptr<uint8_t[]> rgb = std::make_unique<uint8_t[]>(rgbSize);
     if (!DoTransform(pixelMap, reinterpret_cast<char*>(&rgb[0]), componentsNum_)) {
-        HiLog::Error(LABEL, "DoEncode, transform issue.");
+        IMAGE_LOGE("DoEncode, transform issue.");
         return ERROR;
     }
 
@@ -291,34 +295,34 @@ uint32_t WebpEncoder::DoEncode(Media::PixelMap &pixelMap, WebPConfig &webpConfig
         importProc = (IsOpaque(pixelMap)) ? WebPPictureImportRGBX : WebPPictureImportRGBA;
     }
 
-    HiLog::Debug(LABEL, "DoEncode, importProc");
+    IMAGE_LOGD("DoEncode, importProc");
     if (!importProc(&webpPicture, &rgb[0], rgbStride)) {
-        HiLog::Error(LABEL, "DoEncode, import issue.");
+        IMAGE_LOGE("DoEncode, import issue.");
         return ERROR;
     }
 
-    HiLog::Debug(LABEL, "DoEncode, WebPEncode");
+    IMAGE_LOGD("DoEncode, WebPEncode");
     if (!WebPEncode(&webpConfig, &webpPicture)) {
-        HiLog::Error(LABEL, "DoEncode, encode issue.");
+        IMAGE_LOGE("DoEncode, encode issue.");
         return ERROR;
     }
 
-    HiLog::Debug(LABEL, "DoEncode, iccValid=%{public}d", iccValid_);
+    IMAGE_LOGD("DoEncode, iccValid=%{public}d", iccValid_);
     if (iccValid_) {
         auto res = DoEncodeForICC(pixelMap);
         if (res != SUCCESS) {
-            HiLog::Error(LABEL, "DoEncode, encode for icc issue.");
+            IMAGE_LOGE("DoEncode, encode for icc issue.");
             return res;
         }
     }
 
-    HiLog::Debug(LABEL, "DoEncode OUT");
+    IMAGE_LOGD("DoEncode OUT");
     return SUCCESS;
 }
 
 uint32_t WebpEncoder::DoEncodeForICC(Media::PixelMap &pixelMap)
 {
-    HiLog::Debug(LABEL, "DoEncodeForICC IN");
+    IMAGE_LOGD("DoEncodeForICC IN");
 
     auto encodedData = memoryStream_.detachAsData();
     WebPData webpEncode = { encodedData->bytes(), encodedData->size() };
@@ -326,20 +330,20 @@ uint32_t WebpEncoder::DoEncodeForICC(Media::PixelMap &pixelMap)
 
     auto mux = WebPMuxNew();
     if (WebPMuxSetImage(mux, &webpEncode, 0) != WEBP_MUX_OK) {
-        HiLog::Error(LABEL, "DoEncodeForICC, image issue.");
+        IMAGE_LOGE("DoEncodeForICC, image issue.");
         WebPMuxDelete(mux);
         return ERROR;
     }
 
     if (WebPMuxSetChunk(mux, "ICCP", &webpIcc, 0) != WEBP_MUX_OK) {
-        HiLog::Error(LABEL, "DoEncodeForICC, icc issue.");
+        IMAGE_LOGE("DoEncodeForICC, icc issue.");
         WebPMuxDelete(mux);
         return ERROR;
     }
 
     WebPData webpAssembled;
     if (WebPMuxAssemble(mux, &webpAssembled) != WEBP_MUX_OK) {
-        HiLog::Error(LABEL, "DoEncodeForICC, assemble issue.");
+        IMAGE_LOGE("DoEncodeForICC, assemble issue.");
         WebPMuxDelete(mux);
         return ERROR;
     }
@@ -348,7 +352,7 @@ uint32_t WebpEncoder::DoEncodeForICC(Media::PixelMap &pixelMap)
     WebPDataClear(&webpAssembled);
     WebPMuxDelete(mux);
 
-    HiLog::Debug(LABEL, "DoEncodeForICC OUT");
+    IMAGE_LOGD("DoEncodeForICC OUT");
     return SUCCESS;
 }
 
@@ -379,11 +383,11 @@ bool WebpEncoder::IsOpaque(Media::PixelMap &pixelMap)
 
 bool WebpEncoder::DoTransformMemcpy(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformMemcpy IN");
+    IMAGE_LOGD("DoTransformMemcpy IN");
 
     auto src = pixelMap.GetPixels();
     if ((src == nullptr) || (dst == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformMemcpy, address issue.");
+        IMAGE_LOGE("DoTransformMemcpy, address issue.");
         return false;
     }
 
@@ -392,8 +396,7 @@ bool WebpEncoder::DoTransformMemcpy(Media::PixelMap &pixelMap, char* dst, int co
     const uint32_t rowBytes = pixelMap.GetRowBytes();
     const int stride = pixelMap.GetWidth() * componentsNum;
 
-    HiLog::Debug(LABEL,
-        "width=%{public}u, height=%{public}u, rowBytes=%{public}u, stride=%{public}d, componentsNum=%{public}d",
+    IMAGE_LOGD("width=%{public}u, height=%{public}u, rowBytes=%{public}u, stride=%{public}d, componentsNum=%{public}d",
         width, height, rowBytes, stride, componentsNum);
 
     for (int32_t h = 0; h < height; h++) {
@@ -402,13 +405,13 @@ bool WebpEncoder::DoTransformMemcpy(Media::PixelMap &pixelMap, char* dst, int co
             width, componentsNum);
     }
 
-    HiLog::Debug(LABEL, "DoTransformMemcpy OUT");
+    IMAGE_LOGD("DoTransformMemcpy OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformRGBX(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformRGBX IN");
+    IMAGE_LOGD("DoTransformRGBX IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -423,24 +426,24 @@ bool WebpEncoder::DoTransformRGBX(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformRGBX, address issue.");
+        IMAGE_LOGE("DoTransformRGBX, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformRGBX, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformRGBX, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformRGBX OUT");
+    IMAGE_LOGD("DoTransformRGBX OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformRgbA(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformRgbA IN");
+    IMAGE_LOGD("DoTransformRgbA IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -455,24 +458,24 @@ bool WebpEncoder::DoTransformRgbA(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformRgbA, address issue.");
+        IMAGE_LOGE("DoTransformRgbA, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformRgbA, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformRgbA, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformRgbA OUT");
+    IMAGE_LOGD("DoTransformRgbA OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformBGRX(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformBGRX IN");
+    IMAGE_LOGD("DoTransformBGRX IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -487,24 +490,24 @@ bool WebpEncoder::DoTransformBGRX(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformBGRX, address issue.");
+        IMAGE_LOGE("DoTransformBGRX, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformBGRX, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformBGRX, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformBGRX OUT");
+    IMAGE_LOGD("DoTransformBGRX OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformBGRA(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformBGRA IN");
+    IMAGE_LOGD("DoTransformBGRA IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -519,24 +522,24 @@ bool WebpEncoder::DoTransformBGRA(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformBGRA, address issue.");
+        IMAGE_LOGE("DoTransformBGRA, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformBGRA, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformBGRA, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformBGRA OUT");
+    IMAGE_LOGD("DoTransformBGRA OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformBgrA(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformBgrA IN");
+    IMAGE_LOGD("DoTransformBgrA IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -551,24 +554,24 @@ bool WebpEncoder::DoTransformBgrA(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformBgrA, address issue.");
+        IMAGE_LOGE("DoTransformBgrA, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformBgrA, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformBgrA, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformBgrA OUT");
+    IMAGE_LOGD("DoTransformBgrA OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformF16To8888(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformF16To8888 IN");
+    IMAGE_LOGD("DoTransformF16To8888 IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -583,24 +586,24 @@ bool WebpEncoder::DoTransformF16To8888(Media::PixelMap &pixelMap, char* dst, int
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformF16To8888, address issue.");
+        IMAGE_LOGE("DoTransformF16To8888, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformF16To8888, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformF16To8888, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformF16To8888 OUT");
+    IMAGE_LOGD("DoTransformF16To8888 OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformF16pTo8888(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformF16pTo8888 IN");
+    IMAGE_LOGD("DoTransformF16pTo8888 IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -615,24 +618,24 @@ bool WebpEncoder::DoTransformF16pTo8888(Media::PixelMap &pixelMap, char* dst, in
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformF16pTo8888, address issue.");
+        IMAGE_LOGE("DoTransformF16pTo8888, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformF16pTo8888, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformF16pTo8888, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformF16pTo8888 OUT");
+    IMAGE_LOGD("DoTransformF16pTo8888 OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformArgbToRgb(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformArgbToRgb IN");
+    IMAGE_LOGD("DoTransformArgbToRgb IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -647,24 +650,24 @@ bool WebpEncoder::DoTransformArgbToRgb(Media::PixelMap &pixelMap, char* dst, int
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformArgbToRgb, address issue.");
+        IMAGE_LOGE("DoTransformArgbToRgb, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformArgbToRgb, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformArgbToRgb, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformArgbToRgb OUT");
+    IMAGE_LOGD("DoTransformArgbToRgb OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformArgbToRgba(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformArgbToRgba IN");
+    IMAGE_LOGD("DoTransformArgbToRgba IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -679,24 +682,24 @@ bool WebpEncoder::DoTransformArgbToRgba(Media::PixelMap &pixelMap, char* dst, in
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformArgbToRgba, address issue.");
+        IMAGE_LOGE("DoTransformArgbToRgba, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformArgbToRgba, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformArgbToRgba, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformArgbToRgba OUT");
+    IMAGE_LOGD("DoTransformArgbToRgba OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformRGB565(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformRGB565 IN");
+    IMAGE_LOGD("DoTransformRGB565 IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -711,24 +714,24 @@ bool WebpEncoder::DoTransformRGB565(Media::PixelMap &pixelMap, char* dst, int co
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformRGB565, address issue.");
+        IMAGE_LOGE("DoTransformRGB565, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformRGB565, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformRGB565, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformRGB565 OUT");
+    IMAGE_LOGD("DoTransformRGB565 OUT");
     return true;
 }
 
 bool WebpEncoder::DoTransformGray(Media::PixelMap &pixelMap, char* dst, int componentsNum)
 {
-    HiLog::Debug(LABEL, "DoTransformGray IN");
+    IMAGE_LOGD("DoTransformGray IN");
 
     const void *srcPixels = pixelMap.GetPixels();
     uint32_t srcRowBytes = pixelMap.GetRowBytes();
@@ -743,18 +746,18 @@ bool WebpEncoder::DoTransformGray(Media::PixelMap &pixelMap, char* dst, int comp
     ShowTransformParam(srcInfo, srcRowBytes, dstInfo, dstRowBytes, componentsNum);
 
     if ((srcPixels == nullptr) || (dstPixels == nullptr)) {
-        HiLog::Error(LABEL, "DoTransformGray, address issue.");
+        IMAGE_LOGE("DoTransformGray, address issue.");
         return false;
     }
 
     const Position dstPos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, srcRowBytes, srcInfo,
         dstPixels, dstPos, dstRowBytes, dstInfo)) {
-        HiLog::Error(LABEL, "DoTransformGray, pixel convert in adapter failed.");
+        IMAGE_LOGE("DoTransformGray, pixel convert in adapter failed.");
         return false;
     }
 
-    HiLog::Debug(LABEL, "DoTransformGray OUT");
+    IMAGE_LOGD("DoTransformGray OUT");
     return true;
 }
 
@@ -776,8 +779,7 @@ ImageInfo WebpEncoder::MakeImageInfo(int width, int height, PixelFormat pf, Alph
 void WebpEncoder::ShowTransformParam(const ImageInfo &srcInfo, const uint32_t &srcRowBytes,
     const ImageInfo &dstInfo, const uint32_t &dstRowBytes, const int &componentsNum)
 {
-    HiLog::Debug(LABEL,
-        "src(width=%{public}u, height=%{public}u, rowBytes=%{public}u,"
+    IMAGE_LOGD("src(width=%{public}u, height=%{public}u, rowBytes=%{public}u,"
         " pixelFormat=%{public}u, colorspace=%{public}d, alphaType=%{public}d, baseDensity=%{public}d), "
         "dst(width=%{public}u, height=%{public}u, rowBytes=%{public}u,"
         " pixelFormat=%{public}u, colorspace=%{public}d, alphaType=%{public}d, baseDensity=%{public}d), "

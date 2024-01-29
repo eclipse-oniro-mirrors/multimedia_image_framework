@@ -79,8 +79,10 @@ ohos_shared_library("webpplugin") {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
+      "hilog:libhilog",
     ]
   }
+
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   part_name = "image_framework"
 

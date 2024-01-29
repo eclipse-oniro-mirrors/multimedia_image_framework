@@ -16,6 +16,7 @@
 #include "jpeg_decoder.h"
 #include <map>
 #include "hitrace_meter.h"
+#include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
 #include "jerror.h"
@@ -31,12 +32,16 @@
 #include "memory.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "JpegDecoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JpegDecoder" };
 static constexpr uint32_t PL_ICC_MARKER = JPEG_APP0 + 2;
 static constexpr uint32_t PL_MARKER_LENGTH_LIMIT = 0xFFFF;
 namespace {
@@ -156,7 +161,7 @@ void JpegDecoder::CreateDecoder()
     decodeInfo_.err = jpeg_std_error(&jerr_);
     jerr_.error_exit = ErrorExit;
     if (decodeInfo_.err == nullptr) {
-        HiLog::Error(LABEL, "create jpeg decoder failed.");
+        IMAGE_LOGE("create jpeg decoder failed.");
         return;
     }
     decodeInfo_.err->output_message = &OutputErrorMessage;
@@ -180,11 +185,11 @@ void JpegDecoder::SetSource(InputDataStream &sourceStream)
 uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     if (index >= JPEG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
+        IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < JpegDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "get image size failed for state %{public}d.", state_);
+        IMAGE_LOGE("get image size failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= JpegDecodingState::BASE_INFO_PARSED) {
@@ -195,7 +200,7 @@ uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
     // only state JpegDecodingState::SOURCE_INITED and JpegDecodingState::BASE_INFO_PARSING can go here.
     uint32_t ret = DecodeHeader();
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "decode header error on get image size, ret:%{public}u.", ret);
+        IMAGE_LOGE("decode header error on get image size, ret:%{public}u.", ret);
         state_ = JpegDecodingState::BASE_INFO_PARSING;
         return ret;
     }
@@ -302,11 +307,11 @@ static void GetScaledFraction(const int& inSampleSize, jpeg_decompress_struct& d
 uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info)
 {
     if (index >= JPEG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
+        IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < JpegDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "set decode options failed for state %{public}d.", state_);
+        IMAGE_LOGE("set decode options failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= JpegDecodingState::IMAGE_DECODING) {
@@ -317,7 +322,7 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
         uint32_t ret = DecodeHeader();
         if (ret != Media::SUCCESS) {
             state_ = JpegDecodingState::BASE_INFO_PARSING;
-            HiLog::Error(LABEL, "decode header error on set decode options:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on set decode options:%{public}u.", ret);
             return ret;
         }
         state_ = JpegDecodingState::BASE_INFO_PARSED;
@@ -327,7 +332,7 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
     GetScaledFraction(inSampleSize, decodeInfo_);
     uint32_t ret = StartDecompress(opts);
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "start decompress failed on set decode options:%{public}u.", ret);
+        IMAGE_LOGE("start decompress failed on set decode options:%{public}u.", ret);
         return ret;
     }
     info.pixelFormat = outputFormat_;
@@ -350,7 +355,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 {
     ImageTrace imageTrace("JpegDecoder::DoSwDecode");
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "decode image failed.");
+        IMAGE_LOGE("decode image failed.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     uint32_t rowStride = GetRowBytes();
@@ -377,7 +382,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             context.pixelsBuffer.buffer = ptr;
             void *fdBuffer = new int32_t();
             if (fdBuffer == nullptr) {
-                HiLog::Error(LABEL, "new fdBuffer fail");
+                IMAGE_LOGE("new fdBuffer fail");
                 ::munmap(ptr, byteCount);
                 ::close(fd);
                 context.pixelsBuffer.buffer = nullptr;
@@ -402,13 +407,13 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
             };
             GSError ret = sb->Alloc(requestConfig);
             if (ret != GSERROR_OK) {
-                HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+                IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
                 return ERR_DMA_NOT_EXIST;
             }
             void* nativeBuffer = sb.GetRefPtr();
             int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
             if (err != OHOS::GSERROR_OK) {
-                HiLog::Error(LABEL, "NativeBufferReference failed");
+                IMAGE_LOGE("NativeBufferReference failed");
                 return ERR_DMA_DATA_ABNORMAL;
             }
 
@@ -420,8 +425,8 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         } else {
             void *outputBuffer = malloc(byteCount);
             if (outputBuffer == nullptr) {
-                HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                             static_cast<unsigned long long>(byteCount));
+                IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.",
+                    static_cast<unsigned long long>(byteCount));
                 return ERR_IMAGE_MALLOC_ABNORMAL;
             }
             context.pixelsBuffer.buffer = outputBuffer;
@@ -433,8 +438,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 #else
         void *outputBuffer = malloc(byteCount);
         if (outputBuffer == nullptr) {
-            HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                         static_cast<unsigned long long>(byteCount));
+            IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
             return ERR_IMAGE_MALLOC_ABNORMAL;
         }
         context.pixelsBuffer.buffer = outputBuffer;
@@ -446,7 +450,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     }
     uint8_t *base = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     if (base == nullptr) {
-        HiLog::Error(LABEL, "decode image buffer is null.");
+        IMAGE_LOGE("decode image buffer is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
@@ -471,8 +475,8 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         uint32_t readLineNum = jpeg_read_scanlines(&decodeInfo_, &buffer, RW_LINE_NUM);
         if (readLineNum < RW_LINE_NUM) {
             streamPosition_ = srcMgr_.inputStream->Tell();
-            HiLog::Error(LABEL, "read line fail, read num:%{public}u, total read num:%{public}u.", readLineNum,
-                         decodeInfo_.output_scanline);
+            IMAGE_LOGE("read line fail, read num:%{public}u, total read num:%{public}u.", readLineNum,
+                decodeInfo_.output_scanline);
             return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
     }
@@ -482,7 +486,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     // parser icc profile info
     uint32_t iccPaseredResult = iccProfileInfo_.ParsingICCProfile(&decodeInfo_);
     if (iccPaseredResult == OHOS::Media::ERR_IMAGE_DENCODE_ICC_FAILED) {
-        HiLog::Error(LABEL, "dencode image icc error.");
+        IMAGE_LOGE("dencode image icc error.");
         return iccPaseredResult;
     }
 #endif
@@ -492,11 +496,11 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     if (index >= JPEG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
+        IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ < JpegDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "decode failed for state %{public}d.", state_);
+        IMAGE_LOGE("decode failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ > JpegDecodingState::IMAGE_DECODING) {
@@ -505,13 +509,13 @@ uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
         uint32_t ret = DecodeHeader();
         if (ret != Media::SUCCESS) {
             state_ = JpegDecodingState::BASE_INFO_PARSING;
-            HiLog::Error(LABEL, "decode header error on decode:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on decode:%{public}u.", ret);
             return ret;
         }
         state_ = JpegDecodingState::BASE_INFO_PARSED;
         ret = StartDecompress(opts_);
         if (ret != Media::SUCCESS) {
-            HiLog::Error(LABEL, "start decompress failed on decode:%{public}u.", ret);
+            IMAGE_LOGE("start decompress failed on decode:%{public}u.", ret);
             return ret;
         }
         state_ = JpegDecodingState::IMAGE_DECODING;
@@ -522,14 +526,14 @@ uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
         uint32_t ret = hwJpegDecompress_->Decompress(&decodeInfo_, srcMgr_.inputStream, context);
         if (ret == Media::SUCCESS) {
             state_ = JpegDecodingState::IMAGE_DECODED;
-            HiLog::Debug(LABEL, "jpeg hardware decode success.");
+            IMAGE_LOGD("jpeg hardware decode success.");
             return ret;
         }
     }
     uint32_t ret = DoSwDecode(context);
     if (ret == Media::SUCCESS) {
         state_ = JpegDecodingState::IMAGE_DECODED;
-        HiLog::Debug(LABEL, "jpeg software decode success.");
+        IMAGE_LOGD("jpeg software decode success.");
         return Media::SUCCESS;
     }
     if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && opts_.allowPartialImage) {
@@ -550,11 +554,11 @@ uint32_t JpegDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext
 {
     progContext.totalProcessProgress = 0;
     if (index >= JPEG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
+        IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (state_ != JpegDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "incremental decode failed for state %{public}d.", state_);
+        IMAGE_LOGE("incremental decode failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
 
@@ -565,7 +569,7 @@ uint32_t JpegDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext
     // get promote decode progress, in percentage: 0~100.
     progContext.totalProcessProgress =
         decodeInfo_.output_height == 0 ? 0 : (decodeInfo_.output_scanline * NUM_100) / decodeInfo_.output_height;
-    HiLog::Debug(LABEL, "incremental decode progress %{public}u.", progContext.totalProcessProgress);
+    IMAGE_LOGD("incremental decode progress %{public}u.", progContext.totalProcessProgress);
     return ret;
 }
 
@@ -577,7 +581,7 @@ void JpegDecoder::CreateHwDecompressor()
     hwJpegDecompress_ = pluginServer_.CreateObject<AbsImageDecompressComponent>(
         AbsImageDecompressComponent::SERVICE_DEFAULT, capabilities);
     if (hwJpegDecompress_ == nullptr) {
-        HiLog::Error(LABEL, "get hardware jpeg decompress component failed.");
+        IMAGE_LOGE("get hardware jpeg decompress component failed.");
         return;
     }
 }
@@ -662,7 +666,7 @@ bool JpegDecoder::FindMarker(InputDataStream &stream, uint8_t marker)
 uint32_t JpegDecoder::DecodeHeader()
 {
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "get image size failed.");
+        IMAGE_LOGE("get image size failed.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (state_ == JpegDecodingState::SOURCE_INITED) {
@@ -693,10 +697,10 @@ uint32_t JpegDecoder::DecodeHeader()
     int32_t ret = jpeg_read_header(&decodeInfo_, true);
     streamPosition_ = srcMgr_.inputStream->Tell();
     if (ret == JPEG_SUSPENDED) {
-        HiLog::Debug(LABEL, "image input data incomplete, decode header error:%{public}u.", ret);
+        IMAGE_LOGD("image input data incomplete, decode header error:%{public}u.", ret);
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     } else if (ret != JPEG_HEADER_OK) {
-        HiLog::Error(LABEL, "image type is not jpeg, decode header error:%{public}u.", ret);
+        IMAGE_LOGE("image type is not jpeg, decode header error:%{public}u.", ret);
         return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
     return Media::SUCCESS;
@@ -705,30 +709,30 @@ uint32_t JpegDecoder::DecodeHeader()
 uint32_t JpegDecoder::StartDecompress(const PixelDecodeOptions &opts)
 {
     if (setjmp(jerr_.setjmp_buffer)) {
-        HiLog::Error(LABEL, "set output image info failed.");
+        IMAGE_LOGE("set output image info failed.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     // set decode options
     if (decodeInfo_.jpeg_color_space == JCS_CMYK || decodeInfo_.jpeg_color_space == JCS_YCCK) {
         // can't support CMYK to alpha8 convert
         if (opts.desiredPixelFormat == PlPixelFormat::ALPHA_8) {
-            HiLog::Error(LABEL, "can't support colorspace CMYK to alpha convert.");
+            IMAGE_LOGE("can't support colorspace CMYK to alpha convert.");
             return ERR_IMAGE_UNKNOWN_FORMAT;
         }
-        HiLog::Debug(LABEL, "jpeg colorspace is CMYK.");
+        IMAGE_LOGD("jpeg colorspace is CMYK.");
         decodeInfo_.out_color_space = JCS_CMYK;
         outputFormat_ = PlPixelFormat::CMYK;
     } else {
         decodeInfo_.out_color_space = GetDecodeFormat(opts.desiredPixelFormat, outputFormat_);
         if (decodeInfo_.out_color_space == JCS_UNKNOWN) {
-            HiLog::Error(LABEL, "set jpeg output color space invalid.");
+            IMAGE_LOGE("set jpeg output color space invalid.");
             return ERR_IMAGE_UNKNOWN_FORMAT;
         }
     }
     srcMgr_.inputStream->Seek(streamPosition_);
     if (jpeg_start_decompress(&decodeInfo_) != TRUE) {
         streamPosition_ = srcMgr_.inputStream->Tell();
-        HiLog::Error(LABEL, "jpeg start decompress failed, invalid input.");
+        IMAGE_LOGE("jpeg start decompress failed, invalid input.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     streamPosition_ = srcMgr_.inputStream->Tell();
@@ -737,24 +741,24 @@ uint32_t JpegDecoder::StartDecompress(const PixelDecodeOptions &opts)
 
 bool JpegDecoder::ParseExifData()
 {
-    HiLog::Debug(LABEL, "ParseExifData enter");
+    IMAGE_LOGD("ParseExifData enter");
     uint32_t curPos = srcMgr_.inputStream->Tell();
     srcMgr_.inputStream->Seek(0);
     unsigned long fsize = static_cast<unsigned long>(srcMgr_.inputStream->GetStreamSize());
     if (fsize <= 0) {
-        HiLog::Error(LABEL, "Get stream size failed");
+        IMAGE_LOGE("Get stream size failed");
         return false;
     }
     unsigned char *buf = new unsigned char[fsize];
     uint32_t readSize = 0;
     srcMgr_.inputStream->Read(fsize, buf, fsize, readSize);
-    HiLog::Debug(LABEL, "parsing EXIF: fsize %{public}lu", fsize);
+    IMAGE_LOGD("parsing EXIF: fsize %{public}lu", fsize);
 
     int code = exifInfo_.ParseExifData(buf, fsize);
     delete[] buf;
     srcMgr_.inputStream->Seek(curPos);
     if (code) {
-        HiLog::Error(LABEL, "Error parsing EXIF: code %{public}d", code);
+        IMAGE_LOGE("Error parsing EXIF: code %{public}d", code);
         return false;
     }
     return true;
@@ -762,15 +766,15 @@ bool JpegDecoder::ParseExifData()
 
 uint32_t JpegDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
-    HiLog::Debug(LABEL, "[GetImagePropertyInt] enter jpeg plugin, key:%{public}s", key.c_str());
+    IMAGE_LOGD("[GetImagePropertyInt] enter jpeg plugin, key:%{public}s", key.c_str());
     if (IsSameTextStr(key, ACTUAL_IMAGE_ENCODED_FORMAT)) {
-        HiLog::Error(LABEL, "[GetImagePropertyInt] this key is used to check the original format of raw image!");
+        IMAGE_LOGE("[GetImagePropertyInt] this key is used to check the original format of raw image!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
 
     if (!exifInfo_.IsExifDataParsed()) {
         if (!ParseExifData()) {
-            HiLog::Error(LABEL, "[GetImagePropertyInt] Parse exif data failed!");
+            IMAGE_LOGE("[GetImagePropertyInt] Parse exif data failed!");
             return Media::ERROR;
         }
     }
@@ -778,12 +782,12 @@ uint32_t JpegDecoder::GetImagePropertyInt(uint32_t index, const std::string &key
         if (PROPERTY_INT.find(exifInfo_.orientation_) != PROPERTY_INT.end()) {
             value = PROPERTY_INT.at(exifInfo_.orientation_);
         } else {
-            HiLog::Error(LABEL, "[GetImagePropertyInt] The exifinfo:%{public}s is not found",
+            IMAGE_LOGE("[GetImagePropertyInt] The exifinfo:%{public}s is not found",
                 exifInfo_.orientation_.c_str());
             return Media::ERR_MEDIA_VALUE_INVALID;
         }
     } else {
-        HiLog::Error(LABEL, "[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
+        IMAGE_LOGE("[GetImagePropertyInt] The key:%{public}s is not supported int32_t", key.c_str());
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
     return Media::SUCCESS;
@@ -791,15 +795,14 @@ uint32_t JpegDecoder::GetImagePropertyInt(uint32_t index, const std::string &key
 
 uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
-    HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());
+    IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, key:%{public}s", key.c_str());
     if (IsSameTextStr(key, ACTUAL_IMAGE_ENCODED_FORMAT)) {
-        HiLog::Error(LABEL,
-            "[GetImagePropertyString] this key is used to check the original format of raw image!");
+        IMAGE_LOGE("[GetImagePropertyString] this key is used to check the original format of raw image!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
     if (!exifInfo_.IsExifDataParsed()) {
         if (!ParseExifData()) {
-            HiLog::Error(LABEL, "[GetImagePropertyString] Parse exif data failed!");
+            IMAGE_LOGE("[GetImagePropertyString] Parse exif data failed!");
             return Media::ERROR;
         }
     }
@@ -827,10 +830,10 @@ uint32_t JpegDecoder::GetImagePropertyString(uint32_t index, const std::string &
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (IsSameTextStr(value, EXIFInfo::DEFAULT_EXIF_VALUE)) {
-        HiLog::Error(LABEL, "[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
+        IMAGE_LOGE("[GetImagePropertyString] enter jpeg plugin, ifd and entry are not matched!");
         return Media::ERR_MEDIA_VALUE_INVALID;
     }
-    HiLog::Debug(LABEL, "[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
+    IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return Media::SUCCESS;
 }
 
@@ -1011,7 +1014,7 @@ ExifTag JpegDecoder::getExifTagFromKey(const std::string &key)
 uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, const std::string &path)
 {
-    HiLog::Debug(LABEL, "[ModifyImageProperty] with path:%{public}s, key:%{public}s, value:%{public}s",
+    IMAGE_LOGD("[ModifyImageProperty] with path:%{public}s, key:%{public}s, value:%{public}s",
         path.c_str(), key.c_str(), value.c_str());
     ExifTag tag = getExifTagFromKey(key);
     if (tag == EXIF_TAG_PRINT_IMAGE_MATCHING) {
@@ -1028,7 +1031,7 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
 uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, const int fd)
 {
-    HiLog::Debug(LABEL, "[ModifyImageProperty] with fd:%{public}d, key:%{public}s, value:%{public}s",
+    IMAGE_LOGD("[ModifyImageProperty] with fd:%{public}d, key:%{public}s, value:%{public}s",
         fd, key.c_str(), value.c_str());
     ExifTag tag = getExifTagFromKey(key);
     if (tag == EXIF_TAG_PRINT_IMAGE_MATCHING) {
@@ -1045,7 +1048,7 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
 uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, uint8_t *data, uint32_t size)
 {
-    HiLog::Debug(LABEL, "[ModifyImageProperty] with key:%{public}s, value:%{public}s",
+    IMAGE_LOGD("[ModifyImageProperty] with key:%{public}s, value:%{public}s",
         key.c_str(), value.c_str());
     ExifTag tag = getExifTagFromKey(key);
     if (tag == EXIF_TAG_PRINT_IMAGE_MATCHING) {
@@ -1061,9 +1064,9 @@ uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key
 
 uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
-    HiLog::Debug(LABEL, "[GetFilterArea] with privacyType:%{public}d ", privacyType);
+    IMAGE_LOGD("[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (srcMgr_.inputStream == nullptr) {
-        HiLog::Error(LABEL, "[GetFilterArea] srcMgr_.inputStream is nullptr.");
+        IMAGE_LOGE("[GetFilterArea] srcMgr_.inputStream is nullptr.");
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
     uint32_t curPos = srcMgr_.inputStream->Tell();
@@ -1072,7 +1075,7 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
     uint8_t *app1SizeBuf = new uint8_t[JPEG_APP1_SIZE];
     uint32_t readSize = 0;
     if (!srcMgr_.inputStream->Read(JPEG_APP1_SIZE, app1SizeBuf, JPEG_APP1_SIZE, readSize)) {
-        HiLog::Error(LABEL, "[GetFilterArea] get app1 size failed.");
+        IMAGE_LOGE("[GetFilterArea] get app1 size failed.");
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
     uint32_t app1Size =
@@ -1080,7 +1083,7 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
     delete[] app1SizeBuf;
     uint32_t fsize = static_cast<uint32_t>(srcMgr_.inputStream->GetStreamSize());
     if (app1Size > fsize) {
-        HiLog::Error(LABEL, "[GetFilterArea] file format is illegal.");
+        IMAGE_LOGE("[GetFilterArea] file format is illegal.");
         return Media::ERR_MEDIA_INVALID_OPERATION;
     }
 
@@ -1093,7 +1096,7 @@ uint32_t JpegDecoder::GetFilterArea(const int &privacyType, std::vector<std::pai
     delete[] buf;
     srcMgr_.inputStream->Seek(curPos);
     if (ret != Media::SUCCESS) {
-        HiLog::Error(LABEL, "[GetFilterArea]: failed to get area, errno %{public}d", ret);
+        IMAGE_LOGE("[GetFilterArea]: failed to get area, errno %{public}d", ret);
         return ret;
     }
     return Media::SUCCESS;

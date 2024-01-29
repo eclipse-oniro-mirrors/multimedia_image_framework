@@ -15,9 +15,8 @@
 
 #include "png_decoder.h"
 
-#include "hilog/log.h"
+#include "image_log.h"
 #include "image_utils.h"
-#include "log_tags.h"
 #include "media_errors.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
@@ -31,12 +30,16 @@
 #include "memory.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "PngDecoder"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 using namespace MultimediaPlugin;
 using namespace Media;
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "PngDecoder" };
 static constexpr uint32_t PNG_IMAGE_NUM = 1;
 static constexpr int SET_JUMP_VALUE = 1;
 static constexpr int BITDEPTH_VALUE_1 = 1;
@@ -52,7 +55,7 @@ static constexpr int PNG_HEAD_SIZE = 100;
 PngDecoder::PngDecoder()
 {
     if (!InitPnglib()) {
-        HiLog::Error(LABEL, "Png decoder init failed!");
+        IMAGE_LOGE("Png decoder init failed!");
     }
 }
 
@@ -76,15 +79,15 @@ uint32_t PngDecoder::GetImageSize(uint32_t index, PlSize &size)
 {
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     if (index >= PNG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
+        IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        HiLog::Error(LABEL, "create Png Struct or Png Info failed!");
+        IMAGE_LOGE("create Png Struct or Png Info failed!");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     if (state_ < PngDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "get image size failed for state %{public}d.", state_);
+        IMAGE_LOGE("get image size failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= PngDecodingState::BASE_INFO_PARSED) {
@@ -95,7 +98,7 @@ uint32_t PngDecoder::GetImageSize(uint32_t index, PlSize &size)
     // only state PngDecodingState::SOURCE_INITED and PngDecodingState::BASE_INFO_PARSING can go here.
     uint32_t ret = DecodeHeader();
     if (ret != SUCCESS) {
-        HiLog::Debug(LABEL, "decode header error on get image ret:%{public}u.", ret);
+        IMAGE_LOGD("decode header error on get image ret:%{public}u.", ret);
         return ret;
     }
     size.width = png_get_image_width(pngStructPtr_, pngInfoPtr_);
@@ -107,27 +110,27 @@ uint32_t PngDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 {
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     if (index >= PNG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
+        IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        HiLog::Error(LABEL, "Png init fail, can't set decode option.");
+        IMAGE_LOGE("Png init fail, can't set decode option.");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     if (state_ < PngDecodingState::SOURCE_INITED) {
-        HiLog::Error(LABEL, "set decode options failed for state %{public}d.", state_);
+        IMAGE_LOGE("set decode options failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= PngDecodingState::IMAGE_DECODING) {
         if (!FinishOldDecompress()) {
-            HiLog::Error(LABEL, "finish old decompress fail, can't set decode option.");
+            IMAGE_LOGE("finish old decompress fail, can't set decode option.");
             return ERR_IMAGE_INIT_ABNORMAL;
         }
     }
     if (state_ < PngDecodingState::BASE_INFO_PARSED) {
         uint32_t ret = DecodeHeader();
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "decode header error on set decode options:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on set decode options:%{public}u.", ret);
             return ret;
         }
     }
@@ -136,7 +139,7 @@ uint32_t PngDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     // only state PngDecodingState::BASE_INFO_PARSED can go here.
     uint32_t ret = ConfigInfo(opts);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "config decoding failed on set decode options:%{public}u.", ret);
+        IMAGE_LOGE("config decoding failed on set decode options:%{public}u.", ret);
         return ret;
     }
     info.size.width = pngImageInfo_.width;
@@ -160,30 +163,30 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     if (index >= PNG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
+        IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        HiLog::Error(LABEL, "Png init failed can't begin to decode.");
+        IMAGE_LOGE("Png init failed can't begin to decode.");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     if (state_ < PngDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "decode failed for state %{public}d.", state_);
+        IMAGE_LOGE("decode failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ > PngDecodingState::IMAGE_DECODING) {
         if (!FinishOldDecompress()) {
-            HiLog::Error(LABEL, "finish old decompress fail on decode.");
+            IMAGE_LOGE("finish old decompress fail on decode.");
             return ERR_IMAGE_INIT_ABNORMAL;
         }
         uint32_t ret = DecodeHeader();
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "decode header error on decode:%{public}u.", ret);
+            IMAGE_LOGE("decode header error on decode:%{public}u.", ret);
             return ret;
         }
         ret = ConfigInfo(opts_);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "config decoding info failed on decode:%{public}u.", ret);
+            IMAGE_LOGE("config decoding info failed on decode:%{public}u.", ret);
             return ret;
         }
         state_ = PngDecodingState::IMAGE_DECODING;
@@ -199,7 +202,7 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && opts_.allowPartialImage) {
         state_ = PngDecodingState::IMAGE_PARTIAL;
         context.ifPartialOutput = true;
-        HiLog::Error(LABEL, "this is partial image data to decode, ret:%{public}u.", ret);
+        IMAGE_LOGE("this is partial image data to decode, ret:%{public}u.", ret);
         return SUCCESS;
     }
     state_ = PngDecodingState::IMAGE_ERROR;
@@ -210,7 +213,7 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
 bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
 {
     if (byteCount == 0) {
-        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        IMAGE_LOGE("alloc output buffer size: 0 error.");
         return false;
     }
     uint32_t id = context.pixelmapUniqueId_;
@@ -232,7 +235,7 @@ bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
     context.pixelsBuffer.buffer = ptr;
     void *fdBuffer = new int32_t();
     if (fdBuffer == nullptr) {
-        HiLog::Error(LABEL, "new fdBuffer fail");
+        IMAGE_LOGE("new fdBuffer fail");
         ::munmap(ptr, byteCount);
         ::close(fd);
         context.pixelsBuffer.buffer = nullptr;
@@ -261,13 +264,13 @@ bool AllocBufferForDmaType(DecodeContext &context, uint64_t byteCount, PngImageI
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
-        HiLog::Error(LABEL, "SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
         return false;
     }
     void* nativeBuffer = sb.GetRefPtr();
     int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     if (err != OHOS::GSERROR_OK) {
-        HiLog::Error(LABEL, "NativeBufferReference failed");
+        IMAGE_LOGE("NativeBufferReference failed");
         return false;
     }
 
@@ -282,26 +285,25 @@ bool AllocBufferForDmaType(DecodeContext &context, uint64_t byteCount, PngImageI
 bool AllocOutBuffer(DecodeContext &context, uint64_t byteCount)
 {
     if (byteCount == 0) {
-        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        IMAGE_LOGE("alloc output buffer size: 0 error.");
         return false;
     }
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
-        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                     static_cast<unsigned long long>(byteCount));
+        IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
         return false;
     }
 #ifdef _WIN32
     errno_t backRet = memset_s(outputBuffer, 0, byteCount);
     if (backRet != EOK) {
-        HiLog::Error(LABEL, "init output buffer fail.", backRet);
+        IMAGE_LOGE("init output buffer fail.", backRet);
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
     }
 #else
     if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-        HiLog::Error(LABEL, "init output buffer fail.");
+        IMAGE_LOGE("init output buffer fail.");
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
@@ -319,26 +321,25 @@ bool AllocOutBuffer(DecodeContext &context, uint64_t byteCount)
 bool AllocBufferForPlatform(DecodeContext &context, uint64_t byteCount)
 {
     if (byteCount == 0) {
-        HiLog::Error(LABEL, "alloc output buffer size: 0 error.");
+        IMAGE_LOGE("alloc output buffer size: 0 error.");
         return false;
     }
     void *outputBuffer = malloc(byteCount);
     if (outputBuffer == nullptr) {
-        HiLog::Error(LABEL, "alloc output buffer size:[%{public}llu] error.",
-                     static_cast<unsigned long long>(byteCount));
+        IMAGE_LOGE("alloc output buffer size:[%{public}llu] error.", static_cast<unsigned long long>(byteCount));
         return false;
     }
 #ifdef _WIN32
     errno_t backRet = memset_s(outputBuffer, 0, byteCount);
     if (backRet != EOK) {
-        HiLog::Error(LABEL, "init output buffer fail.", backRet);
+        IMAGE_LOGE("init output buffer fail.", backRet);
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
     }
 #else
     if (memset_s(outputBuffer, byteCount, 0, byteCount) != EOK) {
-        HiLog::Error(LABEL, "init output buffer fail.");
+        IMAGE_LOGE("init output buffer fail.");
         free(outputBuffer);
         outputBuffer = nullptr;
         return false;
@@ -359,23 +360,23 @@ uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             if (!AllocBufferForShareType(context, byteCount)) {
-                HiLog::Error(LABEL, "alloc output buffer for SHARE_MEM_ALLOC error.");
+                IMAGE_LOGE("alloc output buffer for SHARE_MEM_ALLOC error.");
                 return nullptr;
             }
         } else if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
             if (!AllocBufferForDmaType(context, byteCount, pngImageInfo_)) {
-                HiLog::Error(LABEL, "alloc output buffer for DMA_ALLOC error.");
+                IMAGE_LOGE("alloc output buffer for DMA_ALLOC error.");
                 return nullptr;
             }
         } else {
             if (!AllocOutBuffer(context, byteCount)) {
-                HiLog::Error(LABEL, "alloc output buffer for DMA_ALLOC error.");
+                IMAGE_LOGE("alloc output buffer for DMA_ALLOC error.");
                 return nullptr;
             }
         }
 #else
         if (!AllocBufferForPlatform(context, byteCount)) {
-            HiLog::Error(LABEL, "alloc output buffer for SHARE_MEM_ALLOC error.");
+            IMAGE_LOGE("alloc output buffer for SHARE_MEM_ALLOC error.");
             return nullptr;
         }
 #endif
@@ -388,21 +389,21 @@ uint32_t PngDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     context.totalProcessProgress = 0;
     if (index >= PNG_IMAGE_NUM) {
-        HiLog::Error(LABEL, "decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
+        IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        HiLog::Error(LABEL, "Png init failed can't begin to decode.");
+        IMAGE_LOGE("Png init failed can't begin to decode.");
         return ERR_IMAGE_INIT_ABNORMAL;
     }
     if (state_ != PngDecodingState::IMAGE_DECODING) {
-        HiLog::Error(LABEL, "incremental decode failed for state %{public}d.", state_);
+        IMAGE_LOGE("incremental decode failed for state %{public}d.", state_);
         return ERR_MEDIA_INVALID_OPERATION;
     }
 
     pixelsData_ = AllocOutputBuffer(context.decodeContext);
     if (pixelsData_ == nullptr) {
-        HiLog::Error(LABEL, "get pixels memory fail.");
+        IMAGE_LOGE("get pixels memory fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     inputStreamPtr_->Seek(streamPosition_);
@@ -410,12 +411,12 @@ uint32_t PngDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     streamPosition_ = inputStreamPtr_->Tell();
     if (ret != SUCCESS) {
         if (ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
-            HiLog::Error(LABEL, "Incremental decode fail, ret:%{public}u", ret);
+            IMAGE_LOGE("Incremental decode fail, ret:%{public}u", ret);
         }
     } else {
         if (outputRowsNum_ != pngImageInfo_.height) {
-            HiLog::Debug(LABEL, "Incremental decode incomplete, outputRowsNum:%{public}u, height:%{public}u",
-                         outputRowsNum_, pngImageInfo_.height);
+            IMAGE_LOGD("Incremental decode incomplete, outputRowsNum:%{public}u, height:%{public}u",
+                outputRowsNum_, pngImageInfo_.height);
         }
         state_ = PngDecodingState::IMAGE_DECODED;
     }
@@ -424,7 +425,7 @@ uint32_t PngDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     // so here pngImageInfo_.height will not be equal to 0 in the PngDecodingState::IMAGE_DECODING state.
     context.totalProcessProgress =
         outputRowsNum_ == 0 ? 0 : outputRowsNum_ * ProgDecodeContext::FULL_PROGRESS / pngImageInfo_.height;
-    HiLog::Debug(LABEL, "Incremental decode progress %{public}u.", context.totalProcessProgress);
+    IMAGE_LOGD("Incremental decode progress %{public}u.", context.totalProcessProgress);
     return ret;
 }
 
@@ -448,7 +449,7 @@ bool PngDecoder::ConvertOriginalFormat(png_byte source, png_byte &destination)
     if (png_get_valid(pngStructPtr_, pngInfoPtr_, PNG_INFO_tRNS)) {
         png_set_tRNS_to_alpha(pngStructPtr_);
     }
-    HiLog::Info(LABEL, "color type:[%{public}d]", source);
+    IMAGE_LOGI("color type:[%{public}d]", source);
     switch (source) {
         case PNG_COLOR_TYPE_PALETTE: {  // value is 3
             png_set_palette_to_rgb(pngStructPtr_);
@@ -474,7 +475,7 @@ bool PngDecoder::ConvertOriginalFormat(png_byte source, png_byte &destination)
             break;
         }
         default: {
-            HiLog::Error(LABEL, "the color type:[%{public}d] libpng unsupported!", source);
+            IMAGE_LOGE("the color type:[%{public}d] libpng unsupported!", source);
             return false;
         }
     }
@@ -546,12 +547,12 @@ void PngDecoder::ChooseFormat(PlPixelFormat format, PlPixelFormat &outputFormat,
 void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
 {
     if ((pngPtr == nullptr) || (message == nullptr)) {
-        HiLog::Error(LABEL, "ErrorExit png_structp or error message is null.");
+        IMAGE_LOGE("ErrorExit png_structp or error message is null.");
         return;
     }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngPtr));
     if (jmpBuf == nullptr) {
-        HiLog::Error(LABEL, "jmpBuf exception.");
+        IMAGE_LOGE("jmpBuf exception.");
         return;
     }
     longjmp(*jmpBuf, SET_JUMP_VALUE);
@@ -560,28 +561,28 @@ void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
 void PngDecoder::PngWarning(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Debug(LABEL, "WarningExit message is null.");
+        IMAGE_LOGD("WarningExit message is null.");
         return;
     }
-    HiLog::Warn(LABEL, "png warn %{public}s", message);
+    IMAGE_LOGD("png warn %{public}s", message);
 }
 
 void PngDecoder::PngErrorMessage(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Debug(LABEL, "PngErrorMessage message is null.");
+        IMAGE_LOGD("PngErrorMessage message is null.");
         return;
     }
-    HiLog::Error(LABEL, "PngErrorMessage, message:%{public}s.", message);
+    IMAGE_LOGE("PngErrorMessage, message:%{public}s.", message);
 }
 
 void PngDecoder::PngWarningMessage(png_structp pngPtr, png_const_charp message)
 {
     if (message == nullptr) {
-        HiLog::Debug(LABEL, "PngWarningMessage message is null.");
+        IMAGE_LOGD("PngWarningMessage message is null.");
         return;
     }
-    HiLog::Warn(LABEL, "PngWarningMessage, message:%{public}s.", message);
+    IMAGE_LOGD("PngWarningMessage, message:%{public}s.", message);
 }
 
 // image incremental decode Interface
@@ -590,17 +591,15 @@ uint32_t PngDecoder::ProcessData(png_structp pngStructPtr, png_infop infoStructP
 {
     if ((pngStructPtr == nullptr) || (infoStructPtr == nullptr) || (sourceStream == nullptr) || (totalSize == 0) ||
         (bufferSize == 0)) {
-        HiLog::Error(LABEL, "ProcessData input error, totalSize:%{public}zu, bufferSize:%{public}zu.", totalSize,
-                     bufferSize);
+        IMAGE_LOGE("ProcessData input error, totalSize:%{public}zu, bufferSize:%{public}zu.", totalSize, bufferSize);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     while (totalSize > 0) {
         size_t readSize = (bufferSize < totalSize) ? bufferSize : totalSize;
         uint32_t ret = IncrementalRead(sourceStream, readSize, streamData);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "ProcessData Read from source stream fail, readSize:%{public}zu, \
-                        bufferSize:%{public}zu, dataSize:%{public}u, totalSize:%{public}zu.",
-                         readSize, bufferSize, streamData.dataSize, totalSize);
+            IMAGE_LOGE("ProcessData Read from source stream fail, readSize:%{public}zu, bufferSize:%{public}zu,"
+                "dataSize:%{public}u, totalSize:%{public}zu.", readSize, bufferSize, streamData.dataSize, totalSize);
             return ret;
         }
         png_process_data(pngStructPtr, infoStructPtr, const_cast<png_bytep>(streamData.inputStreamBuffer),
@@ -613,7 +612,7 @@ uint32_t PngDecoder::ProcessData(png_structp pngStructPtr, png_infop infoStructP
 bool PngDecoder::IsChunk(const png_byte *chunk, const char *flag)
 {
     if (chunk == nullptr || flag == nullptr) {
-        HiLog::Error(LABEL, "IsChunk input parameter exception.");
+        IMAGE_LOGE("IsChunk input parameter exception.");
         return false;
     }
     return memcmp(chunk + CHUNK_DATA_LEN, flag, CHUNK_DATA_LEN) == 0;
@@ -626,18 +625,17 @@ bool PngDecoder::GetImageInfo(PngImageInfo &info)
     int32_t bitDepth = 0;
     png_get_IHDR(pngStructPtr_, pngInfoPtr_, &origWidth, &origHeight, &bitDepth, nullptr, nullptr, nullptr, nullptr);
     if ((origWidth == 0) || (origHeight == 0) || (origWidth > PNG_UINT_31_MAX) || (origHeight > PNG_UINT_31_MAX)) {
-        HiLog::Error(LABEL, "Get the png image size abnormal, width:%{public}u, height:%{public}u", origWidth,
-                     origHeight);
+        IMAGE_LOGE("Get the png image size abnormal, width:%{public}u, height:%{public}u", origWidth, origHeight);
         return false;
     }
     if (bitDepth != BITDEPTH_VALUE_1 && bitDepth != BITDEPTH_VALUE_2 && bitDepth != BITDEPTH_VALUE_4 &&
         bitDepth != BITDEPTH_VALUE_8 && bitDepth != BITDEPTH_VALUE_16) {
-        HiLog::Error(LABEL, "Get the png image bit depth abnormal, bitDepth:%{public}d.", bitDepth);
+        IMAGE_LOGE("Get the png image bit depth abnormal, bitDepth:%{public}d.", bitDepth);
         return false;
     }
     size_t rowDataSize = png_get_rowbytes(pngStructPtr_, pngInfoPtr_);
     if (rowDataSize == 0) {
-        HiLog::Error(LABEL, "Get the bitmap row bytes size fail.");
+        IMAGE_LOGE("Get the bitmap row bytes size fail.");
         return false;
     }
     info.numberPasses = png_set_interlace_handling(pngStructPtr_);
@@ -645,7 +643,7 @@ bool PngDecoder::GetImageInfo(PngImageInfo &info)
     info.height = origHeight;
     info.bitDepth = bitDepth;
     info.rowDataSize = rowDataSize;
-    HiLog::Info(LABEL, "GetImageInfo:width:%{public}u,height:%{public}u,bitDepth:%{public}u,numberPasses:%{public}d.",
+    IMAGE_LOGI("GetImageInfo:width:%{public}u,height:%{public}u,bitDepth:%{public}u,numberPasses:%{public}d.",
         origWidth, origHeight, info.bitDepth, info.numberPasses);
     return true;
 }
@@ -658,17 +656,17 @@ uint32_t PngDecoder::IncrementalRead(InputDataStream *stream, uint32_t desiredSi
 
     uint32_t curPos = stream->Tell();
     if (!stream->Read(desiredSize, outData)) {
-        HiLog::Debug(LABEL, "read data fail.");
+        IMAGE_LOGD("read data fail.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize == 0) {
-        HiLog::Error(LABEL, "inputStreamBuffer is null or data size is %{public}u.", outData.dataSize);
+        IMAGE_LOGE("inputStreamBuffer is null or data size is %{public}u.", outData.dataSize);
         return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
     if (outData.dataSize < desiredSize) {
         stream->Seek(curPos);
-        HiLog::Debug(LABEL, "read outdata size[%{public}u] < data size[%{public}u] and curpos:%{public}u",
-                     outData.dataSize, desiredSize, curPos);
+        IMAGE_LOGD("read outdata size[%{public}u] < data size[%{public}u] and curpos:%{public}u", outData.dataSize,
+            desiredSize, curPos);
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     return SUCCESS;
@@ -687,13 +685,13 @@ uint32_t PngDecoder::GetImageIdatSize(InputDataStream *stream)
         png_byte *chunk = const_cast<png_byte *>(readData.inputStreamBuffer);
         const size_t length = png_get_uint_32(chunk);
         if (IsChunk(chunk, "IDAT")) {
-            HiLog::Debug(LABEL, "first idat Length is %{public}zu.", length);
+            IMAGE_LOGD("first idat Length is %{public}zu.", length);
             idatLength_ = length;
             return SUCCESS;
         }
         uint32_t afterReadPos = stream->Tell();
         if (!stream->Seek(length + afterReadPos + CHUNK_DATA_LEN)) {
-            HiLog::Debug(LABEL, "stream current pos is %{public}u, chunk size is %{public}zu.", preReadPos, length);
+            IMAGE_LOGD("stream current pos is %{public}u, chunk size is %{public}zu.", preReadPos, length);
             stream->Seek(preReadPos);
             return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
         }
@@ -710,19 +708,19 @@ uint32_t PngDecoder::GetImageIdatSize(InputDataStream *stream)
 uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &info)
 {
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "read incremental head input data is null!");
+        IMAGE_LOGE("read incremental head input data is null!");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     uint32_t pos = stream->Tell();
     if (!stream->Seek(PNG_HEAD_SIZE)) {
-        HiLog::Debug(LABEL, "don't enough the data to decode the image head.");
+        IMAGE_LOGD("don't enough the data to decode the image head.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     stream->Seek(pos);
     // set the exception handle
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
-        HiLog::Error(LABEL, "read incremental head PNG decode head exception.");
+        IMAGE_LOGE("read incremental head PNG decode head exception.");
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
 
@@ -741,7 +739,7 @@ uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &
     }
     uint32_t ret = GetImageIdatSize(stream);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "get image idat size fail, ret:%{public}u.", ret);
+        IMAGE_LOGE("get image idat size fail, ret:%{public}u.", ret);
         return ret;
     }
     if (!GetImageInfo(info)) {
@@ -753,9 +751,8 @@ uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &
 void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
 {
     if (rowNum != outputRowsNum_ || pngImageInfo_.height < rowNum) {
-        HiLog::Error(LABEL,
-                     "AllRowsCallback exception, rowNum:%{public}u, outputRowsNum:%{public}u, height:%{public}u.",
-                     rowNum, outputRowsNum_, pngImageInfo_.height);
+        IMAGE_LOGE("AllRowsCallback exception, rowNum:%{public}u, outputRowsNum:%{public}u, height:%{public}u.",
+            rowNum, outputRowsNum_, pngImageInfo_.height);
         return;
     }
     outputRowsNum_++;
@@ -763,8 +760,8 @@ void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
     uint32_t offsetSize = (pngImageInfo_.height - rowNum) * pngImageInfo_.rowDataSize;
     errno_t ret = memcpy_s(offset, offsetSize, row, pngImageInfo_.rowDataSize);
     if (ret != 0) {
-        HiLog::Error(LABEL, "copy data fail, ret:%{public}d, rowDataSize:%{public}u, offsetSize:%{public}u.", ret,
-                     pngImageInfo_.rowDataSize, offsetSize);
+        IMAGE_LOGE("copy data fail, ret:%{public}d, rowDataSize:%{public}u, offsetSize:%{public}u.", ret,
+            pngImageInfo_.rowDataSize, offsetSize);
         return;
     }
 }
@@ -772,11 +769,11 @@ void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
 void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
 {
     if (row == nullptr) {
-        HiLog::Error(LABEL, "input row is null.");
+        IMAGE_LOGE("input row is null.");
         return;
     }
     if (rowNum < firstRow_ || rowNum > lastRow_ || interlacedComplete_) {
-        HiLog::Error(LABEL, "ignore this row, rowNum:%{public}u,InterlacedComplete:%{public}u.", rowNum,
+        IMAGE_LOGE("ignore this row, rowNum:%{public}u,InterlacedComplete:%{public}u.", rowNum,
             interlacedComplete_);
         return;
     }
@@ -784,7 +781,7 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     uint64_t mollocByteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
     uint64_t needByteCount = static_cast<uint64_t>(pngStructPtr_->width) * sizeof(*oldRow);
     if (mollocByteCount < needByteCount) {
-        HiLog::Error(LABEL, "malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
+        IMAGE_LOGE("malloc byte size is(%{public}llu), but actual needs (%{public}llu)",
             static_cast<unsigned long long>(mollocByteCount), static_cast<unsigned long long>(needByteCount));
         return;
     }
@@ -792,20 +789,20 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
     if (pass == 0) {
         // The first pass initializes all rows.
         if (outputRowsNum_ == rowNum - firstRow_) {
-            HiLog::Info(LABEL, "rowNum(%{public}u) - firstRow(%{public}u) = outputRow(%{public}u)", rowNum, firstRow_,
+            IMAGE_LOGI("rowNum(%{public}u) - firstRow(%{public}u) = outputRow(%{public}u)", rowNum, firstRow_,
                 outputRowsNum_);
             return;
         }
         outputRowsNum_++;
     } else {
         if (outputRowsNum_ == lastRow_ - firstRow_ + 1) {
-            HiLog::Info(LABEL, "lastRow_(%{public}u) + firstRow(%{public}u) + 1 = outputRow(%{public}u)", lastRow_,
+            IMAGE_LOGI("lastRow_(%{public}u) + firstRow(%{public}u) + 1 = outputRow(%{public}u)", lastRow_,
                 firstRow_, outputRowsNum_);
             return;
         }
         if (pngImageInfo_.numberPasses - 1 == pass && rowNum == lastRow_) {
             // Last pass, and we have read all of the rows we care about.
-            HiLog::Info(LABEL, "last pass:%{public}d, numberPasses:%{public}d, rowNum:%{public}d, lastRow:%{public}d.",
+            IMAGE_LOGI("last pass:%{public}d, numberPasses:%{public}d, rowNum:%{public}d, lastRow:%{public}d.",
                 pass, pngImageInfo_.numberPasses, rowNum, lastRow_);
             interlacedComplete_ = true;
         }
@@ -815,12 +812,12 @@ void PngDecoder::SaveInterlacedRows(png_bytep row, png_uint_32 rowNum, int pass)
 void PngDecoder::GetAllRows(png_structp pngPtr, png_bytep row, png_uint_32 rowNum, int pass)
 {
     if (pngPtr == nullptr || row == nullptr) {
-        HiLog::Error(LABEL, "get decode rows exception, rowNum:%{public}u.", rowNum);
+        IMAGE_LOGE("get decode rows exception, rowNum:%{public}u.", rowNum);
         return;
     }
     PngDecoder *decoder = static_cast<PngDecoder *>(png_get_progressive_ptr(pngPtr));
     if (decoder == nullptr) {
-        HiLog::Error(LABEL, "get all rows fail, get decoder is null.");
+        IMAGE_LOGE("get all rows fail, get decoder is null.");
         return;
     }
     decoder->SaveRows(row, rowNum);
@@ -829,12 +826,12 @@ void PngDecoder::GetAllRows(png_structp pngPtr, png_bytep row, png_uint_32 rowNu
 void PngDecoder::GetInterlacedRows(png_structp pngPtr, png_bytep row, png_uint_32 rowNum, int pass)
 {
     if (pngPtr == nullptr || row == nullptr) {
-        HiLog::Debug(LABEL, "get decode rows exception, rowNum:%{public}u.", rowNum);
+        IMAGE_LOGD("get decode rows exception, rowNum:%{public}u.", rowNum);
         return;
     }
     PngDecoder *decoder = static_cast<PngDecoder *>(png_get_progressive_ptr(pngPtr));
     if (decoder == nullptr) {
-        HiLog::Error(LABEL, "get all rows fail, get decoder is null.");
+        IMAGE_LOGE("get all rows fail, get decoder is null.");
         return;
     }
     decoder->SaveInterlacedRows(row, rowNum, pass);
@@ -844,7 +841,7 @@ int32_t PngDecoder::ReadUserChunk(png_structp png_ptr, png_unknown_chunkp chunk)
 {
     NinePatchListener *chunkReader = static_cast<NinePatchListener *>(png_get_user_chunk_ptr(png_ptr));
     if (chunkReader == nullptr) {
-        HiLog::Error(LABEL, "chunk header is null.");
+        IMAGE_LOGE("chunk header is null.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     return chunkReader->ReadChunk(reinterpret_cast<const char *>(chunk->name), chunk->data, chunk->size)
@@ -855,14 +852,12 @@ int32_t PngDecoder::ReadUserChunk(png_structp png_ptr, png_unknown_chunkp chunk)
 uint32_t PngDecoder::PushAllToDecode(InputDataStream *stream, size_t bufferSize, size_t length)
 {
     if (stream == nullptr || bufferSize == 0 || length == 0) {
-        HiLog::Error(LABEL, "iend process input exception, bufferSize:%{public}zu, length:%{public}zu.", bufferSize,
-                     length);
+        IMAGE_LOGE("iend process input exception, bufferSize:%{public}zu, length:%{public}zu.", bufferSize, length);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     DataStreamBuffer ReadData;
     if (ProcessData(pngStructPtr_, pngInfoPtr_, stream, ReadData, bufferSize, length) != SUCCESS) {
-        HiLog::Error(LABEL, "ProcessData return false, bufferSize:%{public}zu, length:%{public}zu.", bufferSize,
-                     length);
+        IMAGE_LOGE("ProcessData return false, bufferSize:%{public}zu, length:%{public}zu.", bufferSize, length);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     bool iend = false;
@@ -871,7 +866,7 @@ uint32_t PngDecoder::PushAllToDecode(InputDataStream *stream, size_t bufferSize,
         // Parse chunk length and type.
         ret = IncrementalRead(stream, CHUNK_SIZE, ReadData);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "set iend mode Read chunk fail,ret:%{public}u", ret);
+            IMAGE_LOGE("set iend mode Read chunk fail,ret:%{public}u", ret);
             break;
         }
         png_byte *chunk = const_cast<png_byte *>(ReadData.inputStreamBuffer);
@@ -892,17 +887,17 @@ uint32_t PngDecoder::PushAllToDecode(InputDataStream *stream, size_t bufferSize,
 uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
 {
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "input data is null!");
+        IMAGE_LOGE("input data is null!");
         return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
     if (idatLength_ < incrementalLength_) {
-        HiLog::Error(LABEL, "incremental len:%{public}zu > idat len:%{public}zu.", incrementalLength_, idatLength_);
+        IMAGE_LOGE("incremental len:%{public}zu > idat len:%{public}zu.", incrementalLength_, idatLength_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     // set the exception handle
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
-        HiLog::Error(LABEL, "[IncrementalReadRows]PNG decode exception.");
+        IMAGE_LOGE("[IncrementalReadRows]PNG decode exception.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     // set process decode state to IDAT mode.
@@ -922,17 +917,16 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
     if (stream->IsStreamCompleted()) {
         uint32_t ret = PushAllToDecode(stream, DECODE_BUFFER_SIZE, idatLength_ - incrementalLength_);
         if (ret != SUCCESS) {
-            HiLog::Error(LABEL, "iend set fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.", ret,
-                         idatLength_, incrementalLength_);
+            IMAGE_LOGE("iend set fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.", ret,
+                idatLength_, incrementalLength_);
             return ret;
         }
         return SUCCESS;
     }
     uint32_t ret = PushCurrentToDecode(stream);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL,
-                     "push stream to decode fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
-                     ret, idatLength_, incrementalLength_);
+        IMAGE_LOGE("push stream to decode fail, ret:%{public}u, idatLen:%{public}zu, incrementalLen:%{public}zu.",
+            ret, idatLength_, incrementalLength_);
         return ret;
     }
     return SUCCESS;
@@ -941,11 +935,11 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
 uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
 {
     if (stream == nullptr) {
-        HiLog::Error(LABEL, "push current stream to decode input data is null!");
+        IMAGE_LOGE("push current stream to decode input data is null!");
         return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
     if (idatLength_ == 0) {
-        HiLog::Error(LABEL, "idat Length is zero.");
+        IMAGE_LOGE("idat Length is zero.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
 
@@ -955,7 +949,7 @@ uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
         const size_t targetSize = std::min(DECODE_BUFFER_SIZE, idatLength_ - incrementalLength_);
         ret = IncrementalRead(stream, targetSize, ReadData);
         if (ret != SUCCESS) {
-            HiLog::Debug(LABEL, "push current stream read fail, ret:%{public}u", ret);
+            IMAGE_LOGD("push current stream read fail, ret:%{public}u", ret);
             return ret;
         }
         incrementalLength_ += ReadData.dataSize;
@@ -965,7 +959,7 @@ uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
     while (true) {
         ret = IncrementalRead(stream, CHUNK_SIZE, ReadData);
         if (ret != SUCCESS) {
-            HiLog::Debug(LABEL, "set iend mode Read chunk fail,ret:%{public}u", ret);
+            IMAGE_LOGD("set iend mode Read chunk fail,ret:%{public}u", ret);
             break;
         }
         png_byte *chunk = const_cast<png_byte *>(ReadData.inputStreamBuffer);
@@ -976,7 +970,7 @@ uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
             const size_t targetSize = std::min(DECODE_BUFFER_SIZE, idatLength_ - incrementalLength_);
             ret = IncrementalRead(stream, targetSize, ReadData);
             if (ret != SUCCESS) {
-                HiLog::Debug(LABEL, "push current stream read fail, ret:%{public}u", ret);
+                IMAGE_LOGD("push current stream read fail, ret:%{public}u", ret);
                 return ret;
             }
             incrementalLength_ += ReadData.dataSize;
@@ -1006,13 +1000,13 @@ uint32_t PngDecoder::DecodeHeader()
             state_ = PngDecodingState::BASE_INFO_PARSING;
         } else {
             state_ = PngDecodingState::SOURCE_INITED;
-            HiLog::Error(LABEL, "decode image head, ret:%{public}u.", ret);
+            IMAGE_LOGE("decode image head, ret:%{public}u.", ret);
         }
         return ret;
     }
     if (pngImageInfo_.width == 0 || pngImageInfo_.height == 0) {
-        HiLog::Error(LABEL, "get width and height fail, height:%{public}u, width:%{public}u.", pngImageInfo_.height,
-                     pngImageInfo_.width);
+        IMAGE_LOGE("get width and height fail, height:%{public}u, width:%{public}u.", pngImageInfo_.height,
+            pngImageInfo_.width);
         state_ = PngDecodingState::SOURCE_INITED;
         return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
@@ -1036,14 +1030,14 @@ uint32_t PngDecoder::ConfigInfo(const PixelDecodeOptions &opts)
         ret = GetDecodeFormat(opts.desiredPixelFormat, outputFormat_, alphaType_);
     }
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "get the color type fail.");
+        IMAGE_LOGE("get the color type fail.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
     // get the libpng interface exception.
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
-        HiLog::Error(LABEL, "config decoding info fail.");
+        IMAGE_LOGE("config decoding info fail.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     png_read_update_info(pngStructPtr_, pngInfoPtr_);
@@ -1053,23 +1047,23 @@ uint32_t PngDecoder::ConfigInfo(const PixelDecodeOptions &opts)
 uint32_t PngDecoder::DoOneTimeDecode(DecodeContext &context)
 {
     if (idatLength_ <= 0) {
-        HiLog::Error(LABEL, "normal decode the image source incomplete.");
+        IMAGE_LOGE("normal decode the image source incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
-        HiLog::Error(LABEL, "decode the image fail.");
+        IMAGE_LOGE("decode the image fail.");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     pixelsData_ = AllocOutputBuffer(context);
     if (pixelsData_ == nullptr) {
-        HiLog::Error(LABEL, "get pixels memory fail.");
+        IMAGE_LOGE("get pixels memory fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
     inputStreamPtr_->Seek(streamPosition_);
     uint32_t ret = IncrementalReadRows(inputStreamPtr_);
     if (ret != SUCCESS) {
-        HiLog::Error(LABEL, "normal decode the image fail, ret:%{public}u", ret);
+        IMAGE_LOGE("normal decode the image fail, ret:%{public}u", ret);
         return ret;
     }
     streamPosition_ = inputStreamPtr_->Tell();
@@ -1089,7 +1083,7 @@ bool PngDecoder::FinishOldDecompress()
     if (pngStructPtr_ != nullptr) {
         png_infopp pngInfoPtr = pngInfoPtr_ ? &pngInfoPtr_ : nullptr;
         png_destroy_read_struct(&pngStructPtr_, pngInfoPtr, nullptr);
-        HiLog::Debug(LABEL, "FinishOldDecompress png_destroy_read_struct");
+        IMAGE_LOGD("FinishOldDecompress png_destroy_read_struct");
     }
     state_ = PngDecodingState::SOURCE_INITED;
     if (InitPnglib()) {
@@ -1106,7 +1100,7 @@ bool PngDecoder::InitPnglib()
     // set the libpng exception message callback function
     png_set_error_fn(pngStructPtr_, nullptr, PngErrorMessage, PngWarningMessage);
     if (pngStructPtr_ == nullptr || pngInfoPtr_ == nullptr) {
-        HiLog::Error(LABEL, "Png lib init fail.");
+        IMAGE_LOGE("Png lib init fail.");
         return false;
     }
     return true;

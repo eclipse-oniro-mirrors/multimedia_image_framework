@@ -14,15 +14,17 @@
  */
 
 #include <cinttypes>
+#include "image_log.h"
 #include "media_errors.h"
-#include "hilog/log.h"
-#include "log_tags.h"
 #include "native_image.h"
 
-using OHOS::HiviewDFX::HiLog;
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "NativeImage"
 
 namespace {
-    constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "NativeImage"};
     constexpr int32_t NUMI_0 = 0;
     constexpr uint32_t NUM_0 = 0;
     constexpr uint32_t NUM_1 = 1;
@@ -95,14 +97,14 @@ int32_t NativeImage::SplitYUV422SPComponent()
 {
     auto rawBuffer = GetSurfaceBufferAddr();
     if (rawBuffer == nullptr) {
-        HiLog::Error(LABEL, "SurfaceBuffer viraddr is nullptr");
+        IMAGE_LOGE("SurfaceBuffer viraddr is nullptr");
         return ERR_MEDIA_NULL_POINTER;
     }
 
     uint64_t surfaceSize = NUM_0;
     auto res = GetDataSize(surfaceSize);
     if (res != SUCCESS || surfaceSize == NUM_0) {
-        HiLog::Error(LABEL, "S size is 0");
+        IMAGE_LOGE("S size is 0");
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
 
@@ -110,7 +112,7 @@ int32_t NativeImage::SplitYUV422SPComponent()
     int32_t height = NUM_0;
     res = GetSize(width, height);
     if (res != SUCCESS || width <= NUMI_0 || height <= NUMI_0) {
-        HiLog::Error(LABEL, "Invaild width %{public}" PRId32 " height %{public}" PRId32, width, height);
+        IMAGE_LOGE("Invaild width %{public}" PRId32 " height %{public}" PRId32, width, height);
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
 
@@ -119,7 +121,7 @@ int32_t NativeImage::SplitYUV422SPComponent()
     yuv.ySize = static_cast<uint64_t>(width * height);
     yuv.uvSize = static_cast<uint64_t>(height * uvStride);
     if (surfaceSize < (yuv.ySize + yuv.uvSize * NUM_2)) {
-        HiLog::Error(LABEL, "S size %{public}" PRIu64 " < y plane %{public}" PRIu64
+        IMAGE_LOGE("S size %{public}" PRIu64 " < y plane %{public}" PRIu64
             " + uv plane %{public}" PRIu64, surfaceSize, yuv.ySize, yuv.uvSize * NUM_2);
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
@@ -128,7 +130,7 @@ int32_t NativeImage::SplitYUV422SPComponent()
     NativeComponent* u = CreateComponent(int32_t(ComponentType::YUV_U), yuv.uvSize, uvStride, NUM_2, nullptr);
     NativeComponent* v = CreateComponent(int32_t(ComponentType::YUV_V), yuv.uvSize, uvStride, NUM_2, nullptr);
     if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
-        HiLog::Error(LABEL, "Create Component failed");
+        IMAGE_LOGE("Create Component failed");
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
     yuv.y = y->raw;
@@ -166,7 +168,7 @@ int32_t NativeImage::CombineYUVComponents()
         return res;
     }
     if (!IsYUV422SPFormat(format)) {
-        HiLog::Info(LABEL, "No need to combine components for NO YUV format now");
+        IMAGE_LOGI("No need to combine components for NO YUV format now");
         return SUCCESS;
     }
 
@@ -174,7 +176,7 @@ int32_t NativeImage::CombineYUVComponents()
     auto u = GetComponent(int32_t(ComponentType::YUV_U));
     auto v = GetComponent(int32_t(ComponentType::YUV_V));
     if ((y == nullptr) || (u == nullptr) || (v == nullptr)) {
-        HiLog::Error(LABEL, "No component need to combine");
+        IMAGE_LOGE("No component need to combine");
         return ERR_MEDIA_DATA_UNSUPPORT;
     }
     YUVData data;
@@ -194,7 +196,7 @@ int32_t NativeImage::CombineYUVComponents()
 static std::unique_ptr<NativeComponent> BuildComponent(size_t size, int32_t row, int32_t pixel, uint8_t* vir)
 {
     if (size == NUM_0 && vir == nullptr) {
-        HiLog::Error(LABEL, "Could't create 0 size component data");
+        IMAGE_LOGE("Could't create 0 size component data");
         return nullptr;
     }
     std::unique_ptr<NativeComponent> component = std::make_unique<NativeComponent>();
@@ -223,7 +225,7 @@ NativeComponent* NativeImage::CreateComponent(int32_t type, size_t size, int32_t
 {
     NativeComponent* res = GetCachedComponent(type);
     if (res != nullptr) {
-        HiLog::Info(LABEL, "Component %{public}d already exist. No need create", type);
+        IMAGE_LOGI("Component %{public}d already exist. No need create", type);
         return res;
     }
 
@@ -262,22 +264,21 @@ int32_t NativeImage::GetDataSize(uint64_t &size)
     size = static_cast<uint64_t>(buffer_->GetSize());
     auto extraData = buffer_->GetExtraData();
     if (extraData == nullptr) {
-        HiLog::Info(LABEL, "Nullptr s extra data. return buffer size %{public}" PRIu64, size);
+        IMAGE_LOGI("Nullptr s extra data. return buffer size %{public}" PRIu64, size);
         return SUCCESS;
     }
 
     int32_t extraDataSize = NUMI_0;
     auto res = extraData->ExtraGet(DATA_SIZE_TAG, extraDataSize);
     if (res != NUM_0) {
-        HiLog::Info(LABEL, "S ExtraGet dataSize error %{public}d", res);
+        IMAGE_LOGI("S ExtraGet dataSize error %{public}d", res);
     } else if (extraDataSize <= NUMI_0) {
-        HiLog::Info(LABEL, "S ExtraGet dataSize Ok, but size <= 0");
+        IMAGE_LOGI("S ExtraGet dataSize Ok, but size <= 0");
     } else if (static_cast<uint64_t>(extraDataSize) > size) {
-        HiLog::Info(LABEL,
-            "S ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
+        IMAGE_LOGI("S ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
             extraDataSize, size);
     } else {
-        HiLog::Info(LABEL, "S ExtraGet dataSize %{public}d", extraDataSize);
+        IMAGE_LOGI("S ExtraGet dataSize %{public}d", extraDataSize);
         size = extraDataSize;
     }
     return SUCCESS;
@@ -327,7 +328,7 @@ void NativeImage::release()
     if (buffer_ == nullptr) {
         return;
     }
-    HiLog::Info(LABEL, "NativeImage release");
+    IMAGE_LOGI("NativeImage release");
     if (components_.size() > 0) {
         components_.clear();
     }

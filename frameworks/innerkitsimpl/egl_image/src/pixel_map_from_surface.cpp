@@ -15,14 +15,17 @@
 
 #include "pixel_map_from_surface.h"
 
+#include "image_log.h"
 #include "sync_fence.h"
-#include "hilog/log.h"
-#include "log_tags.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PixelMap"
 
 namespace OHOS {
 namespace Media {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "PixelMap" };
-using namespace OHOS::HiviewDFX;
 
 PixelMapFromSurface::PixelMapFromSurface()
 {}
@@ -70,7 +73,7 @@ bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &
     int ret = surface->GetLastFlushedBuffer(surfaceBuffer_, fence, matrix);
     if (ret != OHOS::GSERROR_OK || surfaceBuffer_ == nullptr) {
         Clear();
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "CreatePixelMapFromSurface: GetLastFlushedBuffer from nativeWindow failed, err: %{public}d",
             ret);
         return false;
@@ -81,7 +84,7 @@ bool PixelMapFromSurface::GetNativeWindowBufferFromSurface(const sptr<Surface> &
     if (srcRect.width > bufferWidth || srcRect.height > bufferHeight ||
         srcRect.left >= bufferWidth || srcRect.top >= bufferHeight ||
         srcRect.left + srcRect.width > bufferWidth || srcRect.top + srcRect.height > bufferHeight) {
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "CreatePixelMapFromSurface: invalid argument: srcRect[%{public}d, %{public}d, %{public}d, %{public}d],"
             "bufferSize:[%{public}d, %{public}d]",
             srcRect.left, srcRect.top, srcRect.width, srcRect.height,
@@ -108,7 +111,7 @@ bool PixelMapFromSurface::CreateEGLImage()
         nativeWindowBuffer_, attrs);
     if (eglImage_ == EGL_NO_IMAGE_KHR) {
         Clear();
-        HiLog::Error(LABEL, "%{public}s create egl image fail %{public}d", __func__, eglGetError());
+        IMAGE_LOGE("%{public}s create egl image fail %{public}d", __func__, eglGetError());
         return false;
     }
     glGenTextures(1, &texId_);
@@ -121,7 +124,7 @@ bool PixelMapFromSurface::CreateEGLImage()
         eglGetProcAddress("glEGLImageTargetTexture2DOES"));
     if (glEGLImageTargetTexture2DOESFunc == nullptr) {
         Clear();
-        HiLog::Error(LABEL, "%{public}s glEGLImageTargetTexture2DOES func not found: %{public}d",
+        IMAGE_LOGE("%{public}s glEGLImageTargetTexture2DOES func not found: %{public}d",
             __func__, eglGetError());
         return false;
     }
@@ -149,7 +152,7 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
         kTopLeft_GrSurfaceOrigin, colorType, kPremul_SkAlphaType, nullptr);
     if (image == nullptr) {
         Clear();
-        HiLog::Error(LABEL, "%{public}s create SkImage failed.", __func__);
+        IMAGE_LOGE("%{public}s create SkImage failed.", __func__);
         return false;
     }
 
@@ -158,7 +161,7 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
         imageInfo, 0, kTopLeft_GrSurfaceOrigin, nullptr);
     if (targetSurface_ == nullptr) {
         Clear();
-        HiLog::Error(LABEL, "%{public}s SkSurface::MakeRenderTarget failed.", __func__);
+        IMAGE_LOGE("%{public}s SkSurface::MakeRenderTarget failed.", __func__);
         return false;
     }
 
@@ -177,7 +180,7 @@ bool PixelMapFromSurface::DrawImage(const Rect &srcRect)
 std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const Rect &srcRect)
 {
     if (srcRect.left < 0 || srcRect.top < 0 || srcRect.width <= 0 || srcRect.height <= 0) {
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "CreatePixelMapFromSurface: invalid argument: srcRect[%{public}d, %{public}d, %{public}d, %{public}d]",
             srcRect.left, srcRect.top, srcRect.width, srcRect.height);
         return nullptr;
@@ -186,7 +189,7 @@ std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const 
     Clear();
     sptr<Surface> surface = SurfaceUtils::GetInstance()->GetSurface(surfaceId);
     if (surface == nullptr) {
-        HiLog::Error(LABEL,
+        IMAGE_LOGE(
             "CreatePixelMapFromSurface: can't find surface for surfaceId: %{public}" PRIu64 ".", surfaceId);
         return nullptr;
     }
@@ -199,7 +202,7 @@ std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const 
     renderContext_ = std::make_unique<RenderContext>();
     if (!renderContext_->Init()) {
         Clear();
-        HiLog::Error(LABEL, "CreatePixelMapFromSurface: init renderContext failed.");
+        IMAGE_LOGE("CreatePixelMapFromSurface: init renderContext failed.");
         return nullptr;
     }
 

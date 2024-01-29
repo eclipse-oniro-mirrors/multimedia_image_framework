@@ -38,7 +38,6 @@
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-using namespace OHOS::HiviewDFX;
 namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
@@ -1509,6 +1508,308 @@ HWTEST_F(ImageSourceTest, CreatePixelMapForYUVTest001, TestSize.Level3)
     std::unique_ptr<PixelMap> ret = imageSource->CreatePixelMapForYUV(errorCode);
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest001 end";
+}
+
+/**
+ * @tc.name: End2EndTest001
+ * @tc.desc: test CreateImageSource and CreatePixelMap of jpg resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.jpg", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t jpegWidth = 472;
+    int32_t jpegHeight = 226;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(jpegWidth, pixelMap->GetWidth());
+    ASSERT_EQ(jpegHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 400;
+    int32_t desiredHeight = 200;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest001 end";
+}
+
+/**
+ * @tc.name: End2EndTest002
+ * @tc.desc: test CreateImageSource and CreatePixelMap of png resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.png", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t pngWidth = 472;
+    int32_t pngHeight = 75;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(pngWidth, pixelMap->GetWidth());
+    ASSERT_EQ(pngHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 400;
+    int32_t desiredHeight = 200;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest002 end";
+}
+
+/**
+ * @tc.name: End2EndTest003
+ * @tc.desc: test CreateImageSource and CreatePixelMap of bmp resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest003 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.bmp", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t bmpWidth = 472;
+    int32_t bmpHeight = 75;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(bmpWidth, pixelMap->GetWidth());
+    ASSERT_EQ(bmpHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 400;
+    int32_t desiredHeight = 200;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest003 end";
+}
+
+/**
+ * @tc.name: End2EndTest004
+ * @tc.desc: test CreateImageSource and CreatePixelMap of ico resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest004 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.ico", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t icoWidth = 48;
+    int32_t icoHeight = 48;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(icoWidth, pixelMap->GetWidth());
+    ASSERT_EQ(icoHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 56;
+    int32_t desiredHeight = 56;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest004 end";
+}
+
+/**
+ * @tc.name: End2EndTest005
+ * @tc.desc: test CreateImageSource and CreatePixelMap of svg resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest005 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.svg", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t desiredWidth = 56;
+    int32_t desiredHeight = 56;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest005 end";
+}
+
+/**
+ * @tc.name: End2EndTest006
+ * @tc.desc: test CreateImageSource and CreatePixelMap of gif resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest006 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.gif", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t gifWidth = 198;
+    int32_t gifHeight = 202;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(gifWidth, pixelMap->GetWidth());
+    ASSERT_EQ(gifHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 150;
+    int32_t desiredHeight = 150;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest006 end";
+}
+
+/**
+ * @tc.name: End2EndTest007
+ * @tc.desc: test CreateImageSource and CreatePixelMap of webp resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest007 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.webp", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t webpWidth = 286;
+    int32_t webpHeight = 221;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(webpWidth, pixelMap->GetWidth());
+    ASSERT_EQ(webpHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 150;
+    int32_t desiredHeight = 150;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest007 end";
+}
+
+/**
+ * @tc.name: End2EndTest008
+ * @tc.desc: test CreateImageSource and CreatePixelMap of dng resource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest008 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+            ImageSource::CreateImageSource("/data/local/tmp/image/test.dng", opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    int32_t webpWidth = 160;
+    int32_t webpHeight = 120;
+
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(webpWidth, pixelMap->GetWidth());
+    ASSERT_EQ(webpHeight, pixelMap->GetHeight());
+
+    int32_t desiredWidth = 100;
+    int32_t desiredHeight = 100;
+
+    decodeOpts.desiredSize.width = desiredWidth;
+    decodeOpts.desiredSize.height = desiredHeight;
+    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
+    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
+
+    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest008 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

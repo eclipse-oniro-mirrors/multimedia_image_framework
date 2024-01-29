@@ -15,7 +15,6 @@
 
 #include <gtest/gtest.h>
 #include <fstream>
-#include "hilog/log.h"
 #include "image_creator.h"
 #include "image_packer.h"
 #include "image_source.h"

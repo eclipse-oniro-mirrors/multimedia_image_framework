@@ -14,21 +14,24 @@
  */
 
 #include "nine_patch_listener.h"
-#include <log_tags.h>
 #include <cmath>
-#include "hilog/log.h"
+#include "image_log.h"
 #ifndef _WIN32
 #include "securec.h"
 #else
 #include "memory.h"
 #endif
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "NinePatchListener"
+
 namespace OHOS {
 namespace ImagePlugin {
-using namespace OHOS::HiviewDFX;
 
 namespace {
-constexpr HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "NinePatchListener" };
 const std::string CHUNK_NAME = "npTc";
 constexpr float FLOAT_NEAR_ZERO = (1.0f / (1 << 12));
 constexpr float FHALF = 0.5f;
@@ -61,24 +64,24 @@ bool NinePatchListener::ReadChunk(const std::string &tag, void *data, size_t len
 {
     if (tag == CHUNK_NAME && length >= sizeof(PngNinePatchRes)) {
         if (data == nullptr) {
-            HiLog::Error(LABEL, "data is null");
+            IMAGE_LOGE("data is null");
             return false;
         }
         PngNinePatchRes *patch = static_cast<PngNinePatchRes *>(data);
         size_t patchSize = patch->SerializedSize();
         if (length != patchSize) {
-            HiLog::Error(LABEL, "length(%{public}zu) not equals patchSize(%{public}zu)", length, patchSize);
+            IMAGE_LOGE("length(%{public}zu) not equals patchSize(%{public}zu)", length, patchSize);
             return false;
         }
         // copy the data because it is owned by the png reader
         PngNinePatchRes *patchNew = static_cast<PngNinePatchRes *>(malloc(patchSize));
         if (patchNew == nullptr) {
-            HiLog::Error(LABEL, "malloc failed");
+            IMAGE_LOGE("malloc failed");
             return false;
         }
         errno_t err = memcpy_s(patchNew, patchSize, patch, patchSize);
         if (err != EOK) {
-            HiLog::Error(LABEL, "memcpy failed. errno:%{public}d", err);
+            IMAGE_LOGE("memcpy failed. errno:%{public}d", err);
             free(patchNew);
             patchNew = nullptr;
             return false;
@@ -98,7 +101,7 @@ bool NinePatchListener::ReadChunk(const std::string &tag, void *data, size_t len
 void NinePatchListener::Scale(float scaleX, float scaleY, int32_t scaledWidth, int32_t scaledHeight)
 {
     if (patch_ == nullptr) {
-        HiLog::Error(LABEL, "patch is null");
+        IMAGE_LOGE("patch is null");
         return;
     }
 

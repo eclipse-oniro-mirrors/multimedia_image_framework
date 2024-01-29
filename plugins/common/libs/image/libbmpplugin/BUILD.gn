@@ -36,6 +36,7 @@ ohos_shared_library("bmpplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/core",
     "$skia_root/skia/include/codec",
