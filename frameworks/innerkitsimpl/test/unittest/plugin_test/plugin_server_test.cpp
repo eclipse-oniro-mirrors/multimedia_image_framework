@@ -187,5 +187,41 @@ HWTEST_F(PluginServerTest, Register002, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PluginServerTest: Register002 end";
 }
+
+/**
+ * @tc.name: CreateObjectTest001
+ * @tc.desc:test CreateObject
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, CreateObjectTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: CreateObjectTest001 start";
+    MultimediaPlugin::PluginServer server;
+    uint16_t interfaceID = 1 << 12;
+    const string className = " ";
+    uint32_t errorCode = 0;
+    PluginClassBase* result = server.CreateObject(interfaceID, className, errorCode);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "PluginServerTest: CreateObjectTest001 end";
+}
+
+/**
+ * @tc.name: CreateObjectTest002
+ * @tc.desc: test CreateObject
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginServerTest, CreateObjectTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginServerTest: CreateObjectTest002 start";
+    MultimediaPlugin::PluginServer server;
+    uint16_t interfaceID = 1 << 12;
+    uint16_t serviceType = 0;
+    const map<string, AttrData> capabilities;
+    const PriorityScheme priorityScheme;
+    uint32_t errorCode = 0;
+    PluginClassBase* result = server.CreateObject(interfaceID, serviceType, capabilities, priorityScheme, errorCode);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "PluginServerTest: CreateObjectTest002 end";
+}
 }
 }
