@@ -29,6 +29,7 @@ using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Media {
+using namespace AstcEncBasedCl;
 static constexpr int32_t RGBA_TEST0001_WIDTH = 256;
 static constexpr int32_t RGBA_TEST0001_HEIGHT = 256;
 static constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
