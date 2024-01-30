@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "image_creator.h"
@@ -275,6 +275,36 @@ HWTEST_F(ImageCreatorTest, SaveSTP003, TestSize.Level3)
 
     free(buffer);
     GTEST_LOG_(INFO) << "ImageCreatorTest: SaveSTP003 end";
+}
+
+/**
+ * @tc.name: GetBufferProcessor001
+ * @tc.desc: test GetBufferProcessor
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, GetBufferProcessor001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: GetBufferProcessor001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    creator->bufferProcessor_ = nullptr;
+    creator->GetBufferProcessor();
+    ASSERT_NE(creator->bufferProcessor_, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: GetBufferProcessor001 end";
+}
+
+/**
+ * @tc.name: QueueNativeImage001
+ * @tc.desc: test QueueNativeImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, QueueNativeImage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    std::shared_ptr<NativeImage> image = nullptr;
+    creator->QueueNativeImage(image);
+    ASSERT_EQ(image, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
