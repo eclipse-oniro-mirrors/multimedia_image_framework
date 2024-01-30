@@ -15,28 +15,21 @@
 
 #ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_IMAGE_COMPRESSOR_H
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_TEXTURE_ENCODE_IMAGE_COMPRESSOR_H
-#include <atomic>
-#include <chrono>
-#include <fstream>
-#include <iostream>
-#include <mutex>
-#include <pthread.h>
-#include <set>
-#include <stdio.h>
-#include <string.h>
-#include <sys/syscall.h>
-#include <unistd.h>
+
+#include <cstdint>
 
 #ifndef USE_OPENCL_WRAPPER
 #define USE_OPENCL_WRAPPER
 #endif
 #include "CL/cl_ext.h"
 #include "opencl_wrapper.h"
-#if _WIN32 || WIN32
-#define CL_ASTC_SHARE_LIB_API __declspec(dllexport)
-#else
+
+namespace OHOS {
+namespace ImagePlugin {
+namespace AstcEncBasedCl {
+
 #define CL_ASTC_SHARE_LIB_API
-#endif
+
 enum CL_ASTC_STATUS {
     CL_ASTC_ENC_SUCCESS = 0,
     CL_ASTC_ENC_FAILED
@@ -74,5 +67,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClEncImage(ClAstcHandle *handle, const 
     uint8_t *buffer);
 
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *handle);
-
+}
+}
+}
 #endif
