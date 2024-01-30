@@ -191,7 +191,6 @@ HWTEST_F(PluginServerTest, Register002, TestSize.Level3)
 /**
  * @tc.name: CreateObjectTest001
  * @tc.desc:test CreateObject
-
  * @tc.type: FUNC
  */
 HWTEST_F(PluginServerTest, CreateObjectTest001, TestSize.Level3)
