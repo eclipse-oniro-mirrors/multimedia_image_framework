@@ -15,7 +15,8 @@
 
 #include "image_compressor.h"
 
-#include <cmath>
+#include <unistd.h>
+#include <fstream>
 
 #include "securec.h"
 #include "media_errors.h"
@@ -27,6 +28,9 @@
 #undef LOG_TAG
 #define LOG_TAG "ClAstcEnc"
 
+namespace OHOS {
+namespace ImagePlugin {
+namespace AstcEncBasedCl {
 constexpr int MAX_WIDTH = 8192;
 constexpr int MAX_HEIGHT = 4096;
 constexpr int TEXTURE_HEAD_BYTES = 16;
@@ -1729,4 +1733,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClEncImage(ClAstcHandle *clAstcHandle,
     }
     ReleaseClAstcObj(encObj);
     return CL_ASTC_ENC_SUCCESS;
+}
+}
+}
 }

@@ -29,7 +29,7 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
-
+using namespace AstcEncBasedCl;
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MASK = 0xFF;
 constexpr uint8_t ASTC_NUM_8 = 8;
