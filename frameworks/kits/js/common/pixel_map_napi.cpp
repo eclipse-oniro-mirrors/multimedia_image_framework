@@ -1202,14 +1202,13 @@ napi_value PixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_info inf
         ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadPixelsToBufferGeneralError",
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadPixelsToBuffer",
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "ReadPixelsToBuffer",
         [](napi_env env, void *data)
         {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             context->status = context->rPixelMap->ReadPixels(
                 context->colorsBufferSize, static_cast<uint8_t*>(context->colorsBuffer));
-        }
-        , EmptyResultComplete, asyncContext, asyncContext->work);
+        }, EmptyResultComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
