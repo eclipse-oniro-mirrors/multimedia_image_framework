@@ -2039,35 +2039,28 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
     }
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
-    if (sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE) {
-        void *fdBuffer = new int32_t();
-        *static_cast<int32_t *>(fdBuffer) = static_cast<FileSourceStream *>(sourceStreamPtr_.get())->GetMMapFd();
-        pixelAstc->SetPixelsAddr(sourceStreamPtr_->GetDataPtr(), fdBuffer, fileSize,
-            AllocatorType::SHARE_MEM_ALLOC, nullptr);
-    } else if (sourceStreamPtr_->GetStreamType() == ImagePlugin::BUFFER_SOURCE_TYPE) {
-        int fd = AshmemCreate("CreatePixelMapForASTC Data", fileSize);
-        if (fd < 0) {
-            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
-            return nullptr;
-        }
-        int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-        if (result < 0) {
-            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
-            ::close(fd);
-            return nullptr;
-        }
-        void* ptr = ::mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-        if (ptr == MAP_FAILED || ptr == nullptr) {
-            IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
-            ::close(fd);
-            return nullptr;
-        }
-        auto data = static_cast<uint8_t*>(ptr);
-        void* fdPtr = new int32_t();
-        *static_cast<int32_t*>(fdPtr) = fd;
-        pixelAstc->SetPixelsAddr(data, fdPtr, fileSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
-        memcpy_s(data, fileSize, sourceStreamPtr_->GetDataPtr(), fileSize);
+    int fd = AshmemCreate("CreatePixelMapForASTC Data", fileSize);
+    if (fd < 0) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
+        return nullptr;
     }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
+        ::close(fd);
+        return nullptr;
+    }
+    void* ptr = ::mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED || ptr == nullptr) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
+        ::close(fd);
+        return nullptr;
+    }
+    auto data = static_cast<uint8_t*>(ptr);
+    void* fdPtr = new int32_t();
+    *static_cast<int32_t*>(fdPtr) = fd;
+    pixelAstc->SetPixelsAddr(data, fdPtr, fileSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    memcpy_s(data, fileSize, sourceStreamPtr_->GetDataPtr(), fileSize);
     pixelAstc->SetAstc(true);
     return pixelAstc;
 }
