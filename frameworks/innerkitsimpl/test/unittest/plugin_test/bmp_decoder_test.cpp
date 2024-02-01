@@ -772,5 +772,23 @@ HWTEST_F(BmpDecoderTest, PluginExternalCreateTest001, TestSize.Level3)
     ASSERT_EQ(result, nullptr);
     GTEST_LOG_(INFO) << "BmpDecoderTest: PluginExternalCreateTest001 end";
 }
+
+/**
+ * @tc.name: SetDecodeOptionsTest008
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest008 start";
+    auto bmpDecoder = std::make_shared<BmpDecoder>();
+    uint32_t index = 0;
+    const PixelDecodeOptions opts;
+    PlImageInfo info;
+    bmpDecoder->state_ = BmpDecodingState::BASE_INFO_PARSED;
+    uint32_t result = bmpDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, SUCCESS);
+    GTEST_LOG_(INFO) << "BmpDecoderTest: SetDecodeOptionsTest008 end";
+}
 }
 }
