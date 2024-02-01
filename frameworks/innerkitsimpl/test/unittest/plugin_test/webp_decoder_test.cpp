@@ -692,7 +692,7 @@ HWTEST_F(WebpDecoderTest, DoIncrementalDecodeTest001, TestSize.Level3)
     context.decodeContext.allocatorType = AllocatorType::DMA_ALLOC;
     mock->returnValue_ = false;
     result = webpDecoder->DoIncrementalDecode(context);
-    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);   
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED)；
     free(context.decodeContext.pixelsBuffer.buffer);
     context.decodeContext.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest001 end";
