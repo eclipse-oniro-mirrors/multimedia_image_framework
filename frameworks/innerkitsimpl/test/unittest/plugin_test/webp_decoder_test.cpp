@@ -688,12 +688,13 @@ HWTEST_F(WebpDecoderTest, DoIncrementalDecodeTest001, TestSize.Level3)
     uint32_t result = webpDecoder->DoIncrementalDecode(context);
     ASSERT_EQ(result, ERR_IMAGE_MALLOC_ABNORMAL);
 
-    context.decodeContext.pixelsBuffer.buff = malloc(4);
+    context.decodeContext.pixelsBuffer.buffer = malloc(4);
+    context.decodeContext.allocatorType = AllocatorType::DMA_ALLOC;
     mock->returnValue_ = false;
     result = webpDecoder->DoIncrementalDecode(context);
     ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);
-    free(context.decodeContext.pixelsBuffer.buff);
-    context.decodeContext.pixelsBuffer.buff = nullptr;
+    free(context.decodeContext.pixelsBuffer.buffer);
+    context.decodeContext.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest001 end";
 }
 }
