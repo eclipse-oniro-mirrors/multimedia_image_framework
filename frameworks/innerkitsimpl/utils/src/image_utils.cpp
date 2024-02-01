@@ -176,7 +176,7 @@ uint32_t ImageUtils::RegisterPluginServer()
         IMAGE_LOGE("[ImageUtil]failed to register plugin server, ERRNO: %{public}u.", result);
     } else {
         g_pluginRegistered = true;
-        IMAGE_LOGI("[ImageUtil]success to register plugin server");
+        IMAGE_LOGD("[ImageUtil]success to register plugin server");
     }
     return result;
 }
