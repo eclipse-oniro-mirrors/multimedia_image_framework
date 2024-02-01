@@ -252,7 +252,7 @@ void PixelAstc::SetRowStride(uint32_t stride)
 
 int32_t PixelAstc::GetRowStride()
 {
-    IMAGE_LOGE("GetRowStride is not support on pixelastc");
+    IMAGE_LOGD("GetRowStride is not support on pixelastc");
     return 0;
 }
 
