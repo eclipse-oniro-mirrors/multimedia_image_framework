@@ -199,7 +199,7 @@ STATIC_EXEC_FUNC(Packing)
 {
     int64_t packedSize = 0;
     auto context = static_cast<ImagePackerAsyncContext*>(data);
-    IMAGE_LOGI("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
+    IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
     context->resultBuffer = std::make_unique<uint8_t[]>(
         (context->resultBufferSize <= 0)?DEFAULT_BUFFER_SIZE:context->resultBufferSize);
     if (context->resultBuffer == nullptr) {
@@ -366,7 +366,7 @@ static int64_t parseBufferSize(napi_env env, napi_value root)
         return tmpNumber;
     }
     napi_get_value_int64(env, tempValue, &tmpNumber);
-    IMAGE_LOGI("BufferSize is %{public}" PRId64, tmpNumber);
+    IMAGE_LOGD("BufferSize is %{public}" PRId64, tmpNumber);
     if (tmpNumber < 0) {
         return DEFAULT_BUFFER_SIZE;
     }
@@ -687,7 +687,7 @@ STATIC_EXEC_FUNC(PackToFile)
         return;
     }
     if (context->packType == TYPE_IMAGE_SOURCE) {
-        IMAGE_LOGI("ImagePacker set image source");
+        IMAGE_LOGD("ImagePacker set image source");
         if (context->rImageSource == nullptr) {
             BuildMsgOnError(context, context->rImageSource == nullptr,
                 "ImageSource is nullptr", ERR_IMAGE_INVALID_PARAMETER);
@@ -695,7 +695,7 @@ STATIC_EXEC_FUNC(PackToFile)
         }
         context->rImagePacker->AddImage(*(context->rImageSource));
     } else {
-        IMAGE_LOGI("ImagePacker set pixelmap");
+        IMAGE_LOGD("ImagePacker set pixelmap");
         if (context->rPixelMap == nullptr) {
             BuildMsgOnError(context, context->rImageSource == nullptr,
                 "Pixelmap is nullptr", ERR_IMAGE_INVALID_PARAMETER);
