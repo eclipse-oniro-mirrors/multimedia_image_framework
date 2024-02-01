@@ -154,7 +154,7 @@ bool FileSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        IMAGE_LOGI("[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}zu", desiredSize);
+        IMAGE_LOGI("[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}u", desiredSize);
         return false;
     }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
@@ -233,10 +233,15 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
     }
     size_t bytesRead = fread(outBuffer, sizeof(outBuffer[0]), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGI("[FileSourceStream]read outBuffer fail, bytesRead:%{public}zu", bytesRead);
-        return false;
+        IMAGE_LOGI("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+            "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
+        int fRes = ferror(filePtr_);
+        if (fRes) {
+            IMAGE_LOGE("fread failed, ferror:%{public}d", fRes);
+            return false;
+        }
     }
-    readSize = desiredSize;
+    readSize = bytesRead;
     return true;
 }
 
@@ -265,13 +270,18 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGI("[FileSourceStream]read dataStreamBuffer fail, bytesRead:%{public}zu", bytesRead);
-        free(readBuffer_);
-        readBuffer_ = nullptr;
-        return false;
+        IMAGE_LOGI("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+            "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
+        int fRes = ferror(filePtr_);
+        if (fRes) {
+            IMAGE_LOGE("fread failed, ferror:%{public}d", fRes);
+            free(readBuffer_);
+            readBuffer_ = nullptr;
+            return false;
+        }
     }
     outData.inputStreamBuffer = static_cast<uint8_t *>(readBuffer_);
-    outData.dataSize = desiredSize;
+    outData.dataSize = bytesRead;
     return true;
 }
 
