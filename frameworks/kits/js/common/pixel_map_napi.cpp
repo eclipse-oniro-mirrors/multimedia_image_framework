@@ -1806,10 +1806,10 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
         }
         asyncContext->status = SUCCESS;
     }
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "Release",
         [](napi_env env, void *data)
         {
-        }, EmptyResultComplete, asyncContext, asyncContext->work);
+        }, EmptyResultComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
