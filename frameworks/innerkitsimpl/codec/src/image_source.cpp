@@ -457,6 +457,12 @@ bool IsWidthAligned(const int32_t &width)
     return ((width * NUM_4) & INT_255) == 0;
 }
 
+bool IsPreferDma(bool perferDma)
+{
+    static bool isSceneBoard = ImageSystemProperties::IsPreferDma();
+    return perferDma && !isSceneBoard;
+}
+
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
@@ -471,7 +477,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
         return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
-            IsWidthAligned(opts.desiredSize.width);
+            (IsWidthAligned(opts.desiredSize.width) || IsPreferDma(opts.preferDma));
     }
     return false;
 #endif
