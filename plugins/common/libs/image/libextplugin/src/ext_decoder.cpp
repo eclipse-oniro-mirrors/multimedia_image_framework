@@ -1010,7 +1010,7 @@ static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManage
         }
         auto size = u8ToU32(tags[i].size);
         auto offset = u8ToU32(tags[i].offset);
-        if (size <= SIZE_ZERO || offset >= profile->size) {
+        if (size == SIZE_ZERO || offset >= profile->size) {
             continue;
         }
         auto buffer = u8ToU32(tags[i].offset) + profile->buffer;

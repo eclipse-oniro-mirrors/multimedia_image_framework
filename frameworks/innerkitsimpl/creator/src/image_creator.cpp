@@ -95,11 +95,11 @@ std::shared_ptr<ImageCreator> ImageCreator::CreateImageCreator(int32_t width,
     RegisterConsumerListener((sptr<IBufferConsumerListener> &)listener);
     auto p = iva->creatorConsumerSurface_->GetProducer();
     iva->creatorProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
-    iva->creatorProducerSurface_->SetQueueSize(capicity);
     if (iva->creatorProducerSurface_ == nullptr) {
         IMAGE_LOGD("SurfaceAsProducer == nullptr");
         return iva;
     }
+    iva->creatorProducerSurface_->SetQueueSize(capicity);
     iva->iraContext_->SetCreatorBufferConsumer(iva->creatorConsumerSurface_);
     iva->iraContext_->SetCreatorBufferProducer(iva->creatorProducerSurface_);
     iva->iraContext_->SetWidth(width);
