@@ -652,5 +652,50 @@ HWTEST_F(WebpDecoderTest, AllocOutputBufferTest001, TestSize.Level3)
     ASSERT_EQ(result, false);
     GTEST_LOG_(INFO) << "WebpDecoderTest: AllocOutputBufferTest001 end";
 }
+
+/**
+ * @tc.name: ReadIncrementalHeadTest002
+ * @tc.desc: Test of ReadIncrementalHead
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, ReadIncrementalHeadTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: ReadIncrementalHeadTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    mock->streamSize = 4096;
+    mock->returnValue_ = false;
+    uint32_t result = webpDecoder->ReadIncrementalHead();
+    ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "WebpDecoderTest: ReadIncrementalHeadTest002 end";
+}
+
+/**
+ * @tc.name: DoIncrementalDecodeTest001
+ * @tc.desc: Test of DoIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, DoIncrementalDecodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest001 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    ProgDecodeContext context;
+    uint32_t result = webpDecoder->DoIncrementalDecode(context);
+    ASSERT_EQ(result, ERR_IMAGE_MALLOC_ABNORMAL);
+
+    context.decodeContext.pixelsBuffer.buffer = malloc(4);
+    context.decodeContext.allocatorType = AllocatorType::DMA_ALLOC;
+    mock->returnValue_ = false;
+    result = webpDecoder->DoIncrementalDecode(context);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);
+    free(context.decodeContext.pixelsBuffer.buffer);
+    context.decodeContext.pixelsBuffer.buffer = nullptr;
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest001 end";
+}
 }
 }
