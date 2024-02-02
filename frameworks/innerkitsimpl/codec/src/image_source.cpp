@@ -313,7 +313,7 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
-    HiLogPrint(LogType::LOG_CORE, LogLevel::LOG_INFO, LOG_TAG_DOMAIN_ID_PLUGIN, "ImageSource",
+    IMAGE_LOGD(
         "CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
         "desiredSize: (%{public}d, %{public}d)", static_cast<unsigned long>(imageId_), opts.desiredPixelFormat,
         opts.desiredSize.width, opts.desiredSize.height);
