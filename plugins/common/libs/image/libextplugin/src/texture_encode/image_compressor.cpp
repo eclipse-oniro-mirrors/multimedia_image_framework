@@ -1467,8 +1467,9 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClCreate(ClAstcHandle **handle, const s
         return CL_ASTC_ENC_FAILED;
     }
     *handle = clAstcHandle;
-    size_t numMaxBlocks = ((MAX_WIDTH + DIM - 1) / DIM) * ((MAX_HEIGHT + DIM - 1) / DIM);
-    clAstcHandle->encObj.blockErrs_ = static_cast<uint32_t *>(malloc((numMaxBlocks * sizeof(uint32_t)))); // 8MB mem Max
+    size_t numMaxBlocks = static_cast<size_t>(((MAX_WIDTH + DIM - 1) / DIM) * ((MAX_HEIGHT + DIM - 1) / DIM));
+    clAstcHandle->encObj.blockErrs_ =
+        static_cast<uint32_t *>(malloc((numMaxBlocks * sizeof(uint32_t)))); // 8MB mem Max
     if (clAstcHandle->encObj.blockErrs_ == nullptr) {
         IMAGE_LOGE("astc blockErrs_ malloc failed!");
         AstcClClose(*handle);
@@ -1580,7 +1581,7 @@ static CL_ASTC_STATUS ClCreateBufferAndImage(const ClAstcImageOption *imageIn,
     int32_t stride = imageIn->stride;
     int32_t width = imageIn->width;
     int32_t height = imageIn->height;
-    size_t numBlocks = ((width + DIM - 1) / DIM) * ((height + DIM - 1) / DIM);
+    size_t numBlocks = static_cast<size_t>(((width + DIM - 1) / DIM) * ((height + DIM - 1) / DIM));
     uint32_t *blockErrs = encObj->blockErrs_;
     size_t blockErrBytes = sizeof(uint32_t) * numBlocks;
     encObj->astcSize = numBlocks * TEXTURE_BLOCK_BYTES;
@@ -1655,7 +1656,7 @@ static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObj
     size_t localMax;
     cl_int clRet = clGetKernelWorkGroupInfo(clAstcHandle->kernel, clAstcHandle->deviceID, CL_KERNEL_WORK_GROUP_SIZE,
         sizeof(size_t), &localMax, nullptr);
-    if ((clRet != CL_SUCCESS) || localMax <= 0) {
+    if (clRet != CL_SUCCESS) {
         IMAGE_LOGE("astc clGetKernelWorkGroupInfo failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
     }
