@@ -391,5 +391,38 @@ HWTEST_F(ImageUtilsTest, GetValidAlphaTypeByFormat, TestSize.Level3)
     ASSERT_EQ(ret, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetValidAlphaTypeByFormat end";
 }
+
+/**
+ * @tc.name: SaveDataToFile001
+ * @tc.desc: ImageUtils::SaveDataToFile
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, SaveDataToFile001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SaveDataToFile001 start";
+    std::string fileName;
+    char *data;
+    size_t totalSize = 0;
+    uint32_t res = ImageUtils::SaveDataToFile(fileName, data, totalSize);
+    ASSERT_EQ(res, IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED);
+    fileName = "file.txt";
+    res = ImageUtils::SaveDataToFile(fileName, data, totalSize);
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: SaveDataToFile001 end";
+}
+
+/**
+ * @tc.name: GetPixelMapName001
+ * @tc.desc: ImageUtils::GetPixelMapName
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetPixelMapName001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName001 start";
+    PixelMap *pixelMap = nullptr;
+    auto res = ImageUtils::GetPixelMapName(pixelMap);
+    ASSERT_EQ(res, "");
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName001 end";
+}
 }
 }
