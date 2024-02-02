@@ -148,6 +148,7 @@ public:
     static void CreateErrorObj(napi_env env, napi_value &errorObj,
         const int32_t errCode, const std::string errMsg);
     static napi_value ThrowExceptionError(napi_env env, const int32_t errCode, const std::string errMsg);
+    static uint64_t GetNowTimeMicroSeconds();
 };
 } // namespace Media
 } // namespace OHOS
