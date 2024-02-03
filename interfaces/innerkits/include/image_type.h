@@ -195,6 +195,7 @@ struct DecodeOptions {
     MemoryUsagePreference preference = MemoryUsagePreference::DEFAULT;
     SVGDecodeOptions SVGOpts;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> desiredColorSpaceInfo = nullptr;
+    bool preferDma = false;
 };
 
 enum class ScaleMode : int32_t {
