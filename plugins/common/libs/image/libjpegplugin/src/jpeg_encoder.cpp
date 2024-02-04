@@ -18,6 +18,7 @@
 #include "color_space.h"
 #endif
 #include "image_log.h"
+#include "image_trace.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImageInfo.h"
 #include "jerror.h"
@@ -78,6 +79,7 @@ JpegEncoder::JpegEncoder() : dstMgr_(nullptr)
 
 uint32_t JpegEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
 {
+    ImageTrace imageTrace("JpegEncoder::StartEncode");
     pixelMaps_.clear();
     dstMgr_.outputStream = &outputStream;
     encodeInfo_.dest = &dstMgr_;
@@ -139,6 +141,7 @@ J_COLOR_SPACE JpegEncoder::GetEncodeFormat(PixelFormat format, int32_t &componen
 
 uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
 {
+    ImageTrace imageTrace("JpegEncoder::AddImage");
     if (pixelMaps_.size() >= JPEG_IMAGE_NUM) {
         IMAGE_LOGE("add pixel map out of range:[%{public}u].", JPEG_IMAGE_NUM);
         return ERR_IMAGE_ADD_PIXEL_MAP_FAILED;
@@ -149,6 +152,7 @@ uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
 
 uint32_t JpegEncoder::FinalizeEncode()
 {
+    ImageTrace imageTrace("JpegEncoder::FinalizeEncode");
     uint32_t errorCode = SetCommonConfig();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("set jpeg compress struct failed:%{public}u.", errorCode);

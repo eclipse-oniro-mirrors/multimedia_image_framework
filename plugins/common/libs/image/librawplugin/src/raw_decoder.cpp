@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 #include "raw_decoder.h"
-#include "image_log.h"
+
 #include "buffer_source_stream.h"
+#include "image_log.h"
+#include "image_trace.h"
 #include "jpeg_decoder.h"
 #include "raw_stream.h"
 
@@ -196,6 +198,7 @@ uint32_t RawDecoder::GetImageSize(uint32_t index, PlSize &size)
 
 uint32_t RawDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("RawDecoder::Decode, index:%u", index);
     IMAGE_LOGD("Decode IN index=%{public}u", index);
 
     if (index >= RAW_IMAGE_NUM) {

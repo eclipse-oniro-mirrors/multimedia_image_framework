@@ -16,6 +16,7 @@
 #include "gif_decoder.h"
 
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
@@ -139,6 +140,7 @@ uint32_t GifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
 uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("GifDecoder::Decode, index:%u", index);
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif

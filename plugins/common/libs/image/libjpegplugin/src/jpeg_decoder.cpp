@@ -495,6 +495,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 
 uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("JpegDecoder::Decode, index:%u", index);
     if (index >= JPEG_IMAGE_NUM) {
         IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;
