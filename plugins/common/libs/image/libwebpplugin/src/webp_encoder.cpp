@@ -15,6 +15,7 @@
 #include "webp_encoder.h"
 #include "webp/mux.h"
 #include "image_log.h"
+#include "image_trace.h"
 #include "media_errors.h"
 #include "pixel_convert_adapter.h"
 
@@ -60,6 +61,7 @@ WebpEncoder::~WebpEncoder()
 
 uint32_t WebpEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option)
 {
+    ImageTrace imageTrace("WebpEncoder::StartEncode");
     IMAGE_LOGD("StartEncode IN, quality=%{public}u, numberHint=%{public}u",
         option.quality, option.numberHint);
 
@@ -74,6 +76,7 @@ uint32_t WebpEncoder::StartEncode(OutputDataStream &outputStream, PlEncodeOption
 
 uint32_t WebpEncoder::AddImage(Media::PixelMap &pixelMap)
 {
+    ImageTrace imageTrace("WebpEncoder::AddImage");
     IMAGE_LOGD("AddImage IN");
 
     if (pixelMaps_.size() >= WEBP_IMAGE_NUM) {
@@ -89,6 +92,7 @@ uint32_t WebpEncoder::AddImage(Media::PixelMap &pixelMap)
 
 uint32_t WebpEncoder::FinalizeEncode()
 {
+    ImageTrace imageTrace("WebpEncoder::FinalizeEncode");
     IMAGE_LOGD("FinalizeEncode IN");
 
     if (pixelMaps_.empty()) {

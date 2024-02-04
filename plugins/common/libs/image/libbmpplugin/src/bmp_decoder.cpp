@@ -16,6 +16,7 @@
 #include "bmp_decoder.h"
 
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "securec.h"
@@ -285,6 +286,7 @@ uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &c
 
 uint32_t BmpDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("BmpDecoder::Decode, index:%u", index);
     if (index >= BMP_IMAGE_NUM) {
         IMAGE_LOGE("Decode failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
         return ERR_IMAGE_INVALID_PARAMETER;

@@ -16,6 +16,7 @@
 #include "png_decoder.h"
 
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "pngpriv.h"
@@ -161,6 +162,7 @@ bool PngDecoder::HasProperty(std::string key)
 
 uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("PngDecoder::Decode, index:%u", index);
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     if (index >= PNG_IMAGE_NUM) {
         IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}u.", index, PNG_IMAGE_NUM);
