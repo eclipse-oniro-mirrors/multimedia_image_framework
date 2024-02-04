@@ -1809,6 +1809,8 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
     IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "Release",
         [](napi_env env, void *data)
         {
+            uint32_t executeId = static_cast<uint32_t>(ImageNapiUtils::GetNowTimeMicroSeconds());
+            IMAGE_LOGI("PixelMap Release, id: %{public}u", executeId);
         }, EmptyResultComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
