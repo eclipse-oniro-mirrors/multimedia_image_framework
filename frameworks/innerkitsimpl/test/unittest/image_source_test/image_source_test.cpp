@@ -1892,8 +1892,8 @@ HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    int32_t desiredWidth = 56;
-    int32_t desiredHeight = 56;
+    int32_t desiredWidth = 57;
+    int32_t desiredHeight = 57;
     DecodeOptions decodeOpts;
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;
