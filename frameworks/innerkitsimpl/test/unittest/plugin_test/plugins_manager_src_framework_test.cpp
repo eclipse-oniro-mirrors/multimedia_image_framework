@@ -885,5 +885,224 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority001, TestSize.Leve
     str2 = nullptr;
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority001 end";
 }
+
+/**
+ * @tc.name: AnalyzeBoolTest001
+ * @tc.desc: AnalyzeBool
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeBoolTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeBoolTest001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeBool(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeBoolTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeUint32Test001
+ * @tc.desc: AnalyzeUint32
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeUint32Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32Test001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeUint32(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32Test001 end";
+}
+
+/**
+ * @tc.name: AnalyzeStringTest001
+ * @tc.desc: AnalyzeString
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeStringTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeStringTest001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeString(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeStringTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeUint32SetTest001
+ * @tc.desc: AnalyzeUint32Set
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeUint32SetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32SetTest001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeUint32Set(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32SetTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeUint32RangeTest001
+ * @tc.desc: AnalyzeUint32Range
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeUint32RangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32RangeTest001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeUint32Range(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeUint32RangeTest001 end";
+}
+
+/**
+ * @tc.name: AnalyzeStringSetTest001
+ * @tc.desc: AnalyzeStringSet
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, AnalyzeStringSetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeStringSetTest001 start";
+    auto capability = std::make_shared<Capability>();
+    const nlohmann::json capInfo;
+    AttrData attrData;
+    uint32_t ret = capability->AnalyzeStringSet(capInfo, attrData);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: AnalyzeStringSetTest001 end";
+}
+
+/**
+ * @tc.name: RegisterTest001
+ * @tc.desc: Register
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, RegisterTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterTest001 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    std::weak_ptr<Plugin> plugin;
+    const nlohmann::json classInfo;
+    uint32_t ret = implClass.Register(plugin, classInfo);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    implClass.state_ = ClassState::CLASS_STATE_REGISTERED;
+    ret = implClass.Register(plugin, classInfo);
+    ASSERT_EQ(ret, ERR_INTERNAL);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: RegisterTest001 end";
+}
+
+/**
+ * @tc.name: CreateObjectTest001
+ * @tc.desc: CreateObject
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, CreateObjectTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CreateObjectTest001 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    uint32_t errorCode;
+    PluginClassBase *ret = implClass.CreateObject(errorCode);
+    ASSERT_EQ(errorCode, ERR_INTERNAL);
+    ASSERT_EQ(ret, nullptr);
+    implClass.state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass.maxInstance_ = 1;
+    implClass.instanceNum_ = 1;
+    ret = implClass.CreateObject(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    implClass.maxInstance_ = 0;
+    implClass.instanceNum_ = 0;
+    ret = implClass.CreateObject(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    implClass.pluginRef_.lock() = nullptr;
+    ret = implClass.CreateObject(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CreateObjectTest001 end";
+}
+
+/**
+ * @tc.name: GetPackageNameTest002
+ * @tc.desc: GetPackageName
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetPackageNameTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetPackageNameTest002 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    implClass.state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass.pluginRef_.lock() = nullptr;
+    const std::string ret = implClass.GetPackageName();
+    ASSERT_EQ(ret, "");
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetPackageNameTest002 end";
+}
+
+/**
+ * @tc.name: IsSupportTest002
+ * @tc.desc: IsSupport
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, IsSupportTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: IsSupportTest002 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    uint16_t interfaceID = 0;
+    bool ret = implClass.IsSupport(interfaceID);
+    ASSERT_EQ(ret, false);
+    implClass.services_.insert(0x0000);
+    ret = implClass.IsSupport(interfaceID);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: IsSupportTest002 end";
+}
+
+/**
+ * @tc.name: OnObjectDestroyTest002
+ * @tc.desc: OnObjectDestroy
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, OnObjectDestroyTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: OnObjectDestroyTest002 start";
+    ImplClass implClass;
+    implClass.OnObjectDestroy();
+    ASSERT_NE(implClass.state_, ClassState::CLASS_STATE_REGISTERED);
+    implClass.state_ = ClassState::CLASS_STATE_REGISTERED;
+    implClass.OnObjectDestroy();
+    ASSERT_EQ(implClass.instanceNum_, 0);
+    implClass.instanceNum_ = 1;
+    implClass.OnObjectDestroy();
+    ASSERT_EQ(implClass.instanceNum_, 0);
+    implClass.instanceNum_ = 1;
+    implClass.pluginRef_.lock() = nullptr;
+    implClass.OnObjectDestroy();
+    ASSERT_EQ(implClass.instanceNum_, 0);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: OnObjectDestroyTest002 end";
+}
+
+/**
+ * @tc.name: GetCapabilityTest002
+ * @tc.desc: GetCapability
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetCapabilityTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCapabilityTest002 start";
+    ImplClass &implClass = DelayedRefSingleton<ImplClass>::GetInstance();
+    const std::string key = "";
+    const AttrData *ret = implClass.GetCapability(key);
+    ASSERT_EQ(ret, nullptr);
+    implClass.state_ = ClassState::CLASS_STATE_REGISTERED;
+    ret = implClass.GetCapability(key);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCapabilityTest002 end";
+}
 }
 }
