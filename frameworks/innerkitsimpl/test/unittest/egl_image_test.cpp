@@ -108,11 +108,11 @@ void EglImageTest::SetUpTestCase()
 {
     cSurface = Surface::CreateSurfaceAsConsumer("imageFrameWorkEglImageTestSurface");
     consumerListener = sptr<OHOS::IBufferConsumerListener>(new ConsumerSurfaceListener(cSurface));
-    cSurface->RegisterConsumerListener(consumerListener);
-
+    
     if (cSurface != nullptr) {
         auto producer = cSurface->GetProducer();
         pSurface = Surface::CreateSurfaceAsProducer(producer);
+        cSurface->RegisterConsumerListener(consumerListener);
     }
     if (pSurface != nullptr) {
         nativeWindow = CreateNativeWindowFromSurface(&pSurface);

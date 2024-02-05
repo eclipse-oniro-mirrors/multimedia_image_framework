@@ -1452,8 +1452,8 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
 
 bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
 {
-    const uint8_t *data = data_;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    const uint8_t *data = data_;
     uint32_t id = GetUniqueId();
     std::string name = "Parcel ImageData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), size);
@@ -2689,7 +2689,6 @@ uint32_t PixelMap::crop(const Rect &rect)
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
-        IMAGE_LOGE("crop CreateMemory failed");
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
@@ -2697,6 +2696,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
+            return ERR_IMAGE_CROP;
         }
         rowStride = reinterpret_cast<SurfaceBuffer*>(m->extend.data)->GetStride();
     }
