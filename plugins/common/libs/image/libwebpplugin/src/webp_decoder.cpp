@@ -16,6 +16,7 @@
 #include "webp_decoder.h"
 
 #include "image_log.h"
+#include "image_trace.h"
 #include "image_utils.h"
 #include "media_errors.h"
 #include "multimedia_templates.h"
@@ -123,6 +124,7 @@ uint32_t WebpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
 
 uint32_t WebpDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("WebpDecoder::Decode, index:%u", index);
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif
