@@ -86,6 +86,7 @@ private:
     bool PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream);
     bool DoDecode(OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBufferHandle);
     void RecycleAllocatedResource();
+    static OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* GetBufferMgr();
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
     OHOS::sptr<OHOS::HDI::Codec::Image::V1_0::ICodecImage> hwDecoder_;

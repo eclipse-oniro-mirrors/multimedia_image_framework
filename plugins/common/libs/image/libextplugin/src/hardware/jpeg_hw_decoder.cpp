@@ -54,7 +54,7 @@ JpegHardwareDecoder::JpegHardwareDecoder()
 {
     inputBuffer_.fenceFd = -1;
     hwDecoder_ = ICodecImage::Get();
-    bufferMgr_ = IDisplayBuffer::Get();
+    bufferMgr_ = GetBufferMgr();
 }
 
 JpegHardwareDecoder::~JpegHardwareDecoder()
@@ -384,5 +384,11 @@ void JpegHardwareDecoder::RecycleAllocatedResource()
     if (ret != HDF_SUCCESS) {
         JPEG_HW_LOGE("failed to deinit decoder, err=%{public}d", ret);
     }
+}
+
+OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* JpegHardwareDecoder::GetBufferMgr()
+{
+    static OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* staticBufferMgr = IDisplayBuffer::Get();
+    return staticBufferMgr;
 }
 } // namespace OHOS::ImagePlugin
