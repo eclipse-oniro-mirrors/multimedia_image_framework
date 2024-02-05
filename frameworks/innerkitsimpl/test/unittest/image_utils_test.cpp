@@ -21,8 +21,10 @@
 #include "source_stream.h"
 #include "istream_source_stream.h"
 #include "image_type.h"
+#include "image_system_properties.h"
 
-
+static const uint8_t NUM_0 = 0;
+static const uint8_t NUM_4 = 4;
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
 constexpr int32_t RGB888_BYTES = 3;
@@ -423,6 +425,80 @@ HWTEST_F(ImageUtilsTest, GetPixelMapName001, TestSize.Level3)
     auto res = ImageUtils::GetPixelMapName(pixelMap);
     ASSERT_EQ(res, "");
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetPixelMapName001 end";
+}
+
+/**
+ * @tc.name: CheckMulOverflowTest002
+ * @tc.desc: CheckMulOverflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, CheckMulOverflowTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflowTest002 start";
+    int32_t width = 0;
+    int32_t bytesPerPixel = 0;
+    bool ret = ImageUtils::CheckMulOverflow(width, bytesPerPixel);
+    ASSERT_EQ(ret, true);
+    width = 1;
+    bytesPerPixel = 1;
+    ret = ImageUtils::CheckMulOverflow(width, bytesPerPixel);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflowTest002 end";
+}
+
+/**
+ * @tc.name: ReversePixelsTest001
+ * @tc.desc: ReversePixels
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ReversePixelsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ReversePixelsTest001 start";
+    uint8_t* srcPixels = nullptr;
+    uint8_t* destPixels = nullptr;
+    uint32_t byteCount = 5;
+    ImageUtils::BGRAToARGB(srcPixels, destPixels, byteCount);
+    ASSERT_EQ(byteCount % NUM_4, 1);
+    ASSERT_NE(byteCount % NUM_4, NUM_0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ReversePixelsTest001 end";
+}
+
+/**
+ * @tc.name: DumpDataIfDumpEnabledTest001
+ * @tc.desc: DumpDataIfDumpEnabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, DumpDataIfDumpEnabledTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpDataIfDumpEnabledTest001 start";
+    const char* data = nullptr;
+    const size_t totalSize = 0;
+    const std::string fileSuffix;
+    uint64_t imageId = 0;
+    ImageUtils::DumpDataIfDumpEnabled(data, totalSize, fileSuffix, imageId);
+    ASSERT_EQ(ImageSystemProperties::GetDumpImageEnabled(), false);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: DumpDataIfDumpEnabledTest001 end";
+}
+
+/**
+ * @tc.name: GetLocalTimeTest001
+ * @tc.desc: GetLocalTime
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 start";
+    auto now = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
+    std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm = *std::localtime(&t);
+
+    std::stringstream ss;
+    int millSecondWidth = 3;
+    ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
+    std::string ret = ImageUtils::GetLocalTime();
+    ASSERT_EQ(ret, ss.str());
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 end";
 }
 }
 }
