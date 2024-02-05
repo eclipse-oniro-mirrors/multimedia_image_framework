@@ -435,14 +435,13 @@ HWTEST_F(ImageUtilsTest, GetPixelMapName001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, CheckMulOverflowTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflowTest002 start";
-    auto imageUtils = std::make_shared<ImageUtils>();
     int32_t width = 0;
     int32_t bytesPerPixel = 0;
-    bool ret = imageUtils->CheckMulOverflow(width, bytesPerPixel);
+    bool ret = ImageUtils::CheckMulOverflow(width, bytesPerPixel);
     ASSERT_EQ(ret, true);
     width = 1;
     bytesPerPixel = 1;
-    ret = imageUtils->CheckMulOverflow(width, bytesPerPixel);
+    ret = ImageUtils::CheckMulOverflow(width, bytesPerPixel);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: CheckMulOverflowTest002 end";
 }
@@ -455,11 +454,10 @@ HWTEST_F(ImageUtilsTest, CheckMulOverflowTest002, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, ReversePixelsTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: ReversePixelsTest001 start";
-    auto imageUtils = std::make_shared<ImageUtils>();
     uint8_t* srcPixels = nullptr;
     uint8_t* destPixels = nullptr;
     uint32_t byteCount = 5;
-    imageUtils->BGRAToARGB(srcPixels, destPixels, byteCount);
+    ImageUtils::BGRAToARGB(srcPixels, destPixels, byteCount);
     ASSERT_EQ(byteCount % NUM_4, 1);
     ASSERT_NE(byteCount % NUM_4, NUM_0);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ReversePixelsTest001 end";
@@ -473,12 +471,11 @@ HWTEST_F(ImageUtilsTest, ReversePixelsTest001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, DumpDataIfDumpEnabledTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: DumpDataIfDumpEnabledTest001 start";
-    auto imageUtils = std::make_shared<ImageUtils>();
     const char* data = nullptr;
     const size_t totalSize = 0;
     const std::string fileSuffix;
     uint64_t imageId = 0;
-    imageUtils->DumpDataIfDumpEnabled(data, totalSize, fileSuffix, imageId);
+    ImageUtils::DumpDataIfDumpEnabled(data, totalSize, fileSuffix, imageId);
     ASSERT_EQ(ImageSystemProperties::GetDumpImageEnabled(), false);
     GTEST_LOG_(INFO) << "ImageUtilsTest: DumpDataIfDumpEnabledTest001 end";
 }
@@ -491,7 +488,6 @@ HWTEST_F(ImageUtilsTest, DumpDataIfDumpEnabledTest001, TestSize.Level3)
 HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 start";
-    auto imageUtils = std::make_shared<ImageUtils>();
     auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
     std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -500,7 +496,7 @@ HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
     std::stringstream ss;
     int millSecondWidth = 3;
     ss << std::put_time(&tm, "%Y-%m-%d %H_%M_%S.") << std::setfill('0') << std::setw(millSecondWidth) << ms.count();
-    std::string ret = imageUtils->GetLocalTime();
+    std::string ret = ImageUtils::GetLocalTime();
     ASSERT_EQ(ret, ss.str());
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 end";
 }
