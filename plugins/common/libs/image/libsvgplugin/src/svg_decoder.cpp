@@ -19,6 +19,7 @@
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImageInfo.h"
+#include "image_trace.h"
 #include "image_log.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -300,6 +301,7 @@ uint32_t SvgDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
 uint32_t SvgDecoder::Decode(uint32_t index, DecodeContext &context)
 {
+    ImageTrace imageTrace("SvgDecoder::Decode, index:%u", index);
     if (index >= SVG_IMAGE_NUM) {
         IMAGE_LOGE("[Decode] decode image index[%{public}u], out of range[%{public}u].",
             index, SVG_IMAGE_NUM);
