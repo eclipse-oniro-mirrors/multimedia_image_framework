@@ -24,10 +24,10 @@
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
+#include "pixel_map_from_surface.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
-#include "pixel_map_from_surface.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -387,7 +387,9 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
+#endif
     };
 
     napi_value constructor = nullptr;
@@ -794,6 +796,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
     return result;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -908,6 +911,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
+#endif
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap)
 {
