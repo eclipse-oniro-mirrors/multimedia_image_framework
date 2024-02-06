@@ -40,6 +40,9 @@
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
+#ifdef IOS_PLATFORM
+#include <sys/syscall.h>
+#endif
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #else
@@ -441,6 +444,15 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("ImageUtils::GetPixelMapName error, pixelMap is null");
         return "";
     }
+#ifdef IOS_PLATFORM
+    std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
+        "_h" + std::to_string(pixelMap->GetHeight()) +
+        "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
+        "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
+        "_pid" + std::to_string(getpid()) +
+        "_tid" + std::to_string(syscall(SYS_thread_selfid)) +
+        "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
+#else
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
@@ -448,6 +460,7 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(gettid()) +
         "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
+#endif
     return pixelMapStr;
 }
 } // namespace Media
