@@ -21,6 +21,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 
 #include "decode_listener.h"
@@ -288,7 +289,7 @@ private:
     bool isIncrementalCompleted_ = false;
     bool hasDesiredSizeOptions = false;
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
-    bool isAstc_ = false;
+    std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
 };
 } // namespace Media
