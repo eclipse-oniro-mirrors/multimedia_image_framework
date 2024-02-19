@@ -34,7 +34,6 @@
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "surface_buffer.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +41,7 @@ extern "C" {
 #include "libswscale/swscale.h"
 #ifdef __cplusplus
 };
+#endif
 #endif
 
 #undef LOG_DOMAIN
@@ -58,6 +58,7 @@ constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::ALPHA_8, AVPixelFormat::AV_PIX_FMT_GRAY8 },
     { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565BE },
@@ -67,6 +68,7 @@ static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA },
     { PixelFormat::RGBA_F16, AVPixelFormat::AV_PIX_FMT_RGBA64BE },
 };
+#endif
 
 uint32_t PostProc::DecodePostProc(const DecodeOptions &opts, PixelMap &pixelMap, FinalOutputStep finalOutputStep)
 {
@@ -703,6 +705,7 @@ void PostProc::SetScanlineCropAndConvert(const Rect &cropRect, ImageInfo &dstIma
     scanlineFilter.SetSrcRegion(srcRect);
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 bool GetScaleFormat(const PixelFormat &format, AVPixelFormat &pixelFormat)
 {
     if (format != PixelFormat::UNKNOWN) {
@@ -791,5 +794,6 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     sws_freeContext(swsContext);
     return true;
 }
+#endif
 } // namespace Media
 } // namespace OHOS
