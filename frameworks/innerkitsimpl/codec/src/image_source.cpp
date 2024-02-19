@@ -98,6 +98,7 @@ namespace InnerFormat {
     const string ASTC_FORMAT = "image/astc";
     const string EXTENDED_FORMAT = "image/x-skia";
     const string IMAGE_EXTENDED_CODEC = "image/extended";
+    const string SVG_FORMAT = "image/svg+xml";
     const string RAW_EXTENDED_FORMATS[] = {
         "image/x-sony-arw",
         "image/x-canon-cr2",
@@ -1105,6 +1106,12 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
     sourceOptions_.pixelFormat = opts.pixelFormat;
     sourceOptions_.size.width = opts.size.width;
     sourceOptions_.size.height = opts.size.height;
+
+    // use format hint in svg format for the performance purpose
+    if (opts.formatHint == InnerFormat::SVG_FORMAT) {
+        sourceInfo_.encodedFormat = opts.formatHint;
+        sourceOptions_.formatHint = opts.formatHint;
+    }
     imageId_ = GetNowTimeMicroSeconds();
 }
 
