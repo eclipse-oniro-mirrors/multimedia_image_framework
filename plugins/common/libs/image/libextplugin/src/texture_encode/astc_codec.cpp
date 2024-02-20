@@ -203,9 +203,14 @@ static void FreeMem(AstcEncoder *work)
         astcenc_context_free(work->codec_context);
         work->codec_context = nullptr;
     }
+    if (work->data_out_) {
+        free(work->data_out_);
+        work->data_out_ = nullptr;
+    }
 }
 
-static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQualityCheck, int blockNum)
+static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQualityCheck, int blockNum,
+    int32_t outSize)
 {
     if (!work) {
         return false;
@@ -236,6 +241,13 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
     if (!work->image_.data) {
         return false;
     }
+    if (outSize < ASTC_HEADER_SIZE) {
+        return false;
+    }
+    work->data_out_ = static_cast<uint8_t *>(malloc(outSize));
+    if (!work->data_out_) {
+        return false;
+    }
     return true;
 }
 
@@ -245,7 +257,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
                                        int32_t blocksNum, int32_t outSize)
 {
     AstcEncoder work;
-    if (!InitMem(&work, param, enableQualityCheck, blocksNum)) {
+    if (!InitMem(&work, param, enableQualityCheck, blocksNum, outSize)) {
         FreeMem(&work);
         return ERROR;
     }
@@ -255,10 +267,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         return ERROR;
     }
     work.image_.data[0] = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
-    work.data_out_ = astcOutput_->GetAddr();
-    size_t size;
-    astcOutput_->GetCapicity(size);
-    if (GenAstcHeader(work.data_out_, work.image_, &param, size) != SUCCESS) {
+    if (GenAstcHeader(work.data_out_, work.image_, &param, outSize) != SUCCESS) {
         IMAGE_LOGE("astc GenAstcHeader failed");
         FreeMem(&work);
         return ERROR;
@@ -279,6 +288,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         FreeMem(&work);
         return ERROR;
     }
+    astcOutput_->Write(work.data_out_, outSize);
     FreeMem(&work);
     return SUCCESS;
 }
@@ -347,13 +357,20 @@ uint32_t AstcCodec::ASTCEncode()
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/data/local/tmp/astcKernelBin.bin";
+        auto buffer = static_cast<uint8_t *>(malloc(outSize));
+        if (!buffer) {
+            IMAGE_LOGE("astc hardware encode allocate buffer failed!");
+            return ERROR;
+        }
         if (TryAstcEncBasedOnCl(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
-            astcPixelMap_->GetRowStride(), &param, astcOutput_->GetAddr(), clBinPath)) {
+            astcPixelMap_->GetRowStride(), &param, buffer, clBinPath)) {
+            astcOutput_->Write(buffer, outSize);
             hardwareFlag = true;
             IMAGE_LOGI("astc hardware encode success!");
         } else {
             IMAGE_LOGI("astc hardware encode failed!");
         }
+        free(buffer);
     }
     if (!hardwareFlag) {
         uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
