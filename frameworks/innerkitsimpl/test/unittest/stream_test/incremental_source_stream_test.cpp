@@ -528,12 +528,12 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0020, TestSize.
 
 /**
  * @tc.name: IncrementalSourceStreamTest0021
- * @tc.desc:   UpdateData
+ * @tc.desc: Test UpdateData
  * @tc.type: FUNC
  */
 HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0021, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: UpdateDataTest001 start";
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0021 start";
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
