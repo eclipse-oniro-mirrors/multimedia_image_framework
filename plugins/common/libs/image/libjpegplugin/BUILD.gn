@@ -130,8 +130,8 @@ ohos_shared_library("jpegplugin") {
     ]
   }
 
+  innerapi_tags = [ "platformsdk" ]
   part_name = "image_framework"
-
   subsystem_name = "multimedia"
 }
 

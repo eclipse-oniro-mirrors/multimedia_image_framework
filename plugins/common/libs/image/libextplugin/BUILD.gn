@@ -124,6 +124,7 @@ ohos_shared_library("textureEncoderCL") {
   }
   cflags = [ "-O3" ]
   cflags_cc = [ "-O3" ]
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
@@ -231,6 +232,7 @@ ohos_shared_library("extplugin") {
     "-O3",
   ]
   cflags_cc = [ "-O3" ]
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
