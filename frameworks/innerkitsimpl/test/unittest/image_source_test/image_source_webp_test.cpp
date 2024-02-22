@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "directory_ex.h"
@@ -536,6 +536,57 @@ HWTEST_F(ImageSourceWebpTest, WebpImageCrop001, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     EXPECT_EQ(200, pixelMap->GetWidth());
     EXPECT_EQ(300, pixelMap->GetHeight());
+}
+
+/**
+ * @tc.name: PromoteDecoding001
+ * @tc.desc: PromoteDecoding
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, PromoteDecoding001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    IncrementalSourceOptions incOpt;
+    incOpt.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpt, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    decodeOpts.rotateDegrees = 180;
+    std::unique_ptr<IncrementalPixelMap> incOpts = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
+    incOpts->imageSource_ = nullptr;
+    incOpts->decodingStatus_.state = IncrementalDecodingState::BASE_INFO_ERROR;
+    uint8_t decodeProgress = 10;
+    uint32_t ret = incOpts->PromoteDecoding(decodeProgress);
+    ASSERT_EQ(ret, incOpts->decodingStatus_.errorDetail);
+    incOpts->decodingStatus_.state = IncrementalDecodingState::IMAGE_ERROR;
+    ret = incOpts->PromoteDecoding(decodeProgress);
+    ASSERT_EQ(ret, incOpts->decodingStatus_.errorDetail);
+    incOpts->decodingStatus_.state = IncrementalDecodingState::IMAGE_DECODED;
+    ret = incOpts->PromoteDecoding(decodeProgress);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+}
+
+/**
+ * @tc.name: OnPeerDestory001
+ * @tc.desc: OnPeerDestory
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, OnPeerDestory001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    IncrementalSourceOptions incOpt;
+    incOpt.incrementalMode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpt, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    decodeOpts.rotateDegrees = 180;
+    std::unique_ptr<IncrementalPixelMap> incOpts = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
+    incOpts->OnPeerDestory();
+    ASSERT_EQ(incOpts->imageSource_, nullptr);
 }
 } // namespace Multimedia
 } // namespace OHOS
