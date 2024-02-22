@@ -673,13 +673,11 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
             "PVERSIONID", DEFAULT_VERSION_ID,
             "IMAGE_TYPE", GetFormatStr(skEncodeFormat)
     );
-#else
-    int32_t ret = 0;
-#endif
     if (SUCCESS != ret) {
         IMAGE_LOGD("ExtDecoder::ReportImageType failed, ret = %{public}d", ret);
         return;
     }
+#endif
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d success", skEncodeFormat);
 }
 #ifdef JPEG_HW_DECODE_ENABLE
