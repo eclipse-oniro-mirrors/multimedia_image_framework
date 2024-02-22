@@ -107,6 +107,7 @@ do \
 
 #define STATIC_EXEC_FUNC(name) static void name ## Exec(napi_env env, void *data)
 #define STATIC_COMPLETE_FUNC(name) static void name ## Complete(napi_env env, napi_status status, void *data)
+#define STATIC_NAPI_VALUE_FUNC(name) static napi_value name ## NapiValue(napi_env env, void *data, void *ptr)
 
 #define DECORATOR_HILOG(op, fmt, args...) \
 do { \
