@@ -99,14 +99,5 @@ bool ImageSystemProperties::GetMediaLibraryAstcEnabled()
     return false;
 #endif
 }
-
-bool ImageSystemProperties::IsPreferDma()
-{
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    return __progname != nullptr && strncmp(__progname, "neboard", strlen("neboard")) == 0;
-#else
-    return false;
-#endif
-}
 } // namespace Media
 } // namespace OHOS
