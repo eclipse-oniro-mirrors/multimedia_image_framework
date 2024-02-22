@@ -26,6 +26,12 @@
 #undef LOG_TAG
 #define LOG_TAG "AstcCodec"
 
+namespace {
+    struct OutBufferWrapper {
+        uint8_t *buffer = nullptr;
+        int32_t size = -1;
+    };
+}
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
@@ -203,14 +209,11 @@ static void FreeMem(AstcEncoder *work)
         astcenc_context_free(work->codec_context);
         work->codec_context = nullptr;
     }
-    if (work->data_out_) {
-        free(work->data_out_);
-        work->data_out_ = nullptr;
-    }
+    work->data_out_ = nullptr;
 }
 
 static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQualityCheck, int blockNum,
-    int32_t outSize)
+    const OutBufferWrapper &outBufferWrapper)
 {
     if (!work) {
         return false;
@@ -241,23 +244,21 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param, bool enableQu
     if (!work->image_.data) {
         return false;
     }
-    if (outSize < ASTC_HEADER_SIZE) {
+    if (outBufferWrapper.size < ASTC_HEADER_SIZE || outBufferWrapper.buffer == nullptr) {
         return false;
     }
-    work->data_out_ = static_cast<uint8_t *>(malloc(outSize));
-    if (!work->data_out_) {
-        return false;
-    }
+    work->data_out_ = outBufferWrapper.buffer;
     return true;
 }
 
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 
 uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
-                                       int32_t blocksNum, int32_t outSize)
+                                       int32_t blocksNum, uint8_t *outBuffer, int32_t outSize)
 {
     AstcEncoder work;
-    if (!InitMem(&work, param, enableQualityCheck, blocksNum, outSize)) {
+    OutBufferWrapper wrapper = {outBuffer, outSize};
+    if (!InitMem(&work, param, enableQualityCheck, blocksNum, wrapper)) {
         FreeMem(&work);
         return ERROR;
     }
@@ -288,7 +289,6 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         FreeMem(&work);
         return ERROR;
     }
-    astcOutput_->Write(work.data_out_, outSize);
     FreeMem(&work);
     return SUCCESS;
 }
@@ -352,28 +352,26 @@ uint32_t AstcCodec::ASTCEncode()
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
+    auto outBuffer = static_cast<uint8_t *>(malloc(outSize));
+    if (outBuffer == nullptr) {
+        IMAGE_LOGE("astc encode allocate buffer failed!");
+        return ERROR;
+    }
 
     if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/data/local/tmp/astcKernelBin.bin";
-        auto buffer = static_cast<uint8_t *>(malloc(outSize));
-        if (!buffer) {
-            IMAGE_LOGE("astc hardware encode allocate buffer failed!");
-            return ERROR;
-        }
         if (TryAstcEncBasedOnCl(static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels()),
-            astcPixelMap_->GetRowStride(), &param, buffer, clBinPath)) {
-            astcOutput_->Write(buffer, outSize);
+            astcPixelMap_->GetRowStride(), &param, outBuffer, clBinPath)) {
             hardwareFlag = true;
             IMAGE_LOGI("astc hardware encode success!");
         } else {
             IMAGE_LOGI("astc hardware encode failed!");
         }
-        free(buffer);
     }
     if (!hardwareFlag) {
-        uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+        uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
         if (res != SUCCESS) {
             IMAGE_LOGE("AstcSoftwareEncode failed");
             return ERROR;
@@ -382,6 +380,10 @@ uint32_t AstcCodec::ASTCEncode()
     }
     IMAGE_LOGD("astc hardwareFlag %{public}d, enableQualityCheck %{public}d, privateProfile %{public}d",
         hardwareFlag, enableQualityCheck, param.privateProfile_);
+    astcOutput_->Write(outBuffer, outSize);
+    if (outBuffer != nullptr) {
+        free(outBuffer);
+    }
     astcOutput_->SetOffset(outSize);
     return SUCCESS;
 }

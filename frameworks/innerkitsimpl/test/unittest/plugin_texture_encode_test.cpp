@@ -271,6 +271,8 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
+    auto outBuffer = static_cast<uint8_t *>(malloc(outSize));
+    ASSERT_NE(outBuffer, nullptr);
 
     bool enableQualityCheck = true;
 
@@ -278,11 +280,11 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, SUCCESS);
 
     param.privateProfile_ = QualityProfile::HIGH_SPEED_PROFILE;
-    softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, SUCCESS);
 
     if (pixelMapPtr != nullptr) {
@@ -295,6 +297,10 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     if (stream != nullptr) {
         delete stream;
         stream = nullptr;
+    }
+    if (outBuffer != nullptr) {
+        free(outBuffer);
+        outBuffer = nullptr;
     }
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode001 end";
@@ -324,6 +330,8 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode002, TestSize.Level3)
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
+    auto outBuffer = static_cast<uint8_t *>(malloc(outSize));
+    ASSERT_NE(outBuffer, nullptr);
 
     bool enableQualityCheck = false;
 
@@ -331,7 +339,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode002, TestSize.Level3)
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, ERROR);
 
     if (pixelMapPtr != nullptr) {
@@ -344,6 +352,10 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode002, TestSize.Level3)
     if (stream != nullptr) {
         delete stream;
         stream = nullptr;
+    }
+    if (outBuffer != nullptr) {
+        free(outBuffer);
+        outBuffer = nullptr;
     }
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode002 end";
@@ -371,6 +383,8 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
+    auto outBuffer = static_cast<uint8_t *>(malloc(outSize));
+    ASSERT_NE(outBuffer, nullptr);
 
     bool enableQualityCheck = false;
 
@@ -378,7 +392,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, ERROR);
 
     if (pixelMapPtr != nullptr) {
@@ -387,6 +401,10 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     if (stream != nullptr) {
         delete stream;
         stream = nullptr;
+    }
+    if (outBuffer != nullptr) {
+        free(outBuffer);
+        outBuffer = nullptr;
     }
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode003 end";
