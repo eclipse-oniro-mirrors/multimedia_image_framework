@@ -57,14 +57,15 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
         IMAGE_LOGE("[FileSourceStream]input the file path exception, pathName=%{public}s", pathName.c_str());
         return nullptr;
     }
-    size_t size = 0;
-    if (!ImageUtils::GetFileSize(realPath, size)) {
-        IMAGE_LOGE("[FileSourceStream]get the file size fail.");
-        return nullptr;
-    }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
+        return nullptr;
+    }
+    size_t size = 0;
+    if (!ImageUtils::GetFileSize(realPath, size)) {
+        IMAGE_LOGE("[FileSourceStream]get the file size fail. pathName=%{public}s", pathName.c_str());
+        fclose(filePtr);
         return nullptr;
     }
     int64_t offset = ftell(filePtr);
@@ -78,21 +79,21 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
 {
-    size_t size = 0;
-
     int dupFd = dup(fd);
     if (dupFd < 0) {
         IMAGE_LOGE("[FileSourceStream]Fail to dup fd.");
         return nullptr;
     }
 
-    if (!ImageUtils::GetFileSize(dupFd, size)) {
-        IMAGE_LOGE("[FileSourceStream]get the file size fail.");
-        return nullptr;
-    }
     FILE *filePtr = fdopen(dupFd, "rb");
     if (filePtr == nullptr) {
         IMAGE_LOGE("[FileSourceStream]open file fail.");
+        return nullptr;
+    }
+    size_t size = 0;
+    if (!ImageUtils::GetFileSize(dupFd, size)) {
+        IMAGE_LOGE("[FileSourceStream]get the file size fail. dupFd=%{public}d", dupFd);
+        fclose(filePtr);
         return nullptr;
     }
 
