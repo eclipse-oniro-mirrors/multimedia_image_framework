@@ -823,7 +823,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
     IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAMETER,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
@@ -1280,7 +1280,7 @@ napi_value PixelMapNapi::ReadPixelsToBufferSync(napi_env env, napi_callback_info
     IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
     IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAMETER,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "ReadPixelsToBuffeSync failed"),
         IMAGE_LOGE("ReadPixelsToBuffeSync failed, invalid parameter"));
 
@@ -1440,7 +1440,7 @@ napi_value PixelMapNapi::WritePixelsSync(napi_env env, napi_callback_info info)
     IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
     IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAMETER,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &area),
@@ -2186,7 +2186,7 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
 
     IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
-        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_INVALID_PARAMETER,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_0], &xArg)),
