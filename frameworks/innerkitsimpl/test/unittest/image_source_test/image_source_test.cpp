@@ -1795,8 +1795,8 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
     ASSERT_EQ(webpWidth, pixelMap->GetWidth());
     ASSERT_EQ(webpHeight, pixelMap->GetHeight());
 
-    int32_t desiredWidth = 160;
-    int32_t desiredHeight = 160;
+    int32_t desiredWidth = 120;
+    int32_t desiredHeight = 120;
 
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;
