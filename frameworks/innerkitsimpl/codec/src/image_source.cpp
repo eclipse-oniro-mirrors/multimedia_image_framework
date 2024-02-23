@@ -19,6 +19,7 @@
 #include <chrono>
 #include <cstring>
 #include <vector>
+#include <dlfcn.h>
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -129,11 +130,28 @@ static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
 static const int DMA_SIZE = 512;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+static const uint32_t SUT_MAGIC_ID = 0x5CA1AB14;
 static const size_t ASTC_HEADER_SIZE = 16;
 static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
+static bool g_isSutDecInit = false;
+static void *g_textureDecSoHandle = nullptr;
+using GetSuperCompressAstcSize = size_t (*)(const uint8_t*, size_t);
+using SuperDecompressTexture = bool (*)(const uint8_t*, size_t, uint8_t*, size_t&);
+static GetSuperCompressAstcSize g_sutDecSoGetSizeFunc = nullptr;
+static SuperDecompressTexture g_sutDecSoDecFunc = nullptr;
+constexpr uint8_t ASTC_HEAD_BYTES = 16;
+constexpr uint8_t ASTC_MAGIC_0 = 0x13;
+constexpr uint8_t ASTC_MAGIC_1 = 0xAB;
+constexpr uint8_t ASTC_MAGIC_2 = 0xA1;
+constexpr uint8_t ASTC_MAGIC_3 = 0x5C;
+constexpr uint8_t BYTE_POS_0 = 0;
+constexpr uint8_t BYTE_POS_1 = 1;
+constexpr uint8_t BYTE_POS_2 = 2;
+constexpr uint8_t BYTE_POS_3 = 3;
+const std::string g_textureSuperDecSo = "/system/lib64/libtextureSuperDecompress.z.so";
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -2001,7 +2019,7 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
     }
     unsigned int magicVal = static_cast<unsigned int>(fileData[0]) + (static_cast<unsigned int>(fileData[1]) << 8) +
         (static_cast<unsigned int>(fileData[2]) << 16) + (static_cast<unsigned int>(fileData[3]) << 24);
-    return magicVal == ASTC_MAGIC_ID;
+    return ((magicVal == ASTC_MAGIC_ID) || (magicVal == SUT_MAGIC_ID));
 }
 
 bool ImageSource::GetImageInfoForASTC(ImageInfo& imageInfo)
@@ -2032,6 +2050,118 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo& imageInfo)
     return true;
 }
 
+static bool CheckClBinIsExist(const std::string &name)
+{
+    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
+{
+    if ((fileBuf == nullptr) || (fileSize <= ASTC_HEAD_BYTES)) {
+        IMAGE_LOGE("astc GetAstcSizeBytes input is nullptr or fileSize is smaller than ASTC HEADER");
+        return 0;
+    }
+    if ((fileBuf[BYTE_POS_0] == ASTC_MAGIC_0) && (fileBuf[BYTE_POS_1] == ASTC_MAGIC_1) &&
+        (fileBuf[BYTE_POS_2] == ASTC_MAGIC_2) && (fileBuf[BYTE_POS_3] == ASTC_MAGIC_3)) {
+        IMAGE_LOGI("astc GetAstcSizeBytes input is pure astc!");
+        return fileSize;
+    }
+    if (!CheckClBinIsExist(g_textureSuperDecSo)) {
+        IMAGE_LOGE("astc is not pure astc, but not find %{public}s!", g_textureSuperDecSo.c_str());
+        return 0;
+    }
+    if (!g_isSutDecInit) {
+        g_textureDecSoHandle = dlopen(g_textureSuperDecSo.c_str(), 1);
+        if (g_textureDecSoHandle == nullptr) {
+            IMAGE_LOGE("astc libtextureSuperDecompress dlopen failed!");
+            return 0;
+        }
+        g_sutDecSoGetSizeFunc =
+            reinterpret_cast<GetSuperCompressAstcSize>(dlsym(g_textureDecSoHandle, "GetSuperCompressAstcSize"));
+        if (g_sutDecSoGetSizeFunc == nullptr) {
+            IMAGE_LOGE("astc GetSuperCompressAstcSize dlsym failed!");
+            dlclose(g_textureDecSoHandle);
+            return 0;
+        }
+        g_sutDecSoDecFunc =
+            reinterpret_cast<SuperDecompressTexture>(dlsym(g_textureDecSoHandle, "SuperDecompressTexture"));
+        if (g_sutDecSoDecFunc == nullptr) {
+            IMAGE_LOGE("astc g_sutDecSoDecFunc dlsym failed!");
+            dlclose(g_textureDecSoHandle);
+            return 0;
+        }
+    }
+    return g_sutDecSoGetSizeFunc(fileBuf, fileSize);
+}
+
+static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes)
+{
+    size_t preOutBytes = outBytes;
+    if ((inData == nullptr) || (outData == nullptr) || (inBytes >= outBytes)) {
+        IMAGE_LOGE("astc TextureSuperCompressDecode input check failed!");
+        return false;
+    }
+    if (g_sutDecSoDecFunc == nullptr) {
+        IMAGE_LOGE("astc SuperDecompressTexture is not dlsym from so!");
+        return false;
+    }
+    if (!g_sutDecSoDecFunc(inData, inBytes, outData, outBytes)) {
+        IMAGE_LOGE("astc SuperDecompressTexture process failed!");
+        return false;
+    }
+    if (outBytes != preOutBytes) {
+        IMAGE_LOGE("astc SuperDecompressTexture Dec size is predicted failed!");
+        return false;
+    }
+    return true;
+}
+
+static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize,
+    unique_ptr<PixelAstc> &pixelAstc, std::unique_ptr<SourceStream> &sourceStreamPtr)
+{
+    int fd = AshmemCreate("CreatePixelMapForASTC Data", astcSize);
+    if (fd < 0) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
+        return false;
+    }
+    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
+    if (result < 0) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
+        ::close(fd);
+        return false;
+    }
+    void* ptr = ::mmap(nullptr, astcSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (ptr == MAP_FAILED || ptr == nullptr) {
+        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
+        ::close(fd);
+        return false;
+    }
+    auto data = static_cast<uint8_t*>(ptr);
+    void* fdPtr = new int32_t();
+    *static_cast<int32_t*>(fdPtr) = fd;
+    pixelAstc->SetPixelsAddr(data, fdPtr, astcSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    bool successMemCpyOrDec = true;
+    if (fileSize < astcSize) {
+        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize, data, astcSize) != true) {
+            IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
+            successMemCpyOrDec = false;
+        }
+    } else {
+        if (memcpy_s(data, fileSize, sourceStreamPtr->GetDataPtr(), fileSize) != 0) {
+            IMAGE_LOGE("[ImageSource] astc memcpy_s failed!");
+            successMemCpyOrDec = false;
+        }
+    }
+    if (!successMemCpyOrDec) {
+        int32_t *fdPtrInt = static_cast<int32_t*>(fdPtr);
+        delete [] fdPtrInt;
+        munmap(ptr, astcSize);
+        ::close(fd);
+        return false;
+    }
+    return true;
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
 {
@@ -2042,7 +2172,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
 {
     ImageTrace imageTrace("CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
-
     ImageInfo info;
     if (!GetImageInfoForASTC(info)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
@@ -2056,28 +2185,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
     }
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
-    int fd = AshmemCreate("CreatePixelMapForASTC Data", fileSize);
-    if (fd < 0) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
+    size_t astcSize = GetAstcSizeBytes(sourceStreamPtr_->GetDataPtr(), fileSize);
+    if (astcSize == 0) {
+        IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
     }
-    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    if (result < 0) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
-        ::close(fd);
+    if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceStreamPtr_)) {
+        IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
         return nullptr;
     }
-    void* ptr = ::mmap(nullptr, fileSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (ptr == MAP_FAILED || ptr == nullptr) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
-        ::close(fd);
-        return nullptr;
-    }
-    auto data = static_cast<uint8_t*>(ptr);
-    void* fdPtr = new int32_t();
-    *static_cast<int32_t*>(fdPtr) = fd;
-    pixelAstc->SetPixelsAddr(data, fdPtr, fileSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
-    memcpy_s(data, fileSize, sourceStreamPtr_->GetDataPtr(), fileSize);
     pixelAstc->SetAstc(true);
     return pixelAstc;
 }
