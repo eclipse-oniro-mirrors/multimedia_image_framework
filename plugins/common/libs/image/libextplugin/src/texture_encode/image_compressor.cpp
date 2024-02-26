@@ -41,7 +41,6 @@ constexpr uint8_t BIT_SHIFT_8BITS = 8;
 constexpr uint8_t BIT_SHIFT_16BITS = 16;
 constexpr uint8_t BIT_SHIFT_24BITS = 24;
 constexpr uint8_t BYTES_MASK = 0xFF;
-constexpr uint8_t STRIDE_RGBA_LOG2 = 2;
 constexpr uint8_t GLOBAL_WH_NUM_CL = 2;
 constexpr size_t MAX_MALLOC_BYTES = 10000000; // max 10MB
 constexpr size_t WORK_GROUP_SIZE = 8;
@@ -1506,7 +1505,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
         return CL_ASTC_ENC_FAILED;
     }
     imageIn->data = data;
-    imageIn->stride = stride >> STRIDE_RGBA_LOG2;
+    imageIn->stride = stride;
     imageIn->width = width;
     imageIn->height = height;
     if (AstcClEncImageCheckImageOption(imageIn)) {

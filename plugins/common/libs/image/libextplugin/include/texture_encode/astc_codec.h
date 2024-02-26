@@ -27,8 +27,7 @@ public:
     uint32_t SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap);
     uint32_t ASTCEncode();
     uint32_t AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
-                                int32_t blocksNum, uint8_t *outBuffer, int32_t outSize);
-
+        int32_t blocksNum, uint8_t *outBuffer, int32_t outSize);
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;
