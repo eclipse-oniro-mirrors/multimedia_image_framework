@@ -526,6 +526,7 @@ ohos_unittest("convertertest") {
   ]
 
   sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/basic_transformer_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/matrix_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_convert_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/post_proc_test.cpp",
