@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include "svg_decoder.h"
 #include "buffer_source_stream.h"
@@ -406,6 +407,163 @@ HWTEST_F(SvgDecoderTest, PromoteIncrementalDecodeTest003, TestSize.Level3)
     bool result = (svgDecoder != nullptr);
     ASSERT_EQ(result, true);
     GTEST_LOG_(INFO) << "SvgDecoderTest: PromoteIncrementalDecodeTest003 end";
+}
+
+/**
+ * @tc.name: SetDecodeOptions001
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, SetDecodeOptions001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptions001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::IMAGE_ERROR;
+    svgDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(svgDecoder->state_, SvgDecoder::SvgDecodingState::BASE_INFO_PARSING);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: SetDecodeOptions001 end";
+}
+
+/**
+ * @tc.name: GetImageSizeTest007
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, GetImageSizeTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: GetImageSizeTest007 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    ImagePlugin::PlSize plSize;
+    uint32_t index = 0;
+    svgDecoder->state_ = SvgDecoder::SvgDecodingState::IMAGE_ERROR;
+    uint32_t ret = svgDecoder->GetImageSize(index, plSize);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: GetImageSizeTest007 end";
+}
+
+/**
+ * @tc.name: AllocBuffer001
+ * @tc.desc: Test of AllocBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, AllocBuffer001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBuffer001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    DecodeContext context;
+    svgDecoder->svgDom_ = nullptr;
+    bool ret = svgDecoder->AllocBuffer(context);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: AllocBuffer001 end";
+}
+
+/**
+ * @tc.name: BuildStream001
+ * @tc.desc: Test of BuildStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, BuildStream001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildStream001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->inputStreamPtr_ = nullptr;
+    bool ret = svgDecoder->BuildStream();
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildStream001 end";
+}
+
+/**
+ * @tc.name: BuildDom001
+ * @tc.desc: Test of BuildDom
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, BuildDom001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildDom001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->svgStream_ = nullptr;
+    bool ret = svgDecoder->BuildDom();
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: BuildDom001 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptions001
+ * @tc.desc: Test of DoSetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoSetDecodeOptions001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptions001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->svgDom_ = nullptr;
+    uint32_t index = 1;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    uint32_t ret = svgDecoder->DoSetDecodeOptions(index, opts, info);
+    ASSERT_EQ(ret, Media::ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoSetDecodeOptions001 end";
+}
+
+/**
+ * @tc.name: DoGetImageSize001
+ * @tc.desc: Test of DoGetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoGetImageSize001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSize001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->svgDom_ = nullptr;
+    uint32_t index = 1;
+    PlSize size;
+    uint32_t ret = svgDecoder->DoGetImageSize(index, size);
+    ASSERT_EQ(ret, Media::ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSize001 end";
+}
+
+/**
+ * @tc.name: DoDecode001
+ * @tc.desc: Test of DoDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(SvgDecoderTest, DoDecode001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoDecode001 start";
+    auto svgDecoder = std::make_shared<SvgDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    svgDecoder->SetSource(*mock.get());
+    svgDecoder->svgDom_ = nullptr;
+    uint32_t index = 1;
+    DecodeContext context;
+    uint32_t ret = svgDecoder->DoDecode(index, context);
+    ASSERT_EQ(ret, Media::ERROR);
+    GTEST_LOG_(INFO) << "SvgDecoderTest: DoDecode001 end";
 }
 }
 }
