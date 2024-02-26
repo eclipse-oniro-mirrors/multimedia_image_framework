@@ -27,6 +27,7 @@
 #include "hardware/jpeg_hw_decoder.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
+#include "jpeg_decoder_yuv.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -36,6 +37,7 @@ public:
     ~ExtDecoder() override;
     bool HasProperty(std::string key) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
+    uint32_t DecodeToYuv420(uint32_t index, DecodeContext &context);
     #ifdef JPEG_HW_DECODE_ENABLE
     uint32_t AllocOutputBuffer(DecodeContext &context);
     void ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType);
@@ -75,11 +77,15 @@ private:
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
+    bool IsYuv420Format(PlPixelFormat format);
     bool ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &outputType);
     bool ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);
     SkAlphaType ConvertToAlphaType(PlAlphaType desiredType, PlAlphaType &outputType);
     uint32_t PreDecodeCheck(uint32_t index);
+    uint32_t PreDecodeCheckYuv(uint32_t index, PlPixelFormat desiredFormat);
+    uint32_t ReadJpegData(uint8_t* jpegBuffer, uint32_t jpegBufferSize);
+    JpegYuvFmt GetJpegYuvOutFmt(PlPixelFormat desiredFormat);
     bool ResetCodec();
     SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
@@ -110,6 +116,9 @@ private:
     uint32_t sampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
+
+    //Yuv
+    PlSize desiredSizeYuv_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

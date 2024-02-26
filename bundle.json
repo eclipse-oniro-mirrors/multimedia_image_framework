@@ -41,7 +41,9 @@
           "drivers_interface_codec",
           "drivers_interface_display",
           "hdf_core",
-          "memmgr_plugin"
+          "memmgr_plugin",
+          "libyuv",
+          "libjpeg-turbo"
         ],
         "third_party": [
           "flutter",
