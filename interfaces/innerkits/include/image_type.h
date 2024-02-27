@@ -159,6 +159,17 @@ struct ImageInfo {
     int32_t baseDensity = 0;
 };
 
+struct YUVDataInfo {
+    uint32_t y_width = 0;
+    uint32_t y_height = 0;
+    uint32_t uv_width = 0;
+    uint32_t uv_height = 0;
+    uint32_t y_stride = 0;
+    uint32_t u_stride = 0;
+    uint32_t v_stride = 0;
+    uint32_t uv_stride = 0;
+};
+
 struct FillColor {
     bool isValidColor = false;
     uint32_t color = 0;

@@ -547,7 +547,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
     }
     NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_HEADER_DECODE, &guard);
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions);
-
+    context.info.pixelFormat = plInfo.pixelFormat;
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
@@ -559,6 +559,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index,
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
+    }
+
+    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
+        context.yuvInfo.imageSize.width != 0) {
+        plInfo.yuvDataInfo = context.yuvInfo;
+        plInfo.size = context.yuvInfo.imageSize;
     }
     PixelMapAddrInfos addrInfos;
     ContextToAddrInfos(context, addrInfos);
@@ -686,7 +692,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             return CreatePixelMapExtended(index, opts, errorCode);
         }
     }
-
+    if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
+        IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
+        return nullptr;
+    }
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
@@ -1270,7 +1279,7 @@ uint32_t ImageSource::GetFormatExtended(string &format)
         IMAGE_LOGE("[ImageSource]Extended get format failed %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
-    
+
     if (!ImageSystemProperties::GetSkiaEnabled()) {
         IMAGE_LOGD("[ImageSource]Extended close SK decode");
         if (format != "image/gif") {
@@ -1597,6 +1606,20 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
     info.size.height = plInfo.size.height;
     info.pixelFormat = static_cast<PixelFormat>(plInfo.pixelFormat);
     info.alphaType = static_cast<AlphaType>(plInfo.alphaType);
+
+    if (info.pixelFormat == PixelFormat::NV12 || info.pixelFormat == PixelFormat::NV21) {
+        YUVDataInfo yuvInfo;
+        yuvInfo.y_width = plInfo.yuvDataInfo.y_width;
+        yuvInfo.y_height = plInfo.yuvDataInfo.y_height;
+        yuvInfo.uv_width = plInfo.yuvDataInfo.uv_width;
+        yuvInfo.uv_height = plInfo.yuvDataInfo.uv_height;
+        yuvInfo.y_stride = plInfo.yuvDataInfo.y_stride;
+        yuvInfo.u_stride = plInfo.yuvDataInfo.u_stride;
+        yuvInfo.v_stride = plInfo.yuvDataInfo.v_stride;
+        yuvInfo.uv_stride = plInfo.yuvDataInfo.uv_stride;
+        pixelMap.SetImageYUVInfo(yuvInfo);
+    }
+
     return pixelMap.SetImageInfo(info, isReUsed);
 }
 
