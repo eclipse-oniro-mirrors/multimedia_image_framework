@@ -271,6 +271,8 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
+    auto outBuffer = static_cast<uint8_t *>(malloc(outSize));
+    ASSERT_NE(outBuffer, nullptr);
 
     bool enableQualityCheck = true;
 
@@ -278,11 +280,11 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, SUCCESS);
 
     param.privateProfile_ = QualityProfile::HIGH_SPEED_PROFILE;
-    softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, SUCCESS);
 
     if (pixelMapPtr != nullptr) {
@@ -296,57 +298,12 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
         delete stream;
         stream = nullptr;
     }
+    if (outBuffer != nullptr) {
+        free(outBuffer);
+        outBuffer = nullptr;
+    }
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode001 end";
-}
-
-/**
- * @tc.name: AstcSoftwareEncode002
- * @tc.desc: GenAstcHeader return error test
- * @tc.desc: size < ASTC_HEADER_SIZE
- * @tc.type: FUNC
- */
-HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode002, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode002 start";
-
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
-    ASSERT_NE(pixelMap, nullptr);
-    Media::PixelMap *pixelMapPtr = pixelMap.get();
-    ASSERT_NE(pixelMapPtr, nullptr);
-
-    uint8_t *output = static_cast<uint8_t *>(malloc(TEXTURE_BLOCK_BYTES - 1));
-    ASSERT_NE(output, nullptr);
-    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, TEXTURE_BLOCK_BYTES - 1);
-    ASSERT_NE(stream, nullptr);
-
-    TextureEncodeOptions param = SetDefaultOption();
-    int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
-        ((param.height_ + param.blockY_ - 1) / param.blockY_);
-    int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
-
-    bool enableQualityCheck = false;
-
-    struct PlEncodeOptions option = { "image/astc/4*4", 100, 1 }; // quality set to 100
-    AstcCodec astcEncoder;
-    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
-    ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
-    ASSERT_EQ(softwareRet, ERROR);
-
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
-    if (output != nullptr) {
-        free(output);
-        output = nullptr;
-    }
-    if (stream != nullptr) {
-        delete stream;
-        stream = nullptr;
-    }
-
-    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode002 end";
 }
 
 /**
@@ -371,16 +328,13 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
-
     bool enableQualityCheck = false;
-
     struct PlEncodeOptions option = { "image/astc/4*4", 100, 1 }; // quality set to 100
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, SUCCESS);
-    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
+    uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, nullptr, outSize);
     ASSERT_EQ(softwareRet, ERROR);
-
     if (pixelMapPtr != nullptr) {
         pixelMapPtr = nullptr;
     }
@@ -388,7 +342,6 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
         delete stream;
         stream = nullptr;
     }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode003 end";
 }
 

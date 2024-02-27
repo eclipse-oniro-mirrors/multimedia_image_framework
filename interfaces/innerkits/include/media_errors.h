@@ -57,6 +57,7 @@ const uint32_t ERR_IMAGE_DECODE_HEAD_ABNORMAL = BASE_MEDIA_ERR_OFFSET + 26;    /
 const uint32_t ERR_IMAGE_DECODE_EXIF_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 27;   // image decode exif unsupport
 const uint32_t ERR_IMAGE_PROPERTY_NOT_EXIST = BASE_MEDIA_ERR_OFFSET + 28;     // image property not exist
 
+const uint32_t ERR_IMAGE_DESIRED_PIXELFORMAT_UNSUPPORTED = BASE_MEDIA_ERR_OFFSET + 29; // desired format unsupported
 const int32_t ERR_MEDIA_DATA_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 30;               // media type unsupported
 const int32_t ERR_MEDIA_TOO_LARGE = BASE_MEDIA_ERR_OFFSET + 31;                    // media data too large
 const int32_t ERR_MEDIA_MALLOC_FAILED = BASE_MEDIA_ERR_OFFSET + 32;                // media malloc memory failed

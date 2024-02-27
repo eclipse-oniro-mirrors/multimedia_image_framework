@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#define private public
 #include <gtest/gtest.h>
 #include <fstream>
 #include <fcntl.h>
@@ -459,6 +459,94 @@ HWTEST_F(IncrementalSourceStreamTest, UpdateDataTest001, TestSize.Level3)
     uint32_t ret = ins->UpdateData(data, size, isCompleted);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: UpdateDataTest001 end";
+}
+
+/**
+ * @tc.name: IncrementalSourceStreamTest0018
+ * @tc.desc: Test Peek
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0018 start";
+    IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
+    ASSERT_NE(ins, nullptr);
+    DataStreamBuffer outData;
+    uint32_t desiredSize = 3;
+    uint8_t set = 1;
+    ins->sourceData_.push_back(set);
+    ins->dataOffset_  = 1;
+    ins->dataSize_ = 2;
+    bool ret = ins->Peek(desiredSize, outData);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0018 end";
+}
+
+/**
+ * @tc.name: IncrementalSourceStreamTest0019
+ * @tc.desc: Test Peek
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0019 start";
+    IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
+    ASSERT_NE(ins, nullptr);
+    uint32_t desiredSize = 3;
+    uint8_t *outBuffer = new uint8_t;
+    uint32_t bufferSize = 3;
+    uint32_t readSize = 0;
+    uint8_t set = 1;
+    ins->sourceData_.push_back(set);
+    ins->dataOffset_  = 1;
+    ins->dataSize_ = 2;
+    bool ret = ins->Peek(desiredSize, outBuffer, bufferSize, readSize);
+    ASSERT_EQ(ret, true);
+    delete outBuffer;
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0019 end";
+}
+
+/**
+ * @tc.name: IncrementalSourceStreamTest0020
+ * @tc.desc: Test Seek
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0020 start";
+    IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
+    ASSERT_NE(ins, nullptr);
+    uint32_t position = 1;
+    ins->dataSize_ = 2;
+    bool ret = ins->Seek(position);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0020 end";
+}
+
+/**
+ * @tc.name: IncrementalSourceStreamTest0021
+ * @tc.desc: Test UpdateData
+ * @tc.type: FUNC
+ */
+HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0021, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0021 start";
+    IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
+    std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
+    ASSERT_NE(ins, nullptr);
+    const uint8_t data[64] = {0};
+    uint32_t size = 0;
+    bool isCompleted = true;
+    uint32_t ret = ins->UpdateData(data, size, isCompleted);
+    ASSERT_EQ(ret, SUCCESS);
+    size = 1;
+    ins->incrementalMode_ =  IncrementalMode::FULL_DATA;
+    ret = ins->UpdateData(data, size, isCompleted);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0021 end";
 }
 }
 }

@@ -697,5 +697,132 @@ HWTEST_F(WebpDecoderTest, DoIncrementalDecodeTest001, TestSize.Level3)
     context.decodeContext.pixelsBuffer.buffer = nullptr;
     GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest001 end";
 }
+
+/**
+ * @tc.name: SetDecodeOptionsTest006
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: SetDecodeOptionsTest006 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    webpDecoder->state_ = WebpDecodingState::IMAGE_DECODING;
+    uint32_t result = webpDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+    GTEST_LOG_(INFO) << "WebpDecoderTest: SetDecodeOptionsTest006 end";
+}
+
+/**
+ * @tc.name: IsDataEnoughTest002
+ * @tc.desc: Test of IsDataEnough
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, IsDataEnoughTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: IsDataEnoughTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    mock->returnValue_ = true;
+    bool result = webpDecoder->IsDataEnough();
+    ASSERT_EQ(result, true);
+    GTEST_LOG_(INFO) << "WebpDecoderTest: IsDataEnoughTest002 end";
+}
+
+/**
+ * @tc.name: GetWebpDecodeModeTest002
+ * @tc.desc: Test of GetWebpDecodeMode
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    PlPixelFormat pixelFormat = PlPixelFormat::BGRA_8888;
+    bool premul = false;
+    uint32_t result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
+    ASSERT_EQ(result, MODE_BGRA);
+    pixelFormat = PlPixelFormat::RGBA_8888;
+    result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
+    ASSERT_EQ(result, MODE_RGBA);
+    GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest002 end";
+}
+
+/**
+ * @tc.name: DoCommonDecodeTest002
+ * @tc.desc: Test of DoCommonDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, DoCommonDecodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoCommonDecodeTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    DecodeContext context;
+    context.pixelsBuffer.buffer = malloc(4);
+    uint32_t result = webpDecoder->DoCommonDecode(context);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);
+    free(context.pixelsBuffer.buffer);
+    context.pixelsBuffer.buffer = nullptr;
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoCommonDecodeTest002 end";
+}
+
+/**
+ * @tc.name: DoIncrementalDecodeTest002
+ * @tc.desc: Test of DoIncrementalDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, DoIncrementalDecodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    mock->returnValue_ = true;
+    ProgDecodeContext context;
+    context.decodeContext.pixelsBuffer.buffer = malloc(4);
+    webpDecoder->dataBuffer_.inputStreamBuffer = nullptr;
+    uint32_t result = webpDecoder->DoIncrementalDecode(context);
+    ASSERT_EQ(result, ERR_IMAGE_DECODE_FAILED);
+    free(context.decodeContext.pixelsBuffer.buffer);
+    context.decodeContext.pixelsBuffer.buffer = nullptr;
+    GTEST_LOG_(INFO) << "WebpDecoderTest: DoIncrementalDecodeTest002 end";
+}
+
+/**
+ * @tc.name: AllocOutputBufferTest002
+ * @tc.desc: Test of SharedMemoryCreate
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpDecoderTest, AllocOutputBufferTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "WebpDecoderTest: AllocOutputBufferTest002 start";
+    auto webpDecoder = std::make_shared<WebpDecoder>();
+    auto mock = std::make_shared<MockInputDataStream>();
+    mock->SetReturn(false);
+    webpDecoder->SetSource(*mock.get());
+    DecodeContext context;
+    bool isIncremental = false;
+    context.pixelsBuffer.buffer = nullptr;
+    context.allocatorType = Media::AllocatorType::SHARE_MEM_ALLOC;
+    bool result = webpDecoder->AllocOutputBuffer(context, isIncremental);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "WebpDecoderTest: AllocOutputBufferTest002 end";
+}
 }
 }

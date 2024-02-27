@@ -2622,6 +2622,10 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
+    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+        IMAGE_LOGE("resize temp disabled for YUV data");
+        return true;
+    }
     ImageTrace imageTrace("PixelMap resize");
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);

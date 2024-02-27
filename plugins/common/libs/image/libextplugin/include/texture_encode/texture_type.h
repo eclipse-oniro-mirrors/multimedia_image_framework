@@ -22,16 +22,26 @@
 #endif
 namespace OHOS {
 namespace ImagePlugin {
-typedef struct TextureEncodeOptionsType {
+enum class SutProfile {
+    SKIP_SUT = 0,
+    EXTREME_SPEED
+}; // the profile of superCompress for texture
+
+struct TextureEncodeOptions {
     int32_t width_;
     int32_t height_;
     uint8_t blockX_;
     uint8_t blockY_;
     int32_t stride_;
     QualityProfile privateProfile_; // enum type defined in astc-encoder module: HIGH_QUALITY_PROFILE HIGH_SPEED_PROFILE
-} TextureEncodeOptions;
+    int32_t blocksNum;
+    int32_t astcBytes;
+    bool enableQualityCheck;
+    bool hardwareFlag;
+    SutProfile sutProfile;
+};
 
-typedef struct AstcEncoderInfo {
+struct AstcEncoder {
     astcenc_config config;
     astcenc_profile profile;
     astcenc_context* codec_context;
@@ -43,7 +53,7 @@ typedef struct AstcEncoderInfo {
     bool calQualityEnable;
     int32_t *mse[RGBA_COM + 1];
 #endif
-} AstcEncoder;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 

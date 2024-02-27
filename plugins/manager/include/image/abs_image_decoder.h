@@ -69,6 +69,8 @@ struct DecodeContext {
     Media::CustomFreePixelMap freeFunc = nullptr;
     // Out: png nine patch context;
     NinePatchContext ninePatchContext;
+    // Out: output YUV data info
+    PlYuvDataInfo yuvInfo;
 };
 
 struct ProgDecodeContext {

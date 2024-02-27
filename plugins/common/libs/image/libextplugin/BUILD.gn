@@ -124,6 +124,7 @@ ohos_shared_library("textureEncoderCL") {
   }
   cflags = [ "-O3" ]
   cflags_cc = [ "-O3" ]
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
@@ -142,6 +143,8 @@ ohos_shared_library("extplugin") {
     "src/ext_pixel_convert.cpp",
     "src/ext_stream.cpp",
     "src/ext_wstream.cpp",
+    "src/jpeg_yuv_decoder/jpeg_decoder_yuv.cpp",
+    "src/jpeg_yuv_decoder/jpeg_yuvdata_converter.cpp",
     "src/plugin_export.cpp",
     "src/texture_encode/astc_codec.cpp",
   ]
@@ -156,6 +159,7 @@ ohos_shared_library("extplugin") {
   include_dirs = [
     "include",
     "include/texture_encode",
+    "include/jpeg_yuv_decoder",
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${graphic_subsystem}/interfaces/inner_api/surface",
@@ -209,6 +213,7 @@ ohos_shared_library("extplugin") {
       "graphic_2d:color_manager",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
+      "libjpeg-turbo:turbojpeg",
     ]
 
     if (enable_jpeg_hw_decode) {
@@ -231,6 +236,14 @@ ohos_shared_library("extplugin") {
     "-O3",
   ]
   cflags_cc = [ "-O3" ]
+  innerapi_tags = [ "platformsdk" ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    cflags += [ "-DLIBYUV_ENABLE" ]
+    external_deps += [ "libyuv:yuv" ]
+  }
+
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
