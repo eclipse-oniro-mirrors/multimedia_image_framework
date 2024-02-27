@@ -22,6 +22,7 @@
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "image_source_util.h"
+#include "memory_manager.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -936,6 +937,96 @@ HWTEST_F(PostProcTest, PostProcTest0039, TestSize.Level3)
     ret = postProc.PixelConvertProc(dstImageInfo, pixelMap, srcImageInfo);
     ASSERT_EQ(ret, ERR_IMAGE_CROP);
     GTEST_LOG_(INFO) << "PostProcTest: PostProcTest0039 end";
+}
+
+/**
+ * @tc.name: CenterDisplayTest001
+ * @tc.desc: test CenterDisplay
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, CenterDisplayTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest001 start";
+    PostProc postProc;
+    PixelMap pixelMap;
+    int32_t srcWidth = 0;
+    int32_t srcHeight = 0;
+    int32_t targetWidth = 0;
+    int32_t targetHeight = 0;
+    bool ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, false);
+    targetWidth = 1;
+    targetHeight = 1;
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::ALPHA_8;
+    pixelMap.allocatorType_ =  AllocatorType::HEAP_ALLOC;
+    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, true);
+    pixelMap.allocatorType_ =  AllocatorType::DMA_ALLOC;
+    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, true);
+    pixelMap.allocatorType_ =  AllocatorType::DEFAULT;
+    ret = postProc.CenterDisplay(pixelMap, srcWidth, srcHeight, targetWidth, targetHeight);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "PostProcTest: CenterDisplayTest001 end";
+}
+
+/**
+ * @tc.name: TransformTest001
+ * @tc.desc: test Transform
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, TransformTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: TransformTest001 start";
+    PostProc postProc;
+    BasicTransformer trans;
+    PixmapInfo input;
+    PixelMap pixelMap;
+    pixelMap.isTransformered_ = true;
+    bool ret = postProc.Transform(trans, input, pixelMap);
+    ASSERT_EQ(ret, false);
+    pixelMap.isTransformered_ = false;
+    postProc.decodeOpts_.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    ret = postProc.Transform(trans, input, pixelMap);
+    ASSERT_EQ(ret, false);
+    postProc.decodeOpts_.allocatorType = AllocatorType::HEAP_ALLOC;
+    ret = postProc.Transform(trans, input, pixelMap);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PostProcTest: TransformTest001 end";
+}
+
+/**
+ * @tc.name: ScalePixelMapExTest001
+ * @tc.desc: test ScalePixelMapEx
+ * @tc.type: FUNC
+ */
+HWTEST_F(PostProcTest, ScalePixelMapExTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExTest001 start";
+    PostProc postProc;
+    Size desiredSize;
+    PixelMap pixelMap;
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    pixelMap.imageInfo_.size.width = 0;
+    pixelMap.imageInfo_.size.height = 0;
+    bool ret = postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+    ASSERT_EQ(ret, false);
+    pixelMap.imageInfo_.size.width = 1;
+    pixelMap.imageInfo_.size.height = 1;
+    pixelMap.data_ = new uint8_t;
+    ret = postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+    ASSERT_EQ(ret, false);
+    pixelMap.imageInfo_.pixelFormat = PixelFormat::ALPHA_8;
+    pixelMap.allocatorType_ = AllocatorType::CUSTOM_ALLOC;
+    ret = postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+    ASSERT_EQ(ret, false);
+    pixelMap.allocatorType_ = AllocatorType::SHARE_MEM_ALLOC;
+    AbsMemory absMemory;
+    absMemory.data.data = new uint8_t;
+    ret = postProc.ScalePixelMapEx(desiredSize, pixelMap, option);
+    ASSERT_EQ(ret, false);
+    delete pixelMap.data_;
+    GTEST_LOG_(INFO) << "PostProcTest: ScalePixelMapExTest001 end";
 }
 }
 }
