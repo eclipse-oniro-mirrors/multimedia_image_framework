@@ -626,7 +626,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
     uint8_t *dstBuffer = nullptr;
-
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
         auto tmpBuffer = make_unique<uint8_t[]>(byteCount);
         dstBuffer = tmpBuffer.get();
@@ -650,7 +649,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         rowStride = sbBuffer->GetStride();
     }
 #endif
-    SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
     ReportImageType(skEncodeFormat);
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
