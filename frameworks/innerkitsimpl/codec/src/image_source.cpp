@@ -2142,6 +2142,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize,
     unique_ptr<PixelAstc> &pixelAstc, std::unique_ptr<SourceStream> &sourceStreamPtr)
 {
+#if !(defined(A_PLATFORM) || defined(IOS_PLATFORM))
     int fd = AshmemCreate("CreatePixelMapForASTC Data", astcSize);
     if (fd < 0) {
         IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
@@ -2182,6 +2183,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize,
         ::close(fd);
         return false;
     }
+#endif
     return true;
 }
 
