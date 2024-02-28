@@ -55,8 +55,7 @@ private:
     void release();
     bool isRelease = false;
     static thread_local napi_ref sConstructor_;
-    static std::shared_ptr<ImageSource> sImgSource_;
-    static std::shared_ptr<ImagePacker> sImgPck_;
+    static thread_local std::shared_ptr<ImagePacker> sImgPck_;
 
     napi_env env_ = nullptr;
     std::shared_ptr<ImagePacker> nativeImgPck = nullptr;

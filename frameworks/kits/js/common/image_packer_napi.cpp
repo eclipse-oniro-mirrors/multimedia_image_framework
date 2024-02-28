@@ -40,8 +40,7 @@ namespace {
 namespace OHOS {
 namespace Media {
 static const std::string CLASS_NAME_IMAGEPACKER = "ImagePacker";
-std::shared_ptr<ImagePacker> ImagePackerNapi::sImgPck_ = nullptr;
-std::shared_ptr<ImageSource> ImagePackerNapi::sImgSource_ = nullptr;
+thread_local std::shared_ptr<ImagePacker> ImagePackerNapi::sImgPck_ = nullptr;
 thread_local napi_ref ImagePackerNapi::sConstructor_ = nullptr;
 
 const int ARGS_THREE = 3;
@@ -318,6 +317,7 @@ napi_value ImagePackerNapi::Constructor(napi_env env, napi_callback_info info)
         if (pImgPackerNapi != nullptr) {
             pImgPackerNapi->env_ = env;
             pImgPackerNapi->nativeImgPck = sImgPck_;
+            sImgPck_ = nullptr;
             status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pImgPackerNapi.get()),
                                ImagePackerNapi::Destructor, nullptr, nullptr);
             if (status == napi_ok) {
@@ -534,7 +534,7 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
     NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
 
-    asyncContext->rImagePacker = std::move(asyncContext->constructor_->nativeImgPck);
+    asyncContext->rImagePacker = asyncContext->constructor_->nativeImgPck;
     ParserPackingArguments(env, argv, argc, asyncContext.get());
     if (asyncContext->callbackRef == nullptr) {
         napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -741,7 +741,7 @@ napi_value ImagePackerNapi::PackToFile(napi_env env, napi_callback_info info)
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
     NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
 
-    asyncContext->rImagePacker = std::move(asyncContext->constructor_->nativeImgPck);
+    asyncContext->rImagePacker = asyncContext->constructor_->nativeImgPck;
     ParserPackToFileArguments(env, argv, argc, asyncContext.get());
     if (asyncContext->callbackRef == nullptr) {
         napi_create_promise(env, &(asyncContext->deferred), &result);
