@@ -101,6 +101,7 @@ struct PixelDecodeOptions {
     bool allowPartialImage = true;
     bool editable = false;
     PlFillColor plFillColor;
+    PlFillColor plStrokeColor;
     PlSVGResize plSVGResize;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> plDesiredColorSpace = nullptr;
 };

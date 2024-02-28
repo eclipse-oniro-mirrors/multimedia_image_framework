@@ -1644,6 +1644,10 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
         plOpts.plFillColor.isValidColor = opts.SVGOpts.fillColor.isValidColor;
         plOpts.plFillColor.color = opts.SVGOpts.fillColor.color;
     }
+    if (opts.SVGOpts.strokeColor.isValidColor) {
+        plOpts.plStrokeColor.isValidColor = opts.SVGOpts.strokeColor.isValidColor;
+        plOpts.plStrokeColor.color = opts.SVGOpts.strokeColor.color;
+    }
     if (opts.SVGOpts.SVGResize.isValidPercentage) {
         plOpts.plSVGResize.isValidPercentage = opts.SVGOpts.SVGResize.isValidPercentage;
         plOpts.plSVGResize.resizePercentage = opts.SVGOpts.SVGResize.resizePercentage;

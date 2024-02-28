@@ -671,6 +671,13 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
         IMAGE_LOGD("no fillColor");
     }
 
+    if (GET_UINT32_BY_NAME(root, "strokeColor", opts->SVGOpts.strokeColor.color)) {
+        opts->SVGOpts.strokeColor.isValidColor = true;
+        IMAGE_LOGD("strokeColor %{public}x", opts->SVGOpts.strokeColor.color);
+    } else {
+        IMAGE_LOGD("no strokeColor");
+    }
+
     if (GET_UINT32_BY_NAME(root, "SVGResize", opts->SVGOpts.SVGResize.resizePercentage)) {
         opts->SVGOpts.SVGResize.isValidPercentage = true;
         IMAGE_LOGD("SVGResize percentage %{public}x", opts->SVGOpts.SVGResize.resizePercentage);

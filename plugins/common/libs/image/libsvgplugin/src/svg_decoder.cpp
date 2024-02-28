@@ -44,6 +44,9 @@ constexpr uint32_t SVG_BYTES_PER_PIXEL = 4;
 constexpr uint32_t SVG_FILL_COLOR_ATTR_WIDTH = 6;
 constexpr uint32_t SVG_FILL_COLOR_MASK = 0xFFFFFF;
 const std::string SVG_FILL_COLOR_ATTR = "fill";
+constexpr uint32_t SVG_STROKE_COLOR_ATTR_WIDTH = 6;
+constexpr uint32_t SVG_STROKE_COLOR_MASK = 0xFFFFFF;
+const std::string SVG_STROKE_COLOR_ATTR = "stroke";
 static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
 static constexpr float FLOAT_HALF = 0.5f;
 
@@ -464,6 +467,28 @@ static void SetSVGFillColor(SkSVGNode* node, uint32_t color)
     SetSVGFillColor(node, "#" + newValue);
 }
 
+static void SetSVGStrokeColor(SkSVGNode* node, std::string color)
+{
+    if (node == nullptr) {
+        return;
+    }
+    IMAGE_LOGD("[SetSVGStrokeColor] node tag %{public}d %{public}s.", node->tag(), color.c_str());
+    node->setAttribute(SVG_STROKE_COLOR_ATTR.c_str(), color.c_str());
+    for (auto childNode : node->getChild()) {
+        SetSVGStrokeColor(childNode.get(), color);
+    }
+}
+
+static void SetSVGStrokeColor(SkSVGNode* node, uint32_t color)
+{
+    std::stringstream stream;
+    stream.fill('0');
+    stream.width(SVG_STROKE_COLOR_ATTR_WIDTH);
+    stream << std::hex <<(color & SVG_STROKE_COLOR_MASK);
+    std::string newValue(stream.str());
+    SetSVGStrokeColor(node, "#" + newValue);
+}
+
 bool SvgDecoder::BuildDom()
 {
     IMAGE_LOGD("[BuildDom] IN");
@@ -588,6 +613,10 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
 
     if (opts_.plFillColor.isValidColor) {
         SetSVGFillColor(svgDom_->getRoot(), opts_.plFillColor.color);
+    }
+
+    if (opts_.plStrokeColor.isValidColor) {
+        SetSVGStrokeColor(svgDom_->getRoot(), opts_.plStrokeColor.color);
     }
 
     if (!AllocBuffer(context)) {
