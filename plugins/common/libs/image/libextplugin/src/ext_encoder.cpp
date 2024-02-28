@@ -22,7 +22,9 @@
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "astc_codec.h"
+#endif
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
 #include "image_log.h"
@@ -131,10 +133,14 @@ static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
     }
 
     uint64_t rowStride = skInfo.minRowBytes64();
+
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (pixelMap->GetAllocatorType() == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
         rowStride = sbBuffer->GetStride();
     }
+#endif
+
     if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
         IMAGE_LOGE("ExtEncoder::BuildSkBitmap to skbitmap failed");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -152,11 +158,13 @@ uint32_t ExtEncoder::FinalizeEncode()
     if (pixelmap_ == nullptr || output_ == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (IsAstc(opts_.format)) {
         AstcCodec astcEncoder;
         astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
         return astcEncoder.ASTCEncode();
     }
+#endif
     auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
         [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
             return IsSameTextStr(item.second, opts_.format);

@@ -21,10 +21,12 @@
 
 #include "SkCodec.h"
 #include "abs_image_decoder.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "display_type.h"
+#include "hardware/jpeg_hw_decoder.h"
+#endif
 #include "ext_stream.h"
 #include "exif_info.h"
-#include "hardware/jpeg_hw_decoder.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "jpeg_decoder_yuv.h"
@@ -107,6 +109,7 @@ private:
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
 #endif
 
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     // hardware
     OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
     SkImageInfo hwDstInfo_;
@@ -116,6 +119,7 @@ private:
     uint32_t sampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
+#endif
 
     //Yuv
     PlSize desiredSizeYuv_;
