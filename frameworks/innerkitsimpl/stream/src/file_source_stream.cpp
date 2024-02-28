@@ -15,6 +15,7 @@
 
 #include "file_source_stream.h"
 
+#include <cerrno>
 #include <unistd.h>
 
 #include "directory_ex.h"
@@ -54,7 +55,8 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 {
     string realPath;
     if (!PathToRealPath(pathName, realPath)) {
-        IMAGE_LOGE("[FileSourceStream]input the file path exception, pathName=%{public}s", pathName.c_str());
+        IMAGE_LOGE("[FileSourceStream]input the file path exception, pathName:%{public}s, errno:%{public}d.",
+            pathName.c_str(), errno);
         return nullptr;
     }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
