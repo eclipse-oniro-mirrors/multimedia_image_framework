@@ -183,7 +183,7 @@ static uint32_t ShareMemAlloc(DecodeContext &context, uint64_t count)
 #endif
 }
 
-static uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
+uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
@@ -200,6 +200,10 @@ static uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo 
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
+    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
+    }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
         IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
@@ -464,6 +468,11 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
+    if (opts.desiredPixelFormat == PlPixelFormat::NV21) {
+        outputColorFmt_ = PIXEL_FMT_YCRCB_420_SP;
+    } else {
+        outputColorFmt_ = PIXEL_FMT_RGBA_8888;
+    }
 
     if (codec_) {
         SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
@@ -615,6 +624,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return SUCCESS;
     }
 #endif
+    context.outInfo.size.width = dstInfo_.width();
+    context.outInfo.size.height = dstInfo_.height();
     uint32_t res = PreDecodeCheck(index);
     if (res != SUCCESS) {
         return res;
@@ -832,10 +843,17 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context)
     return SUCCESS;
 }
 
-bool CheckContext(const SkImageInfo &dstInfo)
+bool ExtDecoder::CheckContext(const DecodeContext &context)
 {
-    if (dstInfo.colorType() != kRGBA_8888_SkColorType) {
-        IMAGE_LOGE("hardware decode only support rgba_8888 format");
+    if (IsYuv420Format(context.info.pixelFormat)) {
+        if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+            return true;
+        }
+        IMAGE_LOGI("yuv hardware decode only support NV21 format");
+        return false;
+    }
+    if (dstInfo_.colorType() != kRGBA_8888_SkColorType) {
+        IMAGE_LOGI("jpeg hardware decode only support rgba_8888 format");
         return false;
     }
     return true;
@@ -855,16 +873,11 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
     // check if the hwDstInfo is equal to the dstInfo
-    if (hwDstInfo_.width() != dstInfo_.width() || hwDstInfo_.height() != dstInfo_.height()) {
-        IMAGE_LOGI("hwDstInfo(%{public}d, %{public}d) != dstInfo(%{public}d, %{public}d)",
-            hwDstInfo_.width(), hwDstInfo_.height(), dstInfo_.width(), dstInfo_.height());
-        return ERROR;
-    }
     JpegHardwareDecoder hwDecoder;
     orgImgSize_.width = info_.width();
     orgImgSize_.height = info_.height();
 
-    if (!CheckContext(dstInfo_)) {
+    if (!CheckContext(context)) {
         return ERROR;
     }
 
@@ -879,6 +892,11 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
         ReleaseOutputBuffer(context, tmpAllocatorType);
         return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    context.outInfo.size.width = hwDstInfo_.width();
+    context.outInfo.size.height = hwDstInfo_.height();
+    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+        context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
     return SUCCESS;
 }
