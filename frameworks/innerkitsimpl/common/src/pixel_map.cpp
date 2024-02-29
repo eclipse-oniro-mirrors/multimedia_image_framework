@@ -1967,7 +1967,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
     return true;
 }
 
-bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, const PixelMemInfo &pixelMemInfo)
+bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo)
 {
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {
@@ -1977,12 +1977,13 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, con
         ReleaseMemory(pixelMemInfo.allocatorType, pixelMemInfo.base, pixelMemInfo.context, pixelMemInfo.bufferSize);
         if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
             delete static_cast<int32_t *>(pixelMemInfo.context);
+            pixelMemInfo.context = nullptr;
         }
         IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
         return false;
     }
     pixelMap->SetPixelsAddr(pixelMemInfo.base, pixelMemInfo.context,
-                            pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, nullptr);
+        pixelMemInfo.bufferSize, pixelMemInfo.allocatorType, nullptr);
     return true;
 }
 
@@ -2008,7 +2009,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
     if (!pixelMap->ReadPropertiesFromParcel(parcel, imgInfo, pixelMemInfo.allocatorType,
-                                            pixelMemInfo.bufferSize, error)) {
+        pixelMemInfo.bufferSize, error)) {
         IMAGE_LOGE("read properties fail");
         delete pixelMap;
         return nullptr;
