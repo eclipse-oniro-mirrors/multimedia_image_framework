@@ -463,7 +463,7 @@ static void SetSVGColor(SkSVGNode* node, uint32_t color, std::string colorAttr)
     stream.width(SVG_COLOR_ATTR_WIDTH);
     stream << std::hex << (color & SVG_COLOR_MASK);
     std::string newValue(stream.str());
-    SetSVGFillColor(node, "#" + newValue, colorAttr);
+    SetSVGColor(node, "#" + newValue, colorAttr);
 }
 
 bool SvgDecoder::BuildDom()
