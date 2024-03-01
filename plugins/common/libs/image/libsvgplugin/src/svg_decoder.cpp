@@ -41,9 +41,10 @@ using namespace Media;
 namespace {
 constexpr uint32_t SVG_IMAGE_NUM = 1;
 constexpr uint32_t SVG_BYTES_PER_PIXEL = 4;
-constexpr uint32_t SVG_FILL_COLOR_ATTR_WIDTH = 6;
-constexpr uint32_t SVG_FILL_COLOR_MASK = 0xFFFFFF;
+constexpr uint32_t SVG_COLOR_ATTR_WIDTH = 6;
+constexpr uint32_t SVG_COLOR_MASK = 0xFFFFFF;
 const std::string SVG_FILL_COLOR_ATTR = "fill";
+const std::string SVG_STROKE_COLOR_ATTR = "stroke";
 static constexpr uint32_t DEFAULT_RESIZE_PERCENTAGE = 100;
 static constexpr float FLOAT_HALF = 0.5f;
 
@@ -442,26 +443,27 @@ bool SvgDecoder::BuildStream()
     return true;
 }
 
-static void SetSVGFillColor(SkSVGNode* node, std::string color)
+static void SetSVGColor(SkSVGNode* node, std::string color, std::string colorAttr)
 {
     if (node == nullptr) {
         return;
     }
-    IMAGE_LOGD("[SetSVGFillColor] node tag %{public}d %{public}s.", node->tag(), color.c_str());
-    node->setAttribute(SVG_FILL_COLOR_ATTR.c_str(), color.c_str());
+    IMAGE_LOGD("[SetSVGColor] node tag %{public}d %{public}s %{public}s.",
+        node->tag(), color.c_str(), colorAttr.c_str());
+    node->setAttribute(colorAttr.c_str(), color.c_str());
     for (auto childNode : node->getChild()) {
-        SetSVGFillColor(childNode.get(), color);
+        SetSVGColor(childNode.get(), color, colorAttr);
     }
 }
 
-static void SetSVGFillColor(SkSVGNode* node, uint32_t color)
+static void SetSVGColor(SkSVGNode* node, uint32_t color, std::string colorAttr)
 {
     std::stringstream stream;
     stream.fill('0');
-    stream.width(SVG_FILL_COLOR_ATTR_WIDTH);
-    stream << std::hex <<(color & SVG_FILL_COLOR_MASK);
+    stream.width(SVG_COLOR_ATTR_WIDTH);
+    stream << std::hex << (color & SVG_COLOR_MASK);
     std::string newValue(stream.str());
-    SetSVGFillColor(node, "#" + newValue);
+    SetSVGColor(node, "#" + newValue, colorAttr);
 }
 
 bool SvgDecoder::BuildDom()
@@ -587,7 +589,11 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     }
 
     if (opts_.plFillColor.isValidColor) {
-        SetSVGFillColor(svgDom_->getRoot(), opts_.plFillColor.color);
+        SetSVGColor(svgDom_->getRoot(), opts_.plFillColor.color, SVG_FILL_COLOR_ATTR);
+    }
+
+    if (opts_.plStrokeColor.isValidColor) {
+        SetSVGColor(svgDom_->getRoot(), opts_.plStrokeColor.color, SVG_STROKE_COLOR_ATTR);
     }
 
     if (!AllocBuffer(context)) {

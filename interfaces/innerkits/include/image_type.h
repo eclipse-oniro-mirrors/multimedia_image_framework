@@ -182,6 +182,7 @@ struct SVGResize {
 
 struct SVGDecodeOptions {
     FillColor fillColor;
+    FillColor strokeColor;
     SVGResize SVGResize;
 };
 
