@@ -219,6 +219,22 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
     return iva;
 }
 
+OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
+{
+    int32_t flushFence = 0;
+    OHOS::Rect damage = {};
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+    SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+    if (surfaceError == SURFACE_ERROR_OK) {
+        iraContext_->currentBuffer_ = buffer;
+    } else {
+        IMAGE_LOGD("buffer is null");
+    }
+    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", timestamp);
+    return iraContext_->GetCurrentBuffer();
+}
+
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
 {
     int32_t flushFence = 0;
@@ -232,6 +248,25 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
     } else {
         IMAGE_LOGD("buffer is null");
     }
+    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", timestamp);
+    return iraContext_->GetCurrentBuffer();
+}
+
+OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
+{
+    int32_t flushFence = 0;
+    OHOS::Rect damage = {};
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer;
+    OHOS::sptr<OHOS::SurfaceBuffer> bufferBefore;
+    sptr<IConsumerSurface> listenerConsumerSurface = iraContext_->GetReceiverBufferConsumer();
+    SurfaceError surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+    while (surfaceError == SURFACE_ERROR_OK) {
+        bufferBefore = buffer;
+        surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
+    }
+
+    iraContext_->currentBuffer_ = bufferBefore;
+    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", timestamp);
     return iraContext_->GetCurrentBuffer();
 }
 
@@ -248,7 +283,9 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
         bufferBefore = buffer;
         surfaceError = listenerConsumerSurface->AcquireBuffer(buffer, flushFence, timestamp, damage);
     }
+
     iraContext_->currentBuffer_ = bufferBefore;
+    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", timestamp);
     return iraContext_->GetCurrentBuffer();
 }
 
@@ -275,12 +312,12 @@ std::shared_ptr<NativeImage> ImageReceiver::NextNativeImage()
     if (GetBufferProcessor() == nullptr) {
         return nullptr;
     }
-
-    auto surfaceBuffer = ReadNextImage();
+    int64_t timestamp = 0;
+    auto surfaceBuffer = ReadNextImage(timestamp);
     if (surfaceBuffer == nullptr) {
         return nullptr;
     }
-    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
+    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor(), timestamp);
 }
 
 std::shared_ptr<NativeImage> ImageReceiver::LastNativeImage()
@@ -288,12 +325,12 @@ std::shared_ptr<NativeImage> ImageReceiver::LastNativeImage()
     if (GetBufferProcessor() == nullptr) {
         return nullptr;
     }
-
-    auto surfaceBuffer = ReadLastImage();
+    int64_t timestamp = 0;
+    auto surfaceBuffer = ReadLastImage(timestamp);
     if (surfaceBuffer == nullptr) {
         return nullptr;
     }
-    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor());
+    return std::make_shared<NativeImage>(surfaceBuffer, GetBufferProcessor(), timestamp);
 }
 } // namespace Media
 } // namespace OHOS

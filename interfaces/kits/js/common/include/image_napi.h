@@ -44,6 +44,7 @@ private:
     static napi_value JsGetFormat(napi_env env, napi_callback_info info);
     static napi_value JsGetComponent(napi_env env, napi_callback_info info);
     static napi_value JsRelease(napi_env env, napi_callback_info info);
+    static napi_value JsGetTimestamp(napi_env env, napi_callback_info info);
 
     static thread_local napi_ref sConstructor_;
     static ImageHolderManager<NativeImage> sNativeImageHolder_;
