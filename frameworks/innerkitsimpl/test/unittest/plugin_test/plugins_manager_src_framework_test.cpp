@@ -1104,5 +1104,56 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, GetCapabilityTest002, TestSize.Level3)
     ASSERT_EQ(ret, nullptr);
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetCapabilityTest002 end";
 }
+
+/**
+ * @tc.name: ExecuteVersionAnalysis001
+ * @tc.desc: ExecuteVersionAnalysis
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, ExecuteVersionAnalysis001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ExecuteVersionAnalysis001 start";
+    Plugin plugin;
+    string input = "";
+    VersionParseStep step = static_cast<OHOS::MultimediaPlugin::VersionParseStep> (0);
+    uint16_t versionArray[4] = {0};
+    uint32_t ret = plugin.ExecuteVersionAnalysis(input, step, versionArray);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    step = static_cast<OHOS::MultimediaPlugin::VersionParseStep> (1);
+    ret = plugin.ExecuteVersionAnalysis(input, step, versionArray);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    step = static_cast<OHOS::MultimediaPlugin::VersionParseStep> (2);
+    ret = plugin.ExecuteVersionAnalysis(input, step, versionArray);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    step = static_cast<OHOS::MultimediaPlugin::VersionParseStep> (3);
+    ret = plugin.ExecuteVersionAnalysis(input, step, versionArray);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    step = static_cast<OHOS::MultimediaPlugin::VersionParseStep> (7);
+    ret = plugin.ExecuteVersionAnalysis(input, step, versionArray);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: ExecuteVersionAnalysis001 end";
+}
+
+/**
+ * @tc.name: GetUint16ValueFromDecimal001
+ * @tc.desc: GetUint16ValueFromDecimal
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginsManagerSrcFrameWorkTest, GetUint16ValueFromDecimal001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueFromDecimal001 start";
+    Plugin plugin;
+    string source = "";
+    uint16_t result;
+    uint32_t ret = plugin.GetUint16ValueFromDecimal(source, result);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    source = "testtest";
+    ret = plugin.GetUint16ValueFromDecimal(source, result);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    source = "12test";
+    ret = plugin.GetUint16ValueFromDecimal(source, result);
+    ASSERT_EQ(ret, ERR_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: GetUint16ValueFromDecimal001 end";
+}
 }
 }
