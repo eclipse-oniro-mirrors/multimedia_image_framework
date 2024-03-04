@@ -509,5 +509,31 @@ HWTEST_F(EglImageTest, PixelMapFromSurfaceTest018, TestSize.Level3)
         EXPECT_NE(pixelMap, nullptr);
     }
 }
+
+/**
+ * @tc.name: Clear001
+ * @tc.desc: Test of Clear
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageTest, Clear001, TestSize.Level3)
+{
+    auto renderContext = std::make_unique<RenderContext>();
+    renderContext->eglDisplay_ = EGL_NO_DISPLAY;
+    renderContext->Clear();
+    EXPECT_EQ(renderContext->eglDisplay_, EGL_NO_DISPLAY);
+}
+
+/**
+ * @tc.name: CreatePbufferSurface001
+ * @tc.desc: Test of CreatePbufferSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(EglImageTest, CreatePbufferSurface001, TestSize.Level3)
+{
+    auto renderContext = std::make_unique<RenderContext>();
+    renderContext->pbufferSurface_ = EGL_NO_SURFACE;
+    bool ret = renderContext->CreatePbufferSurface();
+    EXPECT_EQ(ret, false);
+}
 }
 }
