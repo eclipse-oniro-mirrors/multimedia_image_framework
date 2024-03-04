@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#define private public
 #include <fstream>
 #include <fcntl.h>
 #include "file_source_stream.h"
@@ -468,6 +469,131 @@ HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0022, TestSize.Level3)
     std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(fd, -1, SIZE_T);
     ASSERT_EQ(fileSourceStream, nullptr);
     GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0022 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0023
+ * @tc.desc: Read desiredSize is 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0023, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0023 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    DataStreamBuffer outData;
+    uint32_t desiredSize = 1;
+    fileSourceStream->filePtr_ = fopen("/data/local/tmp/image/test.jpg", "w+");
+    fileSourceStream->fileSize_ = 0;
+    fileSourceStream->fileOffset_ = 0;
+    bool ret = fileSourceStream->Read(desiredSize, outData);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0023 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0024
+ * @tc.desc: Peek desiredSize is 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0024, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0024 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    DataStreamBuffer outData;
+    uint32_t desiredSize = 1;
+    fileSourceStream->filePtr_ = fopen("/data/local/tmp/image/test.jpg", "w+");
+    fileSourceStream->fileSize_ = 0;
+    fileSourceStream->fileOffset_ = 0;
+    bool ret = fileSourceStream->Peek(desiredSize, outData);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0024 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0025
+ * @tc.desc: Read desiredSize is 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0025, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0025 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    uint32_t desiredSize = 0;
+    uint8_t *outBuffer = nullptr;
+    uint32_t bufferSize = 0;
+    uint32_t readSize = 0;
+    bool ret = fileSourceStream->Read(desiredSize, outBuffer, bufferSize, readSize);
+    ASSERT_EQ(ret, false);
+
+    desiredSize = 2;
+    outBuffer = new uint8_t;
+    fileSourceStream->fileSize_ = 1;
+    fileSourceStream->fileOffset_ = 1;
+    ret = fileSourceStream->Read(desiredSize, outBuffer, bufferSize, readSize);
+    ASSERT_EQ(ret, false);
+    delete outBuffer;
+    outBuffer = nullptr;
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0025 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0026
+ * @tc.desc: Peek
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0026, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0026 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    uint8_t *outBuffer = new uint8_t;
+    uint32_t size = 2;
+    uint32_t desiredSize = 1;
+    uint32_t readSize = 2;
+    fileSourceStream->fileSize_ = 2;
+    fileSourceStream->fileOffset_ = 2;
+    bool ret = fileSourceStream->Peek(desiredSize, outBuffer, size, readSize);
+    ASSERT_EQ(ret, false);
+    delete outBuffer;
+    outBuffer = nullptr;
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0026 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0027
+ * @tc.desc: GetDataPtr
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourcFileSourceStreamTest0027eStreamTest0019 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    fileSourceStream->fileData_ = new uint8_t;
+    uint8_t *ret = fileSourceStream->GetDataPtr();
+    ASSERT_NE(ret, nullptr);
+    delete fileSourceStream->fileData_;
+    fileSourceStream->fileData_ = nullptr;
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0027 end";
+}
+
+/**
+ * @tc.name: FileSourceStreamTest0028
+ * @tc.desc: ToOutputDataStream
+ * @tc.type: FUNC
+ */
+HWTEST_F(FileSourceStreamTest, FileSourceStreamTest0028, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0028 start";
+    std::unique_ptr<FileSourceStream> fileSourceStream = FileSourceStream::CreateSourceStream(IMAGE_INPUT_JPG_PATH);
+    ASSERT_NE(fileSourceStream, nullptr);
+    fileSourceStream->filePtr_ = fopen("/data/local/tmp/image/test.jpg", "w+");
+    auto ret = fileSourceStream->ToOutputDataStream();
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "FileSourceStreamTest: FileSourceStreamTest0028 end";
 }
 }
 }
