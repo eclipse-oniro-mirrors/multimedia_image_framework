@@ -216,6 +216,7 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         return ERR_DMA_DATA_ABNORMAL;
     }
 
+    IMAGE_LOGD("ExtDecoder::DmaMemAlloc stride is %{public}d", sb->GetStride());
     SetDecodeContextBuffer(context,
         AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
     return SUCCESS;
@@ -825,8 +826,8 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 #ifdef JPEG_HW_DECODE_ENABLE
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context)
 {
-    uint64_t byteCount = static_cast<uint64_t>(dstInfo_.height()) * dstInfo_.width() * dstInfo_.bytesPerPixel();
-    uint32_t ret = DmaMemAlloc(context, byteCount, info_);
+    uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height()) * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel();
+    uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
         return ERR_IMAGE_DECODE_ABNORMAL;

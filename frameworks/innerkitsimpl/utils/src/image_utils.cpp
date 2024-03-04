@@ -371,13 +371,12 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
     IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled start");
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
         GetPixelMapName(pixelMap.get()) + ".dat";
-    int32_t totalSize = 0;
+    int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
-        totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight() / 2 * 3;
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420, totalSize=%{public}d", totalSize);
-    } else {
-        totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled not YUV420, totalSize=%{public}d", totalSize);
+        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight() / 2 * 3;
+            IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 by hwDecode, totalSize=%{public}d", totalSize);
+        }
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled failed");
