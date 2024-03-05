@@ -87,6 +87,15 @@ bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetSutEncodeEnabled()
+{
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.SutEncode.enabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetMediaLibraryAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)

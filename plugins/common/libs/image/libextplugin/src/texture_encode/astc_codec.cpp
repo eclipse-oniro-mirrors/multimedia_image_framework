@@ -341,7 +341,7 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
 {
     if ((param.sutProfile == SutProfile::SKIP_SUT) ||
         ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE))) {
-        IMAGE_LOGI("astc sutProfile %{public}d or the astc profile could not be superCompress!", param.sutProfile);
+        IMAGE_LOGD("astc sutProfile %{public}d or the astc profile could not be superCompress!", param.sutProfile);
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
@@ -385,30 +385,39 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
     return true;
 }
 
-static void InitAstcEncPara(TextureEncodeOptions &param,
+static bool InitAstcEncPara(TextureEncodeOptions &param,
     int32_t width, int32_t height, int32_t stride, PlEncodeOptions &astcOpts)
 {
     param.enableQualityCheck = false;
     param.hardwareFlag = false;
-    param.sutProfile = SutProfile::SKIP_SUT; // default skip sut
+    param.sutProfile =
+        ImageSystemProperties::GetSutEncodeEnabled() ? SutProfile::EXTREME_SPEED : SutProfile::SKIP_SUT;
     param.width_ = width;
     param.height_ = height;
     param.stride_ = stride;
     param.privateProfile_ = GetAstcQuality(astcOpts.quality);
     extractDimensions(astcOpts.format, param);
+    if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
+        IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
+        return false;
+    }
     param.blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     param.astcBytes = param.blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
+    return true;
 }
 
 uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
-                                       int32_t blocksNum, uint8_t *outBuffer, int32_t outSize)
+    int32_t blocksNum, uint8_t *outBuffer, int32_t outSize)
 {
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
     int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_);
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
+        IMAGE_LOGE("InitAstcEncPara failed");
+        return ERROR;
+    }
     if (!AstcSoftwareEncodeCore(param, pixmapIn, outBuffer)) {
         IMAGE_LOGE("AstcSoftwareEncodeCore failed");
         return ERROR;
@@ -446,7 +455,10 @@ uint32_t AstcCodec::ASTCEncode()
     TextureEncodeOptions param;
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
     int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_);
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
+        IMAGE_LOGE("InitAstcEncPara failed");
+        return ERROR;
+    }
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
     if (astcBuffer == nullptr) {
         IMAGE_LOGE("astc astcBuffer malloc failed!");
