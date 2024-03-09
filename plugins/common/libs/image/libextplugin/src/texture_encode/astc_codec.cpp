@@ -14,7 +14,9 @@
  */
 
 #include "astc_codec.h"
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
+#endif
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "securec.h"
@@ -29,7 +31,9 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 using namespace AstcEncBasedCl;
+#endif
 constexpr uint8_t TEXTURE_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MASK = 0xFF;
 constexpr uint8_t ASTC_NUM_8 = 8;
@@ -297,6 +301,7 @@ static QualityProfile GetAstcQuality(int32_t quality)
     return privateProfile;
 }
 
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOptions *param,
     uint8_t *buffer, const std::string &clBinPath)
 {
@@ -326,6 +331,7 @@ static bool TryAstcEncBasedOnCl(uint8_t *inData, int32_t stride, TextureEncodeOp
     }
     return true;
 }
+#endif
 
 uint32_t AstcCodec::ASTCEncode()
 {
@@ -343,6 +349,7 @@ uint32_t AstcCodec::ASTCEncode()
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_HEAD_BYTES + TEXTURE_HEAD_BYTES;
 
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         IMAGE_LOGI("astc hardware encode begin");
@@ -355,6 +362,7 @@ uint32_t AstcCodec::ASTCEncode()
             IMAGE_LOGI("astc hardware encode failed!");
         }
     }
+#endif
     if (!hardwareFlag) {
         uint32_t res = AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outSize);
         if (res != SUCCESS) {
