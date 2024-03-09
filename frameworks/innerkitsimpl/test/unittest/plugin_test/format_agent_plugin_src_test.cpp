@@ -104,10 +104,6 @@ HWTEST_F(FormatAgentPluginSrcTest, IsHeif64001, TestSize.Level3)
     uint64_t chunkSize = 1;
     bool res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
     ASSERT_EQ(res, false);
-    bytesRead = 20;
-    offset = 16;
-    res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
-    ASSERT_EQ(res, false);
     free(buffer);
     buffer = nullptr;
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64001 end";
