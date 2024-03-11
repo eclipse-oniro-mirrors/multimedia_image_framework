@@ -199,15 +199,19 @@ ohos_shared_library("extplugin") {
     include_dirs += [ "${commonlibrary_subsystem}/base/include" ]
     deps = [
       ":exifhelper",
-      ":textureEncoderCL",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
       "//third_party/astc-encoder:astc_encoder_shared",
-      "//third_party/opencl-headers:libcl",
     ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.open_source_libyuv)) {
+      deps += [
+        ":textureEncoderCL",
+        "//third_party/opencl-headers:libcl",
+      ]
+    }
     deps += skia_platform
-
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
@@ -241,6 +245,7 @@ ohos_shared_library("extplugin") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.open_source_libyuv)) {
     cflags += [ "-DLIBYUV_ENABLE" ]
+    defines += [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
     external_deps += [ "libyuv:yuv" ]
   }
 
