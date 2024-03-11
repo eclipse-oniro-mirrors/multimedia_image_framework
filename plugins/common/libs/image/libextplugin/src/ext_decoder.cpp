@@ -202,7 +202,7 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
     };
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16,
+        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
     }
     GSError ret = sb->Alloc(requestConfig);

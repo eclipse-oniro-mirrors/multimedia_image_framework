@@ -373,10 +373,8 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
-        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-            totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight() / 2 * 3;
-            IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 by hwDecode, totalSize=%{public}d", totalSize);
-        }
+        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 is not supported currently");
+        return;
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled failed");
