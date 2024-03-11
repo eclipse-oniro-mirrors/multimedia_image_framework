@@ -112,6 +112,13 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libsvgplugin/src/svg_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_decoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/src/webp_encoder.cpp",
+
+  # ext
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_encoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_pixel_convert.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/src/ext_wstream.cpp",
 ]
 
 # image_native: not support
@@ -212,6 +219,10 @@ image_native_ios_include_dirs = [
   "//drivers/peripheral/display/interfaces/include",
   "//drivers/peripheral/base",
   "//third_party/skia/third_party/externals/libjpeg-turbo",
+
+  # ext
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include",
+  "//foundation/graphic/graphic_2d/interfaces/inner_api/surface",
 ]
 
 image_native_ios_deps = [

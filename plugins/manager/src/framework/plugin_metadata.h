@@ -244,6 +244,52 @@ const std::vector<std::string> META_DATA = {
     )",
     R"(
         {
+          "packageName":"LibExtPlugin",
+          "version":"1.0.0.0",
+          "targetVersion":"1.0.0.0",
+          "libraryPath":"libextplugin.z.so",
+          "classes": [
+            {
+              "className":"OHOS::ImagePlugin::ExtDecoder",
+              "services": [
+                {
+                  "interfaceID":2,
+                  "serviceType":0
+                }
+              ],
+              "priority":100,
+              "capabilities": [
+                {
+                  "name":"encodeFormat",
+                  "type":"string",
+                  "value": "image/extended"
+                }
+              ]
+            },
+            {
+              "className":"OHOS::ImagePlugin::ExtEncoder",
+              "services": [
+                {
+                  "interfaceID":3,
+                  "serviceType":0
+                }
+              ],
+              "priority":100,
+              "capabilities": [
+                {
+                  "name":"encodeFormat",
+                  "type":"string",
+                  "value": "image/extended"
+                }
+              ]
+            }
+        ]
+      }
+
+    )",
+
+    R"(
+        {
           "packageName":"LibImageFormatAgent",
           "version":"1.0.0.0",
           "targetVersion":"1.0.0.0",
