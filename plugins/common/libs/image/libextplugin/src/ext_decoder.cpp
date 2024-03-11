@@ -20,7 +20,9 @@
 
 #include "ext_pixel_convert.h"
 #include "image_log.h"
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "hisysevent.h"
+#endif
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
@@ -66,7 +68,9 @@ namespace {
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 using namespace OHOS::HDI::Base;
+#endif
 using namespace std;
 const static string DEFAULT_EXIF_VALUE = "default_exif_value";
 const static string CODEC_INITED_KEY = "CodecInited";
@@ -290,6 +294,7 @@ bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
     return true;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) {
     if (info_.isEmpty() && !DecodeHeader()) {
         IMAGE_LOGE("DecodeHeader failed in GetHardwareScaledSize!");
@@ -326,6 +331,7 @@ bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) 
     }
     return true;
 }
+#endif
 
 bool ExtDecoder::IsSupportScaleOnDecode()
 {
@@ -458,6 +464,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     int dstWidth = opts.desiredSize.width;
     int dstHeight = opts.desiredSize.height;
     float scale = ZERO;
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (IsSupportHardwareDecode()) {
         // get dstInfo for hardware decode
         if (IsLowDownScale(opts.desiredSize, info_) && GetHardwareScaledSize(dstWidth, dstHeight, scale)) {
@@ -470,6 +477,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         dstWidth = opts.desiredSize.width;
         dstHeight = opts.desiredSize.height;
     }
+#endif
     if (IsLowDownScale(opts.desiredSize, info_) && GetScaledSize(dstWidth, dstHeight, scale)) {
         dstInfo_ = SkImageInfo::Make(dstWidth, dstHeight, desireColor, desireAlpha,
             getDesiredColorSpace(info_, opts));
@@ -579,7 +587,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         byteCount = byteCount / NUM_4 * NUM_3;
     }
     if (context.pixelsBuffer.buffer == nullptr) {
-        IMAGE_LOGD("Decode alloc byte count.");
         res = SetContextPixelsBuffer(byteCount, context);
         if (res != SUCCESS) {
             return res;
@@ -591,10 +598,12 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     dstOptions_.fFrameIndex = index;
     DebugInfo(info_, dstInfo_, dstOptions_);
     uint64_t rowStride = dstInfo_.minRowBytes64();
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
     }
+#endif
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
     ReportImageType(skEncodeFormat);
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
@@ -611,8 +620,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
-        return RGBxToRGB(dstBuffer, dstInfo_.computeMinByteSize(),
-            static_cast<uint8_t*>(context.pixelsBuffer.buffer),
+        return RGBxToRGB(dstBuffer, dstInfo_.computeMinByteSize(), static_cast<uint8_t*>(context.pixelsBuffer.buffer),
             byteCount, dstInfo_.width() * dstInfo_.height());
     }
     return SUCCESS;
@@ -656,6 +664,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 {
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d start", skEncodeFormat);
     static constexpr char IMAGE_FWK_UE[] = "IMAGE_FWK_UE";
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     int32_t ret = HiSysEventWrite(
             IMAGE_FWK_UE,
             "DECODED_IMAGE_TYPE_STATISTICS",
@@ -668,6 +677,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
         IMAGE_LOGD("ExtDecoder::ReportImageType failed, ret = %{public}d", ret);
         return;
     }
+#endif
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d success", skEncodeFormat);
 }
 #ifdef JPEG_HW_DECODE_ENABLE
