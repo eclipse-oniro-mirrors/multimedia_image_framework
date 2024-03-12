@@ -158,7 +158,7 @@ ohos_unittest("imagesourcetest") {
   if (DUAL_ADAPTER) {
     sources += [
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
-      # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
+      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
       # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
   }

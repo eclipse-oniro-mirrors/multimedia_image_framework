@@ -135,7 +135,7 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kPKM, "" },
     { SkEncodedImageFormat::kKTX, "" },
     { SkEncodedImageFormat::kASTC, "" },
-    { SkEncodedImageFormat::kDNG, "" },
+    { SkEncodedImageFormat::kDNG, "image/raw" },
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
