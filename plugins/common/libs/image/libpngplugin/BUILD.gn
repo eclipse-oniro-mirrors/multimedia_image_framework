@@ -100,8 +100,8 @@ ohos_shared_library("pngplugin") {
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
 
+  innerapi_tags = [ "platformsdk" ]
   part_name = "image_framework"
-
   subsystem_name = "multimedia"
 }
 

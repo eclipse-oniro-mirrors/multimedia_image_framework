@@ -80,6 +80,7 @@ ohos_shared_library("rawplugin") {
     ]
   }
 
+  innerapi_tags = [ "platformsdk" ]
   part_name = "image_framework"
   subsystem_name = "multimedia"
 }
