@@ -71,6 +71,8 @@ struct DecodeContext {
     NinePatchContext ninePatchContext;
     // Out: output YUV data info
     PlYuvDataInfo yuvInfo;
+    // Out: output the final pixelMap Info, only size is used now.
+    PlImageInfo outInfo;
 };
 
 struct ProgDecodeContext {
