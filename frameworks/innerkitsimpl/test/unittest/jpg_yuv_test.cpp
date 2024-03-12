@@ -392,5 +392,20 @@ HWTEST_F(JpgYuvTest, JpgYuvTest019, TestSize.Level3)
     DoTimeTest("test-tree-411.jpg");
 }
 
+HWTEST_F(JpgYuvTest, JpgYuvTest020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest020 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string hw_jpg_path = "/data/local/tmp/image/test_hw.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(hw_jpg_path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest020 end";
+}
 }
 }
