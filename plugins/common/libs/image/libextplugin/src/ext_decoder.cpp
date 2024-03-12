@@ -470,11 +470,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
-    if (opts.desiredPixelFormat == PlPixelFormat::NV21) {
-        outputColorFmt_ = PIXEL_FMT_YCRCB_420_SP;
-    } else {
-        outputColorFmt_ = PIXEL_FMT_RGBA_8888;
-    }
+    outputColorFmt_ = (opts.desiredPixelFormat == PlPixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
 
     if (codec_) {
         SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
@@ -874,7 +870,6 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
 {
-    // check if the hwDstInfo is equal to the dstInfo
     JpegHardwareDecoder hwDecoder;
     orgImgSize_.width = info_.width();
     orgImgSize_.height = info_.height();
