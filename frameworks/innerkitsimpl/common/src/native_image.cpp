@@ -35,7 +35,11 @@ namespace {
 namespace OHOS {
 namespace Media {
 NativeImage::NativeImage(sptr<SurfaceBuffer> buffer,
-    std::shared_ptr<IBufferProcessor> releaser) : buffer_(buffer), releaser_(releaser)
+    std::shared_ptr<IBufferProcessor> releaser) : buffer_(buffer), releaser_(releaser), timestamp_(0)
+{}
+
+NativeImage::NativeImage(sptr<SurfaceBuffer> buffer, std::shared_ptr<IBufferProcessor> releaser,
+    int64_t timestamp) : buffer_(buffer), releaser_(releaser), timestamp_(timestamp)
 {}
 
 struct YUVData {
@@ -290,6 +294,15 @@ int32_t NativeImage::GetFormat(int32_t &format)
         return ERR_MEDIA_DEAD_OBJECT;
     }
     format = buffer_->GetFormat();
+    return SUCCESS;
+}
+
+int32_t NativeImage::GetTimestamp(int64_t &timestamp)
+{
+    if (buffer_ == nullptr) {
+        return ERR_MEDIA_DEAD_OBJECT;
+    }
+    timestamp = timestamp_;
     return SUCCESS;
 }
 

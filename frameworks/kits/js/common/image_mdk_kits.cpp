@@ -14,6 +14,7 @@
  */
 
 #include "image_mdk_kits.h"
+#include "media_errors.h"
 
 #include <map>
 
