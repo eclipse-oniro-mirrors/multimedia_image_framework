@@ -35,6 +35,7 @@
             <option name="push" value="images/test.raf -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.rw2 -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.wbmp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/raw1.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hasNoExif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="multimedia/multimedia_image/libimage_ndk_test_jni.z.so -> /system/lib64" src="out"/>
             <option name="push" value="multimedia/multimedia_image/libimage_ndk_test_jni.z.so -> /system/lib" src="out"/>

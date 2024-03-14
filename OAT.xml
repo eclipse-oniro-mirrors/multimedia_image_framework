@@ -68,6 +68,9 @@ Note:If the text contains special characters, please escape them according to th
             </filefilter>
             <filefilter name="defaultPolicyFilter" desc="Filters for compatibility，license header policies">
             </filefilter>
+            <filefilter name="defaultFilter" desc="Files not to check">
+                <filteritem type="filepath" name="test/resource/image/images/.*.dng" desc="OAT identify dng file as source code file"/>
+            </filefilter>
         </filefilterlist>
     </oatconfig>
 </configuration>

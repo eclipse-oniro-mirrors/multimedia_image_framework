@@ -30,6 +30,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_DNG_PATH = "/data/local/tmp/image/test.dng";
+static const std::string IMAGE_INPUT_RAW_PATH = "/data/local/tmp/image/raw1.dng";
 static const std::string IMAGE_OUTPUT_DNG_FILE_PATH = "/data/test/test_raw_file.jpg";
 
 class ImageSourceRawTest : public testing::Test {
@@ -64,7 +65,7 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap, nullptr);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
@@ -100,7 +101,7 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode002, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap, nullptr);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
@@ -135,7 +136,7 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode003, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 }
 
 /**
@@ -165,7 +166,7 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode004, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap, nullptr);
     ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     /**
      * @tc.steps: step3. compress the pixel map to jpeg file.
      * @tc.expected: step3. pack pixel map success and compare the jpeg compress file size.
@@ -385,6 +386,126 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode010, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(pixelMap.get(), nullptr);
+}
+
+/**
+ * @tc.name: RawImageDecode011
+ * @tc.desc: Decode raw image from file source stream(BGRA_8888)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawTest, RawImageDecode011, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct file path and format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/raw";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_RAW_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+}
+
+/**
+ * @tc.name: RawImageDecode012
+ * @tc.desc: Decode raw image from file source stream(RGB_565)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawTest, RawImageDecode012, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct file path and format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/raw";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_RAW_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGB_565;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+}
+
+/**
+ * @tc.name: RawImageDecode013
+ * @tc.desc: Decode raw image from file source stream(RGBA_8888)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawTest, RawImageDecode013, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct file path and format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/raw";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_RAW_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+}
+
+/**
+ * @tc.name: RawImageDecode014
+ * @tc.desc: Decode raw image from file source stream(RGBA_F16)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceRawTest, RawImageDecode014, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct file path and format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/raw";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_RAW_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::RGBA_F16;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
 }
 } // namespace Multimedia
 } // namespace OHOS
