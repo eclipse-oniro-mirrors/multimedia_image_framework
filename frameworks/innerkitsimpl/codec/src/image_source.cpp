@@ -2124,6 +2124,7 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
             dlclose(g_textureDecSoHandle);
             return 0;
         }
+        g_isSutDecInit = true;
     }
     return g_sutDecSoGetSizeFunc(fileBuf, fileSize);
 }
