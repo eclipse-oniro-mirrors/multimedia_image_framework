@@ -48,7 +48,6 @@ ohos_shared_library("jpegplugin") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",

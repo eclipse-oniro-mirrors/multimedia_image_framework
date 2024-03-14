@@ -39,7 +39,6 @@ ohos_shared_library("pngplugin") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//third_party/skia/third_party/libjpeg-turbo",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
     "$skia_root/skia/include/codec",
     "$skia_root/skia",
     "$skia_root/skia/include/core",

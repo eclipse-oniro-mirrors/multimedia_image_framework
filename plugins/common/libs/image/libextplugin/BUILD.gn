@@ -162,7 +162,6 @@ ohos_shared_library("extplugin") {
     "include/jpeg_yuv_decoder",
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
     "${image_subsystem}/../../../drivers/peripheral/base/",
     "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
     "${image_subsystem}/../../../third_party/skia/",
@@ -215,6 +214,7 @@ ohos_shared_library("extplugin") {
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
+      "graphic_surface:surface",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "libjpeg-turbo:turbojpeg",

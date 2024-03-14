@@ -1132,7 +1132,6 @@ ohos_unittest("textureencodetest") {
     "${image_subsystem}/frameworks/innerkitsimpl/stream/include",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
     "${image_subsystem}/../../../drivers/peripheral/base/",
     "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
     "${image_subsystem}/../../../third_party/skia/",
@@ -1170,7 +1169,6 @@ ohos_unittest("eglimagetest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "${graphic_subsystem}/frameworks/surface/include",
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
     "$image_subsystem/interfaces/innerkits/include",
     "//third_party/googletest/googletest/include",
@@ -1187,7 +1185,7 @@ ohos_unittest("eglimagetest") {
     "c_utils:utils",
     "graphic_2d:color_manager",
     "graphic_2d:libgl",
-    "graphic_2d:surface",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
