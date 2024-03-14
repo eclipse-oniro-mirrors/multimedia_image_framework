@@ -83,8 +83,9 @@ ohos_shared_library("webpplugin") {
   }
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  part_name = "image_framework"
 
+  innerapi_tags = [ "platformsdk" ]
+  part_name = "image_framework"
   subsystem_name = "multimedia"
 }
 
