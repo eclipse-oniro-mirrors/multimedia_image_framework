@@ -453,9 +453,6 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
 #ifdef IMAGE_COLORSPACE_FLAG
     dstColorSpace_ = opts.plDesiredColorSpace;
 #endif
-    if (IsSupportCropOnDecode(dstSubset_)) {
-        dstOptions_.fSubset = &dstSubset_;
-    }
     return SUCCESS;
 }
 
