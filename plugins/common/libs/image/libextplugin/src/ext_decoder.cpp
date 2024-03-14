@@ -217,7 +217,8 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         return ERR_DMA_DATA_ABNORMAL;
     }
 
-    IMAGE_LOGD("ExtDecoder::DmaMemAlloc stride is %{public}d", sb->GetStride());
+    IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
+        sb->GetStride(), sb->GetHeight(), sb->GetSize());
     SetDecodeContextBuffer(context,
         AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
     return SUCCESS;
