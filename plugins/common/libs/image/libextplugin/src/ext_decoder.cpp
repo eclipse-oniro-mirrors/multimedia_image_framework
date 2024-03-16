@@ -977,8 +977,10 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGE("create codec: input stream size is zero.");
         return false;
     }
+    uint32_t src_offset = stream_->Tell();
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
     if (codec_ == nullptr) {
+        stream_->Seek(src_offset);
         IMAGE_LOGE("create codec from stream failed");
         return false;
     }
