@@ -29,7 +29,7 @@
 #include "exif_info.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
-#include "jpeg_decoder_yuv.h"
+#include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"
 
 namespace OHOS {
 namespace ImagePlugin {
