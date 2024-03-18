@@ -708,6 +708,9 @@ JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PlPixelFormat desiredFormat)
 
 uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
 {
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    return 0;
+#endif
     uint32_t res = PreDecodeCheckYuv(index, context.info.pixelFormat);
     if (res != SUCCESS) {
         return res;
