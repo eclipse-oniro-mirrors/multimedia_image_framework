@@ -57,6 +57,7 @@ constexpr uint32_t NEED_NEXT = 1;
 constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
+constexpr int FFMPEG_NUM = 8;
 
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::ALPHA_8, AVPixelFormat::AV_PIX_FMT_GRAY8 },
@@ -769,16 +770,17 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
 
     uint8_t *dstPixels = reinterpret_cast<uint8_t *>(mem->data.data);
     const uint8_t *srcPixels = pixelMap.GetPixels();
-    int32_t srcRowStride = pixelMap.GetRowStride();
-    int32_t dstRowStride;
+    int srcRowStride[FFMPEG_NUM] = {};
+    int dstRowStride[FFMPEG_NUM] = {};
+    srcRowStride[0] = pixelMap.GetRowStride();
     if (mem->GetType() == AllocatorType::DMA_ALLOC) {
-        dstRowStride = reinterpret_cast<SurfaceBuffer*>(mem->extend.data)->GetStride();
+        dstRowStride[0] = reinterpret_cast<SurfaceBuffer*>(mem->extend.data)->GetStride();
     } else {
-        dstRowStride = desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+        dstRowStride[0] = desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     }
     SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
         pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
-    auto res = sws_scale(swsContext, &srcPixels, &srcRowStride, 0, srcHeight, &dstPixels, &dstRowStride);
+    auto res = sws_scale(swsContext, &srcPixels, srcRowStride, 0, srcHeight, &dstPixels, dstRowStride);
     if (!res) {
         sws_freeContext(swsContext);
         mem->Release();
