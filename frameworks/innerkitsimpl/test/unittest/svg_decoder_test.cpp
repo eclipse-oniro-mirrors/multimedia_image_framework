@@ -17,96 +17,16 @@
 #include <gtest/gtest.h>
 #include "svg_decoder.h"
 #include "buffer_source_stream.h"
+#include "mock_data_stream.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
-
 namespace OHOS {
 namespace ImagePlugin {
-static constexpr size_t NUMBER_ONE = 1;
-static constexpr size_t NUMBER_TWO = 2;
-class SvgDecoderTest : public testing::Test {};
-
-class MockInputDataStream : public SourceStream {
+class SvgDecoderTest : public testing::Test {
 public:
-    MockInputDataStream() = default;
-    ~MockInputDataStream() {}
-
-    uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted) override
-    {
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
-
-    bool Read(uint32_t desiredSize, DataStreamBuffer &outData) override
-    {
-        if (streamSize_ == NUMBER_ONE) {
-            streamBuffer_ = std::make_shared<uint8_t>(streamSize_);
-            outData.inputStreamBuffer = streamBuffer_.get();
-        } else if (streamSize_ == NUMBER_TWO) {
-            outData.dataSize = streamSize_;
-        }
-        return returnValue_;
-    }
-
-    bool Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override
-    {
-        return returnValue_;
-    }
-
-    bool Peek(uint32_t desiredSize, DataStreamBuffer &outData) override
-    {
-        return returnValue_;
-    }
-
-    bool Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override
-    {
-        return returnValue_;
-    }
-
-    uint32_t Tell() override
-    {
-        return 0;
-    }
-
-    bool Seek(uint32_t position) override
-    {
-        return returnValue_;
-    }
-
-    uint32_t GetStreamType()
-    {
-        return -1;
-    }
-
-    uint8_t *GetDataPtr()
-    {
-        return nullptr;
-    }
-
-    bool IsStreamCompleted()
-    {
-        return returnValue_;
-    }
-
-    size_t GetStreamSize()
-    {
-        return streamSize_;
-    }
-
-    void SetReturn(bool returnValue)
-    {
-        returnValue_ = returnValue;
-    }
-
-    void SetStreamSize(size_t size)
-    {
-        streamSize_ = size;
-    }
-
-private:
-    bool returnValue_ = false;
-    size_t streamSize_ = 0;
-    std::shared_ptr<uint8_t> streamBuffer_ = nullptr;
+    SvgDecoderTest() {}
+    ~SvgDecoderTest() {}
 };
 
 /**
