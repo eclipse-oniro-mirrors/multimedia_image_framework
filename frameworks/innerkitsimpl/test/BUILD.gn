@@ -190,6 +190,7 @@ ohos_unittest("jpegdecoderextest") {
   include_dirs = [
     "$image_subsystem/frameworks/innerkitsimpl/converter/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
     "$image_subsystem/plugins/manager/include",
@@ -639,6 +640,7 @@ ohos_unittest("pngtest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
@@ -780,6 +782,7 @@ ohos_unittest("webpplugintest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
@@ -865,6 +868,7 @@ ohos_unittest("rawdecodertest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "//foundation/multimedia/utils/include",
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//third_party/googletest/googletest/include",
@@ -911,6 +915,7 @@ ohos_unittest("bmpplugintest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
@@ -945,6 +950,7 @@ ohos_unittest("gifplugintest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
