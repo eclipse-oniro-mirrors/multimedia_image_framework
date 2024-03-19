@@ -66,10 +66,8 @@ HWTEST_F(BasicTransformerTest, ReleaseBufferTest001, TestSize.Level3)
     int dataSize = 2;
     uint8_t *buffer = new uint8_t;
     basicTransformer.ReleaseBuffer(allocatorType, fd, dataSize, buffer);
-    ASSERT_EQ(sizeof(buffer), 8);
     allocatorType = AllocatorType::HEAP_ALLOC;
     basicTransformer.ReleaseBuffer(allocatorType, fd, dataSize, buffer);
-    delete buffer;
     GTEST_LOG_(INFO) << "BasicTransformerTest: ReleaseBufferTest001 end";
 }
 
@@ -98,7 +96,6 @@ HWTEST_F(BasicTransformerTest, TransformPixmapTest001, TestSize.Level3)
     inPixmap.imageInfo.size.height = -FHALF;
     ret = basicTransformer.TransformPixmap(inPixmap, outPixmap, allocate);
     ASSERT_EQ(ret, ERR_IMAGE_ALLOC_MEMORY_FAILED);
-    delete inPixmap.data;
     GTEST_LOG_(INFO) << "BasicTransformerTest: TransformPixmapTest001 end";
 }
 

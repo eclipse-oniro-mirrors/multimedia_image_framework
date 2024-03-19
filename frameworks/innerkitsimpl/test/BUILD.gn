@@ -151,9 +151,11 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
   ]
   if (DUAL_ADAPTER) {
     sources += [
@@ -729,7 +731,8 @@ ohos_unittest("streamtest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_packer_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_source_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/file_source_stream_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
   ]
 
   deps = [

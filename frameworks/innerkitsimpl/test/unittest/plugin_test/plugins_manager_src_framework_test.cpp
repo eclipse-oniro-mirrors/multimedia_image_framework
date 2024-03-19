@@ -862,9 +862,10 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority001, TestSize.Leve
     ASSERT_EQ(ret, ERR_COMP_ERROR);
     lhs.type_ = AttrDataType::ATTR_DATA_STRING;
     rhs.type_ = AttrDataType::ATTR_DATA_STRING;
-    string *str = new std::string("test");
-    lhs.value_.stringValue = str;
-    rhs.value_.stringValue = str;
+    string *str1 = new std::string("test");
+    string *str2 = new std::string("test");
+    lhs.value_.stringValue = str1;
+    rhs.value_.stringValue = str2;
     ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
     ASSERT_NE(ret, ERR_COMP_ERROR);
     type = PriorityType::PRIORITY_TYPE_NULL;
@@ -874,15 +875,12 @@ HWTEST_F(PluginsManagerSrcFrameWorkTest, CompareStringPriority001, TestSize.Leve
     ASSERT_EQ(ret, ERR_COMP_ERROR);
     lhs2.type_ = AttrDataType::ATTR_DATA_STRING;
     rhs2.type_ = AttrDataType::ATTR_DATA_STRING;
-    string *str2 = new std::string("test");
-    lhs2.value_.stringValue = str2;
-    rhs2.value_.stringValue = str2;
+    string *str3 = new std::string("test");
+    string *str4 = new std::string("test");
+    lhs2.value_.stringValue = str3;
+    rhs2.value_.stringValue = str4;
     ret = implClassMgr.CompareStringPriority(lhs, rhs, type);
     ASSERT_NE(ret, ERR_COMP_ERROR);
-    delete str;
-    str = nullptr;
-    delete str2;
-    str2 = nullptr;
     GTEST_LOG_(INFO) << "PluginsManagerSrcFrameWorkTest: CompareStringPriority001 end";
 }
 

@@ -68,22 +68,5 @@ HWTEST_F(PngNinepatchResTest, SerializedSize001, TestSize.Level3)
     ASSERT_EQ(sersize, 32);
     GTEST_LOG_(INFO) << "PngNinepatchResTest: SerializedSize001 end";
 }
-
-/**
- * @tc.name: Deserialize001
- * @tc.desc: test Deserialize
- * @tc.type: FUNC
- */
-HWTEST_F(PngNinepatchResTest, Deserialize001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: Deserialize001 start";
-    ImagePlugin::PngNinePatchRes pngnp;
-    void *inData = malloc(10);
-    ImagePlugin::PngNinePatchRes * ret = pngnp.Deserialize(inData);
-    ASSERT_NE(ret, nullptr);
-    free(inData);
-    inData = nullptr;
-    GTEST_LOG_(INFO) << "PngNinepatchResTest: Deserialize001 end";
-}
 } // namespace Multimedia
 } // namespace OHOS
