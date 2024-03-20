@@ -44,6 +44,16 @@ public:
         holder_.insert(std::pair<std::string, std::shared_ptr<ContentType>>(id, content));
         return id;
     }
+    std::string save(std::shared_ptr<ContentType> content, int64_t uniqueId)
+    {
+        std::string id = std::to_string(uniqueId);
+        if (exist(id)) {
+            return id;
+        }
+        std::lock_guard<std::mutex> guard(holderMutex_);
+        holder_.insert(std::pair<std::string, std::shared_ptr<ContentType>>(id, content));
+        return id;
+    }
     std::shared_ptr<ContentType> get(std::string id)
     {
         std::lock_guard<std::mutex> guard(holderMutex_);
