@@ -17,6 +17,7 @@
 #include <iostream>
 #include <new>
 #include <unistd.h>
+#include "image_log.h"
 #include "image_utils.h"
 #include "pixel_convert.h"
 #include "pixel_map.h"

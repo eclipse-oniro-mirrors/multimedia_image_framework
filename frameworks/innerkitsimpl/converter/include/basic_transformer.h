@@ -19,15 +19,8 @@
 #include <algorithm>
 #include <string>
 
-#include "image_log.h"
 #include "image_type.h"
 #include "matrix.h"
-
-#undef LOG_DOMAIN
-#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
-
-#undef LOG_TAG
-#define LOG_TAG "BasicTransformer"
 
 static constexpr uint32_t IMAGE_SUCCESS = 0;                                     // success
 static constexpr uint32_t IMAGE_BASE_ERROR = 1000;                               // base error
@@ -112,13 +105,6 @@ struct PixmapInfo {
             free(data);
             data = nullptr;
         }
-    }
-
-    void PrintPixmapInfo(const std::string &strFlag) const
-    {
-        IMAGE_LOGD("[PixmapInfo][%{public}s][width, height:%{public}d, %{public}d]"
-            "[bufferSize:%{public}u][pixelFormat:%{public}d].", strFlag.c_str(), imageInfo.size.width,
-            imageInfo.size.height, bufferSize, static_cast<int32_t>(imageInfo.pixelFormat));
     }
 };
 

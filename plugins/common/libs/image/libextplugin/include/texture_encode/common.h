@@ -24,11 +24,16 @@
 #include "securectype.h"
 #include "securec.h"
 
-#include "hilog/log.h"
-#include "log_tags.h"
+#include "image_log.h"
 
 namespace OHOS {
 namespace ImagePlugin {
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "TextureEncode"
+
 #define MAX_CHAR_LEN (256)
 #define HWE_HANDLE int32_t *
 #ifndef DFX_FILE
@@ -39,7 +44,6 @@ namespace ImagePlugin {
 
 #define GET_TIME 0
 constexpr char g_version[MAX_CHAR_LEN] = "Texture Encoder(MIT Video Engineering Department) DEBUG v1.0";
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "TextureEncode" };
 
 int Clamp3(int x, int xmin, int xmax)
 {
@@ -90,19 +94,19 @@ typedef enum HWE_ReturnVal {
 void HWE_Log(const char *fileName, int line, HWELogLevel level.const char *msg, ...);
 
 #define HWE_LOGE(...) \
-    (void)OHOS::HiviewDFX::HiLog::Error(LABEL, __VA_ARGS__)
+    IMAGE_LOGE(__VA_ARGS__)
 
 #define HWE_LOGW(...) \
-    (void)OHOS::HiviewDFX::HiLog::Warn(LABEL, __VA_ARGS__)
+    IMAGE_LOGW(__VA_ARGS__)
 
 #define HWE_LOGI(...) \
-    (void)OHOS::HiviewDFX::HiLog::Info(LABEL, __VA_ARGS__)
+    IMAGE_LOGI(__VA_ARGS__)
 
 #define HWE_LOGD(...) \
-    (void)OHOS::HiviewDFX::HiLog::Debug(LABEL, __VA_ARGS__)
+    IMAGE_LOGD(__VA_ARGS__)
 
-#define HWE_LOGD(...) \
-    (void)OHOS::HiviewDFX::HiLog::Debug(LABEL, __VA_ARGS__)
+#define HWE_LOGF(...) \
+    IMAGE_LOGF(__VA_ARGS__)
 
 int HWE_ReturnIfCheck(int32_t ret, int32_t exp, const char* msg)
 {
