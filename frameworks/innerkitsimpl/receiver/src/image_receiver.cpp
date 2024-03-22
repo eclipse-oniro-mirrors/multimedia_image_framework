@@ -293,7 +293,10 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
 
 sptr<Surface> ImageReceiver::GetReceiverSurface()
 {
-    return iraContext_->GetReceiverBufferProducer();
+    if (iraContext_ != nullptr) {
+        return iraContext_->GetReceiverBufferProducer();
+    }
+    return nullptr;
 }
 
 void ImageReceiver::ReleaseReceiver()
