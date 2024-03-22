@@ -172,7 +172,8 @@
           }
         ],
         "test": [
-          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest"
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest",
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/fuzztest:fuzztest"
         ]
       }
     }
