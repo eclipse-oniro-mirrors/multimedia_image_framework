@@ -248,8 +248,9 @@ image_native_ios_deps = [
 
 image_native_ios_deps += skia_skcms
 image_native_ios_deps += skia_platform
-image_native_ios_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
-
+if (!defined(is_arkui_x) || !is_arkui_x) {
+  image_native_ios_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+}
 image_native_ios_external_deps = [
   # common
   "c_utils:utilsbase",
