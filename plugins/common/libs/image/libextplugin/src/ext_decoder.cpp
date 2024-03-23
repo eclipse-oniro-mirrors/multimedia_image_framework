@@ -80,7 +80,7 @@ const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
-const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const static string IMAGE_DELAY_TIME = "DelayTime";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -1266,7 +1266,8 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
 
 static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF &&
+        codec->getEncodedFormat() != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetDelayTime] Should not get delay time in %{public}d", codec->getEncodedFormat());
         return ERR_MEDIA_INVALID_PARAM;
     }
@@ -1287,7 +1288,7 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     if (!GetPropertyCheck(index, key, res)) {
         return res;
     }
-    if (GIF_IMAGE_DELAY_TIME.compare(key) == ZERO) {
+    if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         return GetDelayTime(codec_.get(), index, value);
     }
     // There can add some not need exif property
@@ -1319,7 +1320,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
         SkEncodedImageFormat format = codec_->getEncodedFormat();
         return GetFormatName(format, value);
-    } else if (GIF_IMAGE_DELAY_TIME.compare(key) == ZERO) {
+    } else if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         int delayTime = ZERO;
         res = GetDelayTime(codec_.get(), index, delayTime);
         value = std::to_string(delayTime);

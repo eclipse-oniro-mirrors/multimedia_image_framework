@@ -51,6 +51,9 @@ static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC1_PATH = "/data/test/test_we
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME1_PATH = "/data/test/test_webp_onetime1.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH = "/data/test/test_webp_inc2.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH = "/data/test/test_webp_onetime2.jpg";
+static const std::string TEST_FILE_SINGLE_FRAME_WEBP = "/data/local/tmp/image/test_single_frame.webp";
+static const std::string TEST_FILE_MULTI_FRAME_WEBP = "/data/local/tmp/image/test_multi_frame.webp";
+static const std::string TEST_FILE_JPG = "/data/local/tmp/image/test.jpg";
 
 class ImageSourceWebpTest : public testing::Test {
 public:
@@ -496,6 +499,59 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
     packSize = PackImage(IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH, std::move(pixelMap1));
     ASSERT_NE(packSize, 0);
     free(buffer);
+}
+
+/**
+ * @tc.name: GetDelayTime001
+ * @tc.desc: Get the delay time list for a single frame webp image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_SINGLE_FRAME_WEBP, opts, errorCode);
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), 0);
+}
+
+/**
+ * @tc.name: GetDelayTime002
+ * @tc.desc: Get the delay time list for a multi frames webp image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_MULTI_FRAME_WEBP, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), 3);
+
+    for (auto delayTime : *delayTimes) {
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
+    }
+}
+
+/**
+ * @tc.name: GetDelayTime003
+ * @tc.desc: Get the delay time list for a non webp format image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_JPG, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(delayTimes, nullptr);
 }
 
 /**

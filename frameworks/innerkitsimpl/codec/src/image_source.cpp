@@ -2287,10 +2287,14 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
     }
 
     auto delayTimes = std::make_unique<vector<int32_t>>();
-    const string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+    if (sourceInfo_.encodedFormat == "image/webp" && frameCount == 1) {
+        errorCode = SUCCESS;
+        return delayTimes;
+    }
+    const string IMAGE_DELAY_TIME = "DelayTime";
     for (uint32_t index = 0; index < frameCount; index++) {
         string delayTimeStr;
-        errorCode = mainDecoder_->GetImagePropertyString(index, GIF_IMAGE_DELAY_TIME, delayTimeStr);
+        errorCode = mainDecoder_->GetImagePropertyString(index, IMAGE_DELAY_TIME, delayTimeStr);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("[ImageSource]GetDelayTime get delay time issue. index=%{public}u", index);
             return nullptr;
