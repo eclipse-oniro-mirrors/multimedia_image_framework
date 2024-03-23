@@ -103,6 +103,15 @@ struct ImageSourceAsyncContext {
     struct RawFileDescriptorInfo rawFileInfo;
 };
 
+struct ImageSourceSyncContext {
+    ImageSourceNapi *constructor_;
+    uint32_t status;
+    uint32_t index = 0;
+    DecodeOptions decodeOpts;
+    std::shared_ptr<PixelMap> rPixelMap;
+    std::string errMsg;
+};
+
 struct ImageEnum {
     std::string name;
     int32_t numVal;
@@ -410,12 +419,14 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
+        DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
+        DECLARE_NAPI_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
@@ -531,38 +542,45 @@ napi_value ImageSourceNapi::GetSupportedFormats(napi_env env, napi_callback_info
     return result;
 }
 
+STATIC_NAPI_VALUE_FUNC(GetImageInfo)
+{
+    napi_value result = nullptr;
+    auto imageInfo = static_cast<ImageInfo*>(data);
+    napi_create_object(env, &result);
+
+    napi_value size = nullptr;
+    napi_create_object(env, &size);
+
+    napi_value sizeWith = nullptr;
+    napi_create_int32(env, imageInfo->size.width, &sizeWith);
+    napi_set_named_property(env, size, "width", sizeWith);
+
+    napi_value sizeHeight = nullptr;
+    napi_create_int32(env, imageInfo->size.height, &sizeHeight);
+    napi_set_named_property(env, size, "height", sizeHeight);
+
+    napi_set_named_property(env, result, "size", size);
+
+    napi_value pixelFormatValue = nullptr;
+    napi_create_int32(env, static_cast<int32_t>(imageInfo->pixelFormat), &pixelFormatValue);
+    napi_set_named_property(env, result, "pixelFormat", pixelFormatValue);
+
+    napi_value colorSpaceValue = nullptr;
+    napi_create_int32(env, static_cast<int32_t>(imageInfo->colorSpace), &colorSpaceValue);
+    napi_set_named_property(env, result, "colorSpace", colorSpaceValue);
+
+    napi_value alphaTypeValue = nullptr;
+    napi_create_int32(env, static_cast<int32_t>(imageInfo->alphaType), &alphaTypeValue);
+    napi_set_named_property(env, result, "alphaType", alphaTypeValue);
+    return result;
+}
+
 STATIC_COMPLETE_FUNC(GetImageInfo)
 {
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context->status == SUCCESS) {
-        napi_create_object(env, &result);
-
-        napi_value size = nullptr;
-        napi_create_object(env, &size);
-
-        napi_value sizeWith = nullptr;
-        napi_create_int32(env, context->imageInfo.size.width, &sizeWith);
-        napi_set_named_property(env, size, "width", sizeWith);
-
-        napi_value sizeHeight = nullptr;
-        napi_create_int32(env, context->imageInfo.size.height, &sizeHeight);
-        napi_set_named_property(env, size, "height", sizeHeight);
-
-        napi_set_named_property(env, result, "size", size);
-
-        napi_value pixelFormatValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.pixelFormat), &pixelFormatValue);
-        napi_set_named_property(env, result, "pixelFormat", pixelFormatValue);
-
-        napi_value colorSpaceValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.colorSpace), &colorSpaceValue);
-        napi_set_named_property(env, result, "colorSpace", colorSpaceValue);
-
-        napi_value alphaTypeValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.alphaType), &alphaTypeValue);
-        napi_set_named_property(env, result, "alphaType", alphaTypeValue);
-
+        napi_value result = GetImageInfoNapiValue(env, &(context->imageInfo), nullptr);
         if (!IMG_IS_OK(status)) {
             context->status = ERROR;
             IMAGE_LOGE("napi_create_int32 failed!");
@@ -1057,6 +1075,72 @@ napi_value ImageSourceNapi::GetImageInfo(napi_env env, napi_callback_info info)
     return result;
 }
 
+napi_value ImageSourceNapi::GetImageInfoSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    uint32_t index = 0;
+    uint32_t ret = SUCCESS;
+
+    IMAGE_LOGD("GetImageInfoSync IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMAGE_LOGD("GetImageInfoSync argCount is [%{public}zu]", argCount);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceNapi> imageSourceNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&imageSourceNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, imageSourceNapi->nativeImgSrc),
+        nullptr, IMAGE_LOGE("empty native pixelmap"));
+
+    if (argCount == NUM_1 && ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_number) {
+        napi_get_value_uint32(env, argValue[NUM_0], &index);
+    }
+
+    if (imageSourceNapi->nativeImgSrc != nullptr) {
+        ImageInfo imageinfo;
+        ret = imageSourceNapi->nativeImgSrc->GetImageInfo(index, imageinfo);
+        if (ret == SUCCESS) {
+            result = GetImageInfoNapiValue(env, &imageinfo, nullptr);
+        }
+    } else {
+        IMAGE_LOGE("native imageSourceNapi is nullptr!");
+    }
+    imageSourceNapi.release();
+    return result;
+}
+
+static std::shared_ptr<PixelMap> CreatePixelMapInner(ImageSourceNapi *thisPtr,
+    std::shared_ptr<ImageSource> imageSource, uint32_t index, DecodeOptions decodeOpts, uint32_t &status)
+{
+    if (thisPtr == nullptr || imageSource == nullptr) {
+        IMAGE_LOGE("Invailed args");
+        status = ERROR;
+    }
+
+    std::shared_ptr<PixelMap> pixelMap;
+    auto incPixelMap = thisPtr->GetIncrementalPixelMap();
+    if (incPixelMap != nullptr) {
+        IMAGE_LOGD("Get Incremental PixelMap!!!");
+        pixelMap = incPixelMap;
+    } else {
+        pixelMap = imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
+            decodeOpts, status);
+    }
+
+    if (status != SUCCESS || !IMG_NOT_NULL(pixelMap)) {
+        IMAGE_LOGE("Create PixelMap error");
+    }
+
+    return pixelMap;
+}
+
 static void CreatePixelMapExecute(napi_env env, void *data)
 {
     uint32_t executeId = static_cast<uint32_t>(ImageNapiUtils::GetNowTimeMicroSeconds());
@@ -1065,7 +1149,6 @@ static void CreatePixelMapExecute(napi_env env, void *data)
         IMAGE_LOGE("data is nullptr");
         return;
     }
-    uint32_t errorCode = 0;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context == nullptr) {
         IMAGE_LOGE("empty context");
@@ -1078,29 +1161,10 @@ static void CreatePixelMapExecute(napi_env env, void *data)
         return;
     }
 
-    if (context->rImageSource == nullptr) {
-        IMAGE_LOGE("empty context rImageSource");
-        return;
-    }
+    context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
+        context->index, context->decodeOpts, context->status);
 
-    if (context->constructor_ != nullptr) {
-        auto incPixelMap = context->constructor_->GetIncrementalPixelMap();
-        if (incPixelMap != nullptr) {
-            IMAGE_LOGI("Get Incremental PixelMap!!!");
-            context->rPixelMap = incPixelMap;
-        }
-    } else {
-        IMAGE_LOGI("Create PixelMap!!!");
-    }
-    if (context->rPixelMap == nullptr) {
-        int index = (context->index >= NUM_0) ? context->index : NUM_0;
-        context->rPixelMap = context->rImageSource->CreatePixelMapEx(index, context->decodeOpts, errorCode);
-    }
-
-    if (IMG_NOT_NULL(context->rPixelMap)) {
-        context->status = SUCCESS;
-    } else {
-        context->status = ERROR;
+    if (context->status != SUCCESS) {
         context->errMsg = "Create PixelMap error";
         IMAGE_LOGE("Create PixelMap error");
     }
@@ -1121,6 +1185,20 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     }
     IMAGE_LOGI("CreatePixelMapComplete OUT, id: %{public}u", completeId);
     ImageSourceCallbackRoutine(env, context, result);
+}
+
+static napi_value CreatePixelMapCompleteSync(napi_env env, napi_status status, ImageSourceSyncContext *context)
+{
+    IMAGE_LOGD("CreatePixelMapCompleteSync IN");
+    napi_value result = nullptr;
+
+    if (context->status == SUCCESS) {
+        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    IMAGE_LOGD("CreatePixelMapCompleteSync OUT");
+    return result;
 }
 
 napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info)
@@ -1176,6 +1254,53 @@ napi_value ImageSourceNapi::CreatePixelMap(napi_env env, napi_callback_info info
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+napi_value ImageSourceNapi::CreatePixelMapSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceSyncContext> syncContext = std::make_unique<ImageSourceSyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&syncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, syncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+
+    if (argCount == NUM_0) {
+        IMAGE_LOGD("CreatePixelMap with no arg");
+    } else if (argCount == NUM_1) {
+        if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
+            if (!ParseDecodeOptions(env, argValue[NUM_0], &(syncContext->decodeOpts),
+                                    &(syncContext->index), syncContext->errMsg)) {
+                IMAGE_LOGE("DecodeOptions mismatch");
+                syncContext->errMsg = "DecodeOptions mismatch";
+                return result;
+            }
+        }
+    }
+
+    syncContext->rPixelMap = CreatePixelMapInner(syncContext->constructor_, syncContext->constructor_->nativeImgSrc,
+        syncContext->index, syncContext->decodeOpts, syncContext->status);
+
+    if (syncContext->status != SUCCESS) {
+        syncContext->errMsg = "Create PixelMap error";
+        IMAGE_LOGE("Create PixelMap error");
+    }
+    result = CreatePixelMapCompleteSync(env, status, static_cast<ImageSourceSyncContext*>((syncContext).get()));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create PixelMap"));
     return result;
 }
 

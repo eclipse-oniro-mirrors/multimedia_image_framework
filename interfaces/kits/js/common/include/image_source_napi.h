@@ -63,7 +63,9 @@ private:
     static napi_value CreateImageSourceComplete(napi_env env, napi_status status, void *data);
     // methods
     static napi_value GetImageInfo(napi_env env, napi_callback_info info);
+    static napi_value GetImageInfoSync(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
     static napi_value ModifyImageProperty(napi_env env, napi_callback_info info);
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);
