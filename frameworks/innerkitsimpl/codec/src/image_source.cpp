@@ -479,6 +479,12 @@ bool IsWidthAligned(const int32_t &width)
     return ((width * NUM_4) & INT_255) == 0;
 }
 
+bool IsPhotosLcd()
+{
+    static bool isPhotos = ImageSystemProperties::IsPhotos();
+    return isPhotos;
+}
+
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
@@ -493,7 +499,9 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
         return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
-            (IsWidthAligned(opts.desiredSize.width) || opts.preferDma);
+            (IsWidthAligned(opts.desiredSize.width)
+            || opts.preferDma
+            || IsPhotosLcd());
     }
     return false;
 #endif

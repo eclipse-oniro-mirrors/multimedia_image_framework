@@ -768,8 +768,10 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         return false;
     }
 
-    uint8_t *dstPixels = reinterpret_cast<uint8_t *>(mem->data.data);
-    const uint8_t *srcPixels = pixelMap.GetPixels();
+    const uint8_t *srcPixels[FFMPEG_NUM] = {};
+    uint8_t *dstPixels[FFMPEG_NUM] = {};
+    srcPixels[0] = pixelMap.GetPixels();
+    dstPixels[0] = reinterpret_cast<uint8_t *>(mem->data.data);
     int srcRowStride[FFMPEG_NUM] = {};
     int dstRowStride[FFMPEG_NUM] = {};
     srcRowStride[0] = pixelMap.GetRowStride();
@@ -780,7 +782,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     }
     SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
         pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
-    auto res = sws_scale(swsContext, &srcPixels, srcRowStride, 0, srcHeight, &dstPixels, dstRowStride);
+    auto res = sws_scale(swsContext, srcPixels, srcRowStride, 0, srcHeight, dstPixels, dstRowStride);
     if (!res) {
         sws_freeContext(swsContext);
         mem->Release();
