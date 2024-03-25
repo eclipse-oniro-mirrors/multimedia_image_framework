@@ -257,4 +257,6 @@ image_native_android_deps = [
 
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform
-image_native_android_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+if (!defined(is_arkui_x) || !is_arkui_x) {
+  image_native_android_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+}

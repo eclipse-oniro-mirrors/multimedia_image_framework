@@ -39,6 +39,7 @@ if (use_clang_ios) {
     ]
 
     include_dirs = [
+      "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin/include",
       "//foundation/multimedia/image_framework/plugins/manager/include",
       "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
       "//foundation/multimedia/image_framework/plugins/manager/include/utils",
