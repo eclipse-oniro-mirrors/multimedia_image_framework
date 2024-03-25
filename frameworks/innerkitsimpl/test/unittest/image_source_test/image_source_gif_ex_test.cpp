@@ -230,6 +230,85 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime003, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetDisposalType001
+ * @tc.desc: test GetDisposalType
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetDisposalType001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType001 start";
+
+    const std::string testName = TEST_FILE_SINGLE_FRAME_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDisposalType(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), TEST_FILE_SINGLE_FRAME_GIF_FRAME_COUNT);
+
+    for (auto delayTime : *delayTimes) {
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
+    }
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType001 end";
+}
+
+/**
+ * @tc.name: GetDisposalType002
+ * @tc.desc: test GetDisposalType
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetDisposalType002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType002 start";
+
+    const std::string testName = TEST_FILE_MULTI_FRAME_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDisposalType(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
+
+    for (auto delayTime : *delayTimes) {
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
+    }
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType002 end";
+}
+
+/**
+ * @tc.name: GetDisposalType003
+ * @tc.desc: test GetDisposalType
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetDisposalType003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType003 start";
+
+    const std::string testName = TEST_FILE_JPG;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDisposalType(errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(delayTimes, nullptr);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetDisposalType003 end";
+}
+
+/**
  * @tc.name: GetFrameCount001
  * @tc.desc: test GetFrameCount
  * @tc.type: FUNC

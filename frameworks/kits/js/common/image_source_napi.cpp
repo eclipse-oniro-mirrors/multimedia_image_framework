@@ -99,6 +99,7 @@ struct ImageSourceAsyncContext {
     std::string errMsg;
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
     std::unique_ptr<std::vector<int32_t>> delayTimes;
+    std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
     struct RawFileDescriptorInfo rawFileInfo;
 };
@@ -423,6 +424,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
+        DECLARE_NAPI_FUNCTION("getDisposalTypeList", GetDisposalType),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
         DECLARE_NAPI_FUNCTION("createPixelMapList", CreatePixelMapList),
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
@@ -2099,6 +2101,90 @@ napi_value ImageSourceNapi::GetDelayTime(napi_env env, napi_callback_info info)
     napi_status status;
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetDelayTime", GetDelayTimeExec,
         GetDelayTimeComplete, asyncContext, asyncContext->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
+
+    return result;
+}
+
+STATIC_EXEC_FUNC(GetDisposalType)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), true);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    uint32_t errorCode = 0;
+    context->disposalType = context->rImageSource->GetDisposalType(errorCode);
+    if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->disposalType)) {
+        context->status = SUCCESS;
+    } else {
+        IMAGE_LOGE("Get DisposalType error, error=%{public}u", errorCode);
+        context->errMsg = "Get DisposalType error";
+        context->status = (errorCode != SUCCESS) ? errorCode : ERROR;
+    }
+}
+
+STATIC_COMPLETE_FUNC(GetDisposalType)
+{
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+
+    auto context = CheckAsyncContext(static_cast<ImageSourceAsyncContext*>(data), false);
+    if (context == nullptr) {
+        IMAGE_LOGE("check async context fail");
+        return;
+    }
+
+    napi_value result = nullptr;
+    if (context->status == SUCCESS && IMG_NOT_NULL(context->disposalType)) {
+        IMAGE_LOGD("GetDisposalTypeComplete array");
+        napi_create_array(env, &result);
+        size_t i = 0;
+        for (auto disposalType : *context->disposalType) {
+            napi_value napiDisposalType = nullptr;
+            napi_create_uint32(env, disposalType, &napiDisposalType);
+            napi_set_element(env, result, i, napiDisposalType);
+            i++;
+        }
+    } else {
+        IMAGE_LOGD("GetDisposalTypeComplete undefined");
+        napi_get_undefined(env, &result);
+    }
+
+    IMAGE_LOGD("GetDisposalTypeComplete set to nullptr");
+    context->disposalType = nullptr;
+    ImageSourceCallbackWithErrorObj(env, context, result);
+}
+
+napi_value ImageSourceNapi::GetDisposalType(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImageSourceNapi::GetDisposalType");
+
+    auto asyncContext = UnwrapContextForList(env, info);
+    if (asyncContext == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_DATA_ABNORMAL,
+            "async context unwrap failed");
+    }
+
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+
+    napi_status status;
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetDisposalType", GetDisposalTypeExec,
+        GetDisposalTypeComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
 
     return result;

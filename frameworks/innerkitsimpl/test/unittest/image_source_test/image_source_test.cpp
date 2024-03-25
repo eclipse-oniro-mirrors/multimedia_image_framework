@@ -1579,6 +1579,22 @@ HWTEST_F(ImageSourceTest, GetDelayTimeTest001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetDisposalTypeTest001
+ * @tc.desc: test GetDisposalType
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetDisposalTypeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDisposalTypeTest001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    auto ret = imageSource->GetDisposalType(errorCode);
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetDisposalTypeTest001 end";
+}
+
+/**
  * @tc.name: DecodeSourceInfoTest001
  * @tc.desc: test DecodeSourceInfo
  * @tc.type: FUNC
