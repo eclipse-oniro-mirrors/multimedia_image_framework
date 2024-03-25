@@ -16,6 +16,9 @@
 #include "image_system_properties.h"
 
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 
 #include <parameter.h>
@@ -27,6 +30,27 @@ extern char* __progname;
 }
 namespace OHOS {
 namespace Media {
+std::string getCurrentProcessName()
+{
+    std::string processName;
+
+    std::ifstream cmdlineFile("/proc/self/cmdline");
+    if (cmdlineFile.is_open()) {
+        std::ostringstream oss;
+        oss << cmdlineFile.rdbuf();
+        cmdlineFile.close();
+
+        // Extract process name from the command line
+        std::string cmdline = oss.str();
+        size_t pos = cmdline.find_first_of('\0');
+        if (pos != std::string::npos) {
+            processName = cmdline.substr(0, pos);
+        }
+    }
+
+    return processName;
+}
+
 bool ImageSystemProperties::GetSkiaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
@@ -100,6 +124,16 @@ bool ImageSystemProperties::GetMediaLibraryAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.GenAstc.enabled", true);
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::IsPhotos()
+{
+#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+    static std::string processName = getCurrentProcessName();
+    return processName == "com.huawei.hmos.photos";
 #else
     return false;
 #endif
