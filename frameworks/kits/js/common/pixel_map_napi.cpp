@@ -358,9 +358,11 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("readPixelsToBuffer", ReadPixelsToBuffer),
         DECLARE_NAPI_FUNCTION("readPixelsToBufferSync", ReadPixelsToBufferSync),
         DECLARE_NAPI_FUNCTION("readPixels", ReadPixels),
+        DECLARE_NAPI_FUNCTION("readPixelsSync", ReadPixelsSync),
         DECLARE_NAPI_FUNCTION("writePixels", WritePixels),
         DECLARE_NAPI_FUNCTION("writePixelsSync", WritePixelsSync),
         DECLARE_NAPI_FUNCTION("writeBufferToPixels", WriteBufferToPixels),
+        DECLARE_NAPI_FUNCTION("writeBufferToPixelsSync", WriteBufferToPixelsSync),
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
         DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("getBytesNumberPerRow", GetBytesNumberPerRow),
@@ -368,16 +370,22 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("isSupportAlpha", IsSupportAlpha),
         DECLARE_NAPI_FUNCTION("setAlphaAble", SetAlphaAble),
         DECLARE_NAPI_FUNCTION("createAlphaPixelmap", CreateAlphaPixelmap),
+        DECLARE_NAPI_FUNCTION("createAlphaPixelmapSync", CreateAlphaPixelmapSync),
         DECLARE_NAPI_FUNCTION("getDensity", GetDensity),
         DECLARE_NAPI_FUNCTION("setDensity", SetDensity),
         DECLARE_NAPI_FUNCTION("opacity", SetAlpha),
+        DECLARE_NAPI_FUNCTION("opacitySync", SetAlphaSync),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("scale", Scale),
         DECLARE_NAPI_FUNCTION("scaleSync", ScaleSync),
         DECLARE_NAPI_FUNCTION("translate", Translate),
+        DECLARE_NAPI_FUNCTION("translateSync", TranslateSync),
         DECLARE_NAPI_FUNCTION("rotate", Rotate),
+        DECLARE_NAPI_FUNCTION("rotateSync", RotateSync),
         DECLARE_NAPI_FUNCTION("flip", Flip),
+        DECLARE_NAPI_FUNCTION("flipSync", FlipSync),
         DECLARE_NAPI_FUNCTION("crop", Crop),
+        DECLARE_NAPI_FUNCTION("cropSync", CropSync),
         DECLARE_NAPI_FUNCTION("getColorSpace", GetColorSpace),
         DECLARE_NAPI_FUNCTION("setColorSpace", SetColorSpace),
         DECLARE_NAPI_FUNCTION("applyColorSpace", ApplyColorSpace),
@@ -714,7 +722,6 @@ STATIC_EXEC_FUNC(CreatePixelMap)
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
     auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
-
     context->rPixelMap = std::move(pixelmap);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
@@ -1369,6 +1376,47 @@ napi_value PixelMapNapi::ReadPixels(napi_env env, napi_callback_info info)
     return result;
 }
 
+napi_value PixelMapNapi::ReadPixelsSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    PositionArea area;
+    IMAGE_LOGD("ReadPixelsSync IN");
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &area),
+        nullptr, IMAGE_LOGE("fail to parse position area"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . ReadPixelsToBuffeSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . ReadPixelsToBuffeSync failed"));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi->nativePixelMap_),
+        nullptr, IMAGE_LOGE("empty native pixelmap"));
+
+    auto nativeStatus = pixelMapNapi->nativePixelMap_->ReadPixels(
+        area.size, area.offset, area.stride, area.region, static_cast<uint8_t*>(area.pixels));
+    pixelMapNapi.release();
+
+    IMG_NAPI_CHECK_RET_D(nativeStatus == SUCCESS,
+        nullptr, IMAGE_LOGE("fail to read pixels"));
+    return result;
+}
+
 napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -1522,6 +1570,53 @@ napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info in
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+napi_value PixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("PixelMapNapi::WriteBufferToPixelsSync");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    void* colorsBuffer = nullptr;
+    size_t colorsBufferSize = 0;
+
+    IMAGE_LOGD("WriteBufferToPixelsSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "WriteBufferToPixelsSync failed"),
+        IMAGE_LOGE("WriteBufferToPixelsSync failed, invalid parameter"));
+
+    napiStatus = napi_get_arraybuffer_info(env, argValue[NUM_0],
+        &colorsBuffer, &colorsBufferSize);
+    IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . WriteBufferToPixelsSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . WriteBufferToPixelsSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        status = pixelMapNapi->nativePixelMap_->WritePixels(
+            static_cast<uint8_t*>(colorsBuffer), colorsBufferSize);
+        if (status != SUCCESS) {
+            IMAGE_LOGE("WritePixels failed");
+        }
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
     return result;
 }
 
@@ -1865,6 +1960,44 @@ napi_value PixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback_info in
     return result;
 }
 
+napi_value PixelMapNapi::CreateAlphaPixelmapSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_0;
+
+    IMAGE_LOGD("CreateAlphaPixelmapSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, nullptr, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_0,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "CreateAlphaPixelmapSync failed"),
+        IMAGE_LOGE("CreateAlphaPixelmapSync failed, invalid parameter"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . CreateAlphaPixelmapSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . CreateAlphaPixelmapSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        InitializationOptions opts;
+        opts.pixelFormat = PixelFormat::ALPHA_8;
+        auto tmpPixelMap = PixelMap::Create(*(pixelMapNapi->nativePixelMap_), opts);
+        result = PixelMapNapi::CreatePixelMap(env, std::move(tmpPixelMap));
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
+}
+
 napi_value PixelMapNapi::GetDensity(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
@@ -2095,6 +2228,50 @@ napi_value PixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
     return nVal.result;
 }
 
+napi_value PixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    double alpha = 0;
+
+    IMAGE_LOGD("SetAlphaSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "SetAlphaSync failed"),
+        IMAGE_LOGE("SetAlphaSync failed, invalid parameter"));
+    napiStatus= napi_get_value_double(env, argValue[NUM_0], &alpha);
+
+    IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . SetAlphaSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . SetAlphaSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        status = pixelMapNapi->nativePixelMap_->SetAlpha(
+            static_cast<float>(alpha));
+        if (status != SUCCESS) {
+            IMAGE_LOGE("SetAlphaSync failed");
+        }
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
+}
+
 static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -2285,6 +2462,50 @@ napi_value PixelMapNapi::Translate(napi_env env, napi_callback_info info)
     return nVal.result;
 }
 
+napi_value PixelMapNapi::TranslateSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_2;
+    napi_value argValue[NUM_2] = {0};
+    double x = 0;
+    double y = 0;
+
+    IMAGE_LOGD("TranslateSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "TranslateSync failed"),
+        IMAGE_LOGE("TranslateSync failed, invalid parameter"));
+
+    if (napi_ok != napi_get_value_double(env, argValue[NUM_0], &x) ||
+        napi_ok != napi_get_value_double(env, argValue[NUM_1], &y)) {
+        IMAGE_LOGE("get arraybuffer info failed");
+        return result;
+    }
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . TranslateSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . TranslateSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        pixelMapNapi->nativePixelMap_->translate(static_cast<float>(x), static_cast<float>(y));
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
+}
+
 static void RotateExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -2355,6 +2576,44 @@ napi_value PixelMapNapi::Rotate(napi_env env, napi_callback_info info)
     return nVal.result;
 }
 
+napi_value PixelMapNapi::RotateSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    double angle = 0;
+
+    IMAGE_LOGD("RotateSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "RotateSync failed"),
+        IMAGE_LOGE("RotateSync failed, invalid parameter"));
+    napiStatus = napi_get_value_double(env, argValue[NUM_0], &angle);
+    IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . RotateSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . RotateSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        pixelMapNapi->nativePixelMap_->rotate(static_cast<float>(angle));
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
+}
 static void FlipExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -2429,6 +2688,55 @@ napi_value PixelMapNapi::Flip(napi_env env, napi_callback_info info)
     return nVal.result;
 }
 
+napi_value PixelMapNapi::FlipSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_2;
+    napi_value argValue[NUM_2] = {0};
+    bool xBarg = 0;
+    bool yBarg = 0;
+
+    IMAGE_LOGD("FlipSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "FlipSync failed"),
+        IMAGE_LOGE("FlipSync failed, invalid parameter"));
+
+    if (napi_ok != napi_get_value_bool(env, argValue[NUM_0], &xBarg)) {
+        IMAGE_LOGE("Arg 0 type mismatch");
+        status = COMMON_ERR_INVALID_PARAMETER;
+    }
+    if (napi_ok != napi_get_value_bool(env, argValue[NUM_1], &yBarg)) {
+        IMAGE_LOGE("Arg 1 type mismatch");
+        status = COMMON_ERR_INVALID_PARAMETER;
+    }
+
+    IMG_NAPI_CHECK_RET_D(status == SUCCESS, result, IMAGE_LOGE("FlipSync failed, invalid parameter"));
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . FlipSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . FlipSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        pixelMapNapi->nativePixelMap_->flip(xBarg, yBarg);
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
+}
+
 static void CropExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
@@ -2496,6 +2804,50 @@ napi_value PixelMapNapi::Crop(napi_env env, napi_callback_info info)
         }
     }
     return nVal.result;
+}
+
+napi_value PixelMapNapi::CropSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    Rect region;
+
+    IMAGE_LOGD("CropSync IN");
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "CropSync failed"),
+        IMAGE_LOGE("CropSync failed, invalid parameter"));
+    if (!parseRegion(env, argValue[NUM_0], &region)) {
+        IMAGE_LOGE("Region type mismatch");
+        return result;
+    }
+
+    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . CropSync failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . CropSync failed"));
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        status = pixelMapNapi->nativePixelMap_->crop(region);
+        if (status != SUCCESS) {
+            IMAGE_LOGE("CropSync failed");
+        }
+    } else {
+        IMAGE_LOGE("Null native ref");
+    }
+    pixelMapNapi.release();
+    return result;
 }
 
 napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
