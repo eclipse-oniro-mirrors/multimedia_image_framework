@@ -269,39 +269,31 @@ ohos_shared_library("heifparser") {
     }
   }
 
-  remove_configs = [
-    "//build/config/compiler:no_rtti",
-  ]
+  remove_configs = [ "//build/config/compiler:no_rtti" ]
 
-  configs = [
-    "//build/config/compiler:rtti",
-  ]
+  configs = [ "//build/config/compiler:rtti" ]
 
-  include_dirs = [
-    "include/heif_impl/heif_parser",
-  ]
+  include_dirs = [ "include/heif_impl/heif_parser" ]
 
   sources = [
-    "src/heif_impl/heif_parser/heif_stream.cpp",
-    "src/heif_impl/heif_parser/box/heif_box.cpp",
     "src/heif_impl/heif_parser/box/basic_box.cpp",
+    "src/heif_impl/heif_parser/box/heif_box.cpp",
     "src/heif_impl/heif_parser/box/item_data_box.cpp",
     "src/heif_impl/heif_parser/box/item_info_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_box.cpp",
     "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
     "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
+    "src/heif_impl/heif_parser/box/item_property_box.cpp",
     "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
     "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
     "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
     "src/heif_impl/heif_parser/box/item_ref_box.cpp",
-    "src/heif_impl/heif_parser/heif_utils.cpp",
-    "src/heif_impl/heif_parser/heif_parser.cpp",
     "src/heif_impl/heif_parser/heif_image.cpp",
+    "src/heif_impl/heif_parser/heif_parser.cpp",
+    "src/heif_impl/heif_parser/heif_stream.cpp",
+    "src/heif_impl/heif_parser/heif_utils.cpp",
   ]
 
-  external_deps = [
-    "c_utils:utils"
-  ]
+  external_deps = [ "c_utils:utils" ]
 
   subsystem_name = "multimedia"
   innerapi_tags = [ "platformsdk_indirect" ]
@@ -309,9 +301,7 @@ ohos_shared_library("heifparser") {
 }
 
 config("heif_hw_decoder_cfg") {
-  cflags_cc = [
-    "-fexceptions"
-  ]
+  cflags_cc = [ "-fexceptions" ]
 }
 
 ohos_shared_library("heifimpl") {
@@ -351,18 +341,16 @@ ohos_shared_library("heifimpl") {
     ]
   }
 
-  sources = [
-    "src/heif_impl/HeifDecoderImpl.cpp",
-  ]
+  sources = [ "src/heif_impl/HeifDecoderImpl.cpp" ]
 
   if (enable_heif_hw_decode) {
     sources += [
       "src/hardware/heif_hw_decoder.cpp",
       "src/hardware/imagecodec/codec_state.cpp",
       "src/hardware/imagecodec/format.cpp",
+      "src/hardware/imagecodec/image_codec.cpp",
       "src/hardware/imagecodec/image_codec_buffer.cpp",
       "src/hardware/imagecodec/image_codec_dfx.cpp",
-      "src/hardware/imagecodec/image_codec.cpp",
       "src/hardware/imagecodec/image_decoder.cpp",
       "src/hardware/imagecodec/msg_handle_loop.cpp",
       "src/hardware/imagecodec/param_bundle.cpp",

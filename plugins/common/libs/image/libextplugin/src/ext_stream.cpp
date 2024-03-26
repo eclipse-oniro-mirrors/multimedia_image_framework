@@ -98,6 +98,14 @@ size_t ExtStream::peek(void *buffer, size_t size) const
     return static_cast<size_t>(buf.resSize);
 }
 
+bool ExtStream::seek(size_t position)
+{
+    if (stream_ == nullptr) {
+        return false;
+    }
+    return stream_->Seek(position);
+}
+
 bool ExtStream::isAtEnd() const
 {
     if (stream_ == nullptr) {

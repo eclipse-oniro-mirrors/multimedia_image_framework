@@ -328,6 +328,9 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 
     if (hwDecoder_ == nullptr) {
         hwDecoder_ = std::make_shared<HeifHardwareDecoder>();
+        if (hwDecoder_ == nullptr) {
+            return false;
+        }
     }
 
     sptr<SurfaceBuffer> hwBuffer
