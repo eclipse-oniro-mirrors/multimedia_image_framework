@@ -18,8 +18,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
-enum heif_error
-{
+enum heif_error {
     heif_error_ok = 0,
     heif_error_eof = 1,
     heif_error_no_ftyp = 2,

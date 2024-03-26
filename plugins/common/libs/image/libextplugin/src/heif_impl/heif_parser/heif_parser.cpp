@@ -641,7 +641,7 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
 }
 
 heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, const std::vector<uint8_t> &data,
-                              const char *item_type, const char *content_type)
+                                   const char *item_type, const char *content_type)
 {
     auto metadataInfe = AddItem(item_type, true);
     if (content_type != nullptr) {

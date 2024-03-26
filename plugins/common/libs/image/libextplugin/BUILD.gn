@@ -299,8 +299,8 @@ ohos_shared_library("heifparser") {
     "src/heif_impl/heif_parser/heif_image.cpp",
   ]
 
-  deps = [
-    "//third_party/bounds_checking_function:libsec_static",
+  external_deps = [
+    "c_utils:utils"
   ]
 
   subsystem_name = "multimedia"

@@ -41,8 +41,17 @@ using namespace Media;
 
 const static int LUMA_10_BIT = 10;
 const static int DEGREE_360 = 360;
+const static int CHUNK_HEAD_OFFSET_1 = 1;
+const static int CHUNK_HEAD_OFFSET_2 = 2;
+const static int CHUNK_HEAD_OFFSET_3 = 3;
+const static int CHUNK_HEAD_SHIFT_8 = 8;
+const static int CHUNK_HEAD_SHIFT_16 = 16;
+const static int CHUNK_HEAD_SHIFT_24 = 24;
+const static int CHUNK_HEAD_SIZE = 4;
 
 #ifdef HEIF_HW_DECODE_ENABLE
+const static int GRID_NUM_2 = 2;
+
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
@@ -195,8 +204,8 @@ private:
     size_t length_ = 0;
 };
 
-HeifDecoderImpl::HeifDecoderImpl():
-    inPixelFormat_(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), outPixelFormat_(PixelFormat::RGBA_8888),
+HeifDecoderImpl::HeifDecoderImpl()
+    : inPixelFormat_(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), outPixelFormat_(PixelFormat::RGBA_8888),
     tileWidth_(0), tileHeight_(0), colNum_(0), rowNum_(0), dstMemory_(nullptr), dstRowStride_(0) {}
 
 bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
@@ -208,11 +217,9 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
 
     std::shared_ptr<HeifInputStream> streamWrapper = std::make_shared<HeifInputStreamWrapper>(stream);
     heif_error err = HeifParser::MakeFromStream(streamWrapper, &parser_);
-
     if (parser_ == nullptr || err != heif_error_ok) {
         return false;
     }
-
     primaryImage_ = parser_->GetPrimaryImage();
     if (primaryImage_ == nullptr) {
         return false;
@@ -263,18 +270,15 @@ void HeifDecoderImpl::getTileSize(const std::shared_ptr<HeifImage> &image, uint3
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
-
     if (imageType == "hvc1") {
         tileWidth = image->GetOriginalWidth();
         tileHeight = image->GetOriginalHeight();
         return;
     }
-
     if (imageType != "grid") {
         IMAGE_LOGE("unsupported image type: %{public}s", imageType.c_str());
         return;
     }
-
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     if (tileImages.empty()) {
@@ -326,7 +330,8 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
         hwDecoder_ = std::make_shared<HeifHardwareDecoder>();
     }
 
-    sptr<SurfaceBuffer> hwBuffer = hwDecoder_->AllocateOutputBuffer(imageInfo_.mWidth, imageInfo_.mHeight, inPixelFormat_);
+    sptr<SurfaceBuffer> hwBuffer
+        = hwDecoder_->AllocateOutputBuffer(imageInfo_.mWidth, imageInfo_.mHeight, inPixelFormat_);
 
     std::string imageType = parser_->GetItemType(primaryImage_->GetItemId());
     bool res = false;
@@ -389,7 +394,7 @@ bool HeifDecoderImpl::decodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
         IMAGE_LOGI("HeifDecoderImpl::decodeSingleImage image is nullptr");
         return false;
     }
-    std::vector<std::vector<uint8_t>> inputs(2);
+    std::vector<std::vector<uint8_t>> inputs(GRID_NUM_2);
 
     parser_->GetItemData(image->GetItemId(), &inputs[0], heif_only_header);
     processChunkHead(inputs[0].data(), inputs[0].size());
@@ -417,17 +422,20 @@ bool HeifDecoderImpl::decodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
 
 bool HeifDecoderImpl::processChunkHead(uint8_t *data, size_t len)
 {
-    if (len < 4) {
+    if (len < CHUNK_HEAD_SIZE) {
         return false;
     }
     size_t index = 0;
-    while (index < len - 4) {
-        size_t chunkLen = data[index] << 24 | data[index + 1] << 16 | data[index + 2] << 8 | data[index + 3];
+    while (index < len - CHUNK_HEAD_SIZE) {
+        size_t chunkLen = (data[index] << CHUNK_HEAD_SHIFT_24)
+                | (data[index + CHUNK_HEAD_OFFSET_1] << CHUNK_HEAD_SHIFT_16)
+                | (data[index + CHUNK_HEAD_OFFSET_2] << CHUNK_HEAD_SHIFT_8)
+                | (data[index + CHUNK_HEAD_OFFSET_3]);
         data[index] = 0;
-        data[index + 1] = 0;
-        data[index + 2] = 0;
-        data[index + 3] = 1;
-        index += (chunkLen + 4);
+        data[index + CHUNK_HEAD_OFFSET_1] = 0;
+        data[index + CHUNK_HEAD_OFFSET_2] = 0;
+        data[index + CHUNK_HEAD_OFFSET_3] = 1;
+        index += (chunkLen + CHUNK_HEAD_SIZE);
     }
     return true;
 }
