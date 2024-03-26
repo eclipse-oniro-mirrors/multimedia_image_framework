@@ -106,5 +106,25 @@ bool ExtStream::isAtEnd() const
     size_t size = stream_->GetStreamSize();
     return (stream_->Tell() == size);
 }
+
+bool ExtStream::hasLength() const
+{
+    return stream_ != nullptr && stream_->GetStreamSize() > 0;
+}
+
+size_t ExtStream::getLength() const
+{
+    return stream_ == nullptr ? 0 : stream_->GetStreamSize();
+}
+
+bool ExtStream::hasPosition() const
+{
+    return stream_ != nullptr && stream_->GetStreamSize() > 0;
+}
+
+size_t ExtStream::getPosition() const
+{
+    return stream_ == nullptr ? 0 : stream_->Tell();
+}
 } // namespace ImagePlugin
 } // namespace OHOS
