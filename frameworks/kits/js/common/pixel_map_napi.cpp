@@ -1610,7 +1610,6 @@ napi_value PixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_callback_inf
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         status = pixelMapNapi->nativePixelMap_->WritePixels(
             static_cast<uint8_t*>(colorsBuffer), colorsBufferSize);
-            IMAGE_LOGE("WritePixels failed");
         if (status != SUCCESS) {
             IMAGE_LOGE("WritePixels failed");
         }
@@ -2483,11 +2482,11 @@ napi_value PixelMapNapi::TranslateSync(napi_env env, napi_callback_info info)
         "TranslateSync failed"),
         IMAGE_LOGE("TranslateSync failed, invalid parameter"));
 
-        if (napi_ok != napi_get_value_double(env, argValue[NUM_0], &x) ||
-            napi_ok != napi_get_value_double(env, argValue[NUM_1], &y)) {
-            IMAGE_LOGE("get arraybuffer info failed");
-            return result;
-        }
+    if (napi_ok != napi_get_value_double(env, argValue[NUM_0], &x) ||
+        napi_ok != napi_get_value_double(env, argValue[NUM_1], &y)) {
+        IMAGE_LOGE("get arraybuffer info failed");
+        return result;
+    }
 
     std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
@@ -2595,8 +2594,7 @@ napi_value PixelMapNapi::RotateSync(napi_env env, napi_callback_info info)
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "RotateSync failed"),
         IMAGE_LOGE("RotateSync failed, invalid parameter"));
-    napiStatus = napi_get_value_double(env, argValue[NUM_0],
-        &angle);
+    napiStatus = napi_get_value_double(env, argValue[NUM_0], &angle);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
 
     std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
