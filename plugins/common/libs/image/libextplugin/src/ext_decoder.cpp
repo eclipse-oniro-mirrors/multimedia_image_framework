@@ -81,6 +81,7 @@ const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string IMAGE_DELAY_TIME = "DelayTime";
+const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -1281,6 +1282,22 @@ static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
     return SUCCESS;
 }
 
+static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
+{
+    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+        IMAGE_LOGE("[GetDisposalType] Should not get disposal type in %{public}d", codec->getEncodedFormat());
+        return ERR_MEDIA_INVALID_PARAM;
+    }
+    auto frameInfos = codec->getFrameInfo();
+    if (index > frameInfos.size() - 1) {
+        IMAGE_LOGE("[GetDisposalType] frame size %{public}zu, index:%{public}d", frameInfos.size(), index);
+        return ERR_MEDIA_INVALID_PARAM;
+    }
+    value = static_cast<int>(frameInfos[index].fDisposalMethod);
+    IMAGE_LOGD("[GetDisposalType] index[%{public}d]:%{public}d", index, value);
+    return SUCCESS;
+}
+
 uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
@@ -1290,6 +1307,9 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     }
     if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         return GetDelayTime(codec_.get(), index, value);
+    }
+    if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        return GetDisposalType(codec_.get(), index, value);
     }
     // There can add some not need exif property
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
@@ -1324,6 +1344,11 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         int delayTime = ZERO;
         res = GetDelayTime(codec_.get(), index, delayTime);
         value = std::to_string(delayTime);
+        return res;
+    } else if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        int disposalType = ZERO;
+        res = GetDisposalType(codec_.get(), index, disposalType);
+        value = std::to_string(disposalType);
         return res;
     }
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {

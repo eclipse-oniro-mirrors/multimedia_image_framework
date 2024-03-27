@@ -2325,6 +2325,31 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
     return delayTimes;
 }
 
+unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
+{
+    auto frameCount = GetFrameCount(errorCode);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]GetDisposalType get frame sum error.");
+        return nullptr;
+    }
+
+    auto disposalTypes = std::make_unique<vector<int32_t>>();
+    const string IMAGE_DISPOSAL_TYPE = "DisposalType";
+    for (uint32_t index = 0; index < frameCount; index++) {
+        int disposalType = 0;
+        errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DISPOSAL_TYPE, disposalType);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("[ImageSource]GetDisposalType get delay time issue. index=%{public}u", index);
+            return nullptr;
+        }
+        disposalTypes->push_back(disposalType);
+    }
+
+    errorCode = SUCCESS;
+
+    return disposalTypes;
+}
+
 uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 {
     uint32_t frameCount = GetSourceInfo(errorCode).topLevelImageNum;
