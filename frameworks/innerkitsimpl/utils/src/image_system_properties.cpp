@@ -105,7 +105,7 @@ bool ImageSystemProperties::GetHardWareDecodeEnabled()
 bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    return system::GetBoolParameter("persist.multimedia.image.AstcHardWareEncode.enabled", false);
+    return system::GetBoolParameter("persist.multimedia.image.AstcHardWareEncode.enabled", true);
 #else
     return false;
 #endif
