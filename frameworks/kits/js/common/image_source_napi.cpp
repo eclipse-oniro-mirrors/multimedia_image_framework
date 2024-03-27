@@ -574,6 +574,11 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
     napi_value alphaTypeValue = nullptr;
     napi_create_int32(env, static_cast<int32_t>(imageInfo->alphaType), &alphaTypeValue);
     napi_set_named_property(env, result, "alphaType", alphaTypeValue);
+
+    napi_value encodedFormatValue = nullptr;
+    napi_create_string_utf8(env, imageInfo->encodedFormat.c_str(), NAPI_AUTO_LENGTH,
+        &encodedFormatValue);
+    napi_set_named_property(env, result, "mimeType", encodedFormatValue);
     return result;
 }
 

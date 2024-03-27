@@ -1500,6 +1500,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         if (GetASTCInfo(sourceStreamPtr_->GetDataPtr(), sourceStreamPtr_->GetStreamSize(), astcInfo)) {
             ImageDecodingStatus imageStatus;
             imageStatus.imageInfo.size = astcInfo.size;
+            imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
             imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
             auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
             iter = result.first;
@@ -1519,6 +1520,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         ImageDecodingStatus imageStatus;
         imageStatus.imageInfo.size.width = size.width;
         imageStatus.imageInfo.size.height = size.height;
+        imageStatus.imageInfo.encodedFormat = sourceInfo_.encodedFormat;
         imageStatus.imageState = ImageDecodingState::BASE_INFO_PARSED;
         auto result = imageStatusMap_.insert(ImageStatusMap::value_type(index, imageStatus));
         iter = result.first;
@@ -1529,6 +1531,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
     } else {
         ImageDecodingStatus status;
         status.imageState = ImageDecodingState::BASE_INFO_ERROR;
+        status.imageInfo.encodedFormat = "none";
         auto errorResult = imageStatusMap_.insert(ImageStatusMap::value_type(index, status));
         iter = errorResult.first;
         IMAGE_LOGE("[ImageSource]decode the image info fail.");
@@ -1621,6 +1624,7 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
     info.size.height = plInfo.size.height;
     info.pixelFormat = static_cast<PixelFormat>(plInfo.pixelFormat);
     info.alphaType = static_cast<AlphaType>(plInfo.alphaType);
+    info.encodedFormat = sourceInfo_.encodedFormat;
 
     if (info.pixelFormat == PixelFormat::NV12 || info.pixelFormat == PixelFormat::NV21) {
         YUVDataInfo yuvInfo;

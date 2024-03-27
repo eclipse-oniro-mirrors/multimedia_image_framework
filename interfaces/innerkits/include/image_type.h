@@ -17,6 +17,7 @@
 #define INTERFACES_INNERKITS_INCLUDE_IMAGE_TYPE_H_
 
 #include <cinttypes>
+#include <string>
 #include "color_space.h"
 
 namespace OHOS {
@@ -157,6 +158,7 @@ struct ImageInfo {
     ColorSpace colorSpace = ColorSpace::SRGB;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
+    std::string encodedFormat;
 };
 
 struct YUVDataInfo {
