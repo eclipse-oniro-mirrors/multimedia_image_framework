@@ -80,6 +80,8 @@ struct ImageSourceAsyncContext {
     size_t sourceBufferSize = NUM_0;
     std::string keyStr;
     std::string valueStr;
+    std::vector<std::string> keyStrArray;
+    std::vector<std::pair<std::string, std::string>> kVStrArray;
     std::string defaultValueStr;
     int32_t valueInt;
     int32_t deufltValueInt;
@@ -89,6 +91,7 @@ struct ImageSourceAsyncContext {
     uint32_t updataLength = 0;
     bool isCompleted = false;
     bool isSuccess = false;
+    bool isBatch = false;
     size_t pathNameLength;
     SourceOptions opts;
     uint32_t index = 0;
@@ -97,6 +100,7 @@ struct ImageSourceAsyncContext {
     std::shared_ptr<ImageSource> rImageSource;
     std::shared_ptr<PixelMap> rPixelMap;
     std::string errMsg;
+    std::multimap<std::int32_t, std::string> errMsgArray;
     std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> pixelMaps;
     std::unique_ptr<std::vector<int32_t>> delayTimes;
     std::unique_ptr<std::vector<int32_t>> disposalType;
@@ -355,6 +359,196 @@ static napi_value CreateEnumTypeObject(napi_env env,
     return result;
 }
 
+std::vector<std::string> GetStringArrayArgument(napi_env env, napi_value object)
+{
+    std::vector<std::string> keyStrArray;
+    uint32_t arrayLen = 0;
+    napi_status status = napi_get_array_length(env, object, &arrayLen);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Get array length failed: %{public}d", status);
+        return keyStrArray;
+    }
+
+    for (uint32_t i = 0; i < arrayLen; i++) {
+        napi_value element;
+        if (napi_get_element(env, object, i, &element) == napi_ok) {
+            keyStrArray.emplace_back(GetStringArgument(env, element));
+        }
+    }
+
+    IMAGE_LOGD("Get string argument success.");
+    return keyStrArray;
+}
+
+std::vector<std::pair<std::string, std::string>> GetRecordArgument(napi_env env, napi_value object)
+{
+    std::vector<std::pair<std::string, std::string>> kVStrArray;
+    napi_value recordNameList = nullptr;
+    uint32_t recordCount = 0;
+    napi_status status = napi_get_property_names(env, object, &recordNameList);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Get recordNameList property names failed %{public}d", status);
+        return kVStrArray;
+    }
+    status = napi_get_array_length(env, recordNameList, &recordCount);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Get recordNameList array length failed %{public}d", status);
+        return kVStrArray;
+    }
+
+    napi_value recordName = nullptr;
+    napi_value recordValue = nullptr;
+    for (uint32_t i = 0; i < recordCount; ++i) {
+        status = napi_get_element(env, recordNameList, i, &recordName);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Get recordName element failed %{public}d", status);
+            continue;
+        }
+        std::string keyStr = GetStringArgument(env, recordName);
+        status = napi_get_named_property(env, object, keyStr.c_str(), &recordValue);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Get recordValue name property failed %{public}d", status);
+            continue;
+        }
+        std::string valueStr = GetStringArgument(env, recordValue);
+        kVStrArray.push_back(std::make_pair(keyStr, valueStr));
+    }
+
+    IMAGE_LOGD("Get record argument success.");
+    return kVStrArray;
+}
+
+napi_status SetValueString(napi_env env, std::string keyStr, std::string valueStr, napi_value &object)
+{
+    napi_value value = nullptr;
+    napi_status status;
+    if (valueStr != "") {
+        status = napi_create_string_utf8(env, valueStr.c_str(), valueStr.length(), &value);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Set Value failed %{public}d", status);
+            return napi_invalid_arg;
+        }
+    }
+    status = napi_set_named_property(env, object, keyStr.c_str(), value);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Set Key failed %{public}d", status);
+        return napi_invalid_arg;
+    }
+    IMAGE_LOGD("Set string value success.");
+    return napi_ok;
+}
+
+napi_value SetRecordParametersInfo(napi_env env, std::vector<std::pair<std::string, std::string>> recordParameters)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status = napi_create_array_with_length(env, recordParameters.size(), &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
+        return result;
+    }
+
+    for (size_t index = 0; index < recordParameters.size(); ++index) {
+        napi_value object = nullptr;
+        status = napi_create_object(env, &object);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Create object failed %{public}d", status);
+            continue;
+        }
+        status = SetValueString(env, recordParameters[index].first, recordParameters[index].second, object);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Set current record parameter failed %{public}d", status);
+            continue;
+        }
+        status = napi_set_element(env, result, index, object);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Add current record parameter failed %{public}d", status);
+            continue;
+        }
+    }
+
+    IMAGE_LOGD("Set record parameters info success.");
+    return result;
+}
+
+napi_value CreateModifyErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
+{
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
+        return result;
+    }
+
+    uint32_t index = 0;
+    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
+        napi_value errMsgVal;
+        napi_get_undefined(env, &errMsgVal);
+        if (it->first == ERR_MEDIA_WRITE_PARCEL_FAIL) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "Create Fd without write permission! exif key: " + it->second);
+        } else if (it->first == ERR_MEDIA_OUT_OF_RANGE) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "The given buffer size is too small to add new exif data! exif key: " + it->second);
+        } else if (it->first == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "The exif data format is not standard! exif key: " + it->second);
+        } else if (it->first == ERR_MEDIA_VALUE_INVALID) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first, it->second);
+        } else {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, ERROR,
+                "There is generic napi failure! exif key: " + it->second);
+        }
+        status = napi_set_element(env, result, index, errMsgVal);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Add error message to array failed %{public}d", status);
+            continue;
+        }
+        ++index;
+    }
+
+    IMAGE_LOGD("Create modify error array success.");
+    return result;
+}
+
+napi_value CreateObtainErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
+{
+    napi_value result = nullptr;
+    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
+        return result;
+    }
+
+    uint32_t index = 0;
+    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
+        napi_value errMsgVal;
+        napi_get_undefined(env, &errMsgVal);
+        if (it->first == ERR_IMAGE_DECODE_ABNORMAL) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "The image source data is incorrect! exif key: " + it->second);
+        } else if (it->first == ERR_IMAGE_UNKNOWN_FORMAT) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "Unknown image format! exif key: " + it->second);
+        } else if (it->first == ERR_IMAGE_DECODE_FAILED) {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
+                "Failed to decode the image! exif key: " + it->second);
+        } else {
+            ImageNapiUtils::CreateErrorObj(env, errMsgVal, ERROR,
+                "There is generic napi failure! exif key: " + it->second);
+        }
+        status = napi_set_element(env, result, index, errMsgVal);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Add error message to array failed %{public}d", status);
+            continue;
+        }
+        ++index;
+    }
+
+    IMAGE_LOGD("Create obtain error array success.");
+    return result;
+}
+
 ImageSourceNapi::ImageSourceNapi():env_(nullptr)
 {   }
 
@@ -422,7 +616,9 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
         DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
+        DECLARE_NAPI_FUNCTION("modifyImageProperties", ModifyImageProperty),
         DECLARE_NAPI_FUNCTION("getImageProperty", GetImageProperty),
+        DECLARE_NAPI_FUNCTION("getImageProperties", GetImageProperty),
         DECLARE_NAPI_FUNCTION("getDelayTimeList", GetDelayTime),
         DECLARE_NAPI_FUNCTION("getDisposalTypeList", GetDisposalType),
         DECLARE_NAPI_FUNCTION("getFrameCount", GetFrameCount),
@@ -1366,19 +1562,23 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
     napi_get_undefined(env, &result[NUM_1]);
     napi_value retVal;
     napi_value callback = nullptr;
-    if (context->status == ERR_MEDIA_WRITE_PARCEL_FAIL) {
-        if (context->fdIndex != -1) {
-            ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-                "Create Fd without write permission!");
+    if (context->isBatch) {
+        result[NUM_0] = CreateModifyErrorArray(env, context->errMsgArray);
+    } else {
+        if (context->status == ERR_MEDIA_WRITE_PARCEL_FAIL) {
+            if (context->fdIndex != -1) {
+                ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
+                    "Create Fd without write permission!");
+            }
+        } else if (context->status == ERR_MEDIA_OUT_OF_RANGE) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
+                "The given buffer size is too small to add new exif data!");
+        } else if (context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
+                "The exif data format is not standard, so modify it failed!");
+        } else if (context->status == ERR_MEDIA_VALUE_INVALID) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, context->errMsg);
         }
-    } else if (context->status == ERR_MEDIA_OUT_OF_RANGE) {
-        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-            "The given buffer size is too small to add new exif data!");
-    } else if (context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
-        ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-            "The exif data format is not standard, so modify it failed!");
-    } else if (context->status == ERR_MEDIA_VALUE_INVALID) {
-        ImageNapiUtils::CreateErrorObj(env, result[0], context->status, context->errMsg);
     }
 
     if (context->deferred) {
@@ -1415,18 +1615,24 @@ static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSour
     napi_get_undefined(env, &result[NUM_1]);
 
     if (context->status == SUCCESS) {
-        napi_create_string_utf8(env, context->valueStr.c_str(), context->valueStr.length(), &result[NUM_1]);
-    } else {
-        if (context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
-            ImageNapiUtils::CreateErrorObj(env, result[0], context->status, "Unsupport EXIF info key!");
+        if (context->isBatch) {
+            result[NUM_1] = SetRecordParametersInfo(env, context->kVStrArray);
         } else {
-            ImageNapiUtils::CreateErrorObj(env, result[0], context->status, "There is generic napi failure!");
+            napi_create_string_utf8(env, context->valueStr.c_str(), context->valueStr.length(), &result[NUM_1]);
         }
+    } else {
+        if (context->isBatch) {
+            result[NUM_0] = CreateObtainErrorArray(env, context->errMsgArray);
+        } else {
+            std::string errMsg = context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT ? "Unsupport EXIF info key!" :
+                "There is generic napi failure!";
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg);
 
-        if (!context->defaultValueStr.empty()) {
-            napi_create_string_utf8(env, context->defaultValueStr.c_str(),
-                context->defaultValueStr.length(), &result[NUM_1]);
-            context->status = SUCCESS;
+            if (!context->defaultValueStr.empty()) {
+                napi_create_string_utf8(env, context->defaultValueStr.c_str(),
+                    context->defaultValueStr.length(), &result[NUM_1]);
+                context->status = SUCCESS;
+            }
         }
     }
 
@@ -1477,6 +1683,10 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
         context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+    } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
+        context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
+        if (context->keyStrArray.size() == 0) return nullptr;
+        context->isBatch = true;
     } else {
         IMAGE_LOGE("arg 0 type mismatch");
         return nullptr;
@@ -1567,8 +1777,95 @@ static bool CheckExifDataValue(const std::string &key, const std::string &value,
     return true;
 }
 
-static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env env,
-    napi_callback_info info)
+static void ModifyImagePropertiesExecute(napi_env env, void *data)
+{
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    uint32_t status = SUCCESS;
+    for (auto recordIterator = context->kVStrArray.begin(); recordIterator != context->kVStrArray.end();
+        ++recordIterator) {
+        if (!CheckExifDataValue(recordIterator->first, recordIterator->second, context->errMsg)) {
+            IMAGE_LOGE("There is invalid exif data parameter");
+            status = ERR_MEDIA_VALUE_INVALID;
+            context->errMsgArray.insert(std::make_pair(status, context->errMsg));
+            continue;
+        }
+        if (!IsSameTextStr(context->pathName, "")) {
+            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
+                recordIterator->second, context->pathName);
+        } else if (context->fdIndex != -1) {
+            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
+                recordIterator->second, context->fdIndex);
+        } else if (context->sourceBuffer != nullptr) {
+            status = context->rImageSource->ModifyImageProperty(0, recordIterator->first,
+                recordIterator->second, static_cast<uint8_t *>(context->sourceBuffer),
+                context->sourceBufferSize);
+        } else {
+            context->errMsgArray.insert(std::make_pair(ERROR, recordIterator->first));
+            IMAGE_LOGE("There is no image source!");
+            continue;
+        }
+        if (status != SUCCESS) {
+            context->errMsgArray.insert(std::make_pair(status, recordIterator->first));
+        }
+    }
+    context->status = context->errMsgArray.size() > 0 ? ERROR : SUCCESS;
+}
+
+static void ModifyImagePropertyExecute(napi_env env, void *data)
+{
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    if (!CheckExifDataValue(context->keyStr, context->valueStr, context->errMsg)) {
+        IMAGE_LOGE("There is invalid exif data parameter");
+        context->status = ERR_MEDIA_VALUE_INVALID;
+        return;
+    }
+    if (!IsSameTextStr(context->pathName, "")) {
+        context->status = context->rImageSource->ModifyImageProperty(context->index,
+            context->keyStr, context->valueStr, context->pathName);
+    } else if (context->fdIndex != -1) {
+        context->status = context->rImageSource->ModifyImageProperty(context->index,
+            context->keyStr, context->valueStr, context->fdIndex);
+    } else if (context->sourceBuffer != nullptr) {
+        context->status = context->rImageSource->ModifyImageProperty(context->index,
+            context->keyStr, context->valueStr, static_cast<uint8_t *>(context->sourceBuffer),
+            context->sourceBufferSize);
+    } else {
+        context->status = ERROR;
+        IMAGE_LOGE("There is no image source!");
+    }
+}
+
+static void GetImagePropertiesExecute(napi_env env, void *data)
+{
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+    uint32_t status = SUCCESS;
+    for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
+        std::string valueStr = "";
+        status = context->rImageSource->GetImagePropertyString(0, *keyStrIt, valueStr);
+        if (status == SUCCESS) {
+            context->kVStrArray.emplace_back(std::make_pair(*keyStrIt, valueStr));
+        } else {
+            context->kVStrArray.emplace_back(std::make_pair(*keyStrIt, ""));
+            context->errMsgArray.insert(std::make_pair(status, *keyStrIt));
+            IMAGE_LOGE("errCode: %{public}u , exif key: %{public}s", status, keyStrIt->c_str());
+        }
+    }
+     context->status = context->kVStrArray.size() == context->errMsgArray.size() ? ERROR : SUCCESS;
+}
+
+static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env env, napi_callback_info info)
 {
     int32_t refCount = 1;
     napi_status status;
@@ -1576,35 +1873,33 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
     napi_value argValue[NUM_4] = {0};
     size_t argCount = NUM_4;
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
-    IMAGE_LOGD("UnwrapContextForModify argCount is [%{public}zu]", argCount);
-
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
-
     std::unique_ptr<ImageSourceAsyncContext> context = std::make_unique<ImageSourceAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&context->constructor_));
-
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_),
-        nullptr, IMAGE_LOGE("fail to unwrap context"));
-
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->constructor_), nullptr, IMAGE_LOGE("fail to unwrap context"));
     context->rImageSource = context->constructor_->nativeImgSrc;
-
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->rImageSource),
-        nullptr, IMAGE_LOGE("empty native rImageSource"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, context->rImageSource), nullptr, IMAGE_LOGE("empty native rImageSource"));
     if (argCount < NUM_1 || argCount > NUM_4) {
         IMAGE_LOGE("argCount mismatch");
         return nullptr;
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_string) {
         context->keyStr = GetStringArgument(env, argValue[NUM_0]);
+    } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
+        context->kVStrArray = GetRecordArgument(env, argValue[NUM_0]);
+        if (context->kVStrArray.size() == 0) return nullptr;
+        context->isBatch = true;
     } else {
         IMAGE_LOGE("arg 0 type mismatch");
         return nullptr;
     }
-    if (ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_string) {
-        context->valueStr = GetStringArgument(env, argValue[NUM_1]);
-    } else {
-        IMAGE_LOGE("arg 1 type mismatch");
-        return nullptr;
+    if (argCount == NUM_2 || argCount == NUM_3 || argCount == NUM_4) {
+        if (ImageNapiUtils::getType(env, argValue[NUM_1]) == napi_string) {
+            context->valueStr = GetStringArgument(env, argValue[NUM_1]);
+        } else {
+            IMAGE_LOGE("arg 1 type mismatch");
+            return nullptr;
+        }
     }
     if (argCount == NUM_3 || argCount == NUM_4) {
         if (ImageNapiUtils::getType(env, argValue[NUM_2]) == napi_object) {
@@ -1638,33 +1933,19 @@ napi_value ImageSourceNapi::ModifyImageProperty(napi_env env, napi_callback_info
     } else {
         napi_get_undefined(env, &result);
     }
-
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImageProperty",
-        [](napi_env env, void *data) {
-            auto context = static_cast<ImageSourceAsyncContext*>(data);
-
-            if (!CheckExifDataValue(context->keyStr, context->valueStr, context->errMsg)) {
-                IMAGE_LOGE("There is invalid exif data parameter");
-                context->status = ERR_MEDIA_VALUE_INVALID;
-                return;
-            }
-            if (!IsSameTextStr(context->pathName, "")) {
-                context->status = context->rImageSource->ModifyImageProperty(context->index,
-                    context->keyStr, context->valueStr, context->pathName);
-            } else if (context->fdIndex != -1) {
-                context->status = context->rImageSource->ModifyImageProperty(context->index,
-                    context->keyStr, context->valueStr, context->fdIndex);
-            } else if (context->sourceBuffer != nullptr) {
-                context->status = context->rImageSource->ModifyImageProperty(context->index,
-                    context->keyStr, context->valueStr, static_cast<uint8_t *>(context->sourceBuffer),
-                    context->sourceBufferSize);
-            } else {
-                IMAGE_LOGE("There is no image source!");
-            }
-        },
-        reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertyComplete),
-        asyncContext,
-        asyncContext->work);
+    if (asyncContext->isBatch) {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImageProperties",
+            ModifyImagePropertiesExecute,
+            reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertyComplete),
+            asyncContext,
+            asyncContext->work);
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ModifyImageProperty",
+            ModifyImagePropertyExecute,
+            reinterpret_cast<napi_async_complete_callback>(ModifyImagePropertyComplete),
+            asyncContext,
+            asyncContext->work);
+    }
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
@@ -1689,16 +1970,24 @@ napi_value ImageSourceNapi::GetImageProperty(napi_env env, napi_callback_info in
         napi_get_undefined(env, &result);
     }
 
-    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageProperty",
-        [](napi_env env, void *data) {
-            auto context = static_cast<ImageSourceAsyncContext*>(data);
-            context->status = context->rImageSource->GetImagePropertyString(context->index,
-                                                                            context->keyStr,
-                                                                            context->valueStr);
-        },
-        reinterpret_cast<napi_async_complete_callback>(GetImagePropertyComplete),
-        asyncContext,
-        asyncContext->work);
+    if (asyncContext->isBatch) {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageProperties",
+            GetImagePropertiesExecute,
+            reinterpret_cast<napi_async_complete_callback>(GetImagePropertyComplete),
+            asyncContext,
+            asyncContext->work);
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageProperty",
+            [](napi_env env, void *data) {
+                auto context = static_cast<ImageSourceAsyncContext*>(data);
+                context->status = context->rImageSource->GetImagePropertyString(context->index,
+                                                                                context->keyStr,
+                                                                                context->valueStr);
+            },
+            reinterpret_cast<napi_async_complete_callback>(GetImagePropertyComplete),
+            asyncContext,
+            asyncContext->work);
+    }
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
