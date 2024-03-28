@@ -396,5 +396,53 @@ HWTEST_F(ImageSourceBmpTest, BmpImageDecode011, TestSize.Level3)
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(pixelMap.get(), nullptr);
 }
+
+/**
+ * @tc.name: BmpImageDecode013
+ * @tc.desc: Decode bmp image from istream source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceBmpTest, BmpImageDecode013, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by istream source stream and default format hit
+     * @tc.expected: step1. create image source success.
+     */
+    std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
+    fs->open(IMAGE_INPUT_BMP_PATH, std::fstream::binary | std::fstream::in);
+    std::string IMAGE_ENCODEDFORMAT = "image/bmp";
+    bool isOpen = fs->is_open();
+    ASSERT_EQ(isOpen, true);
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options(RGBA_8888).
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    /**
+     * @tc.steps: step3. get imageinfo encodedformat from imagesource.
+     * @tc.expected: step3. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo1;
+    uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
+    ASSERT_EQ(ret1, SUCCESS);
+    EXPECT_EQ(imageinfo1.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceBmpTest: BmpImageDecode013 imageinfo1: " << imageinfo1.encodedFormat;
+    /**
+     * @tc.steps: step4. get imageinfo encodedformat pixelmap.
+     * @tc.expected: step4. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo2;
+    pixelMap->GetImageInfo(imageinfo2);
+    EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceBmpTest: BmpImageDecode013 imageinfo2: " << imageinfo2.encodedFormat;
+}
 } // namespace Multimedia
 } // namespace OHOS
