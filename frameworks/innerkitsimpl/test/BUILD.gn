@@ -1040,6 +1040,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
   module_out_path = module_output_path
 
   sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_test/ext_decoder_test.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/jpeg_hw_decoder.cpp",
     "unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
@@ -1048,9 +1049,12 @@ ohos_unittest("jpeg_hw_decoder_test") {
 
   include_dirs = [
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/common/",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/mock/",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder/",
     "${image_subsystem}/plugins/manager/include/",
+    "${image_subsystem}/plugins/manager/include/pluginbase/",
     "${image_subsystem}/interfaces/innerkits/include/",
     "${image_subsystem}/../../../drivers/peripheral/base/",
     "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
@@ -1063,6 +1067,8 @@ ohos_unittest("jpeg_hw_decoder_test") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
     "//third_party/googletest:gtest_main",
     "//third_party/skia:skia_ohos",
   ]
