@@ -30,6 +30,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/multimedia/utils/include",
@@ -196,6 +197,8 @@ if (use_clang_ios) {
     }
     public_configs = [ ":image_external_config" ]
     sources = [
+      "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+      "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_packer_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",

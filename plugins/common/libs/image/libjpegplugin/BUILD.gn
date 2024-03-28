@@ -102,7 +102,6 @@ ohos_shared_library("jpegplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/libexif:libexif",
       "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
     deps += skia_skcms
@@ -110,10 +109,7 @@ ohos_shared_library("jpegplugin") {
 
     if (DUAL_ADAPTER) {
     } else {
-      deps += [
-        "//third_party/libexif:libexif",
-        "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
-      ]
+      deps += [ "//third_party/skia/third_party/libjpeg-turbo:libjpeg" ]
       include_dirs += [
         "//third_party/skia/third_party/libjpeg-turbo",
         "//third_party/skia/third_party/externals/libjpeg-turbo",
@@ -126,6 +122,7 @@ ohos_shared_library("jpegplugin") {
       "graphic_surface:surface",
       "hilog:libhilog",
       "hitrace:hitrace_meter",
+      "libexif:libexif",
     ]
   }
 

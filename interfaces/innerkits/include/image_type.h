@@ -95,6 +95,8 @@ enum class EncodedFormat : int32_t {
     PNG = 2,
     GIF = 3,
     HEIF = 4,
+    WEBP = 5,
+    DNG = 6
 };
 
 enum class PixelFormat : int32_t {

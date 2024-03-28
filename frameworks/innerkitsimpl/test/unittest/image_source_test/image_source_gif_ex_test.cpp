@@ -63,6 +63,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList001, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
@@ -97,6 +98,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList002, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
@@ -131,6 +133,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList003, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
@@ -165,6 +168,7 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime001, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -193,6 +197,7 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime002, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -221,6 +226,7 @@ HWTEST_F(ImageSourceGifExTest, GetDelayTime003, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto delayTimes = imageSource->GetDelayTime(errorCode);
     ASSERT_NE(errorCode, SUCCESS);
@@ -244,6 +250,7 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount001, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
@@ -267,6 +274,7 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount002, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
     ASSERT_EQ(frameCount, TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT);
@@ -289,6 +297,7 @@ HWTEST_F(ImageSourceGifExTest, GetFrameCount003, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     auto frameCount = imageSource->GetFrameCount(errorCode);
     ASSERT_EQ(frameCount, TEST_FILE_JPG_FRAME_COUNT);
