@@ -783,33 +783,7 @@ STATIC_COMPLETE_FUNC(GetImageInfo)
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context->status == SUCCESS) {
-        napi_create_object(env, &result);
-
-        napi_value size = nullptr;
-        napi_create_object(env, &size);
-
-        napi_value sizeWith = nullptr;
-        napi_create_int32(env, context->imageInfo.size.width, &sizeWith);
-        napi_set_named_property(env, size, "width", sizeWith);
-
-        napi_value sizeHeight = nullptr;
-        napi_create_int32(env, context->imageInfo.size.height, &sizeHeight);
-        napi_set_named_property(env, size, "height", sizeHeight);
-
-        napi_set_named_property(env, result, "size", size);
-
-        napi_value pixelFormatValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.pixelFormat), &pixelFormatValue);
-        napi_set_named_property(env, result, "pixelFormat", pixelFormatValue);
-
-        napi_value colorSpaceValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.colorSpace), &colorSpaceValue);
-        napi_set_named_property(env, result, "colorSpace", colorSpaceValue);
-
-        napi_value alphaTypeValue = nullptr;
-        napi_create_int32(env, static_cast<int32_t>(context->imageInfo.alphaType), &alphaTypeValue);
-        napi_set_named_property(env, result, "alphaType", alphaTypeValue);
-
+        result = GetImageInfoNapiValue(env, &(context->imageInfo), nullptr);
         if (!IMG_IS_OK(status)) {
             context->status = ERROR;
             IMAGE_LOGE("napi_create_int32 failed!");
