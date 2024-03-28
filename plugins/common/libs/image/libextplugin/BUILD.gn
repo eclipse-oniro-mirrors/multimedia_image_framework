@@ -37,12 +37,13 @@ ohos_static_library("exifhelper") {
     "${image_subsystem}/interfaces/innerkits/include",
     "//third_party/libexif",
   ]
-  deps = [ "//third_party/libexif:libexif" ]
+
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "libexif:libexif",
   ]
   part_name = "image_framework"
   subsystem_name = "multimedia"
@@ -138,6 +139,17 @@ ohos_shared_library("extplugin") {
     }
   }
   sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "src/ext_decoder.cpp",
     "src/ext_encoder.cpp",
     "src/ext_pixel_convert.cpp",
@@ -162,6 +174,8 @@ ohos_shared_library("extplugin") {
     "include/jpeg_yuv_decoder",
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${graphic_subsystem}/interfaces/inner_api/surface",
     "${image_subsystem}/../../../drivers/peripheral/base/",
     "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
     "${image_subsystem}/../../../third_party/skia/",

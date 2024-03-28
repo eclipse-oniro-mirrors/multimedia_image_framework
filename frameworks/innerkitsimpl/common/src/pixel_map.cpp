@@ -14,6 +14,7 @@
  */
 
 #include "pixel_map.h"
+#include <charconv>
 #include <iostream>
 #include <unistd.h>
 
@@ -33,6 +34,8 @@
 #include "post_proc.h"
 #include "parcel.h"
 #include "pubdef.h"
+#include "metadata_accessor_factory.h"
+#include "metadata_accessor.h"
 #include "image_mdk_common.h"
 
 #ifndef _WIN32
@@ -899,6 +902,87 @@ bool PixelMap::GetARGB32Color(int32_t x, int32_t y, uint32_t &color)
     }
     // use founction point for frequently called interface
     return colorProc_(src, ONE_PIXEL_SIZE * pixelBytes_, &color, ONE_PIXEL_SIZE);
+}
+
+uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string &value)
+{
+    if (exifMetadata_ == nullptr || !exifMetadata_->SetValue(key, value)) {
+        return ERR_EXIF_DECODE_FAILED;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t PixelMap::ModifyImageProperty(std::shared_ptr<MetadataAccessor> &metadataAccessor,
+    const std::string &key, const std::string &value)
+{
+    uint32_t ret = ModifyImageProperty(key, value);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("[PixelMap]Modify image property failed.");
+        return ret;
+    }
+
+    if (metadataAccessor == nullptr) {
+        IMAGE_LOGE("[PixelMap]Create image accessor fail on modify image property.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    metadataAccessor->Set(exifMetadata_);
+
+    return metadataAccessor->Write();
+}
+
+uint32_t PixelMap::GetImagePropertyInt(const std::string &key, int32_t &value)
+{
+    if (exifMetadata_ == nullptr) {
+        return ERR_MEDIA_NO_EXIF_DATA;
+    }
+
+    std::string strValue;
+    int  ret = exifMetadata_->GetValue(key, strValue);
+    if (ret != SUCCESS) {
+        return ret;
+    }
+
+    std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
+    if (res.ec != std::errc()) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    return SUCCESS;
+}
+
+uint32_t PixelMap::GetImagePropertyString(const std::string &key, std::string &value)
+{
+    if (exifMetadata_ == nullptr) {
+        return ERR_MEDIA_NO_EXIF_DATA;
+    }
+
+    return exifMetadata_->GetValue(key, value);
+}
+
+uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string &value, const std::string &path)
+{
+    std::unique_lock<std::mutex> lock(*metadataMutex_);
+
+    if (exifMetadata_ == nullptr) {
+        return ERR_MEDIA_NO_EXIF_DATA;
+    }
+
+    auto metadataAccessor = MetadataAccessorFactory::Create(path);
+    return ModifyImageProperty(metadataAccessor, key, value);
+}
+
+uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string &value, const int fd)
+{
+    std::unique_lock<std::mutex> lock(*metadataMutex_);
+
+    if (exifMetadata_ == nullptr) {
+        return ERR_MEDIA_NO_EXIF_DATA;
+    }
+
+    auto metadataAccessor = MetadataAccessorFactory::Create(fd);
+    return ModifyImageProperty(metadataAccessor, key, value);
 }
 
 bool PixelMap::ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
