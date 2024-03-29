@@ -121,9 +121,9 @@ private:
     long GetMemoryInfo(const std::string &name) const
     {
         std::string line;
-        std::ifstream status_file("/proc/self/status");
+        std::ifstream statusFile("/proc/self/status");
 
-        while (std::getline(status_file, line)) {
+        while (std::getline(statusFile, line)) {
             if (line.find(name) != std::string::npos) {
                 return std::stol(line.substr(name.length()));
             }
@@ -635,12 +635,12 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_Read002, TestSize.Level3)
 }
 
 // Define a global jmp_buf variable
-static sigjmp_buf jmpbuf;
+static sigjmp_buf g_jmpBuf;
 
 // Define a signal handler function
 static void HandleSigsegv(int sig)
 {
-    siglongjmp(jmpbuf, 1);
+    siglongjmp(g_jmpBuf, 1);
 }
 
 /**
@@ -669,7 +669,7 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_MMap001, TestSize.Level3)
     signal(SIGSEGV, HandleSigsegv);
 
     // Try to write data
-    if (sigsetjmp(jmpbuf, 1) == 0) {
+    if (sigsetjmp(g_jmpBuf, 1) == 0) {
         result[0] = 0;
         // If no segmentation fault is triggered, then this is an error
         FAIL() << "Expected a segmentation fault";

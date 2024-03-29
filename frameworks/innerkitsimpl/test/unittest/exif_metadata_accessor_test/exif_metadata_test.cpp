@@ -587,7 +587,7 @@ HWTEST_F(ExifMetadataTest, SetValueBatch002, TestSize.Level3)
     ASSERT_TRUE(metadata.SetValue("RelatedSoundFile", "/usr/home/sound/sea.wav"));
 }
 
-std::string MODIFYDATA[][3] = {
+std::string g_modifyData[][3] = {
     {"BitsPerSample", "9 9 8", "9, 9, 8"},
     {"BitsPerSample", "9, 9, 8", "9, 9, 8"},
     {"BitsPerSample", "9,9,8", "9, 9, 8"},
@@ -750,19 +750,19 @@ HWTEST_F(ExifMetadataTest, SetValueBatch003, TestSize.Level3)
     std::string value;
     ExifMetadata metadata(exifData);
 
-    int rows = sizeof(MODIFYDATA) / sizeof(MODIFYDATA[0]);
+    int rows = sizeof(g_modifyData) / sizeof(g_modifyData[0]);
     for (int i = 0; i < rows; ++i) {
-        std::string key = MODIFYDATA[i][0];
-        std::string modifyvalue = MODIFYDATA[i][1];
+        std::string key = g_modifyData[i][0];
+        std::string modifyvalue = g_modifyData[i][1];
         ASSERT_TRUE(metadata.SetValue(key, modifyvalue));
 
         std::string retvalue;
         metadata.GetValue(key, retvalue);
-        ASSERT_EQ(retvalue, MODIFYDATA[i][2]);
+        ASSERT_EQ(retvalue, g_modifyData[i][2]);
     }
 }
 
-std::string DIRTDATA[][2] = {
+std::string g_dirtData[][2] = {
     {"BitsPerSample", "abc,4"},
     {"DateTimeOriginal", "202:01:25 05:51:34"},
 };
@@ -775,10 +775,10 @@ HWTEST_F(ExifMetadataTest, SetValueBatch004, TestSize.Level3)
     std::string value;
     ExifMetadata metadata(exifData);
 
-    int rows = sizeof(DIRTDATA) / sizeof(DIRTDATA[0]);
+    int rows = sizeof(g_dirtData) / sizeof(g_dirtData[0]);
     for (int i = 0; i < rows; ++i) {
-        std::string key = DIRTDATA[i][0];
-        std::string modifyvalue = DIRTDATA[i][1];
+        std::string key = g_dirtData[i][0];
+        std::string modifyvalue = g_dirtData[i][1];
         ASSERT_NE(metadata.SetValue(key, modifyvalue), true);
     }
 }

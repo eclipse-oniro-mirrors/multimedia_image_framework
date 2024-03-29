@@ -31,7 +31,7 @@ public:
     ~ExifMetadataFormatterTest() {}
 };
 
-std::string MODIFYDATA[][3] = {
+std::string g_modifyData[][3] = {
     {"BitsPerSample", "9 9 8", "9, 9, 8"},
     {"BitsPerSample", "9,9,8", "9, 9, 8"},
     {"Orientation", "1", "Top-left"},

@@ -51,10 +51,12 @@ template <typename T> std::istream &OutputRational(std::istream &is, T &r)
     int32_t denominator = 0;
     char c('\0');
     is >> nominator >> c >> denominator;
-    if (c != '/')
+    if (c != '/') {
         is.setstate(std::ios::failbit);
-    if (is)
+    }
+    if (is) {
         r = { nominator, denominator };
+    }
     return is;
 }
 
