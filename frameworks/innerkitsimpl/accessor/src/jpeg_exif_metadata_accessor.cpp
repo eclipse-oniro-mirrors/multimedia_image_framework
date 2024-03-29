@@ -290,7 +290,7 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
 
     US2Data(tmpBuf.data() + EXIF_BLOB_OFFSET, static_cast<uint16_t>(size + exifHeaderLength), bigEndian);
     if (bufStream.Write(tmpBuf.data(), writeHeaderLength) != writeHeaderLength) {
-        IMAGE_LOGE("Failed to write EXIF_ID to temporary stream. Expected length: %{public}u", writeHeaderLength);
+        IMAGE_LOGE("Failed to write EXIF_ID to temporary stream. Expected length: %{public}zu", writeHeaderLength);
         return false;
     }
 
@@ -374,7 +374,7 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
         if ((markerCount != skipExifSeqNum) && (marker != JPEG_MARKER_SOI)) {
             WriteSegment(bufStream, marker, buf);
         } else {
-            IMAGE_LOGD("Skipping existing exifApp segment number: %{public}u", skipExifSeqNum);
+            IMAGE_LOGD("Skipping existing exifApp segment number.");
         }
 
         marker = FindNextMarker();
