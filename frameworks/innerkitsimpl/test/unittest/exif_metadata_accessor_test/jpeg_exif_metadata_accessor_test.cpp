@@ -134,7 +134,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read002, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "Artist"), "Joseph.Xu");
     ASSERT_EQ(GetProperty(exifMetadata, "NewSubfileType"), "1");
     ASSERT_EQ(GetProperty(exifMetadata, "OECF"), "1 bytes undefined data");
-    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Planar format");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Chunky format");
     ASSERT_EQ(GetProperty(exifMetadata, "PrimaryChromaticities"), "124");
     ASSERT_EQ(GetProperty(exifMetadata, "ReferenceBlackWhite"), "221");
     ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Inch");
@@ -547,7 +547,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write005, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SamplesPerPixel"), "23");
     ASSERT_EQ(GetProperty(exifMetadata, "XResolution"), "72");
     ASSERT_EQ(GetProperty(exifMetadata, "YResolution"), "72");
-    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Planar format");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Chunky format");
     ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Inch");
 
     ASSERT_TRUE(exifMetadata->SetValue("NewSubfileType", "2"));
@@ -577,7 +577,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write005, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SamplesPerPixel"), "3");
     ASSERT_EQ(GetProperty(exifMetadata, "XResolution"), "180");
     ASSERT_EQ(GetProperty(exifMetadata, "YResolution"), "180");
-    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "2");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Planar format");
     ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Centimeter");
 }
 
