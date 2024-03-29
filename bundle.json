@@ -56,7 +56,8 @@
           "skia",
           "astc-encoder",
           "opencl-headers",
-          "ffmpeg"
+          "ffmpeg",
+          "zlib"
         ]
       },
       "build": {

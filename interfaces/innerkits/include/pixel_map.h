@@ -405,7 +405,6 @@ private:
     bool useSourceAsResponse_ = false;
     bool isTransformered_ = false;
     std::shared_ptr<std::mutex> transformMutex_ = std::make_shared<std::mutex>();
-    std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
 
     // only used by rosen backend
     uint32_t uniqueId_ = 0;
@@ -426,6 +425,7 @@ private:
 #endif
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
+    std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
 };
 } // namespace Media
 } // namespace OHOS
