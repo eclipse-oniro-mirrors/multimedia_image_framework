@@ -165,7 +165,7 @@ uint32_t PngExifMetadataAccessor::Read()
         return ERR_IMAGE_SOURCE_DATA;
     }
     ExifData *exifData;
-    size_t byteOrderPos = PngImageChunkUtils::FindTiffPos(tiffBuf, tiffBuf.Size());
+    size_t byteOrderPos = TiffParser::FindTiffPos(tiffBuf);
     if (byteOrderPos == std::numeric_limits<size_t>::max()) {
         IMAGE_LOGE("Cannot find TIFF byte order in Exif metadata.");
         return ERR_IMAGE_SOURCE_DATA;
@@ -195,7 +195,7 @@ bool PngExifMetadataAccessor::GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &s
         return false;
     }
     DataBuf blobBuf(*dataBlob, size);
-    size_t byteOrderPos = PngImageChunkUtils::FindTiffPos(blobBuf, blobBuf.Size());
+    size_t byteOrderPos = TiffParser::FindTiffPos(blobBuf);
     if (byteOrderPos == std::numeric_limits<size_t>::max()) {
         IMAGE_LOGE("Failed to Encode Exif metadata: cannot find tiff byte order");
         return false;
@@ -365,7 +365,7 @@ uint32_t PngExifMetadataAccessor::WriteBlob(DataBuf &blob)
         return ERR_MEDIA_VALUE_INVALID;
     }
 
-    size_t byteOrderPos = PngImageChunkUtils::FindTiffPos(blob, blob.Size());
+    size_t byteOrderPos = TiffParser::FindTiffPos(blob);
     if (byteOrderPos == std::numeric_limits<size_t>::max()) {
         IMAGE_LOGE("Failed to checkout Exif metadata: cannot find tiff byte order");
         return ERR_MEDIA_VALUE_INVALID;

@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <libexif/exif-data.h>
+#include "data_buf.h"
 
 #include "data_buf.h"
 
