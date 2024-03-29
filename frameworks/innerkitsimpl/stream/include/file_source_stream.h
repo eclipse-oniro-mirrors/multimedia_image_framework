@@ -43,6 +43,7 @@ public:
     uint8_t *GetDataPtr() override;
     uint32_t GetStreamType() override;
     ImagePlugin::OutputDataStream* ToOutputDataStream() override;
+    int GetMMapFd();
 
 private:
     DISALLOW_COPY_AND_MOVE(FileSourceStream);
@@ -56,6 +57,7 @@ private:
     uint8_t *readBuffer_ = nullptr;
     uint8_t *fileData_ = nullptr;
     int mmapFd_ = -1;
+    bool mmapFdPassedOn_ = false;
 };
 } // namespace Media
 } // namespace OHOS

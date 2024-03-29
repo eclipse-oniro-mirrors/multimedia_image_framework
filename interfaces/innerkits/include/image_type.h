@@ -212,6 +212,7 @@ struct DecodeOptions {
     SVGDecodeOptions SVGOpts;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> desiredColorSpaceInfo = nullptr;
     bool preferDma = false;
+    bool fastAstc = false;
 };
 
 enum class ScaleMode : int32_t {

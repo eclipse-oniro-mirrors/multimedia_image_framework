@@ -257,7 +257,7 @@ private:
     bool GetImageInfoForASTC(ImageInfo& imageInfo);
     bool ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSupportOdd, bool isAddUV, uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapForYUV(uint32_t &errorCode);
-    std::unique_ptr<PixelMap> CreatePixelMapForASTC(uint32_t &errorCode);
+    std::unique_ptr<PixelMap> CreatePixelMapForASTC(uint32_t &errorCode, bool fastAstc = false);
     uint32_t GetFormatExtended(std::string &format);
     static std::unique_ptr<ImageSource> DoImageSourceCreate(
         std::function<std::unique_ptr<SourceStream>(void)> stream,

@@ -338,7 +338,7 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_);
         close(mmapFd_);
@@ -355,6 +355,12 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
         return nullptr;
     }
     return new (std::nothrow) FilePackerStream(dupFd);
+}
+
+int FileSourceStream::GetMMapFd()
+{
+    mmapFdPassedOn_ = true;
+    return mmapFd_;
 }
 } // namespace Media
 } // namespace OHOS
