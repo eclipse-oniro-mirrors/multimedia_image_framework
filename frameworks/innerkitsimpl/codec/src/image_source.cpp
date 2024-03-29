@@ -1095,6 +1095,10 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 {
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
+        if (key.substr(0, 2) == "Hw") {
+            value = "default_exif_value";
+            return SUCCESS;
+        }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
         return ret;
