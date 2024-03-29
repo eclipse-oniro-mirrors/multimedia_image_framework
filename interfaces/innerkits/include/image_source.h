@@ -271,7 +271,7 @@ private:
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                  const std::string &key, const std::string &value);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    uint32_t CreatExifMetadataByImageSource();
+    uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;

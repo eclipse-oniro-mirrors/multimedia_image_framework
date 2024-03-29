@@ -995,7 +995,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
 {
-    uint32_t ret = CreatExifMetadataByImageSource();
+    uint32_t ret = CreatExifMetadataByImageSource(true);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to modify property.");
@@ -1059,7 +1059,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
-uint32_t ImageSource::CreatExifMetadataByImageSource()
+uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
     if (exifMetadata_ != nullptr) {
         return SUCCESS;
@@ -1077,7 +1077,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource()
     }
 
     uint32_t ret = metadataAccessor->Read();
-    if (ret != SUCCESS) {
+    if (ret != SUCCESS && !addFlag) {
         return ret;
     }
 
