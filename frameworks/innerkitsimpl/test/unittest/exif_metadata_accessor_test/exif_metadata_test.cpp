@@ -640,7 +640,7 @@ std::string g_modifyData[][3] = {
     {"StripByteCounts", "252", "252"},
     {"XResolution", "72/1", "72"},
     {"YResolution", "252/1", "252"},
-    {"PlanarConfiguration", "1", "Planar format"},
+    {"PlanarConfiguration", "1", "Chunky format"},
     {"ResolutionUnit", "2", "Inch"},
     {"TransferFunction", "2", "1 bytes undefined data"},
     {"Software", "MNA-AL00 4.0.0.120(C00E116R3P7)", "MNA-AL00 4.0.0.120(C00E116R3P7)"},

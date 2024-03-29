@@ -59,6 +59,7 @@ static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME1_PATH = "/data/test/tes
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH = "/data/test/test_inc2.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH = "/data/test/test_onetime2.jpg";
 static const std::string IMAGE_HW_EXIF_PATH = "/data/local/tmp/image/test_jpeg_readmetadata004.jpg";
+static const std::string IMAGE_NO_EXIF_PATH = "/data/local/tmp/image/hasNoExif.jpg";
 
 const std::string ORIENTATION = "Orientation";
 const std::string IMAGE_HEIGHT = "ImageHeight";
@@ -2352,6 +2353,28 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0052, TestSize.Level3)
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0052 end";
+}
+
+/**
+ * @tc.name: GetImagePropertyStringTest0053
+ * @tc.desc: image exif does not exist and get Hw* property, return success ,value is default_exif_value
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0053, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0053 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_NO_EXIF_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    uint32_t index = 0;
+    std::string value = "0";
+    std::string key = "HwMnoteFocusMode";
+    uint32_t res = imageSource->GetImagePropertyString(index, key, value);
+    ASSERT_EQ(res, SUCCESS);
+    ASSERT_EQ(value, "default_exif_value");
+    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0053 end";
 }
 
 /**
