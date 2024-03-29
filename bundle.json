@@ -43,12 +43,12 @@
           "hdf_core",
           "memmgr_plugin",
           "libyuv",
-          "libjpeg-turbo",
-          "libexif"
+          "libjpeg-turbo"
         ],
         "third_party": [
           "flutter",
           "libpng",
+          "libexif",
           "bounds_checking_function",
           "expat",
           "json",

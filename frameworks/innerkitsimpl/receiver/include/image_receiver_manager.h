@@ -32,7 +32,11 @@ public:
     ~ImageReceiverManager() {}
     ImageReceiverManager(const ImageReceiverManager&) = delete;
     ImageReceiverManager& operator=(const ImageReceiverManager&) = delete;
-    static ImageReceiverManager& getInstance();
+    static ImageReceiverManager& getInstance()
+    {
+        static ImageReceiverManager instance;
+        return instance;
+    }
     string SaveImageReceiver(shared_ptr<ImageReceiver> imageReceiver);
     sptr<Surface> getSurfaceByKeyId(string keyId);
     shared_ptr<ImageReceiver> getImageReceiverByKeyId(string keyId);

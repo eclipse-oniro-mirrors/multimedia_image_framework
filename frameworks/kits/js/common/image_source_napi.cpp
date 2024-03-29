@@ -21,7 +21,6 @@
 #include "string_ex.h"
 #include "image_trace.h"
 #include "hitrace_meter.h"
-#include "exif_metadata_formatter.h"
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "color_space_object_convertor.h"
 #endif
@@ -40,6 +39,7 @@ namespace {
     constexpr uint32_t NUM_3 = 3;
     constexpr uint32_t NUM_4 = 4;
     constexpr uint32_t NUM_5 = 5;
+    constexpr uint32_t NUM_8 = 8;
 }
 
 namespace OHOS {
@@ -1543,9 +1543,6 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
             if (context->fdIndex != -1) {
                 ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
                     "Create Fd without write permission!");
-            } else {
-                ImageNapiUtils::CreateErrorObj(env, result[0], context->status,
-                    "The EXIF data failed to be written to the file.");
             }
         } else if (context->status == ERR_MEDIA_OUT_OF_RANGE) {
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status,
@@ -1680,13 +1677,76 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     return context;
 }
 
-static bool CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
+static bool IsDoubleString(const std::string &str)
 {
-    bool isError = ExifMetadatFormatter::Validate(key, value);
-    if (isError) {
-        errorInfo = key + "has invalid exif value: ";
+    char* end = nullptr;
+    double number = std::strtod(str.c_str(), &end);
+    return end != str.c_str() && *end == '\0' && number != HUGE_VAL;
+}
+
+static bool CheckExifDataValueOfBitsPerSample(const std::string &key, const std::string &value, std::string &errorInfo)
+{
+    std::vector<std::string> bitsVec;
+    SplitStr(value, ",", bitsVec);
+    if (bitsVec.size() > NUM_3) {
+        errorInfo = "BitsPerSample has invalid exif value: ";
         errorInfo.append(value);
         return false;
+    }
+    for (size_t i = 0; i < bitsVec.size(); i++) {
+        if (!IsNumericStr(bitsVec[i])) {
+            errorInfo = "BitsPerSample has invalid exif value: ";
+            errorInfo.append(bitsVec[i]);
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
+{
+    if (IsSameTextStr(key, "BitsPerSample")) {
+        return CheckExifDataValueOfBitsPerSample(key, value, errorInfo);
+    } else if (IsSameTextStr(key, "Orientation")) {
+        if (!IsNumericStr(value) || atoi(value.c_str()) < 1 || static_cast<uint32_t>(atoi(value.c_str())) > NUM_8) {
+            errorInfo = "Orientation has invalid exif value: ";
+            errorInfo.append(value);
+            return false;
+        }
+    } else if (IsSameTextStr(key, "ImageLength") || IsSameTextStr(key, "ImageWidth")) {
+        if (!IsNumericStr(value)) {
+            errorInfo = "ImageLength or ImageWidth has invalid exif value: ";
+            errorInfo.append(value);
+            return false;
+        }
+    } else if (IsSameTextStr(key, "GPSLatitude") || IsSameTextStr(key, "GPSLongitude")) {
+        std::vector<std::string> gpsVec;
+        SplitStr(value, ",", gpsVec);
+        if (gpsVec.size() != NUM_2 && gpsVec.size() != NUM_3) {
+            errorInfo = "GPSLatitude or GPSLongitude has invalid exif value: ";
+            errorInfo.append(value);
+            return false;
+        }
+
+        for (size_t i = 0; i < gpsVec.size(); i++) {
+            if (!IsDoubleString(gpsVec[i])) {
+                errorInfo = "GPSLatitude or GPSLongitude has invalid exif value: ";
+                errorInfo.append(gpsVec[i]);
+                return false;
+            }
+        }
+    } else if (IsSameTextStr(key, "GPSLatitudeRef")) {
+        if (!IsSameTextStr(value, "N") && !IsSameTextStr(value, "S")) {
+            errorInfo = "GPSLatitudeRef has invalid exif value: ";
+            errorInfo.append(value);
+            return false;
+        }
+    } else if (IsSameTextStr(key, "GPSLongitudeRef")) {
+        if (!IsSameTextStr(value, "W") && !IsSameTextStr(value, "E")) {
+            errorInfo = "GPSLongitudeRef has invalid exif value: ";
+            errorInfo.append(value);
+            return false;
+        }
     }
     return true;
 }

@@ -31,7 +31,6 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
     "//foundation/multimedia/utils/include",
@@ -142,17 +141,6 @@ if (use_clang_android) {
     ]
 
     sources = [
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
@@ -240,9 +228,6 @@ if (use_clang_android) {
         "ipc:ipc_core",
         "napi:ace_napi",
       ]
-      if (enable_libexif) {
-        external_deps += [ "libexif:libexif" ]
-      }
     }
 
     if (purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -263,17 +248,6 @@ ohos_static_library("image_static") {
   public_configs = [ ":image_external_config" ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",

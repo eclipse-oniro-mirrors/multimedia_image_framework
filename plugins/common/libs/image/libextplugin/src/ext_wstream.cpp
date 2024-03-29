@@ -60,25 +60,5 @@ size_t ExtWStream::bytesWritten() const
     stream_->GetCurrentSize(written);
     return written;
 }
-
-bool MetadataWStream::write(const void *buffer, size_t size)
-{
-    OHOS::Media::byte* bytePtr = reinterpret_cast<OHOS::Media::byte*>(const_cast<void*>(buffer));
-    if (stream_->Write(bytePtr, size) !=0) {
-        return true;
-    }
-    return false;
-}
-
-size_t MetadataWStream::bytesWritten() const
-{
-    return stream_->GetSize();
-}
-
-uint8_t* MetadataWStream::GetAddr()
-{
-    return stream_->GetAddr();
-}
-
 } // namespace ImagePlugin
 } // namespace OHOS

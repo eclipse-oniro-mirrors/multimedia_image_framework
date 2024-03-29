@@ -50,7 +50,6 @@
             <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_packing.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_packing_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_large.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.bmp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.9.png -> /data/local/tmp/image" src="res"/>
@@ -66,9 +65,6 @@
             <option name="push" value="images/test.svg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_large.svg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.ico -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/raw1.dng -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_raw_file.jpg -> /data/test" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_readmetadata004.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
@@ -194,61 +190,6 @@
             <option name="push" value="images/test-treeodd-422.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-treeodd-440.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test-treeodd-444.jpg -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
-    <target name="imagestreamtest">
-        <preparer>
-            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
-    <target name="imageaccessortest">
-        <preparer>
-            <option name="push" value="images/exif/test_jpeg_readmetadata001.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_readmetadata003.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_readmetadata004.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_readexifblob002.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_readexifblob003.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata001.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata003.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata005.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata007.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata009.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata011.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata013.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata015.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata017.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata019.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata021.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata023.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata025.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata027.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata029.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata031.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writeexifblob001.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writeexifblob003.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writemetadata002.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writeexifblob002.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writeexifblob004.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_jpeg_writeexifblob006.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_exif.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_noexif.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_chunk_ztxt.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_chunk_text.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_chunk_itxt_nocompress.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_chunk_itxt_withcompress.png -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/exif/test_hwmnote.png -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
-    <target name="exifmetadatatest">
-        <preparer>
-            <option name="push" value="images/test_exif_blank.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_hwkey.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
-        </preparer>
-    </target>
-    <target name="imagetiffparsertest">
-        <preparer>
-            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
 </configuration>
