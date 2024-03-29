@@ -1786,8 +1786,8 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
 
         int *fd = static_cast<int *>(context_);
-        if (fd == nullptr || *fd < 0) {
-            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd < 0.", fd == nullptr ? 1 : 0);
+        if (fd == nullptr || *fd <= 0) {
+            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
 
