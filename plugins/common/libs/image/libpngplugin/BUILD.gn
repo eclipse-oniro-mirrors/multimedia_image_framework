@@ -46,6 +46,7 @@ ohos_shared_library("pngplugin") {
   ]
   deps = [
     "//third_party/libpng:png_static",
+    "//third_party/zlib:shared_libz",
   ]
 
   if (use_mingw_win) {
@@ -93,7 +94,7 @@ ohos_shared_library("pngplugin") {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
-      "hilog:libhilog"
+      "hilog:libhilog",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
