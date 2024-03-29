@@ -32,6 +32,8 @@ public:
     uint32_t FinalizeEncode() override;
 
 private:
+    uint32_t DoFinalizeEncode();
+
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;

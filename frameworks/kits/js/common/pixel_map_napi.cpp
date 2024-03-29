@@ -1651,6 +1651,10 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
     napi_value strideValue = nullptr;
     napi_create_int32(env, static_cast<int32_t>(rPixelMap->GetRowStride()), &strideValue);
     napi_set_named_property(env, result, "stride", strideValue);
+    napi_value encodedFormatValue = nullptr;
+    napi_create_string_utf8(env, imageInfo->encodedFormat.c_str(),
+        imageInfo->encodedFormat.length(), &encodedFormatValue);
+    napi_set_named_property(env, result, "mimeType", encodedFormatValue);
     return result;
 }
 

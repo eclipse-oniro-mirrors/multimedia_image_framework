@@ -339,5 +339,97 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode010, TestSize.Level3)
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(pixelMap.get(), nullptr);
 }
+
+/**
+ * @tc.name: WbmpGetEncodedFormat001
+ * @tc.desc: Decode wrong wbmp image from one imageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWbmpTest, WbmpGetEncodedFormat001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by buffer source stream and default format hit, modify data buffer to wrong
+     * format.
+     * @tc.expected: step1. create image source success.
+     */
+    size_t bufferSize = 0;
+    std::string IMAGE_ENCODEDFORMAR = "image/vnd.wap.wbmp";
+    bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_WBMP_PATH, bufferSize);
+    ASSERT_EQ(ret, true);
+    auto *buffer = reinterpret_cast<uint8_t *>(malloc(bufferSize));
+    ASSERT_NE(buffer, nullptr);
+    ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_WBMP_PATH, buffer, bufferSize);
+    ASSERT_EQ(ret, true);
+    buffer[0] = 43;
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options
+     * @tc.expected: step2. decode image source to pixel map failed, because bmp format error.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(pixelMap.get(), nullptr);
+
+    /**
+     * @tc.steps: step3. get imageinfo encodedformat from imagesource.
+     * @tc.expected: step3. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo1;
+    uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
+    ASSERT_EQ(ret1, SUCCESS);
+    EXPECT_EQ(imageinfo1.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceWbmpTest: WbmpGetEncodedFormat001 imageinfo1: " << imageinfo1.encodedFormat;
+}
+
+/**
+ * @tc.name: WbmpGetEncodedFormat002
+ * @tc.desc: Decode wbmp image from file source stream(ARGB_8888)
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWbmpTest, WbmpGetEncodedFormat002, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct bmp file path and bmp format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string IMAGE_ENCODEDFORMAT = "image/vnd.wap.wbmp";
+    opts.formatHint = IMAGE_ENCODEDFORMAT;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WBMP_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map using pixel format BGRA_8888.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredPixelFormat = PixelFormat::BGRA_8888;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+    /**
+     * @tc.steps: step3. get imageinfo encodedformat from imagesource.
+     * @tc.expected: step3. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo1;
+    uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
+    ASSERT_EQ(ret1, SUCCESS);
+    EXPECT_EQ(imageinfo1.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceWbmpTest: WbmpGetEncodedFormat002 imageinfo1: " << imageinfo1.encodedFormat;
+    /**
+     * @tc.steps: step4. get imageinfo encodedformat pixelmap.
+     * @tc.expected: step4. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo2;
+    pixelMap->GetImageInfo(imageinfo2);
+    EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceWbmpTest: WbmpGetEncodedFormat002 imageinfo2: " << imageinfo2.encodedFormat;
+}
 } // namespace Multimedia
 } // namespace OHOS

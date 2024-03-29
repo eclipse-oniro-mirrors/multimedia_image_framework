@@ -137,6 +137,8 @@ struct ASTCInfo {
 };
 
 class SourceStream;
+class MetadataAccessor;
+class ExifMetadata;
 
 class ImageSource {
 public:
@@ -201,6 +203,7 @@ public:
     NATIVEEXPORT std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> CreatePixelMapList(const DecodeOptions &opts,
         uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDelayTime(uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDisposalType(uint32_t &errorCode);
     NATIVEEXPORT uint32_t GetFrameCount(uint32_t &errorCode);
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     NATIVEEXPORT size_t GetSourceSize() const;
@@ -242,6 +245,7 @@ private:
                                    IncrementalDecodingContext &recordContext);
     void SetIncrementalSource(const bool isIncrementalSource);
     bool IsStreamCompleted();
+    uint32_t GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value);
     FinalOutputStep GetFinalOutputStep(const DecodeOptions &opts, PixelMap &pixelMap, bool hasNinePatch);
     bool HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch);
     bool ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight);
@@ -264,6 +268,10 @@ private:
                                                     PixelMapAddrInfos &addrInfos, uint32_t &errorCode);
     void DumpInputData(const std::string& fileSuffix = "dat");
     static uint64_t GetNowTimeMicroSeconds();
+    uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
+                                 const std::string &key, const std::string &value);
+    uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    uint32_t CreatExifMetadataByImageSource();
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;
@@ -291,6 +299,7 @@ private:
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
     std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
+    std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

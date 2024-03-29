@@ -17,6 +17,7 @@
 #define INTERFACES_INNERKITS_INCLUDE_IMAGE_TYPE_H_
 
 #include <cinttypes>
+#include <string>
 #include "color_space.h"
 
 namespace OHOS {
@@ -95,6 +96,8 @@ enum class EncodedFormat : int32_t {
     PNG = 2,
     GIF = 3,
     HEIF = 4,
+    WEBP = 5,
+    DNG = 6
 };
 
 enum class PixelFormat : int32_t {
@@ -157,6 +160,7 @@ struct ImageInfo {
     ColorSpace colorSpace = ColorSpace::SRGB;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     int32_t baseDensity = 0;
+    std::string encodedFormat;
 };
 
 struct YUVDataInfo {
