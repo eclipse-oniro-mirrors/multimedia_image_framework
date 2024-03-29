@@ -93,8 +93,7 @@ ohos_shared_library("pngplugin") {
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
-      "hilog:libhilog",
-      "zlib:shared_libz"
+      "hilog:libhilog"
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
