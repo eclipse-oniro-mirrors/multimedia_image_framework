@@ -356,7 +356,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         }
     }
     if (isAstc_.has_value() && isAstc_.value()) {
-        return CreatePixelMapForASTC(errorCode);
+        return CreatePixelMapForASTC(errorCode, opts.fastAstc);
     }
 #endif
 
@@ -2275,7 +2275,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     return true;
 }
 
-unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
+unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, bool fastAstc)
 #if defined(A_PLATFORM) || defined(IOS_PLATFORM)
 {
     errorCode = ERROR;
@@ -2303,9 +2303,16 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode)
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
     }
-    if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceStreamPtr_)) {
-        IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
-        return nullptr;
+    if (fastAstc && sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE && fileSize == astcSize) {
+        void *fdBuffer = new int32_t();
+        *static_cast<int32_t *>(fdBuffer) = static_cast<FileSourceStream *>(sourceStreamPtr_.get())->GetMMapFd();
+        pixelAstc->SetPixelsAddr(sourceStreamPtr_->GetDataPtr(), fdBuffer, fileSize,
+            AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    } else {
+        if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceStreamPtr_)) {
+            IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
+            return nullptr;
+        }
     }
     pixelAstc->SetAstc(true);
 
