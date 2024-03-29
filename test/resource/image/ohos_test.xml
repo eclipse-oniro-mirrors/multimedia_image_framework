@@ -249,6 +249,8 @@
     <target name="imagetiffparsertest">
         <preparer>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>    
     <target name="pixelastctest">
         <preparer>
             <option name="push" value="images/test.astc -> /data/local/tmp/image" src="res"/>
