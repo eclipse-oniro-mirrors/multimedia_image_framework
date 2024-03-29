@@ -357,6 +357,18 @@ void ImagePackerNapi::Destructor(napi_env env, void *nativeObject, void *finaliz
 {
 }
 
+static EncodeDynamicRange parseDynamicRange(napi_env env, napi_value root)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
+        return EncodeDynamicRange::DEFAULT;
+    }
+    if (tmpNumber <= static_cast<uint32_t>(EncodeDynamicRange::HDR_VIVID_SINGLE)) {
+        return EncodeDynamicRange(tmpNumber);
+    }
+    return EncodeDynamicRange::DEFAULT;
+}
+
 static int64_t parseBufferSize(napi_env env, napi_value root)
 {
     napi_value tempValue = nullptr;
@@ -434,6 +446,7 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
         IMAGE_LOGE("Invalid pack option format type");
         return false;
     }
+    opts->desiredDynamicRange = parseDynamicRange(env, root);
     IMAGE_LOGD("parsePackOptions format:[%{public}s]", opts->format.c_str());
     return parsePackOptionOfQuality(env, root, opts);
 }

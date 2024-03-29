@@ -37,6 +37,8 @@ static PixelFormatPair g_pixelFormatPairs[] = {
         "kUnknown_SkColorType", "PixelFormat::UNKNOWN"},
     {SkColorType::kRGBA_8888_SkColorType, PixelFormat::ARGB_8888,
         "kRGBA_8888_SkColorType", "PixelFormat::ARGB_8888"},
+    {SkColorType::kRGBA_1010102_SkColorType, PixelFormat::RGBA_1010102,
+        "kRGBA_1010102_SkColorType", "PixelFormat::RGBA_1010102"},
     {SkColorType::kAlpha_8_SkColorType, PixelFormat::ALPHA_8,
         "kAlpha_8_SkColorType", "PixelFormat::ALPHA_8"},
     {SkColorType::kRGB_565_SkColorType, PixelFormat::RGB_565,

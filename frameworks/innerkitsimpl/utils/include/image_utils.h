@@ -52,6 +52,11 @@ public:
         uint64_t imageId = 0);
     static uint64_t GetNowTimeMilliSeconds();
     static std::string GetCurrentProcessName();
+    // BytesToXXX function will modify the offset value.
+    static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static uint32_t BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static int32_t BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static float BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
 
 private:
     static uint32_t RegisterPluginServer();

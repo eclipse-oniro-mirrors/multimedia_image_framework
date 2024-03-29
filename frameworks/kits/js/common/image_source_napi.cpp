@@ -865,6 +865,20 @@ static PixelFormat ParsePixlForamt(int32_t val)
     return PixelFormat::UNKNOWN;
 }
 
+static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
+        IMAGE_LOGD("no desiredDynamicRange");
+        return DecodeDynamicRange::DEFAULT;
+    }
+    if (tmpNumber <= static_cast<uint32_t>(DecodeDynamicRange::SDR)) {
+        return DecodeDynamicRange(tmpNumber);
+    }
+    return DecodeDynamicRange::DEFAULT;
+}
+
+
 static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
 {
     uint32_t tmpNumber = 0;
@@ -905,6 +919,7 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     if (opts->desiredColorSpaceInfo == nullptr) {
         IMAGE_LOGD("no desiredColorSpace");
     }
+    opts->desiredDynamicRange = ParseDynamicRange(env, root);
     return true;
 }
 

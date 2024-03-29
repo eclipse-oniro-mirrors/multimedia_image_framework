@@ -152,11 +152,13 @@ uint32_t DmaMemory::Create()
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    GraphicPixelFormat format = data.format == PixelFormat::RGBA_1010102 ?
+            GRAPHIC_PIXEL_FMT_RGBA_1010102 : GRAPHIC_PIXEL_FMT_RGBA_8888;
     BufferRequestConfig requestConfig = {
         .width = data.desiredSize.width,
         .height = data.desiredSize.height,
         .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
-        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .format = format, // PixelFormat
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
@@ -234,10 +236,12 @@ std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, Memor
     res->data.size = data.size;
     res->data.tag = data.tag;
     res->data.desiredSize = data.desiredSize;
+    res->data.format = data.format;
     res->extend.data = extend.data;
     res->extend.size = extend.size;
     res->extend.tag = extend.tag;
     res->extend.desiredSize = extend.desiredSize;
+    res->extend.format = data.format;
     if (res->data.data == nullptr) {
         if (res->Create() != SUCCESS) {
             return nullptr;
@@ -250,6 +254,7 @@ std::unique_ptr<AbsMemory> MemoryManager::TransMemoryType(const AbsMemory &sourc
     std::string tag)
 {
     MemoryData data = { nullptr, source.data.size, tag.c_str()};
+    data.format = source.data.format;
     auto res = CreateMemory(target, data);
     if (res == nullptr) {
         return res;

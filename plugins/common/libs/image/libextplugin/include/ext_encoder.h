@@ -20,6 +20,8 @@
 
 #include "abs_image_encoder.h"
 #include "plugin_class_base.h"
+#include "SkEncodedImageFormat.h"
+#include "ext_wstream.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -38,6 +40,10 @@ private:
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;
+    uint32_t EncodeSdrImage(SkEncodedImageFormat format, ExtWStream& outputStream);
+    uint32_t EncodeDualVivid(SkEncodedImageFormat format, ExtWStream& outputStream);
+    uint32_t EncodeSingleVivid(SkEncodedImageFormat format, ExtWStream& outputStream);
+    uint32_t EncodeBaseImageByPixelMap(SkEncodedImageFormat format, ExtWStream& outputStream);
 };
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -27,6 +27,7 @@ struct PlEncodeOptions {
     std::string format;
     uint8_t quality = 100;
     uint32_t numberHint = 1;
+    PlEncodeDynamicRange desiredDynamicRange = PlEncodeDynamicRange::DEFAULT;
 };
 
 class AbsImageEncoder {

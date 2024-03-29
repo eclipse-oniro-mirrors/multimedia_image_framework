@@ -53,6 +53,11 @@ struct PackOption {
      * Hint to how many images will be packed into the image file.
      */
     uint32_t numberHint = 1;
+    
+    /**
+     * desired image dynamic range.
+    */
+    EncodeDynamicRange desiredDynamicRange = EncodeDynamicRange::DEFAULT;
 };
 
 class PackerStream;
@@ -89,6 +94,7 @@ private:
     std::unique_ptr<ImagePlugin::AbsImageEncoder> encoder_;
     std::unique_ptr<ImagePlugin::AbsImageEncoder> exEncoder_;
     std::unique_ptr<PixelMap> pixelMap_;  // inner imagesource create, our manage the lifecycle
+    bool encodeToSdr_ = true;
 };
 } // namespace Media
 } // namespace OHOS
