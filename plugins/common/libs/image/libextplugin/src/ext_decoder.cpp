@@ -468,7 +468,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     outputColorFmt_ = (opts.desiredPixelFormat == PlPixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
+#endif
 
     if (codec_) {
         SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
@@ -715,6 +717,9 @@ JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PlPixelFormat desiredFormat)
 
 uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
 {
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    return 0;
+#endif
     uint32_t res = PreDecodeCheckYuv(index, context.info.pixelFormat);
     if (res != SUCCESS) {
         return res;

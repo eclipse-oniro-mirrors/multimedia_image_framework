@@ -40,6 +40,9 @@
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
+#ifdef IOS_PLATFORM
+#include <sys/syscall.h>
+#endif
 #if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #else
@@ -373,12 +376,16 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
             totalSize = static_cast<int32_t>(sbBuffer->GetSize());
         } else {
             totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
         }
+#else
+        totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
+#endif
         IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 totalSize is %{public}d", totalSize);
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
@@ -450,6 +457,15 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         IMAGE_LOGE("ImageUtils::GetPixelMapName error, pixelMap is null");
         return "";
     }
+#ifdef IOS_PLATFORM
+    std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
+        "_h" + std::to_string(pixelMap->GetHeight()) +
+        "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
+        "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
+        "_pid" + std::to_string(getpid()) +
+        "_tid" + std::to_string(syscall(SYS_thread_selfid)) +
+        "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
+#else
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
@@ -457,6 +473,7 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(gettid()) +
         "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
+#endif
     return pixelMapStr;
 }
 } // namespace Media
