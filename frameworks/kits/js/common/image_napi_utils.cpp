@@ -14,7 +14,6 @@
  */
 
 #include "image_napi_utils.h"
-#include <chrono>
 #include <securec.h>
 #include <unistd.h>
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && defined(HICHECKER_ENABLE)
@@ -220,12 +219,6 @@ napi_value ImageNapiUtils::ThrowExceptionError(napi_env env, const int32_t errCo
         napi_get_undefined(env, &result);
     }
     return result;
-}
-
-uint64_t ImageNapiUtils::GetNowTimeMicroSeconds()
-{
-    auto now = std::chrono::system_clock::now();
-    return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
 }  // namespace Media
 }  // namespace OHOS
