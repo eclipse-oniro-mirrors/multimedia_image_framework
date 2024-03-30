@@ -44,7 +44,8 @@
           "memmgr_plugin",
           "libyuv",
           "libjpeg-turbo",
-          "libexif"
+          "libexif",
+          "zlib"
         ],
         "third_party": [
           "flutter",
@@ -53,10 +54,10 @@
           "expat",
           "json",
           "skia",
-          "zlib",
           "astc-encoder",
           "opencl-headers",
-          "ffmpeg"
+          "ffmpeg",
+          "zlib"
         ]
       },
       "build": {

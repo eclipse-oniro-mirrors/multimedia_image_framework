@@ -232,6 +232,7 @@ ohos_shared_library("extplugin") {
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "libjpeg-turbo:turbojpeg",
+      "zlib:libz",
     ]
 
     if (enable_jpeg_hw_decode) {
