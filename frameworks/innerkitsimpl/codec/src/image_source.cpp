@@ -157,6 +157,8 @@ constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
 const std::string g_textureSuperDecSo = "/system/lib64/libtextureSuperDecompress.z.so";
+const auto KEY_SIZE = 2;
+const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -995,7 +997,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
 {
-    uint32_t ret = CreatExifMetadataByImageSource();
+    uint32_t ret = CreatExifMetadataByImageSource(true);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to modify property.");
@@ -1059,7 +1061,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
-uint32_t ImageSource::CreatExifMetadataByImageSource()
+uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
     if (exifMetadata_ != nullptr) {
         return SUCCESS;
@@ -1077,7 +1079,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource()
     }
 
     uint32_t ret = metadataAccessor->Read();
-    if (ret != SUCCESS) {
+    if (ret != SUCCESS && !addFlag) {
         return ret;
     }
 
@@ -1095,6 +1097,10 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 {
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
+        if (key.substr(0, KEY_SIZE) == "Hw") {
+            value = DEFAULT_EXIF_VALUE;
+            return SUCCESS;
+        }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
         return ret;

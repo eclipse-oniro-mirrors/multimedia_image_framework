@@ -119,7 +119,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SamplesPerPixel"), "4");
     ASSERT_EQ(GetProperty(exifMetadata, "XResolution"), "300");
     ASSERT_EQ(GetProperty(exifMetadata, "YResolution"), "300");
-    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Planar format");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Chunky format");
     ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Inch");
     ASSERT_EQ(GetProperty(exifMetadata, "Software"), "GIMP 2.9.5");
     ASSERT_EQ(GetProperty(exifMetadata, "DateTime"), "2016:09:15 06:29:23");
@@ -312,7 +312,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Read007, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SamplesPerPixel"), "4");
     ASSERT_EQ(GetProperty(exifMetadata, "XResolution"), "300");
     ASSERT_EQ(GetProperty(exifMetadata, "YResolution"), "300");
-    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Planar format");
+    ASSERT_EQ(GetProperty(exifMetadata, "PlanarConfiguration"), "Chunky format");
     ASSERT_EQ(GetProperty(exifMetadata, "ResolutionUnit"), "Inch");
     ASSERT_EQ(GetProperty(exifMetadata, "Software"), "GIMP 2.9.5");
     ASSERT_EQ(GetProperty(exifMetadata, "DateTime"), "2016:09:15 06:29:23");
