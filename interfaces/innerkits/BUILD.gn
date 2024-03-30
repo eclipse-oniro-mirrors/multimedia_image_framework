@@ -250,6 +250,7 @@ if (use_clang_android) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
       external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
     }
+    external_deps += [ "zlib:libz" ]
 
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -386,6 +387,7 @@ ohos_static_library("image_static") {
       "hilog:libhilog",
     ]
   }
+  external_deps += [ "zlib:libz" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
