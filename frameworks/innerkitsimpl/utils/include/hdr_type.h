@@ -13,22 +13,61 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_HDR_INCLUDE_HDR_TYPE_H
-#define FRAMEWORKS_INNERKITSIMPL_HDR_INCLUDE_HDR_TYPE_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_HDR_TYPE_H
+#define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_HDR_TYPE_H
 #include <vector>
 namespace OHOS {
 namespace Media {
-enum class HdrType : int32_t {
+enum class ImageHdrType : int32_t {
     UNKNOWN,
     SDR,
-    HDR_VIVID,
+    HDR_ISO_DUAL,
     HDR_CUVA,
-    HDR_ISO,
+    HDR_VIVID_DUAL,
+    HDR_VIVID_SINGLE
 };
+
+typedef struct {
+    float enhanceClippedThreholdMaxGainmap[3];
+    float enhanceClippedThreholdMinGainmap[3];
+    float enhanceMappingGamma[3];
+    float enhanceMappingBaselineOffset[3];
+    float enhanceMappingAlternateOffset[3];
+
+    unsigned char baseColorPrimary;
+    unsigned char baseTransFunction;
+    unsigned char baseColorModel;
+    unsigned char baseMappingFlag;
+    unsigned short baseMappingSize;
+    std::vector<unsigned char> baseMapping;
+    unsigned short baseIccSize;
+    std::vector<unsigned char> baseICC;
+
+    unsigned char enhanceDataColorPrimary;
+    unsigned char enhanceDataTransFunction;
+    unsigned char enhanceDataColorModel;
+
+    unsigned char combineColorPrimary;
+    unsigned char combineTransFunction;
+    unsigned char combineColorModel;
+
+    unsigned char enhanceColorPrimary;
+    unsigned char enhanceTransFunction;
+    unsigned char enhanceColorModel;
+
+    unsigned char combineMappingFlag;
+    unsigned short combineMappingSize;
+    std::vector<unsigned char> combineMapping;
+
+    unsigned short enhanceICCSize;
+    std::vector<unsigned char> enhanceICC;
+}HDRVividGainmapMetadata;
 
 struct HdrMetadata {
     std::vector<uint8_t> staticMetadata;
     std::vector<uint8_t> dynamicMetadata;
+    bool gainmapMetadataFlag = false;
+    HDRVividGainmapMetadata gainmapMetadata;
 };
 
 struct IsoMetadata {
@@ -45,4 +84,4 @@ struct IsoMetadata {
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_HDR_INCLUDE_HDR_TYPE_H
+#endif // FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_HDR_TYPE_H

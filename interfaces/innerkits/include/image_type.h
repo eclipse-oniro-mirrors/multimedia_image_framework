@@ -119,12 +119,13 @@ enum class PixelFormat : int32_t {
 };
 
 enum class DecodeDynamicRange : int32_t {
-    DEFAULT = 0,
+    AUTO = 0,
     SDR = 1,
+    HDR = 2,
 };
 
 enum class EncodeDynamicRange : int32_t {
-    DEFAULT = 0, //10bit jpeg and heif will be encode as HDR_VIVID_DUAL, others will be encode as SDR
+    AUTO = 0, //10bit jpeg will be encode as HDR_VIVID_DUAL, others will be encode as SDR
     SDR,
     HDR_VIVID_DUAL,
     HDR_VIVID_SINGLE,
@@ -227,7 +228,7 @@ struct DecodeOptions {
     bool preferDma = false;
     bool fastAstc = false;
     uint16_t invokeType = 0;
-    DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::DEFAULT;
+    DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::AUTO;
 };
 
 enum class ScaleMode : int32_t {

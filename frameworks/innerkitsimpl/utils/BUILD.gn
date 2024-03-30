@@ -25,10 +25,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/media_utils_lite/interfaces/kits",
       "//foundation/communication/ipc/utils/include",
     ]
-    if (enable_hdr_converter) {
-      include_dirs +=
-          [ "${media_subsystem}/video_processing_engine/interfaces/inner_api" ]
-    }
+
     sources = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
@@ -69,10 +66,7 @@ if (use_clang_ios) {
       "$skia_root/skia",
       "${graphic_subsystem}/interfaces/inner_api/surface",
     ]
-    if (enable_hdr_converter) {
-      include_dirs +=
-          [ "${media_subsystem}/video_processing_engine/interfaces/inner_api" ]
-    }
+
     sources = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
@@ -137,11 +131,6 @@ if (use_clang_ios) {
       } else {
         external_deps += [ "startup:syspara" ]
       }
-    }
-
-    if (enable_hdr_converter) {
-      defines += [ "IMAGE_HDR_CONVERTER_FLAG" ]
-      external_deps += [ "video_processing_engine:videoprocessingengine" ]
     }
 
     #relative_install_dir = "module/multimedia"
@@ -229,12 +218,8 @@ ohos_static_library("image_utils_static") {
     } else {
       external_deps += [ "startup:syspara" ]
     }
-    defines = []
   }
-  if (enable_hdr_converter) {
-    defines += [ "IMAGE_HDR_CONVERTER_FLAG" ]
-    external_deps += [ "video_processing_engine:videoprocessingengine" ]
-  }
+
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

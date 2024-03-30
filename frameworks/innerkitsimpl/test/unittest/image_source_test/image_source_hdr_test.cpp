@@ -27,7 +27,6 @@
 #include "file_source_stream.h"
 #include "buffer_source_stream.h"
 #include "ext_stream.h"
-#include "hdr_helper.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -40,7 +39,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
     LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceJpegTest"
 };
 
-static const std::string IMAGE_INPUT_ULTRA_HDR_PATH = "/data/local/tmp/image/ultrahdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test.jpg";
 
 class ImageSourceHdrTest : public testing::Test {
 public:
@@ -49,30 +48,48 @@ public:
 };
 
 /**
- * @tc.name: HdrDecode001
- * @tc.desc: Test UltraHdr decode
+ * @tc.name: CheckImageSourceHdr001
+ * @tc.desc: Test IsHdrImage()
  * @tc.type: FUNC
  */
-HWTEST_F(ImageSourceHdrTest, HdrDecode001, TestSize.Level3)
+HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr001, TestSize.Level3)
 {
     uint32_t errorCode = 0;
     SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ULTRA_HDR_PATH,
-                                                                              opts, errorCode);
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    bool isHdr = imageSource->IsHdrImage();
+    ASSERT_EQ(isHdr, false);
+}
+
+/**
+ * @tc.name: CheckPixelMapHdr001
+ * @tc.desc: Test PixelMap IsHdr()
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
     uint32_t index = 0;
     DecodeOptions optsPixel;
-    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::DEFAULT;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
     errorCode = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
     HiLog::Debug(LABEL_TEST, "pixel map create");
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-    ASSERT_EQ(pixelMap->GetPixelFormat(), Media::PixelFormat::RGBA_1010102);
-#endif
+
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_EQ(isHdr, false);
 }
 }
 }

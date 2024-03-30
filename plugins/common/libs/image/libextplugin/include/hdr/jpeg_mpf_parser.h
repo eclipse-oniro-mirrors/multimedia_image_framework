@@ -20,7 +20,7 @@
 
 namespace OHOS {
 namespace Media {
-struct SingleImage {
+struct SingleJpegImage {
     uint32_t offset;
     uint32_t size;
 };
@@ -28,11 +28,16 @@ struct SingleImage {
 class JpegMpfParser {
 public:
     bool Parsing(uint8_t* data, uint32_t size);
-    std::vector<SingleImage> images_;
+    std::vector<SingleJpegImage> images_;
 private:
     bool ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dataOffset, bool isBigEndian);
     bool ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndian, uint32_t imageNums);
     uint32_t imageNums_ = 0;
+};
+
+class JpegMpfPacker {
+public:
+    static std::vector<uint8_t> PackHdrJpegMpfMarker(SingleJpegImage base, SingleJpegImage gainmap);
 };
 } // namespace Media
 } // namespace OHOS

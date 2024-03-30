@@ -743,6 +743,7 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
 {
     napi_value result = nullptr;
     auto imageInfo = static_cast<ImageInfo*>(data);
+    auto rImageSource = static_cast<ImageSource*>(ptr);
     napi_create_object(env, &result);
 
     napi_value size = nullptr;
@@ -774,6 +775,10 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
     napi_create_string_utf8(env, imageInfo->encodedFormat.c_str(), NAPI_AUTO_LENGTH,
         &encodedFormatValue);
     napi_set_named_property(env, result, "mimeType", encodedFormatValue);
+
+    napi_value isHdrValue = nullptr;
+    napi_get_boolean(env, rImageSource->IsHdrImage(), &isHdrValue);
+    napi_set_named_property(env, result, "isHdr", isHdrValue);
     return result;
 }
 
@@ -782,7 +787,7 @@ STATIC_COMPLETE_FUNC(GetImageInfo)
     napi_value result = nullptr;
     auto context = static_cast<ImageSourceAsyncContext*>(data);
     if (context->status == SUCCESS) {
-        result = GetImageInfoNapiValue(env, &(context->imageInfo), nullptr);
+        result = GetImageInfoNapiValue(env, &(context->imageInfo), context->rImageSource.get());
         if (!IMG_IS_OK(status)) {
             context->status = ERROR;
             IMAGE_LOGE("napi_create_int32 failed!");
@@ -870,12 +875,12 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
         IMAGE_LOGD("no desiredDynamicRange");
-        return DecodeDynamicRange::DEFAULT;
+        return DecodeDynamicRange::AUTO;
     }
-    if (tmpNumber <= static_cast<uint32_t>(DecodeDynamicRange::SDR)) {
+    if (tmpNumber <= static_cast<uint32_t>(DecodeDynamicRange::HDR)) {
         return DecodeDynamicRange(tmpNumber);
     }
-    return DecodeDynamicRange::DEFAULT;
+    return DecodeDynamicRange::AUTO;
 }
 
 

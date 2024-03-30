@@ -1200,7 +1200,9 @@ bool PixelMap::IsHdr()
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorSpace = InnerGetGrColorSpace();
     if (colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
-        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ) {
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
         return false;
     }
 #endif

@@ -30,6 +30,7 @@ public:
     virtual std::shared_ptr<ExifMetadata> Get() override;
     virtual void Set(std::shared_ptr<ExifMetadata> &ptr) override;
     virtual bool WriteToOutput(ImagePlugin::OutputDataStream &output) override;
+    virtual std::shared_ptr<MetadataStream> GetOutputStream() override;
 
 protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;

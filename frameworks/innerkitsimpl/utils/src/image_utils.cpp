@@ -566,5 +566,64 @@ float ImageUtils::BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndia
     u.i = data;
     return u.f;
 }
+
+void ImageUtils::Uint16ToBytes(uint16_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint8_t BYTE_ONE = (data >> MOVE_BITS_8) & 0xFF;
+    uint8_t BYTE_TWO = data & 0xFF;
+    if (isBigEndian) {
+        bytes[offset++] = BYTE_ONE;
+        bytes[offset++] = BYTE_TWO;
+    } else {
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_ONE;
+    }
+}
+
+void ImageUtils::Uint32ToBytes(uint32_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint8_t BYTE_ONE = (data >> MOVE_BITS_24) & 0xFF;
+    uint8_t BYTE_TWO = (data >> MOVE_BITS_16) & 0xFF;
+    uint8_t BYTE_THREE = (data >> MOVE_BITS_8) & 0xFF;
+    uint8_t BYTE_FOUR = data & 0xFF;
+    if (isBigEndian) {
+        bytes[offset++] = BYTE_ONE;
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_THREE;
+        bytes[offset++] = BYTE_FOUR;
+    } else {
+        bytes[offset++] = BYTE_FOUR;
+        bytes[offset++] = BYTE_THREE;
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_ONE;
+    }
+}
+
+void ImageUtils::FloatToBytes(float data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    union {
+        uint32_t i;
+        float f;
+    } u;
+    u.f = data;
+    Uint32ToBytes(u.i, bytes, offset, isBigEndian);
+}
+
+void ImageUtils::Int32ToBytes(int32_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    union {
+        uint32_t uit;
+        int32_t it;
+    } u;
+    u.it = data;
+    Uint32ToBytes(u.uit, bytes, offset, isBigEndian);
+}
+
+void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8_t>& bytes, uint32_t& offset)
+{
+    for (uint32_t i = 0; i < length; i++) {
+        bytes[offset++] = data[i] & 0xFF;
+    }
+}
 } // namespace Media
 } // namespace OHOS

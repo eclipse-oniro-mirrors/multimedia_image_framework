@@ -79,7 +79,7 @@ struct DecodeContext {
     // Out: hard decode error message
     std::string hardDecodeError;
     // Out: hdr type
-    Media::HdrType hdrType = Media::HdrType::UNKNOWN;
+    Media::ImageHdrType hdrType = Media::ImageHdrType::UNKNOWN;
 };
 
 struct ProgDecodeContext {
@@ -208,9 +208,9 @@ public:
     }
 #endif
 
-    virtual Media::HdrType CheckHdrType()
+    virtual Media::ImageHdrType CheckHdrType()
     {
-        return Media::HdrType::SDR;
+        return Media::ImageHdrType::SDR;
     }
 
     virtual uint32_t GetGainMapOffset()
@@ -218,7 +218,7 @@ public:
         return DEFAULT_GAINMAP_OFFSET;
     }
 
-    virtual Media::HdrMetadata GetHdrMetadata(Media::HdrType type)
+    virtual Media::HdrMetadata GetHdrMetadata(Media::ImageHdrType type)
     {
         return {};
     }

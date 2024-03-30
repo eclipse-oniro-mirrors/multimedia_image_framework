@@ -57,7 +57,7 @@ struct PackOption {
     /**
      * desired image dynamic range.
     */
-    EncodeDynamicRange desiredDynamicRange = EncodeDynamicRange::DEFAULT;
+    EncodeDynamicRange desiredDynamicRange = EncodeDynamicRange::AUTO;
 };
 
 class PackerStream;

@@ -52,6 +52,7 @@ struct OH_DecodingOptions {
     uint32_t rotate;
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
+    int32_t desiredDynamicRange;
 };
 
 struct OH_ImageSource_Info {
@@ -59,7 +60,18 @@ struct OH_ImageSource_Info {
     int32_t width;
     /** Image height, in pixels. */
     int32_t height;
+    /** Image dynamicRange*/
+    bool isHdr;
 };
+
+static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
+{
+    if (val <= static_cast<int32_t>(DecodeDynamicRange::HDR)) {
+        return DecodeDynamicRange(val);
+    }
+
+    return DecodeDynamicRange::AUTO;
+}
 
 MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_Create(OH_DecodingOptions **options)
@@ -186,6 +198,28 @@ Image_ErrorCode OH_DecodingOptions_SetDesiredRegion(OH_DecodingOptions *options,
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_GetDesiredDynamicRange(OH_DecodingOptions *options,
+    int32_t *desiredDynamicRange)
+{
+    if (options == nullptr || desiredDynamicRange == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *desiredDynamicRange = options->desiredDynamicRange;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptions_SetDesiredDynamicRange(OH_DecodingOptions *options,
+    int32_t desiredDynamicRange)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->desiredDynamicRange = desiredDynamicRange;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_DecodingOptions_Release(OH_DecodingOptions *options)
 {
     if (options == nullptr) {
@@ -226,6 +260,16 @@ Image_ErrorCode OH_ImageSourceInfo_GetHeight(OH_ImageSource_Info *info, uint32_t
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceInfo_GetDynamicRange(OH_ImageSource_Info *info, bool *isHdr)
+{
+    if (info == nullptr || isHdr == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *isHdr = info->isHdr;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceInfo_Release(OH_ImageSource_Info *info)
 {
     if (info == nullptr) {
@@ -258,6 +302,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     decOps.desiredRegion.top = ops->desiredRegion.y;
     decOps.desiredRegion.width = ops->desiredRegion.width;
     decOps.desiredRegion.height = ops->desiredRegion.height;
+    decOps.desiredDynamicRange = ParseImageDynamicRange(ops->desiredDynamicRange);
     switch (static_cast<int32_t>(ops->pixelFormat)) {
         case FORMAT_0:
         case FORMAT_2:
@@ -429,6 +474,7 @@ Image_ErrorCode OH_ImageSourceNative_GetImageInfo(OH_ImageSourceNative *source, 
         return IMAGE_BAD_PARAMETER;
     }
     ParseImageSourceInfo(info, imageInfo);
+    info->isHdr = source->GetInnerImageSource()->IsHdrImage();
     return IMAGE_SUCCESS;
 }
 

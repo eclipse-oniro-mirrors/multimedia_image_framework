@@ -105,7 +105,7 @@ enum class PlDynamicRange : int32_t {
 };
 
 enum class PlEncodeDynamicRange : int32_t {
-    DEFAULT = 0,
+    AUTO = 0,
     SDR,
     HDR_VIVID_DUAL,
     HDR_VIVID_SINGLE,

@@ -158,7 +158,6 @@ ohos_shared_library("extplugin") {
     "src/ext_wstream.cpp",
     "src/hdr/hdr_helper.cpp",
     "src/hdr/jpeg_mpf_parser.cpp",
-    "src/hdr/xmp_parser.cpp",
     "src/jpeg_yuv_decoder/jpeg_decoder_yuv.cpp",
     "src/jpeg_yuv_decoder/jpeg_yuvdata_converter.cpp",
     "src/plugin_export.cpp",
@@ -275,10 +274,6 @@ ohos_shared_library("extplugin") {
         "drivers_interface_codec:codec_idl_headers",
         "drivers_peripheral_codec:libcodec_hdi_omx_client",
       ]
-    }
-    if (enable_hdr_converter) {
-      defines += [ "IMAGE_HDR_CONVERTER_FLAG" ]
-      external_deps += [ "video_processing_engine:videoprocessingengine" ]
     }
   }
   cflags = [

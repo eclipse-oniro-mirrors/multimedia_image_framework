@@ -13,20 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_IMAGE_INCLUDE_VPE_UTILS_H
-#define FRAMEWORKS_INNERKITSIMPL_IMAGE_INCLUDE_VPE_UTILS_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
+#define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-#include "colorspace_converter.h"
-#endif
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "surface_buffer.h"
+#include "hdr_type.h"
 
 namespace OHOS {
 namespace Media {
+constexpr int32_t VPE_ERROR_FAILED = -1;
+constexpr int32_t VPE_ERROR_OK = 0;
+
+struct VpeSurfaceBuffers {
+    sptr<SurfaceBuffer> sdr;
+    sptr<SurfaceBuffer> gainmap;
+    sptr<SurfaceBuffer> hdr;
+};
+
 class VpeUtils {
 public:
+    VpeUtils();
+    ~VpeUtils();
+    int32_t ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy);
+    int32_t ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,
         const HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
     static bool GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer,
@@ -39,12 +50,15 @@ public:
     static bool GetSbDynamicMetadata(const sptr<SurfaceBuffer>& buffer, std::vector<uint8_t>& dynamicMetadata);
     static bool SetSbStaticMetadata(sptr<SurfaceBuffer>& buffer, const std::vector<uint8_t>& staticMetadata);
     static bool GetSbStaticMetadata(const sptr<SurfaceBuffer>& buffer, std::vector<uint8_t>& staticMetadata);
-    
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-    static std::shared_ptr<VideoProcessingEngine::ColorSpaceConverter> GetColorSpaceConverter();
-#endif
+    static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap, ImageHdrType type,
+        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color, HdrMetadata& metadata);
+
+private:
+    int32_t ColorSpaceConverterCreate(void* handle, int32_t* instanceId);
+    int32_t ColorSpaceConverterDestory(void* handle, int32_t* instanceId);
+    std::mutex vpeMtx_;
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_IMAGE_INCLUDE_VPE_UTILS_H
+#endif // FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H

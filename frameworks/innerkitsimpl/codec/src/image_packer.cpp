@@ -43,7 +43,7 @@ static constexpr uint8_t QUALITY_MAX = 100;
 const static std::string EXTENDED_ENCODER = "image/extended";
 static constexpr size_t SIZE_ZERO = 0;
 static const std::map<EncodeDynamicRange, PlEncodeDynamicRange> DYNAMIC_RANGE_MAP = {
-    { EncodeDynamicRange::DEFAULT, PlEncodeDynamicRange::DEFAULT },
+    { EncodeDynamicRange::AUTO, PlEncodeDynamicRange::AUTO },
     { EncodeDynamicRange::SDR, PlEncodeDynamicRange::SDR },
     { EncodeDynamicRange::HDR_VIVID_DUAL, PlEncodeDynamicRange::HDR_VIVID_DUAL },
     { EncodeDynamicRange::HDR_VIVID_SINGLE, PlEncodeDynamicRange::HDR_VIVID_SINGLE },
@@ -201,7 +201,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
 {
     ImageTrace imageTrace("ImagePacker::AddImage by imageSource");
     DecodeOptions decodeOpts;
-    decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::DEFAULT;
+    decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
     uint32_t ret = SUCCESS;
     if (pixelMap_ != nullptr) {
         pixelMap_.reset();  // release old inner pixelmap
@@ -223,12 +223,13 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
 uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 {
     ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %{public}u", index);
-    DecodeOptions opts;
+    DecodeOptions decodeOpts;
+    decodeOpts.desiredDynamicRange = encodeToSdr_ ? DecodeDynamicRange::SDR : DecodeDynamicRange::AUTO;
     uint32_t ret = SUCCESS;
     if (pixelMap_ != nullptr) {
         pixelMap_.reset();  // release old inner pixelmap
     }
-    pixelMap_ = source.CreatePixelMap(index, opts, ret);
+    pixelMap_ = source.CreatePixelMap(index, decodeOpts, ret);
     if (ret != SUCCESS) {
         IMAGE_LOGE("image source create pixel map failed.");
         return ret;
@@ -296,7 +297,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.quality = opts.quality;
     plOpts.format = opts.format;
     auto search = DYNAMIC_RANGE_MAP.find(opts.desiredDynamicRange);
-    plOpts.desiredDynamicRange = (search != DYNAMIC_RANGE_MAP.end()) ? search->second : PlEncodeDynamicRange::DEFAULT;
+    plOpts.desiredDynamicRange = (search != DYNAMIC_RANGE_MAP.end()) ? search->second : PlEncodeDynamicRange::AUTO;
 }
 
 void ImagePacker::FreeOldPackerStream()

@@ -1543,14 +1543,14 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
 #endif
 }
 
-HdrType ExtDecoder::CheckHdrType()
+ImageHdrType ExtDecoder::CheckHdrType()
 {
     if (!CheckCodec()) {
-        return Media::HdrType::UNKNOWN;
+        return Media::ImageHdrType::UNKNOWN;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();
     if (format != SkEncodedImageFormat::kJPEG && format != SkEncodedImageFormat::kHEIF) {
-        hdrType_ = Media::HdrType::SDR;
+        hdrType_ = Media::ImageHdrType::SDR;
         gainMapOffset_ = 0;
         return hdrType_;
     }
@@ -1563,16 +1563,16 @@ uint32_t ExtDecoder::GetGainMapOffset()
     if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
         return 0;
     }
-    if (hdrType_ == Media::HdrType::UNKNOWN) {
+    if (hdrType_ == Media::ImageHdrType::UNKNOWN) {
         hdrType_ = Media::HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     }
     return gainMapOffset_;
 }
 
-HdrMetadata ExtDecoder::GetHdrMetadata(Media::HdrType type)
+HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 {
     HdrMetadata metadata = {};
-    if (type > Media::HdrType::SDR && Media::HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
+    if (type > Media::ImageHdrType::SDR && Media::HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
         return metadata;
     }
     return {};

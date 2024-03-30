@@ -54,7 +54,6 @@ base_ase = "ase"
 resource_management_subsystem =
     "/$base_sep_b$base_ase/global/resource_management"
 graphic_surface_root = "//foundation/graphic/graphic_surface"
-media_subsystem = "/$image_sep_f$image_oundation/$image_multimedia"
 
 # skia
 image_use_new_skia = defined(use_new_skia) && use_new_skia
@@ -102,18 +101,11 @@ if (use_clang_android) {
 declare_args() {
   enable_jpeg_hw_decode = true
   enable_heif_hw_decode = false
-  enable_hdr_converter = false
   enable_libexif = true
-
 
   if (defined(global_parts_info) &&
       !defined(global_parts_info.hdf_drivers_interface_display)) {
     enable_jpeg_hw_decode = false
     enable_heif_hw_decode = false
-  }
-
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.multimedia_video_processing_engine)) {
-    enable_hdr_converter = true
   }
 }

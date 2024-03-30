@@ -27,7 +27,7 @@ static const std::string IMAGE_HEIC_FORMAT = "image/heic";
 static const std::string IMAGE_PNG_FORMAT = "image/png";
 static const std::string IMAGE_WEBP_FORMAT = "image/webp";
 static const std::string IMAGE_GIF_FORMAT = "image/gif";
-static const std::string IMAGE_ICO_FORMAT = "image/x-icon";
+static const std::string IMAGE_ICO_FORMAT = "image/x-ico";
 
 } // namespace Media
 } // namespace OHOS

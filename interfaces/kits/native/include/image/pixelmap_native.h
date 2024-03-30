@@ -290,15 +290,14 @@ Image_ErrorCode OH_PixelmapImageInfo_GetPixelFormat(OH_Pixelmap_ImageInfo *info,
 Image_ErrorCode OH_PixelmapImageInfo_GetAlphaType(OH_Pixelmap_ImageInfo *info, int32_t *alphaType);
 
 /**
- * @brief Get isHdr for imageinfo struct.
+ * @brief Get isHdr boolean for imageinfo struct.
  *
- * @param info The {@link OH_Pixelmap_ImageInfo} pointer will be operated.
+ * @param info The imageinfo pointer will be operated.
  * @param isHdr Whether the image has a high dynamic range.
  * @return Returns {@link Image_ErrorCode}
- * @see OH_PixelmapImageInfo_GetDynamicRange
  * @since 12
  */
-Image_ErrorCode OH_PixelmapImageInfo_GetDynamicRange(OH_Pixelmap_ImageInfo *infos, bool *isHdr);
+Image_ErrorCode OH_PixelmapImageInfo_GetDynamicRange(OH_Pixelmap_ImageInfo *info, bool *isHdr);
 
 /**
  * @brief Delete imageinfo struct pointer.

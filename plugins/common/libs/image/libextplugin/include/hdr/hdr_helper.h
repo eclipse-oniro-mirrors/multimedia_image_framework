@@ -24,10 +24,22 @@ namespace OHOS {
 namespace Media {
 class HdrHelper {
 public:
-    static HdrType CheckHdrType(SkCodec* codec, uint32_t& offset);
-    static bool GetMetadata(SkCodec* codec, HdrType type, HdrMetadata& metadata);
-    static std::vector<uint8_t> PackJpegVividBaseInfo(uint32_t offset, uint32_t gainMapSize);
-    static std::vector<uint8_t> PackJpegVividMetadata(HdrMetadata metadata);
+    static ImageHdrType CheckHdrType(SkCodec* codec, uint32_t& offset);
+    static bool GetMetadata(SkCodec* codec, ImageHdrType type, HdrMetadata& metadata);
+};
+
+class HdrJpegPackerHelper {
+public:
+    static uint32_t SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<SkData>& gainmapImage,
+        SkWStream& output, HdrMetadata& metadata);
+private:
+    static std::vector<uint8_t> PackVividMetadataMarker(HdrMetadata& metadata);
+    static std::vector<uint8_t> PackISOMetadataMarker(HdrMetadata& metadata);
+    static std::vector<uint8_t> PackBaseVividMarker(uint32_t gainmapOffset, uint32_t appSize);
+    static std::vector<uint8_t> PackBaseMpfMarker(uint32_t baseSize, uint32_t gainmapSize, uint32_t appOffset);
+    static std::vector<uint8_t> PackBaseISOMarker();
+    static uint32_t GetBaseVividMarkerSize();
+    static uint32_t GetMpfMarkerSize();
 };
 } // namespace Media
 } // namespace OHOS

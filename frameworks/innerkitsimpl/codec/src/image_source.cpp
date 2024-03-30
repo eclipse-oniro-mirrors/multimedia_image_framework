@@ -59,12 +59,6 @@
 #include "include/core/SkData.h"
 #endif
 #include "string_ex.h"
-#ifdef SUT_DECODE_ENABLE
-#include "astc_superDecompress.h"
-#endif
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-#include "colorspace_converter.h"
-#endif
 #include "hdr_type.h"
 #include "vpe_utils.h"
 #include "image_mime_type.h"
@@ -84,9 +78,7 @@ using namespace std;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 using namespace HDI::Display::Graphic::Common::V1_0;
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-using namespace VideoProcessingEngine;
-#endif
+
 static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
     { PixelFormat::ALPHA_8, PlPixelFormat::ALPHA_8 },     { PixelFormat::RGB_565, PlPixelFormat::RGB_565 },
@@ -760,11 +752,11 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
 }
 
 // add graphic colorspace object to pixelMap.
-static void SetPixelMapColorSpace(HdrType type, unique_ptr<PixelMap>& pixelMap,
+static void SetPixelMapColorSpace(ImageHdrType type, unique_ptr<PixelMap>& pixelMap,
     std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (type > HdrType::SDR) {
+    if (type > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(OHOS::ColorManager::ColorSpaceName::BT2020_HLG));
         return ;
     }
@@ -1435,15 +1427,15 @@ bool ImageSource::IsStreamCompleted()
 
 bool ImageSource::IsHdrImage()
 {
-    if (sourceHdrType_ != HdrType::UNKNOWN) {
-        return sourceHdrType_ > HdrType::SDR;
+    if (sourceHdrType_ != ImageHdrType::UNKNOWN) {
+        return sourceHdrType_ > ImageHdrType::SDR;
     }
 
     if (InitMainDecoder() != SUCCESS) {
         return false;
     }
     sourceHdrType_ = mainDecoder_->CheckHdrType();
-    return sourceHdrType_ > HdrType::SDR;
+    return sourceHdrType_ > ImageHdrType::SDR;
 }
 
 // ------------------------------- private method -------------------------------
@@ -1462,7 +1454,7 @@ ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions 
         sourceOptions_.formatHint = opts.formatHint;
     }
     imageId_ = GetNowTimeMicroSeconds();
-    sourceHdrType_ = HdrType::UNKNOWN;
+    sourceHdrType_ = ImageHdrType::UNKNOWN;
 }
 
 ImageSource::FormatAgentMap ImageSource::InitClass()
@@ -2738,7 +2730,6 @@ static string GetExtendedCodecMimeType(AbsImageDecoder* decoder)
     return string();
 }
 
-#ifdef IMAGE_HDR_CONVERTER_FLAG
 static float GetScaleSize(ImageInfo info, DecodeOptions opts)
 {
     if (info.size.width == 0 || info.size.height == 0) {
@@ -2761,9 +2752,9 @@ static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void*
     context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 }
 
-static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, HdrType hdrType)
+static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("UnSupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -2787,9 +2778,9 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, HdrType hdrType)
     }
     SetHdrContext(context, sb, nativeBuffer);
     CM_HDR_Metadata_Type type;
-    if (hdrType == HdrType::HDR_VIVID || hdrType == HdrType::HDR_CUVA) {
+    if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
         type = CM_IMAGE_HDR_VIVID_SINGLE;
-    } else if (hdrType == HdrType::HDR_ISO) {
+    } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
         type = CM_IMAGE_HDR_ISO_SINGLE;
     }
     VpeUtils::SetSbMetadataType(sb, type);
@@ -2797,26 +2788,23 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, HdrType hdrType)
     return SUCCESS;
 #endif
 }
-#endif
 
 DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo info, ImagePlugin::PlImageInfo& plInfo,
                                                     uint32_t& errorCode)
 {
     DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions);
     context.info.pixelFormat = plInfo.pixelFormat;
-#ifdef IMAGE_HDR_CONVERTER_FLAG
-    HdrType decodedHdrType = HdrType::UNKNOWN;
+    ImageHdrType decodedHdrType = ImageHdrType::UNKNOWN;
     if (opts_.desiredDynamicRange != DecodeDynamicRange::SDR) {
-        decodedHdrType = IsHdrImage() ? sourceHdrType_ : HdrType::SDR;
+        decodedHdrType = IsHdrImage() ? sourceHdrType_ : ImageHdrType::SDR;
         if (!ImageSystemProperties::GetDmaEnabled()) {
-            decodedHdrType = HdrType::SDR;
+            decodedHdrType = ImageHdrType::SDR;
             IMAGE_LOGI("[ImageSource]DecodeImageDataToContext imageId_: %{public}lu don't support dma.",
                 static_cast<unsigned long>(imageId_));
-        } else if (decodedHdrType > HdrType::SDR) {
+        } else if (decodedHdrType > ImageHdrType::SDR) {
             context.allocatorType = AllocatorType::DMA_ALLOC;
         }
     }
-#endif
     errorCode = mainDecoder_->Decode(index, context);
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
         // hardware decode success, update plInfo.size
@@ -2826,25 +2814,23 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
         plInfo.size = context.outInfo.size;
     }
     context.info = plInfo;
-    context.hdrType = HdrType::SDR;
+    context.hdrType = ImageHdrType::SDR;
     ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
     ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     if (errorCode != SUCCESS) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return context;
     }
-#ifdef IMAGE_HDR_CONVERTER_FLAG
     DecodeContext hdrContext;
     hdrContext.hdrType = decodedHdrType;
-    hdrContext.info.size = context.info.size;
+    hdrContext.info.size = plInfo.size;
     hdrContext.allocatorType = AllocatorType::DMA_ALLOC;
     float scale = GetScaleSize(info, opts_);
-    if (decodedHdrType > HdrType::SDR && ApplyGainMap(decodedHdrType, context, hdrContext, scale)) {
+    if (decodedHdrType > ImageHdrType::SDR && ApplyGainMap(decodedHdrType, context, hdrContext, scale)) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         plInfo = hdrContext.info;
         return hdrContext;
     }
-#endif
     return context;
 }
 
@@ -2874,7 +2860,7 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     return errorCode;
 }
 
-bool ImageSource::DecodeJpegGainMap(HdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
+bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
 {
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
     if (gainMapOffset == 0 || gainMapOffset > sourceStreamPtr_->GetStreamSize()) {
@@ -2913,7 +2899,7 @@ bool ImageSource::DecodeJpegGainMap(HdrType hdrType, float scale, DecodeContext&
     return true;
 }
 
-bool ImageSource::ApplyGainMap(HdrType hdrType, DecodeContext& baseCtx, DecodeContext& hdrCtx, float scale)
+bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& hdrCtx, float scale)
 {
     string format = GetExtendedCodecMimeType(mainDecoder_.get());
     if (format != IMAGE_JPEG_FORMAT) {
@@ -2944,85 +2930,39 @@ static CM_ColorSpaceType ConvertColorSpaceType(OHOS::ColorManager::ColorSpace co
     return CM_SRGB_LIMIT;
 }
 
-static CM_HDR_Metadata_Type ConvertHdrType(HdrType hdrType)
-{
-    switch (hdrType) {
-        case HdrType::HDR_VIVID :
-        case HdrType::HDR_CUVA :
-            return CM_IMAGE_HDR_VIVID_DUAL;
-        case HdrType::HDR_ISO :
-            return CM_IMAGE_HDR_ISO_DUAL;
-        default:
-            return CM_METADATA_NONE;
-    }
-    return CM_METADATA_NONE;
-}
-
-static void SetFloatMetadata(sptr<SurfaceBuffer>& buffer, int key, const float data)
-{
-    std::vector<uint8_t> metadata(sizeof(float));
-    if (memcpy_s(metadata.data(), metadata.size(), &data, sizeof(float)) != EOK) {
-        return;
-    };
-    buffer->SetMetadata(key, metadata);
-}
-
-static void SetIntMetadata(sptr<SurfaceBuffer>& buffer, int key, const int data)
-{
-    std::vector<uint8_t> metadata(sizeof(int));
-    if (memcpy_s(metadata.data(), metadata.size(), &data, sizeof(int)) != EOK) {
-        return;
-    };
-    buffer->SetMetadata(key, metadata);
-}
-
-static void SetBaseSurfaceBuffer(sptr<SurfaceBuffer>& buffer, CM_HDR_Metadata_Type type,
-                                 CM_ColorSpaceType color, HdrMetadata metadata)
-{
-    VpeUtils::SetSbMetadataType(buffer, type);
-    VpeUtils::SetSbColorSpaceType(buffer, color);
-    VpeUtils::SetSbDynamicMetadata(buffer, metadata.dynamicMetadata);
-    VpeUtils::SetSbStaticMetadata(buffer, metadata.staticMetadata);
-    float maxData = 1.0;
-    float minData = 0.0;
-    SetFloatMetadata(buffer, GAINMAP_MAX, maxData);
-    SetFloatMetadata(buffer, GAINMAP_MIN, minData);
-    SetIntMetadata(buffer, HDR_MODEL, 0);
-}
-
-bool ImageSource::ComposeHdrImage(HdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
+bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
     if (baseCtx.allocatorType != AllocatorType::DMA_ALLOC || gainMapCtx.allocatorType != AllocatorType::DMA_ALLOC) {
         return false;
     }
-    CM_HDR_Metadata_Type cmHdrType = ConvertHdrType(hdrType);
     CM_ColorSpaceType cmColorSpaceType = ConvertColorSpaceType(mainDecoder_->getGrColorSpace());
     // base image
     sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(baseCtx.pixelsBuffer.context));
-    SetBaseSurfaceBuffer(baseSptr, cmHdrType, cmColorSpaceType, metadata);
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, cmColorSpaceType, metadata);
     // gainmap image
-    sptr<SurfaceBuffer> gainMapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
-    VpeUtils::SetSbMetadataType(gainMapSptr, cmHdrType);
-    VpeUtils::SetSbColorSpaceType(gainMapSptr, cmColorSpaceType);
+    sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, cmColorSpaceType, metadata);
     // hdr image
-#ifdef IMAGE_HDR_CONVERTER_FLAG
     uint32_t errorCode = AllocHdrSurfaceBuffer(hdrCtx, hdrType);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", errorCode);
         return false;
     }
     sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(hdrCtx.pixelsBuffer.context));
-    auto convert = VpeUtils::GetColorSpaceConverter();
-    bool legacy = hdrType == HdrType::HDR_CUVA;
-    int error = convert->ComposeImage(baseSptr, gainMapSptr, hdrSptr, legacy);
-    if (error != VPE_ALGO_ERR_OK) {
+    VpeSurfaceBuffers buffers = {
+        .sdr = baseSptr,
+        .gainmap = gainmapSptr,
+        .hdr = hdrSptr,
+    };
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    bool legacy = hdrType == ImageHdrType::HDR_CUVA;
+    int32_t res = utils->ColorSpaceConverterComposeImage(buffers, legacy);
+    if (res != VPE_ERROR_OK) {
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
+        return false;
     }
-    return error == VPE_ALGO_ERR_OK;
-#else
-    return false;
-#endif
+    return true;
 }
 } // namespace Media
 } // namespace OHOS
