@@ -32,7 +32,7 @@ namespace OHOS {
 namespace ImagePlugin {
 namespace AstcEncBasedCl {
 constexpr int MAX_WIDTH = 8192;
-constexpr int MAX_HEIGHT = 4096;
+constexpr int MAX_HEIGHT = 8192;
 constexpr int TEXTURE_HEAD_BYTES = 16;
 constexpr int TEXTURE_BLOCK_BYTES = 16;
 constexpr int MAGIC_FILE_CONSTANT = 0x5CA1AB13;
