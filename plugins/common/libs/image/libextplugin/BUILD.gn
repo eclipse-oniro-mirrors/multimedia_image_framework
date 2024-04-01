@@ -380,8 +380,6 @@ ohos_shared_library("heifimpl") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
-  deps += skia_platform
-
   if (enable_heif_hw_decode) {
     deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   }

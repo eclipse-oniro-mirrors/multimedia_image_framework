@@ -35,6 +35,12 @@ extern "C" {
 
 #include <cmath>
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
+
+#undef LOG_TAG
+#define LOG_TAG "HeifDecoderImpl"
+
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
@@ -51,29 +57,34 @@ const static int CHUNK_HEAD_SIZE = 4;
 
 #ifdef HEIF_HW_DECODE_ENABLE
 const static int GRID_NUM_2 = 2;
+const static uint32_t PLANE_COUNT_TWO = 2;
 
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
     uint32_t height;
     uint32_t stride;
+    OH_NativeBuffer_Planes *planesInfo;
     AVPixelFormat format;
 };
 
-static void FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam &param)
+static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam &param)
 {
-    if (!frame) {
-        return;
-    }
     if (param.format == AV_PIX_FMT_NV12 || param.format == AV_PIX_FMT_NV21 || param.format == AV_PIX_FMT_P010) {
-        frame->data[0] = param.data;
-        frame->data[1] = param.data + param.stride * param.height;
-        frame->linesize[0] = static_cast<int>(param.stride);
-        frame->linesize[1] = static_cast<int>(param.stride);
+        if (param.planesInfo->planeCount < PLANE_COUNT_TWO) {
+            return false;
+        }
+        const OH_NativeBuffer_Plane &planeY = param.planesInfo->planes[0];
+        const OH_NativeBuffer_Plane &planeUV = param.planesInfo->planes[1];
+        frame->data[0] = param.data + planeY.offset;
+        frame->data[1] = param.data + planeUV.offset;
+        frame->linesize[0] = static_cast<int>(planeY.columnStride);
+        frame->linesize[1] = static_cast<int>(planeUV.columnStride);
     } else {
         frame->data[0] = param.data;
-        frame->linesize[0] = param.stride;
+        frame->linesize[0] = static_cast<int>(param.stride);
     }
+    return true;
 }
 
 static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
@@ -88,10 +99,10 @@ static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatCon
                                      dstParam.format,
                                      SWS_BICUBIC, nullptr, nullptr, nullptr);
     if (srcFrame != nullptr && dstFrame != nullptr && ctx != nullptr) {
-        FillFrameInfoForPixelConvert(srcFrame, srcParam);
-        FillFrameInfoForPixelConvert(dstFrame, dstParam);
-        res = sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0,
-                        static_cast<int>(srcParam.height), dstFrame->data, dstFrame->linesize);
+        res = FillFrameInfoForPixelConvert(srcFrame, srcParam)
+                && FillFrameInfoForPixelConvert(dstFrame, dstParam)
+                && sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0,
+                             static_cast<int>(srcParam.height), dstFrame->data, dstFrame->linesize);
     }
 
     av_frame_free(&srcFrame);
@@ -153,6 +164,7 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
             res = PixelFormat::BGRA_8888;
             break;
         default:
+            IMAGE_LOGE("Unsupported dst pixel format: %{public}d", format);
             break;
     }
     return res;
@@ -218,10 +230,12 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
     std::shared_ptr<HeifInputStream> streamWrapper = std::make_shared<HeifInputStreamWrapper>(stream);
     heif_error err = HeifParser::MakeFromStream(streamWrapper, &parser_);
     if (parser_ == nullptr || err != heif_error_ok) {
+        IMAGE_LOGE("make heif parser failed, err: %{public}d", err);
         return false;
     }
     primaryImage_ = parser_->GetPrimaryImage();
     if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("heif primary image is null");
         return false;
     }
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT) {
@@ -229,23 +243,24 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
         inPixelFormat_ = GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
 
-    return reinit(frameInfo);
+    return Reinit(frameInfo);
 }
 
-bool HeifDecoderImpl::reinit(HeifFrameInfo *frameInfo)
+bool HeifDecoderImpl::Reinit(HeifFrameInfo *frameInfo)
 {
-    initFrameInfo(&imageInfo_, primaryImage_);
-    getTileSize(primaryImage_, tileWidth_, tileHeight_);
-    setRowColNum();
+    InitFrameInfo(&imageInfo_, primaryImage_);
+    GetTileSize(primaryImage_, tileWidth_, tileHeight_);
+    SetRowColNum();
     if (frameInfo != nullptr) {
         *frameInfo = imageInfo_;
     }
     return true;
 }
 
-void HeifDecoderImpl::initFrameInfo(HeifFrameInfo *info, const std::shared_ptr<HeifImage> &image)
+void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<HeifImage> &image)
 {
     if (info == nullptr || image == nullptr) {
+        IMAGE_LOGI("InitFrameInfo info or image is null");
         return;
     }
     info->mWidth = image->GetOriginalWidth();
@@ -263,9 +278,10 @@ void HeifDecoderImpl::initFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
     }
 }
 
-void HeifDecoderImpl::getTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight)
+void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight)
 {
     if (!image) {
+        IMAGE_LOGI("GetTileSize image is null");
         return;
     }
 
@@ -276,7 +292,7 @@ void HeifDecoderImpl::getTileSize(const std::shared_ptr<HeifImage> &image, uint3
         return;
     }
     if (imageType != "grid") {
-        IMAGE_LOGE("unsupported image type: %{public}s", imageType.c_str());
+        IMAGE_LOGE("GetTileSize unsupported image type: %{public}s", imageType.c_str());
         return;
     }
     std::vector<std::shared_ptr<HeifImage>> tileImages;
@@ -289,7 +305,7 @@ void HeifDecoderImpl::getTileSize(const std::shared_ptr<HeifImage> &image, uint3
     tileHeight = tileImages[0]->GetOriginalHeight();
 }
 
-void HeifDecoderImpl::setRowColNum()
+void HeifDecoderImpl::SetRowColNum()
 {
     if (tileWidth_ != 0) {
         colNum_ = static_cast<size_t>(ceil((double)imageInfo_.mWidth / (double)tileWidth_));
@@ -329,19 +345,27 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     if (hwDecoder_ == nullptr) {
         hwDecoder_ = std::make_shared<HeifHardwareDecoder>();
         if (hwDecoder_ == nullptr) {
+            IMAGE_LOGE("decode make HeifHardwareDecoder failed");
             return false;
         }
     }
 
     sptr<SurfaceBuffer> hwBuffer
         = hwDecoder_->AllocateOutputBuffer(imageInfo_.mWidth, imageInfo_.mHeight, inPixelFormat_);
+    if (hwBuffer == nullptr) {
+        IMAGE_LOGE("decode AllocateOutputBuffer return null");
+        return false;
+    }
 
     std::string imageType = parser_->GetItemType(primaryImage_->GetItemId());
     bool res = false;
+    IMAGE_LOGI("HeifDecoderImpl::decode width: %{public}d, height: %{public}d,"
+               " imageType: %{public}s, inPixelFormat: %{public}d",
+               imageInfo_.mWidth, imageInfo_.mHeight, imageType.c_str(), inPixelFormat_);
     if (imageType == "grid") {
-        res = decodeGrids(hwBuffer);
+        res = DecodeGrids(hwBuffer);
     } else if (imageType == "hvc1") {
-        res = decodeSingleImage(primaryImage_, hwBuffer);
+        res = DecodeSingleImage(primaryImage_, hwBuffer);
     }
     return res;
 #else
@@ -349,7 +373,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 #endif
 }
 
-bool HeifDecoderImpl::decodeGrids(sptr<SurfaceBuffer> &hwBuffer)
+bool HeifDecoderImpl::DecodeGrids(sptr<SurfaceBuffer> &hwBuffer)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     std::vector<std::shared_ptr<HeifImage>> tileImages;
@@ -366,56 +390,76 @@ bool HeifDecoderImpl::decodeGrids(sptr<SurfaceBuffer> &hwBuffer)
         if (index == 0) {
             // get hvcc header
             parser_->GetItemData(tileImage->GetItemId(), &inputs[index], heif_only_header);
-            processChunkHead(inputs[index].data(), inputs[index].size());
+            ProcessChunkHead(inputs[index].data(), inputs[index].size());
         }
         parser_->GetItemData(tileImage->GetItemId(), &inputs[index + 1], heif_no_header);
-        processChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
+        ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
     }
 
     GridInfo gridInfo = {imageInfo_.mWidth, imageInfo_.mHeight, true, colNum_, rowNum_, tileWidth_, tileHeight_};
     auto err = hwDecoder_->DoDecode(gridInfo, inputs, hwBuffer);
     if (err != SUCCESS) {
+        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+                   " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
+                   " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
+                   err, imageInfo_.mWidth, imageInfo_.mHeight,
+                   inPixelFormat_, colNum_, rowNum_, tileWidth_, tileHeight_, inputs[0].size());
         return false;
     }
-    PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
-                                        imageInfo_.mWidth, imageInfo_.mHeight,
-                                        static_cast<uint32_t>(hwBuffer->GetStride()),
-                                        GraphicPixFmt2AvPixFmtForYuv(inPixelFormat_)};
-    PixelFormatConvertParam dstParam = {dstMemory_, imageInfo_.mWidth, imageInfo_.mHeight,
-                                        static_cast<uint32_t>(dstRowStride_),
-                                        PixFmt2AvPixFmtForRgb(outPixelFormat_)};
-    return ConvertPixelFormat(srcParam, dstParam);
+    return ConvertHwBufferPixelFormat(hwBuffer);
 #else
     return false;
 #endif
 }
 
-bool HeifDecoderImpl::decodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer)
+bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     if (image == nullptr) {
-        IMAGE_LOGI("HeifDecoderImpl::decodeSingleImage image is nullptr");
+        IMAGE_LOGI("HeifDecoderImpl::DecodeSingleImage image is nullptr");
         return false;
     }
     std::vector<std::vector<uint8_t>> inputs(GRID_NUM_2);
 
     parser_->GetItemData(image->GetItemId(), &inputs[0], heif_only_header);
-    processChunkHead(inputs[0].data(), inputs[0].size());
+    ProcessChunkHead(inputs[0].data(), inputs[0].size());
 
     parser_->GetItemData(image->GetItemId(), &inputs[1], heif_no_header);
-    processChunkHead(inputs[1].data(), inputs[1].size());
+    ProcessChunkHead(inputs[1].data(), inputs[1].size());
 
     GridInfo gridInfo = {imageInfo_.mWidth, imageInfo_.mHeight, false, colNum_, rowNum_, tileWidth_, tileHeight_};
     auto err = hwDecoder_->DoDecode(gridInfo, inputs, hwBuffer);
     if (err != SUCCESS) {
+        IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
+                   " imageType: hvc1, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
+                   " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu, dataLen: %{public}zu",
+                   err, imageInfo_.mWidth, imageInfo_.mHeight,
+                   inPixelFormat_, colNum_, rowNum_, tileWidth_, tileHeight_, inputs[0].size(), inputs[1].size());
+        return false;
+    }
+    return ConvertHwBufferPixelFormat(hwBuffer);
+#else
+    return false;
+#endif
+}
+
+bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    OH_NativeBuffer_Planes *hwBufferPlanesInfo = nullptr;
+    hwBuffer->GetPlanesInfo((void **)&hwBufferPlanesInfo);
+    if (hwBufferPlanesInfo == nullptr) {
+        IMAGE_LOGE("find to get hw buffer planes info");
         return false;
     }
     PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
                                         imageInfo_.mWidth, imageInfo_.mHeight,
                                         static_cast<uint32_t>(hwBuffer->GetStride()),
+                                        hwBufferPlanesInfo,
                                         GraphicPixFmt2AvPixFmtForYuv(inPixelFormat_)};
     PixelFormatConvertParam dstParam = {dstMemory_, imageInfo_.mWidth, imageInfo_.mHeight,
                                         static_cast<uint32_t>(dstRowStride_),
+                                        nullptr,
                                         PixFmt2AvPixFmtForRgb(outPixelFormat_)};
     return ConvertPixelFormat(srcParam, dstParam);
 #else
@@ -423,7 +467,7 @@ bool HeifDecoderImpl::decodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
 #endif
 }
 
-bool HeifDecoderImpl::processChunkHead(uint8_t *data, size_t len)
+bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
 {
     if (len < CHUNK_HEAD_SIZE) {
         return false;

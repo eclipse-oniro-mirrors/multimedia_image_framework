@@ -16,7 +16,7 @@
 #ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_IMPL_H
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_IMPL_H
 
-#include "src/codec/SkStubHeifDecoderAPI.h"
+#include "HeifDecoder.h"
 #include "heif_parser.h"
 #include "image_type.h"
 #include "surface_buffer.h"
@@ -50,19 +50,21 @@ public:
     size_t skipScanlines(int count) override;
 
 private:
-    bool reinit(HeifFrameInfo *frameInfo);
+    bool Reinit(HeifFrameInfo *frameInfo);
 
-    void initFrameInfo(HeifFrameInfo *frameInfo, const std::shared_ptr<HeifImage> &image);
+    void InitFrameInfo(HeifFrameInfo *frameInfo, const std::shared_ptr<HeifImage> &image);
 
-    void getTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight);
+    void GetTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight);
 
-    void setRowColNum();
+    void SetRowColNum();
 
-    bool processChunkHead(uint8_t *data, size_t len);
+    bool ProcessChunkHead(uint8_t *data, size_t len);
 
-    bool decodeGrids(sptr<SurfaceBuffer> &hwBuffer);
+    bool DecodeGrids(sptr<SurfaceBuffer> &hwBuffer);
 
-    bool decodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer);
+    bool DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer);
+
+    bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer);
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
