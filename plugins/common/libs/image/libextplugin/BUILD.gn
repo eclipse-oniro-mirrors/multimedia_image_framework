@@ -210,6 +210,7 @@ ohos_shared_library("extplugin") {
     ]
   } else {
     include_dirs += [ "${commonlibrary_subsystem}/base/include" ]
+    defines = []
     deps = [
       ":exifhelper",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
@@ -219,6 +220,7 @@ ohos_shared_library("extplugin") {
     ]
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {
+      defines += [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
       deps += [
         ":textureEncoderCL",
         "//third_party/opencl-headers:libcl",
@@ -247,7 +249,7 @@ ohos_shared_library("extplugin") {
         "hdf_core:libhdi",
         "ipc:ipc_single",
       ]
-      defines = [ "JPEG_HW_DECODE_ENABLE" ]
+      defines += [ "JPEG_HW_DECODE_ENABLE" ]
     }
   }
   cflags = [
@@ -260,7 +262,6 @@ ohos_shared_library("extplugin") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.open_source_libyuv)) {
     cflags += [ "-DLIBYUV_ENABLE" ]
-    defines += [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
     external_deps += [ "libyuv:yuv" ]
   }
 
