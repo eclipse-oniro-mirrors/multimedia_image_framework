@@ -236,7 +236,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
     }
     size_t bytesRead = fread(outBuffer, sizeof(outBuffer[0]), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGI("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+        IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
@@ -273,7 +273,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGI("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+        IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
@@ -338,7 +338,7 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_);
         close(mmapFd_);
@@ -355,6 +355,12 @@ OutputDataStream* FileSourceStream::ToOutputDataStream()
         return nullptr;
     }
     return new (std::nothrow) FilePackerStream(dupFd);
+}
+
+int FileSourceStream::GetMMapFd()
+{
+    mmapFdPassedOn_ = true;
+    return mmapFd_;
 }
 } // namespace Media
 } // namespace OHOS

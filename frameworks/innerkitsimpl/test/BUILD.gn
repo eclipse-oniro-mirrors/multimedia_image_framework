@@ -135,6 +135,7 @@ ohos_unittest("imagesourcetest") {
   module_out_path = module_output_path
 
   include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/include",
     "$image_subsystem/frameworks/innerkitsimpl/converter/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
@@ -145,7 +146,18 @@ ohos_unittest("imagesourcetest") {
     "//commonlibrary/c_utils/base/include",
   ]
   sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
@@ -176,6 +188,8 @@ ohos_unittest("imagesourcetest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "libexif:libexif",
+    "zlib:libz",
   ]
 
   if (purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -1261,6 +1275,142 @@ ohos_unittest("jpeg_yuv_decoder_test") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("imagestreamtest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/../../../third_party/googletest/googlemock/include",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/data_buf_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/metadata_stream_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock",
+    "googletest:gtest",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("imageaccessortest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/jpeg_exif_metadata_accessor_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_exif_metadata_accessor_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+    "libexif:libexif",
+    "zlib:libz",
+  ]
+}
+
+ohos_unittest("imagetiffparsertest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_formatter_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/tiff_parser_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+    "libexif:libexif",
+  ]
+}
+
+ohos_unittest("exifmetadatatest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+  ]
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+    "libexif:libexif",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1272,13 +1422,17 @@ group("unittest") {
     ":creatortest",
     ":eglimagetest",
     ":exifmakernotetest",
+    ":exifmetadatatest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
     ":gstpluginfwtest",
+    ":imageaccessortest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
+    ":imagestreamtest",
+    ":imagetiffparsertest",
     ":imageutilstest",
     ":interfacetest",
     ":jpeg_yuv_decoder_test",

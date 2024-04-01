@@ -96,6 +96,8 @@ enum class EncodedFormat : int32_t {
     PNG = 2,
     GIF = 3,
     HEIF = 4,
+    WEBP = 5,
+    DNG = 6
 };
 
 enum class PixelFormat : int32_t {
@@ -210,6 +212,7 @@ struct DecodeOptions {
     SVGDecodeOptions SVGOpts;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> desiredColorSpaceInfo = nullptr;
     bool preferDma = false;
+    bool fastAstc = false;
 };
 
 enum class ScaleMode : int32_t {
