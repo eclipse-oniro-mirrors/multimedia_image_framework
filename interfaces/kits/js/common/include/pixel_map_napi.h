@@ -24,6 +24,10 @@
 
 namespace OHOS {
 namespace Media {
+enum class ImageType {
+    TYPE_UNKNOWN = 0,
+    TYPE_PIXEL_MAP = 1
+};
 class PixelMapNapi {
 public:
     PixelMapNapi();
@@ -67,6 +71,8 @@ private:
 
     /* stattic method */
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreatePremultipliedPixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreateUnpremultipliedPixelMap(napi_env env, napi_callback_info info);
     /* stattic method */
     static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
     static void CreatePixelMapComplete(napi_env env, napi_status status, void *data);
@@ -117,6 +123,7 @@ private:
     static napi_value SetColorSpace(napi_env env, napi_callback_info info);
     static napi_value Marshalling(napi_env env, napi_callback_info info);
     static napi_value ApplyColorSpace(napi_env env, napi_callback_info info);
+    static ImageType ParserImageType(napi_env env, napi_value argv);
 
     void release();
     static thread_local napi_ref sConstructor_;

@@ -82,6 +82,7 @@ struct PixelMapAsyncContext {
     PositionArea area;
     std::shared_ptr<PixelMap> rPixelMap;
     std::shared_ptr<PixelMap> alphaMap;
+    std::shared_ptr<PixelMap> wPixelMap;
     double alpha = -1;
     uint32_t resultUint32;
     ImageInfo imageInfo;
@@ -184,6 +185,29 @@ static bool parseInitializationOptions(napi_env env, napi_value root, Initializa
         return false;
     }
     return true;
+}
+
+ImageType PixelMapNapi::ParserImageType(napi_env env, napi_value argv)
+{
+    napi_value constructor = nullptr;
+    napi_value global = nullptr;
+    bool isInstance = false;
+    napi_status ret = napi_invalid_arg;
+
+    napi_get_global(env, &global);
+
+    ret = napi_get_named_property(env, global, "PixelMap", &constructor);
+    if (ret != napi_ok) {
+        IMAGE_LOGI("Get PixelMapNapi property failed!");
+    }
+
+    ret = napi_instanceof(env, argv, constructor, &isInstance);
+    if (ret == napi_ok && isInstance) {
+        return ImageType::TYPE_PIXEL_MAP;
+    }
+
+    IMAGE_LOGI("InValued type!");
+    return ImageType::TYPE_UNKNOWN;
 }
 
 static bool parseRegion(napi_env env, napi_value root, Rect* region)
@@ -397,6 +421,8 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
 
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMap", CreatePixelMap),
+        DECLARE_NAPI_STATIC_FUNCTION("createPremultipliedPixelMap", CreatePremultipliedPixelMap),
+        DECLARE_NAPI_STATIC_FUNCTION("createUnpremultipliedPixelMap", CreateUnpremultipliedPixelMap),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
@@ -721,8 +747,13 @@ STATIC_EXEC_FUNC(CreatePixelMap)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
-    auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
-    context->rPixelMap = std::move(pixelmap);
+    if (colors == nullptr) {
+        auto pixelmap = PixelMap::Create(context->opts);
+        context->rPixelMap = std::move(pixelmap);
+    } else {
+        auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+        context->rPixelMap = std::move(pixelmap);
+    }
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
@@ -752,6 +783,146 @@ void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void
     }
 
     CommonCallbackRoutine(env, context, result);
+}
+
+STATIC_EXEC_FUNC(CreatePremultipliedPixelMap)
+{
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    if (IMG_NOT_NULL(context->rPixelMap) && IMG_NOT_NULL(context->wPixelMap)) {
+        bool isPremul = true;
+        if (context->wPixelMap->IsEditable()) {
+            context->status = context->rPixelMap->ConvertAlphaFormat(*context->wPixelMap.get(), isPremul);
+            if (context->status == SUCCESS) {
+                context->wPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+            }
+        } else {
+            context->status = ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+        }
+    } else {
+        context->status = ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+}
+
+STATIC_EXEC_FUNC(CreateUnpremultipliedPixelMap)
+{
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    if (IMG_NOT_NULL(context->rPixelMap) && IMG_NOT_NULL(context->wPixelMap)) {
+        bool isPremul = false;
+        if (context->wPixelMap->IsEditable()) {
+            context->status = context->rPixelMap->ConvertAlphaFormat(*context->wPixelMap.get(), isPremul);
+            if (context->status == SUCCESS) {
+                context->wPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+            }
+        } else {
+            context->status = ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+        }
+    } else {
+        context->status = ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+}
+
+napi_value PixelMapNapi::CreatePremultipliedPixelMap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    int32_t refCount = 1;
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+
+    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP &&
+        ParserImageType(env, argValue[NUM_1]) == ImageType::TYPE_PIXEL_MAP) {
+        asyncContext->rPixelMap = GetPixelMap(env, argValue[NUM_0]);
+        asyncContext->wPixelMap = GetPixelMap(env, argValue[NUM_1]);
+        if (asyncContext->rPixelMap == nullptr || asyncContext->wPixelMap == nullptr) {
+            BuildContextError(env, asyncContext->error, "input image type mismatch", ERR_IMAGE_GET_DATA_ABNORMAL);
+        }
+    } else {
+        BuildContextError(env, asyncContext->error, "input image type mismatch",
+            ERR_IMAGE_GET_DATA_ABNORMAL);
+    }
+
+    IMG_NAPI_CHECK_RET_D(asyncContext->error == nullptr, nullptr, IMAGE_LOGE("input image type mismatch"));
+    if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
+        napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
+    }
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->error == nullptr,
+        BuildContextError(env, asyncContext->error, "CreatePremultipliedPixelMapError", ERR_IMAGE_GET_DATA_ABNORMAL),
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePremultipliedPixelMapGeneralError",
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePremultipliedPixelMap",
+        CreatePremultipliedPixelMapExec, EmptyResultComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+napi_value PixelMapNapi::CreateUnpremultipliedPixelMap(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    int32_t refCount = 1;
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_3] = {0};
+    size_t argCount = NUM_3;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+    IMG_NAPI_CHECK_RET_D(argCount >= NUM_2,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+
+    if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP &&
+        ParserImageType(env, argValue[NUM_1]) == ImageType::TYPE_PIXEL_MAP) {
+        asyncContext->rPixelMap = GetPixelMap(env, argValue[NUM_0]);
+        asyncContext->wPixelMap = GetPixelMap(env, argValue[NUM_1]);
+        if (asyncContext->rPixelMap == nullptr || asyncContext->wPixelMap == nullptr) {
+            BuildContextError(env, asyncContext->error, "input image type mismatch", ERR_IMAGE_GET_DATA_ABNORMAL);
+        }
+    } else {
+        BuildContextError(env, asyncContext->error, "input image type mismatch",
+            ERR_IMAGE_GET_DATA_ABNORMAL);
+    }
+
+    IMG_NAPI_CHECK_RET_D(asyncContext->error == nullptr, nullptr, IMAGE_LOGE("input image type mismatch"));
+    if (argCount == NUM_3 && ImageNapiUtils::getType(env, argValue[argCount - 1]) == napi_function) {
+        napi_create_reference(env, argValue[argCount - 1], refCount, &asyncContext->callbackRef);
+    }
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->error == nullptr,
+        BuildContextError(env, asyncContext->error, "CreateUnpremultipliedPixelMapError", ERR_IMAGE_GET_DATA_ABNORMAL),
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateUnpremultipliedPixelMapGeneralError",
+        [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateUnpremultipliedPixelMap",
+        CreateUnpremultipliedPixelMapExec, EmptyResultComplete, asyncContext, asyncContext->work);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
 }
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
@@ -829,23 +1000,28 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     // thisVar is nullptr here
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_1,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
-    status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(asyncContext->colorsBuffer),
+
+    if (argCount == NUM_2) {
+        status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(asyncContext->colorsBuffer),
         &(asyncContext->colorsBufferSize));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
-    IMG_NAPI_CHECK_RET_D(parseInitializationOptions(env, argValue[1], &(asyncContext->opts)),
-        nullptr, IMAGE_LOGE("InitializationOptions mismatch"));
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
+        IMG_NAPI_CHECK_RET_D(parseInitializationOptions(env, argValue[1], &(asyncContext->opts)),
+            nullptr, IMAGE_LOGE("InitializationOptions mismatch"));
+    } else if (argCount == NUM_1) {
+        IMG_NAPI_CHECK_RET_D(parseInitializationOptions(env, argValue[NUM_0], &(asyncContext->opts)),
+            nullptr, IMAGE_LOGE("InitializationOptions mismatch"));
+    }
     CreatePixelMapExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
-    }
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("fail to create pixel map sync"));
+            status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
+        }
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create pixel map sync"));
     return result;
 }
 
