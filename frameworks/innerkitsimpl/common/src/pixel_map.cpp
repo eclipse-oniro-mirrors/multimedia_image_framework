@@ -2400,7 +2400,7 @@ static void ConvertUintPixelAlpha(uint8_t *rpixel,
             if (isPremul) {
                 nPixel = pixelValue * alphaValue;
             } else {
-                nPixel = (alphaValue == 0) ? 0 : pixelValue / alphaValue;
+                nPixel = (alphaValue > 0) ? pixelValue / alphaValue : 0;
             }
             wpixel[pixelIndex] = static_cast<uint8_t>(nPixel + HALF_ONE);
         } else {

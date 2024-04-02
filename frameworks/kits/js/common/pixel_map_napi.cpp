@@ -1020,7 +1020,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
             status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
-        }
+    }
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create pixel map sync"));
     return result;
 }
