@@ -133,7 +133,7 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
-static const int DMA_SIZE = 512;
+static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const uint32_t SUT_MAGIC_ID = 0x5CA1AB14;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -485,7 +485,11 @@ bool IsSupportFormat(const PixelFormat &format)
 
 bool IsSupportSize(const Size &size)
 {
-    return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
+    // Check for overflow risk
+    if (size.width > 0 && size.height > INT_MAX / size.width) {
+        return false;
+    }
+    return size.width * size.height >= DMA_SIZE;
 }
 
 bool IsWidthAligned(const int32_t &width)
