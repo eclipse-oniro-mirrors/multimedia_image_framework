@@ -1182,9 +1182,14 @@ ohos_unittest("textureencodetest") {
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:exifhelper",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
-    "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
     "${image_subsystem}/plugins/manager:pluginmanager",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines = [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
+    deps += [ "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL" ]
+  }
 
   external_deps = [
     "c_utils:utils",

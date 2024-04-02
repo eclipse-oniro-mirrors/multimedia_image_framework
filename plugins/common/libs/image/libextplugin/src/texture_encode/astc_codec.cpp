@@ -251,8 +251,12 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param)
     return true;
 }
 
-static bool AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer)
+bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer)
 {
+    if ((pixmapIn == nullptr) || (astcBuffer == nullptr)) {
+        IMAGE_LOGE("pixmapIn or astcBuffer is nullptr");
+        return false;
+    }
     AstcEncoder work;
     if (!InitMem(&work, param)) {
         FreeMem(&work);
@@ -453,7 +457,7 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     }
 #endif
     if (!param.hardwareFlag) {
-        if (!AstcSoftwareEncodeCore(param, pixmapIn, astcBuffer)) {
+        if (!AstcCodec::AstcSoftwareEncodeCore(param, pixmapIn, astcBuffer)) {
             IMAGE_LOGE("AstcSoftwareEncodeCore failed");
             return false;
         }
