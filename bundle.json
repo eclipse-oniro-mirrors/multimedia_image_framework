@@ -43,20 +43,21 @@
           "hdf_core",
           "memmgr_plugin",
           "libyuv",
-          "libjpeg-turbo"
+          "libjpeg-turbo",
+          "libexif",
+          "zlib"
         ],
         "third_party": [
           "flutter",
           "libpng",
-          "libexif",
           "bounds_checking_function",
           "expat",
           "json",
           "skia",
-          "zlib",
           "astc-encoder",
           "opencl-headers",
-          "ffmpeg"
+          "ffmpeg",
+          "zlib"
         ]
       },
       "build": {
@@ -172,7 +173,8 @@
           }
         ],
         "test": [
-          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest"
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test:unittest",
+          "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/fuzztest:fuzztest"
         ]
       }
     }

@@ -21,13 +21,15 @@
 #include "v1_0/include/idisplay_buffer.h"
 #include "image/image_plugin_type.h"
 #include "image/input_data_stream.h"
-#include "log_tags.h"
-#include "hilog/log.h"
+#include "image_log.h"
 #include "SkCodec.h"
 #include "jpeglib.h"
 
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
 
-inline constexpr OHOS::HiviewDFX::HiLogLabel JPEG_HW_LABEL = {LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "JPEGHWDECODER"};
+#undef LOG_TAG
+#define LOG_TAG "JPEGHWDECODER"
 
 #ifdef __FILE_NAME__
 #define FILENAME __FILE_NAME__
@@ -37,13 +39,13 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel JPEG_HW_LABEL = {LOG_CORE, LOG_TAG_
 
 #define LOG_FMT "[%{public}s][%{public}s %{public}d] "
 #define JPEG_HW_LOGE(x, ...) \
-    OHOS::HiviewDFX::HiLog::Error(JPEG_HW_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    IMAGE_LOGE(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define JPEG_HW_LOGW(x, ...) \
-    OHOS::HiviewDFX::HiLog::Warn(JPEG_HW_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    IMAGE_LOGW(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define JPEG_HW_LOGI(x, ...) \
-    OHOS::HiviewDFX::HiLog::Info(JPEG_HW_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    IMAGE_LOGI(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define JPEG_HW_LOGD(x, ...) \
-    OHOS::HiviewDFX::HiLog::Debug(JPEG_HW_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    IMAGE_LOGD(LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 namespace OHOS {
 namespace ImagePlugin {

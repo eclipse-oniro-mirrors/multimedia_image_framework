@@ -1372,6 +1372,28 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap043, TestSize.Level3)
 }
 #endif
 
+/**
+* @tc.name: ImagePixelMap044
+* @tc.desc: test getEncodedFormat
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMap044, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap044 getEncodedFormat start";
+    PixelMap pixelMap;
+    ImageInfo info;
+    info.size.width = PIXEL_MAP_TEST_WIDTH;
+    info.size.height = PIXEL_MAP_TEST_HEIGHT;
+    info.pixelFormat = PixelFormat::ALPHA_8;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap.SetImageInfo(info);
+    ImageInfo info1;
+    pixelMap.GetImageInfo(info1);
+    EXPECT_EQ(info1.encodedFormat.empty(), true);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap044 getEncodedFormat end";
+}
+
 std::unique_ptr<PixelMap> CreatePixelMapCommon(int32_t width, int32_t height)
 {
     const uint32_t dataLength = width * height;

@@ -51,6 +51,9 @@ static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC1_PATH = "/data/test/test_we
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME1_PATH = "/data/test/test_webp_onetime1.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_INC2_PATH = "/data/test/test_webp_inc2.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_MULTI_ONETIME2_PATH = "/data/test/test_webp_onetime2.jpg";
+static const std::string TEST_FILE_SINGLE_FRAME_WEBP = "/data/local/tmp/image/test_single_frame.webp";
+static const std::string TEST_FILE_MULTI_FRAME_WEBP = "/data/local/tmp/image/test_multi_frame.webp";
+static const std::string TEST_FILE_JPG = "/data/local/tmp/image/test.jpg";
 
 class ImageSourceWebpTest : public testing::Test {
 public:
@@ -499,6 +502,59 @@ HWTEST_F(ImageSourceWebpTest, WebpImageDecode010, TestSize.Level3)
 }
 
 /**
+ * @tc.name: GetDelayTime001
+ * @tc.desc: Get the delay time list for a single frame webp image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_SINGLE_FRAME_WEBP, opts, errorCode);
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), 0);
+}
+
+/**
+ * @tc.name: GetDelayTime002
+ * @tc.desc: Get the delay time list for a multi frames webp image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_MULTI_FRAME_WEBP, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(delayTimes, nullptr);
+    ASSERT_EQ(delayTimes->size(), 3);
+
+    for (auto delayTime : *delayTimes) {
+        IMAGE_LOGD("delay time is %{public}u.", delayTime);
+    }
+}
+
+/**
+ * @tc.name: GetDelayTime003
+ * @tc.desc: Get the delay time list for a non webp format image.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, GetDelayTime003, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    auto imageSource = ImageSource::CreateImageSource(TEST_FILE_JPG, opts, errorCode);
+
+    auto delayTimes = imageSource->GetDelayTime(errorCode);
+    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(delayTimes, nullptr);
+}
+
+/**
  * @tc.name: WebpImageCrop001
  * @tc.desc: Crop webp image from istream source stream
  * @tc.type: FUNC
@@ -587,6 +643,51 @@ HWTEST_F(ImageSourceWebpTest, OnPeerDestory001, TestSize.Level3)
     std::unique_ptr<IncrementalPixelMap> incOpts = imageSource->CreateIncrementalPixelMap(0, decodeOpts, errorCode);
     incOpts->OnPeerDestory();
     ASSERT_EQ(incOpts->imageSource_, nullptr);
+}
+
+/**
+ * @tc.name: WebpGetEncodedFormat001
+ * @tc.desc: Decode webp image from file source stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceWebpTest, WebpGetEncodedFormat001, TestSize.Level3)
+{
+    /**
+     * @tc.steps: step1. create image source by correct webp file path and jpeg format hit.
+     * @tc.expected: step1. create image source success.
+     */
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string IMAGE_ENCODEDFORMAT = "image/webp";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_WEBP_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+    /**
+     * @tc.steps: step2. decode image source to pixel map by default decode options.
+     * @tc.expected: step2. decode image source to pixel map success.
+     */
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    /**
+     * @tc.steps: step3. get imageinfo encodedformat from imagesource.
+     * @tc.expected: step3. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo1;
+    uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
+    ASSERT_EQ(ret1, SUCCESS);
+    EXPECT_EQ(imageinfo1.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceWebpTest: WebpGetEncodedFormat001 imageinfo1: " << imageinfo1.encodedFormat;
+    /**
+     * @tc.steps: step4. get imageinfo encodedformat pixelmap.
+     * @tc.expected: step4. get imageinfo encodedformat success.
+     */
+    ImageInfo imageinfo2;
+    pixelMap->GetImageInfo(imageinfo2);
+    EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
+    GTEST_LOG_(INFO) << "ImageSourceWebpTest: WebpGetEncodedFormat001 imageinfo2: " << imageinfo2.encodedFormat;
 }
 } // namespace Multimedia
 } // namespace OHOS

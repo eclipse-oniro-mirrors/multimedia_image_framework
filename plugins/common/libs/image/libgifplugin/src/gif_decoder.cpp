@@ -52,7 +52,7 @@ constexpr uint8_t EXTENSION_DATA_INDEX = 1;
 constexpr int32_t INTERLACED_PASSES = 4;
 constexpr int32_t INTERLACED_OFFSET[] = { 0, 4, 2, 1 };
 constexpr int32_t INTERLACED_INTERVAL[] = { 8, 8, 4, 2 };
-const std::string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const std::string IMAGE_DELAY_TIME = "DelayTime";
 const std::string GIF_IMAGE_LOOP_COUNT = "GIFLoopCount";
 constexpr int32_t NETSCAPE_EXTENSION_LENGTH = 11;
 constexpr int32_t DELAY_TIME_LENGTH = 3;
@@ -766,7 +766,7 @@ uint32_t GifDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
         return errorCode;
     }
 
-    if (key == GIF_IMAGE_DELAY_TIME) {
+    if (key == IMAGE_DELAY_TIME) {
         errorCode = GetImageDelayTime(index, value);
     } else if (key == GIF_IMAGE_LOOP_COUNT) {
         errorCode = GetImageLoopCount(0, value);
@@ -782,7 +782,7 @@ uint32_t GifDecoder::GetImagePropertyString(uint32_t index, const std::string &k
 {
     IMAGE_LOGD("[GetImagePropertyString] enter, index:%{public}u, key:%{public}s", index, key.c_str());
 
-    if (key != GIF_IMAGE_DELAY_TIME) {
+    if (key != IMAGE_DELAY_TIME) {
         return AbsImageDecoder::GetImagePropertyString(index, key, value);
     }
 

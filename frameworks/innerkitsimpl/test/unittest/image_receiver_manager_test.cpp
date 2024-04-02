@@ -79,7 +79,9 @@ HWTEST_F(ImageReceiverManagerTest, ImageReceiverManager003, TestSize.Level3)
         RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ImageReceiverManager& imageReceiverManager = ImageReceiverManager::getInstance();
     std::string receiverKey = imageReceiverManager.SaveImageReceiver(iva);
-    ASSERT_EQ(receiverKey, "1");
+    std::string surfaceId = iva->GetReceiverSurface() == nullptr ? "1":
+        std::to_string(iva->GetReceiverSurface()->GetUniqueId());
+    ASSERT_EQ(receiverKey, surfaceId);
     auto surface = imageReceiverManager.getSurfaceByKeyId("");
     bool result = (surface == nullptr);
     ASSERT_EQ(result, true);

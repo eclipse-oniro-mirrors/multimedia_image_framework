@@ -17,8 +17,18 @@
 namespace OHOS {
 namespace Media {
 using namespace std;
+
+ImageReceiverManager& ImageReceiverManager::getInstance()
+{
+    static ImageReceiverManager instance;
+    return instance;
+}
+
 string ImageReceiverManager::SaveImageReceiver(shared_ptr<ImageReceiver> imageReceiver)
 {
+    if (imageReceiver != nullptr && imageReceiver->GetReceiverSurface() != nullptr) {
+        return receiverManager_.save(imageReceiver, imageReceiver->GetReceiverSurface()->GetUniqueId());
+    }
     return receiverManager_.save(imageReceiver);
 }
 shared_ptr<ImageReceiver> ImageReceiverManager::getImageReceiverByKeyId(string keyId)

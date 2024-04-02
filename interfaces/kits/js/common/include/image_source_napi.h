@@ -63,13 +63,16 @@ private:
     static napi_value CreateImageSourceComplete(napi_env env, napi_status status, void *data);
     // methods
     static napi_value GetImageInfo(napi_env env, napi_callback_info info);
+    static napi_value GetImageInfoSync(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
     static napi_value ModifyImageProperty(napi_env env, napi_callback_info info);
     static napi_value GetImageProperty(napi_env env, napi_callback_info info);
     static napi_value UpdateData(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     static napi_value CreatePixelMapList(napi_env env, napi_callback_info info);
     static napi_value GetDelayTime(napi_env env, napi_callback_info info);
+    static napi_value GetDisposalType(napi_env env, napi_callback_info info);
     static napi_value GetFrameCount(napi_env env, napi_callback_info info);
 
     void release();

@@ -56,7 +56,10 @@ group("image_test_list") {
 
   # image
   if (!use_clang_android && !use_clang_ios) {
-    deps = [ "frameworks/innerkitsimpl/test:unittest" ]
+    deps = [
+      "frameworks/innerkitsimpl/test:unittest",
+      "frameworks/innerkitsimpl/test/fuzztest:fuzztest",
+    ]
   }
 }
 

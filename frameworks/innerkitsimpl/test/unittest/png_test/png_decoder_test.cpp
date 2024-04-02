@@ -13,107 +13,25 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
 #define private public
+#include <gtest/gtest.h>
 #include <fstream>
 #include "buffer_source_stream.h"
 #include "media_errors.h"
 #include "memory.h"
 #include "png_decoder.h"
 #include "securec.h"
+#include "mock_data_stream.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Multimedia {
-static constexpr size_t NUMBER_ONE = 1;
-static constexpr size_t NUMBER_TWO = 2;
 class PngDecoderTest : public testing::Test {
 public:
     PngDecoderTest() {}
     ~PngDecoderTest() {}
-};
-
-class MockInputDataStream : public SourceStream {
-public:
-    MockInputDataStream() = default;
-
-    uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted) override
-    {
-        return ERR_IMAGE_DATA_UNSUPPORT;
-    }
-    bool Read(uint32_t desiredSize, DataStreamBuffer &outData) override
-    {
-        if (streamSize == NUMBER_ONE) {
-            streamBuffer = std::make_shared<uint8_t>(streamSize);
-            outData.inputStreamBuffer = streamBuffer.get();
-        } else if (streamSize == NUMBER_TWO) {
-            outData.dataSize = streamSize;
-        }
-        return returnValue_;
-    }
-
-    bool Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override
-    {
-        return returnValue_;
-    }
-
-    bool Peek(uint32_t desiredSize, DataStreamBuffer &outData) override
-    {
-        return returnValue_;
-    }
-
-    bool Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override
-    {
-        return returnValue_;
-    }
-
-    uint32_t Tell() override
-    {
-        return 0;
-    }
-
-    bool Seek(uint32_t position) override
-    {
-        return returnValue_;
-    }
-
-    uint32_t GetStreamType()
-    {
-        return -1;
-    }
-
-    uint8_t *GetDataPtr()
-    {
-        return nullptr;
-    }
-
-    bool IsStreamCompleted()
-    {
-        return returnValue_;
-    }
-
-    size_t GetStreamSize()
-    {
-        return streamSize;
-    }
-
-    void SetReturn(bool returnValue)
-    {
-        returnValue_ = returnValue;
-    }
-
-    void SetStreamSize(size_t size)
-    {
-        streamSize = size;
-    }
-
-    ~MockInputDataStream() {}
-private:
-    bool returnValue_ = false;
-    size_t streamSize = 0;
-    std::shared_ptr<uint8_t> streamBuffer = nullptr;
 };
 
 /**

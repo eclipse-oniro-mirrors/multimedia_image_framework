@@ -45,6 +45,10 @@ static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 constexpr uint8_t DEFAULT_DIM = 4;
 constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 for thumbnail
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+constexpr int32_t WIDTH_CL_THRESHOLD = 256;
+constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
+#endif
 
 uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap)
 {
@@ -434,7 +438,9 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
 static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer)
 {
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
-    if (ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+    bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
+        param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
+    if (openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";

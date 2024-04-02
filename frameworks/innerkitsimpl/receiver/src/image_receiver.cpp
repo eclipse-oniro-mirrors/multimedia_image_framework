@@ -30,7 +30,6 @@
 
 namespace OHOS {
 namespace Media {
-
 ImageReceiver::~ImageReceiver()
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
@@ -196,6 +195,9 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
 
     iva->receiverConsumerSurface_->SetDefaultWidthAndHeight(width, height);
     iva->receiverConsumerSurface_->SetQueueSize(capicity);
+    iva->receiverConsumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_HW_BOTH);
+    iva->receiverConsumerSurface_->ConsumerRequestCpuAccess(true);
+
     auto p = iva->receiverConsumerSurface_->GetProducer();
     iva->receiverProducerSurface_ = Surface::CreateSurfaceAsProducer(p);
     if (iva->receiverProducerSurface_ == nullptr) {
@@ -231,7 +233,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
     } else {
         IMAGE_LOGD("buffer is null");
     }
-    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", timestamp);
+    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", static_cast<long long>(timestamp));
     return iraContext_->GetCurrentBuffer();
 }
 
@@ -248,7 +250,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
     } else {
         IMAGE_LOGD("buffer is null");
     }
-    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", timestamp);
+    IMAGE_LOGD("[ImageReceiver] ReadNextImage %{public}lld", static_cast<long long>(timestamp));
     return iraContext_->GetCurrentBuffer();
 }
 
@@ -266,7 +268,7 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
     }
 
     iraContext_->currentBuffer_ = bufferBefore;
-    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", timestamp);
+    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", static_cast<long long>(timestamp));
     return iraContext_->GetCurrentBuffer();
 }
 
@@ -285,13 +287,16 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
     }
 
     iraContext_->currentBuffer_ = bufferBefore;
-    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", timestamp);
+    IMAGE_LOGD("[ImageReceiver] ReadLastImage %{public}lld", static_cast<long long>(timestamp));
     return iraContext_->GetCurrentBuffer();
 }
 
 sptr<Surface> ImageReceiver::GetReceiverSurface()
 {
-    return iraContext_->GetReceiverBufferProducer();
+    if (iraContext_ != nullptr) {
+        return iraContext_->GetReceiverBufferProducer();
+    }
+    return nullptr;
 }
 
 void ImageReceiver::ReleaseReceiver()

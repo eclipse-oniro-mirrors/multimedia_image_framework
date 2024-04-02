@@ -80,7 +80,8 @@ const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
 const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
-const static string GIF_IMAGE_DELAY_TIME = "GIFDelayTime";
+const static string IMAGE_DELAY_TIME = "DelayTime";
+const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -217,7 +218,8 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         return ERR_DMA_DATA_ABNORMAL;
     }
 
-    IMAGE_LOGD("ExtDecoder::DmaMemAlloc stride is %{public}d", sb->GetStride());
+    IMAGE_LOGD("ExtDecoder::DmaMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
+        sb->GetStride(), sb->GetHeight(), sb->GetSize());
     SetDecodeContextBuffer(context,
         AllocatorType::DMA_ALLOC, static_cast<uint8_t*>(sb->GetVirAddr()), count, nativeBuffer);
     return SUCCESS;
@@ -452,9 +454,6 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
 #ifdef IMAGE_COLORSPACE_FLAG
     dstColorSpace_ = opts.plDesiredColorSpace;
 #endif
-    if (IsSupportCropOnDecode(dstSubset_)) {
-        dstOptions_.fSubset = &dstSubset_;
-    }
     return SUCCESS;
 }
 
@@ -982,8 +981,10 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGE("create codec: input stream size is zero.");
         return false;
     }
+    uint32_t src_offset = stream_->Tell();
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
     if (codec_ == nullptr) {
+        stream_->Seek(src_offset);
         IMAGE_LOGE("create codec from stream failed");
         return false;
     }
@@ -1269,7 +1270,8 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
 
 static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 {
-    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF &&
+        codec->getEncodedFormat() != SkEncodedImageFormat::kWEBP) {
         IMAGE_LOGE("[GetDelayTime] Should not get delay time in %{public}d", codec->getEncodedFormat());
         return ERR_MEDIA_INVALID_PARAM;
     }
@@ -1283,6 +1285,22 @@ static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
     return SUCCESS;
 }
 
+static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
+{
+    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+        IMAGE_LOGE("[GetDisposalType] Should not get disposal type in %{public}d", codec->getEncodedFormat());
+        return ERR_MEDIA_INVALID_PARAM;
+    }
+    auto frameInfos = codec->getFrameInfo();
+    if (index > frameInfos.size() - 1) {
+        IMAGE_LOGE("[GetDisposalType] frame size %{public}zu, index:%{public}d", frameInfos.size(), index);
+        return ERR_MEDIA_INVALID_PARAM;
+    }
+    value = static_cast<int>(frameInfos[index].fDisposalMethod);
+    IMAGE_LOGD("[GetDisposalType] index[%{public}d]:%{public}d", index, value);
+    return SUCCESS;
+}
+
 uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
@@ -1290,8 +1308,11 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     if (!GetPropertyCheck(index, key, res)) {
         return res;
     }
-    if (GIF_IMAGE_DELAY_TIME.compare(key) == ZERO) {
+    if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         return GetDelayTime(codec_.get(), index, value);
+    }
+    if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        return GetDisposalType(codec_.get(), index, value);
     }
     // There can add some not need exif property
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
@@ -1322,10 +1343,15 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
         SkEncodedImageFormat format = codec_->getEncodedFormat();
         return GetFormatName(format, value);
-    } else if (GIF_IMAGE_DELAY_TIME.compare(key) == ZERO) {
+    } else if (IMAGE_DELAY_TIME.compare(key) == ZERO) {
         int delayTime = ZERO;
         res = GetDelayTime(codec_.get(), index, delayTime);
         value = std::to_string(delayTime);
+        return res;
+    } else if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        int disposalType = ZERO;
+        res = GetDisposalType(codec_.get(), index, disposalType);
+        value = std::to_string(disposalType);
         return res;
     }
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {

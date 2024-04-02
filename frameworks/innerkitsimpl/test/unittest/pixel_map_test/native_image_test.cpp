@@ -176,10 +176,6 @@ HWTEST_F(NativeImageTest, CreateComponent001, TestSize.Level3)
     vir = new(uint8_t);
     ret = image.CreateComponent(type, size, row, pixel, vir);
     ASSERT_NE(ret, nullptr);
-    delete(vir);
-    vir = nullptr;
-    delete(native);
-    native = nullptr;
     GTEST_LOG_(INFO) << "NativeImageTest: CreateComponent001 end";
 }
 
@@ -200,8 +196,6 @@ HWTEST_F(NativeImageTest, GetCachedComponent001, TestSize.Level3)
     image.components_.insert(std::make_pair(1, native));
     ret = image.GetCachedComponent(1);
     ASSERT_NE(ret, nullptr);
-    delete(native);
-    native = nullptr;
     GTEST_LOG_(INFO) << "NativeImageTest: GetCachedComponent001 end";
 }
 
@@ -241,8 +235,6 @@ HWTEST_F(NativeImageTest, BuildComponent001, TestSize.Level3)
     image.components_.clear();
     image.CreateComponent(type, size, row, pixel, vir);
     ASSERT_EQ(1, image.components_.size());
-    delete vir;
-    vir = nullptr;
     image.components_.clear();
     image.CreateComponent(type, size, row, pixel, vir);
     ASSERT_EQ(1, image.components_.size());
