@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HEIF_STREAM_H
-#define HEIF_STREAM_H
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_STREAM_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_STREAM_H
 
 #include <memory>
 #include <string>
@@ -152,4 +152,4 @@ private:
 } // namespace ImagePlugin
 } // namespace OHOS
 
-#endif
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_STREAM_H

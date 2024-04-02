@@ -31,7 +31,7 @@ class HeifDecoderImpl : public HeifDecoder {
 public:
     HeifDecoderImpl();
 
-    ~HeifDecoderImpl() override = default;
+    ~HeifDecoderImpl() override;
 
     bool init(HeifStream *stream, HeifFrameInfo *frameInfo) override;
 
@@ -76,6 +76,7 @@ private:
     uint32_t tileHeight_;
     uint32_t colNum_;
     uint32_t rowNum_;
+    uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
 
@@ -96,4 +97,4 @@ HeifDecoder* CreateHeifDecoderImpl();
 }
 #endif
 
-#endif //PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_IMPL_H
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_IMPL_H

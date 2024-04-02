@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef MASTER_HEIF_TYPES_H
-#define MASTER_HEIF_TYPES_H
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_TYPE_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_TYPE_H
 
 #include <vector>
 #include "heif_utils.h"
@@ -101,4 +101,4 @@ struct HeifMetadata {
 } // namespace ImagePlugin
 } // namespace OHOS
 
-#endif //MASTER_HEIF_TYPES_H
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_TYPE_H

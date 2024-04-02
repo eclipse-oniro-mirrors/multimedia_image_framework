@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HEIF_PARSER_H
-#define HEIF_PARSER_H
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_PARSER_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_PARSER_H
 
 #include "box/heif_box.h"
 #include "box/basic_box.h"
@@ -173,4 +173,4 @@ private:
 } // namespace ImagePlugin
 } // namespace OHOS
 
-#endif
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_PARSER_H

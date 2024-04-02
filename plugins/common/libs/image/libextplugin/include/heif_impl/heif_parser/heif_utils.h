@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HEIF_UTILS_H
-#define HEIF_UTILS_H
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_UTILS_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_UTILS_H
 
 #include <string>
 #include "heif_constant.h"
@@ -33,4 +33,4 @@ constexpr inline uint32_t fourcc_to_code(const char *string)
 } // namespace ImagePlugin
 } // namespace OHOS
 
-#endif //HEIF_UTILS_H
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_UTILS_H

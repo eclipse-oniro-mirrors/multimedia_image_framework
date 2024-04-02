@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef HEIF_ERROR_H
-#define HEIF_ERROR_H
+#ifndef PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_ERROR_H
+#define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_ERROR_H
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -45,4 +45,4 @@ enum heif_error {
 } // namespace ImagePlugin
 } // namespace OHOS
 
-#endif
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_ERROR_H

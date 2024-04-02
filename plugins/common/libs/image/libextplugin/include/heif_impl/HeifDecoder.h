@@ -69,4 +69,4 @@ struct HeifDecoder {
     virtual size_t skipScanlines(int count) = 0;
 };
 
-#endif //PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_H
+#endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_H

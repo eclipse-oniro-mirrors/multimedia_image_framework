@@ -35,11 +35,7 @@ public:
 
     size_t read(void *buffer, size_t size) override;
     size_t peek(void *buffer, size_t size) const override;
-    bool seek(size_t position) override;
-    bool hasLength() const override;
     size_t getLength() const override;
-    bool hasPosition() const override;
-    size_t getPosition() const override;
     bool isAtEnd() const override;
 private:
     ImagePlugin::InputDataStream *stream_;

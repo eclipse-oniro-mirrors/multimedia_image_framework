@@ -170,55 +170,16 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
     return res;
 }
 
-class HeifInputStreamWrapper : public HeifInputStream {
-public:
-    explicit HeifInputStreamWrapper(HeifStream *stream) : innerStream_(stream)
-    {
-        if (innerStream_ != nullptr && innerStream_->hasLength()) {
-            length_ = stream->getLength();
-        }
-    }
-
-    [[nodiscard]] int64_t Tell() const override
-    {
-        return (innerStream_ != nullptr && innerStream_->hasPosition())
-                ? static_cast<int64_t>(innerStream_->getPosition()) : 0;
-    }
-
-    bool CheckSize(size_t size, int64_t end) override
-    {
-        auto posAfterRead = static_cast<int64_t>(Tell() + size);
-        return (end < 0 || posAfterRead <= end) && posAfterRead <= length_;
-    }
-
-    bool Read(void *data, size_t size) override
-    {
-        if (innerStream_ == nullptr) {
-            return false;
-        }
-        if (Tell() + size > length_) {
-            return false;
-        }
-        innerStream_->read(data, size);
-        return true;
-    }
-
-    bool Seek(int64_t position) override
-    {
-        if (innerStream_ == nullptr || position > length_) {
-            return false;
-        }
-        return innerStream_->seek(position);
-    }
-
-private:
-    HeifStream *innerStream_;
-    size_t length_ = 0;
-};
-
 HeifDecoderImpl::HeifDecoderImpl()
     : inPixelFormat_(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), outPixelFormat_(PixelFormat::RGBA_8888),
     tileWidth_(0), tileHeight_(0), colNum_(0), rowNum_(0), dstMemory_(nullptr), dstRowStride_(0) {}
+
+HeifDecoderImpl::~HeifDecoderImpl()
+{
+    if (srcMemory_ != nullptr) {
+        delete[] srcMemory_;
+    }
+}
 
 bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
 {
@@ -227,8 +188,20 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
         return false;
     }
 
-    std::shared_ptr<HeifInputStream> streamWrapper = std::make_shared<HeifInputStreamWrapper>(stream);
-    heif_error err = HeifParser::MakeFromStream(streamWrapper, &parser_);
+    size_t fileLength = stream->getLength();
+    if (srcMemory_ == nullptr) {
+        if (fileLength == 0) {
+            IMAGE_LOGE("file size is 0");
+            return false;
+        }
+        srcMemory_ = new uint8_t[fileLength];
+        if (srcMemory_ == nullptr) {
+            return false;
+        }
+        stream->read(srcMemory_, fileLength);
+    }
+
+    heif_error err = HeifParser::MakeFromMemory(srcMemory_, fileLength, false, &parser_);
     if (parser_ == nullptr || err != heif_error_ok) {
         IMAGE_LOGE("make heif parser failed, err: %{public}d", err);
         return false;
@@ -260,7 +233,7 @@ bool HeifDecoderImpl::Reinit(HeifFrameInfo *frameInfo)
 void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<HeifImage> &image)
 {
     if (info == nullptr || image == nullptr) {
-        IMAGE_LOGI("InitFrameInfo info or image is null");
+        IMAGE_LOGE("InitFrameInfo info or image is null");
         return;
     }
     info->mWidth = image->GetOriginalWidth();
@@ -281,7 +254,7 @@ void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
 void HeifDecoderImpl::GetTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight)
 {
     if (!image) {
-        IMAGE_LOGI("GetTileSize image is null");
+        IMAGE_LOGE("GetTileSize image is null");
         return;
     }
 

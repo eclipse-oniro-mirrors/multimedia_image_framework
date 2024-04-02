@@ -98,14 +98,6 @@ size_t ExtStream::peek(void *buffer, size_t size) const
     return static_cast<size_t>(buf.resSize);
 }
 
-bool ExtStream::seek(size_t position)
-{
-    if (stream_ == nullptr) {
-        return false;
-    }
-    return stream_->Seek(position);
-}
-
 bool ExtStream::isAtEnd() const
 {
     if (stream_ == nullptr) {
@@ -115,24 +107,9 @@ bool ExtStream::isAtEnd() const
     return (stream_->Tell() == size);
 }
 
-bool ExtStream::hasLength() const
-{
-    return stream_ != nullptr && stream_->GetStreamSize() > 0;
-}
-
 size_t ExtStream::getLength() const
 {
     return stream_ == nullptr ? 0 : stream_->GetStreamSize();
-}
-
-bool ExtStream::hasPosition() const
-{
-    return stream_ != nullptr && stream_->GetStreamSize() > 0;
-}
-
-size_t ExtStream::getPosition() const
-{
-    return stream_ == nullptr ? 0 : stream_->Tell();
 }
 } // namespace ImagePlugin
 } // namespace OHOS
