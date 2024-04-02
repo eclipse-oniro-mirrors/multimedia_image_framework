@@ -183,13 +183,13 @@ ohos_unittest("imagesourcetest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
+    "//third_party/libexif:libexif",
+    "//third_party/zlib:libz",
   ]
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "libexif:libexif",
-    "zlib:libz",
   ]
 
   if (purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -1328,6 +1328,8 @@ ohos_unittest("imageaccessortest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/libexif:libexif",
+    "//third_party/zlib:libz",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1336,8 +1338,6 @@ ohos_unittest("imageaccessortest") {
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
-    "zlib:libz",
   ]
 }
 
@@ -1362,6 +1362,7 @@ ohos_unittest("imagetiffparsertest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/libexif:libexif",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1370,7 +1371,6 @@ ohos_unittest("imagetiffparsertest") {
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
   ]
 }
 
@@ -1384,7 +1384,6 @@ ohos_unittest("exifmetadatatest") {
   ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
@@ -1393,6 +1392,7 @@ ohos_unittest("exifmetadatatest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/libexif:libexif",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1401,7 +1401,6 @@ ohos_unittest("exifmetadatatest") {
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
   ]
 }
 
