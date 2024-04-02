@@ -21,6 +21,7 @@
 #include "string_ex.h"
 #include "image_trace.h"
 #include "hitrace_meter.h"
+#include "exif_metadata_formatter.h"
 #include "color_space_object_convertor.h"
 
 #undef LOG_DOMAIN
