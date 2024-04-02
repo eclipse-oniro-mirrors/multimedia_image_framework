@@ -322,10 +322,10 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0015, TestSize.
     ASSERT_NE(ins, nullptr);
     
 
-    const uint8_t data = 'a';
+    uint8_t *data = nullptr;
     uint32_t size = 0;
     bool isCompleted = true;
-    uint32_t ret = ins->UpdateData(&data, size, isCompleted);
+    uint32_t ret = ins->UpdateData(data, size, isCompleted);
     ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0015 end";
 }
