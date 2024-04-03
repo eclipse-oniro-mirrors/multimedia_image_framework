@@ -99,6 +99,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     InitializationOptions info;
     info.alphaType = ParseAlphaType(args->createOptions.alphaType);
     info.editable = args->createOptions.editable != NUM_0;
+    info.srcPixelFormat = ParsePixelForamt(args->createOptions.srcPixelFormat);
     info.pixelFormat = ParsePixelForamt(args->createOptions.pixelFormat);
     info.scaleMode = ParseScaleMode(args->createOptions.scaleMode);
     info.size.height = args->createOptions.height;
@@ -106,7 +107,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
 
     BUILD_PARAM pam;
     pam.offset_ = 0;
-    pam.stride_ = info.size.width;
+    pam.width_ = info.size.width;
     pam.flag_ = false;
     int32_t error = IMAGE_RESULT_SUCCESS;
     auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer), args->bufferLen, pam, info, error);

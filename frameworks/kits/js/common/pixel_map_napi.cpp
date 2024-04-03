@@ -171,6 +171,12 @@ static bool parseInitializationOptions(napi_env env, napi_value root, Initializa
     opts->pixelFormat = ParsePixlForamt(tmpNumber);
 
     tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "srcPixelFormat", tmpNumber)) {
+        IMAGE_LOGI("no srcPixelFormat in initialization options");
+    }
+    opts->srcPixelFormat = ParsePixlForamt(tmpNumber);
+
+    tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "scaleMode", tmpNumber)) {
         IMAGE_LOGI("no scaleMode in initialization options");
     }

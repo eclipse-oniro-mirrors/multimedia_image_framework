@@ -128,6 +128,8 @@ struct OhosPixelMapCreateOps {
     uint32_t width;
     /** Image height, in pixels. */
     uint32_t height;
+    /** Image source format. */
+    int32_t srcPixelFormat;
     /** Image format. */
     int32_t pixelFormat;
     /** Editing type of the image. */

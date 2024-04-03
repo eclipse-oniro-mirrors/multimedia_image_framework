@@ -108,6 +108,7 @@ if (use_clang_android) {
     sources = image_native_android_sources
     include_dirs = image_native_android_include_dirs
     deps = image_native_android_deps
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
     subsystem_name = "multimedia"
     part_name = "image_framework"
   }
@@ -120,6 +121,7 @@ if (use_clang_android) {
     include_dirs = image_native_ios_include_dirs
     sources = image_native_ios_sources
     deps = image_native_ios_deps
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
     external_deps = image_native_ios_external_deps
     subsystem_name = "multimedia"
     part_name = "image_framework"
@@ -195,6 +197,7 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils_static",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
+        "//third_party/ffmpeg:libohosffmpeg_static",
       ]
       external_deps = [ "graphic_surface:surface" ]
     } else if (use_clang_mac) {
@@ -213,6 +216,7 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
         "//third_party/bounds_checking_function:libsec_statics",
+        "//third_party/ffmpeg:libohosffmpeg_static",
       ]
       external_deps = [ "graphic_surface:surface" ]
     } else {
@@ -223,6 +227,7 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
+        "//third_party/ffmpeg:libohosffmpeg",
       ]
       deps += skia_platform
 
@@ -230,7 +235,6 @@ if (use_clang_android) {
       } else {
         deps += [ "//third_party/libpng:libpng" ]
       }
-      deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
       external_deps = [
         "c_utils:utils",
         "graphic_2d:color_manager",
