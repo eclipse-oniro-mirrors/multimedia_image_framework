@@ -47,6 +47,7 @@ const std::string WHITE_BALANCE = "WhiteBalance";
 const std::string FOCAL_LENGTH_IN_35_MM_FILM = "FocalLengthIn35mmFilm";
 const std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
+const std::string DATE_TIME = "DateTime";
 constexpr uint8_t JPG_MARKER_PREFIX = 0XFF;
 constexpr uint8_t JPG_MARKER_RST = 0XD0;
 constexpr uint8_t JPG_MARKER_RST0 = 0XD0;
@@ -1065,11 +1066,12 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0050, TestSize.Level3)
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     jpegDecoder->SetSource(*streamPtr.release());
-    std::string key = "";
-    std::string path = "";
-    std::string value = 0;
+    uint32_t index = 0;
+    std::string key = DATE_TIME;
+    uint8_t *data1 = nullptr;
+    std::string value = "";
     uint32_t usize = 0;
-    int32_t result = jpegDecoder->ModifyImageProperty(0, key, value, usize);
+    int32_t result = jpegDecoder->ModifyImageProperty(index, key, value, data1, usize);
     ASSERT_EQ(result, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0050 end";
 }
