@@ -43,11 +43,14 @@
     </target>
     <target name="imagesourcetest">
         <preparer>
+            <option name="push" value="images/test.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.png -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/moving_test.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_hw.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hw.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_exif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_packing.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_packing_exif.jpg -> /data/local/tmp/image" src="res"/>
