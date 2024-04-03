@@ -215,7 +215,10 @@ ohos_unittest("jpegdecoderextest") {
     "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  sources = [ "unittest/jpeg_decoder_ex_test.cpp" ]
+  sources = [
+    "unittest/jpeg_decoder_ex_test.cpp",
+    "unittest/jpeg_decoder_test.cpp",
+  ]
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
