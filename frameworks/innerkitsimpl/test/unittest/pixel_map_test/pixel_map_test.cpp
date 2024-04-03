@@ -109,6 +109,430 @@ std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaTyp
     return pixelMap;
 }
 
+std::map<PixelFormat, std::string> gPixelFormat = {
+    { PixelFormat::ARGB_8888, "PixelFormat::ARGB_8888" },
+    { PixelFormat::RGB_565,   "PixelFormat::RGB_565" },
+    { PixelFormat::RGBA_8888, "PixelFormat::RGBA_8888" },
+    { PixelFormat::BGRA_8888, "PixelFormat::BGRA_8888" },
+    { PixelFormat::RGB_888,   "PixelFormat::RGB_888" },
+    { PixelFormat::ALPHA_8,   "PixelFormat::ALPHA_8" },
+    { PixelFormat::RGBA_F16,  "PixelFormat::RGBA_F16" },
+    { PixelFormat::NV21,      "PixelFormat::NV21" },
+    { PixelFormat::NV12,      "PixelFormat::NV12" },
+    { PixelFormat::CMYK,      "PixelFormat::CMYK" }
+};
+
+/**
+ * @tc.name: PixelMapCreateTest001
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest001 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // ARGB_8888 to others
+    options.srcPixelFormat = PixelFormat::ARGB_8888;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
+        uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
+        for (int i = 0; i < colorlength; i += 4) {
+            buffer[i] = 0x78;
+            buffer[i + 1] = 0x83;
+            buffer[i + 2] = 0xDF;
+            buffer[i + 3] = 0x52;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest001 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest002
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest002 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // RGB_565 to others
+    options.srcPixelFormat = PixelFormat::RGB_565;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 12;    // w:2 * h:3 * pixelByte:2
+        uint8_t buffer[12] = { 0 };    // w:2 * h:3 * pixelByte:2
+        for (int i = 0; i < colorlength; i += 6) {
+            buffer[i] = 0xEA;
+            buffer[i + 1] = 0x8E;
+            buffer[i + 2] = 0x0A;
+            buffer[i + 3] = 0x87;
+            buffer[i + 4] = 0x0B;
+            buffer[i + 5] = 0x87;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest002 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest003
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest003 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // RGBA_8888 to others
+    options.srcPixelFormat = PixelFormat::RGBA_8888;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
+        uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
+        for (int i = 0; i < colorlength; i += 4) {
+            buffer[i] = 0x83;
+            buffer[i + 1] = 0xDF;
+            buffer[i + 2] = 0x52;
+            buffer[i + 3] = 0x78;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest003 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest004
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest004 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // BGRA_8888 to others
+    options.srcPixelFormat = PixelFormat::BGRA_8888;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 24;    // w:2 * h:3 * pixelByte:4
+        uint8_t buffer[24] = { 0 };    // w:2 * h:3 * pixelByte:4
+        for (int i = 0; i < colorlength; i += 4) {
+            buffer[i] = 0x52;
+            buffer[i + 1] = 0xDF;
+            buffer[i + 2] = 0x83;
+            buffer[i + 3] = 0x78;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest004 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest005
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest005 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // RGB_888 to others
+    options.srcPixelFormat = PixelFormat::RGB_888;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 18;    // w:2 * h:3 * pixelByte:3
+        uint8_t buffer[20] = { 0 };    // w:2 * h:3 * pixelByte:3 and add 2 for uint32_t
+        for (int i = 0; i < colorlength; i += 3) {
+            buffer[i] = 0x83;
+            buffer[i + 1] = 0xDF;
+            buffer[i + 2] = 0x52;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest005 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest006
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest006 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // ALPHA_8 to others
+    options.srcPixelFormat = PixelFormat::ALPHA_8;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 6;    // w:2 * h:3 * pixelByte:1
+        uint8_t buffer[8] = { 0 };    // w:2 * h:3 * pixelByte:1 and add 2 for uint32_t
+        for (int i = 0; i < colorlength; i++) {
+            buffer[i] = 0x78;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest006 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest007
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest007 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // RGBA_F16 to others
+    options.srcPixelFormat = PixelFormat::RGBA_F16;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 48;    // w:2 * h:3 * pixelByte:8
+        uint8_t buffer[48] = { 0 };    // w:2 * h:3 * pixelByte:8
+        for (int i = 0; i < colorlength; i += 8) {
+            buffer[i] = 0xEF;
+            buffer[i + 1] = 0x82;
+            buffer[i + 2] = 0x05;
+            buffer[i + 3] = 0xDF;
+            buffer[i + 4] = 0x05;
+            buffer[i + 5] = 0x52;
+            buffer[i + 6] = 0x78;
+            buffer[i + 7] = 0x78;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest007 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest008
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest008 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // NV21 to others
+    options.srcPixelFormat = PixelFormat::NV21;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint8_t buffer[12] = { 0 };    // w:2 * h:3 * pixelByte:2
+        int yLen = options.size.width * options.size.height;  // yLen is 6
+        int w = (options.size.width % 2 == 0) ? (options.size.width) : (options.size.width + 1);
+        int h = (options.size.height % 2 == 0) ? (options.size.height) : (options.size.height + 1);
+        int uvLen = w * h / 2;    // uvLen is 4
+        for (int i = 0; i < yLen; i++) {
+            buffer[i] = 0xAA;
+        }
+        for (int i = yLen; i < yLen + uvLen; i += 2) {
+            buffer[i] = 0x62;
+            buffer[i + 1] = 0x50;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        uint32_t colorlength = yLen + uvLen;
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest008 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest009
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest009, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest009 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // NV12 to others
+    options.srcPixelFormat = PixelFormat::NV12;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint8_t buffer[12] = { 0 };    // w:2 * h:3 * pixelByte:2
+        int yLen = options.size.width * options.size.height;  // yLen is 6
+        int w = (options.size.width % 2 == 0) ? (options.size.width) : (options.size.width + 1);
+        int h = (options.size.height % 2 == 0) ? (options.size.height) : (options.size.height + 1);
+        int uvLen = w * h / 2;    // uvLen is 4
+        for (int i = 0; i < yLen; i++) {
+            buffer[i] = 0xAA;
+        }
+        for (int i = yLen; i < yLen + uvLen; i += 2) {
+            buffer[i] = 0x50;
+            buffer[i + 1] = 0x62;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        uint32_t colorlength = yLen + uvLen;
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest009 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest010
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest010, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest010 start";
+
+    const int32_t offset = 0;
+    InitializationOptions options;
+    options.size.width = 2;
+    options.size.height = 3;
+    options.srcPixelFormat = PixelFormat::UNKNOWN;
+    options.pixelFormat = PixelFormat::UNKNOWN;
+    options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    int32_t width = options.size.width;
+
+    std::map<PixelFormat, std::string>::iterator iter;
+
+    // CMYK to others
+    options.srcPixelFormat = PixelFormat::CMYK;
+    for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        uint32_t colorlength = 18;    // w:2 * h:3 * pixelByte:3
+        uint8_t buffer[20] = { 0 };    // w:2 * h:3 * pixelByte:3 and add 2 for uint32_t
+        for (int i = 0; i < 6; i++) {
+            buffer[i] = 0xDF;
+            buffer[i + 6] = 0x52;
+            buffer[i + 12] = 0x83;
+        }
+        uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
+        options.pixelFormat = iter->first;
+        std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
+        EXPECT_NE(pixelMap1, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest010 end";
+}
+
 /**
  * @tc.name: PixelMapTestT001
  * @tc.desc: delete PixelMap
