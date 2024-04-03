@@ -22,6 +22,7 @@
 #include "ext_encoder.h"
 #include "ext_stream.h"
 #include "mock_data_stream.h"
+#include "file_source_stream.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -39,6 +40,7 @@ const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
 const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
+static const std::string IMAGE_INPUT_JPEG_PATH = "data/local/tmp/image/test_hw1.jpg";
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -616,6 +618,12 @@ HWTEST_F(ExtDecoderTest, IsSupportHardwareDecodeTest001, TestSize.Level3)
     bool ret = extDecoder->IsSupportHardwareDecode();
     ASSERT_EQ(extDecoder->info_.isEmpty(), true);
     ASSERT_EQ(ret, false);
+
+    const std::string pathName = IMAGE_INPUT_JPEG_PATH;
+    auto streamPtr = FileSourceStream::CreateSourceStream(pathName);
+    extDecoder->SetSource(*streamPtr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    ASSERT_NE(extDecoder->codec_, nullptr);
     extDecoder->info_.fDimensions = {2, 2};
     ret = extDecoder->IsSupportHardwareDecode();
     ASSERT_EQ(extDecoder->info_.isEmpty(), false);
