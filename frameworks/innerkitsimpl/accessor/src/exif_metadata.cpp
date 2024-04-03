@@ -120,7 +120,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         mnote_huawei_free_entry_count(ec);
     } else {
         auto tag = exif_tag_from_name(key.c_str());
-        auto entry = exif_data_get_entry(exifData_, tag);
+        ExifEntry *entry = GetEntry(key);
         if (entry == nullptr) {
             IMAGE_LOGE("Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
             value = "";
@@ -276,6 +276,20 @@ ExifEntry *ExifMetadata::GetEntry(const std::string &key, const size_t valueLen)
     if ((entry->format == EXIF_FORMAT_UNDEFINED || entry->format == EXIF_FORMAT_ASCII)
         && (entry->size != static_cast<unsigned int>(valueLen))) {
         ReallocEntry(entry, valueLen);
+    }
+    return entry;
+}
+
+ExifEntry *ExifMetadata::GetEntry(const std::string &key) const
+{
+    IMAGE_LOGD("GetEntry by key is %{public}s.", key.c_str());
+    ExifTag tag = exif_tag_from_name(key.c_str());
+    ExifEntry *entry = nullptr;
+    if (tag == 0x0001 || tag == 0x0002) {
+        ExifIfd ifd = exif_ifd_from_name(key.c_str());
+        entry = exif_content_get_entry(exifData_->ifd[ifd], tag);
+    } else {
+        entry = exif_data_get_entry(exifData_, tag);
     }
     return entry;
 }
