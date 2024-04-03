@@ -24,7 +24,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "securec.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -63,7 +63,7 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
             static_cast<unsigned long long>(byteCount));
         return false;
     }
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     uint32_t id = context.pixelmapUniqueId_;
     std::string name = "SVG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), byteCount);
@@ -120,7 +120,7 @@ bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
             static_cast<unsigned long long>(byteCount));
         return false;
     }
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     BufferRequestConfig requestConfig = {
         .width = svgSize.width(),

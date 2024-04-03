@@ -40,7 +40,7 @@
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #else
 #include "refbase.h"
@@ -165,7 +165,7 @@ uint32_t ImageUtils::RegisterPluginServer()
     vector<string> pluginPaths = { "" };
 #elif defined(_APPLE)
     vector<string> pluginPaths = { "./" };
-#elif defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     vector<string> pluginPaths = {};
 #else
     vector<string> pluginPaths = { "/system/etc/multimediaplugin/image" };

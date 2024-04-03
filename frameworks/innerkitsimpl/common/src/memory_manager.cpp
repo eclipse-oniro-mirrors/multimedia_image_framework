@@ -22,7 +22,7 @@
 #include "media_errors.h"
 #include "securec.h"
 
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "surface_buffer.h"
@@ -58,7 +58,7 @@ uint32_t HeapMemory::Create()
         IMAGE_LOGE("HeapMemory::Create malloc buffer failed");
         return ERR_IMAGE_MALLOC_ABNORMAL;
     }
-#if defined(IOS_PLATFORM) || defined(A_PLATFORM)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     memset_s(data.data, data.size, 0, data.size);
 #endif
     return SUCCESS;
@@ -66,7 +66,7 @@ uint32_t HeapMemory::Create()
 
 uint32_t HeapMemory::Release()
 {
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     IMAGE_LOGD("HeapMemory::Release IN");
     if (data.data == nullptr) {
         IMAGE_LOGI("HeapMemory::Release nullptr data");
@@ -80,7 +80,7 @@ uint32_t HeapMemory::Release()
 
 static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
 {
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (ptr != nullptr && ptr != MAP_FAILED) {
         ::munmap(ptr, size);
     }
@@ -147,7 +147,7 @@ uint32_t SharedMemory::Release()
 
 uint32_t DmaMemory::Create()
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -182,7 +182,7 @@ uint32_t DmaMemory::Create()
 
 uint32_t DmaMemory::Release()
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem release");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else

@@ -21,7 +21,7 @@
 
 #include "SkCodec.h"
 #include "abs_image_decoder.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "display_type.h"
 #include "hardware/jpeg_hw_decoder.h"
 #endif
@@ -112,7 +112,7 @@ private:
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
 #endif
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     // hardware
     OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
     SkImageInfo hwDstInfo_;

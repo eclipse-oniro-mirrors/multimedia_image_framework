@@ -46,7 +46,7 @@
 #include "post_proc.h"
 #include "securec.h"
 #include "source_stream.h"
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
@@ -349,7 +349,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
-#if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
+#if !defined(ANDROID_PLATFORM) || !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
         uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
@@ -440,7 +440,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
         return;
     }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int *>(buffer.context);
         if (buffer.buffer != nullptr) {
@@ -505,7 +505,7 @@ bool IsPhotosLcd()
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
@@ -2240,7 +2240,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     std::unique_ptr<SourceStream> &sourceStreamPtr)
 {
-#if !(defined(A_PLATFORM) || defined(IOS_PLATFORM))
+#if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     int fd = AshmemCreate("CreatePixelMapForASTC Data", astcSize);
     if (fd < 0) {
         IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
@@ -2286,7 +2286,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, bool fastAstc)
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 {
     errorCode = ERROR;
     return nullptr;
