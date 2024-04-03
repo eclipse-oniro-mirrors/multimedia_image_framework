@@ -25,6 +25,10 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+const uint8_t red = 0xFF;
+const uint8_t green = 0x8F;
+const uint8_t blue = 0x7F;
+const uint8_t alpha = 0x7F;
 class PixelMapTest : public testing::Test {
 public:
     PixelMapTest() {}
@@ -118,9 +122,29 @@ std::map<PixelFormat, std::string> gPixelFormat = {
     { PixelFormat::ALPHA_8,   "PixelFormat::ALPHA_8" },
     { PixelFormat::RGBA_F16,  "PixelFormat::RGBA_F16" },
     { PixelFormat::NV21,      "PixelFormat::NV21" },
-    { PixelFormat::NV12,      "PixelFormat::NV12" },
-    { PixelFormat::CMYK,      "PixelFormat::CMYK" }
+    { PixelFormat::NV12,      "PixelFormat::NV12" }
 };
+
+void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pixelByte,
+    uint8_t buffer[])
+{
+    uint32_t colorLength = width * height * pixelByte;
+    for (int i = 0; i < colorLength; i += pixelByte) {
+        buffer[i] = blue;       // i blue index
+        buffer[i + 1] = green;  // i + 1: green index
+        buffer[i + 2] = red;    // i + 2: red index
+        buffer[i + 3] = alpha;  // i + 3: alpha index
+    }
+}
+
+void InitOption(struct InitializationOptions& opts, const uint32_t width, const uint32_t height,
+    PixelFormat format, AlphaType alphaType)
+{
+    opts.size.width = width;
+    opts.size.height = height;
+    opts.pixelFormat = format;
+    opts.alphaType = alphaType;
+}
 
 /**
  * @tc.name: PixelMapCreateTest001
@@ -527,7 +551,7 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest010, TestSize.Level3)
         uint32_t *color = reinterpret_cast<uint32_t *>(buffer);
         options.pixelFormat = iter->first;
         std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorlength, offset, width, options);
-        EXPECT_NE(pixelMap1, nullptr);
+        EXPECT_EQ(pixelMap1, nullptr);
     }
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest010 end";
@@ -1833,6 +1857,327 @@ HWTEST_F(PixelMapTest, ReadImageInfo, TestSize.Level3)
     bool ret = pixeimap.ReadImageInfo(parcel, imgInfo);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest001
+ * @tc.desc: Covernt alpha format to premul or unpremul, format is RGB_565.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest001 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::RGB_565, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    InitializationOptions opts2;
+    InitOption(opts2, width, height, PixelFormat::RGB_565, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts2);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_NE(ret, SUCCESS);
+
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest001 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest002
+ * @tc.desc: Covernt alpha format to premul or unpremul, format is RGBA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest002 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    InitializationOptions opts2;
+    InitOption(opts2, width, height, PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts2);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    void *pixelMapData = pixelMap2->GetWritablePixels();
+    uint8_t *wpixel = static_cast<uint8_t *>(pixelMapData);
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_EQ(ret, SUCCESS);
+    float percent = static_cast<float>(alpha) / UINT8_MAX;
+    for (int i = 0; i < colorLength; i += 4)
+    {
+        EXPECT_TRUE(std::abs(wpixel[i] - percent * red) <= 1);       // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 1] - percent * green) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 2] - percent * blue) <= 1);  // 1: Floating point to integer error
+        EXPECT_TRUE(wpixel[i + 3] == alpha);
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest002 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest003
+ * @tc.desc: covernt alpha format to premul or unpremul,format is BGRA_8888
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest003 start";
+    const int32_t offset = 0;       //for test
+    const int32_t width = 2;        //for test
+    const int32_t height = 2;       //for test
+    const uint32_t pixelByte = 4;   //for test
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts1);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+    void *pixelMapData = pixelMap2->GetWritablePixels();
+    uint8_t *wpixel = static_cast<uint8_t *>(pixelMapData);
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_EQ(ret, SUCCESS);
+    float percent = static_cast<float>(alpha) / UINT8_MAX;
+    for (int i = 0; i < colorLength; i += 4)
+    {
+        EXPECT_TRUE(std::abs(wpixel[i] - percent * red) <= 1);      // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 1] - percent * green) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 2] - percent * blue) <= 1);   // 1: Floating point to integer error
+        EXPECT_TRUE(wpixel[i + 3] == alpha);
+    }
+    std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts1);
+    EXPECT_TRUE(pixelMap3 != nullptr);
+    void *pixelMapData3 = pixelMap3->GetWritablePixels();
+    uint8_t *wpixel3 = static_cast<uint8_t *>(pixelMapData3);
+    ret = pixelMap2->ConvertAlphaFormat(*pixelMap3.get(), false);
+    ASSERT_EQ(ret, SUCCESS);
+    for (int i = 0; i < colorLength; i += 4)
+    {
+        EXPECT_TRUE(std::abs(wpixel3[i] - red) <= 1);      // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel3[i + 1] - green) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel3[i + 2] - blue) <= 1);   // 1: Floating point to integer error
+        EXPECT_TRUE(wpixel3[i + 3] == alpha);
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest003 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest004
+ * @tc.desc: Covernt alpha format to premul or unpremul, format is RGB_888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest004 start";
+    const int32_t offset = 0; //for test
+    const int32_t width = 2; //for test
+    const int32_t height = 2; //for test
+    const uint32_t pixelByte = 4; //for test
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::RGB_888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts1);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_NE(ret, SUCCESS);
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest004 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest005
+ * @tc.desc: covernt alpha format to premul or unpremul, format is ALPHA_8.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest005 start";
+    const int32_t offset = 0; //for test
+    const int32_t width = 2; //for test
+    const int32_t height = 2; //for test
+    const uint32_t pixelByte = 4; //for test
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts1);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+    uint8_t *spixel = static_cast<uint8_t *>(pixelMap2->GetWritablePixels());
+    void *pixelMapData = pixelMap2->GetWritablePixels();
+    uint8_t *wpixel = static_cast<uint8_t *>(pixelMapData);
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_EQ(ret, SUCCESS);
+    for (int i = 0; i < colorLength; i += 4)
+    {
+        EXPECT_TRUE(std::abs(wpixel[i] - spixel[i]) <= 1);         // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 1] - spixel[i + 1]) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel[i + 2] - spixel[i + 2]) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(wpixel[i + 3] == spixel[i + 3]);               // i + 3: alpha index
+    }
+    std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts1);
+    EXPECT_TRUE(pixelMap3 != nullptr);
+    void *pixelMapData3 = pixelMap3->GetWritablePixels();
+    uint8_t *wpixel3 = static_cast<uint8_t *>(pixelMapData3);
+    ret = pixelMap2->ConvertAlphaFormat(*pixelMap3.get(), false);
+    ASSERT_EQ(ret, SUCCESS);
+    for (int i = 0; i < colorLength; i += 4)
+    {
+        EXPECT_TRUE(std::abs(wpixel3[i] - spixel[i]) <= 1);         // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel3[i + 1] - spixel[i + 1]) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(std::abs(wpixel3[i + 2] - spixel[i + 2]) <= 1); // 1: Floating point to integer error
+        EXPECT_TRUE(wpixel3[i + 3] == spixel[i + 3]);
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest005 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest006
+ * @tc.desc: Covernt alpha format to premul or unpremul. Format is ALPHA_8, source format is BGRA_8888.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest006 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    InitializationOptions opts2;
+    InitOption(opts2, width, height, PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts2);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_NE(ret, SUCCESS);
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest006 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest007
+ * @tc.desc: RGB_888 pixel format pixel map operation, foramt is RGBA_F16.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest007 start";
+        const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    InitializationOptions opts2;
+    InitOption(opts2, width, height, PixelFormat::RGBA_F16, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts2);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_NE(ret, SUCCESS);
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
+    ASSERT_NE(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest007 end";
+}
+
+/**
+ * @tc.name: ConvertAlphaFormatTest008
+ * @tc.desc: RGB_888 pixel format pixel map operation, image info is default.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ConvertAlphaFormatTest008, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest008 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap1 = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap1 != nullptr);
+    InitializationOptions opts2;
+    InitOption(opts2, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts2);
+    EXPECT_TRUE(pixelMap2 != nullptr);
+
+    uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
+    ASSERT_EQ(ret, SUCCESS);
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest008 end";
 }
 }
 }

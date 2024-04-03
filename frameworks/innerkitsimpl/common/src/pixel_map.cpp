@@ -2657,7 +2657,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
     }
     int32_t index = 0;
     for (int32_t i = 0; i < imageInfo_.size.height; ++i) {
-        for (int32_t j = 0; j < stride; ++j) {
+        for (int32_t j = 0; j < stride; j+=pixelBytes_) {
             index = i * stride + j;
             ConvertUintPixelAlpha(data_ + index, pixelBytes_, srcAlphaIndex, isPremul,
                 static_cast<uint8_t*>(dstData) + index);
