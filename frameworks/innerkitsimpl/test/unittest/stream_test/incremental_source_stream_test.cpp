@@ -137,23 +137,13 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest006, TestSize.L
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
-    uint32_t size = pixelMap->GetCapacity();
+    uint8_t data = 'a';
+    uint32_t size = 10;
     uint32_t desiredSize = size;
     uint32_t readSize;
-    bool ret = ins->Peek(desiredSize, data, size, readSize);
+    bool ret = ins->Peek(desiredSize, &data, size, readSize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest006 end";
 }
@@ -169,23 +159,13 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest007, TestSize.L
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
-    uint32_t size = pixelMap->GetCapacity();
+    uint8_t data = 'a';
+    uint32_t size = 10;
     uint32_t desiredSize = 0;
     uint32_t readSize;
-    bool ret = ins->Peek(desiredSize, data, size, readSize);
+    bool ret = ins->Peek(desiredSize, &data, size, readSize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest007 end";
 }
@@ -201,23 +181,13 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest008, TestSize.L
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
-    uint32_t size = pixelMap->GetCapacity();
+    uint8_t data = 'a';
+    uint32_t size = 10;
     uint32_t desiredSize = size;
     uint32_t readSize;
-    bool ret = ins->Read(desiredSize, data, size, readSize);
+    bool ret = ins->Read(desiredSize, &data, size, readSize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest008 end";
 }
@@ -233,23 +203,13 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest009, TestSize.L
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
-    uint32_t size = pixelMap->GetCapacity();
+    uint8_t data = 'a';
+    uint32_t size = 10;
     uint32_t desiredSize = 0;
     uint32_t readSize;
-    bool ret = ins->Read(desiredSize, data, size, readSize);
+    bool ret = ins->Read(desiredSize, &data, size, readSize);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest009 end";
 }
@@ -281,19 +241,9 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0011, TestSize.
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    uint32_t position = pixelMap->GetCapacity();
+    uint32_t position = 5;
     bool ret = ins->Seek(position);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0011 end";
@@ -328,22 +278,12 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0013, TestSize.
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    const uint8_t *data = pixelMap->GetPixels();
-    uint32_t size = pixelMap->GetCapacity();
+    const uint8_t data = 'a';
+    uint32_t size = 10;
     bool isCompleted = true;
-    uint32_t ret = ins->UpdateData(data, size, isCompleted);
+    uint32_t ret = ins->UpdateData(&data, size, isCompleted);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0013 end";
 }
@@ -359,22 +299,12 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0014, TestSize.
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    const uint8_t *data = pixelMap->GetPixels();
-    uint32_t size = pixelMap->GetCapacity();
+    const uint8_t data = 'a';
+    uint32_t size = 5;
     bool isCompleted = true;
-    uint32_t ret = ins->UpdateData(data, size, isCompleted);
+    uint32_t ret = ins->UpdateData(&data, size, isCompleted);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "IncrementalSourceStreamTest: IncrementalSourceStreamTest0014 end";
 }
@@ -390,20 +320,10 @@ HWTEST_F(IncrementalSourceStreamTest, IncrementalSourceStreamTest0015, TestSize.
     IncrementalMode mode = IncrementalMode::INCREMENTAL_DATA;
     std::unique_ptr<IncrementalSourceStream> ins = IncrementalSourceStream::CreateSourceStream(mode);
     ASSERT_NE(ins, nullptr);
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPG_PATH, opts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(imageSource.get(), nullptr);
+    
 
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-
-    const uint8_t *data = nullptr;
-    uint32_t size = pixelMap->GetCapacity();
+    uint8_t *data = nullptr;
+    uint32_t size = 0;
     bool isCompleted = true;
     uint32_t ret = ins->UpdateData(data, size, isCompleted);
     ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);

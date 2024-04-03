@@ -747,8 +747,7 @@ ohos_unittest("streamtest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_packer_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_source_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/file_source_stream_test.cpp",
-
-    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
   ]
 
   deps = [
