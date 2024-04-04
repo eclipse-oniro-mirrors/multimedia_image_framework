@@ -1259,16 +1259,6 @@ int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLeng
         return -1;
     }
 
-    if (srcInfo.pixelFormat == dstInfo.pixelFormat &&
-        srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
-        IMAGE_LOGE("src pixel format is equal dst pixel format. no need to convert");
-        if (memcpy_s(dstPixels, srcLength, srcPixels, srcLength) != 0) {
-            IMAGE_LOGE("[PixelMap]Convert: memcpy_s failed!");
-            return -1;
-        }
-        return srcLength;
-    }
-
     if ((srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) &&
         (dstInfo.pixelFormat == PixelFormat::NV12 || dstInfo.pixelFormat == PixelFormat::NV21)) {
         FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
