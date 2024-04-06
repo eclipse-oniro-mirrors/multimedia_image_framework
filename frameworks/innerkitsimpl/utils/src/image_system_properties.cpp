@@ -73,7 +73,8 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
 bool ImageSystemProperties::GetDmaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
-    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", false);
+    static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
+    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", true) && isPhone;
 #else
     return false;
 #endif
