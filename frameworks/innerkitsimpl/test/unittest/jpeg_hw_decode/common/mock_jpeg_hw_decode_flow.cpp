@@ -37,10 +37,6 @@ JpegHwDecoderFlow::JpegHwDecoderFlow() : sampleSize_(1), outputColorFmt_(PIXEL_F
 
 JpegHwDecoderFlow::~JpegHwDecoderFlow()
 {
-    if (outputBuffer_.buffer != nullptr) {
-        BufferHandle *outputHandle = outputBuffer_.buffer->Move();
-        bufferMgr_->FreeMem(*outputHandle);
-    }
     bufferMgr_ = nullptr;
 }
 
