@@ -40,6 +40,7 @@
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
 #include "pixel_map.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
