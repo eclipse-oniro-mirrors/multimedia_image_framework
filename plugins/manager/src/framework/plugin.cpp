@@ -210,7 +210,7 @@ uint32_t Plugin::ResolveLibrary()
     }
 
     return SUCCESS;
-#elif defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     startFunc_ = PluginExternalStart;
     stopFunc_ = PluginExternalStop;
     createFunc_ = PluginExternalCreate;
@@ -251,7 +251,7 @@ void Plugin::FreeLibrary()
     startFunc_ = NULL;
     stopFunc_ = NULL;
     createFunc_ = NULL;
-#elif defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     startFunc_ = nullptr;
     stopFunc_ = nullptr;
     createFunc_ = nullptr;

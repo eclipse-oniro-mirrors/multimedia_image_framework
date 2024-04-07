@@ -36,7 +36,7 @@ static napi_value Export(napi_env env, napi_value exports)
     PixelMapNapi::Init(env, exports);
     IMAGE_LOGD("ImageSourceNapi CALL");
     ImageSourceNapi::Init(env, exports);
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     IMAGE_LOGD("ImageReceiverNapi CALL");
     ImageReceiverNapi::Init(env, exports);
     IMAGE_LOGD("ImageCreatorNapi CALL");

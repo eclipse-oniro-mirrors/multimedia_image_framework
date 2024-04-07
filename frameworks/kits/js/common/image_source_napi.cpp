@@ -22,7 +22,7 @@
 #include "image_trace.h"
 #include "hitrace_meter.h"
 #include "exif_metadata_formatter.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "color_space_object_convertor.h"
 #endif
 
