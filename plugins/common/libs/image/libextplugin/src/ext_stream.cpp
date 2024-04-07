@@ -106,5 +106,10 @@ bool ExtStream::isAtEnd() const
     size_t size = stream_->GetStreamSize();
     return (stream_->Tell() == size);
 }
+
+size_t ExtStream::getLength() const
+{
+    return stream_ == nullptr ? 0 : stream_->GetStreamSize();
+}
 } // namespace ImagePlugin
 } // namespace OHOS

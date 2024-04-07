@@ -160,6 +160,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
@@ -215,7 +216,10 @@ ohos_unittest("jpegdecoderextest") {
     "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  sources = [ "unittest/jpeg_decoder_ex_test.cpp" ]
+  sources = [
+    "unittest/jpeg_decoder_ex_test.cpp",
+    "unittest/jpeg_decoder_test.cpp",
+  ]
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
