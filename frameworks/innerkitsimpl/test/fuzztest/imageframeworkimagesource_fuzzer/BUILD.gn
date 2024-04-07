@@ -23,7 +23,7 @@ ohos_fuzztest("ImageFrameworkImagesourceFuzzTest") {
     "$image_subsystem/interfaces/innerkits/include",
   ]
 
-  sources = [ "src/imageframework_fuzzer.cpp" ]
+  sources = [ "src/imageframeworkimagesource_fuzzer.cpp" ]
 
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
 
