@@ -40,13 +40,6 @@ BufferMetadataStream::~BufferMetadataStream()
 
 ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 {
-    if (buffer_.capacity() < static_cast<unsigned int>(currentOffset_ + size)) {
-        // Calculate the required memory size, ensuring it is a multiple of 4k
-        size_t newCapacity = ((currentOffset_ + size + METADATA_STREAM_PAGE_SIZE - 1) / METADATA_STREAM_PAGE_SIZE)
-                             * METADATA_STREAM_PAGE_SIZE;
-        buffer_.reserve(newCapacity);
-    }
-
     buffer_.insert(buffer_.end(), data, data + size);
     currentOffset_ += size;
     return size;
