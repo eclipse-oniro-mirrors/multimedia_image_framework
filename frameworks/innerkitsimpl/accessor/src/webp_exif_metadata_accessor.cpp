@@ -290,20 +290,19 @@ bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
             IMAGE_LOGE("Failed to read image chunk header information.");
             return false;
         }
-        bufStream.Write(chunkHead.Data(), chunkHead.Size());
 
-        uint32_t size = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
+        uint32_t chunkSize = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
         const ssize_t imgSize = imageStream_->GetSize();
-        if (size > imgSize - imageStream_->Tell()) {
+        if (chunkSize > imgSize - imageStream_->Tell()) {
             IMAGE_LOGE("Read chunk length error.");
             return false;
         }
 
-        if (size % WEBP_BUF_SIZE) {
-            ++size;
+        if (chunkSize % WEBP_BUF_SIZE) {
+            ++chunkSize;
         }
 
-        DataBuf chunkData(size);
+        DataBuf chunkData(chunkSize);
         if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
             IMAGE_LOGE("Failed to read image chunk data.");
             return false;
@@ -311,12 +310,16 @@ bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 
         std::string strChunkId(reinterpret_cast<const char *>(chunkHead.CData()), WEBP_CHUNK_ID_SIZE);
         if (strChunkId == WEBP_CHUNK_HEADER_EXIF) {
+            UL2Data(chunkHead.Data(WEBP_FILE_SIZE_BUFF_SIZE), size, littleEndian);
+            bufStream.Write(chunkHead.Data(), chunkHead.Size());
             bufStream.Write(dataBlob, size);
             if (chunkData.Size() % WEBP_BUF_SIZE) {
                 bufStream.Write(&WEBP_PAD_ODD, 1);
             }
             break;
         }
+
+        bufStream.Write(chunkHead.Data(), chunkHead.Size());
         bufStream.Write(chunkData.Data(), chunkData.Size());
     }
 
@@ -331,6 +334,7 @@ bool WebpExifMetadataAccessor::InsertExifMetadata(BufferMetadataStream &bufStrea
 
     static byte exifChunckId[] = { 0x45, 0x58, 0x49, 0x46 };
     if (bufStream.Write(exifChunckId, WEBP_CHUNK_ID_SIZE) != WEBP_CHUNK_ID_SIZE) {
+        IMAGE_LOGE("BufStream tell: %{public}lu", bufStream.Tell());
         return false;
     }
     DataBuf exifChunckSize(WEBP_CHUNK_SIZE);
@@ -449,6 +453,9 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
         return false;
     }
     uint32_t fileSize = GetULong(headInfo.Data(WEBP_RIFF_SIZE), littleEndian) + size;
+    if (size % WEBP_BUF_SIZE) {
+        ++fileSize;
+    }
 
     if (!CheckChunkVp8x(exifFlag) && exifFlag == Vp8xAndExifInfo::UNKNOWN) {
         return false;
@@ -458,7 +465,7 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
         fileSize += exifFlag == Vp8xAndExifInfo::VP8X_NOT_EXIST ? WEBP_CHUNK_VP8X_SIZE : 0;
         fileSize += WEBP_CHUNK_ID_SIZE + WEBP_CHUNK_SIZE;
         UL2Data(headInfo.Data(WEBP_FILE_SIZE_BUFF_SIZE), fileSize, littleEndian);
-        IMAGE_LOGD("Write webp file size: %{public}u", fileSize);
+        IMAGE_LOGD("Write webp file size: %{public}u, new exif size: %{public}u", fileSize, size);
         return bufStream.Write(headInfo.Data(), headInfo.Size()) == (ssize_t)headInfo.Size();
     }
 
@@ -467,9 +474,10 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
         return false;
     }
 
-    fileSize -= exifData.Size();
+    fileSize -= exifData.Size() % WEBP_BUF_SIZE ? (exifData.Size() + 1) : exifData.Size();
     UL2Data(headInfo.Data(WEBP_FILE_SIZE_BUFF_SIZE), fileSize, littleEndian);
-    IMAGE_LOGD("Write webp file size: %{public}u", fileSize);
+    IMAGE_LOGD("Write webp file size: %{public}u, old exif size: %{public}u, new exif size: %{public}u",
+        fileSize, size, exifData.Size());
     return bufStream.Write(headInfo.Data(), headInfo.Size()) == (ssize_t)headInfo.Size();
 }
 
