@@ -33,6 +33,7 @@ enum class Vp8xAndExifInfo : int32_t {
     EXIF_NOT_EXIST = 2,
     EXIF_EXIST = 3
 };
+
 class WebpExifMetadataAccessor : public AbstractExifMetadataAccessor {
 public:
     WebpExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream);

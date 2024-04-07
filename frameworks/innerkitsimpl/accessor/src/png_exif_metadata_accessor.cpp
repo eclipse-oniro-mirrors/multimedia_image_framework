@@ -310,9 +310,7 @@ uint32_t PngExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
     }
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    imageStream_->CopyFrom(tmpBufStream);
-
-    return SUCCESS;
+    return imageStream_->CopyFrom(tmpBufStream);
 }
 
 uint32_t PngExifMetadataAccessor::Write()

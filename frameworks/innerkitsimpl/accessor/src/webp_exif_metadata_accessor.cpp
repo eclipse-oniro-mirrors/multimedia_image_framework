@@ -262,9 +262,7 @@ uint32_t WebpExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
     }
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    imageStream_->CopyFrom(tmpBufStream);
-
-    return SUCCESS;
+    return imageStream_->CopyFrom(tmpBufStream);
 }
 
 bool WebpExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)

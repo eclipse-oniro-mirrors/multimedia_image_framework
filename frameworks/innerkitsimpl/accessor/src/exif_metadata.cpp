@@ -465,7 +465,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     const char *capture_buf = value.c_str();
     int capture_buf_length = value.length();
     int ret = mnote_huawei_entry_set_value(entry, capture_buf, capture_buf_length);
-    return ret == 0 ? true : false;
+    return ret == 0;
 }
 
 bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &value)
