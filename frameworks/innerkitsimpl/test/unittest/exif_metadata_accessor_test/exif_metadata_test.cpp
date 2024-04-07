@@ -780,7 +780,7 @@ HWTEST_F(ExifMetadataTest, SetValueBatch004, TestSize.Level3)
 }
 
 
-std::string BATCHDATA006[][3] = {
+std::string g_batchData006[][3] = {
     {"BitsPerSample", "65535,65535,65535", "65535, 65535, 65535"},
     {"Orientation", "8", "Left-bottom"},
     {"ImageLength", "65535", "65535"},
@@ -1074,10 +1074,10 @@ HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
     std::string value;
     ExifMetadata metadata(exifData);
 
-    int rows = sizeof(BATCHDATA006) / sizeof(BATCHDATA006[0]);
+    int rows = sizeof(g_batchData006) / sizeof(g_batchData006[0]);
     for (int i = 0; i < rows; ++i) {
-        std::string key = BATCHDATA006[i][0];
-        std::string modifyvalue = BATCHDATA006[i][1];
+        std::string key = g_batchData006[i][0];
+        std::string modifyvalue = g_batchData006[i][1];
         auto iv = ExifMetadatFormatter::Validate(key, modifyvalue);
         bool isValidateSuccess = (iv == Media::SUCCESS);
         ASSERT_TRUE(isValidateSuccess);
@@ -1087,12 +1087,12 @@ HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
 
         std::string retvalue;
         metadata.GetValue(key, retvalue);
-        ASSERT_EQ(retvalue, BATCHDATA006[i][2]);
+        ASSERT_EQ(retvalue, g_batchData006[i][2]);
     }
 }
 
 
-std::string ERROR[][2] = {
+std::string g_error[][2] = {
     {"BitsPerSample", "8,8"},
     {"Orientation", "0"},
     {"ImageLength", "abc"},
@@ -1212,10 +1212,10 @@ HWTEST_F(ExifMetadataTest, SetValueBatch007, TestSize.Level3)
     std::string value;
     ExifMetadata metadata(exifData);
 
-    int rows = sizeof(ERROR) / sizeof(ERROR[0]);
+    int rows = sizeof(g_error) / sizeof(g_error[0]);
     for (int i = 0; i < rows; ++i) {
-        std::string key = ERROR[i][0];
-        std::string modifyvalue = ERROR[i][1];
+        std::string key = g_error[i][0];
+        std::string modifyvalue = g_error[i][1];
         auto iv = ExifMetadatFormatter::Validate(key, modifyvalue);
         bool isValidateSuccess = (iv == Media::SUCCESS);
         auto isSetValueSuccess = metadata.SetValue(key, modifyvalue);
