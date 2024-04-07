@@ -192,6 +192,8 @@ HWTEST_F(DngExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(value, "sensitivity");
     ASSERT_EQ(exifMetadata->GetValue("DNGVersion", value), SUCCESS);
     ASSERT_EQ(value, "0x01, 0x04, 0x00, 0x00");
+    ASSERT_EQ(exifMetadata->GetValue("SubjectDistance", value), SUCCESS);
+    ASSERT_EQ(value, "2.5 m");
     ASSERT_EQ(exifMetadata->GetValue("DefaultCropSize", value), SUCCESS);
     ASSERT_EQ(value, "1");
     ASSERT_EQ(exifMetadata->GetValue("SubjectLocation", value), SUCCESS);
@@ -340,8 +342,6 @@ HWTEST_F(DngExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_NE(exifMetadata, nullptr);
 
     std::string value;
-    ASSERT_EQ(exifMetadata->GetValue("MakerNote", value), SUCCESS);
-    ASSERT_EQ(value, "1268 bytes undefined data");
     ASSERT_EQ(exifMetadata->GetValue("GainControl", value), SUCCESS);
     ASSERT_EQ(value, "Normal");
     ASSERT_EQ(exifMetadata->GetValue("OffsetTime", value), SUCCESS);
@@ -376,8 +376,8 @@ HWTEST_F(DngExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_EQ(value, "5364435");
     ASSERT_EQ(exifMetadata->GetValue("StripOffsets", value), SUCCESS);
     ASSERT_EQ(value, "0");
-    ASSERT_EQ(exifMetadata->GetValue("SubSecTime", value), SUCCESS);
-    ASSERT_EQ(value, "2.2.0.0");
+    ASSERT_EQ(exifMetadata->GetValue("SubsecTime", value), SUCCESS);
+    ASSERT_EQ(value, "427000");
 }
 
 /**
@@ -397,9 +397,9 @@ HWTEST_F(DngExifMetadataAccessorTest, Read007, TestSize.Level3)
     ASSERT_NE(exifMetadata, nullptr);
 
     std::string value;
-    ASSERT_EQ(exifMetadata->GetValue("SubSecTimeDigitized", value), SUCCESS);
+    ASSERT_EQ(exifMetadata->GetValue("SubsecTimeDigitized", value), SUCCESS);
     ASSERT_EQ(value, "700");
-    ASSERT_EQ(exifMetadata->GetValue("SubSecTimeOriginal", value), SUCCESS);
+    ASSERT_EQ(exifMetadata->GetValue("SubsecTimeOriginal", value), SUCCESS);
     ASSERT_EQ(value, "700");
     ASSERT_EQ(exifMetadata->GetValue("SubfileType", value), SUCCESS);
     ASSERT_EQ(value, "1");
@@ -411,6 +411,8 @@ HWTEST_F(DngExifMetadataAccessorTest, Read007, TestSize.Level3)
     ASSERT_EQ(value, "xx");
     ASSERT_EQ(exifMetadata->GetValue("BrightnessValue", value), SUCCESS);
     ASSERT_EQ(value, "10.46 EV (4810.21 cd/m^2)");
+    ASSERT_EQ(exifMetadata->GetValue("CFAPattern", value), SUCCESS);
+    ASSERT_EQ(value, "5 bytes undefined data");
     ASSERT_EQ(exifMetadata->GetValue("CameraOwnerName", value), SUCCESS);
     ASSERT_EQ(value, "xx");
     ASSERT_EQ(exifMetadata->GetValue("ColorSpace", value), SUCCESS);
@@ -534,7 +536,7 @@ HWTEST_F(DngExifMetadataAccessorTest, Read012, TestSize.Level3)
     ASSERT_NE(exifMetadata, nullptr);
 
     std::string value;
-    ASSERT_EQ(exifMetadata->GetValue("SubSecTimeDigitized", value), SUCCESS);
+    ASSERT_EQ(exifMetadata->GetValue("SubsecTimeDigitized", value), SUCCESS);
     ASSERT_EQ(value, "700");
 }
 
@@ -632,47 +634,18 @@ HWTEST_F(DngExifMetadataAccessorTest, Read014, TestSize.Level3)
     ASSERT_EQ(value, "11");
     ASSERT_EQ(exifMetadata->GetValue("HwMnoteSceneVersion", value), SUCCESS);
     ASSERT_EQ(value, "1");
+    ASSERT_EQ(exifMetadata->GetValue("MakerNote", value), SUCCESS);
+    ASSERT_EQ(value, "HwMnoteCaptureMode:1,HwMnoteBurstNumber:2,HwMnoteFrontCamera:3,"
+        "HwMnoteRollAngle:4,HwMnotePitchAngle:5,HwMnotePhysicalAperture:6,"
+        "HwMnoteFocusMode:7,HwMnoteFacePointer:122,HwMnoteFaceVersion:1,"
+        "HwMnoteFaceCount:2,HwMnoteFaceConf:3,HwMnoteFaceSmileScore:1 2 3 4 5 6 7 8,"
+        "HwMnoteFaceRect:1 2 3 4 5 6 7 8 1 2 3 4 5 6 7 8,"
+        "HwMnoteFaceLeyeCenter:1 2 3 4,HwMnoteFaceReyeCenter:5 6 7 8,"
+        "HwMnoteFaceMouthCenter:1 2 3 4 5 6 7 8,HwMnoteScenePointer:256,"
+        "HwMnoteSceneVersion:1,HwMnoteSceneFoodConf:2,HwMnoteSceneStageConf:3,"
+        "HwMnoteSceneBlueSkyConf:4,HwMnoteSceneGreenPlantConf:5,HwMnoteSceneBeachConf:6,"
+        "HwMnoteSceneSnowConf:7,HwMnoteSceneSunsetConf:8,HwMnoteSceneFlowersConf:9,"
+        "HwMnoteSceneNightConf:10,HwMnoteSceneTextConf:11");
 }
-
-/**
- * @tc.name: Read015
- * @tc.desc: test the dngDecoded Exif properties, read field name "CFAPattern" failed
- * @tc.type: FUNC
- */
-HWTEST_F(DngExifMetadataAccessorTest, Read015, TestSize.Level3)
-{
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_DNG_PATH);
-    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
-    DngExifMetadataAccessor imageAccessor(stream);
-    uint32_t result = imageAccessor.Read();
-    ASSERT_EQ(result, 0);
-
-    auto exifMetadata = imageAccessor.Get();
-    ASSERT_NE(exifMetadata, nullptr);
-    std::string value;
-    ASSERT_EQ(exifMetadata->GetValue("CFAPattern", value), ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    ASSERT_EQ(value, "");
-}
-
-/**
- * @tc.name: Read016
- * @tc.desc: test the dngDecoded Exif properties, read field name "SubjectDistance" failed
- * @tc.type: FUNC
- */
-HWTEST_F(DngExifMetadataAccessorTest, Read016, TestSize.Level3)
-{
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT1_DNG_PATH);
-    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
-    DngExifMetadataAccessor imageAccessor(stream);
-    uint32_t result = imageAccessor.Read();
-    ASSERT_EQ(result, 0);
-
-    auto exifMetadata = imageAccessor.Get();
-    ASSERT_NE(exifMetadata, nullptr);
-    std::string value;
-    ASSERT_EQ(exifMetadata->GetValue("SubjectDistance", value), SUCCESS);
-    ASSERT_EQ(value, "");
-}
-
 } // namespace Multimedia
 } // namespace OHOS
