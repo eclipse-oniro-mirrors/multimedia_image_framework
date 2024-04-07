@@ -44,7 +44,6 @@
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
 #include "surface_buffer.h"
 #else
 #include "refbase.h"
