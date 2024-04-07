@@ -76,7 +76,7 @@ typedef struct PixelMapError {
 
 typedef struct BuildParam {
     int32_t offset_ = 0;
-    int32_t stride_ = 0;
+    int32_t width_ = 0;
     bool flag_ = true;
 } BUILD_PARAM;
 
@@ -174,6 +174,7 @@ public:
     NATIVEEXPORT virtual void *GetFd() const;
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
+    NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
     NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
     {
         errorCode = code;
@@ -291,6 +292,11 @@ public:
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value,
         const int fd);
 
+    static int32_t GetRGBxRowDataSize(const ImageInfo& info);
+    static int32_t GetRGBxByteCount(const ImageInfo& info);
+    static int32_t GetYUVByteCount(const ImageInfo& info);
+    static int32_t GetAllocatedByteCount(const ImageInfo& info);
+
 private:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
@@ -389,6 +395,8 @@ private:
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> &metadataAccessor,
         const std::string &key, const std::string &value);
 
+    static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
+        void *dstPixels, const ImageInfo &dstInfo);
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;

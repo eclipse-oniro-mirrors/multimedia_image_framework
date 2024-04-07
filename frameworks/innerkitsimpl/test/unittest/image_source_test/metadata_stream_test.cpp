@@ -1290,7 +1290,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write002, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Open(OpenMode::ReadWrite);
     stream.Write((byte *)"Hello, world!", 13);
-    ASSERT_EQ(stream.buffer_.capacity(), 4096);
+    ASSERT_EQ(stream.buffer_.capacity(), 13);
     ASSERT_EQ(stream.Tell(), 13);
 }
 
@@ -1307,7 +1307,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write003, TestSize.Level3)
     byte data[METADATA_STREAM_PAGE_SIZE + 1] = {0};  // Create a 4097-byte data
     stream.Write(data, METADATA_STREAM_PAGE_SIZE + 1); // Write 4097 bytes of data
     ASSERT_GE(stream.buffer_.capacity(),
-        METADATA_STREAM_PAGE_SIZE * 2);                      // Check if the buffer capacity is at least 4097
+        METADATA_STREAM_PAGE_SIZE + 1);                      // Check if the buffer capacity is at least 4097
     ASSERT_EQ(stream.Tell(), METADATA_STREAM_PAGE_SIZE + 1); // Check if the write position is correct
 }
 

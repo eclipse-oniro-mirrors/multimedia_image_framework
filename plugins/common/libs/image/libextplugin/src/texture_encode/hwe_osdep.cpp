@@ -250,7 +250,7 @@ int32_t HWE_SetThreadAffinityMask(const HWE_Pthread *thread, uint32_t cpuNum, co
         for (uint32_t idx = 0; idx < cpuNum; idx++) {
             CPU_SET(cpuIdxArray[idx], &threadAffinityMask);
         }
-#ifdef A_PLATFORM
+#ifdef ANDROID_PLATFORM
         return sched_setaffinity(thread->thread, sizeof(threadAffinityMask), &threadAffinityMask);
 #else
         return pthread_setaffinity_np(thread->thread, sizeof(threadAffinityMask), &threadAffinityMask);

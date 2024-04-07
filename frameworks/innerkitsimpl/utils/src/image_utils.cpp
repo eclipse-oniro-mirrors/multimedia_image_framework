@@ -168,7 +168,7 @@ uint32_t ImageUtils::RegisterPluginServer()
     vector<string> pluginPaths = { "" };
 #elif defined(_APPLE)
     vector<string> pluginPaths = { "./" };
-#elif defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     vector<string> pluginPaths = {};
 #else
     vector<string> pluginPaths = { "/system/etc/multimediaplugin/image" };

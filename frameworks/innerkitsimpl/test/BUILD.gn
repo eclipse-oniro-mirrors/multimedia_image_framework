@@ -160,6 +160,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
@@ -183,13 +184,15 @@ ohos_unittest("imagesourcetest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
+    "//third_party/zlib:libz",
   ]
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
 
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
-    "libexif:libexif",
-    "zlib:libz",
   ]
 
   if (purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -213,7 +216,10 @@ ohos_unittest("jpegdecoderextest") {
     "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-  sources = [ "unittest/jpeg_decoder_ex_test.cpp" ]
+  sources = [
+    "unittest/jpeg_decoder_ex_test.cpp",
+    "unittest/jpeg_decoder_test.cpp",
+  ]
   deps = [
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
@@ -745,8 +751,7 @@ ohos_unittest("streamtest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_packer_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/buffer_source_stream_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/file_source_stream_test.cpp",
-
-    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/stream_test/incremental_source_stream_test.cpp",
   ]
 
   deps = [
@@ -868,9 +873,11 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
-    "//third_party/libexif:libexif",
     "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
   ]
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
   deps += skia_skcms
   deps += skia_platform
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1182,9 +1189,14 @@ ohos_unittest("textureencodetest") {
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:exifhelper",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
-    "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
     "${image_subsystem}/plugins/manager:pluginmanager",
   ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines = [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
+    deps += [ "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL" ]
+  }
 
   external_deps = [
     "c_utils:utils",
@@ -1334,16 +1346,17 @@ ohos_unittest("imageaccessortest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "//third_party/zlib:libz",
   ]
-
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
-    "zlib:libz",
   ]
 }
 
@@ -1369,14 +1382,15 @@ ohos_unittest("imagetiffparsertest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
-
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
   ]
 }
 
@@ -1390,7 +1404,6 @@ ohos_unittest("exifmetadatatest") {
   ]
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
@@ -1400,14 +1413,15 @@ ohos_unittest("exifmetadatatest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
-
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
-    "libexif:libexif",
   ]
 }
 

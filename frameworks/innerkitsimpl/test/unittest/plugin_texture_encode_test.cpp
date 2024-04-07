@@ -14,11 +14,14 @@
  */
 #include <cstdlib>
 #include <gtest/gtest.h>
-#include "securec.h"
+#include <securec.h>
+#include <sys/time.h>
 
 #include "astc_codec.h"
 #include "buffer_packer_stream.h"
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
+#endif
 #include "image_source_util.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
@@ -29,25 +32,51 @@ using namespace OHOS::Media;
 using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Media {
+
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 using namespace AstcEncBasedCl;
-static constexpr int32_t RGBA_TEST0001_WIDTH = 256;
-static constexpr int32_t RGBA_TEST0001_HEIGHT = 256;
-static constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
-static constexpr int32_t PIXEL_VALUE_MAX = 256;
-static constexpr int32_t TEXTURE_BLOCK_BYTES = 16;
-static constexpr int32_t ASTC_BLOCK_WIDTH = 4;
-static constexpr int32_t ASTC_BLOCK_HEIGHT = 4;
-static constexpr int32_t OUTPUT_SIZE_MAX = 200000;
-static constexpr int32_t BYTES_PER_PIXEL = 4;
-static constexpr int32_t RGBA_MAX_WIDTH = 8192;
-static constexpr int32_t RGBA_MAX_HEIGHT = 4096;
+constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
+constexpr int32_t RGBA_MAX_WIDTH = 8192;
+constexpr int32_t RGBA_MAX_HEIGHT = 8192;
+#endif
+
+constexpr int32_t RGBA_TEST0001_WIDTH = 256;
+constexpr int32_t RGBA_TEST0001_HEIGHT = 256;
+constexpr int32_t PIXEL_VALUE_MAX = 256;
+constexpr int32_t TEXTURE_BLOCK_BYTES = 16;
+constexpr int32_t TEXTURE_HEAD_BYTES = 16;
+constexpr int32_t ASTC_BLOCK_WIDTH = 4;
+constexpr int32_t ASTC_BLOCK_HEIGHT = 4;
+constexpr int32_t OUTPUT_SIZE_MAX = 200000;
+constexpr int32_t BYTES_PER_PIXEL = 4;
+constexpr int64_t SECOND_TO_MICROS = 1000000;
+constexpr size_t FILE_NAME_LENGTH = 512;
+struct AstcEncTestPara {
+    TextureEncodeOptions param;
+    int32_t width;
+    int32_t height;
+    uint8_t block;
+    size_t frames;
+    bool isBasedOnGpu;
+    bool isSelfCreatePixMap;
+    QualityProfile privateProfile;
+    int64_t totalTime;
+};
+
+enum class TestEncRet {
+    ERR_OK = 0,
+    ERR_FILE_NOT_FIND,
+    ERR_ENC_FAILED,
+    ERR_LOW_LEVEL_FAILED
+};
+
 class PluginTextureEncodeTest : public testing::Test {
 public:
     PluginTextureEncodeTest() {}
     ~PluginTextureEncodeTest() {}
 };
 
-static TextureEncodeOptions SetDefaultOption()
+static TextureEncodeOptions CreateDefaultEncParam()
 {
     TextureEncodeOptions param;
     param.width_ = RGBA_TEST0001_WIDTH;
@@ -87,6 +116,13 @@ static std::unique_ptr<PixelMap> ConstructPixmap(int32_t width, int32_t height)
     pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 
     return pixelMap;
+}
+
+static int64_t CurrentTimeInUs(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, nullptr);
+    return tv.tv_sec * SECOND_TO_MICROS + tv.tv_usec;
 }
 
 /**
@@ -129,10 +165,6 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode001, TestSize.Level3)
         delete stream;
         stream = nullptr;
     }
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode001 end";
 }
 
@@ -157,14 +189,6 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode002, TestSize.Level3)
     AstcCodec astcEncoder;
     uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
     ASSERT_EQ(setRet, ERROR);
-
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
-    if (stream != nullptr) {
-        stream = nullptr;
-    }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode002 end";
 }
 
@@ -198,10 +222,6 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode003, TestSize.Level3)
         delete stream;
         stream = nullptr;
     }
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode003 end";
 }
 
@@ -239,10 +259,6 @@ HWTEST_F(PluginTextureEncodeTest, ASTCEncode004, TestSize.Level3)
         delete stream;
         stream = nullptr;
     }
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: ASTCEncode004 end";
 }
 
@@ -266,7 +282,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    TextureEncodeOptions param = SetDefaultOption();
+    TextureEncodeOptions param = CreateDefaultEncParam();
     param.privateProfile_ = QualityProfile::HIGH_QUALITY_PROFILE;
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
@@ -287,9 +303,6 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
     softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, outBuffer, outSize);
     ASSERT_EQ(softwareRet, SUCCESS);
 
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
     if (output != nullptr) {
         free(output);
         output = nullptr;
@@ -302,17 +315,16 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode001, TestSize.Level3)
         free(outBuffer);
         outBuffer = nullptr;
     }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode001 end";
 }
 
 /**
- * @tc.name: AstcSoftwareEncode003
+ * @tc.name: AstcSoftwareEncode002
  * @tc.desc: GenAstcHeader return error test
  * @tc.desc: header == nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
+HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode003 start";
 
@@ -324,7 +336,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(nullptr, OUTPUT_SIZE_MAX);
     ASSERT_NE(stream, nullptr);
 
-    TextureEncodeOptions param = SetDefaultOption();
+    TextureEncodeOptions param = CreateDefaultEncParam();
     int32_t blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
         ((param.height_ + param.blockY_ - 1) / param.blockY_);
     int32_t outSize = blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_BLOCK_BYTES;
@@ -335,9 +347,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     ASSERT_EQ(setRet, SUCCESS);
     uint32_t softwareRet = astcEncoder.AstcSoftwareEncode(param, enableQualityCheck, blocksNum, nullptr, outSize);
     ASSERT_EQ(softwareRet, ERROR);
-    if (pixelMapPtr != nullptr) {
-        pixelMapPtr = nullptr;
-    }
+
     if (stream != nullptr) {
         delete stream;
         stream = nullptr;
@@ -345,6 +355,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcSoftwareEncode003, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcSoftwareEncode003 end";
 }
 
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 /**
  * @tc.name: AstcEncBasedOnCl001
  * @tc.desc: Test the AstcClFillImage function
@@ -354,7 +365,7 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl001 start";
 
-    TextureEncodeOptions param = SetDefaultOption();
+    TextureEncodeOptions param = CreateDefaultEncParam();
     param.stride_ = param.stride_ << RGBA_BYTES_PIXEL_LOG2;
     int32_t inputSize = (param.width_ * param.height_) << RGBA_BYTES_PIXEL_LOG2;
     uint8_t *input = static_cast<uint8_t *>(malloc(inputSize));
@@ -389,9 +400,6 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl001, TestSize.Level3)
     if (input != nullptr) {
         free(input);
         input = nullptr;
-    }
-    if (imageInPtr != nullptr) {
-        imageInPtr = nullptr;
     }
 
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl001 end";
@@ -451,11 +459,385 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl003, TestSize.Level3)
     ret = AstcClClose(nullptr);
     ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
 
-    if (astcClEncoder != nullptr) {
-        astcClEncoder = nullptr;
-    }
-
     GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcEncBasedOnCl003 end";
 }
+#endif
+
+static bool FillEncodeOptions(TextureEncodeOptions &param,
+    int32_t width, int32_t height, uint8_t block, QualityProfile privateProfile)
+{
+    param.enableQualityCheck = false;
+    param.hardwareFlag = false;
+    param.sutProfile = SutProfile::SKIP_SUT;
+    param.width_ = width;
+    param.height_ = height;
+    param.stride_ = width;
+    param.privateProfile_ = privateProfile;
+    param.blockX_ = block;
+    param.blockY_ = block;
+    if ((param.blockX_ != 0) && (param.blockY_ != 0)) {
+        param.blocksNum = ((param.width_ + param.blockX_ - 1) / param.blockX_) *
+            ((param.height_ + param.blockY_ - 1) / param.blockY_);
+    } else {
+        return false;
+    }
+    param.astcBytes = param.blocksNum * TEXTURE_BLOCK_BYTES + TEXTURE_HEAD_BYTES;
+    return true;
+}
+
+void FreeAllMem(uint8_t **pixMapGroup, uint8_t **astcBuf, size_t frames)
+{
+    if (pixMapGroup != nullptr) {
+        for (size_t idx = 0; idx < frames; idx++) {
+            if (pixMapGroup[idx] != nullptr) {
+                free(pixMapGroup[idx]);
+            }
+        }
+        free(pixMapGroup);
+    }
+    if (astcBuf != nullptr) {
+        for (size_t idx = 0; idx < frames; idx++) {
+            if (astcBuf[idx] != nullptr) {
+                free(astcBuf[idx]);
+            }
+        }
+        free(astcBuf);
+    }
+}
+
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
+    uint8_t *buffer, const std::string &clBinPath)
+{
+    ClAstcHandle *astcClEncoder = nullptr;
+    if ((inData == nullptr) || (buffer == nullptr)) {
+        GTEST_LOG_(ERROR) << "astc Please check TryAstcEncBasedOnCl input!";
+        return false;
+    }
+    if (AstcClCreate(&astcClEncoder, clBinPath) != CL_ASTC_ENC_SUCCESS) {
+        GTEST_LOG_(ERROR) << "astc AstcClCreate failed!";
+        return false;
+    }
+    ClAstcImageOption imageIn;
+    if (AstcClFillImage(&imageIn, inData, param.stride_, param.width_, param.height_) != CL_ASTC_ENC_SUCCESS) {
+        GTEST_LOG_(ERROR) << "astc AstcClFillImage failed!";
+        AstcClClose(astcClEncoder);
+        return false;
+    }
+    if (AstcClEncImage(astcClEncoder, &imageIn, buffer) != CL_ASTC_ENC_SUCCESS) {
+        GTEST_LOG_(ERROR) << "astc AstcClEncImage failed!";
+        AstcClClose(astcClEncoder);
+        return false;
+    }
+    if (AstcClClose(astcClEncoder) != CL_ASTC_ENC_SUCCESS) {
+        GTEST_LOG_(ERROR) << "astc AstcClClose failed!";
+        return false;
+    }
+    return true;
+}
+#endif
+
+static void SelfCreatePixMap(uint8_t *pixMap, size_t bytesPerFile, size_t idx)
+{
+    uint8_t *buf = pixMap;
+    for (size_t pixel = 0; pixel < bytesPerFile; pixel++) {
+        *buf++ = (pixel + idx) % PIXEL_VALUE_MAX;
+    }
+}
+
+static bool CheckFileIsExist(const std::string &name)
+{
+    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+static TestEncRet ReadFileExtern(uint8_t *pixMap, size_t bytesPerFile, size_t idx, AstcEncTestPara &testPara)
+{
+    const std::string testPath = "/data/local/tmp";
+    char inFile[FILE_NAME_LENGTH];
+    if (sprintf_s(inFile, sizeof(inFile), "%s/%dx%d/a%04ld_%dx%d.rgb", testPath.c_str(),
+        testPara.width, testPara.height, idx + 1, testPara.width, testPara.height) < 0) {
+            return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    std::string fileStr(inFile);
+    if (!CheckFileIsExist(fileStr)) {
+        GTEST_LOG_(ERROR) << "File is not exist: " << inFile;
+        return TestEncRet::ERR_FILE_NOT_FIND;
+    }
+    std::ifstream contents{fileStr};
+    std::string fileContent{std::istreambuf_iterator<char>{contents}, {}};
+    if (fileContent.length() < bytesPerFile) {
+        GTEST_LOG_(ERROR) << "File size is too small: need " << bytesPerFile <<
+            " bytes, but the file only " << fileContent.length() << " bytes in " << inFile;
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    if (memcpy_s(pixMap, bytesPerFile, static_cast<const char *>(fileContent.c_str()), bytesPerFile) != 0) {
+        GTEST_LOG_(ERROR) << "file memcpy_s failed";
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    return TestEncRet::ERR_OK;
+}
+
+TestEncRet EncodeMutiFrames(uint8_t **pixMapGroup, uint8_t **astcBuf, AstcEncTestPara &testPara)
+{
+    if ((pixMapGroup == nullptr) || (astcBuf == nullptr)) {
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    testPara.totalTime = 0;
+    size_t bytesPerFile = testPara.width * testPara.height * BYTES_PER_PIXEL;
+    std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
+    for (size_t idx = 0; idx < testPara.frames; idx++) {
+        pixMapGroup[idx] = (uint8_t *) malloc (bytesPerFile * sizeof(uint8_t));
+        if (pixMapGroup[idx] == nullptr) {
+            return TestEncRet::ERR_LOW_LEVEL_FAILED;
+        }
+        astcBuf[idx] = (uint8_t *) malloc (testPara.param.astcBytes * sizeof(uint8_t));
+        if (astcBuf[idx] == nullptr) {
+            return TestEncRet::ERR_LOW_LEVEL_FAILED;
+        }
+        if (testPara.isSelfCreatePixMap) {
+            SelfCreatePixMap(pixMapGroup[idx], bytesPerFile, idx);
+        } else {
+            TestEncRet ret = ReadFileExtern(pixMapGroup[idx], bytesPerFile, idx, testPara);
+            if (ret != TestEncRet::ERR_OK) {
+                return ret;
+            }
+        }
+        int64_t startTime = CurrentTimeInUs();
+        bool isBasedGpu = false;
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+        if (testPara.isBasedOnGpu) {
+            if (!TryAstcEncBasedOnCl(testPara.param, pixMapGroup[idx], astcBuf[idx], clBinPath)) {
+                GTEST_LOG_(ERROR) << "astc encoding based on GPU failed";
+                return TestEncRet::ERR_ENC_FAILED;
+            }
+            isBasedGpu = true;
+        }
+#endif
+        if (!isBasedGpu && !AstcCodec::AstcSoftwareEncodeCore(testPara.param, pixMapGroup[idx], astcBuf[idx])) {
+            GTEST_LOG_(ERROR) << "astc encoding based on CPU failed";
+            return TestEncRet::ERR_ENC_FAILED;
+        }
+        testPara.totalTime += CurrentTimeInUs() - startTime;
+    }
+    return TestEncRet::ERR_OK;
+}
+
+TestEncRet TestCaseMultiFrameEnc(AstcEncTestPara &testPara)
+{
+    if (!FillEncodeOptions(testPara.param, testPara.width, testPara.height,
+        testPara.block, testPara.privateProfile)) {
+        GTEST_LOG_(ERROR) << "FillEncodeOptions failed";
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    uint8_t **pixMapGroup = (uint8_t **) calloc (testPara.frames, sizeof(uint8_t*));
+    if (pixMapGroup == nullptr) {
+        GTEST_LOG_(ERROR) << "pixMapGroup calloc failed";
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    uint8_t **astcBuf = (uint8_t **) calloc (testPara.frames, sizeof(uint8_t*));
+    if (astcBuf == nullptr) {
+        GTEST_LOG_(ERROR) << "astcBuf calloc failed";
+        FreeAllMem(pixMapGroup, astcBuf, testPara.frames);
+        return TestEncRet::ERR_LOW_LEVEL_FAILED;
+    }
+    TestEncRet ret = EncodeMutiFrames(pixMapGroup, astcBuf, testPara);
+    FreeAllMem(pixMapGroup, astcBuf, testPara.frames);
+    if (ret == TestEncRet::ERR_OK) {
+        GTEST_LOG_(INFO) << "isGPU:" << testPara.isBasedOnGpu << " SelfPixel:" << testPara.isSelfCreatePixMap <<
+            " profile:" << testPara.privateProfile << " " << testPara.param.width_ << "x" <<
+            testPara.param.height_ << " frames " <<
+            testPara.frames << " gpu astc encoding average time: " <<
+            static_cast<float>(testPara.totalTime) / static_cast<float>(testPara.frames) << "us";
+    }
+    return ret;
+}
+
+static AstcEncTestPara CreateAstcEncTestPara(int32_t width, int32_t height,
+    uint8_t block, size_t frames, bool isBasedOnGpu)
+{
+    AstcEncTestPara testPara;
+    testPara.width = width;
+    testPara.height = height;
+    testPara.isBasedOnGpu = isBasedOnGpu;
+    testPara.block = block;
+    testPara.frames = frames;
+    testPara.isSelfCreatePixMap = true;
+    testPara.privateProfile = HIGH_SPEED_PROFILE;
+    return testPara;
+}
+
+/**
+ * @tc.name: AstcEncoderTime_001
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / 64x64 / quality 20 / self-created images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_001, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false);
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_002
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / 64x64 / quality 100 / self-created images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_002, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false);
+    testPara.privateProfile = HIGH_QUALITY_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_003
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / 64x64 / quality 20 / Extern images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_003, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false);
+    testPara.isSelfCreatePixMap = false;
+    ASSERT_LE(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_FILE_NOT_FIND);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_004
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / 64x64 / quality 100 / Extern images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_004, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false);
+    testPara.isSelfCreatePixMap = false;
+    testPara.privateProfile = HIGH_QUALITY_PROFILE;
+    ASSERT_LE(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_FILE_NOT_FIND);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_005
+ * @tc.desc: Calculate the average time
+ *         : BasedOnGPU / 64x64 / self-created images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_005, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_006
+ * @tc.desc: Calculate the average time
+ *         : BasedOnGPU / 64x64 / Extern images / 5000frames
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_006, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    testPara.isSelfCreatePixMap = false;
+    ASSERT_LE(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_FILE_NOT_FIND);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_007
+ * @tc.desc: Calculate the average time
+ *         : BasedOnGPU / different resolution / self-created images
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_007, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, true);
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(128, 128, 4, 5000, true); // 64x64 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(256, 256, 4, 5000, true); // 256x256 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(512, 512, 4, 5000, true); // 512x512 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(1024, 1024, 4, 200, true); // 1024x1024 block 4x4 , frames 200
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(1920, 1080, 4, 100, true); // 1920x1080 block 4x4 , frames 100
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(2560, 1440, 4, 50, true); // 2560x1440 block 4x4 , frames 50
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(3840, 2160, 4, 20, true); // 3840x2160 block 4x4 , frames 20
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(8192, 8192, 4, 10, true); // 8192x8192 block 4x4 , frames 10
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_008
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / different resolution / self-created images
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_008, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: true
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false);
+    testPara.isSelfCreatePixMap = true;
+    testPara.privateProfile = HIGH_SPEED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(128, 128, 4, 5000, false); // 64x64 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(256, 256, 4, 5000, false); // 256x256 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(512, 512, 4, 5000, false); // 512x512 block 4x4 , frames 5000
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(1024, 1024, 4, 200, false); // 1024x1024 block 4x4 , frames 200
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(1920, 1080, 4, 100, false); // 1920x1080 block 4x4 , frames 100
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(2560, 1440, 4, 50, false); // 2560x1440 block 4x4 , frames 50
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(3840, 2160, 4, 20, false); // 3840x2160 block 4x4 , frames 20
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(8192, 8192, 4, 10, false); // 8192x8192 block 4x4 , frames 10
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+
+/**
+ * @tc.name: AstcEncoderTime_009
+ * @tc.desc: BoundCheck for new function
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_009, TestSize.Level3)
+{
+    TextureEncodeOptions param;
+    ASSERT_EQ(AstcCodec::AstcSoftwareEncodeCore(param, nullptr, nullptr), false);
+
+    uint8_t pixmapIn = 0;
+    ASSERT_EQ(AstcCodec::AstcSoftwareEncodeCore(param, &pixmapIn, nullptr), false);
 } // namespace Multimedia
+
+}
 } // namespace OHOS

@@ -46,6 +46,7 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     PixelMapNapiArgs args;
     args.createOptions.width = info.width;
     args.createOptions.height = info.height;
+    args.createOptions.srcPixelFormat = info.srcPixelFormat;
     args.createOptions.pixelFormat = info.pixelFormat;
     args.createOptions.editable = info.editable;
     args.createOptions.alphaType = info.alphaType;

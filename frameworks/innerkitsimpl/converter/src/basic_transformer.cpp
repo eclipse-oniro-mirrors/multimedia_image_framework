@@ -27,7 +27,7 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include "ashmem.h"
 #include <sys/mman.h>
 #endif
@@ -138,7 +138,7 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
 
 void BasicTransformer::ReleaseBuffer(AllocatorType allocatorType, int fd, int dataSize, uint8_t *buffer)
 {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (buffer != nullptr) {
             ::munmap(buffer, dataSize);

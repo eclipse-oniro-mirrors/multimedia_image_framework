@@ -21,7 +21,7 @@
 #include "media_errors.h"
 #include "multimedia_templates.h"
 #include "securec.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -125,7 +125,7 @@ uint32_t WebpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
 uint32_t WebpDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     ImageTrace imageTrace("WebpDecoder::Decode, index:%u", index);
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif
     if (index >= WEBP_IMAGE_NUM) {
@@ -391,7 +391,7 @@ void WebpDecoder::Reset()
 
 static bool SharedMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
@@ -467,7 +467,7 @@ static bool HeapMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
 
 static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, const PlSize &webpSize)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else

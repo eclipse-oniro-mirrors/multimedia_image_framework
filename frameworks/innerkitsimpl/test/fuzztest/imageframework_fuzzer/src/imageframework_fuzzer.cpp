@@ -19,31 +19,27 @@
 #include <string>
 
 #include "image_source.h"
-#include "pixel_map.h"
+
 namespace OHOS {
-void BatchInsertFuzzer(const uint8_t* data, size_t size)
+namespace Media {
+static inline std::string FuzzString(const uint8_t *data, size_t size)
+{
+    return {reinterpret_cast<const char*>(data), size};
+}
+
+void CreateImageSourceByPathname(const uint8_t* data, size_t size)
 {
     uint32_t errCode = 0;
-    Media::SourceOptions opts;
-    std::unique_ptr<Media::ImageSource> imageSource = Media::ImageSource::CreateImageSource(data, size, opts, errCode);
-    const int32_t offset = 0;
-    Media::InitializationOptions iopts;
-    Media::PixelMap::Create((uint32_t*)data, size, iopts);
-    Media::PixelMap::Create((uint32_t*)data, size, offset, 0, iopts);
-    Media::PixelMap::Create((uint32_t*)data, size, offset, 0, iopts, true);
-    Media::BUILD_PARAM bp;
-    bp.offset_ = 0;
-    bp.stride_ = 0;
-    bp.flag_ = true;
-    int err = 0;
-    Media::PixelMap::Create((uint32_t*)data, size, bp, iopts, err);
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(FuzzString(data, size), opts, errCode);
 }
+} // namespace Media
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::BatchInsertFuzzer(data, size);
+    OHOS::Media::CreateImageSourceByPathname(data, size);
     return 0;
 }

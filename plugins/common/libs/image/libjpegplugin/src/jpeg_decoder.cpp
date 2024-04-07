@@ -22,7 +22,7 @@
 #include "jerror.h"
 #include "media_errors.h"
 #include "string_ex.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -147,7 +147,7 @@ JpegSrcMgr::JpegSrcMgr(InputDataStream *stream) : inputStream(stream)
 JpegDecoder::JpegDecoder() : srcMgr_(nullptr)
 {
     CreateDecoder();
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     CreateHwDecompressor();
 #endif
 }
@@ -361,7 +361,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     uint32_t rowStride = GetRowBytes();
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(rowStride) * decodeInfo_.output_height;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             uint32_t id = context.pixelmapUniqueId_;
             std::string name = "JPEG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
@@ -464,7 +464,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
 
     srcMgr_.inputStream->Seek(streamPosition_);
     uint8_t *buffer = nullptr;
-#if !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();

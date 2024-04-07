@@ -24,7 +24,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #define SUPPORT_MMAP
 #endif

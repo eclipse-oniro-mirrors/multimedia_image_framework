@@ -27,7 +27,7 @@ mac_buildtool = "//build/toolchain/mac:clang_x64"
 image_decode_windows_defines = [ "_WIN32" ]
 image_decode_mac_defines = [ "_APPLE" ]
 image_decode_ios_defines = [ "IOS_PLATFORM" ]
-image_decode_android_defines = [ "A_PLATFORM" ]
+image_decode_android_defines = [ "ANDROID_PLATFORM" ]
 image_sep_f = "/f"
 image_sep_p = "/p"
 image_oundation = "oundation"
@@ -100,10 +100,12 @@ if (use_clang_android) {
 # hw_decoder
 declare_args() {
   enable_jpeg_hw_decode = true
+  enable_heif_hw_decode = false
   enable_libexif = true
 
   if (defined(global_parts_info) &&
       !defined(global_parts_info.hdf_drivers_interface_display)) {
     enable_jpeg_hw_decode = false
+    enable_heif_hw_decode = false
   }
 }

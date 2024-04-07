@@ -46,7 +46,7 @@
 #include "post_proc.h"
 #include "securec.h"
 #include "source_stream.h"
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
@@ -133,7 +133,7 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
-static const int DMA_SIZE = 512;
+static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const uint32_t SUT_MAGIC_ID = 0x5CA1AB14;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -349,7 +349,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
-#if !defined(A_PLATFORM) || !defined(IOS_PLATFORM)
+#if !defined(ANDROID_PLATFORM) || !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
         uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
@@ -440,7 +440,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
         return;
     }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         int *fd = static_cast<int *>(buffer.context);
         if (buffer.buffer != nullptr) {
@@ -485,7 +485,11 @@ bool IsSupportFormat(const PixelFormat &format)
 
 bool IsSupportSize(const Size &size)
 {
-    return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
+    // Check for overflow risk
+    if (size.width > 0 && size.height > INT_MAX / size.width) {
+        return false;
+    }
+    return size.width * size.height >= DMA_SIZE;
 }
 
 bool IsWidthAligned(const int32_t &width)
@@ -501,7 +505,7 @@ bool IsPhotosLcd()
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return false;
 #else
@@ -2236,7 +2240,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     std::unique_ptr<SourceStream> &sourceStreamPtr)
 {
-#if !(defined(A_PLATFORM) || defined(IOS_PLATFORM))
+#if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     int fd = AshmemCreate("CreatePixelMapForASTC Data", astcSize);
     if (fd < 0) {
         IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
@@ -2282,7 +2286,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, bool fastAstc)
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 {
     errorCode = ERROR;
     return nullptr;
