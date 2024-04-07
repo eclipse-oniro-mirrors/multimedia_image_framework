@@ -238,6 +238,45 @@
             <option name="push" value="images/exif/test_chunk_itxt_nocompress.png -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_chunk_itxt_withcompress.png -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_hwmnote.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_chunk_itxt_nocompress.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_chunk_itxt_withcompress.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_chunk_text.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_chunk_ztxt.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_exif.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_out_noexif.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_write_exif.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readexifblob001.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readexifblob002.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata001.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata002.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata003.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata004.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata005.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata006.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata007.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_readmetadata008.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writeexifblob001.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writeexifblob002.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata001.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata002.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata003.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata004.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata005.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata006.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata007.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata008.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata009.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata010.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata011.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata012.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata013.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata014.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata015.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata016.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata017.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata018.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata019.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_webp_writemetadata020.webp -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="exifmetadatatest">

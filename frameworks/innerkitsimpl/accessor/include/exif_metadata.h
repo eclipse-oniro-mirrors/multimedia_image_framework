@@ -36,6 +36,7 @@ public:
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
     ExifEntry* GetEntry(const std::string &key, const size_t len);
+    ExifEntry* GetEntry(const std::string &key) const;
     void ReallocEntry(ExifEntry *ptrEntry, const size_t len);
     bool SetShort(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
     bool SetSShort(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
@@ -45,6 +46,8 @@ private:
     bool SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
     bool SetByte(ExifEntry *ptrEntry, const std::string &value);
     bool SetMem(ExifEntry *ptrEntry, const std::string &value, const size_t len);
+    bool SetHwMoteValue(const std::string &key, const std::string &value);
+    bool SetCommonValue(const std::string &key, const std::string &value);
     ExifData *exifData_;
 };
 } // namespace Media

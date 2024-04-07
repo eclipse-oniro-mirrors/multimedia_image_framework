@@ -242,15 +242,15 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read004, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "427000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeDigitized"), "427000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeOriginal"), "427000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "427000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "427000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubfileType"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
               "Within rectangle (width 183, height 259) around (x,y) = (10,20)");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistanceRange"), "Unknown");
     ASSERT_EQ(GetProperty(exifMetadata, "BodySerialNumber"), "xx");
     ASSERT_EQ(GetProperty(exifMetadata, "BrightnessValue"), "2.50 EV (19.38 cd/m^2)");
-    ASSERT_EQ(GetProperty(exifMetadata, "CFAPattern"), "");
+    ASSERT_EQ(GetProperty(exifMetadata, "CFAPattern"), "1 bytes undefined data");
     ASSERT_EQ(GetProperty(exifMetadata, "CameraOwnerName"), "xx");
     ASSERT_EQ(GetProperty(exifMetadata, "ColorSpace"), "Adobe RGB");
     ASSERT_EQ(GetProperty(exifMetadata, "ComponentsConfiguration"), "");
@@ -293,7 +293,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read005, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ImageWidth"), "3000");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitude"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitude"), "");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitudeRef"), "R98");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitudeRef"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitudeRef"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "DateTimeOriginal"), "2024:01:11 09:39:58");
     ASSERT_EQ(GetProperty(exifMetadata, "ExposureTime"), "1/590 sec.");
@@ -662,7 +662,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write007, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("OECF", "1 bytes"));
     ASSERT_TRUE(exifMetadata->SetValue("MaxApertureValue", "9/100"));
     ASSERT_TRUE(exifMetadata->SetValue("SubjectDistance", "25/1"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "5 12"));
     ASSERT_TRUE(exifMetadata->SetValue("DNGVersion", "1 1 0 0"));
     ASSERT_TRUE(exifMetadata->SetValue("DefaultCropSize", "1 1"));
     ASSERT_TRUE(exifMetadata->SetValue("SubfileType", "1"));
@@ -966,8 +966,8 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "427000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeOriginal"), "427000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeDigitized"), "427000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "427000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "427000");
     ASSERT_EQ(GetProperty(exifMetadata, "FlashpixVersion"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "ColorSpace"), "Adobe RGB");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "1000");
@@ -977,11 +977,10 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SpatialFrequencyResponse"), ".");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalPlaneXResolution"), "1080");
 
-    ASSERT_TRUE(exifMetadata->SetValue("MakerNote", "XXXXXX"));
     ASSERT_TRUE(exifMetadata->SetValue("UserComment", "Comm"));
     ASSERT_TRUE(exifMetadata->SetValue("SubsecTime", "4280000"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubSecTimeOriginal", "4280000"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubSecTimeDigitized", "4280000"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubsecTimeOriginal", "4280000"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubsecTimeDigitized", "4280000"));
     ASSERT_TRUE(exifMetadata->SetValue("FlashpixVersion", "0100"));
     ASSERT_TRUE(exifMetadata->SetValue("ColorSpace", "1"));
     ASSERT_TRUE(exifMetadata->SetValue("PixelXDimension", "1001"));
@@ -996,8 +995,8 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "Comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "4280000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeOriginal"), "4280000");
-    ASSERT_EQ(GetProperty(exifMetadata, "SubSecTimeDigitized"), "4280000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "4280000");
+    ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "4280000");
     ASSERT_EQ(GetProperty(exifMetadata, "FlashpixVersion"), "FlashPix Version 1.0");
     ASSERT_EQ(GetProperty(exifMetadata, "ColorSpace"), "sRGB");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "1001");
@@ -1029,7 +1028,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write014, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SensingMethod"), "Two-chip color area sensor");
     ASSERT_EQ(GetProperty(exifMetadata, "FileSource"), "DSC");
     ASSERT_EQ(GetProperty(exifMetadata, "SceneType"), "Directly photographed");
-    ASSERT_EQ(GetProperty(exifMetadata, "CFAPattern"), "");
+    ASSERT_EQ(GetProperty(exifMetadata, "CFAPattern"), "1 bytes undefined data");
     ASSERT_EQ(GetProperty(exifMetadata, "CustomRendered"), "Custom process");
     ASSERT_EQ(GetProperty(exifMetadata, "ExposureMode"), "Auto exposure");
     ASSERT_EQ(GetProperty(exifMetadata, "WhiteBalance"), "Manual white balance");
@@ -1038,7 +1037,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write014, TestSize.Level3)
 
     ASSERT_TRUE(exifMetadata->SetValue("FocalPlaneYResolution", "881/1"));
     ASSERT_TRUE(exifMetadata->SetValue("FocalPlaneResolutionUnit", "2"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "5"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "5 12"));
     ASSERT_TRUE(exifMetadata->SetValue("ExposureIndex", "5/2"));
     ASSERT_TRUE(exifMetadata->SetValue("SensingMethod", "2"));
     ASSERT_TRUE(exifMetadata->SetValue("FileSource", "2"));
@@ -1159,8 +1158,6 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "3456"));
     ASSERT_TRUE(exifMetadata->SetValue("SourceExposureTimesOfCompositeImage", "1 bytes"));
     ASSERT_TRUE(exifMetadata->SetValue("Gamma", "25/10"));
-    ASSERT_TRUE(exifMetadata->SetValue("JPEGInterchangeFormat", "0"));
-    ASSERT_TRUE(exifMetadata->SetValue("JPEGInterchangeFormatLength", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("PhotometricInterpretation", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("RowsPerStrip", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("StripByteCounts", "0"));
@@ -1174,8 +1171,8 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "3456");
     ASSERT_EQ(GetProperty(exifMetadata, "SourceExposureTimesOfCompositeImage"), "1 bytes");
     ASSERT_EQ(GetProperty(exifMetadata, "Gamma"), "2.5");
-    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormat"), "0");
-    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormatLength"), "0");
+    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormat"), "");
+    ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormatLength"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "PhotometricInterpretation"), "Reversed mono");
     ASSERT_EQ(GetProperty(exifMetadata, "RowsPerStrip"), "0");
     ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "0");

@@ -156,6 +156,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
@@ -1327,8 +1328,10 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/jpeg_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_exif_metadata_accessor_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/webp_exif_metadata_accessor_test.cpp",
   ]
 
   deps = [

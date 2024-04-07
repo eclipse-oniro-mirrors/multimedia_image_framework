@@ -74,6 +74,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
 
   # image_napi
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",

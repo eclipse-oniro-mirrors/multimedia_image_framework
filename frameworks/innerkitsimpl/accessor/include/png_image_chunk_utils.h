@@ -41,6 +41,9 @@ public:
     // lookup tiff marker
     static size_t FindTiffPos(DataBuf &exifInfo, size_t exifInfoLength);
 
+    // lookup text chunk's exif keyword "raw profile xxx"
+    static bool FindExifFromTxt(DataBuf &chunkData);
+
 private:
     // get keyword from png txt chunk
     static DataBuf GetKeywordFromChunk(const DataBuf &chunkData);
