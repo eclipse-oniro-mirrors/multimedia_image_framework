@@ -32,7 +32,7 @@ void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
     pathName.append(std::to_string(height));
     pathName.append("-");
     int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
-    if(write(fd, data, size) != (ssize_t)size){
+    if (write(fd, data, size) != (ssize_t)size) {
         close(fd);
         return;
     }
