@@ -46,6 +46,8 @@ private:
     bool SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
     bool SetByte(ExifEntry *ptrEntry, const std::string &value);
     bool SetMem(ExifEntry *ptrEntry, const std::string &value, const size_t len);
+    bool SetHwMoteValue(const std::string &key, const std::string &value);
+    bool SetCommonValue(const std::string &key, const std::string &value);
     ExifData *exifData_;
 };
 } // namespace Media

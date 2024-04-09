@@ -437,7 +437,40 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
         IMAGE_LOGE("Failed to validate and convert value for key: %{public}s", key.c_str());
         return false;
     }
-    size_t valueLen = result.second.length();
+
+    if (key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw" && key == "HwMnoteCaptureMode") {
+        return SetHwMoteValue(key, result.second);
+    }
+
+    return SetCommonValue(key, result.second);
+}
+
+bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)
+{
+    ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+    if (md == nullptr) {
+        IMAGE_LOGD("Exif data mnote data md is nullptr");
+        return false;
+    }
+    if (!is_huawei_md(md)) {
+        IMAGE_LOGE("Exif data returned null for key: %{public}s", key.c_str());
+        return false;
+    }
+
+    auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, MNOTE_HUAWEI_CAPTURE_MODE);
+    if (!entry) {
+        return false;
+    }
+
+    const char *capture_buf = value.c_str();
+    int capture_buf_length = value.length();
+    int ret = mnote_huawei_entry_set_value(entry, capture_buf, capture_buf_length);
+    return ret == 0;
+}
+
+bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &value)
+{
+    size_t valueLen = value.length();
     ExifEntry *ptrEntry = GetEntry(key, valueLen);
     if (ptrEntry == nullptr) {
         return false;
@@ -446,29 +479,29 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
     bool isSetSuccess = false;
     switch (ptrEntry->format) {
         case EXIF_FORMAT_SHORT:
-            isSetSuccess = SetShort(ptrEntry, order, result.second);
+            isSetSuccess = SetShort(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_LONG:
-            isSetSuccess = SetLong(ptrEntry, order, result.second);
+            isSetSuccess = SetLong(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_SSHORT:
-            isSetSuccess = SetSShort(ptrEntry, order, result.second);
+            isSetSuccess = SetSShort(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_SLONG:
-            isSetSuccess = SetSLong(ptrEntry, order, result.second);
+            isSetSuccess = SetSLong(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_RATIONAL:
-            isSetSuccess = SetRational(ptrEntry, order, result.second);
+            isSetSuccess = SetRational(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_SRATIONAL:
-            isSetSuccess = SetSRational(ptrEntry, order, result.second);
+            isSetSuccess = SetSRational(ptrEntry, order, value);
             break;
         case EXIF_FORMAT_BYTE:
-            isSetSuccess = SetByte(ptrEntry, result.second);
+            isSetSuccess = SetByte(ptrEntry, value);
             break;
         case EXIF_FORMAT_UNDEFINED:
         case EXIF_FORMAT_ASCII:
-            isSetSuccess = SetMem(ptrEntry, result.second, valueLen);
+            isSetSuccess = SetMem(ptrEntry, value, valueLen);
             break;
         default:
             IMAGE_LOGE("Unsupported Exif format for key: %{public}s", key.c_str());
@@ -476,5 +509,6 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
     }
     return isSetSuccess;
 }
+
 } // namespace Media
 } // namespace OHOS

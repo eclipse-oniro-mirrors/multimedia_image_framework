@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,8 +16,10 @@
 #include <gtest/gtest.h>
 #include <memory>
 #include "libexif/exif-tag.h"
+#include "media_errors.h"
 #include "tiff_parser.h"
 #include "exif_metadata.h"
+#include "exif_metadata_formatter.h"
 #include "image_log.h"
 
 using namespace OHOS::Media;
@@ -25,7 +27,6 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace Multimedia {
-
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
 static const std::string IMAGE_INPUT_JPEG_BLANKEXIF_PATH = "/data/local/tmp/image/test_exif_blank.jpg";
 static const std::string IMAGE_INPUT_JPEG_HW_PATH = "/data/local/tmp/image/test_hwkey.jpg";
@@ -566,8 +567,6 @@ HWTEST_F(ExifMetadataTest, SetValueBatch002, TestSize.Level3)
     ASSERT_TRUE(metadata.SetValue("YCbCrPositioning", "1"));
     ASSERT_TRUE(metadata.SetValue("ReferenceBlackWhite", "221/1"));
     ASSERT_TRUE(metadata.SetValue("Copyright", "Hw"));
-    ASSERT_TRUE(metadata.SetValue("JPEGInterchangeFormat", "1"));
-    ASSERT_TRUE(metadata.SetValue("JPEGInterchangeFormatLength", "111"));
     ASSERT_TRUE(metadata.SetValue("ExposureProgram", "2"));
     ASSERT_TRUE(metadata.SetValue("SpectralSensitivity", "sensitivity"));
     ASSERT_TRUE(metadata.SetValue("OECF", "45"));
@@ -580,8 +579,8 @@ HWTEST_F(ExifMetadataTest, SetValueBatch002, TestSize.Level3)
     ASSERT_TRUE(metadata.SetValue("SubjectDistance", "25/1"));
     ASSERT_TRUE(metadata.SetValue("SubjectArea", "10 20 183 259"));
     ASSERT_TRUE(metadata.SetValue("SubsecTime", "427000"));
-    ASSERT_TRUE(metadata.SetValue("SubSecTimeOriginal", "427000"));
-    ASSERT_TRUE(metadata.SetValue("SubSecTimeDigitized", "427000"));
+    ASSERT_TRUE(metadata.SetValue("SubsecTimeOriginal", "427000"));
+    ASSERT_TRUE(metadata.SetValue("SubsecTimeDigitized", "427000"));
     ASSERT_TRUE(metadata.SetValue("FlashpixVersion", "1"));
     ASSERT_TRUE(metadata.SetValue("ColorSpace", "1"));
     ASSERT_TRUE(metadata.SetValue("RelatedSoundFile", "/usr/home/sound/sea.wav"));
@@ -653,8 +652,8 @@ std::string g_modifyData[][3] = {
     {"ReferenceBlackWhite", "222 0 1.5 0 25.2 25.2", "222,  0, 1.5,  0, 25.2, 25.2"},
     {"Copyright", "Hw", "Hw (Photographer) - [None] (Editor)"},
     {"SubsecTime", "427000", "427000"},
-    {"SubSecTimeOriginal", "427000", "427000"},
-    {"SubSecTimeDigitized", "427000", "427000"},
+    {"SubsecTimeOriginal", "427000", "427000"},
+    {"SubsecTimeDigitized", "427000", "427000"},
     {"FlashpixVersion", "0100", "FlashPix Version 1.0"},
     {"ColorSpace", "2", "Adobe RGB"},
     {"RelatedSoundFile", "/usr/home/sound/sea.wav", "/usr/home/sound/sea.wav"},
@@ -663,7 +662,7 @@ std::string g_modifyData[][3] = {
     {"FocalPlaneXResolution", "1080/1", "1080"},
     {"FocalPlaneYResolution", "880/1", "880"},
     {"FocalPlaneResolutionUnit", "3", "Centimeter"},
-    {"SubjectLocation", "3", "3"},
+    {"SubjectLocation", "3 12", "3, 12"},
     {"ExposureIndex", "3/2", "1.5"},
     {"SensingMethod", "3", "Two-chip color area sensor"},
     {"FileSource", "3", "DSC"},
@@ -710,8 +709,6 @@ std::string g_modifyData[][3] = {
     {"SubjectDistance", "5/2", "2.5 m"},
     {"DefaultCropSize", "153 841", "153, 841"},
     {"LensSpecification", "3/4 5/2 3/2 1/2", "0.8, 2.5, 1.5, 0.5"},
-    {"JPEGInterchangeFormat", "1456", "1456"},
-    {"JPEGInterchangeFormatLength", "1456", "1456"},
     {"SubjectArea", "12 13", "(x,y) = (12,13)"},
     {"DNGVersion", "2 2 3 1", "2, 2, 3, 1"},
     {"SubfileType", "2", "2"},
@@ -739,7 +736,6 @@ std::string g_modifyData[][3] = {
     {"CompositeImage", "2", "2"},
     {"Gamma", "5/2", "2.5"},
     {"OffsetTime", "2024:01:25", "2024:01:25"},
-    {"MakerNote", "xxxxx", "5 bytes undefined data"},
 };
 
 HWTEST_F(ExifMetadataTest, SetValueBatch003, TestSize.Level3)
@@ -782,6 +778,451 @@ HWTEST_F(ExifMetadataTest, SetValueBatch004, TestSize.Level3)
         ASSERT_NE(metadata.SetValue(key, modifyvalue), true);
     }
 }
+
+
+std::string g_batchData006[][3] = {
+    {"BitsPerSample", "65535,65535,65535", "65535, 65535, 65535"},
+    {"Orientation", "8", "Left-bottom"},
+    {"ImageLength", "65535", "65535"},
+    {"ImageWidth", "65535", "65535"},
+    {"GPSLatitude", "114,3", "38.0,  0,  0"},
+    {"GPSLongitude", "114,3", "38.0,  0,  0"},
+    {"GPSLatitudeRef", "S", "S"},
+    {"GPSLongitudeRef", "W", "W"},
+    {"DateTimeOriginal", "1900:01:01 00:00:00", "1900:01:01 00:00:00"},
+    {"ExposureTime", "1/60", "1/60 sec."},
+    {"ISOSpeedRatings", "65535", "65535"},
+    {"FNumber", "1/30", "f/0.0"},
+    {"DateTime", "1900:01:01", "1900:01:01"},
+    {"GPSTimeStamp", "12 54 20", "12:54:20.00"},
+    {"GPSDateStamp", "1900:01:01", "1900:01:01"},
+    {"ImageDescription", "@  @", "@  @"},
+    {"Make", "APPLE", "APPLE"},
+    {"Model", "%s \\0", "%s \\0"},
+    {"PhotoMode", "13", "13"},
+    {"JPEGProc", "13", "13"},
+    {"SensitivityType", "0", "Unknown"},
+    {"StandardOutputSensitivity", "1000", "1000"},
+    {"RecommendedExposureIndex", "2147483647", "2147483647"},
+    {"ISOSpeedRatings", "65535", "65535"},
+    {"ISOSpeed", "65535", "65535"},
+    {"ApertureValue", "16", "16.00 EV (f/256.0)"},
+    {"ExposureBiasValue", "4", "4.00 EV"},
+    {"MeteringMode", "0", "Unknown"},
+    {"LightSource", "2", "Fluorescent"},
+    {"Flash", "95", "Flash fired, auto mode, return light detected, red-eye reduction mode"},
+    {"FocalLength", "31/1", "31.0 mm"},
+    {"UserComment", "%s \\0", "%s \\0"},
+    {"PixelXDimension", "0", "0"},
+    {"PixelYDimension", "0", "0"},
+    {"WhiteBalance", "0", "Auto white balance"},
+    {"FocalLengthIn35mmFilm", "12", "12"},
+    {"Compression", "32773", "PackBits compression"},
+    {"PhotometricInterpretation", "1", "Normal mono"},
+    {"StripOffsets", "456", "456"},
+    {"SamplesPerPixel", "65535", "65535"},
+    {"RowsPerStrip", "345", "345"},
+    {"StripByteCounts", "345", "345"},
+    {"XResolution", "31/1", "31"},
+    {"YResolution", "31/1", "31"},
+    {"PlanarConfiguration", "2", "Planar format"},
+    {"ResolutionUnit", "3", "Centimeter"},
+    {"TransferFunction", "123", "3 bytes undefined data"},
+    {"Software", "%s \\0", "%s \\0"},
+    {"Artist", "%s \\0", "%s \\0"},
+    {"WhitePoint", "31/1", "31, 0/0"},
+    {"PrimaryChromaticities", "31/1", "31"},
+    {"YCbCrCoefficients", "3/2 4/2 9/3", "1.5, 2.0, 3.0"},
+    {"YCbCrSubSampling", "4 5", "4, 5"},
+    {"YCbCrPositioning", "2", "Co-sited"},
+    {"ReferenceBlackWhite", "3", " 3, 255,  0, 255,  0, 255"},
+    {"Copyright", "joseph", "joseph (Photographer) - [None] (Editor)"},
+    {"ExposureProgram", "8", "Landscape mode (for landscape photos with the background in focus)"},
+    {"SpectralSensitivity", "1234", "1234"},
+    {"OECF", "ab", "2 bytes undefined data"},
+    {"ExifVersion", "0120", "Exif Version 1.2"},
+    {"DateTimeDigitized", "1900:01:01 00:00:00", "1900:01:01 00:00:00"},
+    {"ComponentsConfiguration", "1256", "Y Cb G B"},
+    {"ShutterSpeedValue", "3/2", "1.50 EV (1/3 sec.)"},
+    {"BrightnessValue", "6/5", "1.20 EV (7.87 cd/m^2)"},
+    {"MaxApertureValue", "8/5", "1.60 EV (f/1.7)"},
+    {"SubjectDistance", "1/2", "0.5 m"},
+    {"SubjectArea", "45 23", "(x,y) = (45,23)"},
+    {"SubsecTime", "427000", "427000"},
+    {"SubsecTimeOriginal", "123456", "123456"},
+    {"SubsecTimeDigitized", "999999", "999999"},
+    {"FlashpixVersion", "0101", "FlashPix Version 1.01"},
+    {"ColorSpace", "2", "Adobe RGB"},
+    {"RelatedSoundFile", "abc", "abc"},
+    {"FlashEnergy", "5/2", "2.5"},
+    {"SpatialFrequencyResponse", "corn", "corn"},
+    {"FocalPlaneXResolution", "102/1", "102"},
+    {"FocalPlaneYResolution", "81/1", "81"},
+    {"FocalPlaneResolutionUnit", "3", "Centimeter"},
+    {"SubjectLocation", "23 112", "23, 112"},
+    {"ExposureIndex", "5/2", "2.5"},
+    {"SensingMethod", "8", "Color sequential linear sensor"},
+    {"FileSource", "4", "Internal error (unknown value 4)"},
+    {"CFAPattern", "ab", "2 bytes undefined data"},
+    {"CustomRendered", "1", "Custom process"},
+    {"ExposureMode", "2", "Auto bracket"},
+    {"DigitalZoomRatio", "23/1", "23"},
+    {"SceneCaptureType", "3", "Night scene"},
+    {"GainControl", "4", "High gain down"},
+    {"Contrast", "2", "Hard"},
+    {"Saturation", "2", "High saturation"},
+    {"Sharpness", "2", "Hard"},
+    {"DeviceSettingDescription", "coxex", "coxex"},
+    {"SubjectDistanceRange", "3", "Distant view"},
+    {"ImageUniqueID", "xxx", "xxx"},
+    {"GPSVersionID", "2.2.0.1", "2.2.0.1"},
+    {"GPSAltitudeRef", "1", "Sea level reference"},
+    {"GPSAltitude", "100/100", "1.00"},
+    {"GPSSatellites", "a b c", "a b c"},
+    {"GPSStatus", "V", "V"},
+    {"GPSMeasureMode", "3", "3"},
+    {"GPSDOP", "100/100", "1.00"},
+    {"GPSSpeedRef", "K", "K"},
+    {"GPSSpeed", "0/1", " 0"},
+    {"GPSTrackRef", "M", "M"},
+    {"GPSTrack", "3.5", "3.5"},
+    {"GPSImgDirectionRef", "T", "T"},
+    {"GPSImgDirection", "2.5", "2.5"},
+    {"GPSMapDatum", "%s\\0", "%s\\0"},
+    {"GPSDestLatitudeRef", "S", "S"},
+    {"GPSDestLatitude", "0/1 0/1 0/1", " 0,  0,  0"},
+    {"GPSDestLongitudeRef", "W", "W"},
+    {"GPSDestLongitude", "0/1 0/1 0/1", " 0,  0,  0"},
+    {"GPSDestBearingRef", "C", "C"},
+    {"GPSDestBearing", "2.5", "2.5"},
+    {"GPSDestDistanceRef", "K", "K"},
+    {"GPSDestDistance", "2.5", "2.5"},
+    {"GPSProcessingMethod", "XXX", "XXX"},
+    {"GPSAreaInformation", "client", "client"},
+    {"GPSDifferential", "1", "1"},
+    {"BodySerialNumber", "xoinc", "xoinc"},
+    {"CameraOwnerName", "joseph", "joseph"},
+    {"CompositeImage", "3", "3"},
+    {"CompressedBitsPerPixel", "25", "25"},
+    {"DNGVersion", "2 2 3 2", "2, 2, 3, 2"},
+    {"DefaultCropSize", "123 654", "123, 654"},
+    {"Gamma", "3/2", "1.5"},
+    {"ISOSpeedLatitudeyyy", "123", "123"},
+    {"ISOSpeedLatitudezzz", "123", "123"},
+    {"LensMake", "plex", "plex"},
+    {"LensModel", "world", "world"},
+    {"LensSerialNumber", "root", "root"},
+    {"LensSpecification", "3/4 5/2 3/2 5/2", "0.8, 2.5, 1.5, 2.5"},
+    {"NewSubfileType", "5", "5"},
+    {"OffsetTime", "2023:01:25", "2023:01:25"},
+    {"OffsetTimeDigitized", "cirtize", "cirtize"},
+    {"OffsetTimeOriginal", "ject", "ject"},
+    {"SourceExposureTimesOfCompositeImage", "xixe", "xixe"},
+    {"SourceImageNumberOfCompositeImage", "11 23", "11, 23"},
+    {"SubfileType", "3", "3"},
+    {"GPSHPositioningError", "1/2", "0.5"},
+    {"PhotographicSensitivity", "65535", "65535"},
+    {"BitsPerSample", "1,1,1", "1, 1, 1"},
+    {"Orientation", "1", "Top-left"},
+    {"ImageLength", "0", "0"},
+    {"ImageWidth", "0", "0"},
+    {"GPSLatitude", "39,54,20", "39, 54, 20"},
+    {"GPSLongitude", "120/1 52/1 26/1", "120, 52, 26"},
+    {"GPSLatitudeRef", "N", "N"},
+    {"GPSLongitudeRef", "E", "E"},
+    {"DateTimeOriginal", "2024:01:25 05:51:34", "2024:01:25 05:51:34"},
+    {"ExposureTime", "1/34", "1/34 sec."},
+    {"SceneType", "1", "Directly photographed"},
+    {"ISOSpeedRatings", "1", "1"},
+    {"FNumber", "1/1", "f/1.0"},
+    {"DateTime", "2024:01:23", "2024:01:23"},
+    {"GPSTimeStamp", "11/1 37/1 58/1", "11:37:58.00"},
+    {"GPSDateStamp", "2025:01:11", "2025:01:11"},
+    {"ImageDescription", "_cuva%s\\d", "_cuva%s\\d"},
+    {"Make", "name", "name"},
+    {"Model", "TNY-AL00", "TNY-AL00"},
+    {"PhotoMode", "252", "252"},
+    {"JPEGProc", "252", "252"},
+    {"SensitivityType", "5", "Standard output sensitivity (SOS) and ISO speed"},
+    {"StandardOutputSensitivity", "5", "5"},
+    {"RecommendedExposureIndex", "123", "123"},
+    {"ISOSpeedRatings", "745", "745"},
+    {"ISOSpeed", "800", "800"},
+    {"ApertureValue", "4/1", "4.00 EV (f/4.0)"},
+    {"ExposureBiasValue", "23/1", "23.00 EV"},
+    {"MeteringMode", "5", "Pattern"},
+    {"LightSource", "1", "Daylight"},
+    {"Flash", "5", "Strobe return light not detected"},
+    {"FocalLength", "0/1", "0.0 mm"},
+    {"UserComment", "place for user comments", "place for user comments"},
+    {"PixelXDimension", "123", "123"},
+    {"PixelYDimension", "234", "234"},
+    {"WhiteBalance", "1", "Manual white balance"},
+    {"FocalLengthIn35mmFilm", "2", "2"},
+    {"Compression", "1", "Uncompressed"},
+    {"PhotometricInterpretation", "0", "Reversed mono"},
+    {"StripOffsets", "123", "123"},
+    {"SamplesPerPixel", "0", "0"},
+    {"RowsPerStrip", "123", "123"},
+    {"StripByteCounts", "123", "123"},
+    {"XResolution", "0/1", " 0"},
+    {"YResolution", "0/1", " 0"},
+    {"PlanarConfiguration", "1", "Chunky format"},
+    {"ResolutionUnit", "2", "Inch"},
+    {"TransferFunction", "abc", "3 bytes undefined data"},
+    {"Software", "abcdef", "abcdef"},
+    {"Artist", "None", "None"},
+    {"WhitePoint", "252/1", "252, 0/0"},
+    {"PrimaryChromaticities", "0/1", " 0"},
+    {"YCbCrCoefficients", "299/1000 587/1000 114/1000", "0.299, 0.587, 0.114"},
+    {"YCbCrSubSampling", "3 2", "3, 2"},
+    {"YCbCrPositioning", "1", "Centered"},
+    {"ReferenceBlackWhite", "222 0 1.5 0 25.2 25.2", "222,  0, 1.5,  0, 25.2, 25.2"},
+    {"Copyright", "undefined", "undefined (Photographer) - [None] (Editor)"},
+    {"ExposureProgram", "0", "Not defined"},
+    {"SpectralSensitivity", "abc", "abc"},
+    {"OECF", "excc", "4 bytes undefined data"},
+    {"ExifVersion", "0110", "Exif Version 1.1"},
+    {"DateTimeDigitized", "2022:06:02 15:51:34", "2022:06:02 15:51:34"},
+    {"ComponentsConfiguration", "1456", "Y R G B"},
+    {"ShutterSpeedValue", "5/2", "2.50 EV (1/6 sec.)"},
+    {"BrightnessValue", "5/2", "2.50 EV (19.38 cd/m^2)"},
+    {"MaxApertureValue", "5/2", "2.50 EV (f/2.4)"},
+    {"SubjectDistance", "5/2", "2.5 m"},
+    {"SubjectArea", "12 13", "(x,y) = (12,13)"},
+    {"SubsecTime", "123456", "123456"},
+    {"SubsecTimeOriginal", "427000", "427000"},
+    {"SubsecTimeDigitized", "427000", "427000"},
+    {"FlashpixVersion", "0100", "FlashPix Version 1.0"},
+    {"ColorSpace", "1", "sRGB"},
+    {"RelatedSoundFile", "/usr/home", "/usr/home"},
+    {"FlashEnergy", "832/1", "832"},
+    {"SpatialFrequencyResponse", "13", "13"},
+    {"FocalPlaneXResolution", "1080/1", "1080"},
+    {"FocalPlaneYResolution", "880/1", "880"},
+    {"FocalPlaneResolutionUnit", "2", "Inch"},
+    {"SubjectLocation", "0 1", "0, 1"},
+    {"ExposureIndex", "3/2", "1.5"},
+    {"SensingMethod", "3", "Two-chip color area sensor"},
+    {"FileSource", "3", "DSC"},
+    {"CFAPattern", "3", "1 bytes undefined data"},
+    {"CustomRendered", "0", "Normal process"},
+    {"ExposureMode", "0", "Auto exposure"},
+    {"DigitalZoomRatio", "321/1", "321"},
+    {"SceneCaptureType", "0", "Standard"},
+    {"GainControl", "0", "Normal"},
+    {"Contrast", "0", "Normal"},
+    {"Saturation", "0", "Normal"},
+    {"Sharpness", "0", "Normal"},
+    {"DeviceSettingDescription", "2xxx", "2xxx"},
+    {"SubjectDistanceRange", "0", "Unknown"},
+    {"ImageUniqueID", "FXIC012", "FXIC012"},
+    {"GPSVersionID", "2.2.0.0", "2.2.0.0"},
+    {"GPSAltitudeRef", "0", "Sea level"},
+    {"GPSAltitude", "0/100", "0.00"},
+    {"GPSSatellites", "xxx", "xxx"},
+    {"GPSStatus", "A", "A"},
+    {"GPSMeasureMode", "2", "2"},
+    {"GPSDOP", "182/1", "182"},
+    {"GPSSpeedRef", "N", "N"},
+    {"GPSSpeed", "150/1", "150"},
+    {"GPSTrackRef", "T", "T"},
+    {"GPSTrack", "114/3", "38.0"},
+    {"GPSImgDirectionRef", "M", "M"},
+    {"GPSImgDirection", "125/56", "2.23"},
+    {"GPSMapDatum", "xxx", "xxx"},
+    {"GPSDestLatitudeRef", "N", "N"},
+    {"GPSDestLatitude", "33/1 22/1 11/1", "33, 22, 11"},
+    {"GPSDestLongitudeRef", "E", "E"},
+    {"GPSDestLongitude", "33/1 22/1 11/1", "33, 22, 11"},
+    {"GPSDestBearingRef", "T", "T"},
+    {"GPSDestBearing", "22/11", "2.0"},
+    {"GPSDestDistanceRef", "N", "N"},
+    {"GPSDestDistance", "10/1", "10"},
+    {"GPSProcessingMethod", "CELLID", "CELLID"},
+    {"GPSAreaInformation", "arexxx", "arexxx"},
+    {"GPSDifferential", "0", "0"},
+    {"BodySerialNumber", "exoch", "exoch"},
+    {"CameraOwnerName", "c.uec", "c.uec"},
+    {"CompositeImage", "2", "2"},
+    {"CompressedBitsPerPixel", "24/1", "24"},
+    {"DNGVersion", "2 2 3 1", "2, 2, 3, 1"},
+    {"DefaultCropSize", "153 841", "153, 841"},
+    {"Gamma", "5/2", "2.5"},
+    {"ISOSpeedLatitudeyyy", "1456", "1456"},
+    {"ISOSpeedLatitudezzz", "1456", "1456"},
+    {"LensMake", "xxwx", "xxwx"},
+    {"LensModel", "txaw", "txaw"},
+    {"LensSerialNumber", "qxhc", "qxhc"},
+    {"LensSpecification", "3/4 5/2 3/2 1/2", "0.8, 2.5, 1.5, 0.5"},
+    {"NewSubfileType", "3", "3"},
+    {"OffsetTime", "2024:01:25", "2024:01:25"},
+    {"OffsetTimeDigitized", "cfh", "cfh"},
+    {"OffsetTimeOriginal", "chex", "chex"},
+    {"SourceExposureTimesOfCompositeImage", "xxxw", "xxxw"},
+    {"SourceImageNumberOfCompositeImage", "23 34", "23, 34"},
+    {"SubfileType", "2", "2"},
+    {"GPSHPositioningError", "5/2", "2.5"},
+    {"PhotographicSensitivity", "1", "1"},
+};
+
+HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_BLANKEXIF_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+
+    std::string value;
+    ExifMetadata metadata(exifData);
+
+    int rows = sizeof(g_batchData006) / sizeof(g_batchData006[0]);
+    for (int i = 0; i < rows; ++i) {
+        std::string key = g_batchData006[i][0];
+        std::string modifyvalue = g_batchData006[i][1];
+        auto iv = ExifMetadatFormatter::Validate(key, modifyvalue);
+        bool isValidateSuccess = (iv == Media::SUCCESS);
+        ASSERT_TRUE(isValidateSuccess);
+
+        auto isSetValueSuccess = metadata.SetValue(key, modifyvalue);
+        ASSERT_TRUE(isSetValueSuccess);
+
+        std::string retvalue;
+        metadata.GetValue(key, retvalue);
+        ASSERT_EQ(retvalue, g_batchData006[i][2]);
+    }
+}
+
+
+std::string g_error[][2] = {
+    {"BitsPerSample", "8,8"},
+    {"Orientation", "0"},
+    {"ImageLength", "abc"},
+    {"ImageWidth", "@@@"},
+    {"GPSLatitude", "abc,3"},
+    {"GPSLongitude", "12,a"},
+    {"GPSLatitudeRef", "W"},
+    {"GPSLongitudeRef", "S"},
+    {"DateTimeOriginal", "05:61:34"},
+    {"ExposureTime", "1/0"},
+    {"SceneType", "abc"},
+    {"ISOSpeedRatings", "-1"},
+    {"FNumber", "1/0"},
+    {"DateTime", "2024:13"},
+    {"GPSTimeStamp", "37/0,58/0"},
+    {"GPSDateStamp", "2023:01"},
+    {"SensitivityType", "a"},
+    {"StandardOutputSensitivity", "abc"},
+    {"RecommendedExposureIndex", "-123"},
+    {"ISOSpeed", "a"},
+    {"ApertureValue", "a"},
+    {"ExposureBiasValue", "a"},
+    {"MeteringMode", "256"},
+    {"LightSource", "256"},
+    {"Flash", "999"},
+    {"FocalLength", "a"},
+    {"UserComment", ""},
+    {"PixelXDimension", "abc"},
+    {"PixelYDimension", "!!!"},
+    {"WhiteBalance", "2"},
+    {"FocalLengthIn35mmFilm", "abc"},
+    {"Compression", "11"},
+    {"PhotometricInterpretation", "a"},
+    {"StripOffsets", "abc"},
+    {"SamplesPerPixel", "-1"},
+    {"RowsPerStrip", "abc"},
+    {"StripByteCounts", "abc"},
+    {"XResolution", "a"},
+    {"YResolution", "b"},
+    {"PlanarConfiguration", "a"},
+    {"ResolutionUnit", "4"},
+    {"WhitePoint", "abc"},
+    {"PrimaryChromaticities", "abc"},
+    {"YCbCrCoefficients", "123,345"},
+    {"YCbCrSubSampling", "4"},
+    {"YCbCrPositioning", "3"},
+    {"ReferenceBlackWhite", "undefined"},
+    {"ExposureProgram", "-1"},
+    {"ExifVersion", "a"},
+    {"DateTimeDigitized", "a"},
+    {"ComponentsConfiguration", "a"},
+    {"ShutterSpeedValue", "0/0"},
+    {"BrightnessValue", "12000000/0"},
+    {"MaxApertureValue", "-1/0"},
+    {"SubjectDistance", "meter"},
+    {"SubjectArea", "abc"},
+    {"FlashpixVersion", "abc"},
+    {"ColorSpace", "abc"},
+    {"FlashEnergy", "abc"},
+    {"SpatialFrequencyResponse", ""},
+    {"FocalPlaneXResolution", "abc"},
+    {"FocalPlaneYResolution", "abc"},
+    {"FocalPlaneResolutionUnit", "255"},
+    {"SubjectLocation", "2"},
+    {"ExposureIndex", "-1/1"},
+    {"SensingMethod", "9"},
+    {"CustomRendered", "2"},
+    {"ExposureMode", "3"},
+    {"DigitalZoomRatio", "a"},
+    {"SceneCaptureType", "4"},
+    {"GainControl", "5"},
+    {"Contrast", "3"},
+    {"Saturation", "65536"},
+    {"Sharpness", "65535"},
+    {"DeviceSettingDescription", ""},
+    {"SubjectDistanceRange", "a"},
+    {"GPSVersionID", "23"},
+    {"GPSAltitudeRef", "2"},
+    {"GPSAltitude", "abc"},
+    {"GPSStatus", "C"},
+    {"GPSMeasureMode", "4"},
+    {"GPSDOP", "-1"},
+    {"GPSSpeedRef", "AA"},
+    {"GPSSpeed", "a"},
+    {"GPSTrack", "a"},
+    {"GPSImgDirectionRef", "C"},
+    {"GPSImgDirection", "a"},
+    {"GPSDestLatitudeRef", "W"},
+    {"GPSDestLatitude", "abc"},
+    {"GPSDestLongitudeRef", "S"},
+    {"GPSDestLongitude", "none"},
+    {"GPSDestBearing", "x"},
+    {"GPSDestDistanceRef", "C"},
+    {"GPSDestDistance", "B"},
+    {"GPSDifferential", "4"},
+    {"CompositeImage", "5"},
+    {"CompressedBitsPerPixel", "diry"},
+    {"DNGVersion", "2 3"},
+    {"DefaultCropSize", "hi xic"},
+    {"Gamma", "rat"},
+    {"ISOSpeedLatitudeyyy", "a"},
+    {"ISOSpeedLatitudezzz", "bc"},
+    {"LensSpecification", "a b c"},
+    {"NewSubfileType", "a"},
+    {"SourceImageNumberOfCompositeImage", "a"},
+    {"SubfileType", "5"},
+    {"GPSHPositioningError", "a"},
+    {"PhotographicSensitivity", "-1"},
+};
+
+
+HWTEST_F(ExifMetadataTest, SetValueBatch007, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_BLANKEXIF_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+
+    std::string value;
+    ExifMetadata metadata(exifData);
+
+    int rows = sizeof(g_error) / sizeof(g_error[0]);
+    for (int i = 0; i < rows; ++i) {
+        std::string key = g_error[i][0];
+        std::string modifyvalue = g_error[i][1];
+        auto iv = ExifMetadatFormatter::Validate(key, modifyvalue);
+        bool isValidateSuccess = (iv == Media::SUCCESS);
+        auto isSetValueSuccess = metadata.SetValue(key, modifyvalue);
+        ASSERT_FALSE(isValidateSuccess && isSetValueSuccess);
+    }
+}
+
 
 std::map<std::string, ExifIfd> IFDTable = {
     { "BitsPerSample", EXIF_IFD_0 },
@@ -935,6 +1376,5 @@ HWTEST_F(ExifMetadataTest, GetIFD001, TestSize.Level3)
         ASSERT_EQ(ifd, it.second);
     }
 }
-
 } // namespace Multimedia
 } // namespace OHOS

@@ -214,6 +214,22 @@ bool PngImageChunkUtils::FindExifKeyword(const byte *keyword)
     return false;
 }
 
+bool PngImageChunkUtils::FindExifFromTxt(DataBuf &chunkData)
+{
+    DataBuf keyword = GetKeywordFromChunk(chunkData);
+    if (keyword.Empty()) {
+        IMAGE_LOGE("Failed to read the keyword from chunk.");
+        return false;
+    }
+
+    bool foundExifKeyword = FindExifKeyword(keyword.CData());
+    if (!foundExifKeyword) {
+        IMAGE_LOGI("The text chunk is without exif keyword");
+        return false;
+    }
+    return true;
+}
+
 size_t PngImageChunkUtils::VerifyExifIdCode(DataBuf &exifInfo, size_t exifInfoLength)
 {
     static const std::array<byte, EXIF_HEADER_SIZE> exifIdCode { 0x45, 0x78, 0x69, 0x66, 0x00, 0x00 };

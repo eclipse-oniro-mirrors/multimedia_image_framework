@@ -97,8 +97,8 @@ const std::set<std::string> READ_WRITE_KEYS = {
     "ReferenceBlackWhite",
     "Copyright",
     "SubsecTime",
-    "SubSecTimeOriginal",
-    "SubSecTimeDigitized",
+    "SubsecTimeOriginal",
+    "SubsecTimeDigitized",
     "FlashpixVersion",
     "ColorSpace",
     "RelatedSoundFile",
@@ -154,8 +154,6 @@ const std::set<std::string> READ_WRITE_KEYS = {
     "SubjectDistance",
     "DefaultCropSize",
     "LensSpecification",
-    "JPEGInterchangeFormat",
-    "JPEGInterchangeFormatLength",
     "SubjectArea",
     "DNGVersion",
     "SubfileType",
@@ -183,11 +181,12 @@ const std::set<std::string> READ_WRITE_KEYS = {
     "CompositeImage",
     "Gamma",
     "OffsetTime",
-    "MakerNote"
+    "PhotographicSensitivity",
+    "HwMnoteCaptureMode",
 };
 
 const std::set<std::string> READ_ONLY_KEYS = {
-    "HwMnoteCaptureMode",      "HwMnotePhysicalAperture",
+    "HwMnotePhysicalAperture",
     "HwMnoteRollAngle",        "HwMnotePitchAngle",
     "HwMnoteSceneFoodConf",    "HwMnoteSceneStageConf",
     "HwMnoteSceneBlueSkyConf", "HwMnoteSceneGreenPlantConf",
@@ -200,7 +199,9 @@ const std::set<std::string> READ_ONLY_KEYS = {
     "HwMnoteBurstNumber",      "HwMnoteFaceVersion",
     "HwMnoteFaceConf",         "HwMnoteFaceSmileScore",
     "HwMnoteFaceRect",         "HwMnoteFaceLeyeCenter",
-    "HwMnoteFaceReyeCenter",   "HwMnoteFaceMouthCenter"
+    "HwMnoteFaceReyeCenter",   "HwMnoteFaceMouthCenter",
+    "JPEGInterchangeFormat",   "JPEGInterchangeFormatLength",
+    "MakerNote",
 };
 
 // Orientation, tag 0x0112
@@ -522,7 +523,9 @@ constexpr TagDetails exifCompositeImage[] = {
 std::map<std::string, std::tuple<const TagDetails *, const size_t>> ExifMetadatFormatter::valueRangeValidateConfig = {
     { "Orientation", std::make_tuple(exifOrientation, std::size(exifOrientation)) },
     { "GPSLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
+    { "GPSDestLatitudeRef", std::make_tuple(exifGPSLatitudeRef, std::size(exifGPSLatitudeRef)) },
     { "GPSLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
+    { "GPSDestLongitudeRef", std::make_tuple(exifGPSLongitudeRef, std::size(exifGPSLongitudeRef)) },
     { "WhiteBalance", std::make_tuple(exifWhiteBalance, std::size(exifWhiteBalance)) },
     { "Flash", std::make_tuple(exifFlash, std::size(exifFlash)) },
     { "LightSource", std::make_tuple(exifLightSource, std::size(exifLightSource)) },
@@ -1042,6 +1045,7 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"LensSpecification", fourDecimalToRationalWithBlank},
     {"LensSpecification", fourDecimalToRationalWithComma},
     {"ReferenceBlackWhite", sixDecimalToRationalWithBlank},
+    {"SubjectLocation", doubleIntWithBlank},
 };
 
 std::multimap<std::string, std::string> ExifMetadatFormatter::valueFormatValidateConfig = {
@@ -1051,9 +1055,47 @@ std::multimap<std::string, std::string> ExifMetadatFormatter::valueFormatValidat
     { "GPSLatitude", DOUBLE_INT_WITH_COMMA_REGEX },
     { "GPSLatitude", TRIBLE_INT_WITH_COMMA_REGEX },
     { "GPSLatitude", TRIBLE_DECIMAL_WITH_COMMA_REGEX },
+    { "GPSLatitude", TRIBLE_RATIONAL_WITH_BLANK_REGEX },
     { "GPSLongitude", DOUBLE_INT_WITH_COMMA_REGEX },
     { "GPSLongitude", TRIBLE_INT_WITH_COMMA_REGEX },
     { "GPSLongitude", TRIBLE_DECIMAL_WITH_COMMA_REGEX },
+    { "GPSLongitude", TRIBLE_RATIONAL_WITH_BLANK_REGEX },
+    { "ISOSpeedRatings", ONE_INT_REGEX },
+    { "StandardOutputSensitivity", ONE_INT_REGEX },
+    { "RecommendedExposureIndex", ONE_INT_REGEX },
+    { "ISOSpeed", ONE_INT_REGEX },
+    { "ApertureValue", ONE_RATIONAL_REGEX },
+    { "ApertureValue", ONE_INT_REGEX },
+    { "ApertureValue", ONE_DECIMAL_REGEX },
+    { "ExposureBiasValue", ONE_RATIONAL_REGEX },
+    { "ExposureBiasValue", ONE_INT_REGEX },
+    { "ExposureBiasValue", ONE_DECIMAL_REGEX },
+    { "FocalLength", ONE_RATIONAL_REGEX },
+    { "FocalLength", ONE_INT_REGEX },
+    { "FocalLength", ONE_DECIMAL_REGEX },
+    { "PixelXDimension", ONE_INT_REGEX },
+    { "PixelYDimension", ONE_INT_REGEX },
+    { "FocalLengthIn35mmFilm", ONE_INT_REGEX },
+    { "PhotometricInterpretation", ONE_INT_REGEX },
+    { "StripOffsets", ONE_INT_REGEX },
+    { "SamplesPerPixel", ONE_INT_REGEX },
+    { "RowsPerStrip", ONE_INT_REGEX },
+    { "StripByteCounts", ONE_INT_REGEX },
+    { "XResolution", ONE_RATIONAL_REGEX },
+    { "YResolution", ONE_RATIONAL_REGEX },
+    { "PlanarConfiguration", ONE_INT_REGEX },
+    { "YCbCrSubSampling", DOUBLE_INT_WITH_BLANK_REGEX },
+    { "WhitePoint", ONE_RATIONAL_REGEX },
+    { "WhitePoint", ONE_INT_REGEX },
+    { "WhitePoint", ONE_DECIMAL_REGEX },
+    { "DateTimeDigitized", DATETIME_REGEX },
+    { "ComponentsConfiguration", ONE_INT_REGEX },
+    { "FlashpixVersion", ONE_INT_REGEX },
+    { "ExifVersion", ONE_INT_REGEX },
+    { "ISOSpeedLatitudeyyy", ONE_INT_REGEX },
+    { "ISOSpeedLatitudezzz", ONE_INT_REGEX },
+    { "PhotographicSensitivity", ONE_INT_REGEX },
+    { "HwMnoteCaptureMode", ONE_INT_REGEX },
 };
 
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.

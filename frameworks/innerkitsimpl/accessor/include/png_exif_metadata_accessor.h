@@ -17,6 +17,7 @@
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_PNG_EXIF_METADATA_ACCESSOR_H
 
 #include "abstract_exif_metadata_accessor.h"
+#include "buffer_metadata_stream.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,9 +37,15 @@ public:
 
 private:
     bool IsPngType() const;
-    size_t ReadChunk(DataBuf &buffer) const;
     bool FindTiffFromText(const DataBuf &data, const std::string chunkType, DataBuf &tiffData) const;
     bool ProcessExifData(DataBuf &blob, std::string chunkType, uint32_t chunkLength) const;
+    bool GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &size);
+    bool UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size);
+    bool WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size);
+    bool WriteExifData(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size,
+                       DataBuf &chunkBuf, std::string chunkType);
+    size_t ReadChunk(DataBuf &buffer) const;
+    uint32_t UpdateData(uint8_t *dataBlob, uint32_t size);
 };
 } // namespace Media
 } // namespace OHOS
