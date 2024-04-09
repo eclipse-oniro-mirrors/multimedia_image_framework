@@ -310,7 +310,11 @@ uint32_t PngExifMetadataAccessor::UpdateData(uint8_t *dataBlob, uint32_t size)
     }
 
     imageStream_->Seek(0, SeekPos::BEGIN);
-    return imageStream_->CopyFrom(tmpBufStream);
+    if (!imageStream_->CopyFrom(tmpBufStream)) {
+        IMAGE_LOGE("Copy from temp stream failed");
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    return SUCCESS;
 }
 
 uint32_t PngExifMetadataAccessor::Write()
