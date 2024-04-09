@@ -760,7 +760,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write004, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("LightSource", "1"));
     ASSERT_TRUE(exifMetadata->SetValue("Flash", "24"));
     ASSERT_TRUE(exifMetadata->SetValue("FocalLength", "35/1"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "10 20 183 259"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "10 20"));
     ASSERT_TRUE(exifMetadata->SetValue("UserComment", "place for user comments."));
 
     ASSERT_EQ(imageAccessor.Write(), 0);
@@ -918,7 +918,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write007, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("LensModel", "xxx"));
     ASSERT_TRUE(exifMetadata->SetValue("LensSerialNumber", "111a"));
     ASSERT_TRUE(exifMetadata->SetValue("CompositeImage", "2"));
-    ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "3456"));
+    ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "34 56"));
     ASSERT_TRUE(exifMetadata->SetValue("SourceExposureTimesOfCompositeImage", "byte"));
     ASSERT_TRUE(exifMetadata->SetValue("Gamma", "3/2"));
     ASSERT_TRUE(exifMetadata->SetValue("SpectralSensitivity", "Sensitivity"));
@@ -936,7 +936,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write007, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "xxx");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "111a");
     ASSERT_EQ(GetProperty(exifMetadata, "CompositeImage"), "2");
-    ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "3456, 1");
+    ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "34, 56");
     ASSERT_EQ(GetProperty(exifMetadata, "SourceExposureTimesOfCompositeImage"), "byte");
     ASSERT_EQ(GetProperty(exifMetadata, "Gamma"), "1.5");
     ASSERT_EQ(GetProperty(exifMetadata, "SpectralSensitivity"), "Sensitivity");

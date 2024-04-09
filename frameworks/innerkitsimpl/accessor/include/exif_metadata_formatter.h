@@ -70,6 +70,7 @@ private:
     static ValueFormatDelegate tribleIntWithComma;
     static ValueFormatDelegate fourIntWithBlank;
     static ValueFormatDelegate fourIntWithComma;
+    static ValueFormatDelegate oneInt;
     static ValueFormatDelegate oneRational;
     static ValueFormatDelegate oneIntToRational;
     static ValueFormatDelegate oneDecimalToRational;

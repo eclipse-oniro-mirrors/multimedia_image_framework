@@ -18,6 +18,8 @@
 #include <regex>
 #include <string_view>
 #include <set>
+#include <string>
+#include <sstream>
 #include <utility>
 
 #include "exif_metadata_formatter.h"
@@ -519,6 +521,18 @@ constexpr TagDetails exifCompositeImage[] = {
     {3, "CompositeCapturedWhenShooting"},
 };
 
+// exifSensitivityType, tag 0x8830
+constexpr TagDetails exifSensitivityType[] = {
+    {0, "Unknown"},
+    {1, "Standard output sensitivity (SOS)"},
+    {2, "Recommended exposure index (REI)"},
+    {3, "ISO speed"},
+    {4, "Standard output sensitivity (SOS) and recommended exposure index (REI)"},
+    {5, "Standard output sensitivity (SOS) and ISO speed"},
+    {6, "Recommended exposure index (REI) and ISO speed"},
+    {7, "Standard output sensitivity (SOS) and recommended exposure index (REI) and ISO speed"},
+};
+
 // configuratioin for value range validation. For example GPSLatitudeRef the value must be 'N' or 'S'.
 std::map<std::string, std::tuple<const TagDetails *, const size_t>> ExifMetadatFormatter::valueRangeValidateConfig = {
     { "Orientation", std::make_tuple(exifOrientation, std::size(exifOrientation)) },
@@ -556,13 +570,20 @@ std::map<std::string, std::tuple<const TagDetails *, const size_t>> ExifMetadatF
     { "GPSMeasureMode", std::make_tuple(exifGPSMeasureMode, std::size(exifGPSMeasureMode)) },
     { "GPSSpeedRef", std::make_tuple(exifGPSSpeedRef, std::size(exifGPSSpeedRef)) },
     { "GPSImgDirectionRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
+    { "GPSTrackRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
+    { "GPSDestBearingRef", std::make_tuple(exifGPSDirRef, std::size(exifGPSDirRef)) },
     { "GPSDestDistanceRef", std::make_tuple(exifGPSDestDistanceRef, std::size(exifGPSDestDistanceRef)) },
     { "GPSDifferential", std::make_tuple(exifGPSDifferential, std::size(exifGPSDifferential)) },
     { "CompositeImage", std::make_tuple(exifCompositeImage, std::size(exifCompositeImage)) },
+    { "SensitivityType", std::make_tuple(exifSensitivityType, std::size(exifSensitivityType)) },
 };
 
 const size_t DECIMAL_BASE = 10;
 const std::string COMMA_REGEX("\\,"), COLON_REGEX("\\:"), DOT_REGEX("\\.");
+const std::set<std::string> UINT16_KEYS = {
+    "ImageLength", "ImageWidth", "ISOSpeedRatings", "ISOSpeedRatings",
+    "FocalLengthIn35mmFilm", "SamplesPerPixel", "PhotographicSensitivity"
+};
 
 const auto ONE_RATIONAL_REGEX = R"(^[0-9]+/[1-9][0-9]*$)";
 const auto ONE_INT_REGEX = R"(^[0-9]+$)";
@@ -584,7 +605,7 @@ const auto FOUR_DECIMAL_WITH_BLANK_REGEX = "(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\
 const auto FOUR_DECIMAL_WITH_COMMA_REGEX = "(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?";
 const auto SIX_DECIMAL_WITH_BLANK_REGEX =
     "(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?";
-const auto DATETIME_REGEX = R"(^[0-9]{4}:[0-9]{2}:[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}$)";
+const auto DATETIME_REGEX = R"(^[0-9]{4}:[0-9]{2}:[0-9]{2}\s([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$)";
 const auto DATE_REGEX = R"(^[0-9]{4}:[0-9]{2}:[0-9]{2}$)";
 
 /*
@@ -817,6 +838,9 @@ bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value
     return true;
 }
 
+ValueFormatDelegate ExifMetadatFormatter::oneInt =
+    std::make_pair(ExifMetadatFormatter::ValidRegex, ONE_INT_REGEX);
+
 // regex validation for two integer like DefaultCropSize 9 9 the format is [0-9]+ [0-9]+
 ValueFormatDelegate ExifMetadatFormatter::doubleIntWithBlank =
     std::make_pair(ExifMetadatFormatter::ValidRegex, DOUBLE_INT_WITH_BLANK_REGEX);
@@ -1046,56 +1070,33 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"LensSpecification", fourDecimalToRationalWithComma},
     {"ReferenceBlackWhite", sixDecimalToRationalWithBlank},
     {"SubjectLocation", doubleIntWithBlank},
-};
-
-std::multimap<std::string, std::string> ExifMetadatFormatter::valueFormatValidateConfig = {
-    { "BitsPerSample", TRIBLE_INT_WITH_COMMA_REGEX },
-    { "ImageLength", ONE_INT_REGEX },
-    { "ImageWidth", ONE_INT_REGEX },
-    { "GPSLatitude", DOUBLE_INT_WITH_COMMA_REGEX },
-    { "GPSLatitude", TRIBLE_INT_WITH_COMMA_REGEX },
-    { "GPSLatitude", TRIBLE_DECIMAL_WITH_COMMA_REGEX },
-    { "GPSLatitude", TRIBLE_RATIONAL_WITH_BLANK_REGEX },
-    { "GPSLongitude", DOUBLE_INT_WITH_COMMA_REGEX },
-    { "GPSLongitude", TRIBLE_INT_WITH_COMMA_REGEX },
-    { "GPSLongitude", TRIBLE_DECIMAL_WITH_COMMA_REGEX },
-    { "GPSLongitude", TRIBLE_RATIONAL_WITH_BLANK_REGEX },
-    { "ISOSpeedRatings", ONE_INT_REGEX },
-    { "StandardOutputSensitivity", ONE_INT_REGEX },
-    { "RecommendedExposureIndex", ONE_INT_REGEX },
-    { "ISOSpeed", ONE_INT_REGEX },
-    { "ApertureValue", ONE_RATIONAL_REGEX },
-    { "ApertureValue", ONE_INT_REGEX },
-    { "ApertureValue", ONE_DECIMAL_REGEX },
-    { "ExposureBiasValue", ONE_RATIONAL_REGEX },
-    { "ExposureBiasValue", ONE_INT_REGEX },
-    { "ExposureBiasValue", ONE_DECIMAL_REGEX },
-    { "FocalLength", ONE_RATIONAL_REGEX },
-    { "FocalLength", ONE_INT_REGEX },
-    { "FocalLength", ONE_DECIMAL_REGEX },
-    { "PixelXDimension", ONE_INT_REGEX },
-    { "PixelYDimension", ONE_INT_REGEX },
-    { "FocalLengthIn35mmFilm", ONE_INT_REGEX },
-    { "PhotometricInterpretation", ONE_INT_REGEX },
-    { "StripOffsets", ONE_INT_REGEX },
-    { "SamplesPerPixel", ONE_INT_REGEX },
-    { "RowsPerStrip", ONE_INT_REGEX },
-    { "StripByteCounts", ONE_INT_REGEX },
-    { "XResolution", ONE_RATIONAL_REGEX },
-    { "YResolution", ONE_RATIONAL_REGEX },
-    { "PlanarConfiguration", ONE_INT_REGEX },
-    { "YCbCrSubSampling", DOUBLE_INT_WITH_BLANK_REGEX },
-    { "WhitePoint", ONE_RATIONAL_REGEX },
-    { "WhitePoint", ONE_INT_REGEX },
-    { "WhitePoint", ONE_DECIMAL_REGEX },
-    { "DateTimeDigitized", DATETIME_REGEX },
-    { "ComponentsConfiguration", ONE_INT_REGEX },
-    { "FlashpixVersion", ONE_INT_REGEX },
-    { "ExifVersion", ONE_INT_REGEX },
-    { "ISOSpeedLatitudeyyy", ONE_INT_REGEX },
-    { "ISOSpeedLatitudezzz", ONE_INT_REGEX },
-    { "PhotographicSensitivity", ONE_INT_REGEX },
-    { "HwMnoteCaptureMode", ONE_INT_REGEX },
+    {"ImageLength", oneInt},
+    {"ImageWidth", oneInt},
+    {"ISOSpeedRatings", oneInt},
+    {"StandardOutputSensitivity", oneInt},
+    {"RecommendedExposureIndex", oneInt},
+    {"ISOSpeed", oneInt},
+    {"PixelXDimension", oneInt},
+    {"PixelYDimension", oneInt},
+    {"FocalLengthIn35mmFilm", oneInt},
+    {"StripOffsets", oneInt},
+    {"SamplesPerPixel", oneInt},
+    {"RowsPerStrip", oneInt},
+    {"StripByteCounts", oneInt},
+    {"ExifVersion", oneInt},
+    {"ISOSpeedLatitudeyyy", oneInt},
+    {"ISOSpeedLatitudezzz", oneInt},
+    {"ComponentsConfiguration", oneInt},
+    {"PhotographicSensitivity", oneInt},
+    {"FlashpixVersion", oneInt},
+    {"DateTimeDigitized", dateTimeValidation},
+    {"DateTimeDigitized", dateValidation},
+    {"SubjectArea", doubleIntWithBlank},
+    {"SubjectArea", doubleIntWithComma},
+    {"SourceImageNumberOfCompositeImage", doubleIntWithBlank},
+    {"SourceImageNumberOfCompositeImage", doubleIntWithComma},
+    {"YCbCrSubSampling", doubleIntWithBlank},
+    {"YCbCrSubSampling", doubleIntWithComma},
 };
 
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.
@@ -1148,14 +1149,6 @@ int32_t ExifMetadatFormatter::ValidateValueRange(const std::string &keyName, con
     return Media::SUCCESS;
 }
 
-// check if has any value format configuration
-bool ExifMetadatFormatter::IsFormatValidationConfigExisting(const std::string &keyName)
-{
-    IMAGE_LOGD("Checking if value format validation configuration exists for key: %{public}s", keyName.c_str());
-    auto it = ExifMetadatFormatter::valueFormatValidateConfig.find(keyName);
-    return it != ExifMetadatFormatter::valueFormatValidateConfig.end();
-}
-
 // validate value format. For example BitPerSample the value format should be 9 9 9 or 9,9,9
 int32_t ExifMetadatFormatter::ConvertValueFormat(const std::string &keyName, std::string &value)
 {
@@ -1189,37 +1182,6 @@ int32_t ExifMetadatFormatter::ConvertValueFormat(const std::string &keyName, std
     return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
 }
 
-int32_t ExifMetadatFormatter::ValidateValueFormat(const std::string &keyName, const std::string &value)
-{
-    IMAGE_LOGD("ValidateValueFormat keyName is [%{public}s] value is [%{public}s].", keyName.c_str(), value.c_str());
-
-    auto it = ExifMetadatFormatter::valueFormatValidateConfig.find(keyName);
-    if (it == ExifMetadatFormatter::valueFormatValidateConfig.end()) {
-        IMAGE_LOGD("No format validation needed. Defaulting to success.");
-
-        // if no format validation config default success
-        return Media::SUCCESS;
-    }
-
-    IMAGE_LOGD("Validating value format. Key: %{public}s, Value: %{public}s", keyName.c_str(), value.c_str());
-
-    // get first iterator according to keyName
-    for (auto iterator = ExifMetadatFormatter::valueFormatValidateConfig.find(keyName);
-        iterator != ExifMetadatFormatter::valueFormatValidateConfig.end() &&
-        iterator != ExifMetadatFormatter::valueFormatValidateConfig.upper_bound(keyName);
-        iterator++) {
-        bool isValidated = ExifMetadatFormatter::ValidRegex(value, iterator->second);
-        IMAGE_LOGD("Validation result: %{public}d", isValidated);
-        if (isValidated) {
-            IMAGE_LOGD("Validation successful.");
-            return Media::SUCCESS;
-        }
-    }
-
-    IMAGE_LOGD("Validation failed. Unsupported EXIF format.");
-    return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-}
-
 bool ExifMetadatFormatter::IsKeySupported(const std::string &keyName)
 {
     auto wit = READ_WRITE_KEYS.find(keyName);
@@ -1240,19 +1202,19 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
 
     if (!ExifMetadatFormatter::IsKeySupported(keyName)) {
         IMAGE_LOGD("Key is not supported.");
-        return std::make_pair(Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "");
+        return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
     }
 
     if (!ExifMetadatFormatter::IsModifyAllowed(keyName)) {
         IMAGE_LOGD("Key is not allowed to modify.");
-        return std::make_pair(Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "");
+        return std::make_pair(Media::ERR_MEDIA_WRITE_PARCEL_FAIL, "");
     }
 
     // 1.validate value format
     if (ExifMetadatFormatter::ConvertValueFormat(keyName, tmpValue)) {
         IMAGE_LOGD("Invalid value format. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
         // value format validate does not pass
-        return std::make_pair(Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "");
+        return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
     }
     IMAGE_LOGD("Processed format value. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
 
@@ -1260,9 +1222,64 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
     if (ExifMetadatFormatter::ValidateValueRange(keyName, value)) {
         IMAGE_LOGD("Invalid value range. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
         // value range validate does not pass
-        return std::make_pair(Media::ERR_MEDIA_OUT_OF_RANGE, "");
+        return std::make_pair(Media::ERR_MEDIA_VALUE_INVALID, "");
     }
     return std::make_pair(Media::SUCCESS, tmpValue);
+}
+
+static bool StrToDouble(const std::string &value, double &output)
+{
+    size_t slashPos = value.find('/');
+    if (slashPos == std::string::npos) {
+        IMAGE_LOGE("StrToDouble split error");
+        return false;
+    }
+    std::string numeratorStr = value.substr(0, slashPos);
+    std::string denominatorStr = value.substr(slashPos + 1);
+    int numerator = stoi(numeratorStr);
+    int denominator = stoi(denominatorStr);
+    output = static_cast<double>(numerator) / denominator;
+    return true;
+}
+
+static bool ValidLatLong(const std::string &key, const std::string &value)
+{
+    IMAGE_LOGD("ValidLatLong key is %{public}s value is %{public}s", key.c_str(), value.c_str());
+
+    double degree = 0.0;
+    double minute = 0.0;
+    double second = 0.0;
+
+    std::vector<std::string> tokens;
+    SplitStr(value, " ", tokens);
+    if (tokens.size() != 3) {
+        IMAGE_LOGE("value size is not 3. token size %{public}d", tokens.size());
+        return false;
+    }
+    if (!StrToDouble(tokens[0], degree) || !StrToDouble(tokens[1], minute) || !StrToDouble(tokens[2], second)) {
+        IMAGE_LOGE("Convert gps data to double type failed.");
+        return false;
+    }
+    constexpr uint32_t timePeriod = 60;
+    double latOrLong = degree + minute / timePeriod + second / (timePeriod * timePeriod);
+
+    if (key == "GPSLatitude" && (latOrLong > 90.0 || latOrLong < 0.0)) {
+        IMAGE_LOGE("GPSLatitude is out of range.");
+        return false;
+    }
+    if (key == "GPSLongitude" && (latOrLong > 180.0 || latOrLong < 0.0)) {
+        IMAGE_LOGE("GPSLongitude is out of range.");
+        return false;
+    }
+    return true;
+}
+
+static bool IsUint16(const std::string& s) {
+    IMAGE_LOGD("IsUint16 %{publich}s", s.c_str());
+    std::istringstream iss(s);
+    uint16_t num;
+    iss >> num;
+    return !iss.fail() && iss.eof();
 }
 
 // exif validation portal
@@ -1270,27 +1287,26 @@ int32_t ExifMetadatFormatter::Validate(const std::string &keyName, const std::st
 {
     IMAGE_LOGD("Validating. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
 
-    // translate exif tag. For example translate "BitsPerSample" to "Exif.Image.BitsPerSample"
-    if (!ExifMetadatFormatter::IsKeySupported(keyName)) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    auto result = ExifMetadatFormatter::Format(keyName, value);
+    if (result.first) {
+        IMAGE_LOGE("Validating Error %{public}d", result.first);
+        return result.first;
     }
 
-    if (!ExifMetadatFormatter::IsModifyAllowed(keyName)) {
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    IMAGE_LOGD("format result: %{public}s", result.second.c_str());
+    if ((keyName == "GPSLatitude" || keyName == "GPSLongitude") &&
+        !ValidLatLong(keyName, result.second)) {
+        IMAGE_LOGE("Validating GPSLatLong Error");
+        return ERR_MEDIA_VALUE_INVALID;
     }
 
-    // 1.validate value format
-    if (ExifMetadatFormatter::ValidateValueFormat(keyName, value)) {
-        IMAGE_LOGD("Invalid value format. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
-        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT; // value format validate does not pass
+    if ((UINT16_KEYS.find(keyName) != UINT16_KEYS.end()) &&
+        !IsUint16(result.second)) {
+        IMAGE_LOGE("Validating uint16 Error %{public}s", result.second.c_str());
+        return ERR_MEDIA_VALUE_INVALID;
     }
-    IMAGE_LOGD("Processed format value. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
-    // 2.validate value range
-    if (ExifMetadatFormatter::ValidateValueRange(keyName, value)) {
-        IMAGE_LOGD("Invalid value range. Key: %{public}s, Value: %{public}s.", keyName.c_str(), value.c_str());
-        return Media::ERR_MEDIA_OUT_OF_RANGE; // value range validate does not pass
-    }
-    return Media::SUCCESS;
+    IMAGE_LOGD("Validate ret: %{result.first}d", result.first);
+    return result.first;
 }
 } // namespace Media
 } // namespace OHOS

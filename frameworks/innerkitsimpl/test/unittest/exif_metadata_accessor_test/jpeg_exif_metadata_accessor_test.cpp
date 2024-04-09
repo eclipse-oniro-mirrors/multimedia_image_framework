@@ -1194,20 +1194,20 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
 
     ASSERT_TRUE(exifMetadata->SetValue("LensSerialNumber", "XXX"));
     ASSERT_TRUE(exifMetadata->SetValue("CompositeImage", "1"));
-    ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "3456"));
+    ASSERT_TRUE(exifMetadata->SetValue("SourceImageNumberOfCompositeImage", "34 56"));
     ASSERT_TRUE(exifMetadata->SetValue("SourceExposureTimesOfCompositeImage", "1 bytes"));
     ASSERT_TRUE(exifMetadata->SetValue("Gamma", "25/10"));
     ASSERT_TRUE(exifMetadata->SetValue("PhotometricInterpretation", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("RowsPerStrip", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("StripByteCounts", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("StripOffsets", "0"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "11 21 183 259"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "11 21"));
     ASSERT_EQ(imageAccessor.Write(), 0);
 
     ASSERT_EQ(imageAccessor.Read(), 0);
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "XXX");
     ASSERT_EQ(GetProperty(exifMetadata, "CompositeImage"), "1");
-    ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "3456");
+    ASSERT_EQ(GetProperty(exifMetadata, "SourceImageNumberOfCompositeImage"), "34");
     ASSERT_EQ(GetProperty(exifMetadata, "SourceExposureTimesOfCompositeImage"), "1 bytes");
     ASSERT_EQ(GetProperty(exifMetadata, "Gamma"), "2.5");
     ASSERT_EQ(GetProperty(exifMetadata, "JPEGInterchangeFormat"), "");
