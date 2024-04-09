@@ -61,7 +61,7 @@ private:
     static DataBuf GetRawTextFromChunk(const DataBuf &chunkData, size_t keySize, TextChunkType chunkType);
 
     // lookup exif keyword
-    static bool FindExifKeyword(const byte *keyword);
+    static bool FindExifKeyword(const byte *keyword, size_t size);
 
     // lookup exif marker
     static size_t VerifyExifIdCode(DataBuf &exifInfo, size_t exifInfoLength);
