@@ -257,6 +257,13 @@ if (use_clang_android) {
       external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
     }
 
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.graphic_graphic_2d_ext)) {
+      defines += [ "SUT_DECODE_ENABLE" ]
+      include_dirs = [ "${ipc_subsystem}/graphic/graphic_2d_ext/texture_supercompress/decode/include" ]
+      external_deps += [ "graphic_2d_ext:textureSuperDecompress" ]
+    }
+
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]

@@ -14,6 +14,9 @@
  */
 
 #include "astc_codec.h"
+#ifdef SUT_ENCODE_ENABLE
+#include "astc_superCompress.h"
+#endif
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
 #endif
@@ -340,17 +343,7 @@ static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
 }
 #endif
 
-static bool g_isSutEncInit = false;
-static void *g_textureSutEncSoHandle = nullptr;
-using SuperCompressTexture = bool (*)(uint8_t*, int32_t, uint8_t*, int32_t&, uint32_t);
-static SuperCompressTexture g_sutEncSoEncFunc = nullptr;
-const std::string g_textureSuperEncSo = "/system/lib64/libtextureSuperCompress.z.so";
-
-static bool CheckClBinIsExist(const std::string &name)
-{
-    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
-}
-
+#ifdef SUT_ENCODE_ENABLE
 static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
     if ((param.sutProfile == SutProfile::SKIP_SUT) ||
@@ -363,25 +356,6 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         IMAGE_LOGE("astc TryTextureSuperCompress: astcBuffer is nullptr!");
         return false;
     }
-    if (!CheckClBinIsExist(g_textureSuperEncSo)) {
-        IMAGE_LOGE("astc TryTextureSuperCompress: not find %{public}s!", g_textureSuperEncSo.c_str());
-        return false;
-    }
-    if (!g_isSutEncInit) {
-        g_textureSutEncSoHandle = dlopen(g_textureSuperEncSo.c_str(), 1);
-        if (g_textureSutEncSoHandle == nullptr) {
-            IMAGE_LOGE("astc libtextureSuperCompress dlopen failed!");
-            return false;
-        }
-        g_sutEncSoEncFunc =
-            reinterpret_cast<SuperCompressTexture>(dlsym(g_textureSutEncSoHandle, "SuperCompressTexture"));
-        if (g_sutEncSoEncFunc == nullptr) {
-            IMAGE_LOGE("astc libtextureSuperCompress dlsym failed!");
-            dlclose(g_textureSutEncSoHandle);
-            return false;
-        }
-        g_isSutEncInit = true;
-    }
     uint8_t *dstMem = nullptr;
     int32_t dstSize = 0;
     switch (param.sutProfile) {
@@ -391,13 +365,15 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
             IMAGE_LOGI("astc could not be supported for sutProfile%{public}d", param.sutProfile);
             return false;
     }
-    if (!g_sutEncSoEncFunc(astcBuffer, param.astcBytes, dstMem, dstSize, static_cast<uint32_t>(param.sutProfile))) {
+    if (!Rosen::TextureSuperCodecEnc::SuperCompressTexture(astcBuffer,
+        param.astcBytes, dstMem, dstSize, static_cast<uint32_t>(param.sutProfile))) {
         IMAGE_LOGE("astc g_sutEncSoEncFunc failed. notice: astc memory may be polluted!");
         return false;
     }
     param.astcBytes = dstSize;
     return true;
 }
+#endif
 
 static bool InitAstcEncPara(TextureEncodeOptions &param,
     int32_t width, int32_t height, int32_t stride, PlEncodeOptions &astcOpts)
@@ -487,11 +463,13 @@ uint32_t AstcCodec::ASTCEncode()
         free(astcBuffer);
         return ERROR;
     }
+#ifdef SUT_ENCODE_ENABLE
     if (!TryTextureSuperCompress(param, astcBuffer)) {
         IMAGE_LOGE("astc TryTextureSuperCompress failed!");
         free(astcBuffer);
         return ERROR;
     }
+#endif
     astcOutput_->Write(astcBuffer, param.astcBytes);
     free(astcBuffer);
     IMAGE_LOGD("astc GpuFlag %{public}d, enableQualityCheck %{public}d, astcProfile %{public}d, sut%{public}d",

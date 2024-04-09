@@ -56,6 +56,9 @@
 #include "include/core/SkData.h"
 #endif
 #include "string_ex.h"
+#ifdef SUT_DECODE_ENABLE
+#include "astc_superDecompress.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -141,12 +144,7 @@ static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
-static bool g_isSutDecInit = false;
-static void *g_textureDecSoHandle = nullptr;
-using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
-using SuperDecompressTexture = bool (*)(const uint8_t *, size_t, uint8_t *, size_t &);
-static GetSuperCompressAstcSize g_sutDecSoGetSizeFunc = nullptr;
-static SuperDecompressTexture g_sutDecSoDecFunc = nullptr;
+#ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
 constexpr uint8_t ASTC_MAGIC_1 = 0xAB;
@@ -156,7 +154,7 @@ constexpr uint8_t BYTE_POS_0 = 0;
 constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
-const std::string g_textureSuperDecSo = "/system/lib64/libtextureSuperDecompress.z.so";
+#endif
 const auto KEY_SIZE = 2;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 
@@ -2170,11 +2168,7 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo)
     return true;
 }
 
-static bool CheckClBinIsExist(const std::string &name)
-{
-    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
-}
-
+#ifdef SUT_DECODE_ENABLE
 static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
 {
     if ((fileBuf == nullptr) || (fileSize <= ASTC_HEAD_BYTES)) {
@@ -2186,33 +2180,7 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
         IMAGE_LOGI("astc GetAstcSizeBytes input is pure astc!");
         return fileSize;
     }
-    if (!CheckClBinIsExist(g_textureSuperDecSo)) {
-        IMAGE_LOGE("astc is not pure astc, but not find %{public}s!", g_textureSuperDecSo.c_str());
-        return 0;
-    }
-    if (!g_isSutDecInit) {
-        g_textureDecSoHandle = dlopen(g_textureSuperDecSo.c_str(), 1);
-        if (g_textureDecSoHandle == nullptr) {
-            IMAGE_LOGE("astc libtextureSuperDecompress dlopen failed!");
-            return 0;
-        }
-        g_sutDecSoGetSizeFunc =
-            reinterpret_cast<GetSuperCompressAstcSize>(dlsym(g_textureDecSoHandle, "GetSuperCompressAstcSize"));
-        if (g_sutDecSoGetSizeFunc == nullptr) {
-            IMAGE_LOGE("astc GetSuperCompressAstcSize dlsym failed!");
-            dlclose(g_textureDecSoHandle);
-            return 0;
-        }
-        g_sutDecSoDecFunc =
-            reinterpret_cast<SuperDecompressTexture>(dlsym(g_textureDecSoHandle, "SuperDecompressTexture"));
-        if (g_sutDecSoDecFunc == nullptr) {
-            IMAGE_LOGE("astc g_sutDecSoDecFunc dlsym failed!");
-            dlclose(g_textureDecSoHandle);
-            return 0;
-        }
-        g_isSutDecInit = true;
-    }
-    return g_sutDecSoGetSizeFunc(fileBuf, fileSize);
+    return Rosen::TextureSuperCodecDec::GetSuperCompressAstcSize(fileBuf, fileSize);
 }
 
 static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes)
@@ -2222,11 +2190,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         IMAGE_LOGE("astc TextureSuperCompressDecode input check failed!");
         return false;
     }
-    if (g_sutDecSoDecFunc == nullptr) {
-        IMAGE_LOGE("astc SuperDecompressTexture is not dlsym from so!");
-        return false;
-    }
-    if (!g_sutDecSoDecFunc(inData, inBytes, outData, outBytes)) {
+    if (!Rosen::TextureSuperCodecDec::SuperDecompressTexture(inData, inBytes, outData, outBytes)) {
         IMAGE_LOGE("astc SuperDecompressTexture process failed!");
         return false;
     }
@@ -2236,6 +2200,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     }
     return true;
 }
+#endif
 
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     std::unique_ptr<SourceStream> &sourceStreamPtr)
@@ -2263,17 +2228,21 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     *static_cast<int32_t *>(fdPtr) = fd;
     pixelAstc->SetPixelsAddr(data, fdPtr, astcSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
     bool successMemCpyOrDec = true;
+#ifdef SUT_DECODE_ENABLE
     if (fileSize < astcSize) {
         if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize, data, astcSize) != true) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
             successMemCpyOrDec = false;
         }
     } else {
+#endif
         if (memcpy_s(data, fileSize, sourceStreamPtr->GetDataPtr(), fileSize) != 0) {
             IMAGE_LOGE("[ImageSource] astc memcpy_s failed!");
             successMemCpyOrDec = false;
         }
+#ifdef SUT_DECODE_ENABLE
     }
+#endif
     if (!successMemCpyOrDec) {
         int32_t *fdPtrInt = static_cast<int32_t *>(fdPtr);
         delete[] fdPtrInt;
@@ -2308,11 +2277,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
     }
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
+#ifdef SUT_DECODE_ENABLE
     size_t astcSize = GetAstcSizeBytes(sourceStreamPtr_->GetDataPtr(), fileSize);
     if (astcSize == 0) {
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
     }
+#else
+    size_t astcSize = fileSize;
+#endif
     if (fastAstc && sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE && fileSize == astcSize) {
         void *fdBuffer = new int32_t();
         *static_cast<int32_t *>(fdBuffer) = static_cast<FileSourceStream *>(sourceStreamPtr_.get())->GetMMapFd();

@@ -238,6 +238,13 @@ ohos_shared_library("extplugin") {
       "zlib:libz",
     ]
 
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.graphic_graphic_2d_ext)) {
+      defines += [ "SUT_ENCODE_ENABLE" ]
+      include_dirs += [ "${ipc_subsystem}/graphic/graphic_2d_ext/texture_supercompress/encode/include" ]
+      external_deps += [ "graphic_2d_ext:textureSuperCompress" ]
+    }
+
     if (enable_jpeg_hw_decode) {
       external_deps += [
         "drivers_interface_codec:image_idl_headers",
