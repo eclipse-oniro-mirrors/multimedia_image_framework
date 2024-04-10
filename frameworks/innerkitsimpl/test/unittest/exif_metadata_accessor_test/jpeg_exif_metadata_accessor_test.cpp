@@ -394,7 +394,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read007, TestSize.Level3)
     std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
     ASSERT_NE(exifMetadata, nullptr);
 
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), 
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"),
               "HwMnoteScenePointer:170,"
               "HwMnoteSceneVersion:1207959808,"
               "HwMnoteFacePointer:188,"
