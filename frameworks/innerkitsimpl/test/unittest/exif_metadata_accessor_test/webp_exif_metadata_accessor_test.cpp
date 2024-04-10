@@ -257,7 +257,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "H1");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "21mm");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), "33, 22, 11, 10");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "5 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2023:01:19 10:39:58");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "2023:01:20 10:39:00");
@@ -1561,7 +1561,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "400");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "543792");
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Daylight");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "5 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "1.69 EV (f/1.8)");
     ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Pattern");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "3456");
@@ -1588,7 +1588,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write019, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ISOSpeedRatings"), "300");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeDigitized"), "4380000");
     ASSERT_EQ(GetProperty(exifMetadata, "LightSource"), "Fluorescent");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "5 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "0.09 EV (f/1.0)");
     ASSERT_EQ(GetProperty(exifMetadata, "MeteringMode"), "Spot");
     ASSERT_EQ(GetProperty(exifMetadata, "PixelXDimension"), "1000");
