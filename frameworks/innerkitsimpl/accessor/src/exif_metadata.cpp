@@ -136,7 +136,8 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     return SUCCESS;
 }
 
-int ExifMetadata::HandleMakerNote(std::string &value) const{
+int ExifMetadata::HandleMakerNote(std::string &value) const
+{
     std::vector<char> tagValueChar(TAG_VALUE_SIZE, 0);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
     if (md == nullptr) {
@@ -144,7 +145,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const{
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (!is_huawei_md(md)) {
-        IMAGE_LOGD("Exif data mnote data md is not huawei md.");
+        IMAGE_LOGD("Exif data mnote data md is not ours md.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     MnoteHuaweiEntryCount *ec = nullptr;
@@ -152,10 +153,10 @@ int ExifMetadata::HandleMakerNote(std::string &value) const{
     if (ec == nullptr) {
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
-    
+
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
-        const char* mnoteKey = mnote_huawei_tag_get_name(entry->tag);
+        const char *mnoteKey = mnote_huawei_tag_get_name(entry->tag);
         mnote_huawei_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
         value += std::string(mnoteKey) + ":" + tagValueChar.data() + ",";
     }
@@ -307,8 +308,8 @@ ExifEntry *ExifMetadata::GetEntry(const std::string &key, const size_t valueLen)
         return nullptr;
     }
 
-    if ((entry->format == EXIF_FORMAT_UNDEFINED || entry->format == EXIF_FORMAT_ASCII)
-        && (entry->size != static_cast<unsigned int>(valueLen))) {
+    if ((entry->format == EXIF_FORMAT_UNDEFINED || entry->format == EXIF_FORMAT_ASCII) &&
+        (entry->size != static_cast<unsigned int>(valueLen))) {
         ReallocEntry(entry, valueLen);
     }
     return entry;
