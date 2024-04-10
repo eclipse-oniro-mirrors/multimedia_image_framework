@@ -163,6 +163,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
         mnote_huawei_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
         value += std::string(mnoteKey) + ":" + tagValueChar.data() + ",";
     }
+
     // Check if the last character of value is a comma and remove it
     if (value.length() > 1 && value[value.length() - 1] == ',') {
         value = value.substr(0, value.length() - 1);
