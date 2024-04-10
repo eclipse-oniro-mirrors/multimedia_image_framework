@@ -28,35 +28,35 @@ namespace OHOS {
 namespace Multimedia {
 
 namespace {
-    static const std::string IMAGE_INPUT1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata001.jpg";
-    static const std::string IMAGE_INPUT2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata003.jpg";
-    static const std::string IMAGE_INPUT3_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata004.jpg";
-    static const std::string IMAGE_ERROR1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readexifblob002.jpg";
-    static const std::string IMAGE_ERROR2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readexifblob003.jpg";
-    static const std::string IMAGE_INPUT_WRITE1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata001.jpg";
-    static const std::string IMAGE_INPUT_WRITE3_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata003.jpg";
-    static const std::string IMAGE_INPUT_WRITE5_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata005.jpg";
-    static const std::string IMAGE_INPUT_WRITE7_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata007.jpg";
-    static const std::string IMAGE_INPUT_WRITE9_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata009.jpg";
-    static const std::string IMAGE_INPUT_WRITE11_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata011.jpg";
-    static const std::string IMAGE_INPUT_WRITE13_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata013.jpg";
-    static const std::string IMAGE_INPUT_WRITE15_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata015.jpg";
-    static const std::string IMAGE_INPUT_WRITE17_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata017.jpg";
-    static const std::string IMAGE_INPUT_WRITE19_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata019.jpg";
-    static const std::string IMAGE_INPUT_WRITE21_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata021.jpg";
-    static const std::string IMAGE_INPUT_WRITE23_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata023.jpg";
-    static const std::string IMAGE_INPUT_WRITE25_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata025.jpg";
-    static const std::string IMAGE_INPUT_WRITE27_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata027.jpg";
-    static const std::string IMAGE_INPUT_WRITE29_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata029.jpg";
-    static const std::string IMAGE_INPUT_WRITE31_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata031.jpg";
-    static const std::string IMAGE_INPUT_WRITE2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob001.jpg";
-    static const std::string IMAGE_INPUT_WRITE4_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob003.jpg";
-    static const std::string IMAGE_OUTPUT_WRITE1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata002.jpg";
-    static const std::string IMAGE_OUTPUT_WRITE2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob002.jpg";
-    static const std::string IMAGE_OUTPUT_WRITE4_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob004.jpg";
-    static const std::string IMAGE_OUTPUT_WRITE6_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob006.jpg";
-    constexpr auto EXIF_ID = "Exif\0\0";
-    constexpr auto EXIF_ID_SIZE = 6;
+static const std::string IMAGE_INPUT1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata001.jpg";
+static const std::string IMAGE_INPUT2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata003.jpg";
+static const std::string IMAGE_INPUT3_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readmetadata004.jpg";
+static const std::string IMAGE_ERROR1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readexifblob002.jpg";
+static const std::string IMAGE_ERROR2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_readexifblob003.jpg";
+static const std::string IMAGE_INPUT_WRITE1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata001.jpg";
+static const std::string IMAGE_INPUT_WRITE3_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata003.jpg";
+static const std::string IMAGE_INPUT_WRITE5_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata005.jpg";
+static const std::string IMAGE_INPUT_WRITE7_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata007.jpg";
+static const std::string IMAGE_INPUT_WRITE9_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata009.jpg";
+static const std::string IMAGE_INPUT_WRITE11_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata011.jpg";
+static const std::string IMAGE_INPUT_WRITE13_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata013.jpg";
+static const std::string IMAGE_INPUT_WRITE15_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata015.jpg";
+static const std::string IMAGE_INPUT_WRITE17_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata017.jpg";
+static const std::string IMAGE_INPUT_WRITE19_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata019.jpg";
+static const std::string IMAGE_INPUT_WRITE21_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata021.jpg";
+static const std::string IMAGE_INPUT_WRITE23_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata023.jpg";
+static const std::string IMAGE_INPUT_WRITE25_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata025.jpg";
+static const std::string IMAGE_INPUT_WRITE27_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata027.jpg";
+static const std::string IMAGE_INPUT_WRITE29_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata029.jpg";
+static const std::string IMAGE_INPUT_WRITE31_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata031.jpg";
+static const std::string IMAGE_INPUT_WRITE2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob001.jpg";
+static const std::string IMAGE_INPUT_WRITE4_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob003.jpg";
+static const std::string IMAGE_OUTPUT_WRITE1_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writemetadata002.jpg";
+static const std::string IMAGE_OUTPUT_WRITE2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob002.jpg";
+static const std::string IMAGE_OUTPUT_WRITE4_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob004.jpg";
+static const std::string IMAGE_OUTPUT_WRITE6_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob006.jpg";
+constexpr auto EXIF_ID = "Exif\0\0";
+constexpr auto EXIF_ID_SIZE = 6;
 }
 
 class JpegExifMetadataAccessorTest : public testing::Test {
@@ -207,7 +207,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "xxx");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "xxx");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), " 1, 1.5,  1,  2");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "xx");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "xx");
@@ -246,7 +246,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read004, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "427000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubfileType"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
-              "Within rectangle (width 183, height 259) around (x,y) = (10,20)");
+        "Within rectangle (width 183, height 259) around (x,y) = (10,20)");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectDistanceRange"), "Unknown");
     ASSERT_EQ(GetProperty(exifMetadata, "BodySerialNumber"), "xx");
     ASSERT_EQ(GetProperty(exifMetadata, "BrightnessValue"), "2.50 EV (19.38 cd/m^2)");
@@ -366,7 +366,46 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneSunsetConf"), "8");
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneTextConf"), "11");
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneVersion"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:1,HwMnoteBurstNumber:2,HwMnoteFrontCamera:3,"
+        "HwMnoteRollAngle:4,HwMnotePitchAngle:5,HwMnotePhysicalAperture:6,"
+        "HwMnoteFocusMode:7,HwMnoteFacePointer:122,HwMnoteFaceVersion:1,"
+        "HwMnoteFaceCount:2,HwMnoteFaceConf:3,HwMnoteFaceSmileScore:1 2 3 4 5 6 7 8,"
+        "HwMnoteFaceRect:1 2 3 4 5 6 7 8 1 2 3 4 5 6 7 8,"
+        "HwMnoteFaceLeyeCenter:1 2 3 4,HwMnoteFaceReyeCenter:5 6 7 8,"
+        "HwMnoteFaceMouthCenter:1 2 3 4 5 6 7 8,HwMnoteScenePointer:256,"
+        "HwMnoteSceneVersion:1,HwMnoteSceneFoodConf:2,HwMnoteSceneStageConf:3,"
+        "HwMnoteSceneBlueSkyConf:4,HwMnoteSceneGreenPlantConf:5,HwMnoteSceneBeachConf:6,"
+        "HwMnoteSceneSnowConf:7,HwMnoteSceneSunsetConf:8,HwMnoteSceneFlowersConf:9,"
+        "HwMnoteSceneNightConf:10,HwMnoteSceneTextConf:11");
 }
+
+/**
+ * @tc.name: Read007
+ * @tc.desc: test Read
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, Read007, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT2_JPEG_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"),
+              "HwMnoteScenePointer:170,"
+              "HwMnoteSceneVersion:1207959808,"
+              "HwMnoteFacePointer:188,"
+              "HwMnoteFaceVersion:1207959808,"
+              "HwMnoteCaptureMode:0,"
+              "HwMnoteFrontCamera:0,"
+              "HwMnoteRollAngle:26,"
+              "HwMnotePitchAngle:-83,"
+              "HwMnotePhysicalAperture:1");
+}
+
 
 /**
  * @tc.name: ReadBlob002
@@ -963,7 +1002,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
 
     auto exifMetadata = imageAccessor.Get();
     ASSERT_NE(exifMetadata, nullptr);
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "427000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "427000");
@@ -992,7 +1031,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(imageAccessor.Write(), 0);
 
     ASSERT_EQ(imageAccessor.Read(), 0);
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "Comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "4280000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "4280000");
@@ -1151,7 +1190,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
-            "Within rectangle (width 183, height 259) around (x,y) = (10,20)");
+        "Within rectangle (width 183, height 259) around (x,y) = (10,20)");
 
     ASSERT_TRUE(exifMetadata->SetValue("LensSerialNumber", "XXX"));
     ASSERT_TRUE(exifMetadata->SetValue("CompositeImage", "1"));
@@ -1178,7 +1217,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "StripByteCounts"), "0");
     ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "0");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
-            "Within rectangle (width 183, height 259) around (x,y) = (11,21)");
+        "Within rectangle (width 183, height 259) around (x,y) = (11,21)");
 }
 
 /**
@@ -1248,7 +1287,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, WriteBlob003, TestSize.Level3)
 }
 
 std::string JpegExifMetadataAccessorTest::GetProperty(const std::shared_ptr<ExifMetadata> &metadata,
-                                                      const std::string &prop)
+    const std::string &prop)
 {
     std::string value;
     metadata->GetValue(prop, value);
