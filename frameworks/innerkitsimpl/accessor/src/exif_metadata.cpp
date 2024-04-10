@@ -87,42 +87,15 @@ ExifMetadata::~ExifMetadata()
 int ExifMetadata::GetValue(const std::string &key, std::string &value) const
 {
     IMAGE_LOGD("Retrieving value for key: %{public}s", key.c_str());
-    char tagValueChar[TAG_VALUE_SIZE];
     if (exifData_ == nullptr) {
         IMAGE_LOGE("Exif data is null for key: %{public}s", key.c_str());
         value = "";
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (key == "MakerNote") {
-        ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
-        if (md == nullptr) {
-            IMAGE_LOGD("Exif data mnote data md is a nullptr.");
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
-        if (!is_huawei_md(md)) {
-            IMAGE_LOGD("Exif data mnote data md is not huawei md.");
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
-        MnoteHuaweiEntryCount *ec = nullptr;
-        mnote_huawei_get_entry_count((ExifMnoteDataHuawei *)md, &ec);
-        if (ec == nullptr) {
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
-        }
-        
-        for (unsigned int i = 0; i < ec->size; i++) {
-            MnoteHuaweiEntry *entry = ec->entries[i];
-            const char* mnoteKey = mnote_huawei_tag_get_name(entry->tag);
-            mnote_huawei_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
-            value += std::string(mnoteKey) + ":" + tagValueChar + ",";
-        }
-
-        // Check if the last character of value is a comma and remove it
-        if (value.length() > 1 && value[value.length() - 1] == ',') {
-            value = value.substr(0, value.length() - 1);
-        }
-
-        return SUCCESS;
+        return HandleMakerNote(value);
     }
+    char tagValueChar[TAG_VALUE_SIZE];
     if (key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") {
         value = DEFAULT_EXIF_VALUE;
         ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
@@ -160,6 +133,38 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         value = tagValueChar;
     }
     IMAGE_LOGD("Retrieved value for key: %{public}s is: %{public}s", key.c_str(), value.c_str());
+    return SUCCESS;
+}
+
+int ExifMetadata::HandleMakerNote(std::string &value) const{
+    std::vector<char> tagValueChar(TAG_VALUE_SIZE, 0);
+    ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+    if (md == nullptr) {
+        IMAGE_LOGD("Exif data mnote data md is a nullptr.");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    if (!is_huawei_md(md)) {
+        IMAGE_LOGD("Exif data mnote data md is not huawei md.");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    MnoteHuaweiEntryCount *ec = nullptr;
+    mnote_huawei_get_entry_count((ExifMnoteDataHuawei *)md, &ec);
+    if (ec == nullptr) {
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    
+    for (unsigned int i = 0; i < ec->size; i++) {
+        MnoteHuaweiEntry *entry = ec->entries[i];
+        const char* mnoteKey = mnote_huawei_tag_get_name(entry->tag);
+        mnote_huawei_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
+        value += std::string(mnoteKey) + ":" + tagValueChar.data() + ",";
+    }
+
+    // Check if the last character of value is a comma and remove it
+    if (value.length() > 1 && value[value.length() - 1] == ',') {
+        value = value.substr(0, value.length() - 1);
+    }
+
     return SUCCESS;
 }
 
