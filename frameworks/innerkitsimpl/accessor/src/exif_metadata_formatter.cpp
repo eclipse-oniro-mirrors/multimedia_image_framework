@@ -39,6 +39,16 @@ namespace OHOS {
 namespace Media {
 
 const auto GPS_DEGREE_SIZE = 2;
+const auto GPS_NORMAL_SIZE = 3;
+const double GPS_MAX_LATITUDE = 90.0;
+const double GPS_MIN_LATITUDE = 0.0;
+const double GPS_MAX_LONGITUDE = 180.0;
+const double GPS_MIN_LONGITUDE = 0.0;
+const int CONSTANT_0 = 0;
+const int CONSTANT_1 = 1;
+const int CONSTANT_2 = 2;
+const int CONSTANT_3 = 3;
+const int CONSTANT_4 = 4;
 
 const std::set<std::string> READ_WRITE_KEYS = {
     "BitsPerSample",
@@ -1238,6 +1248,9 @@ static bool StrToDouble(const std::string &value, double &output)
     std::string denominatorStr = value.substr(slashPos + 1);
     int numerator = stoi(numeratorStr);
     int denominator = stoi(denominatorStr);
+    if (denominator == 0) {
+        return false;
+    }
     output = static_cast<double>(numerator) / denominator;
     return true;
 }
@@ -1252,29 +1265,29 @@ static bool ValidLatLong(const std::string &key, const std::string &value)
 
     std::vector<std::string> tokens;
     SplitStr(value, " ", tokens);
-    if (tokens.size() != 3) {
+    if (tokens.size() != GPS_NORMAL_SIZE) {
         IMAGE_LOGE("value size is not 3. token size %{public}d", tokens.size());
         return false;
     }
-    if (!StrToDouble(tokens[0], degree) || !StrToDouble(tokens[1], minute) || !StrToDouble(tokens[2], second)) {
+    if (!StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) || !StrToDouble(tokens[CONSTANT_2], second)) {
         IMAGE_LOGE("Convert gps data to double type failed.");
         return false;
     }
     constexpr uint32_t timePeriod = 60;
     double latOrLong = degree + minute / timePeriod + second / (timePeriod * timePeriod);
 
-    if (key == "GPSLatitude" && (latOrLong > 90.0 || latOrLong < 0.0)) {
+    if (key == "GPSLatitude" && (latOrLong > GPS_MAX_LATITUDE || latOrLong < GPS_MIN_LATITUDE)) {
         IMAGE_LOGE("GPSLatitude is out of range.");
         return false;
     }
-    if (key == "GPSLongitude" && (latOrLong > 180.0 || latOrLong < 0.0)) {
+    if (key == "GPSLongitude" && (latOrLong > GPS_MAX_LONGITUDE || latOrLong < GPS_MIN_LONGITUDE)) {
         IMAGE_LOGE("GPSLongitude is out of range.");
         return false;
     }
     return true;
 }
 
-static bool IsUint16(const std::string& s) {
+static bool IsUint16(const std::string &s) {
     IMAGE_LOGD("IsUint16 %{publich}s", s.c_str());
     std::istringstream iss(s);
     uint16_t num;
