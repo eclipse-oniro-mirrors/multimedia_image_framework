@@ -47,8 +47,6 @@ const double GPS_MIN_LONGITUDE = 0.0;
 const int CONSTANT_0 = 0;
 const int CONSTANT_1 = 1;
 const int CONSTANT_2 = 2;
-const int CONSTANT_3 = 3;
-const int CONSTANT_4 = 4;
 
 const std::set<std::string> READ_WRITE_KEYS = {
     "BitsPerSample",
@@ -1269,7 +1267,8 @@ static bool ValidLatLong(const std::string &key, const std::string &value)
         IMAGE_LOGE("value size is not 3. token size %{public}d", tokens.size());
         return false;
     }
-    if (!StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) || !StrToDouble(tokens[CONSTANT_2], second)) {
+    if (!StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) ||
+        !StrToDouble(tokens[CONSTANT_2], second)) {
         IMAGE_LOGE("Convert gps data to double type failed.");
         return false;
     }
@@ -1287,7 +1286,8 @@ static bool ValidLatLong(const std::string &key, const std::string &value)
     return true;
 }
 
-static bool IsUint16(const std::string &s) {
+static bool IsUint16(const std::string &s)
+{
     IMAGE_LOGD("IsUint16 %{publich}s", s.c_str());
     std::istringstream iss(s);
     uint16_t num;
