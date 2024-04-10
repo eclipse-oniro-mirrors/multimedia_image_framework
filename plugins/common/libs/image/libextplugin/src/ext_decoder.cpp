@@ -631,7 +631,11 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
     bool isOutputYuv420Format = IsYuv420Format(context.info.pixelFormat);
     if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG) {
-        return DecodeToYuv420(index, context);
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    return 0;
+#else
+    return DecodeToYuv420(index, context);
+#endif
     }
     uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
     uint8_t *dstBuffer = nullptr;

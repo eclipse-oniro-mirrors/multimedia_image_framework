@@ -20,6 +20,10 @@
 #include "log_tags.h"
 #include "pixel_map.h"
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "ashmem.h"
+#endif
+
 namespace OHOS {
 namespace Media {
 // Define bytes per pixel
@@ -161,6 +165,19 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     info.alphaType = at;
     info.colorSpace = cs;
     return info;
+}
+
+static bool CheckAshmemSize(const int &fd, const int32_t &bufferSize)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (fd < 0) {
+        return false;
+    }
+    int32_t ashmemSize = AshmemGetSize(fd);
+    return bufferSize == ashmemSize;
+#else
+    return false;
+#endif
 }
 } // namespace Media
 } // namespace OHOS

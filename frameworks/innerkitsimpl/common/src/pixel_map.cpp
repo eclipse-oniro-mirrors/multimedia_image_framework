@@ -1753,9 +1753,10 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
 uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     int fd = ReadFileDescriptor(parcel);
-    if (fd < 0) {
-        IMAGE_LOGE("read fd :[%{public}d] error", fd);
+    if (!CheckAshmemSize(fd, bufferSize)) {
+        IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
@@ -1785,6 +1786,7 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     }
 
     ReleaseMemory(AllocatorType::SHARE_MEM_ALLOC, ptr, &fd, bufferSize);
+#endif
     return base;
 }
 
@@ -1912,7 +1914,10 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
-
+        if (!CheckAshmemSize(*fd, bufferSize)) {
+            IMAGE_LOGE("write pixel map check ashmem size failed, fd:[%{public}d].", *fd);
+            return false;
+        }
         if (!WriteFileDescriptor(parcel, *fd)) {
             IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
             return false;
@@ -2126,7 +2131,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
-        if (fd < 0) {
+        if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             return false;
         }
@@ -2221,7 +2226,7 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         return nullptr;
     }
     if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
-        IMAGE_LOGE("read properties fail");
+        IMAGE_LOGE("read memInfo fail");
         delete pixelMap;
         return nullptr;
     }
