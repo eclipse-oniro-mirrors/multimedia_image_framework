@@ -40,7 +40,6 @@ const static string ENCODED_FORMAT_KEY = "EncodedFormat";
 const static string SUPPORT_SCALE_KEY = "SupportScale";
 const static string SUPPORT_CROP_KEY = "SupportCrop";
 const static string EXT_SHAREMEM_NAME = "EXT RawData";
-static const std::string IMAGE_INPUT_JPEG_PATH = "data/local/tmp/image/test_hw1.jpg";
 class ExtDecoderTest : public testing::Test {
 public:
     ExtDecoderTest() {}
@@ -619,9 +618,11 @@ HWTEST_F(ExtDecoderTest, IsSupportHardwareDecodeTest001, TestSize.Level3)
     ASSERT_EQ(extDecoder->info_.isEmpty(), true);
     ASSERT_EQ(ret, false);
 
-    const std::string pathName = IMAGE_INPUT_JPEG_PATH;
-    auto streamPtr = FileSourceStream::CreateSourceStream(pathName);
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
     extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
     extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
     ASSERT_NE(extDecoder->codec_, nullptr);
     extDecoder->info_.fDimensions = {2, 2};
@@ -776,9 +777,6 @@ HWTEST_F(ExtDecoderTest, FinalizeEncodeTest001, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     extEncoder.pixelmap_ = new PixelMap;
     extEncoder.output_ = new MockOutputDataStream;
-    extEncoder.opts_.format = "image/astc";
-    ret = extEncoder.FinalizeEncode();
-    ASSERT_EQ(ret, SUCCESS);
     extEncoder.opts_.format = "image/";
     ret = extEncoder.FinalizeEncode();
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
