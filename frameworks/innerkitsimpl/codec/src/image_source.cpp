@@ -157,6 +157,12 @@ constexpr uint8_t BYTE_POS_3 = 3;
 #endif
 const auto KEY_SIZE = 2;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
+    {"Top-left", 0},
+    {"Bottom-right", 180},
+    {"Right-top", 90},
+    {"Left-bottom", 270},
+};
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -1117,6 +1123,15 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     std::string strValue;
     uint32_t ret = GetImagePropertyCommon(index, key, strValue);
 
+    if (key == "Orientation") {
+        if (ORIENTATION_INT_MAP.count(strValue) == 0) {
+            IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
+            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        }
+        IMAGE_LOGD("ORIENTATION_INT_MAP map value by %{public}s", strValue.c_str());
+        strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
+    }
+    IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
     std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
     if (res.ec != std::errc()) {
         return ERR_IMAGE_SOURCE_DATA;
