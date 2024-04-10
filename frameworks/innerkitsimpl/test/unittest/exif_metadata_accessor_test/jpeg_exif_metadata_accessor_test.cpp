@@ -380,6 +380,34 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read006, TestSize.Level3)
 }
 
 /**
+ * @tc.name: Read007
+ * @tc.desc: test Read
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, Read007, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(IMAGE_INPUT2_JPEG_PATH);
+    ASSERT_TRUE(stream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(stream);
+    uint32_t result = imageAccessor.Read();
+    ASSERT_EQ(result, 0);
+    std::shared_ptr<ExifMetadata> exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), 
+              "HwMnoteScenePointer:170,"
+              "HwMnoteSceneVersion:1207959808,"
+              "HwMnoteFacePointer:188,"
+              "HwMnoteFaceVersion:1207959808,"
+              "HwMnoteCaptureMode:0,"
+              "HwMnoteFrontCamera:0,"
+              "HwMnoteRollAngle:26,"
+              "HwMnotePitchAngle:-83,"
+              "HwMnotePhysicalAperture:1");
+}
+
+
+/**
  * @tc.name: ReadBlob002
  * @tc.desc: test ReadBlob from error jpeg image1 which does not have 0xff, return false
  * @tc.type: FUNC
