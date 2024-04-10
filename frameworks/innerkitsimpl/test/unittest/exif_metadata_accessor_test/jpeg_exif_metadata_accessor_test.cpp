@@ -207,7 +207,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "LensModel"), "xxx");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSerialNumber"), "xxx");
     ASSERT_EQ(GetProperty(exifMetadata, "LensSpecification"), " 1, 1.5,  1,  2");
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "GainControl"), "Normal");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "xx");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "xx");
@@ -366,6 +366,18 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read006, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneSunsetConf"), "8");
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneTextConf"), "11");
     ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteSceneVersion"), "1");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), 
+              "HwMnoteCaptureMode:1,HwMnoteBurstNumber:2,HwMnoteFrontCamera:3,"
+              "HwMnoteRollAngle:4,HwMnotePitchAngle:5,HwMnotePhysicalAperture:6,"
+              "HwMnoteFocusMode:7,HwMnoteFacePointer:122,HwMnoteFaceVersion:1,"
+              "HwMnoteFaceCount:2,HwMnoteFaceConf:3,HwMnoteFaceSmileScore:1 2 3 4 5 6 7 8,"
+              "HwMnoteFaceRect:1 2 3 4 5 6 7 8 1 2 3 4 5 6 7 8,"
+              "HwMnoteFaceLeyeCenter:1 2 3 4,HwMnoteFaceReyeCenter:5 6 7 8,"
+              "HwMnoteFaceMouthCenter:1 2 3 4 5 6 7 8,HwMnoteScenePointer:256,"
+              "HwMnoteSceneVersion:1,HwMnoteSceneFoodConf:2,HwMnoteSceneStageConf:3,"
+              "HwMnoteSceneBlueSkyConf:4,HwMnoteSceneGreenPlantConf:5,HwMnoteSceneBeachConf:6,"
+              "HwMnoteSceneSnowConf:7,HwMnoteSceneSunsetConf:8,HwMnoteSceneFlowersConf:9,"
+              "HwMnoteSceneNightConf:10,HwMnoteSceneTextConf:11");
 }
 
 /**
@@ -963,7 +975,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
 
     auto exifMetadata = imageAccessor.Get();
     ASSERT_NE(exifMetadata, nullptr);
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "427000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "427000");
@@ -992,7 +1004,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(imageAccessor.Write(), 0);
 
     ASSERT_EQ(imageAccessor.Read(), 0);
-    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "34 bytes undefined data");
+    ASSERT_EQ(GetProperty(exifMetadata, "MakerNote"), "HwMnoteCaptureMode:123");
     ASSERT_EQ(GetProperty(exifMetadata, "UserComment"), "Comm");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTime"), "4280000");
     ASSERT_EQ(GetProperty(exifMetadata, "SubsecTimeOriginal"), "4280000");
