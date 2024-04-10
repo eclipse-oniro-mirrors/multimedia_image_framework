@@ -1036,7 +1036,7 @@ static bool isRawFileDescriptor(napi_env env, napi_value argValue, ImageSourceAs
     if (!hasNamedProperty(env, argValue, "fd") ||
         !hasNamedProperty(env, argValue, "offset") ||
         !hasNamedProperty(env, argValue, "length")) {
-        IMAGE_LOGE("RawFileDescriptor mismatch");
+        IMAGE_LOGD("RawFileDescriptor mismatch");
         return false;
     }
     if (parseRawFileItem(env, argValue, "fd", &(context->rawFileInfo.fd)) &&
