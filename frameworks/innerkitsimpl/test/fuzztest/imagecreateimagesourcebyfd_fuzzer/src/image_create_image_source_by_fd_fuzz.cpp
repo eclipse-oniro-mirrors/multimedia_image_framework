@@ -34,7 +34,6 @@ void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
     uint32_t errorCode;
     auto imagesource = Media::ImageSource::CreateImageSource(fd, opts, errorCode);
     Media ::DecodeOptions dopts;
-    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
     imagesource->CreatePixelMap(dopts, errorCode);
     close(fd);
 }
