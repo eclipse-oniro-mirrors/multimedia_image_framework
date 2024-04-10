@@ -23,7 +23,7 @@ ohos_fuzztest("ImageCreateImageSourceByPathNameFuzzTest") {
     "$image_subsystem/interfaces/innerkits/include",
   ]
 
-  sources = [ "src/imagecreateimagesourcebypathname_fuzzer.cpp" ]
+  sources = [ "src/image_create_image_source_by_pathname_fuzzer.cpp" ]
 
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
 

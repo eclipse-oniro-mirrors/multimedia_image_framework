@@ -13,22 +13,30 @@
  * limitations under the License.
  */
 
-#include "imagecreateincrementalpixelmap_fuzzer.h"
+#include "image_create_image_source_by_fd_fuzz.h"
 
 #include <cstdint>
 #include <string>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "image_source.h"
 namespace OHOS {
-void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
+void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
 {
-    uint32_t errCode = 0;
+    std::string pathName = "/tmp/test.jpg";
+    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    if (write(fd, data, size) != (ssize_t)size) {
+        close(fd);
+        return;
+    }
     Media::SourceOptions opts;
-    std::unique_ptr<Media::ImageSource> imageSource = Media::ImageSource::CreateImageSource(data, size, opts, errCode);
-    Media::DecodeOptions dopts;
     uint32_t errorCode;
-    uint32_t index = 1;
-    imageSource->CreateIncrementalPixelMap(index, dopts, errorCode);
+    auto imagesource = Media::ImageSource::CreateImageSource(fd, opts, errorCode);
+    Media ::DecodeOptions dopts;
+    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    imagesource->CreatePixelMap(dopts, errorCode);
+    close(fd);
 }
 } // namespace OHOS
 
@@ -36,6 +44,6 @@ void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::CreateIncrementalPixelMapFuzz(data, size);
+    OHOS::CreateImageSourceByFDFuzz(data, size);
     return 0;
 }

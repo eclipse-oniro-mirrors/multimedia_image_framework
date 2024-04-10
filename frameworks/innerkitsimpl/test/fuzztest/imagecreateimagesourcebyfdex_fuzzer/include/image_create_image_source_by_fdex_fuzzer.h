@@ -12,5 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef IMAGE_CREATE_IMAGE_SOURCE_BY_FDEX_FUZZER_H
+#define IMAGE_CREATE_IMAGE_SOURCE_BY_FDEX_FUZZER_H
 
-FUZZ
+#define FUZZ_PROJECT_NAME "image_createimagesourcebyfdex_fuzzer"
+#endif

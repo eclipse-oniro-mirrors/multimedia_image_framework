@@ -13,35 +13,28 @@
  * limitations under the License.
  */
 
-#include "imagecreateimagesourcebyfdex_fuzzer.h"
+#include "image_create_image_source_by_pathname_fuzzer.h"
 
 #include <cstdint>
 #include <string>
 #include <unistd.h>
 #include <fcntl.h>
 
-
 #include "image_source.h"
 namespace OHOS {
-void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
+void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
 {
-    Media::SourceOptions opts;
-    uint32_t errorCode;
-    uint32_t offset = 0;
-    uint32_t length = 1;
-    std::string pathName = "/tmp/";
-    int width = 10;
-    int height = 10;
-    pathName.append(std::to_string(width));
-    pathName.append("-");
-    pathName.append(std::to_string(height));
-    pathName.append("-");
+    std::string pathName = "/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
     if (write(fd, data, size) != (ssize_t)size) {
         close(fd);
         return;
     }
-    Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    Media ::DecodeOptions dopts;
+    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    imagesource->CreatePixelMap(dopts, errorCode);
     close(fd);
 }
 } // namespace OHOS
@@ -50,6 +43,6 @@ void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::CreateImageSourceByFDEXFuzz(data, size);
+    OHOS::CreateImageSourceByPathNameFuzz(data, size);
     return 0;
 }

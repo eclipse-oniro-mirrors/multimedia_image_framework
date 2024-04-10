@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGECREATEIMAGESOURCEBYDATA_FUZZER_H
-#define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGECREATEIMAGESOURCEBYDATA_FUZZER_H
+#ifndef IMAGE_CREATE_IMAGE_SOURCE_BY_PATHNAME_FUZZER_H
+#define IMAGE_CREATE_IMAGE_SOURCE_BY_PATHNAME_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "image_createimagesourcebydata_fuzzer"
+#define FUZZ_PROJECT_NAME "image_createimagesourcebypathname_fuzzer"
 #endif
