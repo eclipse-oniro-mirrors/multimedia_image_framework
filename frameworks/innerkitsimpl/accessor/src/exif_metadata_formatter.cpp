@@ -593,9 +593,9 @@ const std::set<std::string> UINT16_KEYS = {
     "FocalLengthIn35mmFilm", "SamplesPerPixel", "PhotographicSensitivity"
 };
 
-const auto ONE_RATIONAL_REGEX = R"(^[0-9]+/[1-9][0-9]*$)";
-const auto ONE_INT_REGEX = R"(^[0-9]+$)";
-const auto ONE_DECIMAL_REGEX = "(\\d+)(\\.\\d+)?";
+const auto SINGLE_RATIONAL_REGEX = R"(^[0-9]+/[1-9][0-9]*$)";
+const auto SINGLE_INT_REGEX = R"(^[0-9]+$)";
+const auto SINGLE_DECIMAL_REGEX = "(\\d+)(\\.\\d+)?";
 const auto DOUBLE_INT_WITH_BLANK_REGEX = R"(^[0-9]+\s[0-9]+$)";
 const auto DOUBLE_INT_WITH_COMMA_REGEX = R"(^[0-9]+,[0-9]+$)";
 const auto TRIBLE_INT_WITH_BLANK_REGEX = R"(^[0-9]+\s[0-9]+\s[0-9]+$)";
@@ -613,8 +613,8 @@ const auto FOUR_DECIMAL_WITH_BLANK_REGEX = "(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\
 const auto FOUR_DECIMAL_WITH_COMMA_REGEX = "(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?";
 const auto SIX_DECIMAL_WITH_BLANK_REGEX =
     "(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?";
-const auto DATETIME_REGEX = R"(^[0-9]{4}:[0-9]{2}:[0-9]{2}\s([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$)";
-const auto DATE_REGEX = R"(^[0-9]{4}:[0-9]{2}:[0-9]{2}$)";
+const auto DATETIME_REGEX = R"(^[0-9]{4}:(0[1-9]|1[012]):(0[1-9]|[12][0-9]|3[01])\s([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$)";
+const auto DATE_REGEX = R"(^[0-9]{4}:(0[1-9]|1[012]):(0[1-9]|[12][0-9]|3[01])$)";
 
 /*
  * validate the key is in value range array.
@@ -846,8 +846,8 @@ bool ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat(std::string &value
     return true;
 }
 
-ValueFormatDelegate ExifMetadatFormatter::oneInt =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, ONE_INT_REGEX);
+ValueFormatDelegate ExifMetadatFormatter::singleInt =
+    std::make_pair(ExifMetadatFormatter::ValidRegex, SINGLE_INT_REGEX);
 
 // regex validation for two integer like DefaultCropSize 9 9 the format is [0-9]+ [0-9]+
 ValueFormatDelegate ExifMetadatFormatter::doubleIntWithBlank =
@@ -874,15 +874,15 @@ ValueFormatDelegate ExifMetadatFormatter::fourIntWithComma =
     std::make_pair(ExifMetadatFormatter::ValidRegexWithComma, FOUR_INT_WITH_COMMA_REGEX);
 
 // regex validation for one rational like ApertureValue 4/1 the format is [0-9]+/[1-9][0-9]
-ValueFormatDelegate ExifMetadatFormatter::oneRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegex, ONE_RATIONAL_REGEX);
+ValueFormatDelegate ExifMetadatFormatter::singleRational =
+    std::make_pair(ExifMetadatFormatter::ValidRegex, SINGLE_RATIONAL_REGEX);
 
 // regex validation for integer and convert it to rational like ApertureValue 4 --> 4/1
-ValueFormatDelegate ExifMetadatFormatter::oneIntToRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithRationalFormat, ONE_INT_REGEX);
+ValueFormatDelegate ExifMetadatFormatter::singleIntToRational =
+    std::make_pair(ExifMetadatFormatter::ValidRegexWithRationalFormat, SINGLE_INT_REGEX);
 
-ValueFormatDelegate ExifMetadatFormatter::oneDecimalToRational =
-    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, ONE_DECIMAL_REGEX);
+ValueFormatDelegate ExifMetadatFormatter::singleDecimalToRational =
+    std::make_pair(ExifMetadatFormatter::ValidRegexWithDecimalRationalFormat, SINGLE_DECIMAL_REGEX);
 
 ValueFormatDelegate ExifMetadatFormatter::doubleIntToOneRationalWithComma =
     std::make_pair(ExifMetadatFormatter::ValidRegexWithGpsOneRationalFormat, DOUBLE_INT_WITH_COMMA_REGEX);
@@ -949,9 +949,9 @@ ValueFormatDelegate ExifMetadatFormatter::sixDecimalToRationalWithBlank =
 std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueFormatConvertConfig = {
     {"BitsPerSample", tribleIntWithBlank},
     {"BitsPerSample", tribleIntWithComma},
-    {"CompressedBitsPerPixel", oneRational},
-    {"CompressedBitsPerPixel", oneIntToRational},
-    {"CompressedBitsPerPixel", oneDecimalToRational},
+    {"CompressedBitsPerPixel", singleRational},
+    {"CompressedBitsPerPixel", singleIntToRational},
+    {"CompressedBitsPerPixel", singleDecimalToRational},
     {"GPSLatitude", doubleIntToOneRationalWithComma},
     {"GPSLatitude", tribleRationalWithBlank},
     {"GPSLatitude", tribleIntToRationalWithBlank},
@@ -960,117 +960,117 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"GPSLongitude", tribleRationalWithBlank},
     {"GPSLongitude", tribleIntToRationalWithBlank},
     {"GPSLongitude", tribleIntToRationalWithComma},
-    {"ApertureValue", oneRational},
-    {"ApertureValue", oneIntToRational},
-    {"ApertureValue", oneDecimalToRational},
+    {"ApertureValue", singleRational},
+    {"ApertureValue", singleIntToRational},
+    {"ApertureValue", singleDecimalToRational},
     {"DateTimeOriginal", dateTimeValidation},
     {"DateTimeOriginal", dateValidation},
     {"DateTime", dateTimeValidation},
     {"DateTime", dateValidation},
-    {"ExposureBiasValue", oneRational},
-    {"ExposureBiasValue", oneIntToRational},
-    {"ExposureBiasValue", oneDecimalToRational},
-    {"ExposureTime", oneRational},
-    {"ExposureTime", oneIntToRational},
-    {"ExposureTime", oneDecimalToRational},
-    {"FNumber", oneRational},
-    {"FNumber", oneIntToRational},
-    {"FNumber", oneDecimalToRational},
-    {"FocalLength", oneRational},
-    {"FocalLength", oneIntToRational},
-    {"FocalLength", oneDecimalToRational},
+    {"ExposureBiasValue", singleRational},
+    {"ExposureBiasValue", singleIntToRational},
+    {"ExposureBiasValue", singleDecimalToRational},
+    {"ExposureTime", singleRational},
+    {"ExposureTime", singleIntToRational},
+    {"ExposureTime", singleDecimalToRational},
+    {"FNumber", singleRational},
+    {"FNumber", singleIntToRational},
+    {"FNumber", singleDecimalToRational},
+    {"FocalLength", singleRational},
+    {"FocalLength", singleIntToRational},
+    {"FocalLength", singleDecimalToRational},
     {"GPSTimeStamp", tribleRationalWithBlank},
     {"GPSTimeStamp", tribleIntToRationalWithBlank},
     {"GPSTimeStamp", tribleIntToRationalWithColon},
     {"GPSDateStamp", dateValidation},
-    {"XResolution", oneRational},
-    {"XResolution", oneIntToRational},
-    {"XResolution", oneDecimalToRational},
-    {"YResolution", oneRational},
-    {"YResolution", oneIntToRational},
-    {"YResolution", oneDecimalToRational},
-    {"WhitePoint", oneRational},
-    {"WhitePoint", oneIntToRational},
-    {"WhitePoint", oneDecimalToRational},
-    {"PrimaryChromaticities", oneRational},
-    {"PrimaryChromaticities", oneIntToRational},
-    {"PrimaryChromaticities", oneDecimalToRational},
+    {"XResolution", singleRational},
+    {"XResolution", singleIntToRational},
+    {"XResolution", singleDecimalToRational},
+    {"YResolution", singleRational},
+    {"YResolution", singleIntToRational},
+    {"YResolution", singleDecimalToRational},
+    {"WhitePoint", singleRational},
+    {"WhitePoint", singleIntToRational},
+    {"WhitePoint", singleDecimalToRational},
+    {"PrimaryChromaticities", singleRational},
+    {"PrimaryChromaticities", singleIntToRational},
+    {"PrimaryChromaticities", singleDecimalToRational},
     {"YCbCrCoefficients", tribleRationalWithBlank},
     {"YCbCrCoefficients", tribleIntToRationalWithBlank},
     {"YCbCrCoefficients", tribleIntToRationalWithComma},
     {"YCbCrCoefficients", tribleDecimalToRationalWithBlank},
     {"YCbCrCoefficients", tribleDecimalToRatiionalWithComma},
-    {"ReferenceBlackWhite", oneRational},
-    {"ReferenceBlackWhite", oneIntToRational},
-    {"ReferenceBlackWhite", oneDecimalToRational},
-    {"ShutterSpeedValue", oneRational},
-    {"ShutterSpeedValue", oneIntToRational},
-    {"ShutterSpeedValue", oneDecimalToRational},
-    {"BrightnessValue", oneRational},
-    {"BrightnessValue", oneIntToRational},
-    {"BrightnessValue", oneDecimalToRational},
-    {"MaxApertureValue", oneRational},
-    {"MaxApertureValue", oneIntToRational},
-    {"MaxApertureValue", oneDecimalToRational},
-    {"SubjectDistance", oneRational},
-    {"SubjectDistance", oneIntToRational},
-    {"SubjectDistance", oneDecimalToRational},
-    {"FlashEnergy", oneRational},
-    {"FlashEnergy", oneIntToRational},
-    {"FlashEnergy", oneDecimalToRational},
-    {"FocalPlaneXResolution", oneRational},
-    {"FocalPlaneXResolution", oneIntToRational},
-    {"FocalPlaneXResolution", oneDecimalToRational},
-    {"FocalPlaneYResolution", oneRational},
-    {"FocalPlaneYResolution", oneIntToRational},
-    {"FocalPlaneYResolution", oneDecimalToRational},
-    {"ExposureIndex", oneRational},
-    {"ExposureIndex", oneIntToRational},
-    {"ExposureIndex", oneDecimalToRational},
-    {"DigitalZoomRatio", oneRational},
-    {"DigitalZoomRatio", oneIntToRational},
-    {"DigitalZoomRatio", oneDecimalToRational},
-    {"GPSAltitude", oneRational},
-    {"GPSAltitude", oneIntToRational},
-    {"GPSAltitude", oneDecimalToRational},
-    {"GPSDOP", oneRational},
-    {"GPSDOP", oneIntToRational},
-    {"GPSDOP", oneDecimalToRational},
-    {"GPSSpeed", oneRational},
-    {"GPSSpeed", oneIntToRational},
-    {"GPSSpeed", oneDecimalToRational},
-    {"GPSTrack", oneRational},
-    {"GPSTrack", oneIntToRational},
-    {"GPSTrack", oneDecimalToRational},
-    {"GPSImgDirection", oneRational},
-    {"GPSImgDirection", oneIntToRational},
-    {"GPSImgDirection", oneDecimalToRational},
+    {"ReferenceBlackWhite", singleRational},
+    {"ReferenceBlackWhite", singleIntToRational},
+    {"ReferenceBlackWhite", singleDecimalToRational},
+    {"ShutterSpeedValue", singleRational},
+    {"ShutterSpeedValue", singleIntToRational},
+    {"ShutterSpeedValue", singleDecimalToRational},
+    {"BrightnessValue", singleRational},
+    {"BrightnessValue", singleIntToRational},
+    {"BrightnessValue", singleDecimalToRational},
+    {"MaxApertureValue", singleRational},
+    {"MaxApertureValue", singleIntToRational},
+    {"MaxApertureValue", singleDecimalToRational},
+    {"SubjectDistance", singleRational},
+    {"SubjectDistance", singleIntToRational},
+    {"SubjectDistance", singleDecimalToRational},
+    {"FlashEnergy", singleRational},
+    {"FlashEnergy", singleIntToRational},
+    {"FlashEnergy", singleDecimalToRational},
+    {"FocalPlaneXResolution", singleRational},
+    {"FocalPlaneXResolution", singleIntToRational},
+    {"FocalPlaneXResolution", singleDecimalToRational},
+    {"FocalPlaneYResolution", singleRational},
+    {"FocalPlaneYResolution", singleIntToRational},
+    {"FocalPlaneYResolution", singleDecimalToRational},
+    {"ExposureIndex", singleRational},
+    {"ExposureIndex", singleIntToRational},
+    {"ExposureIndex", singleDecimalToRational},
+    {"DigitalZoomRatio", singleRational},
+    {"DigitalZoomRatio", singleIntToRational},
+    {"DigitalZoomRatio", singleDecimalToRational},
+    {"GPSAltitude", singleRational},
+    {"GPSAltitude", singleIntToRational},
+    {"GPSAltitude", singleDecimalToRational},
+    {"GPSDOP", singleRational},
+    {"GPSDOP", singleIntToRational},
+    {"GPSDOP", singleDecimalToRational},
+    {"GPSSpeed", singleRational},
+    {"GPSSpeed", singleIntToRational},
+    {"GPSSpeed", singleDecimalToRational},
+    {"GPSTrack", singleRational},
+    {"GPSTrack", singleIntToRational},
+    {"GPSTrack", singleDecimalToRational},
+    {"GPSImgDirection", singleRational},
+    {"GPSImgDirection", singleIntToRational},
+    {"GPSImgDirection", singleDecimalToRational},
     {"GPSDestLatitude", tribleRationalWithBlank},
     {"GPSDestLatitude", tribleIntToRationalWithBlank},
     {"GPSDestLatitude", tribleIntToRationalWithComma},
     {"GPSDestLongitude", tribleRationalWithBlank},
     {"GPSDestLongitude", tribleIntToRationalWithBlank},
     {"GPSDestLongitude", tribleIntToRationalWithComma},
-    {"GPSDestBearing", oneRational},
-    {"GPSDestBearing", oneIntToRational},
-    {"GPSDestBearing", oneDecimalToRational},
-    {"GPSDestDistance", oneRational},
-    {"GPSDestDistance", oneIntToRational},
-    {"GPSDestDistance", oneDecimalToRational},
+    {"GPSDestBearing", singleRational},
+    {"GPSDestBearing", singleIntToRational},
+    {"GPSDestBearing", singleDecimalToRational},
+    {"GPSDestDistance", singleRational},
+    {"GPSDestDistance", singleIntToRational},
+    {"GPSDestDistance", singleDecimalToRational},
     {"GPSVersionID", fourIntWithDot},
-    {"CompressedBitsPerPixel", oneRational},
-    {"CompressedBitsPerPixel", oneIntToRational},
-    {"CompressedBitsPerPixel", oneDecimalToRational},
+    {"CompressedBitsPerPixel", singleRational},
+    {"CompressedBitsPerPixel", singleIntToRational},
+    {"CompressedBitsPerPixel", singleDecimalToRational},
     {"DNGVersion", fourIntWithBlank},
     {"DNGVersion", fourIntWithComma},
     {"DefaultCropSize", doubleIntWithBlank},
     {"DefaultCropSize", doubleIntWithComma},
-    {"Gamma", oneRational},
-    {"Gamma", oneIntToRational},
-    {"Gamma", oneDecimalToRational},
-    {"GPSHPositioningError", oneRational},
-    {"GPSHPositioningError", oneIntToRational},
-    {"GPSHPositioningError", oneDecimalToRational},
+    {"Gamma", singleRational},
+    {"Gamma", singleIntToRational},
+    {"Gamma", singleDecimalToRational},
+    {"GPSHPositioningError", singleRational},
+    {"GPSHPositioningError", singleIntToRational},
+    {"GPSHPositioningError", singleDecimalToRational},
     {"LensSpecification", fourRationalWithBlank},
     {"LensSpecification", fourIntToRationalWithBlank},
     {"LensSpecification", fourIntToRationalWithComma},
@@ -1078,25 +1078,25 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"LensSpecification", fourDecimalToRationalWithComma},
     {"ReferenceBlackWhite", sixDecimalToRationalWithBlank},
     {"SubjectLocation", doubleIntWithBlank},
-    {"ImageLength", oneInt},
-    {"ImageWidth", oneInt},
-    {"ISOSpeedRatings", oneInt},
-    {"StandardOutputSensitivity", oneInt},
-    {"RecommendedExposureIndex", oneInt},
-    {"ISOSpeed", oneInt},
-    {"PixelXDimension", oneInt},
-    {"PixelYDimension", oneInt},
-    {"FocalLengthIn35mmFilm", oneInt},
-    {"StripOffsets", oneInt},
-    {"SamplesPerPixel", oneInt},
-    {"RowsPerStrip", oneInt},
-    {"StripByteCounts", oneInt},
-    {"ExifVersion", oneInt},
-    {"ISOSpeedLatitudeyyy", oneInt},
-    {"ISOSpeedLatitudezzz", oneInt},
-    {"ComponentsConfiguration", oneInt},
-    {"PhotographicSensitivity", oneInt},
-    {"FlashpixVersion", oneInt},
+    {"ImageLength", singleInt},
+    {"ImageWidth", singleInt},
+    {"ISOSpeedRatings", singleInt},
+    {"StandardOutputSensitivity", singleInt},
+    {"RecommendedExposureIndex", singleInt},
+    {"ISOSpeed", singleInt},
+    {"PixelXDimension", singleInt},
+    {"PixelYDimension", singleInt},
+    {"FocalLengthIn35mmFilm", singleInt},
+    {"StripOffsets", singleInt},
+    {"SamplesPerPixel", singleInt},
+    {"RowsPerStrip", singleInt},
+    {"StripByteCounts", singleInt},
+    {"ExifVersion", singleInt},
+    {"ISOSpeedLatitudeyyy", singleInt},
+    {"ISOSpeedLatitudezzz", singleInt},
+    {"ComponentsConfiguration", singleInt},
+    {"PhotographicSensitivity", singleInt},
+    {"FlashpixVersion", singleInt},
     {"DateTimeDigitized", dateTimeValidation},
     {"DateTimeDigitized", dateValidation},
     {"SubjectArea", doubleIntWithBlank},
@@ -1237,6 +1237,9 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
 
 static bool StrToDouble(const std::string &value, double &output)
 {
+    if (value.empty()) {
+        return false;
+    }
     size_t slashPos = value.find('/');
     if (slashPos == std::string::npos) {
         IMAGE_LOGE("StrToDouble split error");

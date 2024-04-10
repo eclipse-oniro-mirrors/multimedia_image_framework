@@ -457,7 +457,7 @@ bool ExifMetadata::SetMem(ExifEntry *ptrEntry, const std::string &value, const s
     if (UndefinedByte.find(ptrEntry->tag) != UndefinedByte.end()) {
         return SetByte(ptrEntry, value);
     }
-    IMAGE_LOGD("Use to memcpy_s %{public}s", value.c_str());
+    IMAGE_LOGD("memcpy_s value string %{public}s", value.c_str());
     if (memcpy_s((ptrEntry)->data, valueLen, value.c_str(), valueLen) != 0) {
         IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
         return false;
