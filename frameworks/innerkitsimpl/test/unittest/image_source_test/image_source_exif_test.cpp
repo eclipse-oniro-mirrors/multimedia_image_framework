@@ -204,5 +204,30 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt001 end";
 }
 
+HWTEST_F(ImageSourceExifTest, GetImagePropertyInt002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 start";
+
+    const int fd = open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+
+    uint32_t index = 0;
+    int32_t value = 0;
+    std::string strValue;
+
+    imageSource->GetImagePropertyInt(index, "DelayTime", value);
+    ASSERT_EQ(value, 0);
+
+    imageSource->GetImagePropertyInt(index, "DisposalType", value);
+    ASSERT_EQ(value, 0);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

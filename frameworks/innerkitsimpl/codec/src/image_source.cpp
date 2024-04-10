@@ -163,6 +163,9 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
     {"Right-top", 90},
     {"Left-bottom", 270},
 };
+const static string IMAGE_DELAY_TIME = "DelayTime";
+const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
+const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -1120,9 +1123,20 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
+
+    if (key.empty()) {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    // keep aline with previous logical for delay time and disposal type
+    if (IMAGE_DELAY_TIME.compare(key) == ZERO || IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("keey aline exdecoder: %{public}s", key.c_str());
+        uint32_t ret = mainDecoder_->GetImagePropertyInt(index, key, value);
+        IMAGE_LOGD("mainDecoder_ call GetImagePropertyInt fail, ret:%{public}u", ret);
+        return ret;
+    }
+
     std::string strValue;
     uint32_t ret = GetImagePropertyCommon(index, key, strValue);
-
     if (key == "Orientation") {
         if (ORIENTATION_INT_MAP.count(strValue) == 0) {
             IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
