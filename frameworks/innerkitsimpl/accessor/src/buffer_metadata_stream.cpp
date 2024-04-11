@@ -67,8 +67,8 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
     if (currentOffset_ + static_cast<long>(size) > capacity_) {
         if (memoryMode_ == Fix) {
             IMAGE_LOGE("BufferImageStream::Write failed, currentOffset:%{public}ld, "
-                "size:%{public}u, capacity:%{public}ld",
-                currentOffset_, size, capacity_);
+                "size:%{public}ld, capacity:%{public}ld",
+                currentOffset_, static_cast<long>(size), capacity_);
             return -1;
         }
 
