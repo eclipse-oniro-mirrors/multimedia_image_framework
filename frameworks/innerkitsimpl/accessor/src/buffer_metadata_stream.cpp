@@ -94,6 +94,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
             // If the old buffer was not externally allocated, delete it
             if (originData_ != buffer_) {
                 delete[] buffer_;
+                buffer_ = nullptr;
             }
         }
 
@@ -228,6 +229,7 @@ bool BufferMetadataStream::CopyFrom(MetadataStream &src)
     if (memoryMode_ == Dynamic) {
         if (buffer_ != nullptr) {
             delete[] buffer_;
+            buffer_ = nullptr;
         }
         ssize_t estimatedSize = ((src.GetSize() + METADATA_STREAM_PAGE_SIZE - 1) / METADATA_STREAM_PAGE_SIZE) *
             METADATA_STREAM_PAGE_SIZE; // Ensure it is a multiple of 32k
@@ -278,7 +280,7 @@ bool BufferMetadataStream::ReadAndWriteData(MetadataStream &src)
 
 void BufferMetadataStream::HandleWriteFailure()
 {
-    if (memoryMode_ == Dynamic) {
+    if (memoryMode_ == Dynamic && buffer_ != originData_) {
         delete[] buffer_;
         buffer_ = nullptr;
         capacity_ = 0;
