@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "image_log.h"
+#include "image_data_statistics.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_type_converter.h"
@@ -326,24 +327,34 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
     }
 }
 
+static PixelFormat SetPixelFormat(BUILD_PARAM &info, const InitializationOptions &opts)
+{
+    PixelFormat format = PixelFormat::BGRA_8888;
+    if (info.flag_) {
+        format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
+    }
+
+    return format;
+}
+
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
-    IMAGE_LOGE("[PixelMap]Create: make pixelmap failed!");
+    ImageDataStatistics imageDataStatistics("[PixelMap]Create width = %d, height = %d, pixelformat = %d," \
+    "alphaType = %d", info.width_, opts.size.height, opts.pixelFormat, opts.alphaType);
     int offset = info.offset_;
     if (!CheckParams(colors, colorLength, offset, info.width_, opts)) {
         return nullptr;
     }
+
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("[image]Create: make pixelmap failed!");
         errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
         return nullptr;
     }
-    PixelFormat format = PixelFormat::BGRA_8888;
-    if (info.flag_) {
-        format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
-    }
+
+    PixelFormat format = SetPixelFormat(info, opts);
     ImageInfo srcImageInfo =
         MakeImageInfo(info.width_, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
@@ -356,18 +367,18 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
+
     int fd = 0;
     uint32_t bufferSize = dstPixelMap->GetByteCount();
-    
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory size %{public}u fail", bufferSize);
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
-
+    imageDataStatistics.SetRequestMemory(bufferSize);
     int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset),
-        colorLength, srcImageInfo, dstPixels, dstImageInfo);
+                                                    colorLength, srcImageInfo, dstPixels, dstImageInfo);
     if (dstLength < 0) {
         IMAGE_LOGE("[PixelMap]Create: pixel convert failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
@@ -464,6 +475,9 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
 unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 {
     IMAGE_LOGD("PixelMap::Create3 enter");
+    ImageDataStatistics imageDataStatistics("[PixelMap]Create3 width = %d, height = %d, pixelformat = %d," \
+                                            "alphaType = %d",
+                                            opts.size.width, opts.size.height, opts.pixelFormat, opts.alphaType);
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("create pixelMap pointer fail");
@@ -489,6 +503,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
         return nullptr;
     }
+    imageDataStatistics.SetRequestMemory(bufferSize);
     // update alpha opaque
     UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
                       static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
@@ -563,6 +578,9 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     int32_t &errorCode)
 {
     IMAGE_LOGD("PixelMap::Create5 enter");
+    ImageDataStatistics imageDataStatistics("[PixelMap] Create5 width = %d, height = %d, pixelformat = %d," \
+                                        "alphaType = %d",
+                                        opts.size.width, opts.size.height, opts.pixelFormat, opts.alphaType);
     ImageInfo srcImageInfo;
     source.GetImageInfo(srcImageInfo);
     PostProc postProc;
@@ -609,6 +627,10 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
+    ImageDataStatistics imageDataStatistics("[PixelMap] SourceCropAndConvert width = %d, height = %d," \
+                                    "pixelformat = %d, alphaType = %d",
+                                    srcImageInfo.size.width, srcImageInfo.size.height, srcImageInfo.pixelFormat,
+                                    srcImageInfo.alphaType);
     uint32_t bufferSize = dstPixelMap.GetByteCount();
     if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
@@ -626,7 +648,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-
+    imageDataStatistics.SetRequestMemory(bufferSize);
     if (memset_s(dstPixels, bufferSize, 0, bufferSize) != EOK) {
         IMAGE_LOGE("dstPixels memset_s failed.");
     }
@@ -725,6 +747,10 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 }
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
 {
+    ImageDataStatistics imageDataStatistics("[PixelMap] CopyPixelMap width = %d, height = %d, pixelformat = %d" \
+                                            "allocatorType = %d",
+                                            source.GetWidth(), source.GetHeight(), source.GetPixelFormat(),
+                                            source.GetAllocatorType());
     uint32_t bufferSize = source.GetByteCount();
     if (source.GetPixels() == nullptr) {
         IMAGE_LOGE("source pixelMap data invalid");
@@ -749,7 +775,8 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
         return false;
     }
-    void* tmpDstPixels = dstPixels;
+    imageDataStatistics.SetRequestMemory(bufferSize);
+    void *tmpDstPixels = dstPixels;
     if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
@@ -879,6 +906,9 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
+    ImageDataStatistics imageDataStatistics("[PixelMap]SetImageInfo width = %d, height = %d, pixelformat = %d" \
+        "AlphaType = %d, ColorSpace = %d, encodedFormat = %s", info.size.width, info.size.height, info.pixelFormat,
+        info.alphaType, info.colorSpace, info.encodedFormat.c_str());
     if (info.size.width <= 0 || info.size.height <= 0) {
         IMAGE_LOGE("pixel map image info invalid.");
         return ERR_IMAGE_DATA_ABNORMAL;
@@ -915,6 +945,8 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         FreePixelMap();
     }
     imageInfo_ = info;
+    imageDataStatistics.AddTitle("width = %d, high = %d, format = %d, colorsapce = %d, type = %d, density = %d",
+        info.size.width, info.size.height, info.pixelFormat, info.colorSpace, info.alphaType, info.baseDensity);
     return SUCCESS;
 }
 
@@ -1407,6 +1439,7 @@ uint32_t PixelMap::ResetConfig(const Size &size, const PixelFormat &format)
 
 bool PixelMap::SetAlphaType(const AlphaType &alphaType)
 {
+    ImageDataStatistics imageDataStatistics("[PixelMap]SetAlphaType. alphaType = %d", alphaType);
     AlphaType type = ImageUtils::GetValidAlphaTypeByFormat(alphaType, imageInfo_.pixelFormat);
     if (type == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
         IMAGE_LOGE("SetAlphaType Failed to get validate alpha type.");
@@ -2629,6 +2662,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
 
 uint32_t PixelMap::SetAlpha(const float percent)
 {
+    ImageDataStatistics imageDataStatistics("[PixelMap]SetAlpha.");
     auto alphaType = GetAlphaType();
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
         alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
@@ -2870,7 +2904,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 
 void PixelMap::scale(float xAxis, float yAxis)
 {
-    ImageTrace imageTrace("PixelMap scale");
+    ImageTrace imageTrace("PixelMap scale xAxis = %f, yAxis = %f", xAxis, yAxis);
+    ImageDataStatistics imageDataStatistics("[PixelMap]scale xAxis = %f, yAxis = %f", xAxis, yAxis);
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -2880,7 +2915,9 @@ void PixelMap::scale(float xAxis, float yAxis)
 
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
-    ImageTrace imageTrace("PixelMap scale");
+    ImageTrace imageTrace("PixelMap scale with option");
+    ImageDataStatistics imageDataStatistics("[PixelMap]scale with option xAxis = %f, yAxis = %f, option = %d",
+        xAxis, yAxis, option);
     TransInfos infos;
     infos.matrix.setScale(xAxis, yAxis);
     if (!DoTranslation(infos, option)) {
@@ -2907,6 +2944,7 @@ bool PixelMap::resize(float xAxis, float yAxis)
 void PixelMap::translate(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap translate");
+    ImageDataStatistics imageDataStatistics("[PixelMap]translate xAxis = %f, yAxis = %f", xAxis, yAxis);
     TransInfos infos;
     infos.matrix.setTranslate(xAxis, yAxis);
     if (!DoTranslation(infos)) {
@@ -2917,6 +2955,7 @@ void PixelMap::translate(float xAxis, float yAxis)
 void PixelMap::rotate(float degrees)
 {
     ImageTrace imageTrace("PixelMap rotate");
+    ImageDataStatistics imageDataStatistics("[PixelMap]rotate degree = %f", degrees);
     TransInfos infos;
     infos.matrix.setRotate(degrees);
     if (!DoTranslation(infos)) {
@@ -2927,6 +2966,7 @@ void PixelMap::rotate(float degrees)
 void PixelMap::flip(bool xAxis, bool yAxis)
 {
     ImageTrace imageTrace("PixelMap flip");
+    ImageDataStatistics imageDataStatistics("[PixelMap]flip.");
     if (xAxis == false && yAxis == false) {
         return;
     }
@@ -2935,6 +2975,8 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 
 uint32_t PixelMap::crop(const Rect &rect)
 {
+    ImageTrace imageTrace("PixelMap crop");
+    ImageDataStatistics imageDataStatistics("[PixelMap]crop");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
 
@@ -2944,7 +2986,6 @@ uint32_t PixelMap::crop(const Rect &rect)
 #else
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
-
     SkTransInfo dst;
     SkIRect dstIRect = SkIRect::MakeXYWH(rect.left, rect.top, rect.width, rect.height);
     dst.r = SkRect::Make(dstIRect);
