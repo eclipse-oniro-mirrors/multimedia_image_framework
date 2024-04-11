@@ -141,5 +141,23 @@ HWTEST_F(FormatAgentPluginSvgTest, SvgGetPixelsTest, TestSize.Level3)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "FormatAgentPluginSvgTest: SvgGetPixelsTest end";
 }
+
+/**
+ * @tc.name: SvgCheckFormatTest002
+ * @tc.desc: svg CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSvgTest, SvgCheckFormatTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSvgTest: SvgCheckFormatTest002 start";
+    ImagePlugin::SvgFormatAgent formatAgent;
+    uint32_t data = 0;
+    void *headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    uint32_t dataSize = 4;
+    auto ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSvgTest: SvgCheckFormatTest002 end";
+}
 }
 }

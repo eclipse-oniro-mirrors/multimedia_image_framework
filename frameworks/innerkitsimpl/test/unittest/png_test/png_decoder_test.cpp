@@ -1735,5 +1735,24 @@ HWTEST_F(PngDecoderTest, DecodeHeader001, TestSize.Level3)
     ASSERT_EQ(result, ERR_IMAGE_GET_DATA_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: DecodeHeader001 end";
 }
+
+/**
+ * @tc.name: SetDecodeOptionsTest014
+ * @tc.desc: Test of SetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(PngDecoderTest, SetDecodeOptionsTest014, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest014 start";
+    auto pngDecoder = std::make_shared<PngDecoder>();
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    pngDecoder->pngStructPtr_ = nullptr;
+    pngDecoder->pngInfoPtr_ = nullptr;
+    uint32_t result = pngDecoder->SetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
+    GTEST_LOG_(INFO) << "PngDecoderTest: SetDecodeOptionsTest014 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

@@ -320,9 +320,15 @@ HWTEST_F(ExtDecoderTest, DecodeTest001, TestSize.Level3)
     EXIFInfo exifInfo_;
     uint32_t index = 0;
     DecodeContext context;
-    extDecoder->codec_ = nullptr;
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    ASSERT_NE(extDecoder->codec_, nullptr);
     uint32_t ret = extDecoder->Decode(index, context);
-    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
     GTEST_LOG_(INFO) << "ExtDecoderTest: DecodeTest001 end";
 }
 
@@ -805,6 +811,192 @@ HWTEST_F(ExtDecoderTest, readTest001, TestSize.Level3)
     ASSERT_NE(extStream.stream_, nullptr);
     ASSERT_EQ(ret, SIZE_ZERO);
     GTEST_LOG_(INFO) << "ExtDecoderTest: readTest001 end";
+}
+
+/**
+ * @tc.name: CheckCodecTest002
+ * @tc.desc: Test of CheckCodec
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, CheckCodecTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest002 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    bool ret = extDecoder->CheckCodec();
+    ASSERT_NE(extDecoder->codec_, nullptr);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: CheckCodecTest002 end";
+}
+
+/**
+ * @tc.name: GetHardwareScaledSizeTest002
+ * @tc.desc: Test of GetHardwareScaledSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetHardwareScaledSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHardwareScaledSizeTest002 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    extDecoder->info_.fDimensions = {20, 20};
+    ASSERT_EQ(extDecoder->info_.isEmpty(), false);
+    float scale = ZERO;
+    int dWidth = 2;
+    int dHeight = 1;
+    bool ret = extDecoder->GetHardwareScaledSize(dWidth, dHeight, scale);
+    ASSERT_EQ(ret, true);
+    dWidth = 4;
+    dHeight = 2;
+    ret = extDecoder->GetHardwareScaledSize(dWidth, dHeight, scale);
+    ASSERT_EQ(ret, true);
+    dWidth = 6;
+    dHeight = 3;
+    ret = extDecoder->GetHardwareScaledSize(dWidth, dHeight, scale);
+    ASSERT_EQ(ret, true);
+    dWidth = 20;
+    dHeight = 10;
+    ret = extDecoder->GetHardwareScaledSize(dWidth, dHeight, scale);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetHardwareScaledSizeTest002 end";
+}
+
+/**
+ * @tc.name: PreDecodeCheckTest002
+ * @tc.desc: Test of PreDecodeCheck
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, PreDecodeCheckTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckTest002 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    uint32_t index = 0;
+    extDecoder->codec_ = nullptr;
+    uint32_t ret = extDecoder->PreDecodeCheck(index);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    extDecoder->frameCount_ = 1;
+    ret = extDecoder->PreDecodeCheck(index);
+    ASSERT_EQ(extDecoder->codec_, nullptr);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
+
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    ASSERT_NE(extDecoder->codec_, nullptr);
+    ret = extDecoder->PreDecodeCheck(index);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
+
+    extDecoder->dstInfo_.fDimensions = {1, 1};
+    ret = extDecoder->PreDecodeCheck(index);
+    ASSERT_EQ(extDecoder->dstInfo_.isEmpty(), false);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckTest002 end";
+}
+
+/**
+ * @tc.name: PreDecodeCheckYuvTest001
+ * @tc.desc: Test of PreDecodeCheckYuv
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, PreDecodeCheckYuvTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckYuvTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    extDecoder->codec_ = nullptr;
+    uint32_t index = 0;
+    PlPixelFormat desiredFormat = PlPixelFormat::UNKNOWN;
+    uint32_t ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    extDecoder->frameCount_ = 1;
+    const int fd = open("/data/local/tmp/image/test_hw1.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::unique_ptr<FileSourceStream> streamPtr = FileSourceStream::CreateSourceStream(fd);
+    ASSERT_NE(streamPtr, nullptr);
+    extDecoder->SetSource(*streamPtr);
+    ASSERT_NE(extDecoder->stream_, nullptr);
+    extDecoder->codec_ = SkCodec::MakeFromStream(std::make_unique<ExtStream>(extDecoder->stream_));
+    ASSERT_NE(extDecoder->codec_, nullptr);
+    extDecoder->dstInfo_.fDimensions = {1, 1};
+    ASSERT_EQ(extDecoder->dstInfo_.isEmpty(), false);
+    extDecoder->stream_ = nullptr;
+    ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+
+    MockInputDataStream inputDataStream;
+    extDecoder->stream_ = &inputDataStream;
+    ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    desiredFormat = PlPixelFormat::NV21;
+    ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckYuvTest001 end";
+}
+
+/**
+ * @tc.name: ReadJpegDataTest001
+ * @tc.desc: Test of ReadJpegData
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, ReadJpegDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: ReadJpegDataTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    uint8_t *jpegBuffer = nullptr;
+    uint32_t jpegBufferSize = 0;
+    extDecoder->stream_ = nullptr;
+    uint32_t ret = extDecoder->ReadJpegData(jpegBuffer, jpegBufferSize);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+
+    MockInputDataStream inputDataStream;
+    extDecoder->stream_ = &inputDataStream;
+    ret = extDecoder->ReadJpegData(jpegBuffer, jpegBufferSize);
+    ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+
+    uint8_t buffer = 16;
+    jpegBuffer = &buffer;
+    jpegBufferSize = 128;
+    ret = extDecoder->ReadJpegData(jpegBuffer, jpegBufferSize);
+    ASSERT_EQ(extDecoder->stream_->Seek(0), false);
+    ASSERT_EQ(ret, ERR_IMAGE_GET_DATA_ABNORMAL);
+
+    inputDataStream.returnValue_ = true;
+    ASSERT_EQ(extDecoder->stream_->Seek(0), true);
+    ret = extDecoder->ReadJpegData(jpegBuffer, jpegBufferSize);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: ReadJpegDataTest001 end";
+}
+
+/**
+ * @tc.name: GetJpegYuvOutFmtTest001
+ * @tc.desc: Test of GetJpegYuvOutFmt
+ * @tc.type: FUNC
+ */
+HWTEST_F(ExtDecoderTest, GetJpegYuvOutFmtTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 start";
+    std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
+    EXIFInfo exifInfo_;
+    PlPixelFormat desiredFormat = PlPixelFormat::UNKNOWN;
+    auto ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
+    ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);
+    desiredFormat = PlPixelFormat::NV12;
+    ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
+    ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 end";
 }
 }
 }

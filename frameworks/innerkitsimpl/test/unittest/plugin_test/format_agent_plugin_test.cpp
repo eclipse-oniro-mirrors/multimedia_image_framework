@@ -705,5 +705,106 @@ HWTEST_F(FormatAgentPluginTest, read_mbf001, TestSize.Level3)
     stream = nullptr;
     GTEST_LOG_(INFO) << "FormatAgentPluginTest: read_mbf001 end";
 }
+
+/**
+ * @tc.name: GifFormatAgentPluginTest004
+ * @tc.desc: Gif CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, GifFormatAgentPluginTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest004 start";
+    ImagePlugin::GifFormatAgent formatAgent;
+    void *headerData = nullptr;
+    uint32_t dataSize = 1;
+    bool ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    uint32_t data = 0;
+    headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    dataSize = 7;
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    char stamp[] = "GIF87a";
+    headerData = &stamp;
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: GifFormatAgentPluginTest004 end";
+}
+
+/**
+ * @tc.name: BmpFormatAgentPluginTest007
+ * @tc.desc: bmp CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, BmpFormatAgentPluginTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: BmpFormatAgentPluginTest007 start";
+    ImagePlugin::BmpFormatAgent formatAgent;
+    void *headerData = nullptr;
+    uint32_t dataSize = 1;
+    bool ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    ASSERT_EQ(sizeof(BMP_HEADER), 2);
+    uint32_t data = 0;
+    headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    dataSize = 3;
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+
+    uint8_t bmpHeader[] = { 0x42, 0x4D };
+    headerData = &bmpHeader;
+    ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: BmpFormatAgentPluginTest007 end";
+}
+
+/**
+ * @tc.name: PngFormatAgentPluginTest007
+ * @tc.desc: Png CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, PngFormatAgentPluginTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: PngFormatAgentPluginTest007 start";
+    ImagePlugin::PngFormatAgent formatAgent;
+    uint32_t data = 0;
+    void *headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    uint32_t dataSize = 1;
+    ASSERT_EQ(sizeof(PNG_HEADER), 8);
+    bool ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: PngFormatAgentPluginTest007 end";
+}
+
+/**
+ * @tc.name: JpegFormatAgentPluginTest007
+ * @tc.desc: Jpeg CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginTest, JpegFormatAgentPluginTest007, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: JpegFormatAgentPluginTest007 start";
+    ImagePlugin::JpegFormatAgent formatAgent;
+    uint32_t data = 0;
+    void *headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    uint32_t dataSize = 2;
+    ASSERT_EQ(sizeof(JPEG_HEADER), 3);
+    bool ret = formatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "FormatAgentPluginTest: JpegFormatAgentPluginTest007 end";
+}
 }
 }

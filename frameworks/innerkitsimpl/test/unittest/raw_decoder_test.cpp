@@ -19,6 +19,7 @@
 #include "raw_decoder.h"
 #include "raw_stream.h"
 #include "mock_data_stream.h"
+#include "mock_abs_image_decoder.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -683,6 +684,103 @@ HWTEST_F(RawDecoderTest, DoGetImageSize001, TestSize.Level3)
     uint32_t result = rawDecoder->DoGetImageSize(index, size);
     ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
     GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize001 end";
+}
+
+/**
+ * @tc.name: DoDecodeHeaderByPiex004
+ * @tc.desc: Test of DoDecodeHeaderByPiex
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeHeaderByPiex004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex004 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    rawDecoder->rawStream_ = nullptr;
+    uint32_t result = rawDecoder->DoDecodeHeaderByPiex();
+    ASSERT_EQ(result, Media::ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeHeaderByPiex004 end";
+}
+
+/**
+ * @tc.name: DoSetDecodeOptionsTest002
+ * @tc.desc: Test of DoSetDecodeOptions
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoSetDecodeOptionsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptionsTest002 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PixelDecodeOptions opts;
+    PlImageInfo info;
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    ASSERT_NE(rawDecoder->jpegDecoder_, nullptr);
+    uint32_t result = rawDecoder->DoSetDecodeOptions(index, opts, info);
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoSetDecodeOptionsTest002 end";
+}
+
+/**
+ * @tc.name: DoGetImageSizeTest002
+ * @tc.desc: Test of DoGetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoGetImageSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSizeTest002 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    PlSize size;
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    ASSERT_NE(rawDecoder->jpegDecoder_, nullptr);
+    uint32_t result = rawDecoder->DoGetImageSize(index, size);
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSizeTest002 end";
+}
+
+/**
+ * @tc.name: DoDecodeTest002
+ * @tc.desc: Test of DoDecode
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, DoDecodeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeTest002 start";
+    auto rawDecoder = std::make_shared<RawDecoder>();
+    uint32_t index = 0;
+    DecodeContext context;
+    rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
+    ASSERT_NE(rawDecoder->jpegDecoder_, nullptr);
+    uint32_t result = rawDecoder->DoDecode(index, context);
+    ASSERT_EQ(result, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "RawDecoderTest: DoDecodeTest002 end";
+}
+
+/**
+ * @tc.name: GetDataTest001
+ * @tc.desc: Test of GetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(RawDecoderTest, GetDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "RawStreamTest: GetDataTest001 start";
+    MockInputDataStream sourceStream;
+    auto rawStream = std::make_shared<RawStream>(sourceStream);
+    const size_t offset = 1;
+    const size_t length = 0;
+    uint8_t *data = nullptr;
+    rawStream->inputStream_ = nullptr;
+    auto result = rawStream->GetData(offset, length, data);
+    ASSERT_EQ(result, piex::kUnsupported);
+    MockInputDataStream mockInputDataStream;
+    rawStream->inputStream_ = &mockInputDataStream;
+    ASSERT_NE(rawStream->inputStream_, nullptr);
+    result = rawStream->GetData(offset, length, data);
+    ASSERT_EQ(result, piex::kFail);
+    mockInputDataStream.returnValue_ = true;
+    result = rawStream->GetData(offset, length, data);
+    ASSERT_EQ(result, piex::kFail);
+    GTEST_LOG_(INFO) << "RawStreamTest: GetDataTest001 end";
 }
 }
 }
