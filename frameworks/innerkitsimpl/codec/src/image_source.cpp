@@ -1110,6 +1110,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
+        isExifReadFailed = true;
         return ret;
     }
 
