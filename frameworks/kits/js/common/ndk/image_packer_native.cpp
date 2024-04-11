@@ -55,6 +55,11 @@ struct OH_PackingOptions {
     Image_MimeType mimeType;
     int quality;
     int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
+    uint16_t loop;
+    uint16_t* delayTimes;
+    uint32_t delayTimesSize;
+    uint16_t* disposalTypes;
+    uint32_t disposalTypesSize;
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
@@ -206,6 +211,74 @@ Image_ErrorCode OH_PackingOptions_SetDesiredDynamicRange(OH_PackingOptions *opti
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetLoop(OH_PackingOptions *options, uint16_t loop)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->loop = loop;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetLoop(OH_PackingOptions *options, uint16_t* loop)
+{
+    if (options == nullptr || loop == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *loop = options->loop;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetDelayTimes(OH_PackingOptions *options, uint16_t* delayTimes,
+    uint32_t delayTimesSize)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->delayTimes = delayTimes;
+    options->delayTimesSize = delayTimesSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetDelayTimes(OH_PackingOptions *options, uint16_t* delayTimes,
+    uint32_t* delayTimesSize)
+{
+    if (options == nullptr || delayTimes == nullptr || delayTimesSize == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delayTimes = options->delayTimes;
+    *delayTimesSize = options->delayTimesSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetDisposalTypes(OH_PackingOptions *options, uint16_t* disposalTypes,
+    uint32_t disposalTypesSize)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->disposalTypes = disposalTypes;
+    options->disposalTypesSize = disposalTypesSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetDisposalTypes(OH_PackingOptions *options, uint16_t* disposalTypes,
+    uint32_t* disposalTypesSize)
+{
+    if (options == nullptr || disposalTypes == nullptr || disposalTypesSize == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    disposalTypes = options->disposalTypes;
+    *disposalTypesSize = options->disposalTypesSize;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options)
 {
     if (options == nullptr) {
@@ -274,6 +347,34 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImagePacker_PackToDataMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
+    OH_PixelmapNative **pixelmaps, int32_t mapSize, uint8_t* outData, size_t* outDataSize)
+{
+    if (imagePacker == nullptr || options == nullptr || pixelmaps == nullptr || outData == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    std::vector<OH_PixelmapNative*> pixelmap;
+    PackOption packOption;
+    std::string format(options->mimeType.data, options->mimeType.size);
+    packOption.format = format;
+    packOption.quality = options->quality;
+    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
+    packOption.loop = options->loop;
+    
+    for (uint32_t i = 0; i < options->delayTimesSize; i++) {
+        packOption.delayTimes.push_back(options->delayTimes[i]);
+    }
+    for (uint32_t i = 0; i < options->disposalTypesSize; i++) {
+        packOption.disposalTypes.push_back(options->disposalTypes[i]);
+    }
+    for (int i = 0; i < mapSize; i++) {
+        pixelmap.push_back(pixelmaps[i]);
+    }
+    return ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmap, outData,
+        reinterpret_cast<int64_t*>(outDataSize)));
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_ImageSourceNative *imageSource, int32_t fd)
 {
@@ -309,6 +410,33 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
     packOption.quality = options->quality;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
+    OH_PixelmapNative **pixelmaps, int32_t mapSize, int32_t fd)
+{
+    if (imagePacker == nullptr || options == nullptr || pixelmaps == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    std::vector<OH_PixelmapNative*> pixelmap;
+    PackOption packOption;
+    std::string format(options->mimeType.data, options->mimeType.size);
+    packOption.format = format;
+    packOption.quality = options->quality;
+    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
+    packOption.loop = options->loop;
+
+    for (uint32_t i = 0; i < options->delayTimesSize; i++) {
+        packOption.delayTimes.push_back(options->delayTimes[i]);
+    }
+    for (uint32_t i = 0; i < options->disposalTypesSize; i++) {
+        packOption.disposalTypes.push_back(options->disposalTypes[i]);
+    }
+    for (int i = 0; i < mapSize; i++) {
+        pixelmap.push_back(pixelmaps[i]);
+    }
+    return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmap, fd));
 }
 
 MIDK_EXPORT

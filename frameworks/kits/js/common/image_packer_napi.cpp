@@ -65,6 +65,8 @@ const int32_t SIZE = 100;
 const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
 const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
+const int MASK_3 = 0x3;
+const int MASK_16 = 0xffff;
 
 struct ImagePackerError {
     bool hasErrorCode = false;
@@ -83,6 +85,7 @@ struct ImagePackerAsyncContext {
     PackOption packOption;
     std::shared_ptr<ImagePacker> rImagePacker;
     std::shared_ptr<PixelMap> rPixelMap;
+    std::shared_ptr<std::vector<std::shared_ptr<PixelMap>>> rPixelMaps;
     std::unique_ptr<uint8_t[]> resultBuffer;
     int32_t packType = TYPE_IMAGE_SOURCE;
     int64_t resultBufferSize = 0;
@@ -315,7 +318,9 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("packing", Packing),
+        DECLARE_NAPI_FUNCTION("packingMultiFrames", PackingMultiFrames),
         DECLARE_NAPI_FUNCTION("packToFile", PackToFile),
+        DECLARE_NAPI_FUNCTION("packToFileMultiFrames", PackToFileMultiFrames),
         DECLARE_NAPI_FUNCTION("packingFromPixelMap", Packing),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
@@ -435,6 +440,75 @@ static int64_t parseBufferSize(napi_env env, napi_value root)
         return DEFAULT_BUFFER_SIZE;
     }
     return tmpNumber;
+}
+
+static bool parsePackOptionOfdelayTimes(napi_env env, napi_value root, PackOption* opts)
+{
+    napi_value tmpValue = nullptr;
+    if (!GET_NODE_BY_NAME(root, "delayTimes", tmpValue)) {
+        IMAGE_LOGE("No delayTimes in pack option");
+        return false;
+    }
+    bool isDelayTimesArray = false;
+    napi_is_array(env, tmpValue, &isDelayTimesArray);
+    uint32_t num;
+    if (isDelayTimesArray) {
+        uint32_t len = 0;
+        if (napi_get_array_length(env, tmpValue, &len) != napi_ok) {
+            IMAGE_LOGE("Parse pack napi_get_array_length failed");
+            return false;
+        }
+        for (size_t i = 0; i < len; i++) {
+            napi_value item;
+            napi_get_element(env, tmpValue, i, &item);
+            if (napi_get_value_uint32(env, item, &num) != napi_ok) {
+                IMAGE_LOGE("Parse delayTime in item failed %{public}zu", i);
+                return false;
+            }
+            opts->delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+        }
+    }
+    return true;
+}
+
+static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOption* opts)
+{
+    napi_value tmpValue = nullptr;
+    if (!GET_NODE_BY_NAME(root, "disposalTypes", tmpValue)) {
+        IMAGE_LOGE("No disposalTypes in pack option");
+        return false;
+    }
+    bool isDisposalTypesArray = false;
+    napi_is_array(env, tmpValue, &isDisposalTypesArray);
+    uint32_t num;
+    if (isDisposalTypesArray) {
+        uint32_t len = 0;
+        if (napi_get_array_length(env, tmpValue, &len) != napi_ok) {
+            IMAGE_LOGE("Parse pack napi_get_array_length failed");
+            return false;
+        }
+        for (size_t i = 0; i < len; i++) {
+            napi_value item;
+            napi_get_element(env, tmpValue, i, &item);
+            if (napi_get_value_uint32(env, item, &num) != napi_ok) {
+                IMAGE_LOGE("Parse disposalTypes in item failed %{public}zu", i);
+                return false;
+            }
+            opts->disposalTypes.push_back(static_cast<uint16_t>(num & MASK_3));
+        }
+    }
+    return true;
+}
+
+static bool parsePackOptionOfLoop(napi_env env, napi_value root, PackOption* opts)
+{
+    uint32_t tmpNumber = 0;
+    if (!GET_UINT32_BY_NAME(root, "loop", tmpNumber)) {
+        IMAGE_LOGE("No loop in pack option");
+        return false;
+    }
+    opts->loop = static_cast<uint16_t>(tmpNumber & MASK_16);
+    return parsePackOptionOfdelayTimes(env, root, opts);
 }
 
 static bool parsePackOptionOfQuality(napi_env env, napi_value root, PackOption* opts)
@@ -700,6 +774,234 @@ napi_value ImagePackerNapi::Release(napi_env env, napi_callback_info info)
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "Release",
         [](napi_env env, void *data) {}, ReleaseComplete, context, context->work);
+    return result;
+}
+
+static void ParserPackToFileMultiFramesArguments(napi_env env,
+    napi_value* argv, size_t argc, ImagePackerAsyncContext* context)
+{
+    if (argc != PARAM3) {
+        BuildMsgOnError(context, (argc != PARAM3),
+            "Arguments Count error", ERR_IMAGE_INVALID_PARAMETER);
+    }
+    context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
+    BuildMsgOnError(context, context->rPixelMaps != nullptr,
+        "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+    if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
+        BuildMsgOnError(context, (napi_get_value_int32(env, argv[PARAM1], &(context->fd)) == napi_ok &&
+            context->fd > INVALID_FD), "fd mismatch", ERR_IMAGE_INVALID_PARAMETER);
+    }
+    if (argc > PARAM2 && ImageNapiUtils::getType(env, argv[PARAM2]) == napi_object) {
+        BuildMsgOnError(context,
+            parsePackOptions(env, argv[PARAM2], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context,
+            parsePackOptionOfLoop(env, argv[PARAM2], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context,
+            parsePackOptionOfdisposalTypes(env, argv[PARAM2], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+    }
+}
+
+STATIC_EXEC_FUNC(PackToFileMultiFrames)
+{
+    int64_t packedSize = 0;
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    if (context->fd <= INVALID_FD) {
+        BuildMsgOnError(context, context->fd <= INVALID_FD,
+        "ImagePacker invalid fd", ERR_IMAGE_INVALID_PARAMETER);
+        return;
+    }
+
+    auto startRes = context->rImagePacker->StartPacking(context->fd, context->packOption);
+    if (startRes != SUCCESS) {
+        context->status = ERROR;
+        BuildMsgOnError(context, startRes == SUCCESS, "Start packing failed", startRes);
+        return;
+    }
+    IMAGE_LOGD("ImagePacker set pixelmap");
+    if (context->rPixelMaps == nullptr) {
+        BuildMsgOnError(context, context->rPixelMaps == nullptr,
+            "Pixelmap is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+        return;
+    }
+    for (auto &pixelMap : *context->rPixelMaps.get()) {
+        context->rImagePacker->AddImage(*(pixelMap.get()));
+    }
+    auto packRes = context->rImagePacker->FinalizePacking(packedSize);
+    IMAGE_LOGD("packRes=%{public}d packedSize=%{public}" PRId64, packRes, packedSize);
+    if (packRes == SUCCESS && packedSize > 0) {
+        context->packedSize = packedSize;
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+        BuildMsgOnError(context, packRes == SUCCESS, "PackedSize outside size", packRes);
+        IMAGE_LOGE("Packing failed, packedSize outside size.");
+    }
+}
+
+STATIC_COMPLETE_FUNC(PackToFileMultiFrames)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value ImagePackerNapi::PackToFileMultiFrames(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImagePackerNapi::PackToFileMultiFrames");
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_FOUR;
+    napi_value argv[ARGS_FOUR] = {0};
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &result);
+
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
+
+    std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
+
+    asyncContext->rImagePacker = std::move(asyncContext->constructor_->nativeImgPck);
+    ParserPackToFileMultiFramesArguments(env, argv, argc, asyncContext.get());
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    ImageNapiUtils::HicheckerReport();
+
+    if (IsImagePackerErrorOccur(asyncContext.get())) {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackingError",
+            [](napi_env env, void *data) {}, PackingErrorComplete, asyncContext, asyncContext->work);
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "PackToFileMultiFrames",
+            PackToFileMultiFramesExec, PackToFileMultiFramesComplete,
+            asyncContext, asyncContext->work, napi_qos_user_initiated);
+    }
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
+}
+
+static void ParserPackingMultiFramesArguments(napi_env env,
+    napi_value* argv, size_t argc, ImagePackerAsyncContext* context)
+{
+    if (argc != PARAM2) {
+        BuildMsgOnError(context, (argc != PARAM2),
+            "Arguments Count error", ERR_IMAGE_INVALID_PARAMETER);
+    }
+    context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
+    BuildMsgOnError(context, context->rPixelMaps != nullptr,
+        "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+    if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
+        BuildMsgOnError(context,
+            parsePackOptions(env, argv[PARAM1], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context,
+            parsePackOptionOfLoop(env, argv[PARAM1], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        context->resultBufferSize = parseBufferSize(env, argv[PARAM1]);
+        BuildMsgOnError(context,
+            parsePackOptionOfdisposalTypes(env, argv[PARAM1], &(context->packOption)),
+            "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+    }
+}
+
+STATIC_EXEC_FUNC(PackingMultiFrames)
+{
+    int64_t packedSize = 0;
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+    IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
+    context->resultBuffer = std::make_unique<uint8_t[]>(
+        (context->resultBufferSize <= 0)?DEFAULT_BUFFER_SIZE:context->resultBufferSize);
+    if (context->resultBuffer == nullptr) {
+        BuildMsgOnError(context, context->resultBuffer == nullptr, "ImagePacker buffer alloc error");
+        return;
+    }
+    context->rImagePacker->StartPacking(context->resultBuffer.get(),
+        context->resultBufferSize, context->packOption);
+    IMAGE_LOGD("ImagePacker set pixelmap");
+    if (context->rPixelMaps == nullptr) {
+        BuildMsgOnError(context, context->rPixelMaps == nullptr,
+            "Pixelmap is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+        return;
+    }
+    for (auto &pixelMap : *context->rPixelMaps.get()) {
+        context->rImagePacker->AddImage(*(pixelMap.get()));
+    }
+    context->rImagePacker->FinalizePacking(packedSize);
+    IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
+    if (packedSize > 0 && (packedSize < context->resultBufferSize)) {
+        context->packedSize = packedSize;
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+        IMAGE_LOGE("Packing failed, packedSize outside size.");
+    }
+}
+
+STATIC_COMPLETE_FUNC(PackingMultiFrames)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    auto context = static_cast<ImagePackerAsyncContext*>(data);
+
+    if (!ImageNapiUtils::CreateArrayBuffer(env, context->resultBuffer.get(),
+                                           context->packedSize, &result)) {
+        context->status = ERROR;
+        IMAGE_LOGE("napi_create_arraybuffer failed!");
+        napi_get_undefined(env, &result);
+    } else {
+        context->status = SUCCESS;
+    }
+    context->resultBuffer = nullptr;
+    context->resultBufferSize = 0;
+    CommonCallbackRoutine(env, context, result);
+}
+
+napi_value ImagePackerNapi::PackingMultiFrames(napi_env env, napi_callback_info info)
+{
+    ImageTrace imageTrace("ImagePackerNapi::PackingMultiFrames");
+    napi_status status;
+    napi_value result = nullptr;
+    size_t argc = ARGS_FOUR;
+    napi_value argv[ARGS_FOUR] = {0};
+    napi_value thisVar = nullptr;
+
+    napi_get_undefined(env, &result);
+
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    NAPI_ASSERT(env, IMG_IS_OK(status), "fail to napi_get_cb_info");
+
+    std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
+
+    asyncContext->rImagePacker = std::move(asyncContext->constructor_->nativeImgPck);
+    ParserPackingMultiFramesArguments(env, argv, argc, asyncContext.get());
+    if (asyncContext->callbackRef == nullptr) {
+        napi_create_promise(env, &(asyncContext->deferred), &result);
+    }
+
+    ImageNapiUtils::HicheckerReport();
+
+    if (IsImagePackerErrorOccur(asyncContext.get())) {
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, "PackingError",
+            [](napi_env env, void *data) {}, PackingErrorComplete, asyncContext, asyncContext->work);
+    } else {
+        IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "PackingMultiFrames",
+            PackingMultiFramesExec, PackingMultiFramesComplete,
+            asyncContext, asyncContext->work, napi_qos_user_initiated);
+    }
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
 

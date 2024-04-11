@@ -481,6 +481,29 @@ std::shared_ptr<PixelMap> PixelMapNapi::GetPixelMap(napi_env env, napi_value pix
     return pixelmapNapiPtr->nativePixelMap_;
 }
 
+std::shared_ptr<std::vector<std::shared_ptr<PixelMap>>> PixelMapNapi::GetPixelMaps(napi_env env, napi_value pixelmaps)
+{
+    auto PixelMaps = std::make_shared<std::vector<std::shared_ptr<PixelMap>>>();
+    uint32_t length = 0;
+    auto status = napi_get_array_length(env, pixelmaps, &length);
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("GetPixelMaps napi get array length failed");
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value element;
+        status = napi_get_element(env, pixelmaps, i, &element);
+        if (!IMG_IS_OK(status)) {
+            IMAGE_LOGE("GetPixelMaps napi get element failed");
+            return nullptr;
+        }
+        std::shared_ptr<PixelMap> pixelMap;
+        pixelMap = GetPixelMap(env, element);
+        PixelMaps->push_back(pixelMap);
+    }
+    return PixelMaps;
+}
+
 std::shared_ptr<PixelMap>* PixelMapNapi::GetPixelMap()
 {
     return &nativePixelMap_;

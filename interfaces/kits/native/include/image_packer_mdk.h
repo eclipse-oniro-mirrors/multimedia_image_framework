@@ -157,7 +157,6 @@ int32_t OH_ImagePacker_PackToData(ImagePacker_Native* native, napi_value source,
 int32_t OH_ImagePacker_PackToFile(ImagePacker_Native* native, napi_value source,
     ImagePacker_Opts* opts, int fd);
 
-
 /**
  * @brief Releases an {@link ImagePacker_Native} object at the native layer.
  * Note: This API is not used to release a JavaScript native API <b>ImagePacker</b> object.

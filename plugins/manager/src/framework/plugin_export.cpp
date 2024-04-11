@@ -16,7 +16,7 @@
 #include "plugin_export.h"
 #include "bmp_decoder.h"
 #include "bmp_format_agent.h"
-#include "gif_decoder.h"
+#include "gif_encoder.h"
 #include "gif_format_agent.h"
 #include "image_log.h"
 #include "iosfwd"
@@ -58,7 +58,7 @@ PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::JpegFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::PngFormatAgent)
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifFormatAgent)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpDecoder)
 PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::WebpEncoder)

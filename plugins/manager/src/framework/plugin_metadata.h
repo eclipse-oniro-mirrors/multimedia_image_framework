@@ -223,10 +223,10 @@ const std::vector<std::string> META_DATA = {
           "libraryPath":"libgifplugin.z.so",
           "classes": [
             {
-              "className":"OHOS::ImagePlugin::GifDecoder",
+              "className":"OHOS::ImagePlugin::GifEncoder",
               "services": [
                 {
-                  "interfaceID":2,
+                  "interfaceID":3,
                   "serviceType":0
                 }
               ],

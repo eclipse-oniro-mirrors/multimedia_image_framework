@@ -102,6 +102,38 @@ int32_t OH_ImagePackerNative::PackingFromPixelmap(OHOS::Media::PackOption *optio
     return IMAGE_ENCODE_FAILED;
 }
 
+int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *option,
+    std::vector<OH_PixelmapNative*> &pixelmap, uint8_t *outData, int64_t *size)
+{
+    if (option == nullptr || pixelmap.empty()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    int64_t packedSize = 0;
+    uint32_t ret = IMAGE_SUCCESS;
+    const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024;
+    int64_t bufferSize = (*size <= 0) ? DEFAULT_BUFFER_SIZE : (*size);
+    ret = imagePacker->StartPacking(outData, bufferSize, *option);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    for (int i = 0; i < pixelmap.size(); i++) {
+        ret = imagePacker->AddImage(*(pixelmap[i]->GetInnerPixelmap().get()));
+    }
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    ret = imagePacker->FinalizePacking(packedSize);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    if (packedSize > 0 && (packedSize < bufferSize)) {
+        *size = packedSize;
+        return IMAGE_SUCCESS;
+    }
+    return IMAGE_ENCODE_FAILED;
+}
+
 int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption *option,
     OH_ImageSourceNative *imageSource, const int fd)
 {
@@ -138,6 +170,28 @@ int32_t OH_ImagePackerNative::PackToFileFromPixelmap(OHOS::Media::PackOption *op
         return ret;
     }
     ret = imagePacker->AddImage(*pixelmapPtr);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    return imagePacker->FinalizePacking(packedSize);
+}
+
+int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *option,
+    std::vector<OH_PixelmapNative*> &pixelmap, int32_t fd)
+{
+    if (option == nullptr || pixelmap.empty()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    int64_t packedSize = 0;
+    uint32_t ret = IMAGE_SUCCESS;
+    ret = imagePacker->StartPacking(fd, *option);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    for (int i = 0; i < pixelmap.size(); i++) {
+        ret = imagePacker->AddImage(*(pixelmap[i]->GetInnerPixelmap().get()));
+    }
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
