@@ -26,9 +26,9 @@
 namespace OHOS {
 namespace Media {
 #if defined(FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_TESTS_PRIVATE)
-    #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_PRIVATE_UNLESS_TESTED public
+#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_PRIVATE_UNLESS_TESTED public
 #else
-    #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_PRIVATE_UNLESS_TESTED private
+#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_PRIVATE_UNLESS_TESTED private
 #endif
 
 /**
@@ -36,17 +36,27 @@ namespace Media {
  * @brief A class for handling image streams in memory.
  *
  * This class provides methods for reading from and seeking within an image
- * stream in memory. The maximum size of the stream is limited by
- * std::vector<uint8_t>::size_type, which is 4GB. Although MetadataStream can
- * address a maximum space of 'long', in memory mode, the maximum space is
- * limited by std::vector<uint8_t>::size_type.
+ * stream in memory.
  */
 class BufferMetadataStream : public MetadataStream {
 public:
+    enum MemoryMode {
+        Fix,    // Memory is fixed at construction and cannot be changed
+        Dynamic // Memory can be changed
+    };
+
     /* *
      * @brief Constructs a new BufferMetadataStream object.
      */
     BufferMetadataStream();
+
+    /* *
+     * @brief Constructs a new BufferMetadataStream object with specified data, size and memory mode.
+     * @param originData The original data to be used for the BufferMetadataStream.
+     * @param size The size of the original data.
+     * @param mode The memory mode to be used for the BufferMetadataStream.
+     */
+    BufferMetadataStream(byte *originData, size_t size, MemoryMode mode);
 
     /* *
      * @brief Destructs the BufferMetadataStream object.
@@ -127,16 +137,14 @@ public:
     virtual bool Flush() override;
 
     /* *
-     * Get the memory address of the BufferMetadataStream.
-     * Since the data of BufferMetadataStream is stored in a std::vector<uint8_t>,
-     * this function directly returns the pointer to the data using the
-     * std::vector::data() function. Note that this function ignores the
-     * isWriteable parameter, because the data of BufferMetadataStream is always
-     * writable.
-     *
      * @param isWriteable This parameter is ignored, the data of
      * BufferMetadataStream is always writable.
      * @return Returns a pointer to the data of BufferMetadataStream.
+     * The read/write characteristics of the memory pointed to by the
+     * returned addr pointer depend on whether it comes from managed
+     * memory or is allocated by itself. If it is self-allocated, it
+     * can be both read and written. If it is managed, it depends on
+     * the read/write properties of the managed memory.
      */
     virtual byte *GetAddr(bool isWriteable = false) override;
 
@@ -160,21 +168,54 @@ public:
      */
     virtual ssize_t GetSize() override;
 
-FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_PRIVATE_UNLESS_TESTED:
     /* *
-     * @brief Closes the BufferMetadataStream.
+     * Release the managed memory to the external.
+     *
+     * @return Returns the pointer to the released memory.
+     */
+    byte *Release();
+
+private:
+    /* *
+     * @brief Closes the BufferImageStream.
      */
     virtual void Close() override;
+    bool ReadAndWriteData(MetadataStream &src);
+    void HandleWriteFailure();
 
     /* *
-     * @brief The memory buffer of the BufferMetadataStream.
+     * @brief The memory buffer of the BufferImageStream.
      */
-    std::vector<uint8_t> buffer_;
+    byte *buffer_;
 
     /* *
-     * @brief The current offset in the BufferMetadataStream.
+     * @brief The original pointer saved when constructed with originData.
+     * It is needed when closing to determine whether to release the buffer.
+     */
+    byte *originData_;
+
+    /* *
+     * @brief The pre-allocated memory capacity of the buffer.
+     */
+    long capacity_;
+
+    /* *
+     * @brief The data size of the buffer.
+     * Since it is in memory, bufferSize will not exceed the maximum length of
+     * memory, so size_t is not used here.
+     */
+    long bufferSize_;
+
+    /* *
+     * @brief The current offset in the BufferImageStream.
      */
     long currentOffset_;
+
+    /* *
+     * @brief The memory mode, which can be fixed memory or dynamic memory.
+     * See MemoryMode for details.
+     */
+    MemoryMode memoryMode_;
 };
 } // namespace Media
 } // namespace OHOS
