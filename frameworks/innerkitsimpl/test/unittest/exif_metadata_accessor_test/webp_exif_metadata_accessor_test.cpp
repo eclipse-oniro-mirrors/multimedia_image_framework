@@ -706,7 +706,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write003, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("ExifVersion", "0210"));
     ASSERT_TRUE(exifMetadata->SetValue("DateTimeOriginal", "2022:06:02 15:51:35"));
     ASSERT_TRUE(exifMetadata->SetValue("DateTimeDigitized", "2022:06:02 15:51:35"));
-    ASSERT_TRUE(exifMetadata->SetValue("OffsetTime", "111"));
+    ASSERT_TRUE(exifMetadata->SetValue("OffsetTime", "2024:04:11"));
     ASSERT_TRUE(exifMetadata->SetValue("OffsetTimeOriginal", "00xx"));
 
     ASSERT_EQ(imageAccessor.Write(), 0);
@@ -725,7 +725,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write003, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "ExifVersion"), "Exif Version 2.1");
     ASSERT_EQ(GetProperty(exifMetadata, "DateTimeOriginal"), "2022:06:02 15:51:35");
     ASSERT_EQ(GetProperty(exifMetadata, "DateTimeDigitized"), "2022:06:02 15:51:35");
-    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "111");
+    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2024:04:11");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeOriginal"), "00xx");
 }
 

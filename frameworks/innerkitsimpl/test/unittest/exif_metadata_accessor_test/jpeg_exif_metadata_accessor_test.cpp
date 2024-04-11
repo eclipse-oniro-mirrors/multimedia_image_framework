@@ -957,7 +957,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write012, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "Flash"), "Strobe return light not detected");
     ASSERT_EQ(GetProperty(exifMetadata, "FocalLength"), "31.0 mm");
 
-    ASSERT_TRUE(exifMetadata->SetValue("OffsetTime", "XX"));
+    ASSERT_TRUE(exifMetadata->SetValue("OffsetTime", "2024:04:11"));
     ASSERT_TRUE(exifMetadata->SetValue("OffsetTimeOriginal", "XX"));
     ASSERT_TRUE(exifMetadata->SetValue("OffsetTimeDigitized", "XX"));
     ASSERT_TRUE(exifMetadata->SetValue("ComponentsConfiguration", "1456"));
@@ -973,7 +973,7 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write012, TestSize.Level3)
     ASSERT_EQ(imageAccessor.Write(), 0);
 
     ASSERT_EQ(imageAccessor.Read(), 0);
-    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "XX");
+    ASSERT_EQ(GetProperty(exifMetadata, "OffsetTime"), "2024:04:11");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeOriginal"), "XX");
     ASSERT_EQ(GetProperty(exifMetadata, "OffsetTimeDigitized"), "XX");
     ASSERT_EQ(GetProperty(exifMetadata, "ComponentsConfiguration"), "Y R G B");
