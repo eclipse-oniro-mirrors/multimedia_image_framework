@@ -171,6 +171,26 @@
               "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image/include"
             },
             "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image:egl_image"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "image_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/native/common/ndk:ohimage"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "image_receiver_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/native/common/ndk:image_receiver"
           }
         ],
         "test": [

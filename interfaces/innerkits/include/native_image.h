@@ -48,6 +48,10 @@ public:
     int32_t GetFormat(int32_t &format);
     int32_t GetTimestamp(int64_t &timestamp);
     NativeComponent* GetComponent(int32_t type);
+    std::map<int32_t, std::unique_ptr<NativeComponent>>& GetComponents()
+    {
+        return components_;
+    }
     int32_t CombineYUVComponents();
     sptr<SurfaceBuffer> GetBuffer()
     {

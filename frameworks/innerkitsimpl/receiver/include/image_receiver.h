@@ -73,6 +73,10 @@ public:
     {
         surfaceBufferAvaliableListener_ = surfaceBufferAvaliableListener;
     }
+    void UnRegisterBufferAvaliableListener()
+    {
+        surfaceBufferAvaliableListener_.reset();
+    }
     static sptr<Surface> getSurfaceById(std::string id);
     void ReleaseReceiver();
 
