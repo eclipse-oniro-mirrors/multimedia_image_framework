@@ -30,7 +30,7 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "surface_buffer.h"
@@ -59,7 +59,7 @@ constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
 constexpr int FFMPEG_NUM = 8;
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::ALPHA_8, AVPixelFormat::AV_PIX_FMT_GRAY8 },
     { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565BE },
@@ -473,7 +473,7 @@ bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
 
 uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(A_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
         return nullptr;
 #else
     std::string name = "Parcel RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(uniqueId);
@@ -503,7 +503,7 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 uint8_t *PostProc::AllocDmaMemory(const Size &size, const uint64_t bufferSize,
                                   void **nativeBuffer, int &targetRowStride)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(A_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return nullptr;
 #else
     MemoryData memoryData = {nullptr, (uint32_t)bufferSize, "PostProc", {size.width, size.height}};
@@ -521,7 +521,7 @@ uint8_t *PostProc::AllocDmaMemory(const Size &size, const uint64_t bufferSize,
 void PostProc::ReleaseBuffer(AllocatorType allocatorType, int fd,
                              uint64_t dataSize, uint8_t **buffer, void *nativeBuffer)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (*buffer != nullptr) {
             ::munmap(*buffer, dataSize);
@@ -706,7 +706,7 @@ void PostProc::SetScanlineCropAndConvert(const Rect &cropRect, ImageInfo &dstIma
     scanlineFilter.SetSrcRegion(srcRect);
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool GetScaleFormat(const PixelFormat &format, AVPixelFormat &pixelFormat)
 {
     if (format != PixelFormat::UNKNOWN) {

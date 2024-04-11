@@ -20,7 +20,7 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "securec.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -112,7 +112,7 @@ uint32_t BmpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 
 uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &context)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     uint32_t id = context.pixelmapUniqueId_;
     std::string name = "BMP RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
     int fd = AshmemCreate(name.c_str(), byteCount);
@@ -148,7 +148,7 @@ uint32_t BmpDecoder::SetShareMemBuffer(uint64_t byteCount, DecodeContext &contex
 
 static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo &dstInfo)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -185,7 +185,7 @@ static uint32_t DmaMemAlloc(uint64_t count, DecodeContext &context, SkImageInfo 
 
 uint32_t SetBuffer(uint64_t byteCount, DecodeContext &context)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         if (byteCount == 0) {
             IMAGE_LOGE("Decode failed, byteCount is invalid value");
             return ERR_MEDIA_INVALID_VALUE;
@@ -258,7 +258,7 @@ uint32_t SetBufferForPlatform(uint64_t byteCount, DecodeContext &context)
 
 uint32_t BmpDecoder::SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
         uint32_t res = SetShareMemBuffer(byteCount, context);
         if (res != SUCCESS) {

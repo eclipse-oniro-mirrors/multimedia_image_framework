@@ -27,7 +27,7 @@
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include "ashmem.h"
 #include <sys/mman.h>
 #endif
@@ -138,7 +138,7 @@ bool BasicTransformer::CheckAllocateBuffer(PixmapInfo &outPixmap, AllocateMem al
 
 void BasicTransformer::ReleaseBuffer(AllocatorType allocatorType, int fd, int dataSize, uint8_t *buffer)
 {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (buffer != nullptr) {
             ::munmap(buffer, dataSize);
@@ -376,7 +376,7 @@ void BasicTransformer::GetAroundPixelRGB565(const AroundPos aroundPos, uint8_t *
 {
     const uint16_t *row0 = reinterpret_cast<uint16_t *>(data + aroundPos.y0 * rb);
     const uint16_t *row1 = reinterpret_cast<uint16_t *>(data + aroundPos.y1 * rb);
-    
+
     aroundPixels.color00 = RGB565to32(row0[aroundPos.x0]);
     aroundPixels.color01 = RGB565to32(row0[aroundPos.x1]);
     aroundPixels.color10 = RGB565to32(row1[aroundPos.x0]);

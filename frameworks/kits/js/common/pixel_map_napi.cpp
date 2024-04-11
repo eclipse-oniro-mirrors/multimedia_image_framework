@@ -21,7 +21,7 @@
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
 #include "pixel_map_from_surface.h"
@@ -55,7 +55,7 @@ static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
 static const std::string CLASS_NAME = "PixelMap";
 static const std::int32_t NEW_INSTANCE_ARGC = 1;
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
 
@@ -400,7 +400,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
 #endif
     };
@@ -851,14 +851,14 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
-    
+
     auto pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
     context->rPixelMap = std::move(pixelMap);
 
@@ -997,7 +997,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
 
 STATIC_EXEC_FUNC(Unmarshalling)
 {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
     auto messageParcel = napi_messageSequence->GetMessageParcel();
@@ -1038,7 +1038,7 @@ void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void 
 
 napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
 {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (PixelMapNapi::GetConstructor() == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -1103,7 +1103,7 @@ napi_value PixelMapNapi::ThrowExceptionError(napi_env env,
 }
 
 napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_info info)
-#if defined(IOS_PLATFORM) || defined(A_PLATFORM)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
 {
     napi_value result = nullptr;
     return result;
@@ -1194,7 +1194,7 @@ napi_value PixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
     size_t argCount = 0;
     IMAGE_LOGD("GetIsStrideAlignment IN");
-    
+
     IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
@@ -1204,7 +1204,7 @@ napi_value PixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callback_info i
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi),
         result, IMAGE_LOGE("fail to unwrap context"));
-        
+
     if (pixelMapNapi->nativePixelMap_ == nullptr) {
         return result;
     }
@@ -2931,7 +2931,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 
 napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
 {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NapiValues nVal;
     nVal.argc = NUM_1;
     napi_value argValue[NUM_1] = {0};
