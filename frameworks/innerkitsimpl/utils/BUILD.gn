@@ -110,6 +110,7 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       ]
 
+      sources += [ "src/image_data_statistics.cpp" ]
       external_deps = [
         "c_utils:utils",
         "graphic_2d:color_manager",
@@ -181,6 +182,7 @@ ohos_static_library("image_utils_static") {
     ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [ "src/image_data_statistics.cpp" ]
     deps = [
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]

@@ -26,6 +26,7 @@
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
 #include "image_trace.h"
+#include "image_data_statistics.h"
 #endif
 #include "exif_metadata.h"
 #include "file_source_stream.h"
@@ -166,7 +167,7 @@ ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     IMAGE_LOGD("[ImageSource]get supported image type.");
-
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetSupportedFormats.");
     formats.clear();
     vector<ClassInfo> classInfos;
     uint32_t ret =
@@ -223,6 +224,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, c
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with stream.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with stream.");
     return DoImageSourceCreate(
         [&is]() {
             auto stream = IstreamSourceStream::CreateSourceStream(move(is));
@@ -238,7 +240,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with buffer.");
-
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with buffer.");
     if (data == nullptr || size == 0) {
         IMAGE_LOGE("[ImageSource]parameter error.");
         errorCode = ERR_MEDIA_INVALID_PARAM;
@@ -262,6 +264,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with pathName.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with pathName.");
     if (pathName.size() == SIZE_ZERO) {
         IMAGE_LOGE("[ImageSource]parameter error.");
         return nullptr;
@@ -284,6 +287,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with fd.");
     return DoImageSourceCreate(
         [&fd]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd);
@@ -299,6 +303,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
     const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with offset.");
     return DoImageSourceCreate(
         [&fd, offset, length]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
@@ -314,6 +319,8 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create incremental ImageSource.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateIncrementalImageSource width = %d, height = %d," \
+        "format = %d", opts.sourceOptions.size.width, opts.sourceOptions.size.height, opts.sourceOptions.pixelFormat);
     auto sourcePtr = DoImageSourceCreate(
         [&opts]() {
             auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
@@ -550,6 +557,7 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
     opts_ = opts;
     ImageInfo info;
@@ -577,6 +585,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
     }
+    imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d," \
+        "memorySize: %d, memoryType: %d", context.outInfo.size.width, context.outInfo.size.height,
+        info.size.width, info.size.height, sourceInfo_.encodedFormat.c_str(), context.pixelFormat,
+        context.pixelsBuffer.bufferSize, context.allocatorType);
+    imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
     ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     guard.unlock();
@@ -848,6 +861,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 unique_ptr<IncrementalPixelMap> ImageSource::CreateIncrementalPixelMap(uint32_t index, const DecodeOptions &opts,
     uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource] CreateIncrementalPixelMap width = %d, height = %d," \
+        "pixelformat = %d", opts.desiredSize.width, opts.desiredSize.height, opts.desiredPixelFormat);
     IncrementalPixelMap *incPixelMapPtr = new (std::nothrow) IncrementalPixelMap(index, opts, this);
     if (incPixelMapPtr == nullptr) {
         IMAGE_LOGE("[ImageSource]create the incremental pixel map unique_ptr fail.");
@@ -960,6 +975,7 @@ void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 
 uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]UpdateData");
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]image source update data, source stream is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -979,6 +995,7 @@ DecodeEvent ImageSource::GetDecodeEvent()
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfo by index");
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetImageInfo by index.");
     uint32_t ret = SUCCESS;
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto iter = GetValidImageStatus(index, ret);
@@ -994,7 +1011,9 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
             info.size.width, info.size.height);
         return ERR_IMAGE_DECODE_FAILED;
     }
-
+    imageDataStatistics.AddTitle("width = %d, height = %d, pixelformat = %d, encodedFormat = %s, alphaType = %d",
+        imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.encodedFormat.c_str(),
+        imageInfo.alphaType);
     imageInfo = info;
     return SUCCESS;
 }
@@ -1036,6 +1055,7 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1049,6 +1069,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const int fd)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
     if (fd <= STDERR_FILENO) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1116,6 +1137,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetImagePropertyInt.");
     std::string strValue;
     uint32_t ret = GetImagePropertyCommon(index, key, strValue);
 
@@ -1130,6 +1152,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetImagePropertyString.");
     return GetImagePropertyCommon(index, key, value);
 }
 
@@ -2353,6 +2376,7 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreatePixelMapList.");
     DumpInputData();
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
@@ -2377,6 +2401,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
 
 unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetDelayTime.");
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Failed to get frame count in GetDelayTime.");
@@ -2446,6 +2471,7 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
 
 uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]GetFrameCount.");
     uint32_t frameCount = GetSourceInfo(errorCode).topLevelImageNum;
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetFrameCount get source info error.");
