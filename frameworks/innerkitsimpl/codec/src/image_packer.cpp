@@ -24,6 +24,7 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
+#include "image_data_statistics.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
 #endif
@@ -182,6 +183,7 @@ uint32_t ImagePacker::AddImage(PixelMap &pixelMap)
 {
     ImageUtils::DumpPixelMapBeforeEncode(pixelMap);
     ImageTrace imageTrace("ImagePacker::AddImage by pixelMap");
+
     return DoEncodingFunc([this, &pixelMap](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddImage(pixelMap);
     });
@@ -200,6 +202,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
         IMAGE_LOGE("image source create pixel map failed.");
         return ret;
     }
+
     if (pixelMap_ == nullptr || pixelMap_.get() == nullptr) {
         IMAGE_LOGE("create the pixel map unique_ptr fail.");
         return ERR_IMAGE_MALLOC_ABNORMAL;
@@ -210,7 +213,7 @@ uint32_t ImagePacker::AddImage(ImageSource &source)
 
 uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
 {
-    ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index:%{public}u", index);
+    ImageTrace imageTrace("ImagePacker::AddImage by imageSource and index %{public}u", index);
     DecodeOptions opts;
     uint32_t ret = SUCCESS;
     if (pixelMap_ != nullptr) {
@@ -243,6 +246,7 @@ uint32_t ImagePacker::FinalizePacking()
 
 uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
 {
+    ImageDataStatistics imageDataStatistics("[ImagePacker]FinalizePacking.");
     uint32_t ret = FinalizePacking();
     if (packerStream_ != nullptr) {
         packerStream_->Flush();
