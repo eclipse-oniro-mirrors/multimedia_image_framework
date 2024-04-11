@@ -38,18 +38,18 @@ struct YuvPlaneInfo {
     unsigned char *planes[YUVCOMPONENT_MAX] = { 0 };
 };
 
-int I444ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I444ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I422ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I422ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I420ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I420ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I440ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I440ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I411ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
-int I411ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
+int I444ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I444ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I422ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I422ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I420ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I420ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I440ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I440ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I411ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
+int I411ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
 
-int I400ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest);
+int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest);
 }
 }
 #endif

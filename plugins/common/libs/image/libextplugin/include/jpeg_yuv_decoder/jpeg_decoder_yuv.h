@@ -26,8 +26,8 @@
 namespace OHOS {
 namespace ImagePlugin {
 
-typedef int (*FUNC_I4xxToI420)(YuvPlaneInfo& src, YuvPlaneInfo& dest);
-typedef int (*FUNC_I4xxToNV21)(YuvPlaneInfo& src, YuvPlaneInfo& dest);
+typedef int (*FUNC_I4xxToI420)(const YuvPlaneInfo& src, const YuvPlaneInfo& dest);
+typedef int (*FUNC_I4xxToNV21)(const YuvPlaneInfo& src, const YuvPlaneInfo& dest);
 
 struct ConverterPair {
     FUNC_I4xxToI420 to420Func = nullptr;

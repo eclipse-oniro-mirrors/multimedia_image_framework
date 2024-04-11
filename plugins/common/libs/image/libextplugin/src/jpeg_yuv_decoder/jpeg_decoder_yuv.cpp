@@ -72,11 +72,9 @@ tjscalingfactor JpegDecoderYuv::GetScaledFactor(uint32_t jpgwidth, uint32_t jpgh
     if (sf == nullptr || NUMSF == 0) {
         return factor;
     }
-    uint32_t scaledw = 0;
-    uint32_t scaledh = 0;
     for (int i = 0; i < NUMSF; i++) {
-        scaledw = TJSCALED(jpgwidth, sf[i]);
-        scaledh = TJSCALED(jpgheight, sf[i]);
+        uint32_t scaledw = TJSCALED(jpgwidth, sf[i]);
+        uint32_t scaledh = TJSCALED(jpgheight, sf[i]);
         if ((scaledw <= width && scaledh <= height) || i == NUMSF - 1) {
             factor.num = sf[i].num;
             factor.denom = sf[i].denom;
@@ -392,11 +390,8 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
         return DecodeFrom420To420(context, dehandle, width, height);
     }
     std::unique_ptr<uint8_t[]> yuvBuffer = std::make_unique<uint8_t[]>(totalSizeForDecodeData);
-    unsigned char* data = (unsigned char*)yuvBuffer.get();
-    if (data == nullptr) {
-        IMAGE_LOGE("JpegDecoderYuv DoDecodeToYuvPlane, error to malloc");
-        return JpegYuvDecodeError_MemoryMallocFailed;
-    }
+    unsigned char* data = reinterpret_cast<unsigned char*>(yuvBuffer.get());
+
     YuvPlaneInfo jpegOutYuvInfo = { 0 };
     FillJpgOutYuvInfo(jpegOutYuvInfo, width, height, data, jpegSubsamp);
     ret = tjDecompressToYUVPlanes(dehandle, decodeParameter_.jpegBuffer_, decodeParameter_.jpegBufferSize_,
