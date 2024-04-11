@@ -167,7 +167,6 @@ ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     IMAGE_LOGD("[ImageSource]get supported image type.");
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetSupportedFormats.");
     formats.clear();
     vector<ClassInfo> classInfos;
     uint32_t ret =
@@ -995,7 +994,6 @@ DecodeEvent ImageSource::GetDecodeEvent()
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfo by index");
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetImageInfo by index.");
     uint32_t ret = SUCCESS;
     std::unique_lock<std::mutex> guard(decodingMutex_);
     auto iter = GetValidImageStatus(index, ret);
@@ -1011,9 +1009,6 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
             info.size.width, info.size.height);
         return ERR_IMAGE_DECODE_FAILED;
     }
-    imageDataStatistics.AddTitle("width = %d, height = %d, pixelformat = %d, encodedFormat = %s, alphaType = %d",
-        imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.encodedFormat.c_str(),
-        imageInfo.alphaType);
     imageInfo = info;
     return SUCCESS;
 }
@@ -2401,7 +2396,6 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
 
 unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetDelayTime.");
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Failed to get frame count in GetDelayTime.");
@@ -2471,7 +2465,6 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
 
 uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
 {
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetFrameCount.");
     uint32_t frameCount = GetSourceInfo(errorCode).topLevelImageNum;
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]GetFrameCount get source info error.");
