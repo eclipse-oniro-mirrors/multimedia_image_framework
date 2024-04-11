@@ -1129,9 +1129,8 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     }
     // keep aline with previous logical for delay time and disposal type
     if (IMAGE_DELAY_TIME.compare(key) == ZERO || IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
-        IMAGE_LOGD("keey aline exdecoder: %{public}s", key.c_str());
+        IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
         uint32_t ret = mainDecoder_->GetImagePropertyInt(index, key, value);
-        IMAGE_LOGD("mainDecoder_ call GetImagePropertyInt fail, ret:%{public}u", ret);
         return ret;
     }
 
@@ -1142,7 +1141,6 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
             IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
             return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }
-        IMAGE_LOGD("ORIENTATION_INT_MAP map value by %{public}s", strValue.c_str());
         strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
     }
     IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
