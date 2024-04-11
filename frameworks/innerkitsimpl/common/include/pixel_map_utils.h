@@ -16,6 +16,10 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_COMMON_INCLUDE_PIXEL_MAP_UTILS_H
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "ashmem.h"
+#endif
+
 #include "image_type.h"
 #include "log_tags.h"
 #include "pixel_map.h"
@@ -161,6 +165,19 @@ static ImageInfo MakeImageInfo(int width, int height, PixelFormat pf, AlphaType 
     info.alphaType = at;
     info.colorSpace = cs;
     return info;
+}
+
+static bool CheckAshmemSize(const int &fd, const int32_t &bufferSize, bool isAstc = false)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (fd < 0) {
+        return false;
+    }
+    int32_t ashmemSize = AshmemGetSize(fd);
+    return isAstc || bufferSize == ashmemSize;
+#else
+    return false;
+#endif
 }
 } // namespace Media
 } // namespace OHOS
