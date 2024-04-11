@@ -1755,8 +1755,8 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
     uint8_t *base = nullptr;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
     int fd = ReadFileDescriptor(parcel);
-    if (!CheckAshmemSize(fd, bufferSize)) {
-        IMAGE_LOGE("ReadAshmemDataFromParcel check ashmem size failed, fd:[%{public}d].", fd);
+    if (fd < 0) {
+        IMAGE_LOGE("read fd :[%{public}d] error", fd);
         return nullptr;
     }
     if (bufferSize <= 0 || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
@@ -1912,10 +1912,6 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd <= 0) {
             IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
-            return false;
-        }
-        if (!CheckAshmemSize(*fd, bufferSize)) {
-            IMAGE_LOGE("write pixel map check ashmem size failed, fd:[%{public}d].", *fd);
             return false;
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
@@ -2131,7 +2127,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
-        if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize)) {
+        if (fd < 0) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
             return false;
         }
