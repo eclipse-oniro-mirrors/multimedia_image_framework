@@ -1051,12 +1051,14 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     const std::string &path)
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
+    
+#if !defined(IOS_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
+#endif
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
-
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImageProperty(metadataAccessor, key, value);
 }
