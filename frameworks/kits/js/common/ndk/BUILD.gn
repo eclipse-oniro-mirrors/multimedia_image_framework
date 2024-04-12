@@ -123,10 +123,7 @@ ohos_shared_library("image_source") {
     "$image_subsystem/interfaces/kits/js/common:image",
   ]
 
-  external_deps = [
-    "c_utils:utils",
-    "resource:librawfile_ndk"
-  ]
+  external_deps = [ "c_utils:utils" ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
