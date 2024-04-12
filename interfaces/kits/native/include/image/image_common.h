@@ -1158,7 +1158,7 @@ static const char *OHOS_IMAGE_PROPERTY_GPS_H_POSITIONING_ERROR = "GPSHPositionin
 /**
  * @brief This tag indicates the sensitivity of the camera or input device when the image was shot.
  * It is used in {@link OH_ImageSource_GetImageProperty} and {@link OH_ImageSource_ModifyImageProperty}.
- * 
+ *
  * @since 12
  */
 static const char *OHOS_IMAGE_PROPERTY_PHOTOGRAPHIC_SENSITIVITY = "PhotographicSensitivity";

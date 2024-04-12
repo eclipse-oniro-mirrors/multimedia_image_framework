@@ -211,7 +211,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
 
     auto surfaceBuffer = receiver->ptrImgRcv->ReadLastImage();
     if (nullptr == surfaceBuffer) {
-        IMAGE_LOGE("Bad data: surface buffer empty.");
+        IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
     }
 
@@ -253,7 +253,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
 
     auto surfaceBuffer = receiver->ptrImgRcv->ReadNextImage();
     if (nullptr == surfaceBuffer) {
-        IMAGE_LOGE("Bad data: surface buffer empty.");
+        IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
     }
 

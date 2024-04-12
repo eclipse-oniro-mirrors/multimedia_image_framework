@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <inttypes.h>
+#include <cinttypes.h>
 
 #include "common_utils.h"
 #include "image_log.h"
@@ -31,7 +31,8 @@ Image_ErrorCode OH_ImageNative_GetImageSize(OH_ImageNative* image, Image_Size* s
         IMAGE_LOGE("Invalid parameter: image=0x%{public}p, size=0x%{public}p", image, size);
         return IMAGE_BAD_PARAMETER;
     }
-    int32_t width = 0, height = 0;
+    int32_t width = 0;
+    int32_t height = 0;
     Image_ErrorCode err = (Image_ErrorCode)image->imgNative->GetSize(width, height);
     size->width = width;
     size->height = height;
