@@ -79,7 +79,9 @@ private:
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
-    bool IsYuv420Format(PlPixelFormat format);
+    bool IsYuv420Format(PlPixelFormat format) const;
+    bool IsHeifToYuvDecode(const DecodeContext &context) const;
+    uint32_t DoHeifToYuvDecode(DecodeContext &context);
     bool ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &outputType);
     bool ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);
@@ -96,6 +98,7 @@ private:
     void ReportImageType(SkEncodedImageFormat skEncodeFormat);
     bool CheckContext(const DecodeContext &context);
     uint32_t DmaMemAlloc(DecodeContext &context, uint64_t count, SkImageInfo &dstInfo);
+    uint32_t HeifYUVMemAlloc(DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;

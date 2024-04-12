@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "gtest/gtest.h"
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
@@ -39,8 +40,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_FILE_METADATA_STREAM_TESTS_PRIVATE
-#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_BUFFER_METADATA_STREAM_TESTS_PRIVATE
 #include "metadata_stream.h"
 #include "buffer_metadata_stream.h"
 #include "file_metadata_stream.h"
@@ -768,6 +767,10 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CopyFrom002, TestSize.Level3)
     ASSERT_TRUE(src.Open());
     ASSERT_EQ(dest.Open(), true);
     src.Write((byte *)"Hello, world!", 13);
+    char bufSrc[14] = {0};
+    src.Seek(0, SeekPos::BEGIN);
+    src.Read((byte *)bufSrc, 13);
+    ASSERT_STREQ(bufSrc, "Hello, world!");
     ASSERT_TRUE(dest.CopyFrom(src));
     dest.Seek(0, SeekPos::BEGIN);
     char buf[14] = {0};
@@ -1290,7 +1293,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write002, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Open(OpenMode::ReadWrite);
     stream.Write((byte *)"Hello, world!", 13);
-    ASSERT_EQ(stream.buffer_.capacity(), 13);
+    ASSERT_EQ(stream.capacity_, METADATA_STREAM_PAGE_SIZE);
     ASSERT_EQ(stream.Tell(), 13);
 }
 
@@ -1306,43 +1309,46 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write003, TestSize.Level3)
     stream.Open(OpenMode::ReadWrite);
     byte data[METADATA_STREAM_PAGE_SIZE + 1] = {0};  // Create a 4097-byte data
     stream.Write(data, METADATA_STREAM_PAGE_SIZE + 1); // Write 4097 bytes of data
-    ASSERT_GE(stream.buffer_.capacity(),
+    ASSERT_GE(stream.capacity_,
         METADATA_STREAM_PAGE_SIZE + 1);                      // Check if the buffer capacity is at least 4097
     ASSERT_EQ(stream.Tell(), METADATA_STREAM_PAGE_SIZE + 1); // Check if the write position is correct
 }
 
 /**
- * @tc.name: BufferMetadataStream_Write004
- * @tc.desc: Test the Write function of BufferMetadataStream, checking if it can
+ * @tc.name: BufferImageStream_Write004
+ * @tc.desc: Test the Write function of BufferImageStream, checking if it can
  * correctly handle data of the exact buffer capacity
  * @tc.type: FUNC
  */
-HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write004, TestSize.Level3)
+HWTEST_F(MetadataStreamTest, BufferImageStream_Write004, TestSize.Level3)
 {
     BufferMetadataStream stream;
-    stream.Open(OpenMode::ReadWrite);
+    stream.Open();
 
     byte data[METADATA_STREAM_PAGE_SIZE] = {0};  // Create a 4096-byte data
     stream.Write(data, METADATA_STREAM_PAGE_SIZE); // Write 4096 bytes of data
-    ASSERT_EQ(stream.buffer_.capacity(),
+    ASSERT_EQ(stream.capacity_,
         METADATA_STREAM_PAGE_SIZE); // Check if the buffer capacity is 4096
     ASSERT_EQ(stream.Tell(),
         METADATA_STREAM_PAGE_SIZE); // Check if the write position is correct
 }
 
 /**
- * @tc.name: BufferMetadataStream_Write005
- * @tc.desc: Test the Write function of BufferMetadataStream, checking if it can
+ * @tc.name: BufferImageStream_Write005
+ * @tc.desc: Test the Write function of BufferImageStream, checking if it can
  * correctly handle fixed buffer size
  * @tc.type: FUNC
  */
-HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write005, TestSize.Level3)
+HWTEST_F(MetadataStreamTest, BufferImageStream_Write005, TestSize.Level3)
 {
-    BufferMetadataStream stream;
-    ASSERT_TRUE(stream.Open(OpenMode::ReadWrite));
+    char text[] = "Hello, world!";
+    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Fix);
+    ASSERT_TRUE(stream.Open());
     ASSERT_EQ(stream.Write((byte *)"Hi", 2), 2);
     ASSERT_EQ(stream.Tell(), 2);
-    ASSERT_EQ(stream.Write((byte *)"this is a very long text", 24), 24);
+    ASSERT_STREQ(text, "Hillo, world!");
+    ASSERT_EQ(stream.Write((byte *)"this is a very long text", 24), -1);
+    ASSERT_STREQ(text, "Hillo, world!");
 }
 
 HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write006, TestSize.Level3)
@@ -1356,6 +1362,55 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write006, TestSize.Level3)
 
         delete[] buf; // Don't forget to delete the dynamically allocated buffer
     }
+}
+
+/**
+ * @tc.name: BufferImageStream_Write006
+ * @tc.desc: Test the Write function of BufferImageStream, checking if it can
+ * correctly handle dynamic buffer size
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write007, TestSize.Level3)
+{
+    char text[] = "Hello, world!";
+    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Dynamic);
+    ASSERT_TRUE(stream.Open());
+    ASSERT_EQ(stream.Write((byte *)"Hi", 2), 2);
+    ASSERT_EQ(stream.Tell(), 2);
+    ASSERT_STREQ(text, "Hillo, world!");
+    stream.Seek(0, SeekPos::BEGIN);
+    ASSERT_EQ(stream.Write((byte *)"this is a very long text", 25), 25);
+    ASSERT_STREQ((char *)stream.GetAddr(false), "this is a very long text");
+}
+
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write008, TestSize.Level3)
+{
+    BufferMetadataStream stream;
+    byte *buf = new byte[13];
+    ASSERT_TRUE(stream.Open());
+    stream.Write((uint8_t *)"Hello, world!", 13);
+    stream.Seek(4, SeekPos::BEGIN);
+    stream.Write((uint8_t *)"a", 1);
+    stream.Write((uint8_t *)"b", 1);
+    stream.Seek(0, SeekPos::BEGIN);
+    stream.Read(buf, 13);
+    ASSERT_STREQ((char *)buf, "Hellab world!");
+    delete[] buf;
+}
+
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write009, TestSize.Level3)
+{
+    BufferMetadataStream stream;
+    byte *buf = new byte[2000];
+    byte *buf2 = new byte[500];
+    ASSERT_TRUE(stream.Open());
+    stream.Write(buf, 2000);
+    stream.Write(buf2, 500);
+    stream.Write(buf2, 500);
+    ASSERT_EQ(stream.GetSize(), 3000);
+    ASSERT_EQ(stream.capacity_, 32768);
+    delete[] buf;
+    delete[] buf2;
 }
 
 /**
@@ -1381,6 +1436,19 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close002, TestSize.Level3)
 }
 
 /**
+ * @tc.name: BufferImageStream_Close003
+ * @tc.desc: Test the Close function of BufferImageStream after releasing the
+ * stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferImageStream_Close003, TestSize.Level3)
+{
+    BufferMetadataStream stream;
+    stream.Write((byte *)"Hello, world!", 13);
+    delete[] stream.Release();
+}
+
+/**
  * @tc.name: BufferMetadataStream_Close004
  * @tc.desc: Test the Close function of BufferMetadataStream after closing the
  * stream
@@ -1391,6 +1459,49 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close004, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Write((byte *)"Hello, world!", 13);
     stream.Close();
+}
+
+/**
+ * @tc.name: BufferImageStream_Close005
+ * @tc.desc: Test the Close function of BufferImageStream with a fixed size
+ * buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferImageStream_Close005, TestSize.Level3)
+{
+    char text[] = "Hello, world!";
+    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Fix);
+}
+
+/**
+ * @tc.name: BufferImageStream_Close006
+ * @tc.desc: Test the Close function of BufferImageStream with a fixed size
+ * buffer after releasing the stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferImageStream_Close006, TestSize.Level3)
+{
+    char text[] = "Hello, world!";
+    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Fix);
+    stream.Release();
+}
+
+/**
+ * @tc.name: BufferImageStream_Close007
+ * @tc.desc: Test the Close function of BufferImageStream with a dynamic size
+ * buffer after writing and releasing the stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MetadataStreamTest, BufferImageStream_Close007, TestSize.Level3)
+{
+    char text[] = "Hello, world!";
+    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Dynamic);
+    stream.Write((byte *)"this is a very very long text", 28);
+    delete[] stream.Release();
+
+    DataBuf dataBuf(10);
+    dataBuf.WriteUInt8(0, 123);
+    EXPECT_EQ(dataBuf.ReadUInt8(0), 123);
 }
 
 HWTEST_F(MetadataStreamTest, BufferMetadataStream_CopyFrom001, TestSize.Level3)

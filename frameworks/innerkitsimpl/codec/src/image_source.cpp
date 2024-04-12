@@ -617,10 +617,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
-        static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-        info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    if ("image/gif" != sourceInfo_.encodedFormat) {
+        IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
+            "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
+            static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
+            info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    }
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         pixelMap->SetExifMetadata(exifMetadata_);
@@ -1049,12 +1051,14 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     const std::string &path)
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
+    
+#if !defined(IOS_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
+#endif
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
-
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImageProperty(metadataAccessor, key, value);
 }
@@ -1113,6 +1117,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
+    if (isExifReadFailed && exifMetadata_ == nullptr) {
+        IMAGE_LOGE("There is no exif in picture!");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
         if (key.substr(0, KEY_SIZE) == "Hw") {
@@ -1121,6 +1129,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
+        isExifReadFailed = true;
         return ret;
     }
 
