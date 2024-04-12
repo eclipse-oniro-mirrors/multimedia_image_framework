@@ -22,6 +22,7 @@
 #include "image_trace.h"
 #include "hitrace_meter.h"
 #include "exif_metadata_formatter.h"
+#include "image_dfx.h"
 #include "color_space_object_convertor.h"
 
 #undef LOG_DOMAIN
@@ -1331,6 +1332,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(ImageSourceNapi *thisPtr,
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
     } else {
+        decodeOpts.invokeType = JS_INTERFACE;
         pixelMap = imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
             decodeOpts, status);
     }
@@ -2179,6 +2181,7 @@ STATIC_EXEC_FUNC(CreatePixelMapList)
     uint32_t errorCode = 0;
     uint32_t frameCount = context->rImageSource->GetFrameCount(errorCode);
     if ((errorCode == SUCCESS) && (context->index >= NUM_0) && (context->index < frameCount)) {
+        context->decodeOpts.invokeType = JS_INTERFACE;
         context->pixelMaps = context->rImageSource->CreatePixelMapList(context->decodeOpts, errorCode);
     }
     if ((errorCode == SUCCESS) && IMG_NOT_NULL(context->pixelMaps)) {

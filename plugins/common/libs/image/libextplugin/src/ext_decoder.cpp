@@ -657,11 +657,14 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 {
 #ifdef JPEG_HW_DECODE_ENABLE
     if (IsSupportHardwareDecode() && DoHardWareDecode(context) == SUCCESS) {
+        context.isHardDecode = true;
         return SUCCESS;
     }
 #endif
     context.outInfo.size.width = dstInfo_.width();
     context.outInfo.size.height = dstInfo_.height();
+    context.info.size.width = info_.width();
+    context.info.size.height = info_.height();
     if (IsHeifToYuvDecode(context)) {
         return DoHeifToYuvDecode(context);
     }
@@ -927,11 +930,13 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     uint32_t ret = AllocOutputBuffer(context);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
+        context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer_);
     if (ret != SUCCESS) {
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
+        context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
         ReleaseOutputBuffer(context, tmpAllocatorType);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }

@@ -24,7 +24,6 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
-#include "image_data_statistics.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
 #endif
@@ -246,7 +245,6 @@ uint32_t ImagePacker::FinalizePacking()
 
 uint32_t ImagePacker::FinalizePacking(int64_t &packedSize)
 {
-    ImageDataStatistics imageDataStatistics("[ImagePacker]FinalizePacking.");
     uint32_t ret = FinalizePacking();
     if (packerStream_ != nullptr) {
         packerStream_->Flush();

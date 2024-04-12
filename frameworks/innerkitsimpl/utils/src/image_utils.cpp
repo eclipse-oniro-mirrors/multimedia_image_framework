@@ -24,6 +24,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 #include "__config"
 #include "image_log.h"
@@ -420,6 +421,31 @@ void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize
         return;
     }
     IMAGE_LOGI("ImageUtils::DumpDataIfDumpEnabled success, path = %{public}s", fileName.c_str());
+}
+
+uint64_t ImageUtils::GetNowTimeMilliSeconds()
+{
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+}
+
+std::string ImageUtils::GetCurrentProcessName()
+{
+    std::string processName;
+    std::ifstream cmdlineFile("/proc/self/cmdline");
+    if (cmdlineFile.is_open()) {
+        std::ostringstream oss;
+        oss << cmdlineFile.rdbuf();
+        cmdlineFile.close();
+
+        //Extrace process name from the command line
+        std::string cmdline = oss.str();
+        size_t pos = cmdline.find_first_of('\0');
+        if (pos != std::string::npos) {
+            processName = cmdline.substr(0, pos);
+        }
+    }
+    return processName;
 }
 
 uint32_t ImageUtils::SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize)

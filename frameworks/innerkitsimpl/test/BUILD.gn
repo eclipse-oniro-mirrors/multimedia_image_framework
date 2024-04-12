@@ -1509,6 +1509,55 @@ ohos_unittest("image_receiver_native_test") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("datastatisticstest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_data_statistics_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_unittest("imageeventtest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_event_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "ipc:ipc_core",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1518,6 +1567,7 @@ group("unittest") {
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
+    ":datastatisticstest",
     ":eglimagetest",
     ":exifmakernotetest",
     ":exifmetadatatest",
@@ -1529,6 +1579,7 @@ group("unittest") {
     ":image_receiver_native_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
+    ":imageeventtest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
