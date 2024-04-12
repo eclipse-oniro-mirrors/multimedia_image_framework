@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include <cinttypes.h>
+#include <inttypes.h>
 
 #include "common_utils.h"
 #include "image_log.h"
