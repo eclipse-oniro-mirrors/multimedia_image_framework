@@ -1113,6 +1113,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
+    if (isExifReadFailed && exifMetadata_ == nullptr) {
+        IMAGE_LOGE("There is no exif in picture!");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
         if (key.substr(0, KEY_SIZE) == "Hw") {
@@ -1121,6 +1125,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
+        isExifReadFailed = true;
         return ret;
     }
 
