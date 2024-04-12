@@ -31,6 +31,10 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
+#ifdef HEIF_HW_DECODE_ENABLE
+#include "heif_impl/HeifDecoder.h"
+#include "hardware/heif_hw_decoder.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -245,6 +249,37 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
     }
     SetDecodeContextBuffer(context, AllocatorType::HEAP_ALLOC, out, count, nullptr);
     return SUCCESS;
+}
+
+uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    HeifHardwareDecoder decoder;
+    GraphicPixelFormat graphicPixelFormat = context.info.pixelFormat
+            == PlPixelFormat::NV12 ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    sptr<SurfaceBuffer> hwBuffer
+            = decoder.AllocateOutputBuffer(info_.width(), info_.height(), graphicPixelFormat);
+    if (hwBuffer == nullptr) {
+        IMAGE_LOGE("HeifHardwareDecoder AllocateOutputBuffer return null");
+        return ERR_DMA_NOT_EXIST;
+    }
+
+    void* nativeBuffer = hwBuffer.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        IMAGE_LOGE("HeifYUVMemAlloc Reference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+
+    IMAGE_LOGI("ExtDecoder::HeifYUVMemAlloc sb stride is %{public}d, height is %{public}d, size is %{public}d",
+               hwBuffer->GetStride(), hwBuffer->GetHeight(), hwBuffer->GetSize());
+    uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(info_.width(), info_.height());
+    SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
+                           static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
+    return SUCCESS;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
 }
 
 ExtDecoder::ExtDecoder() : codec_(nullptr), frameCount_(ZERO)
@@ -479,6 +514,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
             desiredSizeYuv_.width = std::abs((int)opts.desiredSize.width);
             desiredSizeYuv_.height = std::abs((int)opts.desiredSize.height);
         }
+        if (skEncodeFormat == SkEncodedImageFormat::kHEIF && IsYuv420Format(opts.desiredPixelFormat)) {
+            info.pixelFormat = opts.desiredPixelFormat;
+        }
     }
     // SK only support low down scale
     int dstWidth = opts.desiredSize.width;
@@ -624,6 +662,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #endif
     context.outInfo.size.width = dstInfo_.width();
     context.outInfo.size.height = dstInfo_.height();
+    if (IsHeifToYuvDecode(context)) {
+        return DoHeifToYuvDecode(context);
+    }
     uint32_t res = PreDecodeCheck(index);
     if (res != SUCCESS) {
         return res;
@@ -1456,12 +1497,41 @@ bool ExtDecoder::IsSupportHardwareDecode() {
         && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM;
 }
 
-bool ExtDecoder::IsYuv420Format(PlPixelFormat format)
+bool ExtDecoder::IsYuv420Format(PlPixelFormat format) const
 {
     if (format == PlPixelFormat::NV12 || format == PlPixelFormat::NV21) {
         return true;
     }
     return false;
+}
+
+bool ExtDecoder::IsHeifToYuvDecode(const DecodeContext &context) const
+{
+    return codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF && IsYuv420Format(context.info.pixelFormat);
+}
+
+uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("YUV Decode HeifDecoder is nullptr");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    uint32_t allocRet = HeifYUVMemAlloc(context);
+    if (allocRet != SUCCESS) {
+        return allocRet;
+    }
+    auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    decoder->setOutputColor(context.info.pixelFormat
+        == PlPixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
+    decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
+                          dstBuffer->GetStride(), context.pixelsBuffer.context);
+    bool decodeRet = decoder->decode(nullptr);
+    return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
 }
 } // namespace ImagePlugin
 } // namespace OHOS
