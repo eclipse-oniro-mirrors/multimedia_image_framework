@@ -14,9 +14,6 @@
  */
 
 #include "astc_codec.h"
-#ifdef SUT_ENCODE_ENABLE
-#include "astc_superCompress.h"
-#endif
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
 #endif
@@ -51,6 +48,77 @@ constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 constexpr int32_t WIDTH_CL_THRESHOLD = 256;
 constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
+#endif
+
+#ifdef SUT_ENCODE_ENABLE
+static const std::string g_textureSuperEncSo = "/system/lib64/libtextureSuperCompress.z.so";
+using SuperCompressTexture = bool (*)(uint8_t*, int32_t, uint8_t*, int32_t&, uint32_t);
+
+class SutEncSoManager {
+public:
+    SutEncSoManager();
+    ~SutEncSoManager();
+    bool LoadSutEncSo();
+    SuperCompressTexture sutEncSoEncFunc_;
+private:
+    bool sutEncSoOpened_;
+    void *textureEncSoHandle_;
+};
+
+static SutEncSoManager g_sutEncSoManager;
+
+SutEncSoManager::SutEncSoManager()
+{
+    sutEncSoOpened_ = false;
+    textureEncSoHandle_ = nullptr;
+    sutEncSoEncFunc_ = nullptr;
+}
+
+SutEncSoManager::~SutEncSoManager()
+{
+    if (!sutEncSoOpened_ || textureEncSoHandle_ == nullptr) {
+        IMAGE_LOGD("astcenc sut enc so is not be opened when dlclose!");
+        return;
+    }
+    if (dlclose(textureEncSoHandle_) != 0) {
+        IMAGE_LOGE("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
+        return;
+    } else {
+        IMAGE_LOGD("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
+        return;
+    }
+}
+
+static bool CheckClBinIsExist(const std::string &name)
+{
+    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+bool SutEncSoManager::LoadSutEncSo()
+{
+    if (!sutEncSoOpened_) {
+        if (!CheckClBinIsExist(g_textureSuperEncSo)) {
+            IMAGE_LOGE("sut %{public}s! is not found", g_textureSuperEncSo.c_str());
+            return false;
+        }
+        textureEncSoHandle_ = dlopen(g_textureSuperEncSo.c_str(), 1);
+        if (textureEncSoHandle_ == nullptr) {
+            IMAGE_LOGE("sut libtextureSuperCompress dlopen failed!");
+            return false;
+        }
+        sutEncSoEncFunc_ =
+            reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTexture"));
+        if (sutEncSoEncFunc_ == nullptr) {
+            IMAGE_LOGE("sut libtextureSuperCompress dlsym failed!");
+            dlclose(textureEncSoHandle_);
+            textureEncSoHandle_ = nullptr;
+            return false;
+        }
+        IMAGE_LOGD("astcenc dlopen success: %{public}s!", g_textureSuperEncSo.c_str());
+        sutEncSoOpened_ = true;
+    }
+    return true;
+}
 #endif
 
 uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOptions &option, Media::PixelMap* pixelMap)
@@ -365,7 +433,11 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
             IMAGE_LOGI("astc could not be supported for sutProfile%{public}d", param.sutProfile);
             return false;
     }
-    if (!Rosen::TextureSuperCodecEnc::SuperCompressTexture(astcBuffer,
+    if (!g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT enc so dlopen failed or sutEncSoEncFunc_ is nullptr!");
+        return false;
+    }
+    if (!g_sutEncSoManager.sutEncSoEncFunc_(astcBuffer,
         param.astcBytes, dstMem, dstSize, static_cast<uint32_t>(param.sutProfile))) {
         IMAGE_LOGE("astc g_sutEncSoEncFunc failed. notice: astc memory may be polluted!");
         return false;
@@ -453,6 +525,8 @@ uint32_t AstcCodec::ASTCEncode()
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
+    IMAGE_LOGD("astcenc start: %{public}dx%{public}d, enableQualityCheck %{public}d, astcProfile %{public}d",
+        imageInfo.size.width, imageInfo.size.height, param.enableQualityCheck, param.privateProfile_);
     uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
     if (astcBuffer == nullptr) {
         IMAGE_LOGE("astc astcBuffer malloc failed!");
@@ -472,8 +546,8 @@ uint32_t AstcCodec::ASTCEncode()
 #endif
     astcOutput_->Write(astcBuffer, param.astcBytes);
     free(astcBuffer);
-    IMAGE_LOGD("astc GpuFlag %{public}d, enableQualityCheck %{public}d, astcProfile %{public}d, sut%{public}d",
-        param.hardwareFlag, param.enableQualityCheck, param.privateProfile_, param.sutProfile);
+    IMAGE_LOGD("astcenc end: %{public}dx%{public}d, GpuFlag %{public}d, sut%{public}d",
+        imageInfo.size.width, imageInfo.size.height, param.hardwareFlag, param.sutProfile);
     astcOutput_->SetOffset(param.astcBytes);
     return SUCCESS;
 }
