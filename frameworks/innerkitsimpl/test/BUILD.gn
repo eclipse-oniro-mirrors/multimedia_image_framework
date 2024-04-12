@@ -1461,6 +1461,54 @@ ohos_unittest("exifmetadatatest") {
   ]
 }
 
+ohos_unittest("image_native_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl",
+    "${image_subsystem}/frameworks/kits/native/common/ndk/include",
+    "${image_subsystem}/frameworks/kits/js/common/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+  ]
+
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_native_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/googletest:gtest_main",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("image_receiver_native_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl",
+    "${image_subsystem}/frameworks/kits/native/common/ndk/include",
+    "${image_subsystem}/frameworks/kits/js/common/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+  ]
+
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_receiver_native_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/googletest:gtest_main",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1477,6 +1525,8 @@ group("unittest") {
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":heifyuvtest",
+    ":image_native_test",
+    ":image_receiver_native_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
     ":imagepixelmapparceltest",
