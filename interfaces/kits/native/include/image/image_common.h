@@ -26,7 +26,7 @@
  * @file image_common.h
  *
  * @brief Declares the common enums and structs used by the image interface.
- * @library libimage.so
+ *
  * @syscap SystemCapability.Multimedia.Image.Core
  * @since 12
  */
