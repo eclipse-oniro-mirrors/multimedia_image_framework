@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "jpeg_exif_metadata_accessor.h"
 
 #include <libexif/exif-data.h>
@@ -21,6 +20,7 @@
 #include "image_log.h"
 #include "media_errors.h"
 #include "tiff_parser.h"
+#include <array>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
