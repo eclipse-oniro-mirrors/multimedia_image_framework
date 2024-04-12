@@ -30,7 +30,6 @@ public:
     void AddTitle(const std::string title);
     void AddTitle(const char *fmt, ...);
 private:
-    uint64_t GetNowTimeMillSeconds();
     std::string title_;
     uint64_t startTime_;
     uint32_t memorySize_;

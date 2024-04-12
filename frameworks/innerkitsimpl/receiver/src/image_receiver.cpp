@@ -21,7 +21,6 @@
 #include "image_utils.h"
 #include "image_receiver_buffer_processor.h"
 #include "image_receiver_manager.h"
-#include "image_data_statistics.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -240,7 +239,6 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage(int64_t &timestamp)
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadNextImage()
 {
-    ImageDataStatistics imageDataStatistics("[ImageReceiver]ReadNextImage.");
     int32_t flushFence = 0;
     int64_t timestamp = 0;
     OHOS::Rect damage = {};
@@ -276,7 +274,6 @@ OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage(int64_t &timestamp)
 
 OHOS::sptr<OHOS::SurfaceBuffer> ImageReceiver::ReadLastImage()
 {
-    ImageDataStatistics imageDataStatistics("[ImageReceiver]ReadLastImage.");
     int32_t flushFence = 0;
     int64_t timestamp = 0;
     OHOS::Rect damage = {};
@@ -317,7 +314,6 @@ std::shared_ptr<IBufferProcessor> ImageReceiver::GetBufferProcessor()
 
 std::shared_ptr<NativeImage> ImageReceiver::NextNativeImage()
 {
-    ImageDataStatistics imageDataStatistics("[ImageReceiver]NextNativeImage.");
     if (GetBufferProcessor() == nullptr) {
         return nullptr;
     }
@@ -331,7 +327,6 @@ std::shared_ptr<NativeImage> ImageReceiver::NextNativeImage()
 
 std::shared_ptr<NativeImage> ImageReceiver::LastNativeImage()
 {
-    ImageDataStatistics imageDataStatistics("[ImageReceiver]LastNativeImage.");
     if (GetBufferProcessor() == nullptr) {
         return nullptr;
     }

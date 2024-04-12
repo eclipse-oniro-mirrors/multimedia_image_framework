@@ -47,6 +47,7 @@
 #include "post_proc.h"
 #include "securec.h"
 #include "source_stream.h"
+#include "image_dfx.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -214,14 +215,17 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
         return nullptr;
     }
 
     auto sourcePtr = new (std::nothrow) ImageSource(std::move(streamPtr), opts);
     if (sourcePtr == nullptr) {
         IMAGE_LOGE("[ImageSource]failed to create ImageSource.");
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "failed to create ImageSource");
         return nullptr;
     }
+    sourcePtr->SetSource(traceName);
     errorCode = SUCCESS;
     return unique_ptr<ImageSource>(sourcePtr);
 }
@@ -563,6 +567,8 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    ImageEvent imageEvent;
+    SetDecodeInfoOptions(index, opts, imageEvent);
     ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
     opts_ = opts;
@@ -571,6 +577,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImageTrace imageTrace("CreatePixelMapExtended, info.size:(%d, %d)", info.size.width, info.size.height);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("get image info failed, ret:" + std::to_string(errorCode));
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
@@ -581,6 +588,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
+        imageEvent.SetDecodeErrorMsg("set decode options error.ret:" + std::to_string(errorCode));
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         return nullptr;
     }
@@ -591,6 +599,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
     }
+    SetDecodeInfoOptions(index, opts, context, imageEvent);
     imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d," \
         "memorySize: %d, memoryType: %d", context.outInfo.size.width, context.outInfo.size.height,
         info.size.width, info.size.height, sourceInfo_.encodedFormat.c_str(), context.pixelFormat,
@@ -601,6 +610,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
@@ -728,6 +738,60 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     return pixelMap;
 }
 
+void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, ImageEvent &imageEvent)
+{
+    DecodeInfoOptions options;
+    options.sampleSize = opts.sampleSize;
+    options.rotate = opts.rotateDegrees;
+    options.editable = opts.editable;
+    options.sourceWidth = opts.CropRect.width;
+    options.sourceHeight = opts.CropRect.height;
+    options.desireSizeWidth = opts.desiredSize.width;
+    options.desireSizeHeight = opts.desiredSize.height;
+    options.desireRegionWidth = opts.desiredRegion.width;
+    options.desireRegionHeight = opts.desiredRegion.height;
+    options.desireRegionX = opts.desiredRegion.left;
+    options.desireRegionY = opts.desiredRegion.top;
+    options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
+    options.index = index;
+    options.fitDensity = opts.fitDensity;
+    options.desireColorSpace = static_cast<int32_t>(opts.desiredColorSpace);
+    options.mimeType = sourceInfo_.encodedFormat;
+    options.memoryType = static_cast<int32_t>(opts.allocatorType);
+    options.invokeType = opts.invokeType;
+    options.imageSource = source_;
+    imageEvent.SetDecodeInfoOptions(options);
+}
+
+void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts,
+    const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent)
+{
+    DecodeInfoOptions options;
+    options.sampleSize = opts.sampleSize;
+    options.rotate = opts.rotateDegrees;
+    options.editable = opts.editable;
+    options.sourceWidth = context.info.size.width;
+    options.sourceHeight = context.info.size.height;
+    options.desireSizeWidth = context.outInfo.size.width;
+    options.desireSizeHeight = context.outInfo.size.width;
+    options.desireRegionWidth = opts.desiredRegion.width;
+    options.desireRegionHeight = opts.desiredRegion.height;
+    options.desireRegionX = opts.desiredRegion.left;
+    options.desireRegionY = opts.desiredRegion.top;
+    options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
+    options.index = index;
+    options.fitDensity = opts.fitDensity;
+    options.desireColorSpace = static_cast<int32_t>(opts.desiredColorSpace);
+    options.mimeType = sourceInfo_.encodedFormat;
+    options.memorySize = context.pixelsBuffer.bufferSize;
+    options.memoryType = static_cast<int32_t>(context.allocatorType);
+    options.invokeType = opts.invokeType;
+    options.imageSource = source_;
+    options.isHardDecode = context.isHardDecode;
+    options.hardDecodeError = context.hardDecodeError;
+    imageEvent.SetDecodeInfoOptions(options);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -748,19 +812,25 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             return CreatePixelMapExtended(index, opts, errorCode);
         }
     }
+
+    ImageEvent imageEvent;
+    SetDecodeInfoOptions(index, opts, imageEvent);
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
+        imageEvent.SetDecodeErrorMsg("get YUV420 not support without going through CreatePixelMapExtended");
         return nullptr;
     }
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
+        imageEvent.SetDecodeErrorMsg("image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return nullptr;
     }
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr || pixelMap.get() == nullptr) {
         IMAGE_LOGE("[ImageSource]create the pixel map unique_ptr fail.");
+        imageEvent.SetDecodeErrorMsg("create the pixel map unique_ptr fail.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
@@ -769,6 +839,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
+        imageEvent.SetDecodeErrorMsg("set decode options error, ret:." + std::to_string(errorCode));
         return nullptr;
     }
 
@@ -786,6 +857,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()));
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("update pixelmap info error, ret:." + std::to_string(errorCode));
         return nullptr;
     }
 
@@ -813,6 +885,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             guard.lock();
         }
     }
+    SetDecodeInfoOptions(index, opts, context, imageEvent);
     if (!useSkia) {
         ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
         ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
@@ -820,6 +893,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
         if (context.pixelsBuffer.buffer != nullptr) {
             if (context.freeFunc != nullptr) {
                 context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
@@ -1148,7 +1222,6 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetImagePropertyInt.");
 
     if (key.empty()) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
@@ -1180,7 +1253,6 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
-    ImageDataStatistics imageDataStatistics("[ImageSource]GetImagePropertyString.");
     return GetImagePropertyCommon(index, key, value);
 }
 
@@ -1858,6 +1930,8 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     IncrementalDecodingContext &recordContext)
 {
     IMAGE_LOGD("[ImageSource]do incremental decoding: begin.");
+    ImageEvent imageEvent;
+    imageEvent.SetIncrementalDecode();
     uint8_t *pixelAddr = static_cast<uint8_t *>(pixelMap.GetWritablePixels());
     ProgDecodeContext context;
     context.decodeContext.pixelsBuffer.buffer = pixelAddr;
@@ -1869,9 +1943,11 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     }
     IMAGE_LOGD("[ImageSource]do incremental decoding progress:%{public}u.", context.totalProcessProgress);
     recordContext.decodingProgress = context.totalProcessProgress;
+    SetDecodeInfoOptions(index, opts, context.decodeContext, imageEvent);
     if (ret != SUCCESS && ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_ERROR;
         IMAGE_LOGE("[ImageSource]do incremental decoding source fail, ret:%{public}u.", ret);
+        imageEvent.SetDecodeErrorMsg("do incremental decoding source fail, ret:" + std::to_string(ret));
         return ret;
     }
     if (ret == SUCCESS) {
@@ -2486,6 +2562,11 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     }
 
     return frameCount;
+}
+
+void ImageSource::SetSource(const std::string &source)
+{
+    source_ = source;
 }
 
 void ImageSource::DumpInputData(const std::string &fileSuffix)

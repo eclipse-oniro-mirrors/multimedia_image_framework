@@ -18,3 +18,82 @@ DECODED_IMAGE_TYPE_STATISTICS:
   PNAMEID: {type: STRING, desc: package name}
   PVERSIONID: {type: STRING, desc: application version}
   IMAGE_TYPE: {type: STRING, desc: Type of the decoded image for example png jpeg bmp gif ico and wbmp}
+
+CREATE_IMAGESOURCE_FAULT:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the create image source failure, preserve: true}
+  PNAMEID: {type: STRING, desc: package name}
+  PVERSIONID: {type: STRING, desc: application version}
+  WIDTH: {type: UINT32, desc: image width}
+  HEIGHT: {type: UINT32, desc: image height}
+  TYPE: {type: STRING, desc: image formats jpeg png etc}
+  ERROR_MSG: {type: STRING, desc: error message}
+
+
+ENCODE_FAULT:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the encode failure, preserve: true}
+  PNAMEID: {type: STRING, desc: package name}
+  PVERSIONID: {type: STRING, desc: application version}
+  WIDTH: {type: UINT32, desc: image width}
+  HEIGHT: {type: UINT32, desc: image height}
+  MIME_TYPE: {type: STRING, desc: Image formats jpeg png etc}
+  ERROR_MSG: {type: STRING, desc: error message}
+
+DECODE_FAULT:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding cause of the decode failure, preserve: true}
+  PNAMEID: {type: STRING, desc: package name}
+  PVERSIONID: {type: STRING, desc: application version}
+  APPLICATION_NAME: {type: STRING, desc: application name}
+  ROTATE: {type: FLOAT, desc: image rorate}
+  EDITABLE: {type: BOOL, desc: IsEditable 0 is No 1 is Yes}
+  SAMPLE_SIZE: {type: UINT32, desc: sample}
+  SOURCE_WIDTH: {type: INT32, desc: source image width}
+  SOURCE_HEIGHT: {type: INT32, desc: source image height}
+  DESIRE_SIZE_WIDTH: {type: INT32, desc: desire image width}
+  DESIRE_SIZE_HEIGHT: {type: INT32, desc: desire image height}
+  DESIRE_REGION_WIDTH: {type: INT32, desc: desire region width}
+  DESIRE_REGION_HEIGHT: {type: INT32, desc: desire region height}
+  DESIRE_REGION_X: {type: INT32, desc: desire region x}
+  DESIRE_REGION_Y: {type: INT32, desc: desire region y}
+  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected image pixel format The options are as fol1ows 1 is ARGB_888 3 is RGBA_8888 4 is BGRA_8888 8 is NV21 9 is NV12}
+  INDEX: {type: UINT32, desc: image index}
+  FIT_DENSITY: {type: INT32, desc: fit density}
+  DESIRE_COLOR_SPACE: {type: INT32, desc: Indicates the expected image color space 1 is DISLAY_P3 2 is SRGB 3 is LINEAR SRGB}
+  MIMETYPE: {type: STRING, desc: Image formats jpeg png etc}
+  MEMORY_SIZE: {type: UINT32, desc: memory size}
+  MEMORY_TYPE: {type: INT32, desc: Memory type The options are as follows 1 is heap 2 is sharedMem 4 is Dma}
+  IMAGE_SOURCE: {type: STRING, desc: Image source FD buffer etc}
+  INVOKE_TYPE: {type: STRING, desc: Invocation type JS_inerface c_interface and inner}
+  INCREMENTAL_DECODE: {type: BOOL, desc: Indicates whether to perform incremental decoding The options are as follows 0 is no 1 is yes}
+  HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
+  HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
+  ERROR_MSG: {type: STRING, desc: error message}
+
+DECODE_INFORMATION:
+  __BASE: {type: BEHAVIOR, level: MINOR, desc: Image encoding and decoding information statistics. Each application reports data once a day in different formats, preserve: true}
+  PNAMEID: {type: STRING, desc: package name}
+  PVERSIONID: {type: STRING, desc: application version}
+  APPLICATION_NAME: {type: STRING, desc: application name}
+  ROTATE: {type: FLOAT, desc: image rorate}
+  EDITABLE: {type: BOOL, desc: IsEditable 0 is No 1 is Yes}
+  SAMPLE_SIZE: {type: UINT32, desc: sample}
+  SOURCE_WIDTH: {type: INT32, desc: source image width}
+  SOURCE_HEIGHT: {type: INT32, desc: source image height}
+  DESIRE_SIZE_WIDTH: {type: INT32, desc: desire image width}
+  DESIRE_SIZE_HEIGHT: {type: INT32, desc: desire image height}
+  DESIRE_REGION_WIDTH: {type: INT32, desc: desire region width}
+  DESIRE_REGION_HEIGHT: {type: INT32, desc: desire region height}
+  DESIRE_REGION_X: {type: INT32, desc: desire region x}
+  DESIRE_REGION_Y: {type: INT32, desc: desire region y}
+  DESIRE_DESIRE_PIXEL_FORMAT: {type: INT32, desc: Expected image pixel format The options are as fol1ows 1 is ARGB_888 3 is RGBA_8888 4 is BGRA_8888 8 is NV21 9 is NV12}
+  INDEX: {type: UINT32, desc: image index}
+  FIT_DENSITY: {type: INT32, desc: fit density}
+  DESIRE_COLOR_SPACE: {type: INT32, desc: Indicates the expected image color space 1 is DISLAY_P3 2 is SRGB 3 is LINEAR SRGB}
+  MIMETYPE: {type: STRING, desc: Image formats jpeg png etc}
+  MEMORY_SIZE: {type: UINT32, desc: memory size}
+  MEMORY_TYPE: {type: INT32, desc: Memory type The options are as follows 1 is heap 2 is sharedMem 4 is Dma}
+  IMAGE_SOURCE: {type: STRING, desc: Image source FD buffer etc}
+  INVOKE_TYPE: {type: STRING, desc: Invocation type JS_inerface c_interface and inner}
+  INCREMENTAL_DECODE: {type: BOOL, desc: Indicates whether to perform incremental decoding The options are as follows 0 is no 1 is yes}
+  HARD_DECODE: {type: BOOL, desc: Whether to perform hard decoding 0 is no 1 is yes}
+  HARD_DECODE_ERROR: {type: STRING, desc: hard decode error message}
+  COST_TIME: {type: UINT64, desc: decode cost time}

@@ -50,6 +50,8 @@ public:
     static void DumpPixelMapBeforeEncode(PixelMap& pixelMap);
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
         uint64_t imageId = 0);
+    static uint64_t GetNowTimeMilliSeconds();
+    static std::string GetCurrentProcessName();
 
 private:
     static uint32_t RegisterPluginServer();

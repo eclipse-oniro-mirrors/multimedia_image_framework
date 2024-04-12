@@ -13,10 +13,11 @@
  * limitations under the License.
  */
 
-#include <chrono>
+#include "image_data_statistics.h"
+
 #include "securec.h"
 #include "image_log.h"
-#include "image_data_statistics.h"
+#include "image_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -26,7 +27,7 @@ static constexpr uint64_t TIME_THRESHOLD_MS = 500;
 
 ImageDataStatistics::ImageDataStatistics(const std::string &title) : title_(title), memorySize_(0)
 {
-    startTime_ = GetNowTimeMillSeconds();
+    startTime_ = ImageUtils::GetNowTimeMilliSeconds();
 }
 
 ImageDataStatistics::ImageDataStatistics(const char *fmt, ...) : memorySize_(0)
@@ -46,14 +47,14 @@ ImageDataStatistics::ImageDataStatistics(const char *fmt, ...) : memorySize_(0)
             title_ = "ImageDataTraceFmt Format Error";
         }
     }
-    startTime_ = GetNowTimeMillSeconds();
+    startTime_ = ImageUtils::GetNowTimeMilliSeconds();
 #endif
 }
 
 ImageDataStatistics::~ImageDataStatistics()
 {
 #if !defined(_WIN32) && !defined(_APPLE)
-    uint64_t endTime = GetNowTimeMillSeconds();
+    uint64_t endTime = ImageUtils::GetNowTimeMilliSeconds();
     uint64_t timeInterval = endTime - startTime_;
 
     if ((memorySize_ != 0) && (memorySize_ > MEMORY_THRESHOLD_BYTE)) {
@@ -68,12 +69,6 @@ ImageDataStatistics::~ImageDataStatistics()
             static_cast<unsigned long long>(startTime_), static_cast<unsigned long long>(endTime));
     }
 #endif
-}
-
-uint64_t ImageDataStatistics::GetNowTimeMillSeconds()
-{
-    auto now = std::chrono::system_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 }
 
 void ImageDataStatistics::SetRequestMemory(uint32_t size)
