@@ -31,8 +31,8 @@
  * @since 12
  */
 
-#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H
-#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H
+#ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H_
+#define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H_
 #include <stdint.h>
 #include <stddef.h>
 
@@ -114,21 +114,36 @@ typedef struct Image_String Image_MimeType;
  * @since 12
  */
 typedef enum {
-    IMAGE_SUCCESS = 0,                                       // Operation success
-    IMAGE_BAD_PARAMETER = 401,                               // Invalid parameter
-    IMAGE_UNSUPPORTED_MIM_ETYPE = 7600101,                    // unsupported mime type
-    IMAGE_UNKNOWN_MIME_TYPE = 7600102,                        // unknown mime type
-    IMAGE_TOO_LARGE = 7600103,                               // too large data or image
-    IMAGE_UNSUPPORTED_OPERATION = 7600201,                   // unsupported operations
-    IMAGE_UNSUPPORTED_METADATA = 7600202,                    // unsupported metadata
-    IMAGE_UNSUPPORTED_CONVERSION = 7600203,                  // unsupported conversion
-    IMAGE_INVALID_REGION = 7600204,                          // invalid region
-    IMAGE_ALLOC_FAILED = 7600301,                            // failed to allocate memory
-    IMAGE_COPY_FAILED = 7600302,                             // memory copy failed
-    IMAGE_UNKNOWN_ERROR = 7600901,                           // unknown error
-    IMAGE_BAD_SOURCE = 7700101,                              // decode data source exception
-    IMAGE_DECODE_FAILED = 7700301,                           // decode failed
-    IMAGE_ENCODE_FAILED = 7800301,                           // encode failed
+    /** operation success */
+    IMAGE_SUCCESS = 0,
+    /** invalid parameter */
+    IMAGE_BAD_PARAMETER = 401,
+    /** unsupported mime type */
+    IMAGE_UNSUPPORTED_MIME_TYPE = 7600101,
+    /** unknown mime type */
+    IMAGE_UNKNOWN_MIME_TYPE = 7600102,
+    /** too large data or image */
+    IMAGE_TOO_LARGE = 7600103,
+    /** unsupported operations */
+    IMAGE_UNSUPPORTED_OPERATION = 7600201,
+    /** unsupported metadata */
+    IMAGE_UNSUPPORTED_METADATA = 7600202,
+    /** unsupported conversion */
+    IMAGE_UNSUPPORTED_CONVERSION = 7600203,
+    /** invalid region */
+    IMAGE_INVALID_REGION = 7600204,
+    /** failed to allocate memory */
+    IMAGE_ALLOC_FAILED = 7600301,
+    /** memory copy failed */
+    IMAGE_COPY_FAILED = 7600302,
+    /** unknown error */
+    IMAGE_UNKNOWN_ERROR = 7600901,
+    /** decode data source exception */
+    IMAGE_BAD_SOURCE = 7700101,
+    /** decode failed */
+    IMAGE_DECODE_FAILED = 7700301,
+    /** encode failed */
+    IMAGE_ENCODE_FAILED = 7800301,
 } Image_ErrorCode;
 
 /**
@@ -1248,4 +1263,4 @@ static const char *OHOS_IMAGE_PROPERTY_SCENE_VERSION = "HwMnoteSceneVersion";
 #endif
 /** @} */
 
-#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H
+#endif // INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_IMAGE_COMMON_H_
