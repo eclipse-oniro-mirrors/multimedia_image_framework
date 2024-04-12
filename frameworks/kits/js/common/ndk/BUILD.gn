@@ -109,7 +109,14 @@ ohos_shared_library("image_source") {
     "image_source_native_impl.cpp",
   ]
 
-  public_configs = [ ":native_public_config" ]
+  include_dirs = [
+    "include",
+    "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
+    "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
+    "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
+    "$resource_management_subsystem/interfaces/native/resource/include",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
+  ]
 
   deps = [
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
@@ -136,7 +143,15 @@ ohos_shared_library("image_packer") {
     "image_packer_native.cpp",
     "image_packer_native_impl.cpp",
   ]
-  public_configs = [ ":native_public_config" ]
+
+  include_dirs = [
+    "include",
+    "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
+    "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
+    "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
+  ]
+
   deps = [
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
