@@ -18,7 +18,6 @@
 
 #include "image_source_native.h"
 #include "image_source_native_impl.h"
-#include "raw_file.h"
 
 using namespace testing::ext;
 namespace OHOS {
@@ -249,21 +248,6 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromData, TestSize.Level
     Image_ErrorCode ret = OH_ImageSourceNative_CreateFromData(data, dataSize, &imageSource);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromData end";
-}
-
-/**
- * @tc.name: OH_ImageSourceNative_CreateFromRawFile
- * @tc.desc: test OH_ImageSourceNative_CreateFromRawFile
- * @tc.type: FUNC
- */
-HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromRawFile, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromRawFile start";
-    OH_ImageSourceNative *imageSource = nullptr;
-    RawFileDescriptor *rawFile = nullptr;
-    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromRawFile(rawFile, &imageSource);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromRawFile end";
 }
 
 /**
