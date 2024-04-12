@@ -272,6 +272,7 @@ ohos_shared_library("extplugin") {
     cflags += [ "-DLIBYUV_ENABLE" ]
     external_deps += [ "libyuv:yuv" ]
   }
+  external_deps += [ "zlib:libz" ]
 
   subsystem_name = "multimedia"
   part_name = "image_framework"

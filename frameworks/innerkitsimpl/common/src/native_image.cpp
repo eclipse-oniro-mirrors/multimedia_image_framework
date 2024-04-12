@@ -17,6 +17,7 @@
 #include "image_log.h"
 #include "media_errors.h"
 #include "native_image.h"
+#include "image_data_statistics.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -308,6 +309,7 @@ int32_t NativeImage::GetTimestamp(int64_t &timestamp)
 
 NativeComponent* NativeImage::GetComponent(int32_t type)
 {
+    ImageDataStatistics imageDataStatistics("[NativeImage] GetComponent by type %d", type);
     if (buffer_ == nullptr) {
         return nullptr;
     }
