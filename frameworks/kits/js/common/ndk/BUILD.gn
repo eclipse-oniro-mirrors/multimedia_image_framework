@@ -114,7 +114,6 @@ ohos_shared_library("image_source") {
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include",
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
-    "$resource_management_subsystem/interfaces/native/resource/include",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
   ]
 
@@ -124,7 +123,10 @@ ohos_shared_library("image_source") {
     "$image_subsystem/interfaces/kits/js/common:image",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "resource:librawfile_ndk"
+  ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"
