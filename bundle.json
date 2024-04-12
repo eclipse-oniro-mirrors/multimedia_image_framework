@@ -108,6 +108,16 @@
           },
           {
             "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "pixelmap_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap"
+          },
+          {
+            "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
                 "image_pixel_map_napi.h",
@@ -156,12 +166,30 @@
           },
           {
             "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+              "header_files": [
+                "image_source_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source"
+          },
+          {
+            "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
                 "image_packer_mdk.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer_ndk"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+              "header_files": [
+                "image_packer_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer"
           },
           {
             "header":{
