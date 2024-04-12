@@ -617,10 +617,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
-        static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-        info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    if ("image/gif" != sourceInfo_.encodedFormat) {
+        IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
+            "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
+            static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
+            info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    }
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         pixelMap->SetExifMetadata(exifMetadata_);
