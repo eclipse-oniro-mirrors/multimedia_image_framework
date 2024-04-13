@@ -133,7 +133,7 @@ static const map<PlAlphaType, SkAlphaType> ALPHA_TYPE_MAP = {
 static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kBMP, "image/bmp" },
     { SkEncodedImageFormat::kGIF, "image/gif" },
-    { SkEncodedImageFormat::kICO, "image/png" },
+    { SkEncodedImageFormat::kICO, "image/x-ico" },
     { SkEncodedImageFormat::kJPEG, "image/jpeg" },
     { SkEncodedImageFormat::kPNG, "image/png" },
     { SkEncodedImageFormat::kWBMP, "image/bmp" },
