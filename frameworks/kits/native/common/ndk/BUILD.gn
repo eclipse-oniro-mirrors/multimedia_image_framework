@@ -28,7 +28,7 @@ ohos_shared_library("ohimage") {
     cfi_cross_dso = true
     debug = false
   }
-  output_name = "image"
+  output_name = "ohimage"
   output_extension = "so"
 
   sources = [ "image_native.cpp" ]
