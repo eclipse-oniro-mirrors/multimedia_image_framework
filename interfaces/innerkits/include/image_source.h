@@ -275,9 +275,10 @@ private:
                                  const std::string &key, const std::string &value);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
-    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, ImageEvent &imageEvent);
-    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::DecodeContext &context,
+    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
+    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
+    void UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent);
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;

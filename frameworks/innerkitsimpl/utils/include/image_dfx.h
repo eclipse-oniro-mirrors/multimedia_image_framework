@@ -63,7 +63,7 @@ public:
     {
         options_.isIncrementalDecode = true;
     }
-
+    DecodeInfoOptions &GetDecodeInfoOptions();
 private:
     DecodeInfoOptions options_;
     uint64_t startTime_;

@@ -47,6 +47,11 @@ void ImageEvent::SetDecodeInfoOptions(const DecodeInfoOptions &options)
     options_ = options;
 }
 
+DecodeInfoOptions& ImageEvent::GetDecodeInfoOptions()
+{
+    return options_;
+}
+
 void ImageEvent::SetDecodeErrorMsg(std::string msg)
 {
     options_.errorMsg = msg;
