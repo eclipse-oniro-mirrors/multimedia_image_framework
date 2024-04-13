@@ -663,9 +663,8 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #endif
     context.outInfo.size.width = dstInfo_.width();
     context.outInfo.size.height = dstInfo_.height();
-    context.info.size.width = info_.width();
-    context.info.size.height = info_.height();
     if (IsHeifToYuvDecode(context)) {
+        context.isHardDecode = true;
         return DoHeifToYuvDecode(context);
     }
     uint32_t res = PreDecodeCheck(index);
@@ -680,6 +679,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #else
     return DecodeToYuv420(index, context);
 #endif
+    }
+    if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
+        context.isHardDecode = true;
     }
     uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
     uint8_t *dstBuffer = nullptr;
