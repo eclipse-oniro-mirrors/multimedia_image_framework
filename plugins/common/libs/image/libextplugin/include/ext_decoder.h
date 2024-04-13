@@ -41,7 +41,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t DecodeToYuv420(uint32_t index, DecodeContext &context);
     #ifdef JPEG_HW_DECODE_ENABLE
-    uint32_t AllocOutputBuffer(DecodeContext &context);
+    uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer);
     void ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType);
     uint32_t HardWareDecode(DecodeContext &context);
     uint32_t DoHardWareDecode(DecodeContext &context);
@@ -117,7 +117,6 @@ private:
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     // hardware
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
     SkImageInfo hwDstInfo_;
     PlSize orgImgSize_;
     PlSize outputBufferSize_;

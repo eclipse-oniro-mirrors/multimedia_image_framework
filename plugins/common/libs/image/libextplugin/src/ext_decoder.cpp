@@ -869,7 +869,8 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
     IMAGE_LOGD("ExtDecoder::ReportImageType format %{public}d success", skEncodeFormat);
 }
 #ifdef JPEG_HW_DECODE_ENABLE
-uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context)
+uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
+    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer)
 {
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height()) * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel();
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
@@ -884,8 +885,8 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context)
         outputBufferSize_.width = static_cast<uint32_t>(handle->stride);
     }
     outputBufferSize_.height = static_cast<uint32_t>(handle->height);
-    outputBuffer_.buffer = new NativeBuffer(handle);
-    outputBuffer_.fenceFd = -1;
+    outputBuffer.buffer = new NativeBuffer(handle);
+    outputBuffer.fenceFd = -1;
     return SUCCESS;
 }
 
@@ -913,7 +914,6 @@ void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorTyp
     context.freeFunc = nullptr;
     context.pixelsBuffer.bufferSize = 0;
     context.pixelsBuffer.context = nullptr;
-    outputBuffer_.buffer = nullptr;
 }
 
 uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
@@ -927,13 +927,14 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     }
 
     Media::AllocatorType tmpAllocatorType = context.allocatorType;
-    uint32_t ret = AllocOutputBuffer(context);
+    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer;
+    uint32_t ret = AllocOutputBuffer(context, outputBuffer);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
         context.hardDecodeError = "Decode failed, Alloc OutputBuffer failed, ret=" + std::to_string(ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
-    ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer_);
+    ret = hwDecoder.Decode(codec_.get(), stream_, orgImgSize_, sampleSize_, outputBuffer);
     if (ret != SUCCESS) {
         IMAGE_LOGE("failed to do jpeg hardware decode, err=%{public}d", ret);
         context.hardDecodeError = "failed to do jpeg hardware decode, err=" + std::to_string(ret);
