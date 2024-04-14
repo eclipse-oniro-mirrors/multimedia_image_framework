@@ -60,7 +60,9 @@ bool PngExifMetadataAccessor::IsPngType() const
     }
     const int32_t len = PNG_SIGN_SIZE;
     byte buf[len];
-    imageStream_->Read(buf, len);
+    if (imageStream_->Read(buf, len) == -1) {
+        return false;
+    }
     if (imageStream_->IsEof()) {
         return false;
     }
@@ -68,7 +70,7 @@ bool PngExifMetadataAccessor::IsPngType() const
     return !memcmp(buf, pngSignature, PNG_SIGN_SIZE);
 }
 
-size_t PngExifMetadataAccessor::ReadChunk(DataBuf &buffer) const
+ssize_t PngExifMetadataAccessor::ReadChunk(DataBuf &buffer) const
 {
     return imageStream_->Read(buffer.Data(), buffer.Size());
 }
@@ -272,7 +274,7 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
         DataBuf chunkBuf(PNG_CHUNK_HEAD_SIZE + chunkLength + PNG_CHUNK_CRC_SIZE);
         std::copy_n(chunkHead.Begin(), PNG_CHUNK_HEAD_SIZE, chunkBuf.Begin());
 
-        size_t bufLength = imageStream_->Read(chunkBuf.Data(PNG_CHUNK_HEAD_SIZE), chunkLength + PNG_CHUNK_CRC_SIZE);
+        ssize_t bufLength = imageStream_->Read(chunkBuf.Data(PNG_CHUNK_HEAD_SIZE), chunkLength + PNG_CHUNK_CRC_SIZE);
         if (bufLength != chunkLength + PNG_CHUNK_CRC_SIZE) {
             IMAGE_LOGE("Read chunk head error.");
             return false;
