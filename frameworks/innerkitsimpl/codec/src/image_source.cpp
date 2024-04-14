@@ -1173,24 +1173,30 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
+    IMAGE_LOGD("CreatExifMetadataByImageSource");
     if (exifMetadata_ != nullptr) {
+        IMAGE_LOGD("exifMetadata_ exist return SUCCESS");
         return SUCCESS;
     }
 
     if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGD("sourceStreamPtr_ not exist return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
+    IMAGE_LOGD("sourceStreamPtr GetDataPtr");
     uint8_t* ptr = sourceStreamPtr_->GetDataPtr();
     uint32_t size = sourceStreamPtr_->GetStreamSize();
     auto metadataAccessor = MetadataAccessorFactory::Create(ptr, size);
     if (metadataAccessor == nullptr) {
+        IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
-        return ret;
+        IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {

@@ -1678,15 +1678,14 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
     return context;
 }
 
-static bool CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
+static uint32_t CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
 {
-    bool isError = ExifMetadatFormatter::Validate(key, value);
-    if (isError) {
+    uint32_t status = ExifMetadatFormatter::Validate(key, value);
+    if (status != SUCCESS) {
         errorInfo = key + "has invalid exif value: ";
         errorInfo.append(value);
-        return false;
     }
-    return true;
+    return status;
 }
 
 static void ModifyImagePropertiesExecute(napi_env env, void *data)
@@ -1699,9 +1698,11 @@ static void ModifyImagePropertiesExecute(napi_env env, void *data)
     uint32_t status = SUCCESS;
     for (auto recordIterator = context->kVStrArray.begin(); recordIterator != context->kVStrArray.end();
         ++recordIterator) {
-        if (!CheckExifDataValue(recordIterator->first, recordIterator->second, context->errMsg)) {
+        IMAGE_LOGD("CheckExifDataValue");
+        status = CheckExifDataValue(recordIterator->first, recordIterator->second, context->errMsg);
+        IMAGE_LOGD("Check ret status: %{public}d", status);
+        if (status != SUCCESS) {
             IMAGE_LOGE("There is invalid exif data parameter");
-            status = ERR_MEDIA_VALUE_INVALID;
             context->errMsgArray.insert(std::make_pair(status, context->errMsg));
             continue;
         }
@@ -1734,9 +1735,12 @@ static void ModifyImagePropertyExecute(napi_env env, void *data)
         IMAGE_LOGE("empty context");
         return;
     }
-    if (!CheckExifDataValue(context->keyStr, context->valueStr, context->errMsg)) {
+    IMAGE_LOGD("ModifyImagePropertyExecute CheckExifDataValue");
+    uint32_t status = CheckExifDataValue(context->keyStr, context->valueStr, context->errMsg);
+    IMAGE_LOGD("ModifyImagePropertyExecute Check ret status: %{public}d", status);
+    if (status != SUCCESS) {
         IMAGE_LOGE("There is invalid exif data parameter");
-        context->status = ERR_MEDIA_VALUE_INVALID;
+        context->status = status;
         return;
     }
     if (!IsSameTextStr(context->pathName, "")) {
