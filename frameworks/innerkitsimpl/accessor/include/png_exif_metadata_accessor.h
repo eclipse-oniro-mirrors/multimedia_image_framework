@@ -44,7 +44,7 @@ private:
     bool WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size);
     bool WriteExifData(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size,
                        DataBuf &chunkBuf, std::string chunkType);
-    size_t ReadChunk(DataBuf &buffer) const;
+    ssize_t ReadChunk(DataBuf &buffer) const;
     uint32_t UpdateData(uint8_t *dataBlob, uint32_t size);
 };
 } // namespace Media
