@@ -21,7 +21,7 @@
 #include "media_errors.h"
 #include "pngpriv.h"
 #include "pngstruct.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -211,7 +211,7 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     return ret;
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 bool AllocBufferForShareType(DecodeContext &context, uint64_t byteCount)
 {
     if (byteCount == 0) {
@@ -359,7 +359,7 @@ uint8_t *PngDecoder::AllocOutputBuffer(DecodeContext &context)
 {
     if (context.pixelsBuffer.buffer == nullptr) {
         uint64_t byteCount = static_cast<uint64_t>(pngImageInfo_.rowDataSize) * pngImageInfo_.height;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             if (!AllocBufferForShareType(context, byteCount)) {
                 IMAGE_LOGE("alloc output buffer for SHARE_MEM_ALLOC error.");

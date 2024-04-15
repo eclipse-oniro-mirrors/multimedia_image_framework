@@ -48,7 +48,7 @@
 #include "purgeable_resource_manager.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "buffer_handle_parcel.h"
@@ -112,7 +112,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     if (freePixelMapProc_ != nullptr) {
         freePixelMapProc_(data_, context_, pixelsSize_);
     }
-    
+
     switch (allocatorType_) {
         case AllocatorType::HEAP_ALLOC: {
             free(data_);
@@ -134,7 +134,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             break;
         }
         case AllocatorType::DMA_ALLOC: {
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
             ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context_));
             data_ = nullptr;
             context_ = nullptr;
@@ -150,7 +150,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
 
 void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     int *fd = static_cast<int *>(context);
     if (addr != nullptr) {
         ::munmap(addr, size);
@@ -236,7 +236,7 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
     uint32_t bufferSize = dstPixelMap->GetByteCount();
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -298,7 +298,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
 void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         if (*buffer != nullptr) {
             ::munmap(*buffer, dataSize);
@@ -319,7 +319,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::string name = "PixelMap RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(uniqueId);
     fd = AshmemCreate(name.c_str(), bufferSize);
     if (fd < 0) {
@@ -408,7 +408,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
                       static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -558,7 +558,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
     }
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -674,7 +674,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
@@ -772,7 +772,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
         rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_7) >> NUM_3) << NUM_3);
     } else {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
                 IMAGE_LOGE("set imageInfo failed, context_ is null");
@@ -839,7 +839,7 @@ const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
             pixelBytes_);
         return nullptr;
     }
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return (data_ + y * rowStride_ + x);
 #else
     return (data_ + y * rowDataSize_  + x);
@@ -854,7 +854,7 @@ const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint16_t*
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return reinterpret_cast<uint16_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
 #else
     return reinterpret_cast<uint16_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
@@ -869,7 +869,7 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint32_t*
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return reinterpret_cast<uint32_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
 #else
     return reinterpret_cast<uint32_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
@@ -882,7 +882,7 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
         IMAGE_LOGE("input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
     }
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return (data_ + y * rowStride_ + (static_cast<uint32_t>(x) * pixelBytes_));
 #else
     return (data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) * pixelBytes_));
@@ -1501,7 +1501,7 @@ void *PixelMap::GetFd() const
 
 void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
         if (context != nullptr) {
             int *fd = static_cast<int *>(context);
@@ -1536,7 +1536,7 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
 
 bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     const uint8_t *data = data_;
     uint32_t id = GetUniqueId();
     std::string name = "Parcel ImageData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
@@ -1631,7 +1631,7 @@ uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
 uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     int fd = ReadFileDescriptor(parcel);
     if (fd < 0) {
         IMAGE_LOGE("read fd :[%{public}d] error", fd);
@@ -1670,7 +1670,7 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
 
 uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (static_cast<unsigned int>(bufferSize) <= MIN_IMAGEDATA_SIZE) {
         return ReadHeapDataFromParcel(parcel, bufferSize);
     } else {
@@ -1683,7 +1683,7 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 
 bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 {
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (fd < 0) {
         return false;
     }
@@ -1700,7 +1700,7 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 
 int PixelMap::ReadFileDescriptor(Parcel &parcel)
 {
-#if !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     sptr<IPCFileDescriptor> descriptor = parcel.ReadObject<IPCFileDescriptor>();
     if (descriptor == nullptr) {
         return -1;
@@ -1781,7 +1781,7 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
 
 bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const
 {
-#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::SHARE_MEM_ALLOC) {
         if (!parcel.WriteInt32(bufferSize)) {
             return false;
@@ -2003,7 +2003,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
 
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (fd < 0) {
@@ -2576,7 +2576,7 @@ static inline int FloatToInt(float a)
     return static_cast<int>(a + HALF);
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void GenSrcTransInfo(SkTransInfo &srcInfo, ImageInfo &imageInfo, PixelMap* pixelmap,
     sk_sp<SkColorSpace> colorSpace)
 {
@@ -2613,7 +2613,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         height += dstInfo.r.fTop;
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize};
 #else
@@ -2625,7 +2625,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint64_t rowStride = dstInfo.info.minRowBytes();
     if (memoryInfo.allocType == AllocatorType::DMA_ALLOC) {
         if (memoryInfo.memory->extend.data == nullptr) {
@@ -2676,7 +2676,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
 
     SkTransInfo src;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
@@ -2787,7 +2787,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     GetImageInfo(imageInfo);
 
     SkTransInfo src;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
@@ -2812,7 +2812,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
@@ -2876,7 +2876,7 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     src.info = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
     uint64_t rowStride = src.info.minRowBytes();
     uint8_t* srcData = data_;
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
         rowStride = sbBuffer->GetStride();

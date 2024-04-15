@@ -18,7 +18,7 @@
 #include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
 
@@ -141,7 +141,7 @@ uint32_t GifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
 uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
 {
     ImageTrace imageTrace("GifDecoder::Decode, index:%u", index);
-#if defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif
     PlSize imageSize;
@@ -548,7 +548,7 @@ static uint32_t HeapMemoryRelease(PlImageBuffer &plBuffer)
 
 static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -583,7 +583,7 @@ static uint32_t DmaMemoryCreate(PlImageBuffer &plBuffer, GifFileType *gifPtr)
 
 static uint32_t DmaMemoryRelease(PlImageBuffer &plBuffer)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem release");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -600,7 +600,7 @@ static uint32_t DmaMemoryRelease(PlImageBuffer &plBuffer)
 #endif
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(A_PLATFORM) && !defined(IOS_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 static inline void ReleaseSharedMemory(int* fdPtr, uint8_t* ptr = nullptr, size_t size = SIZE_ZERO)
 {
     if (ptr != nullptr && ptr != MAP_FAILED) {

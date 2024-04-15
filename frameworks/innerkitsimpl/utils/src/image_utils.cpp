@@ -43,7 +43,7 @@
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
 #endif
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #else
 #include "refbase.h"
@@ -168,7 +168,7 @@ uint32_t ImageUtils::RegisterPluginServer()
     vector<string> pluginPaths = { "" };
 #elif defined(_APPLE)
     vector<string> pluginPaths = { "./" };
-#elif defined(A_PLATFORM) || defined(IOS_PLATFORM)
+#elif defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     vector<string> pluginPaths = {};
 #else
     vector<string> pluginPaths = { "/system/etc/multimediaplugin/image" };
@@ -376,7 +376,7 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
             totalSize = static_cast<int32_t>(sbBuffer->GetSize());
