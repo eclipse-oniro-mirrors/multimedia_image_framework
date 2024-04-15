@@ -30,7 +30,13 @@ using namespace OHOS::ImagePlugin;
 namespace OHOS {
 namespace Media {
 static const std::string IMAGE_INPUT_NULL_JPEG_PATH = "/data/local/tmp/image/test_null.jpg";
+static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_INPUT_TXT_PATH = "/data/local/tmp/image/test.txt";
+constexpr uint32_t COMPONENT_NUM_RGBA = 4;
+constexpr uint32_t COMPONENT_NUM_BGRA = 4;
+constexpr uint32_t COMPONENT_NUM_RGB = 3;
+constexpr uint32_t COMPONENT_NUM_GRAY = 1;
+constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
@@ -1897,6 +1903,122 @@ HWTEST_F(PluginLibJpegTest, PackingICCProfileTest001, TestSize.Level3)
     uint32_t result = iccProfileInfo.PackingICCProfile(cinfo, info);
     ASSERT_EQ(result, OHOS::Media::ERR_IMAGE_ENCODE_ICC_FAILED);
     GTEST_LOG_(INFO) << "IccProfileInfoTest: PackingICCProfileTest001 end";
+}
+
+/**
+ * @tc.name: exif_info017
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info017, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info017 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::string value = "111";
+    unsigned char data[3] = {0xFF, 0xD8, 0x12};
+    uint32_t size = 1;
+    uint32_t ret = exinfo.ModifyExifData(tag, value, data, size);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info017 end";
+}
+
+/**
+ * @tc.name: exif_info018
+ * @tc.desc: SetGpsRationals
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info018, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info018 start";
+    EXIFInfo exinfo;
+    ExifData *data = nullptr;
+    ExifEntry *ptrEntry = nullptr;
+    ExifByteOrder order = EXIF_BYTE_ORDER_INTEL;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::vector<ExifRational> exifRationals;
+    bool ret = exinfo.SetGpsRationals(data, &ptrEntry, order, tag, exifRationals);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info018 end";
+}
+
+/**
+ * @tc.name: exif_info019
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info019, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info019 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::string value = "111";
+    std::string path = IMAGE_INPUT_JPEG_PATH;
+    uint32_t ret = exinfo.ModifyExifData(tag, value, path);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info019 end";
+}
+
+/**
+ * @tc.name: exif_info020
+ * @tc.desc: ModifyExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, exif_info020, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info020 start";
+    EXIFInfo exinfo;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::string value = "111";
+    int fd = open("/data/local/tmp/image/test_test.text", O_RDWR | O_CREAT, 0777);
+    char buffer[3] = {0xFF, 0xD8, 0x11};
+    write(fd, buffer, strlen(buffer));
+    uint32_t ret = exinfo.ModifyExifData(tag, value, fd);
+    ASSERT_EQ(ret, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: exif_info020 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest001
+ * @tc.desc: GetEncodeFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest001 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    PixelFormat format = PixelFormat::RGBA_F16;
+    int32_t componentsNum = 1;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    format = PixelFormat::RGBA_8888;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    format = PixelFormat::BGRA_8888;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_BGRA);
+    format = PixelFormat::ALPHA_8;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_GRAY);
+    format = PixelFormat::RGB_565;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+    format = PixelFormat::RGB_888;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGB);
+    format = PixelFormat::NV12;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+    format = PixelFormat::NV21;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_YUV420SP);
+    format = PixelFormat::CMYK;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, COMPONENT_NUM_RGBA);
+    format = PixelFormat::UNKNOWN;
+    Jpegencoder->GetEncodeFormat(format, componentsNum);
+    ASSERT_EQ(componentsNum, 0);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
