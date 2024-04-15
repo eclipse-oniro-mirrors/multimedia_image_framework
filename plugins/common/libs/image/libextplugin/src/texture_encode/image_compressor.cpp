@@ -1269,6 +1269,47 @@ kernel void AstcCl(read_only image2d_t inputImage, __global uint4* astcArr, __gl
 }
 )";
 
+class OpenCLSoManager {
+public:
+    OpenCLSoManager();
+    ~OpenCLSoManager();
+    bool LoadOpenCLSo();
+private:
+    void *clSoHandle = nullptr;
+    bool loadSuccess = false;
+};
+
+static OpenCLSoManager g_clSoManager;
+
+OpenCLSoManager::OpenCLSoManager()
+{
+    clSoHandle = nullptr;
+    loadSuccess = false;
+}
+
+OpenCLSoManager::~OpenCLSoManager()
+{
+    if (!UnLoadCLExtern(clSoHandle)) {
+        IMAGE_LOGE("astcenc OpenCLSoManager UnLoad failed!");
+    } else {
+        IMAGE_LOGD("astcenc OpenCLSoManager UnLoad success!");
+        loadSuccess = false;
+    }
+}
+
+bool OpenCLSoManager::LoadOpenCLSo()
+{
+    if (!loadSuccess) {
+        loadSuccess = InitOpenCLExtern(&clSoHandle);
+        if (loadSuccess) {
+            IMAGE_LOGD("astcenc OpenCLSoManager Load success!");
+        } else {
+            IMAGE_LOGE("astcenc OpenCLSoManager Load failed!");
+        }
+    }
+    return loadSuccess;
+}
+
 CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClClose(ClAstcHandle *clAstcHandle)
 {
     if (clAstcHandle == nullptr) {
@@ -1423,7 +1464,7 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
 
 static CL_ASTC_STATUS AstcCreateClKernel(ClAstcHandle *clAstcHandle, const std::string &clBinPath)
 {
-    if (!OHOS::InitOpenCL()) {
+    if (!g_clSoManager.LoadOpenCLSo()) {
         IMAGE_LOGE("astc InitOpenCL error!");
         return CL_ASTC_ENC_FAILED;
     }
