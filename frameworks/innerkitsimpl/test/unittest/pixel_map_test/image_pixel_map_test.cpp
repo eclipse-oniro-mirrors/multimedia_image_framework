@@ -1922,7 +1922,8 @@ HWTEST_F(ImagePixelMapTest, ModifyImageProperty001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource("/data/local/tmp/image/test_exif.jpg", opts, errorCode);
+    std::string path = "/data/local/tmp/image/test_exif.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
     DecodeOptions decopts;

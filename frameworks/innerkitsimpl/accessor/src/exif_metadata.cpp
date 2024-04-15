@@ -217,7 +217,8 @@ bool ExifMetadata::CreateExifdata()
 std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
 {
     ExifData *exifData = this->GetExifData();
-    return std::make_shared<ExifMetadata>(exifData);
+    std::shared_ptr<ExifMetadata> sharedPtr = std::make_shared<ExifMetadata>(exifData);
+    return sharedPtr;
 }
 
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
