@@ -1003,6 +1003,11 @@ uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string
     return SUCCESS;
 }
 
+void PixelMap::SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+{
+    exifMetadata_ = ptr->Clone();
+}
+
 uint32_t PixelMap::GetImagePropertyInt(const std::string &key, int32_t &value)
 {
     if (exifMetadata_ == nullptr) {
