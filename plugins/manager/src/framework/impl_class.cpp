@@ -327,7 +327,7 @@ PluginClassBase *CfiFactory(PluginCreateFunc factory, const string &className) _
     return factory(className);
 }
 
-PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin)
+PluginClassBase *ImplClass::DoCreateObject(shared_ptr<Plugin> &plugin) __attribute__((no_sanitize("cfi")))
 {
     // since the plugin library may be unloaded and reloaded, the pointer cannot guarantee a constant value,
     // so it is reread every time here.

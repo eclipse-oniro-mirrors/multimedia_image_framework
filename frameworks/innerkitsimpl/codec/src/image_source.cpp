@@ -1401,7 +1401,7 @@ void ImageSource::RemoveDecodeListener(DecodeListener *listener)
     }
 }
 
-ImageSource::~ImageSource()
+ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
 {
     IMAGE_LOGD("ImageSource destructor enter");
     std::lock_guard<std::mutex> guard(listenerMutex_);
