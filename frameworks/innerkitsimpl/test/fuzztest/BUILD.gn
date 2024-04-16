@@ -18,5 +18,6 @@ group("fuzztest") {
     "imagecreateimagesourcebyfdex_fuzzer:ImageCreateImageSourceByFdExFuzzTest",
     "imagecreateimagesourcebypathname_fuzzer:ImageCreateImageSourceByPathNameFuzzTest",
     "imageframework_fuzzer:ImageFrameworkFuzzTest",
+    "imagecreateimagesourcebyistream_fuzzer:ImageCreateImageSourceByIstreamFuzzTest",
   ]
 }
