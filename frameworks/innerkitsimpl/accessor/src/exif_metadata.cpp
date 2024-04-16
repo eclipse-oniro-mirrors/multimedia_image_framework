@@ -32,6 +32,7 @@
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+#include "tiff_parser.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -218,7 +219,7 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
 {
     ExifData *exifData = this->GetExifData();
 
-    uint_8 *dataBlob = nullptr;
+    unsigned char *dataBlob = nullptr;
     uint32_t size = 0;
     TiffParser::Encode(&dataBlob, size, exifData);
     if (dataBlob == nullptr) {
