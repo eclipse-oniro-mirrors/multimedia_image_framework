@@ -16,8 +16,8 @@ group("fuzztest") {
   deps = [
     "imagecreateimagesourcebyfd_fuzzer:ImageCreateImageSourceByFdFuzzTest",
     "imagecreateimagesourcebyfdex_fuzzer:ImageCreateImageSourceByFdExFuzzTest",
+    "imagecreateimagesourcebyistream_fuzzer:ImageCreateImageSourceByIstreamFuzzTest",
     "imagecreateimagesourcebypathname_fuzzer:ImageCreateImageSourceByPathNameFuzzTest",
     "imageframework_fuzzer:ImageFrameworkFuzzTest",
-    "imagecreateimagesourcebyistream_fuzzer:ImageCreateImageSourceByIstreamFuzzTest",
   ]
 }
