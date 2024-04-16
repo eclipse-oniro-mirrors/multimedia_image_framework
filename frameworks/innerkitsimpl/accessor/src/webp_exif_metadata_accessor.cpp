@@ -65,14 +65,14 @@ uint32_t WebpExifMetadataAccessor::Read()
 {
     DataBuf dataBuf;
     if (!ReadBlob(dataBuf)) {
-        IMAGE_LOGE("Image stream does not have dataBuf.");
+        IMAGE_LOGD("Image stream does not have dataBuf.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
     ExifData *exifData;
     TiffParser::Decode(reinterpret_cast<const unsigned char *>(dataBuf.CData()), dataBuf.Size(), &exifData);
     if (exifData == nullptr) {
-        IMAGE_LOGE("Image stream does not have exifData.");
+        IMAGE_LOGD("Image stream does not have exifData.");
         return ERR_IMAGE_DECODE_FAILED;
     }
 
@@ -174,7 +174,7 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     byte reserved = chunkData.Data()[0];
     if (!(reserved & WEBP_EXIF_FLAG_BIT)) {
         exifFlag = Vp8xAndExifInfo::EXIF_NOT_EXIST;
-        IMAGE_LOGE("Image stream does not have exifData.");
+        IMAGE_LOGD("Image stream does not have exifData.");
         return false;
     }
     exifFlag = Vp8xAndExifInfo::EXIF_EXIST;

@@ -709,7 +709,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
     if ("image/gif" != sourceInfo_.encodedFormat) {
-        IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
+        IMAGE_LOGD("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
             "imageSize: (%{public}d, %{public}d), hdrType : %{public}d, cost %{public}lu us",
             static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
             info.size.height, context.hdrType, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
@@ -1193,7 +1193,7 @@ uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::str
 {
     uint32_t ret = CreatExifMetadataByImageSource(true);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("Failed to create Exif metadata "
+        IMAGE_LOGD("Failed to create Exif metadata "
             "when attempting to modify property.");
         return ret;
     }
@@ -1324,7 +1324,7 @@ uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
     if (isExifReadFailed && exifMetadata_ == nullptr) {
-        IMAGE_LOGE("There is no exif in picture!");
+        IMAGE_LOGD("There is no exif in picture!");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     uint32_t ret = CreatExifMetadataByImageSource();
@@ -1333,7 +1333,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
             value = DEFAULT_EXIF_VALUE;
             return SUCCESS;
         }
-        IMAGE_LOGE("Failed to create Exif metadata "
+        IMAGE_LOGD("Failed to create Exif metadata "
             "when attempting to get property.");
         isExifReadFailed = true;
         return ret;
@@ -1664,7 +1664,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
         if (ret == ERR_IMAGE_MISMATCHED_FORMAT) {
             continue;
         } else if (ret == SUCCESS) {
-            IMAGE_LOGI("[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
+            IMAGE_LOGD("[ImageSource]GetEncodedFormat success format :%{public}s.", iter->first.c_str());
             format = iter->first;
             return SUCCESS;
         } else {
@@ -2088,7 +2088,7 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     }
     if (ret == SUCCESS) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_DECODED;
-        IMAGE_LOGI("[ImageSource]do incremental decoding success.");
+        IMAGE_LOGD("[ImageSource]do incremental decoding success.");
     }
     return ret;
 }
