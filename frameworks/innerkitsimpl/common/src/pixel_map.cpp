@@ -994,9 +994,9 @@ uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
-    if (!isModifyMetadata_) {
+    if (!isMetadataModified_) {
         exifMetadata_ = exifMetadata_->Clone();
-        isModifyMetadata_ = true;
+        isMetadataModified_ = true;
     }
 
     if (!exifMetadata_->SetValue(key, value)) {

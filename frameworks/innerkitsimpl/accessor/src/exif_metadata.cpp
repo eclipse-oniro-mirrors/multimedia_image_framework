@@ -227,7 +227,7 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
     }
 
     ExifData *newExifData = nullptr;
-    TiffParser::Decode(dataBlob, size, &new_exifData);
+    TiffParser::Decode(dataBlob, size, &newExifData);
     if (newExifData == nullptr) {
         return nullptr;
     }
