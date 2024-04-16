@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include "buffer_metadata_stream.h"
 #include "file_metadata_stream.h"
 #include "image_log.h"
 #include "image_type.h"
@@ -38,13 +37,12 @@ const byte pngHeader[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 const byte webpHeader[] = { 0x57, 0x45, 0x42, 0x50 };
 const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
 
-std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size)
+std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size, BufferMetadataStream::MemoryMode mode)
 {
     if (buffer == nullptr) {
         return nullptr;
     }
-    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(buffer, size,
-                                                        BufferMetadataStream::MemoryMode::Fix);
+    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(buffer, size, mode);
     return Create(stream);
 }
 
