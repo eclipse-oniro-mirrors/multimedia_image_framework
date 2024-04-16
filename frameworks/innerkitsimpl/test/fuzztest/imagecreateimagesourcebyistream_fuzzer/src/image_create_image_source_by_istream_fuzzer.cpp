@@ -33,7 +33,7 @@ void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
     }
     std::filebuf fb;
     fb.open(pathName, std::ios_base::in);
-    std::unique_ptr<std::istream> is(new std::istream(&fb));
+    std::unique_ptr<std::istream> is = std::make_unique<std::istream>(&fb);
     Media::SourceOptions opts;
     uint32_t errorCode;
     Media ::DecodeOptions dopts;
