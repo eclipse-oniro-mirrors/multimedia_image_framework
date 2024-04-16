@@ -428,7 +428,7 @@ private:
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
-    bool isModifyMetadata_ = false;
+    bool isMetadataModified_ = false;
 };
 } // namespace Media
 } // namespace OHOS

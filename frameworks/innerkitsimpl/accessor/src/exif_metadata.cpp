@@ -226,13 +226,13 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         return nullptr;
     }
 
-    ExifData *new_exifData = nullptr;
+    ExifData *newExifData = nullptr;
     TiffParser::Decode(dataBlob, size, &new_exifData);
-    if (new_exifData == nullptr) {
+    if (newExifData == nullptr) {
         return nullptr;
     }
-    std::shared_ptr<ExifMetadata> sharedPtr = std::make_shared<ExifMetadata>(new_exifData);
-    return sharedPtr;
+    std::shared_ptr<ExifMetadata> exifDataPtr = std::make_shared<ExifMetadata>(newExifData);
+    return exifDataPtr;
 }
 
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)
