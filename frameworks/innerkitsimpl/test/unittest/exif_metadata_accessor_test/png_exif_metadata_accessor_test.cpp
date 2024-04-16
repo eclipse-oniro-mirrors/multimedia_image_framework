@@ -868,7 +868,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write008, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("StripByteCounts", "252"));
     ASSERT_TRUE(exifMetadata->SetValue("StripOffsets", "11"));
     ASSERT_TRUE(exifMetadata->SetValue("SubfileType", "2"));
-    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "10 20 183 259"));
+    ASSERT_TRUE(exifMetadata->SetValue("SubjectArea", "10 20"));
     ASSERT_TRUE(exifMetadata->SetValue("SubjectDistance", "25/1"));
     ASSERT_TRUE(exifMetadata->SetValue("SubjectDistanceRange", "0"));
     ASSERT_TRUE(exifMetadata->SetValue("SubjectLocation", "3 12"));
@@ -1007,7 +1007,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("Copyright", "20"));
     ASSERT_TRUE(exifMetadata->SetValue("ExposureProgram", "2"));
     ASSERT_TRUE(exifMetadata->SetValue("ExifVersion", "0210"));
-    ASSERT_TRUE(exifMetadata->SetValue("DateTimeDigitized", "27"));
+    ASSERT_TRUE(exifMetadata->SetValue("DateTimeDigitized", "2023:01:19 10:39:58"));
     ASSERT_TRUE(exifMetadata->SetValue("ShutterSpeedValue", "13"));
     ASSERT_TRUE(exifMetadata->SetValue("BrightnessValue", "30"));
     ASSERT_TRUE(exifMetadata->SetValue("MaxApertureValue", "31"));
@@ -1027,7 +1027,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write013, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "Copyright"), "20 (Photographer) - [None] (Editor)");
     ASSERT_EQ(GetProperty(exifMetadata, "ExposureProgram"), "Normal program");
     ASSERT_EQ(GetProperty(exifMetadata, "ExifVersion"), "Exif Version 2.1");
-    ASSERT_EQ(GetProperty(exifMetadata, "DateTimeDigitized"), "27");
+    ASSERT_EQ(GetProperty(exifMetadata, "DateTimeDigitized"), "2023:01:19 10:39:58");
     ASSERT_EQ(GetProperty(exifMetadata, "ShutterSpeedValue"), "13.00 EV (1/8192 sec.)");
     ASSERT_EQ(GetProperty(exifMetadata, "BrightnessValue"), "30.00 EV (3678917695.14 cd/m^2)");
     ASSERT_EQ(GetProperty(exifMetadata, "MaxApertureValue"), "31.00 EV (f/46341.0)");
@@ -1105,7 +1105,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write015, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("GPSMeasureMode", "2"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDOP", "68"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSSpeed", "70"));
-    ASSERT_TRUE(exifMetadata->SetValue("GPSTrackRef", "71"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSTrackRef", "T"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSTrack", "72"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSImgDirection", "74"));
 
@@ -1123,7 +1123,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write015, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "GPSMeasureMode"), "2");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDOP"), "68");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSSpeed"), "70");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrackRef"), "71");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSTrackRef"), "T");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSTrack"), "72");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSImgDirection"), "74");
 }
@@ -1145,7 +1145,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_TRUE(exifMetadata->SetValue("GPSMapDatum", "75"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDestLatitudeRef", "N"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDestLongitudeRef", "E"));
-    ASSERT_TRUE(exifMetadata->SetValue("GPSDestBearingRef", "80"));
+    ASSERT_TRUE(exifMetadata->SetValue("GPSDestBearingRef", "T"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDestBearing", "81"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDestDistance", "83"));
     ASSERT_TRUE(exifMetadata->SetValue("GPSDestLatitude", "33/1 22/1 11/1"));
@@ -1163,7 +1163,7 @@ HWTEST_F(PngExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "GPSMapDatum"), "75");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitudeRef"), "N");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLongitudeRef"), "E");
-    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearingRef"), "80");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearingRef"), "T");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDestBearing"), "81");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDestDistance"), "83");
     ASSERT_EQ(GetProperty(exifMetadata, "GPSDestLatitude"), "33, 22, 11");

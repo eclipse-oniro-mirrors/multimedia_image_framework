@@ -155,5 +155,79 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty003, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyImageProperty003 end";
 }
 
+HWTEST_F(ImageSourceExifTest, GetImagePropertyInt001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt001 start";
+
+    const int fd = open(IMAGE_INPUT_NO_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+
+    uint32_t index = 0;
+    int32_t value = 0;
+    std::string strValue;
+
+    std::string key = "Orientation";
+    imageSource->ModifyImageProperty(index, key, "1", fd);
+    imageSource->GetImagePropertyString(index, key, strValue);
+    ASSERT_EQ(strValue, "Top-left");
+    imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(value, 0);
+
+    imageSource->ModifyImageProperty(index, key, "3", fd);
+    imageSource->GetImagePropertyString(index, key, strValue);
+    ASSERT_EQ(strValue, "Bottom-right");
+    imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(value, 180);
+
+    imageSource->ModifyImageProperty(index, key, "6", fd);
+    imageSource->GetImagePropertyString(index, key, strValue);
+    ASSERT_EQ(strValue, "Right-top");
+    imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(value, 90);
+
+    imageSource->ModifyImageProperty(index, key, "8", fd);
+    imageSource->GetImagePropertyString(index, key, strValue);
+    ASSERT_EQ(strValue, "Left-bottom");
+    imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(value, 270);
+
+    imageSource->ModifyImageProperty(index, key, "4", fd);
+    imageSource->GetImagePropertyString(index, key, strValue);
+    ASSERT_EQ(strValue, "Bottom-left");
+    auto ret = imageSource->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt001 end";
+}
+
+HWTEST_F(ImageSourceExifTest, GetImagePropertyInt002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 start";
+
+    const int fd = open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+
+    uint32_t index = 0;
+    int32_t value = 0;
+    std::string strValue;
+
+    imageSource->GetImagePropertyInt(index, "DelayTime", value);
+    ASSERT_EQ(value, 0);
+
+    imageSource->GetImagePropertyInt(index, "DisposalType", value);
+    ASSERT_EQ(value, 0);
+
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt002 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

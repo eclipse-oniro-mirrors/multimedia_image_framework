@@ -18,6 +18,7 @@
 #include "image_log.h"
 #include "media_errors.h"
 #include "securec.h"
+#include "image_dfx.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -472,6 +473,7 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
             index = args->decodingOps->index;
         }
         IMAGE_LOGD("ImageSourceNapiCreatePixelmap CreatePixelMapEx");
+        decOps.invokeType = C_INTERFACE;
         auto tmpPixelmap = native->CreatePixelMapEx(index, decOps, errorCode);
         if (tmpPixelmap != nullptr) {
             nativePixelMap = std::move(tmpPixelmap);
@@ -502,6 +504,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
     if (args->decodingOps != nullptr) {
         ParseDecodingOps(decOps, args->decodingOps);
     }
+    decOps.invokeType = C_INTERFACE;
     auto pixelMapList = native->CreatePixelMapList(decOps, errorCode);
     if (pixelMapList == nullptr) {
         IMAGE_LOGE("ImageSourceNapiCreatePixelmapList CreatePixelMapList failed");

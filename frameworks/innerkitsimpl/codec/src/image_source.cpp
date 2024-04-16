@@ -19,13 +19,15 @@
 #include <charconv>
 #include <chrono>
 #include <cstring>
+#include <dlfcn.h>
 #include <filesystem>
 #include <vector>
-#include <dlfcn.h>
+
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
 #include "image_trace.h"
+#include "image_data_statistics.h"
 #endif
 #include "exif_metadata.h"
 #include "file_source_stream.h"
@@ -46,6 +48,7 @@
 #include "post_proc.h"
 #include "securec.h"
 #include "source_stream.h"
+#include "image_dfx.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
@@ -56,9 +59,6 @@
 #include "include/core/SkData.h"
 #endif
 #include "string_ex.h"
-#ifdef SUT_DECODE_ENABLE
-#include "astc_superDecompress.h"
-#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -154,9 +154,99 @@ constexpr uint8_t BYTE_POS_0 = 0;
 constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
+static const std::string g_textureSuperDecSo = "/system/lib64/libtextureSuperDecompress.z.so";
+
+using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
+using SuperDecompressTexture = bool (*)(const uint8_t *, size_t, uint8_t *, size_t &);
+
+class SutDecSoManager {
+public:
+    SutDecSoManager();
+    ~SutDecSoManager();
+    bool LoadSutDecSo();
+    GetSuperCompressAstcSize sutDecSoGetSizeFunc_;
+    SuperDecompressTexture sutDecSoDecFunc_;
+private:
+    bool sutDecSoOpened_;
+    void *textureDecSoHandle_;
+};
+
+static SutDecSoManager g_sutDecSoManager;
+
+SutDecSoManager::SutDecSoManager()
+{
+    sutDecSoOpened_ = false;
+    textureDecSoHandle_ = nullptr;
+    sutDecSoGetSizeFunc_ = nullptr;
+    sutDecSoDecFunc_ = nullptr;
+}
+
+SutDecSoManager::~SutDecSoManager()
+{
+    if (!sutDecSoOpened_ || textureDecSoHandle_ == nullptr) {
+        IMAGE_LOGD("[ImageSource] astcenc dec so is not be opened when dlclose!");
+        return;
+    }
+    if (dlclose(textureDecSoHandle_) != 0) {
+        IMAGE_LOGD("[ImageSource] astcenc dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
+        return;
+    } else {
+        IMAGE_LOGD("[ImageSource] astcenc dlclose success: %{public}s!", g_textureSuperDecSo.c_str());
+        return;
+    }
+}
+
+static bool CheckClBinIsExist(const std::string &name)
+{
+    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+
+bool SutDecSoManager::LoadSutDecSo()
+{
+    if (!sutDecSoOpened_) {
+        if (!CheckClBinIsExist(g_textureSuperDecSo)) {
+            IMAGE_LOGE("[ImageSource] %{public}s! is not found", g_textureSuperDecSo.c_str());
+            return false;
+        }
+        textureDecSoHandle_ = dlopen(g_textureSuperDecSo.c_str(), 1);
+        if (textureDecSoHandle_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc libtextureSuperDecompress dlopen failed!");
+            return false;
+        }
+        sutDecSoGetSizeFunc_ =
+            reinterpret_cast<GetSuperCompressAstcSize>(dlsym(textureDecSoHandle_, "GetSuperCompressAstcSize"));
+        if (sutDecSoGetSizeFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc GetSuperCompressAstcSize dlsym failed!");
+            dlclose(textureDecSoHandle_);
+            textureDecSoHandle_ = nullptr;
+            return false;
+        }
+        sutDecSoDecFunc_ =
+            reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTexture"));
+        if (sutDecSoDecFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture dlsym failed!");
+            dlclose(textureDecSoHandle_);
+            textureDecSoHandle_ = nullptr;
+            return false;
+        }
+        IMAGE_LOGD("[ImageSource] astcenc dlopen success: %{public}s!", g_textureSuperDecSo.c_str());
+        sutDecSoOpened_ = true;
+    }
+    return true;
+}
 #endif
+
 const auto KEY_SIZE = 2;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
+    {"Top-left", 0},
+    {"Bottom-right", 180},
+    {"Right-top", 90},
+    {"Left-bottom", 270},
+};
+const static string IMAGE_DELAY_TIME = "DelayTime";
+const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
+const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -164,7 +254,6 @@ ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     IMAGE_LOGD("[ImageSource]get supported image type.");
-
     formats.clear();
     vector<ClassInfo> classInfos;
     uint32_t ret =
@@ -205,14 +294,17 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
         return nullptr;
     }
 
     auto sourcePtr = new (std::nothrow) ImageSource(std::move(streamPtr), opts);
     if (sourcePtr == nullptr) {
         IMAGE_LOGE("[ImageSource]failed to create ImageSource.");
+        ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "failed to create ImageSource");
         return nullptr;
     }
+    sourcePtr->SetSource(traceName);
     errorCode = SUCCESS;
     return unique_ptr<ImageSource>(sourcePtr);
 }
@@ -221,6 +313,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, c
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with stream.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with stream.");
     return DoImageSourceCreate(
         [&is]() {
             auto stream = IstreamSourceStream::CreateSourceStream(move(is));
@@ -236,7 +329,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with buffer.");
-
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with buffer.");
     if (data == nullptr || size == 0) {
         IMAGE_LOGE("[ImageSource]parameter error.");
         errorCode = ERR_MEDIA_INVALID_PARAM;
@@ -260,6 +353,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with pathName.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with pathName.");
     if (pathName.size() == SIZE_ZERO) {
         IMAGE_LOGE("[ImageSource]parameter error.");
         return nullptr;
@@ -282,6 +376,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with fd.");
     return DoImageSourceCreate(
         [&fd]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd);
@@ -297,6 +392,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
     const SourceOptions &opts, uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create Imagesource with fd offset and length.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with offset.");
     return DoImageSourceCreate(
         [&fd, offset, length]() {
             auto streamPtr = FileSourceStream::CreateSourceStream(fd, offset, length);
@@ -312,6 +408,8 @@ unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const Incremen
     uint32_t &errorCode)
 {
     IMAGE_LOGD("[ImageSource]create incremental ImageSource.");
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreateIncrementalImageSource width = %d, height = %d," \
+        "format = %d", opts.sourceOptions.size.width, opts.sourceOptions.size.height, opts.sourceOptions.pixelFormat);
     auto sourcePtr = DoImageSourceCreate(
         [&opts]() {
             auto streamPtr = IncrementalSourceStream::CreateSourceStream(opts.incrementalMode);
@@ -548,13 +646,17 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    ImageEvent imageEvent;
+    ImageDataStatistics imageDataStatistics("[ImageSource] CreatePixelMapExtended.");
     uint64_t decodeStartTime = GetNowTimeMicroSeconds();
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+    SetDecodeInfoOptions(index, opts, info, imageEvent);
     ImageTrace imageTrace("CreatePixelMapExtended, info.size:(%d, %d)", info.size.width, info.size.height);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
         IMAGE_LOGE("[ImageSource]get image info failed, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("get image info failed, ret:" + std::to_string(errorCode));
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return nullptr;
     }
@@ -565,6 +667,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
     if (errorCode != SUCCESS) {
+        imageEvent.SetDecodeErrorMsg("set decode options error.ret:" + std::to_string(errorCode));
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
         return nullptr;
     }
@@ -575,11 +678,18 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_PARTIAL_DECODE, &guard);
     }
+    UpdateDecodeInfoOptions(context, imageEvent);
+    imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d,"
+        "memorySize: %d, memoryType: %d", context.outInfo.size.width, context.outInfo.size.height, info.size.width,
+        info.size.height, sourceInfo_.encodedFormat.c_str(), context.pixelFormat, context.pixelsBuffer.bufferSize,
+        context.allocatorType);
+    imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
     ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("decode source fail, ret:" + std::to_string(errorCode));
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
@@ -605,10 +715,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (!context.ifPartialOutput) {
         NotifyDecodeEvent(decodeListeners_, DecodeEvent::EVENT_COMPLETE_DECODE, nullptr);
     }
-    IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
-        "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
-        static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
-        info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    if ("image/gif" != sourceInfo_.encodedFormat) {
+        IMAGE_LOGI("CreatePixelMapExtended success, imageId:%{public}lu, desiredSize: (%{public}d, %{public}d),"
+            "imageSize: (%{public}d, %{public}d), cost %{public}lu us",
+            static_cast<unsigned long>(imageId_), opts.desiredSize.width, opts.desiredSize.height, info.size.width,
+            info.size.height, static_cast<unsigned long>(GetNowTimeMicroSeconds() - decodeStartTime));
+    }
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         pixelMap->SetExifMetadata(exifMetadata_);
@@ -705,6 +817,65 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo
     return pixelMap;
 }
 
+void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info,
+    ImageEvent &imageEvent)
+{
+    DecodeInfoOptions options;
+    options.sampleSize = opts.sampleSize;
+    options.rotate = opts.rotateDegrees;
+    options.editable = opts.editable;
+    options.sourceWidth = info.size.width;
+    options.sourceHeight = info.size.height;
+    options.desireSizeWidth = opts.desiredSize.width;
+    options.desireSizeHeight = opts.desiredSize.height;
+    options.desireRegionWidth = opts.desiredRegion.width;
+    options.desireRegionHeight = opts.desiredRegion.height;
+    options.desireRegionX = opts.desiredRegion.left;
+    options.desireRegionY = opts.desiredRegion.top;
+    options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
+    options.index = index;
+    options.fitDensity = opts.fitDensity;
+    options.desireColorSpace = static_cast<int32_t>(opts.desiredColorSpace);
+    options.mimeType = sourceInfo_.encodedFormat;
+    options.invokeType = opts.invokeType;
+    options.imageSource = source_;
+    imageEvent.SetDecodeInfoOptions(options);
+}
+
+void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts,
+    const ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent)
+{
+    DecodeInfoOptions options;
+    options.sampleSize = opts.sampleSize;
+    options.rotate = opts.rotateDegrees;
+    options.editable = opts.editable;
+    options.sourceWidth = plInfo.size.width;
+    options.sourceHeight = plInfo.size.height;
+    options.desireSizeWidth = opts.desiredSize.width;
+    options.desireSizeHeight = opts.desiredSize.height;
+    options.desireRegionWidth = opts.desiredRegion.width;
+    options.desireRegionHeight = opts.desiredRegion.height;
+    options.desireRegionX = opts.desiredRegion.left;
+    options.desireRegionY = opts.desiredRegion.top;
+    options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
+    options.index = index;
+    options.fitDensity = opts.fitDensity;
+    options.desireColorSpace = static_cast<int32_t>(opts.desiredColorSpace);
+    options.mimeType = sourceInfo_.encodedFormat;
+    options.invokeType = opts.invokeType;
+    options.imageSource = source_;
+    imageEvent.SetDecodeInfoOptions(options);
+}
+
+void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent)
+{
+    DecodeInfoOptions &options = imageEvent.GetDecodeInfoOptions();
+    options.memorySize = context.pixelsBuffer.bufferSize;
+    options.memoryType = static_cast<int32_t>(context.allocatorType);
+    options.isHardDecode = context.isHardDecode;
+    options.hardDecodeError = context.hardDecodeError;
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -725,27 +896,34 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             return CreatePixelMapExtended(index, opts, errorCode);
         }
     }
+
+    ImageEvent imageEvent;
     if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
         IMAGE_LOGE("[ImageSource] get YUV420 not support without going through CreatePixelMapExtended");
+        imageEvent.SetDecodeErrorMsg("get YUV420 not support without going through CreatePixelMapExtended");
         return nullptr;
     }
     // the mainDecoder_ may be borrowed by Incremental decoding, so needs to be checked.
     if (InitMainDecoder() != SUCCESS) {
         IMAGE_LOGE("[ImageSource]image decode plugin is null.");
+        imageEvent.SetDecodeErrorMsg("image decode plugin is null.");
         errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
         return nullptr;
     }
     unique_ptr<PixelMap> pixelMap = make_unique<PixelMap>();
     if (pixelMap == nullptr || pixelMap.get() == nullptr) {
         IMAGE_LOGE("[ImageSource]create the pixel map unique_ptr fail.");
+        imageEvent.SetDecodeErrorMsg("create the pixel map unique_ptr fail.");
         errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
         return nullptr;
     }
 
     ImagePlugin::PlImageInfo plInfo;
     errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
+    SetDecodeInfoOptions(index, opts, plInfo, imageEvent);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
+        imageEvent.SetDecodeErrorMsg("set decode options error, ret:." + std::to_string(errorCode));
         return nullptr;
     }
 
@@ -763,6 +941,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     errorCode = UpdatePixelMapInfo(opts_, plInfo, *(pixelMap.get()));
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]update pixelmap info error ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("update pixelmap info error, ret:." + std::to_string(errorCode));
         return nullptr;
     }
 
@@ -790,6 +969,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             guard.lock();
         }
     }
+    UpdateDecodeInfoOptions(context, imageEvent);
     if (!useSkia) {
         ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
         ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
@@ -797,6 +977,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     guard.unlock();
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decode source fail, ret:%{public}u.", errorCode);
+        imageEvent.SetDecodeErrorMsg("decode source fail, ret:." + std::to_string(errorCode));
         if (context.pixelsBuffer.buffer != nullptr) {
             if (context.freeFunc != nullptr) {
                 context.freeFunc(context.pixelsBuffer.buffer, context.pixelsBuffer.context,
@@ -846,6 +1027,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
 unique_ptr<IncrementalPixelMap> ImageSource::CreateIncrementalPixelMap(uint32_t index, const DecodeOptions &opts,
     uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource] CreateIncrementalPixelMap width = %d, height = %d," \
+        "pixelformat = %d", opts.desiredSize.width, opts.desiredSize.height, opts.desiredPixelFormat);
     IncrementalPixelMap *incPixelMapPtr = new (std::nothrow) IncrementalPixelMap(index, opts, this);
     if (incPixelMapPtr == nullptr) {
         IMAGE_LOGE("[ImageSource]create the incremental pixel map unique_ptr fail.");
@@ -958,6 +1141,7 @@ void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 
 uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]UpdateData");
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]image source update data, source stream is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -992,7 +1176,6 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
             info.size.width, info.size.height);
         return ERR_IMAGE_DECODE_FAILED;
     }
-
     imageInfo = info;
     return SUCCESS;
 }
@@ -1034,12 +1217,15 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
+    
+#if !defined(IOS_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
+#endif
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
-
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
     return ModifyImageProperty(metadataAccessor, key, value);
 }
@@ -1047,6 +1233,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const int fd)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
     if (fd <= STDERR_FILENO) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1065,24 +1252,30 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
+    IMAGE_LOGD("CreatExifMetadataByImageSource");
     if (exifMetadata_ != nullptr) {
+        IMAGE_LOGD("exifMetadata_ exist return SUCCESS");
         return SUCCESS;
     }
 
     if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGD("sourceStreamPtr_ not exist return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
+    IMAGE_LOGD("sourceStreamPtr GetDataPtr");
     uint8_t* ptr = sourceStreamPtr_->GetDataPtr();
     uint32_t size = sourceStreamPtr_->GetStreamSize();
     auto metadataAccessor = MetadataAccessorFactory::Create(ptr, size);
     if (metadataAccessor == nullptr) {
+        IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
-        return ret;
+        IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
@@ -1097,6 +1290,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
+    if (isExifReadFailed && exifMetadata_ == nullptr) {
+        IMAGE_LOGE("There is no exif in picture!");
+        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
         if (key.substr(0, KEY_SIZE) == "Hw") {
@@ -1105,6 +1302,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         }
         IMAGE_LOGE("Failed to create Exif metadata "
             "when attempting to get property.");
+        isExifReadFailed = true;
         return ret;
     }
 
@@ -1114,9 +1312,26 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
+
+    if (key.empty()) {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    // keep aline with previous logical for delay time and disposal type
+    if (IMAGE_DELAY_TIME.compare(key) == ZERO || IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("GetImagePropertyInt special key: %{public}s", key.c_str());
+        uint32_t ret = mainDecoder_->GetImagePropertyInt(index, key, value);
+        return ret;
+    }
     std::string strValue;
     uint32_t ret = GetImagePropertyCommon(index, key, strValue);
-
+    if (key == "Orientation") {
+        if (ORIENTATION_INT_MAP.count(strValue) == 0) {
+            IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
+            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        }
+        strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
+    }
+    IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
     std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
     if (res.ec != std::errc()) {
         return ERR_IMAGE_SOURCE_DATA;
@@ -1805,6 +2020,8 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     IncrementalDecodingContext &recordContext)
 {
     IMAGE_LOGD("[ImageSource]do incremental decoding: begin.");
+    ImageEvent imageEvent;
+    imageEvent.SetIncrementalDecode();
     uint8_t *pixelAddr = static_cast<uint8_t *>(pixelMap.GetWritablePixels());
     ProgDecodeContext context;
     context.decodeContext.pixelsBuffer.buffer = pixelAddr;
@@ -1819,6 +2036,7 @@ uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions 
     if (ret != SUCCESS && ret != ERR_IMAGE_SOURCE_DATA_INCOMPLETE) {
         recordContext.IncrementalState = ImageDecodingState::IMAGE_ERROR;
         IMAGE_LOGE("[ImageSource]do incremental decoding source fail, ret:%{public}u.", ret);
+        imageEvent.SetDecodeErrorMsg("do incremental decoding source fail, ret:" + std::to_string(ret));
         return ret;
     }
     if (ret == SUCCESS) {
@@ -2180,7 +2398,11 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
         IMAGE_LOGI("astc GetAstcSizeBytes input is pure astc!");
         return fileSize;
     }
-    return Rosen::TextureSuperCodecDec::GetSuperCompressAstcSize(fileBuf, fileSize);
+    if (!g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoGetSizeFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec so dlopen failed or sutDecSoGetSizeFunc_ is nullptr!");
+        return 0;
+    }
+    return g_sutDecSoManager.sutDecSoGetSizeFunc_(fileBuf, fileSize);
 }
 
 static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes)
@@ -2190,7 +2412,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         IMAGE_LOGE("astc TextureSuperCompressDecode input check failed!");
         return false;
     }
-    if (!Rosen::TextureSuperCodecDec::SuperDecompressTexture(inData, inBytes, outData, outBytes)) {
+    if (!g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.sutDecSoDecFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec so dlopen failed or sutDecSoDecFunc_ is nullptr!");
+        return false;
+    }
+    if (!g_sutDecSoManager.sutDecSoDecFunc_(inData, inBytes, outData, outBytes)) {
         IMAGE_LOGE("astc SuperDecompressTexture process failed!");
         return false;
     }
@@ -2326,6 +2552,7 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
+    ImageDataStatistics imageDataStatistics("[ImageSource]CreatePixelMapList.");
     DumpInputData();
     auto frameCount = GetFrameCount(errorCode);
     if (errorCode != SUCCESS) {
@@ -2432,6 +2659,11 @@ uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)
     }
 
     return frameCount;
+}
+
+void ImageSource::SetSource(const std::string &source)
+{
+    source_ = source;
 }
 
 void ImageSource::DumpInputData(const std::string &fileSuffix)

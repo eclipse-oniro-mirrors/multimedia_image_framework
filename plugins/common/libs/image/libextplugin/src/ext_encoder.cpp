@@ -36,6 +36,8 @@
 #include "image_utils.h"
 #include "media_errors.h"
 #include "string_ex.h"
+#include "image_data_statistics.h"
+#include "image_dfx.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
@@ -158,22 +160,50 @@ bool IsAstc(const std::string &format)
     return format.find("image/astc") == 0;
 }
 
+static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, DataBuf &exifBlob, OutputDataStream* output,
+    ImageInfo &imageInfo, PlEncodeOptions &opts)
+{
+    if (output == nullptr) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    auto metadataAccessor = MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten());
+    if (metadataAccessor != nullptr) {
+        if (metadataAccessor->WriteBlob(exifBlob) == SUCCESS) {
+            if (metadataAccessor->WriteToOutput(*output)) {
+                return SUCCESS;
+            }
+        }
+    }
+    if (!output->Write(tStream.GetAddr(), tStream.bytesWritten())) {
+        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts.format, "Failed to encode image");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    return SUCCESS;
+}
+
 uint32_t ExtEncoder::DoFinalizeEncode()
 {
+    ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
+        opts_.format.c_str(), opts_.quality);
     auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
         [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
             return IsSameTextStr(item.second, opts_.format);
     });
     if (iter == FORMAT_NAME.end()) {
         IMAGE_LOGE("Unsupported format: %{public}s", opts_.format.c_str());
+        ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     SkBitmap bitmap;
     TmpBufferHolder holder;
+    ImageInfo imageInfo;
+    pixelmap_->GetImageInfo(imageInfo);
+    imageDataStatistics.AddTitle("width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
     auto errorCode = BuildSkBitmap(pixelmap_, bitmap, iter->first, holder);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Failed to build SkBitmap");
+        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to build SkBitmap");
         return errorCode;
     }
 
@@ -182,6 +212,7 @@ uint32_t ExtEncoder::DoFinalizeEncode()
         ExtWStream wStream(output_);
         if (!SkEncodeImage(&wStream, bitmap, iter->first, opts_.quality)) {
             IMAGE_LOGE("Failed to encode image");
+            ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
             return ERR_IMAGE_ENCODE_FAILED;
         }
         return SUCCESS;
@@ -195,22 +226,11 @@ uint32_t ExtEncoder::DoFinalizeEncode()
     MetadataWStream tStream;
     if (!SkEncodeImage(&tStream, bitmap, iter->first, opts_.quality)) {
         IMAGE_LOGE("Failed to encode image");
+        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
         return ERR_IMAGE_ENCODE_FAILED;
     }
 
-    auto metadataAccessor = MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten());
-    if (metadataAccessor != nullptr) {
-        if (metadataAccessor->WriteBlob(exifBlob) == SUCCESS) {
-            if (metadataAccessor->WriteToOutput(*output_)) {
-                return SUCCESS;
-            }
-        }
-    }
-    if (!output_->Write(tStream.GetAddr(), tStream.bytesWritten())) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
-
-    return SUCCESS;
+    return CreateAndWriteBlob(tStream, exifBlob, output_, imageInfo, opts_);
 }
 
 uint32_t ExtEncoder::FinalizeEncode()
@@ -220,6 +240,8 @@ uint32_t ExtEncoder::FinalizeEncode()
     }
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (IsAstc(opts_.format)) {
+        ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
+            opts_.format.c_str(), opts_.quality);
         AstcCodec astcEncoder;
         astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
         return astcEncoder.ASTCEncode();

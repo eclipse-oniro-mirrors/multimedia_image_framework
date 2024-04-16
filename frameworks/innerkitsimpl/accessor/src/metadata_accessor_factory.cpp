@@ -43,8 +43,8 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffe
     if (buffer == nullptr) {
         return nullptr;
     }
-    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>();
-    stream->Write(buffer, size);
+    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(buffer, size,
+                                                        BufferMetadataStream::MemoryMode::Fix);
     return Create(stream);
 }
 

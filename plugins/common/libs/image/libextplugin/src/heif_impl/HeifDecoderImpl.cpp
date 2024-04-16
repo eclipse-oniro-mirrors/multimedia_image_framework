@@ -71,16 +71,22 @@ struct PixelFormatConvertParam {
 static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam &param)
 {
     if (param.format == AV_PIX_FMT_NV12 || param.format == AV_PIX_FMT_NV21 || param.format == AV_PIX_FMT_P010) {
-        if (param.planesInfo->planeCount < PLANE_COUNT_TWO) {
+        if (param.planesInfo == nullptr || param.planesInfo->planeCount < PLANE_COUNT_TWO) {
+            IMAGE_LOGE("planesInfo is invalid for yuv buffer");
             return false;
         }
         const OH_NativeBuffer_Plane &planeY = param.planesInfo->planes[0];
-        const OH_NativeBuffer_Plane &planeUV = param.planesInfo->planes[1];
+        const OH_NativeBuffer_Plane &planeUV = param.planesInfo->planes[param.format == AV_PIX_FMT_NV21 ? 2 : 1];
+        IMAGE_LOGI("planeY offset: %{public}ld, columnStride: %{public}d, rowStride: %{public}d,"
+                   " planeUV offset: %{public}ld, columnStride: %{public}d, rowStride: %{public}d",
+                   planeY.offset, planeY.columnStride, planeY.rowStride,
+                   planeUV.offset, planeUV.columnStride, planeUV.rowStride);
         frame->data[0] = param.data + planeY.offset;
         frame->data[1] = param.data + planeUV.offset;
         frame->linesize[0] = static_cast<int>(planeY.columnStride);
         frame->linesize[1] = static_cast<int>(planeUV.columnStride);
     } else {
+        IMAGE_LOGI("rgb stride: %{public}d", param.stride);
         frame->data[0] = param.data;
         frame->linesize[0] = static_cast<int>(param.stride);
     }
@@ -90,6 +96,7 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
 static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
 {
     ImageTrace trace("ConvertPixelFormat %d %d", srcParam.format, dstParam.format);
+    IMAGE_LOGI("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
     bool res = false;
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
@@ -130,7 +137,7 @@ static AVPixelFormat GraphicPixFmt2AvPixFmtForYuv(GraphicPixelFormat pixelFormat
     return res;
 }
 
-static AVPixelFormat PixFmt2AvPixFmtForRgb(PixelFormat pixelFormat)
+static AVPixelFormat PixFmt2AvPixFmtForOutput(PixelFormat pixelFormat)
 {
     AVPixelFormat res = AV_PIX_FMT_RGBA;
     switch (pixelFormat) {
@@ -142,6 +149,12 @@ static AVPixelFormat PixFmt2AvPixFmtForRgb(PixelFormat pixelFormat)
             break;
         case PixelFormat::RGB_565:
             res = AV_PIX_FMT_RGB565;
+            break;
+        case PixelFormat::NV12:
+            res = AV_PIX_FMT_NV12;
+            break;
+        case PixelFormat::NV21:
+            res = AV_PIX_FMT_NV21;
             break;
         default:
             break;
@@ -163,6 +176,12 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
         case kHeifColorFormat_BGRA_8888:
             res = PixelFormat::BGRA_8888;
             break;
+        case kHeifColorFormat_NV12:
+            res = PixelFormat::NV12;
+            break;
+        case kHeifColorFormat_NV21:
+            res = PixelFormat::NV21;
+            break;
         default:
             IMAGE_LOGE("Unsupported dst pixel format: %{public}d", format);
             break;
@@ -172,7 +191,8 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
 
 HeifDecoderImpl::HeifDecoderImpl()
     : inPixelFormat_(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), outPixelFormat_(PixelFormat::RGBA_8888),
-    tileWidth_(0), tileHeight_(0), colNum_(0), rowNum_(0), dstMemory_(nullptr), dstRowStride_(0) {}
+    tileWidth_(0), tileHeight_(0), colNum_(0), rowNum_(0),
+    dstMemory_(nullptr), dstRowStride_(0), dstHwBuffer_(nullptr) {}
 
 HeifDecoderImpl::~HeifDecoderImpl()
 {
@@ -324,7 +344,11 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     }
 
     sptr<SurfaceBuffer> hwBuffer
-        = hwDecoder_->AllocateOutputBuffer(imageInfo_.mWidth, imageInfo_.mHeight, inPixelFormat_);
+        = IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
+                hwDecoder_->AllocateOutputBuffer(imageInfo_.mWidth, imageInfo_.mHeight, inPixelFormat_);
+    if (IsDirectYUVDecode()) {
+        inPixelFormat_ = static_cast<GraphicPixelFormat>(hwBuffer->GetFormat());
+    }
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
         return false;
@@ -379,7 +403,7 @@ bool HeifDecoderImpl::DecodeGrids(sptr<SurfaceBuffer> &hwBuffer)
                    inPixelFormat_, colNum_, rowNum_, tileWidth_, tileHeight_, inputs[0].size());
         return false;
     }
-    return ConvertHwBufferPixelFormat(hwBuffer);
+    return IsDirectYUVDecode() || ConvertHwBufferPixelFormat(hwBuffer);
 #else
     return false;
 #endif
@@ -410,7 +434,7 @@ bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
                    inPixelFormat_, colNum_, rowNum_, tileWidth_, tileHeight_, inputs[0].size(), inputs[1].size());
         return false;
     }
-    return ConvertHwBufferPixelFormat(hwBuffer);
+    return IsDirectYUVDecode() || ConvertHwBufferPixelFormat(hwBuffer);
 #else
     return false;
 #endif
@@ -419,21 +443,31 @@ bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
 bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    OH_NativeBuffer_Planes *hwBufferPlanesInfo = nullptr;
-    hwBuffer->GetPlanesInfo((void **)&hwBufferPlanesInfo);
-    if (hwBufferPlanesInfo == nullptr) {
-        IMAGE_LOGE("find to get hw buffer planes info");
+    OH_NativeBuffer_Planes *srcBufferPlanesInfo = nullptr;
+    hwBuffer->GetPlanesInfo((void **)&srcBufferPlanesInfo);
+    if (srcBufferPlanesInfo == nullptr) {
+        IMAGE_LOGE("find to get src buffer planes info");
         return false;
     }
+
+    OH_NativeBuffer_Planes *dstBufferPlanesInfo = nullptr;
+    if (dstHwBuffer_ != nullptr) {
+        dstHwBuffer_->GetPlanesInfo((void **)&dstBufferPlanesInfo);
+        if (dstBufferPlanesInfo == nullptr) {
+            IMAGE_LOGE("fail to get dst buffer planes info");
+            return false;
+        }
+    }
+
     PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
                                         imageInfo_.mWidth, imageInfo_.mHeight,
                                         static_cast<uint32_t>(hwBuffer->GetStride()),
-                                        hwBufferPlanesInfo,
+                                        srcBufferPlanesInfo,
                                         GraphicPixFmt2AvPixFmtForYuv(inPixelFormat_)};
     PixelFormatConvertParam dstParam = {dstMemory_, imageInfo_.mWidth, imageInfo_.mHeight,
                                         static_cast<uint32_t>(dstRowStride_),
-                                        nullptr,
-                                        PixFmt2AvPixFmtForRgb(outPixelFormat_)};
+                                        dstBufferPlanesInfo,
+                                        PixFmt2AvPixFmtForOutput(outPixelFormat_)};
     return ConvertPixelFormat(srcParam, dstParam);
 #else
     return false;
@@ -460,18 +494,24 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
     return true;
 }
 
+bool HeifDecoderImpl::IsDirectYUVDecode()
+{
+    return dstHwBuffer_ != nullptr && primaryImage_->GetLumaBitNum() != LUMA_10_BIT;
+}
+
 bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
 {
     // unimplemented
     return false;
 }
 
-void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride)
+void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *context)
 {
     if (dstMemory_ == nullptr) {
         dstMemory_ = dstBuffer;
         dstRowStride_ = rowStride;
     }
+    dstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
 
 bool HeifDecoderImpl::getScanline(uint8_t *dst)

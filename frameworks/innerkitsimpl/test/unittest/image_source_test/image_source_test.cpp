@@ -1866,7 +1866,7 @@ HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
     ASSERT_EQ(bmpWidth, pixelMap->GetWidth());
     ASSERT_EQ(bmpHeight, pixelMap->GetHeight());
 
-    int32_t desiredWidth = 472;
+    int32_t desiredWidth = 200;
     int32_t desiredHeight = 75;
 
     decodeOpts.desiredSize.width = desiredWidth;
@@ -1905,8 +1905,8 @@ HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
     ASSERT_EQ(icoWidth, pixelMap->GetWidth());
     ASSERT_EQ(icoHeight, pixelMap->GetHeight());
 
-    int32_t desiredWidth = 56;
-    int32_t desiredHeight = 56;
+    int32_t desiredWidth = 32;
+    int32_t desiredHeight = 32;
 
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;
@@ -2012,8 +2012,8 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
     ASSERT_EQ(webpWidth, pixelMap->GetWidth());
     ASSERT_EQ(webpHeight, pixelMap->GetHeight());
 
-    int32_t desiredWidth = 130;
-    int32_t desiredHeight = 130;
+    int32_t desiredWidth = 90;
+    int32_t desiredHeight = 90;
 
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;

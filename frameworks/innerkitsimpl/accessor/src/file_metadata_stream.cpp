@@ -396,15 +396,31 @@ bool FileMetadataStream::TruncateFile(size_t totalBytesWritten, MetadataStream &
 bool FileMetadataStream::CopyDataFromSource(MetadataStream &src, ssize_t &totalBytesWritten)
 {
     ssize_t buffer_size = std::min((ssize_t)METADATA_STREAM_COPY_FROM_BUFFER_SIZE, src.GetSize());
-    std::vector<byte> tempBuffer(buffer_size, 0); // Initialize all elements to 0
+    if (buffer_size > METADATA_STREAM_COPY_FROM_BUFFER_SIZE) {
+        return false;
+    }
+    byte *tempBuffer = new (std::nothrow) byte[buffer_size];
+    if (tempBuffer == nullptr) {
+        // Handle memory allocation failure
+        HandleFileError("Memory allocation", filePath_, -1, -1, buffer_size);
+        return false;
+    }
 
     Seek(0, SeekPos::BEGIN);
     src.Seek(0, SeekPos::BEGIN); // Set the position of src to 0
 
+    bool result = ReadFromSourceAndWriteToFile(src, tempBuffer, buffer_size, totalBytesWritten);
+    delete[] tempBuffer;
+    return result;
+}
+
+bool FileMetadataStream::ReadFromSourceAndWriteToFile(MetadataStream &src, byte *tempBuffer, ssize_t buffer_size,
+    ssize_t &totalBytesWritten)
+{
     while (!src.IsEof()) {
-        ssize_t bytesRead = src.Read(tempBuffer.data(), buffer_size);
+        ssize_t bytesRead = src.Read(tempBuffer, buffer_size);
         if (bytesRead > 0) {
-            size_t bytesWritten = Write(tempBuffer.data(), bytesRead);
+            size_t bytesWritten = Write(tempBuffer, bytesRead);
             if (bytesWritten == static_cast<size_t>(-1)) {
                 // Write failed
                 HandleFileError("Write file", filePath_, fileno(fp_), bytesWritten, bytesRead);

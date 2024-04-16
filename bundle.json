@@ -45,8 +45,7 @@
           "libyuv",
           "libjpeg-turbo",
           "libexif",
-          "zlib",
-          "graphic_2d_ext"
+          "zlib"
         ],
         "third_party": [
           "flutter",
@@ -108,6 +107,16 @@
           },
           {
             "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "pixelmap_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap"
+          },
+          {
+            "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
                 "image_pixel_map_napi.h",
@@ -156,12 +165,30 @@
           },
           {
             "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+              "header_files": [
+                "image_source_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_source"
+          },
+          {
+            "header": {
               "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/",
               "header_files": [
                 "image_packer_mdk.h"
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer_ndk"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image",
+              "header_files": [
+                "image_packer_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/ndk:image_packer"
           },
           {
             "header":{
@@ -171,6 +198,26 @@
               "header_base": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image/include"
             },
             "name": "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/egl_image:egl_image"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "image_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/native/common/ndk:ohimage"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "image_receiver_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/native/common/ndk:image_receiver"
           }
         ],
         "test": [

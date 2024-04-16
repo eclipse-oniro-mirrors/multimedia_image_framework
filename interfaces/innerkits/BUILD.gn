@@ -256,12 +256,11 @@ if (use_clang_android) {
       defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
       external_deps += [ "memmgr_plugin:libpurgeablemem_plugin" ]
     }
+    external_deps += [ "zlib:libz" ]
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.graphic_graphic_2d_ext)) {
       defines += [ "SUT_DECODE_ENABLE" ]
-      include_dirs = [ "${ipc_subsystem}/graphic/graphic_2d_ext/texture_supercompress/decode/include" ]
-      external_deps += [ "graphic_2d_ext:textureSuperDecompress" ]
     }
 
     #  relative_install_dir = "module/multimedia"
@@ -400,6 +399,7 @@ ohos_static_library("image_static") {
       "hilog:libhilog",
     ]
   }
+  external_deps += [ "zlib:libz" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

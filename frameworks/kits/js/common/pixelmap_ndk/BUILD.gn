@@ -44,3 +44,34 @@ ohos_shared_library("pixelmap_ndk") {
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
+
+ohos_shared_library("pixelmap") {
+  output_extension = "so"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    debug = false
+  }
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
+    "$SUBSYSTEM_DIR/interfaces/kits/native/include/image",
+    "$SUBSYSTEM_DIR/frameworks/kits/js/common/ndk/include",
+  ]
+
+  sources = [
+    "pixelmap_native.cpp",
+    "pixelmap_native_impl.cpp",
+  ]
+
+  public_configs =
+      [ "$SUBSYSTEM_DIR/interfaces/innerkits:image_external_config" ]
+
+  deps = [  #"$SUBSYSTEM_DIR/interfaces/kits/js/common:image",
+    "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/egl_image:egl_image",
+    "$SUBSYSTEM_DIR/interfaces/innerkits:image_native",
+  ]
+
+  innerapi_tags = [ "ndk" ]
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}

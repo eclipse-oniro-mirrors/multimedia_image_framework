@@ -52,7 +52,7 @@ constexpr auto WEBP_CHUNK_HEADER_VP8L = "VP8L";
 constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_EXIF = "EXIF";
 constexpr auto WEBP_CHUNK_OPERATE_FLAG = 0xFF;
-constexpr auto WEBP_WRITE_BLOCK = 4096;
+constexpr auto WEBP_WRITE_BLOCK = 4096 * 32;
 }
 
 WebpExifMetadataAccessor::WebpExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream)
@@ -437,7 +437,7 @@ bool WebpExifMetadataAccessor::CopyRestData(BufferMetadataStream &bufStream)
 {
     DataBuf buf(WEBP_WRITE_BLOCK);
     ssize_t readSize = imageStream_->Read(buf.Data(), buf.Size());
-    while (readSize != 0) {
+    while (readSize > 0) {
         if (bufStream.Write(buf.Data(), readSize) != readSize) {
             IMAGE_LOGE("Write block data to temp stream failed.");
             return false;
@@ -509,14 +509,18 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     }
 
     DataBuf chunkHead(WEBP_CHUNK_ID_SIZE + WEBP_CHUNK_SIZE);
-    imageStream_->Read(chunkHead.Data(), chunkHead.Size());
+    if (imageStream_->Read(chunkHead.Data(), chunkHead.Size()) != chunkHead.Size()) {
+        return false;
+    }
     if (bufStream.Write(chunkHead.Data(), chunkHead.Size()) != (ssize_t)chunkHead.Size()) {
         return false;
     }
 
     const uint32_t size = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
     DataBuf chunkData(size);
-    imageStream_->Read(chunkData.Data(), chunkData.Size());
+    if (imageStream_->Read(chunkData.Data(), chunkData.Size()) != chunkData.Size()) {
+        return false;
+    }
     chunkData.Data()[0] |= WEBP_EXIF_FLAG_BIT;
     return bufStream.Write(chunkData.Data(), chunkData.Size()) == (ssize_t)chunkData.Size();
 }

@@ -36,9 +36,19 @@ enum class OpenMode {
     ReadWrite // Read-write mode
 };
 
-constexpr int METADATA_STREAM_PAGE_SIZE = 4096;
+/**
+ * Considering that the size of exif fields often exceeds 4K and is less than 32K,
+ * we set the increment of memory to 32K each time to minimize memory allocation.
+ */
+constexpr int METADATA_STREAM_PAGE_SIZE = 4096 * 8;
 constexpr int METADATA_STREAM_ERROR_BUFFER_SIZE = 255;
-constexpr int METADATA_STREAM_COPY_FROM_BUFFER_SIZE = 4096*32;
+
+/**
+ * Considering that the circuitry of solid-state storage is of a low-speed multi-concurrent form,
+ * we use a larger read/write buffer to activate the potential for concurrent read/write operations of the circuit,
+ * thereby increasing I/O throughput.
+ */
+constexpr int METADATA_STREAM_COPY_FROM_BUFFER_SIZE = 4096 * 32;
 
 /**
  * @class MetadataStream
