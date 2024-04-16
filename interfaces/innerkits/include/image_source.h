@@ -45,11 +45,13 @@ class AbsImageDecoder;
 struct DataStreamBuffer;
 struct PixelDecodeOptions;
 struct PlImageInfo;
+struct DecodeContext;
 } // namespace ImagePlugin
 } // namespace OHOS
 
 namespace OHOS {
 namespace Media {
+class ImageEvent;
 struct SourceOptions {
     std::string formatHint;
     int32_t baseDensity = 0;
@@ -208,6 +210,7 @@ public:
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     NATIVEEXPORT size_t GetSourceSize() const;
 #endif
+    void SetSource(const std::string &source);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -272,6 +275,10 @@ private:
                                  const std::string &key, const std::string &value);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
+    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImageInfo &info, ImageEvent &imageEvent);
+    void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
+        ImageEvent &imageEvent);
+    void UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent);
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;
@@ -300,6 +307,8 @@ private:
     std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
+    std::string source_; // Image source fd buffer etc
+    bool isExifReadFailed = false;
 };
 } // namespace Media
 } // namespace OHOS

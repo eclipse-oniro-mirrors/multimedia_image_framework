@@ -572,12 +572,12 @@ HWTEST_F(ExifMetadataTest, SetValueBatch002, TestSize.Level3)
     ASSERT_TRUE(metadata.SetValue("OECF", "45"));
     ASSERT_TRUE(metadata.SetValue("ExifVersion", "0210"));
     ASSERT_TRUE(metadata.SetValue("DateTimeDigitized", "2023:01:19 10:39:58"));
-    ASSERT_TRUE(metadata.SetValue("ComponentsConfiguration", "1 5 6"));
+    ASSERT_TRUE(metadata.SetValue("ComponentsConfiguration", "1456"));
     ASSERT_TRUE(metadata.SetValue("ShutterSpeedValue", "13/1"));
     ASSERT_TRUE(metadata.SetValue("BrightnessValue", "13/1"));
     ASSERT_TRUE(metadata.SetValue("MaxApertureValue", "1/12"));
     ASSERT_TRUE(metadata.SetValue("SubjectDistance", "25/1"));
-    ASSERT_TRUE(metadata.SetValue("SubjectArea", "10 20 183 259"));
+    ASSERT_TRUE(metadata.SetValue("SubjectArea", "10 20"));
     ASSERT_TRUE(metadata.SetValue("SubsecTime", "427000"));
     ASSERT_TRUE(metadata.SetValue("SubsecTimeOriginal", "427000"));
     ASSERT_TRUE(metadata.SetValue("SubsecTimeDigitized", "427000"));
@@ -893,7 +893,7 @@ std::string g_batchData006[][3] = {
     {"GPSDestLatitude", "0/1 0/1 0/1", " 0,  0,  0"},
     {"GPSDestLongitudeRef", "W", "W"},
     {"GPSDestLongitude", "0/1 0/1 0/1", " 0,  0,  0"},
-    {"GPSDestBearingRef", "C", "C"},
+    {"GPSDestBearingRef", "M", "M"},
     {"GPSDestBearing", "2.5", "2.5"},
     {"GPSDestDistanceRef", "K", "K"},
     {"GPSDestDistance", "2.5", "2.5"},
@@ -1201,6 +1201,10 @@ std::string g_error[][2] = {
     {"SubfileType", "5"},
     {"GPSHPositioningError", "a"},
     {"PhotographicSensitivity", "-1"},
+    {"GPSLatitude", "100,20,10"},
+    {"GPSLongitude", "200,20,10"},
+    {"DateTime", "2024:01:23 25:10:10"},
+    {"ImageLength", "65538"},
 };
 
 

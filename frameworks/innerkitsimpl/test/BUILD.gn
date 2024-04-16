@@ -1037,6 +1037,33 @@ ohos_unittest("ndktest") {
   ]
 }
 
+ohos_unittest("ndktest2") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/kits/js/common/ndk/include",
+    "/utils/include",
+    "/interfaces/innerkits/include",
+    "//third_party/googletest/googletest/include",
+    "//third_party/node/src",
+    "$resource_management_subsystem/interfaces/native/resource/include",
+  ]
+  sources = [
+    "unittest/image_packer_native_ndk_test.cpp",
+    "unittest/image_source_native_ndk_test.cpp",
+    "unittest/pixelmap_native_ndk_test.cpp",
+  ]
+
+  deps = [
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_packer",
+    "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
+    "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+}
+
 ohos_unittest("napitest") {
   module_out_path = module_output_path
 
@@ -1260,6 +1287,34 @@ ohos_unittest("jpgyuvtest") {
   external_deps = [ "c_utils:utils" ]
 }
 
+ohos_unittest("heifyuvtest") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/common/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/stream/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/plugins/common/libs/image/formatagentplugin/include",
+    "${image_subsystem}/plugins/manager/include",
+    "${image_subsystem}/../../../foundation/multimedia/utils/include",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+  ]
+
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_yuv_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/googletest:gtest_main",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
+    "${image_subsystem}/plugins/manager:pluginmanager",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
 ohos_unittest("jpeg_yuv_decoder_test") {
   module_out_path = module_output_path
 
@@ -1311,6 +1366,11 @@ ohos_unittest("imagestreamtest") {
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+
+  cflags = [
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
 
   external_deps = [
     "c_utils:utils",
@@ -1428,6 +1488,103 @@ ohos_unittest("exifmetadatatest") {
   ]
 }
 
+ohos_unittest("image_native_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl",
+    "${image_subsystem}/frameworks/kits/native/common/ndk/include",
+    "${image_subsystem}/frameworks/kits/js/common/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+  ]
+
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_native_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/googletest:gtest_main",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("image_receiver_native_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl",
+    "${image_subsystem}/frameworks/kits/native/common/ndk/include",
+    "${image_subsystem}/frameworks/kits/js/common/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/../../../third_party/googletest/googletest/include",
+  ]
+
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_receiver_native_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/../../../third_party/googletest:gtest_main",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
+    "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+  external_deps = [ "c_utils:utils" ]
+}
+
+ohos_unittest("datastatisticstest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_data_statistics_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+}
+
+ohos_unittest("imageeventtest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_event_test.cpp" ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "ipc:ipc_core",
+  ]
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1437,14 +1594,19 @@ group("unittest") {
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
+    ":datastatisticstest",
     ":eglimagetest",
     ":exifmakernotetest",
     ":exifmetadatatest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
     ":gstpluginfwtest",
+    ":heifyuvtest",
+    ":image_native_test",
+    ":image_receiver_native_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
+    ":imageeventtest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",
@@ -1457,6 +1619,7 @@ group("unittest") {
     ":jpegutilstest",
     ":jpgyuvtest",
     ":napitest",
+    ":ndktest2",
     ":pixelastctest",
     ":pixelconvertadaptertest",
     ":pixelmaptest",

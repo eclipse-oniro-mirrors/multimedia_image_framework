@@ -16,7 +16,7 @@
 #include "jpeg_exif_metadata_accessor.h"
 
 #include <libexif/exif-data.h>
-
+#include <array>
 #include "file_metadata_stream.h"
 #include "image_log.h"
 #include "media_errors.h"
@@ -99,7 +99,9 @@ bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob) const
 
         if ((marker == JPEG_MARKER_APP1) && (size >= APP1_EXIF_LENGTH)) {
             blob.Resize(size - SEGMENT_LENGTH_SIZE);
-            imageStream_->Read(blob.Data(), (size - SEGMENT_LENGTH_SIZE));
+            if (imageStream_->Read(blob.Data(), (size - SEGMENT_LENGTH_SIZE)) == -1) {
+                return false;
+            }
             if (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0) {
                 return true;
             }
@@ -337,7 +339,7 @@ bool JpegExifMetadataAccessor::CopyRestData(BufferMetadataStream &bufStream)
 {
     DataBuf buf(READ_WRITE_BLOCK_SIZE * READ_WRITE_BLOCK_SIZE_NUM);
     ssize_t readSize = imageStream_->Read(buf.Data(), buf.Size());
-    while (readSize != 0) {
+    while (readSize > 0) {
         if (bufStream.Write((byte *)buf.CData(), readSize) != readSize) {
             IMAGE_LOGE("Failed to write block data to temporary stream. Expected size: %{public}zd", readSize);
             return false;

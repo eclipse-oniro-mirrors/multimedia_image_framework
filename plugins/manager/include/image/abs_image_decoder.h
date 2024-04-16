@@ -73,6 +73,10 @@ struct DecodeContext {
     PlYuvDataInfo yuvInfo;
     // Out: output the final pixelMap Info, only size is used now.
     PlImageInfo outInfo;
+    // Out: Whether to perform hard decoding 0 is no 1 is yes
+    bool isHardDecode = false;
+    // Out: hard decode error message
+    std::string hardDecodeError;
 };
 
 struct ProgDecodeContext {

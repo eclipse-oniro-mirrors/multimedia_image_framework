@@ -85,6 +85,7 @@ struct PixelMemInfo {
     void* context = nullptr;
     int32_t bufferSize = 0;
     AllocatorType allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    bool isAstc = false;
 };
 
 class ExifMetadata;

@@ -30,6 +30,7 @@ extern char* __progname;
 }
 namespace OHOS {
 namespace Media {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 std::string getCurrentProcessName()
 {
     std::string processName;
@@ -47,9 +48,9 @@ std::string getCurrentProcessName()
             processName = cmdline.substr(0, pos);
         }
     }
-
     return processName;
 }
+#endif
 
 bool ImageSystemProperties::GetSkiaEnabled()
 {

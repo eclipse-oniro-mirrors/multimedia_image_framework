@@ -214,6 +214,7 @@ ohos_shared_library("extplugin") {
     defines = []
     deps = [
       ":exifhelper",
+      ":heifimpl",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
@@ -228,6 +229,7 @@ ohos_shared_library("extplugin") {
       ]
     }
     deps += skia_platform
+
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
@@ -241,8 +243,6 @@ ohos_shared_library("extplugin") {
     if (defined(global_parts_info) &&
         defined(global_parts_info.graphic_graphic_2d_ext)) {
       defines += [ "SUT_ENCODE_ENABLE" ]
-      include_dirs += [ "${ipc_subsystem}/graphic/graphic_2d_ext/texture_supercompress/encode/include" ]
-      external_deps += [ "graphic_2d_ext:textureSuperCompress" ]
     }
 
     if (enable_jpeg_hw_decode) {
@@ -259,6 +259,17 @@ ohos_shared_library("extplugin") {
       ]
       defines += [ "JPEG_HW_DECODE_ENABLE" ]
     }
+    if (enable_heif_hw_decode) {
+      defines += [ "HEIF_HW_DECODE_ENABLE" ]
+      include_dirs += [
+        "include/heif_impl/heif_parser",
+        "//third_party/openmax/api/1.1.2",
+      ]
+      external_deps += [
+        "drivers_interface_codec:codec_idl_headers",
+        "drivers_peripheral_codec:libcodec_hdi_omx_client",
+      ]
+    }
   }
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",
@@ -272,6 +283,7 @@ ohos_shared_library("extplugin") {
     cflags += [ "-DLIBYUV_ENABLE" ]
     external_deps += [ "libyuv:yuv" ]
   }
+  external_deps += [ "zlib:libz" ]
 
   subsystem_name = "multimedia"
   part_name = "image_framework"

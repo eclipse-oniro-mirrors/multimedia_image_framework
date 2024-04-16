@@ -43,7 +43,7 @@ public:
 
     bool decodeSequence(int frameIndex, HeifFrameInfo *frameInfo) override;
 
-    void setDstBuffer(uint8_t *dstBuffer, size_t rowStride) override;
+    void setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *context) override;
 
     bool getScanline(uint8_t *dst) override;
 
@@ -66,6 +66,8 @@ private:
 
     bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer);
 
+    bool IsDirectYUVDecode();
+
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
     GraphicPixelFormat inPixelFormat_;
@@ -79,6 +81,7 @@ private:
     uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
+    SurfaceBuffer *dstHwBuffer_;
 
 #ifdef HEIF_HW_DECODE_ENABLE
     std::shared_ptr<HeifHardwareDecoder> hwDecoder_;

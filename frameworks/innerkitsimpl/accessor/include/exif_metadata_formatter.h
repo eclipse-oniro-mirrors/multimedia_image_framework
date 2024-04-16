@@ -70,9 +70,10 @@ private:
     static ValueFormatDelegate tribleIntWithComma;
     static ValueFormatDelegate fourIntWithBlank;
     static ValueFormatDelegate fourIntWithComma;
-    static ValueFormatDelegate oneRational;
-    static ValueFormatDelegate oneIntToRational;
-    static ValueFormatDelegate oneDecimalToRational;
+    static ValueFormatDelegate singleInt;
+    static ValueFormatDelegate singleRational;
+    static ValueFormatDelegate singleIntToRational;
+    static ValueFormatDelegate singleDecimalToRational;
     static ValueFormatDelegate tribleRationalWithBlank;
     static ValueFormatDelegate tribleIntToRationalWithBlank;
     static ValueFormatDelegate tribleIntToRationalWithComma;

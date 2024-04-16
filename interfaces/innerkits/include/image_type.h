@@ -213,6 +213,7 @@ struct DecodeOptions {
     std::shared_ptr<OHOS::ColorManager::ColorSpace> desiredColorSpaceInfo = nullptr;
     bool preferDma = false;
     bool fastAstc = false;
+    uint16_t invokeType = 0;
 };
 
 enum class ScaleMode : int32_t {
