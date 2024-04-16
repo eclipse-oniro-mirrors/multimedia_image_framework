@@ -1273,7 +1273,7 @@ static bool ValidLatLong(const std::string &key, const std::string &value)
     std::vector<std::string> tokens;
     SplitStr(value, " ", tokens);
     if (tokens.size() != GPS_NORMAL_SIZE) {
-        IMAGE_LOGE("value size is not 3. token size %{public}d", tokens.size());
+        IMAGE_LOGE("value size is not 3. token size %{public}lu", static_cast<unsigned long>(tokens.size()));
         return false;
     }
     if (!StrToDouble(tokens[CONSTANT_0], degree) || !StrToDouble(tokens[CONSTANT_1], minute) ||
