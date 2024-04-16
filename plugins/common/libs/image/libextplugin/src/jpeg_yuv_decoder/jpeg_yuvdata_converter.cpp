@@ -43,7 +43,7 @@ namespace ImagePlugin {
 #define SCALE_411_X 4
 #define SCALE_411_Y 1
 
-static bool IsValidYuvData(YuvPlaneInfo &data)
+static bool IsValidYuvData(const YuvPlaneInfo &data)
 {
     if (data.planes[YCOM] == nullptr || data.planes[UCOM] == nullptr || data.planes[VCOM] == nullptr ||
         data.strides[YCOM] == 0 || data.strides[UCOM] == 0 || data.strides[VCOM] == 0) {
@@ -53,7 +53,7 @@ static bool IsValidYuvData(YuvPlaneInfo &data)
     }
 }
 
-static bool IsValidYuvNVData(YuvPlaneInfo &data)
+static bool IsValidYuvNVData(const YuvPlaneInfo &data)
 {
     if (data.planes[YCOM] == nullptr || data.planes[UVCOM] == nullptr ||
         data.strides[YCOM] == 0 || data.strides[UVCOM] == 0) {
@@ -63,7 +63,7 @@ static bool IsValidYuvNVData(YuvPlaneInfo &data)
     }
 }
 
-static bool IsValidYuvGrayData(YuvPlaneInfo &data)
+static bool IsValidYuvGrayData(const YuvPlaneInfo &data)
 {
     if (data.planes[YCOM] == nullptr || data.strides[YCOM] == 0) {
         return false;
@@ -125,7 +125,8 @@ static uint8_t SampleUV(const uint8_t* srcUV, int stride, bool canUseNextRow, bo
     return *srcUV;
 }
 
-static bool VerifyParameter(YuvPlaneInfo &src, YuvPlaneInfo &dest, uint8_t srcXScale, uint8_t srcYScale, bool outYU12)
+static bool VerifyParameter(const YuvPlaneInfo &src, const YuvPlaneInfo &dest,
+                            uint8_t srcXScale, uint8_t srcYScale, bool outYU12)
 {
     uint32_t width = src.imageWidth;
     uint32_t height = src.imageHeight;
@@ -141,7 +142,7 @@ static bool VerifyParameter(YuvPlaneInfo &src, YuvPlaneInfo &dest, uint8_t srcXS
     return true;
 }
 
-static bool CopyYData(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+static bool CopyYData(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     uint32_t height = src.imageHeight;
     const uint8_t* srcY = nullptr;
@@ -163,7 +164,8 @@ static bool CopyYData(YuvPlaneInfo &src, YuvPlaneInfo &dest)
     return true;
 }
 
-int I4xxToI420_c(YuvPlaneInfo &src, YuvPlaneInfo &dest, uint8_t srcXScale, uint8_t srcYScale, bool outfmtIsYU12)
+int I4xxToI420_c(const YuvPlaneInfo &src, const YuvPlaneInfo &dest,
+                 uint8_t srcXScale, uint8_t srcYScale, bool outfmtIsYU12)
 {
     if (!VerifyParameter(src, dest, srcXScale, srcYScale, outfmtIsYU12)) {
         return -1;
@@ -214,7 +216,7 @@ int I4xxToI420_c(YuvPlaneInfo &src, YuvPlaneInfo &dest, uint8_t srcXScale, uint8
     return 0;
 }
 
-int I444ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I444ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
 #ifdef LIBYUV_ENABLE
     uint32_t width = src.imageWidth;
@@ -230,7 +232,7 @@ int I444ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
 #endif
 }
 
-int I444ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I444ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
 #ifdef LIBYUV_ENABLE
     uint32_t width = src.imageWidth;
@@ -246,7 +248,7 @@ int I444ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
 #endif
 }
 
-int I422ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I422ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
 #ifdef LIBYUV_ENABLE
     uint32_t width = src.imageWidth;
@@ -262,7 +264,7 @@ int I422ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
 #endif
 }
 
-int I422ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I422ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
 #ifdef LIBYUV_ENABLE
     uint32_t width = src.imageWidth;
@@ -278,12 +280,12 @@ int I422ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
 #endif
 }
 
-int I420ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I420ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     return I4xxToI420_c(src, dest, SCALE_420_X, SCALE_420_Y, true);
 }
 
-int I420ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I420ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
 #ifdef LIBYUV_ENABLE
     uint32_t width = src.imageWidth;
@@ -299,27 +301,27 @@ int I420ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
 #endif
 }
 
-int I440ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I440ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     return I4xxToI420_c(src, dest, SCALE_440_X, SCALE_440_Y, true);
 }
 
-int I440ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I440ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     return I4xxToI420_c(src, dest, SCALE_440_X, SCALE_440_Y, false);
 }
 
-int I411ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I411ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     return I4xxToI420_c(src, dest, SCALE_411_X, SCALE_411_Y, true);
 }
 
-int I411ToNV21_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I411ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     return I4xxToI420_c(src, dest, SCALE_411_X, SCALE_411_Y, false);
 }
 
-int I400ToI420_wrapper(YuvPlaneInfo &src, YuvPlaneInfo &dest)
+int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
     uint32_t width = src.imageWidth;
     uint32_t height = src.imageHeight;
