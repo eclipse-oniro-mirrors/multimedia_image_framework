@@ -994,16 +994,20 @@ uint32_t PixelMap::ModifyImageProperty(const std::string &key, const std::string
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
-    if (!isMetadataModified_) {
-        exifMetadata_ = exifMetadata_->Clone();
-        isMetadataModified_ = true;
-    }
-
     if (!exifMetadata_->SetValue(key, value)) {
         return ERR_MEDIA_VALUE_INVALID;
     }
 
     return SUCCESS;
+}
+
+void PixelMap::SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+{
+    if (ptr == nullptr) {
+        return;
+    }
+
+    exifMetadata_ = ptr->Clone();
 }
 
 uint32_t PixelMap::GetImagePropertyInt(const std::string &key, int32_t &value)

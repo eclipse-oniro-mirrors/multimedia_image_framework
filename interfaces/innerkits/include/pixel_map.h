@@ -280,10 +280,7 @@ public:
         return exifMetadata_;
     }
 
-    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
-    {
-        exifMetadata_ = ptr;
-    }
+    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
 
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
@@ -428,7 +425,6 @@ private:
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
-    bool isMetadataModified_ = false;
 };
 } // namespace Media
 } // namespace OHOS
