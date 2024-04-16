@@ -217,7 +217,20 @@ bool ExifMetadata::CreateExifdata()
 std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
 {
     ExifData *exifData = this->GetExifData();
-    std::shared_ptr<ExifMetadata> sharedPtr = std::make_shared<ExifMetadata>(exifData);
+
+    uint_8 *dataBlob = nullptr;
+    uint32_t size = 0;
+    TiffParser::Encode(&dataBlob, size, exifData);
+    if (dataBlob == nullptr) {
+        return nullptr;
+    }
+
+    ExifData *new_exifData = nullptr;
+    TiffParser::Decode(dataBlob, size, &new_exifData);
+    if (new_exifData == nullptr) {
+        return nullptr;
+    }
+    std::shared_ptr<ExifMetadata> sharedPtr = std::make_shared<ExifMetadata>(new_exifData);
     return sharedPtr;
 }
 
