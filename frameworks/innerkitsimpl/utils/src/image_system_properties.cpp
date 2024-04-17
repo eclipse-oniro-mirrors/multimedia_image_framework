@@ -30,6 +30,7 @@ extern char* __progname;
 }
 namespace OHOS {
 namespace Media {
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 std::string getCurrentProcessName()
 {
     std::string processName;
@@ -50,6 +51,7 @@ std::string getCurrentProcessName()
 
     return processName;
 }
+#endif
 
 bool ImageSystemProperties::GetSkiaEnabled()
 {
@@ -91,7 +93,11 @@ bool ImageSystemProperties::GetAntiAliasingEnabled()
 
 bool ImageSystemProperties::GetDumpImageEnabled()
 {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.dumpimage.enabled", false);
+#else
+    return false;
+#endif
 }
 
 bool ImageSystemProperties::GetHardWareDecodeEnabled()
