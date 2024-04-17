@@ -680,9 +680,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     UpdateDecodeInfoOptions(context, imageEvent);
     imageDataStatistics.AddTitle("imageSize: [%d, %d], desireSize: [%d, %d], imageFormat: %s, desirePixelFormat: %d,"
-        "memorySize: %d, memoryType: %d", context.outInfo.size.width, context.outInfo.size.height, info.size.width,
-        info.size.height, sourceInfo_.encodedFormat.c_str(), context.pixelFormat, context.pixelsBuffer.bufferSize,
-        context.allocatorType);
+        "memorySize: %d, memoryType: %d", info.size.width, info.size.height, opts.desiredSize.width,
+        opts.desiredSize.height, sourceInfo_.encodedFormat.c_str(), opts.desiredPixelFormat,
+        context.pixelsBuffer.bufferSize, context.allocatorType);
     imageDataStatistics.SetRequestMemory(context.pixelsBuffer.bufferSize);
     ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
     ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
@@ -828,10 +828,10 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     options.sourceHeight = info.size.height;
     options.desireSizeWidth = opts.desiredSize.width;
     options.desireSizeHeight = opts.desiredSize.height;
-    options.desireRegionWidth = opts.desiredRegion.width;
-    options.desireRegionHeight = opts.desiredRegion.height;
-    options.desireRegionX = opts.desiredRegion.left;
-    options.desireRegionY = opts.desiredRegion.top;
+    options.desireRegionWidth = opts.CropRect.width;
+    options.desireRegionHeight = opts.CropRect.height;
+    options.desireRegionX = opts.CropRect.left;
+    options.desireRegionY = opts.CropRect.top;
     options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
     options.index = index;
     options.fitDensity = opts.fitDensity;
@@ -853,10 +853,10 @@ void ImageSource::SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts
     options.sourceHeight = plInfo.size.height;
     options.desireSizeWidth = opts.desiredSize.width;
     options.desireSizeHeight = opts.desiredSize.height;
-    options.desireRegionWidth = opts.desiredRegion.width;
-    options.desireRegionHeight = opts.desiredRegion.height;
-    options.desireRegionX = opts.desiredRegion.left;
-    options.desireRegionY = opts.desiredRegion.top;
+    options.desireRegionWidth = opts.CropRect.width;
+    options.desireRegionHeight = opts.CropRect.height;
+    options.desireRegionX = opts.CropRect.left;
+    options.desireRegionY = opts.CropRect.top;
     options.desirePixelFormat = static_cast<int32_t>(opts.desiredPixelFormat);
     options.index = index;
     options.fitDensity = opts.fitDensity;
