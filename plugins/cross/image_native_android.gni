@@ -75,6 +75,10 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
 
   # image_napi
   "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
@@ -266,4 +270,6 @@ image_native_android_deps = [
 
 image_native_android_deps += skia_skcms
 image_native_android_deps += skia_platform
-image_native_android_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+if (!defined(is_arkui_x) || !is_arkui_x) {
+  image_native_android_deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+}

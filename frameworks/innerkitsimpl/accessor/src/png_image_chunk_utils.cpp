@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <array>
 #include <libexif/exif-data.h>
 #include <zlib.h>
 

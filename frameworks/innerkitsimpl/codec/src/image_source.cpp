@@ -1036,10 +1036,6 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
-    if (!std::filesystem::exists(path)) {
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
     std::unique_lock<std::mutex> guard(decodingMutex_);
 
     auto metadataAccessor = MetadataAccessorFactory::Create(path);
