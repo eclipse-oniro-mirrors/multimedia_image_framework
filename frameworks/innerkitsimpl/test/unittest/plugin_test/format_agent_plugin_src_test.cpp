@@ -152,5 +152,62 @@ HWTEST_F(FormatAgentPluginSrcTest, CheckFormat004, TestSize.Level3)
     headerData = nullptr;
     GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormat004 end";
 }
+
+/**
+ * @tc.name: EndianSwap64Test001
+ * @tc.desc: EndianSwap64
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, EndianSwap64Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::EndianSwap64Test001 start";
+    HeifFormatAgent heifFormatAgent;
+    uint64_t value = 0;
+    uint64_t res = heifFormatAgent.EndianSwap64(value);
+    ASSERT_EQ(res, 0);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::EndianSwap64Test001 end";
+}
+
+/**
+ * @tc.name: IsHeif64Test003
+ * @tc.desc: IsHeif64
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, IsHeif64Test003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64Test003 start";
+    HeifFormatAgent heifFormatAgent;
+    uint64_t data = 0;
+    void *buffer = &data;
+    size_t bytesRead = 20;
+    int64_t offset = 0;
+    uint64_t chunkSize = 1;
+    auto *ptr = static_cast<const uint64_t *>(buffer);
+    ASSERT_EQ(*ptr, 0);
+    auto *chunkSizePtr = static_cast<const uint64_t *>(buffer) + (offset / sizeof(uint64_t));
+    ASSERT_EQ(*chunkSizePtr, 0);
+    bool res = heifFormatAgent.IsHeif64(buffer, bytesRead, offset, chunkSize);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::IsHeif64Test003 end";
+}
+
+/**
+ * @tc.name: CheckFormatTest005
+ * @tc.desc: CheckFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(FormatAgentPluginSrcTest, CheckFormatTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormatTest005 start";
+    HeifFormatAgent heifFormatAgent;
+    uint32_t dataSize = 10;
+    uint32_t data[10] = { 1 };
+    void *headerData = &data;
+    ASSERT_NE(headerData, nullptr);
+    bool res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    res = heifFormatAgent.CheckFormat(headerData, dataSize);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "FormatAgentPluginSrcTest: HeifFormatAgent::CheckFormatTest005 end";
+}
 }
 }
