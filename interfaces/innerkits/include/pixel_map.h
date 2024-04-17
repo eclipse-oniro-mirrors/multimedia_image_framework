@@ -280,7 +280,10 @@ public:
         return exifMetadata_;
     }
 
-    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
+    NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+    {
+        exifMetadata_ = ptr;
+    }
 
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
