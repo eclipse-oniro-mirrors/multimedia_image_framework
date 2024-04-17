@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include "buffer_metadata_stream.h"
 #include "image_type.h"
 #include "metadata_accessor.h"
 #include "metadata_stream.h"
@@ -27,7 +28,8 @@ namespace OHOS {
 namespace Media {
 class MetadataAccessorFactory {
 public:
-    static std::shared_ptr<MetadataAccessor> Create(uint8_t *buffer, const uint32_t size);
+    static std::shared_ptr<MetadataAccessor> Create(uint8_t *buffer, const uint32_t size,
+        BufferMetadataStream::MemoryMode mode = BufferMetadataStream::Fix);
     static std::shared_ptr<MetadataAccessor> Create(const int fd);
     static std::shared_ptr<MetadataAccessor> Create(const std::string &path);
 

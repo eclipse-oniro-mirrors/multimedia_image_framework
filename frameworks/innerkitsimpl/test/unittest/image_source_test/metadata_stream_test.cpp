@@ -1552,5 +1552,18 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_CopyFrom004, TestSize.Level3)
     ASSERT_EQ(src.GetSize(), dest.GetSize());
     ASSERT_EQ(memcmp(src.GetAddr(), dest.GetAddr(), src.GetSize()), 0);
 }
+
+HWTEST_F(MetadataStreamTest, BufferMetadataStream_CopyFrom005, TestSize.Level3)
+{
+    BufferMetadataStream temp;
+    temp.Open();
+    temp.Write((uint8_t*)"Hello, world", 13);
+    BufferMetadataStream src(temp.GetAddr(), temp.GetSize(), BufferMetadataStream::Dynamic);
+    FileMetadataStream dest(filePathSource);
+    src.Open();
+    dest.Open();
+    src.CopyFrom(dest);
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <map>
 
+#include "buffer_metadata_stream.h"
 #include "SkBitmap.h"
 #include "SkImageEncoder.h"
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -166,7 +167,8 @@ static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, DataBuf &exifBlob, 
     if (output == nullptr) {
         return ERR_IMAGE_ENCODE_FAILED;
     }
-    auto metadataAccessor = MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten());
+    auto metadataAccessor =
+        MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten(), BufferMetadataStream::Dynamic);
     if (metadataAccessor != nullptr) {
         if (metadataAccessor->WriteBlob(exifBlob) == SUCCESS) {
             if (metadataAccessor->WriteToOutput(*output)) {
@@ -188,7 +190,7 @@ uint32_t ExtEncoder::DoFinalizeEncode()
     auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
         [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
             return IsSameTextStr(item.second, opts_.format);
-    });
+        });
     if (iter == FORMAT_NAME.end()) {
         IMAGE_LOGE("Unsupported format: %{public}s", opts_.format.c_str());
         ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);

@@ -368,7 +368,7 @@ HWTEST_F(ImagePackerTest, StartPacking013, TestSize.Level3)
     ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    auto fileSize = std::filesystem::file_size(IMAGE_JPG_SRC);
+    const int fileSize = 1024 * 1024 * 10;
     ImagePacker pack;
 
     std::vector<uint8_t> outputData(fileSize);
