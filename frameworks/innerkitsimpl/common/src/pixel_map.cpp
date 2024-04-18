@@ -2691,7 +2691,7 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
                 static_cast<uint8_t*>(dstData) + index);
         }
     }
-    if (isPremul == true){
+    if (isPremul == true) {
         wPixelMap.SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     } else {
         wPixelMap.SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
