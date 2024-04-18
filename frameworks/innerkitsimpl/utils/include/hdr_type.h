@@ -61,7 +61,7 @@ typedef struct {
 
     unsigned short enhanceICCSize;
     std::vector<unsigned char> enhanceICC;
-}HDRVividGainmapMetadata;
+} HDRVividGainmapMetadata;
 
 struct HdrMetadata {
     std::vector<uint8_t> staticMetadata;

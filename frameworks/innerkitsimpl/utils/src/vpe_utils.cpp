@@ -109,6 +109,7 @@ int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool le
     OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
     ColorSpaceConverterDestory(vpeHandle, &instanceId);
+    dlclose(vpeHandle);
     return res;
 }
 
@@ -142,6 +143,7 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
     ColorSpaceConverterDestory(vpeHandle, &instanceId);
+    dlclose(vpeHandle);
     return res;
 }
 

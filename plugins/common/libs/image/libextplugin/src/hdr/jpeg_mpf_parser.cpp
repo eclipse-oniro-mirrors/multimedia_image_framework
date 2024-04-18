@@ -179,23 +179,27 @@ static void WriteMpIndexIFD(vector<uint8_t>& bytes, uint32_t& offset, uint8_t im
     // tag count is three(MPF_VERSION_TAG, NUMBERS_OF_IMAGES_TAG, MP_ENTRY_TAG)
     const uint16_t tagCount = 3;
     ImageUtils::Uint16ToBytes(tagCount, bytes, offset);
+
     // tag MPF_VERSION_TAG
     const uint16_t versionTagCount = 4;
     ImageUtils::Uint16ToBytes(MPF_VERSION_TAG, bytes, offset);
     ImageUtils::Uint16ToBytes(TAG_TYPE_UNDEFINED, bytes, offset);
     ImageUtils::Uint32ToBytes(versionTagCount, bytes, offset);
     ImageUtils::ArrayToBytes(MPF_VERSION_DEFAULT, UINT32_BYTE_SIZE, bytes, offset);
+
     // tag NUMBERS_OF_IMAGES_TAG
     const uint16_t imageNumTagCount = 1;
     ImageUtils::Uint16ToBytes(NUMBERS_OF_IMAGES_TAG, bytes, offset);
     ImageUtils::Uint16ToBytes(TAG_TYPE_LONG, bytes, offset);
     ImageUtils::Uint32ToBytes(imageNumTagCount, bytes, offset);
     ImageUtils::Uint32ToBytes(imageNum, bytes, offset);
+
     // tag MP_ENTRY_TAG
     const uint32_t mpEntryCount = MP_ENTRY_BYTE_SIZE * imageNum;
     ImageUtils::Uint16ToBytes(MP_ENTRY_TAG, bytes, offset);
     ImageUtils::Uint16ToBytes(TAG_TYPE_UNDEFINED, bytes, offset);
     ImageUtils::Uint32ToBytes(mpEntryCount, bytes, offset);
+
     // offset-markerSize(2)-lengthSize(2)-MULTI_PICTURE_FLAG size(4)+mpEntryOffsetSize(4)+attributeIfdOffset(4)
     uint32_t mpEntryOffset = offset - UINT16_BYTE_SIZE - UINT16_BYTE_SIZE - UINT32_BYTE_SIZE +
         UINT32_BYTE_SIZE + UINT32_BYTE_SIZE;
@@ -208,10 +212,12 @@ std::vector<uint8_t> JpegMpfPacker::PackHdrJpegMpfMarker(SingleJpegImage base, S
     uint32_t index = 0;
     bytes[index++] = 0xFF;
     bytes[index++] = 0xE2;
+
     // length dont combine marker(0xFFE2)
     ImageUtils::Uint16ToBytes(HDR_MULTI_PICTURE_APP_LENGTH - UINT16_BYTE_SIZE, bytes, index);
     ImageUtils::ArrayToBytes(MULTI_PICTURE_HEADER_FLAG, UINT32_BYTE_SIZE, bytes, index);
     ImageUtils::ArrayToBytes(BIG_ENDIAN_FLAG, UINT32_BYTE_SIZE, bytes, index);
+
     // BIG_ENDIAN_FLAG size + IFDOffset size
     const uint32_t IFDOffset = UINT32_BYTE_SIZE + UINT32_BYTE_SIZE;
     ImageUtils::Uint32ToBytes(IFDOffset, bytes, index);
