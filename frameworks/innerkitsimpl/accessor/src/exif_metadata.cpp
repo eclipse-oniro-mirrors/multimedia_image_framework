@@ -32,6 +32,7 @@
 #include "media_errors.h"
 #include "securec.h"
 #include "string_ex.h"
+#include "tiff_parser.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -212,6 +213,26 @@ bool ExifMetadata::CreateExifdata()
     exif_data_fix(exifData_);
     IMAGE_LOGD("New exif data created.");
     return true;
+}
+
+std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
+{
+    ExifData *exifData = this->GetExifData();
+
+    unsigned char *dataBlob = nullptr;
+    uint32_t size = 0;
+    TiffParser::Encode(&dataBlob, size, exifData);
+    if (dataBlob == nullptr) {
+        return nullptr;
+    }
+
+    ExifData *newExifData = nullptr;
+    TiffParser::Decode(dataBlob, size, &newExifData);
+    if (newExifData == nullptr) {
+        return nullptr;
+    }
+    std::shared_ptr<ExifMetadata> exifDataPtr = std::make_shared<ExifMetadata>(newExifData);
+    return exifDataPtr;
 }
 
 ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag, const size_t valueLen)

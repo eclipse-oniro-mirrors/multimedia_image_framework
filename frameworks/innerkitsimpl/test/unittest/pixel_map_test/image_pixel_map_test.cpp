@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "image_source.h"
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "color_space.h"
@@ -1908,6 +1909,37 @@ HWTEST_F(ImagePixelMapTest, TransformData001, TestSize.Level3)
     EXPECT_EQ(transformData2.flipX, transformData.flipX);
     EXPECT_EQ(transformData2.flipY, transformData.flipY);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: TransformData001 end";
+}
+
+/**
+ * @tc.name: ModifyImageProperty001
+ * @tc.desc: ModifyImageProperty test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePixelMapTest, ModifyImageProperty001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ModifyImageProperty001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    opts.formatHint = "image/jpeg";
+    std::string path = "/data/local/tmp/image/test_exif.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeOptions decopts;
+    uint32_t ret = SUCCESS;
+    auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
+    ASSERT_EQ(ret, SUCCESS);
+
+    std::string key = "Model";
+    std::string imagesource_org_value = "TNY-AL00";
+    pixelMap->ModifyImageProperty(key, "Test");
+    std::string getValue;
+    pixelMap->GetImagePropertyString(key, getValue);
+    EXPECT_EQ(getValue, "Test");
+    imageSource->GetImagePropertyString(0, key, getValue);
+    EXPECT_EQ(getValue, imagesource_org_value);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ModifyImageProperty001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

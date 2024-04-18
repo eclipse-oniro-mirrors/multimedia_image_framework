@@ -723,7 +723,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
-        pixelMap->SetExifMetadata(exifMetadata_);
+        auto metadataPtr = exifMetadata_->Clone();
+        pixelMap->SetExifMetadata(metadataPtr);
     }
     return pixelMap;
 }
@@ -1016,7 +1017,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     }
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
-        pixelMap->SetExifMetadata(exifMetadata_);
+        auto metadataPtr = exifMetadata_->Clone();
+        pixelMap->SetExifMetadata(metadataPtr);
     }
 
     // not ext decode, dump pixelMap while decoding svg here
@@ -2341,7 +2343,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     IMAGE_LOGD("CreatePixelMapForYUV operation completed.");
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
-        pixelMap->SetExifMetadata(exifMetadata_);
+        auto metadataPtr = exifMetadata_->Clone();
+        pixelMap->SetExifMetadata(metadataPtr);
     }
 
     return pixelMap;
@@ -2526,7 +2529,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
     pixelAstc->SetAstc(true);
 
     if (CreatExifMetadataByImageSource() == SUCCESS) {
-        pixelAstc->SetExifMetadata(exifMetadata_);
+        auto metadataPtr = exifMetadata_->Clone();
+        pixelAstc->SetExifMetadata(metadataPtr);
     }
 
     return pixelAstc;
