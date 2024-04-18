@@ -2055,17 +2055,9 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest005, TestSize.Level3)
     ASSERT_EQ(ret, SUCCESS);
     for (int i = 0; i < colorLength; i += 4)
     {
-        printf("wpixel0 = %d",wpixel3[i]);
-        printf("spixel0 = %d\n",spixel[i]);
         EXPECT_TRUE(std::abs(wpixel3[i] - spixel[i]) <= 1);         // 1: Floating point to integer error
-        printf("wpixel1 = %d",wpixel3[i+1]);
-        printf("spixel1 = %d\n",spixel[i+1]);
         EXPECT_TRUE(std::abs(wpixel3[i + 1] - spixel[i + 1]) <= 1); // 1: Floating point to integer error
-        printf("wpixel2 = %d",wpixel3[i+2]);
-        printf("spixel2 = %d\n",spixel[i+2]);
         EXPECT_TRUE(std::abs(wpixel3[i + 2] - spixel[i + 2]) <= 1); // 1: Floating point to integer error
-        printf("wpixel3 = %d",wpixel3[i+3]);
-        printf("spixel3 = %d\n",spixel[i+3]);
         EXPECT_TRUE(wpixel3[i + 3] == spixel[i + 3]);
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest005 end";
