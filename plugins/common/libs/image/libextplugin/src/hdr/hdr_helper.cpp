@@ -17,6 +17,7 @@
 
 #include <dlfcn.h>
 #include <securec.h>
+
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "image_log.h"

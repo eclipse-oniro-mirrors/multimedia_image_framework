@@ -15,6 +15,8 @@
 
 #include "vpe_utils.h"
 
+#include <dlfcn.h>
+
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "image_log.h"
@@ -22,7 +24,6 @@
 #include "metadata_convertor.h"
 #include "external_window.h"
 #include "native_window.h"
-#include <dlfcn.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
