@@ -98,6 +98,7 @@ ohos_shared_library("bmpplugin") {
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

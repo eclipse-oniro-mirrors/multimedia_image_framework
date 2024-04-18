@@ -75,8 +75,9 @@ ohos_shared_library("imageformatagent") {
       "hilog:libhilog",
     ]
   }
-  part_name = "image_framework"
 
+  innerapi_tags = [ "platformsdk" ]
+  part_name = "image_framework"
   subsystem_name = "multimedia"
 }
 
