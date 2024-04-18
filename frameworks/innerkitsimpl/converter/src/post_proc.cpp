@@ -765,7 +765,9 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     }
     uint32_t dstBufferSize = desiredSize.height * desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
-    auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType(), memoryData);
+    
+    auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
+        AllocatorType::DEFAULT : pixelMap.GetAllocatorType(), memoryData);
     if (mem == nullptr) {
         IMAGE_LOGE("ScalePixelMapEx CreateMemory failed");
         return false;
