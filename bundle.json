@@ -45,7 +45,8 @@
           "libyuv",
           "libjpeg-turbo",
           "libexif",
-          "zlib"
+          "zlib",
+          "resource_management"
         ],
         "third_party": [
           "flutter",

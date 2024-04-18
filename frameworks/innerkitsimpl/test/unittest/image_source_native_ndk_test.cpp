@@ -251,6 +251,21 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromData, TestSize.Level
 }
 
 /**
+ * @tc.name: OH_ImageSourceNative_CreateFromRawFile002
+ * @tc.desc: test OH_ImageSourceNative_CreateFromRawFile
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreateFromRawFile002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromRawFile002 start";
+    OH_ImageSourceNative *imageSource = nullptr;
+    RawFileDescriptor *rawFile = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromRawFile(rawFile, &imageSource);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_CreateFromRawFile002 end";
+}
+
+/**
  * @tc.name: OH_ImageSourceNative_CreatePixelmap
  * @tc.desc: test OH_ImageSourceNative_CreatePixelmap
  * @tc.type: FUNC
