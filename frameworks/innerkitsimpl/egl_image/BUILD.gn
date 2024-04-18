@@ -43,6 +43,7 @@ ohos_shared_library("egl_image") {
     "hitrace:hitrace_meter",
   ]
 
+  innerapi_tags = [ "platformsdk" ]
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

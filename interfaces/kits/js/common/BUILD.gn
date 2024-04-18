@@ -182,7 +182,7 @@ if (use_clang_ios) {
     ]
 
     output_name = "libimage"
-    relative_install_dir = "module/multimedia"
+    innerapi_tags = [ "platformsdk" ]
     subsystem_name = "multimedia"
     part_name = "image_framework"
   }
