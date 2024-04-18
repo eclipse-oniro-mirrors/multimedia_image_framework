@@ -24,7 +24,7 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
-#include "pixel_map_from_surface.h"
+#include "transaction/rs_interfaces.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
@@ -1040,8 +1040,16 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
-    
-    auto pixelMap = CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), context->area.region);
+
+    auto &rsClient = Rosen::RSInterfaces::GetInstance();
+    OHOS::Rect r = {
+        .x = context->area.region.left,
+        .y = context->area.region.top,
+        .w = context->area.region.width,
+        .h = context->area.region.height,
+    };
+    std::shared_ptr<Media::PixelMap> pixelMap =
+        rsClient.CreatePixelMapFromSurfaceId(std::stoull(context->surfaceId), r);
     context->rPixelMap = std::move(pixelMap);
 
     if (IMG_NOT_NULL(context->rPixelMap)) {
@@ -1376,7 +1384,7 @@ napi_value PixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callback_info i
     napi_value thisVar = nullptr;
     size_t argCount = 0;
     IMAGE_LOGD("GetIsStrideAlignment IN");
-    
+
     IMG_JS_ARGS(env, info, status, argCount, nullptr, thisVar);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
@@ -1386,7 +1394,7 @@ napi_value PixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callback_info i
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi),
         result, IMAGE_LOGE("fail to unwrap context"));
-        
+
     if (pixelMapNapi->nativePixelMap_ == nullptr) {
         return result;
     }
