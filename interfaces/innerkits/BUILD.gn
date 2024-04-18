@@ -238,6 +238,7 @@ if (use_clang_android) {
       }
       external_deps = [
         "c_utils:utils",
+        "drivers_interface_display:display_commontype_idl_headers",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
         "hilog:libhilog",
@@ -394,12 +395,14 @@ ohos_static_library("image_static") {
     }
     external_deps = [
       "c_utils:utils",
+      "drivers_interface_display:display_commontype_idl_headers",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
     ]
   }
   external_deps += [ "zlib:libz" ]
+
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

@@ -33,6 +33,7 @@
 #include "media_errors.h"
 #include "pixel_map.h"
 #include "plugin_service.h"
+#include "hdr_type.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -77,6 +78,8 @@ struct DecodeContext {
     bool isHardDecode = false;
     // Out: hard decode error message
     std::string hardDecodeError;
+    // Out: hdr type
+    Media::ImageHdrType hdrType = Media::ImageHdrType::UNKNOWN;
 };
 
 struct ProgDecodeContext {
@@ -116,6 +119,7 @@ class AbsImageDecoder {
 public:
     static constexpr uint32_t DEFAULT_IMAGE_NUM = 1;
     static constexpr uint32_t E_NO_EXIF = 1;
+    static constexpr uint32_t DEFAULT_GAINMAP_OFFSET = 0;
 
     AbsImageDecoder() = default;
 
@@ -204,6 +208,20 @@ public:
     }
 #endif
 
+    virtual Media::ImageHdrType CheckHdrType()
+    {
+        return Media::ImageHdrType::SDR;
+    }
+
+    virtual uint32_t GetGainMapOffset()
+    {
+        return DEFAULT_GAINMAP_OFFSET;
+    }
+
+    virtual Media::HdrMetadata GetHdrMetadata(Media::ImageHdrType type)
+    {
+        return {};
+    }
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };

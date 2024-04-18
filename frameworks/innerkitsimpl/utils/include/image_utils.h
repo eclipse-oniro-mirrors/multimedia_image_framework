@@ -52,7 +52,16 @@ public:
         uint64_t imageId = 0);
     static uint64_t GetNowTimeMilliSeconds();
     static std::string GetCurrentProcessName();
-
+    // BytesToXXX and xxxToBytes function will modify the offset value.
+    static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static uint32_t BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static int32_t BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static float BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
+    static void Uint16ToBytes(uint16_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
+    static void Uint32ToBytes(uint32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
+    static void FloatToBytes(float data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
+    static void Int32ToBytes(int32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
+    static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

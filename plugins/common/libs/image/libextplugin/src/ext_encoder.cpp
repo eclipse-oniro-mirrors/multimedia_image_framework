@@ -43,6 +43,13 @@
 #include "surface_buffer.h"
 #endif
 #include "tiff_parser.h"
+#include "hdr_helper.h"
+#include "vpe_utils.h"
+#include "image_mime_type.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "securec.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -53,20 +60,21 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
+using namespace HDI::Display::Graphic::Common::V1_0;
 
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
-    {SkEncodedImageFormat::kBMP, "image/bmp"},
-    {SkEncodedImageFormat::kGIF, "image/gif"},
-    {SkEncodedImageFormat::kICO, "image/ico"},
-    {SkEncodedImageFormat::kJPEG, "image/jpeg"},
-    {SkEncodedImageFormat::kPNG, "image/png"},
-    {SkEncodedImageFormat::kWBMP, "image/bmp"},
-    {SkEncodedImageFormat::kWEBP, "image/webp"},
+    {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
+    {SkEncodedImageFormat::kGIF, IMAGE_GIF_FORMAT},
+    {SkEncodedImageFormat::kICO, IMAGE_ICO_FORMAT},
+    {SkEncodedImageFormat::kJPEG, IMAGE_JPEG_FORMAT},
+    {SkEncodedImageFormat::kPNG, IMAGE_PNG_FORMAT},
+    {SkEncodedImageFormat::kWBMP, IMAGE_BMP_FORMAT},
+    {SkEncodedImageFormat::kWEBP, IMAGE_WEBP_FORMAT},
     {SkEncodedImageFormat::kPKM, ""},
     {SkEncodedImageFormat::kKTX, ""},
     {SkEncodedImageFormat::kASTC, ""},
     {SkEncodedImageFormat::kDNG, ""},
-    {SkEncodedImageFormat::kHEIF, "image/heif"},
+    {SkEncodedImageFormat::kHEIF, IMAGE_HEIC_FORMAT},
 };
 
 ExtEncoder::ExtEncoder()
@@ -100,7 +108,7 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
     pixelMap->GetImageInfo(info);
     SkColorType colorType = ImageTypeConverter::ToSkColorType(info.pixelFormat);
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
-    sk_sp<SkColorSpace> colorSpace = nullptr;
+    sk_sp<SkColorSpace> colorSpace = SkColorSpace::MakeSRGB();
 #ifdef IMAGE_COLORSPACE_FLAG
     if (pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
         colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
@@ -122,97 +130,145 @@ static uint32_t RGBToRGBx(Media::PixelMap *pixelMap, SkImageInfo &skInfo, TmpBuf
     return ExtPixelConvert::RGBToRGBx(src, dst);
 }
 
-static uint32_t BuildSkBitmap(Media::PixelMap *pixelMap, SkBitmap &bitmap,
-    SkEncodedImageFormat format, TmpBufferHolder &holder)
-{
-    uint32_t res = SUCCESS;
-    SkImageInfo skInfo = ToSkInfo(pixelMap);
-    auto pixels = pixelMap->GetWritablePixels();
-    if (format == SkEncodedImageFormat::kJPEG &&
-        skInfo.colorType() == SkColorType::kRGB_888x_SkColorType &&
-        pixelMap->GetCapacity() < skInfo.computeMinByteSize()) {
-        res = RGBToRGBx(pixelMap, skInfo, holder);
-        if (res != SUCCESS) {
-            IMAGE_LOGE("ExtEncoder::BuildSkBitmap pixel convert failed %{public}d", res);
-            return res;
-        }
-        pixels = holder.buf.get();
-        skInfo = skInfo.makeColorType(SkColorType::kRGBA_8888_SkColorType);
-    }
-
-    uint64_t rowStride = skInfo.minRowBytes64();
-
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (pixelMap->GetAllocatorType() == Media::AllocatorType::DMA_ALLOC) {
-        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
-        rowStride = sbBuffer->GetStride();
-    }
-#endif
-
-    if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
-        IMAGE_LOGE("ExtEncoder::BuildSkBitmap to skbitmap failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    return res;
-}
-
 bool IsAstc(const std::string &format)
 {
     return format.find("image/astc") == 0;
 }
 
-static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, DataBuf &exifBlob, OutputDataStream* output,
+static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, DataBuf &exifBlob, SkWStream& outStream,
     ImageInfo &imageInfo, PlEncodeOptions &opts)
 {
-    if (output == nullptr) {
-        return ERR_IMAGE_ENCODE_FAILED;
-    }
     auto metadataAccessor =
         MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten(), BufferMetadataStream::Dynamic);
     if (metadataAccessor != nullptr) {
         if (metadataAccessor->WriteBlob(exifBlob) == SUCCESS) {
-            if (metadataAccessor->WriteToOutput(*output)) {
+            std::shared_ptr<MetadataStream> hasExifStream = metadataAccessor->GetOutputStream();
+            if (hasExifStream != nullptr &&
+                outStream.write(hasExifStream->GetAddr(), hasExifStream->GetSize())) {
                 return SUCCESS;
             }
         }
     }
-    if (!output->Write(tStream.GetAddr(), tStream.bytesWritten())) {
+    if (!outStream.write(tStream.GetAddr(), tStream.bytesWritten())) {
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts.format, "Failed to encode image");
         return ERR_IMAGE_ENCODE_FAILED;
     }
     return SUCCESS;
 }
 
-uint32_t ExtEncoder::DoFinalizeEncode()
+uint32_t ExtEncoder::FinalizeEncode()
 {
+    if (pixelmap_ == nullptr || output_ == nullptr) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
         opts_.format.c_str(), opts_.quality);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (IsAstc(opts_.format)) {
+        AstcCodec astcEncoder;
+        astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
+        return astcEncoder.ASTCEncode();
+    }
+#endif
     auto iter = std::find_if(FORMAT_NAME.begin(), FORMAT_NAME.end(),
         [this](const std::map<SkEncodedImageFormat, std::string>::value_type item) {
             return IsSameTextStr(item.second, opts_.format);
-        });
+    });
     if (iter == FORMAT_NAME.end()) {
-        IMAGE_LOGE("Unsupported format: %{public}s", opts_.format.c_str());
+        IMAGE_LOGE("ExtEncoder::FinalizeEncode unsupported format %{public}s", opts_.format.c_str());
         ReportEncodeFault(0, 0, opts_.format, "Unsupported format:" + opts_.format);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    SkBitmap bitmap;
-    TmpBufferHolder holder;
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     imageDataStatistics.AddTitle("width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
-    auto errorCode = BuildSkBitmap(pixelmap_, bitmap, iter->first, holder);
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Failed to build SkBitmap");
-        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to build SkBitmap");
-        return errorCode;
-    }
+    encodeFormat_ = iter->first;
+    ExtWStream wStream(output_);
 
-    if (pixelmap_->GetExifMetadata() == nullptr ||
+    switch (opts_.desiredDynamicRange) {
+        case PlEncodeDynamicRange::AUTO:
+            if (pixelmap_->IsHdr() &&
+                (encodeFormat_ == SkEncodedImageFormat::kJPEG || encodeFormat_ == SkEncodedImageFormat::kHEIF)) {
+                return EncodeDualVivid(wStream);
+            }
+            return EncodeSdrImage(wStream);
+        case PlEncodeDynamicRange::SDR:
+            return EncodeSdrImage(wStream);
+        case PlEncodeDynamicRange::HDR_VIVID_DUAL:
+            return EncodeDualVivid(wStream);
+        case PlEncodeDynamicRange::HDR_VIVID_SINGLE:
+            return EncodeSingleVivid(wStream);
+    }
+    return ERR_IMAGE_ENCODE_FAILED;
+}
+
+static sptr<SurfaceBuffer> AllocSurfaceBuffer(SkImageInfo info, CM_HDR_Metadata_Type type, CM_ColorSpaceType color)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = info.width(),
+        .height = info.height(),
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_DISPLAY_P3,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        return nullptr;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        return nullptr;
+    }
+    VpeUtils::SetSbMetadataType(sb, type);
+    VpeUtils::SetSbColorSpaceType(sb, color);
+    return sb;
+#endif
+}
+
+static void FreeBaseAndGainMapSurfaceBuffer(sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainMap)
+{
+    ImageUtils::SurfaceBuffer_Unreference(base.GetRefPtr());
+    ImageUtils::SurfaceBuffer_Unreference(gainMap.GetRefPtr());
+}
+
+static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& gainmap)
+{
+    std::vector<uint8_t> dynamicMetadata = {};
+    VpeUtils::GetSbDynamicMetadata(hdr, dynamicMetadata);
+    std::vector<uint8_t> staticMetadata = {};
+    VpeUtils::GetSbStaticMetadata(hdr, staticMetadata);
+    HdrMetadata metadata = {
+        .staticMetadata = staticMetadata,
+        .dynamicMetadata = dynamicMetadata
+    };
+    std::vector<uint8_t> gainmapMetadataVec = {};
+    VpeUtils::GetSbDynamicMetadata(gainmap, gainmapMetadataVec);
+    if (memcpy_s(&metadata.gainmapMetadata, sizeof(HDRVividGainmapMetadata),
+        gainmapMetadataVec.data(), gainmapMetadataVec.size()) != EOK) {
+        metadata.gainmapMetadataFlag = false;
+    } else {
+        metadata.gainmapMetadataFlag = true;
+    }
+    return metadata;
+}
+
+uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream)
+{
+    ImageInfo imageInfo;
+    pixelmap_->GetImageInfo(imageInfo);
+    if (!needExif || pixelmap_->GetExifMetadata() == nullptr ||
         pixelmap_->GetExifMetadata()->GetExifData() == nullptr) {
-        ExtWStream wStream(output_);
-        if (!SkEncodeImage(&wStream, bitmap, iter->first, opts_.quality)) {
+        if (!SkEncodeImage(&outStream, bitmap, encodeFormat_, opts_.quality)) {
             IMAGE_LOGE("Failed to encode image");
             ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
             return ERR_IMAGE_ENCODE_FAILED;
@@ -226,31 +282,179 @@ uint32_t ExtEncoder::DoFinalizeEncode()
     TiffParser::Encode(&dataPtr, datSize, exifData);
     DataBuf exifBlob(dataPtr, datSize);
     MetadataWStream tStream;
-    if (!SkEncodeImage(&tStream, bitmap, iter->first, opts_.quality)) {
+    if (!SkEncodeImage(&tStream, bitmap, encodeFormat_, opts_.quality)) {
         IMAGE_LOGE("Failed to encode image");
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");
         return ERR_IMAGE_ENCODE_FAILED;
     }
-
-    return CreateAndWriteBlob(tStream, exifBlob, output_, imageInfo, opts_);
+    return CreateAndWriteBlob(tStream, exifBlob, outStream, imageInfo, opts_);
 }
 
-uint32_t ExtEncoder::FinalizeEncode()
+uint32_t ExtEncoder::EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream)
 {
-    if (pixelmap_ == nullptr || output_ == nullptr) {
-        return ERR_IMAGE_INVALID_PARAMETER;
+    SkBitmap bitmap;
+    TmpBufferHolder holder;
+    SkImageInfo skInfo = ToSkInfo(pixelMap);
+    auto pixels = pixelMap->GetWritablePixels();
+    if (encodeFormat_ == SkEncodedImageFormat::kJPEG &&
+        skInfo.colorType() == SkColorType::kRGB_888x_SkColorType &&
+        pixelMap->GetCapacity() < skInfo.computeMinByteSize()) {
+        uint32_t res = RGBToRGBx(pixelMap, skInfo, holder);
+        if (res != SUCCESS) {
+            IMAGE_LOGE("ExtEncoder::EncodeImageByPixelMap pixel convert failed %{public}d", res);
+            return res;
+        }
+        pixels = holder.buf.get();
+        skInfo = skInfo.makeColorType(SkColorType::kRGBA_8888_SkColorType);
     }
+    uint64_t rowStride = skInfo.minRowBytes64();
+
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (IsAstc(opts_.format)) {
-        ImageDataStatistics imageDataStatistics("[ExtEncoder]FinalizeEncode imageFormat = %s, quality = %d",
-            opts_.format.c_str(), opts_.quality);
-        AstcCodec astcEncoder;
-        astcEncoder.SetAstcEncode(output_, opts_, pixelmap_);
-        return astcEncoder.ASTCEncode();
+    if (pixelMap->GetAllocatorType() == Media::AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
+        rowStride = sbBuffer->GetStride();
     }
 #endif
+    if (!bitmap.installPixels(skInfo, pixels, rowStride)) {
+        IMAGE_LOGE("ExtEncoder::EncodeImageByPixelMap to SkBitmap failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    return EncodeImageByBitmap(bitmap, needExif, outputStream);
+}
 
-    return DoFinalizeEncode();
+uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
+    bool needExif, SkWStream& outputStream)
+{
+    SkBitmap bitmap;
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("EncodeImageBySurfaceBuffer failed, surfaceBuffer is nullptr");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    auto pixels = surfaceBuffer->GetVirAddr();
+    if (pixels == nullptr) {
+        IMAGE_LOGE("EncodeImageBySurfaceBuffer failed, pixels is nullptr");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint64_t rowStride = surfaceBuffer->GetStride();
+    if (!bitmap.installPixels(info, pixels, rowStride)) {
+        IMAGE_LOGE("ExtEncoder::EncodeImageBySurfaceBuffer to SkBitmap failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    return EncodeImageByBitmap(bitmap, needExif, outputStream);
+}
+
+sk_sp<SkData> ExtEncoder::GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif)
+{
+    SkDynamicMemoryWStream stream;
+    if (EncodeImageBySurfaceBuffer(surfaceBuffer, info, needExif, stream) != SUCCESS) {
+        return nullptr;
+    }
+    return stream.detachAsData();
+}
+
+static uint32_t DecomposeImage(Media::PixelMap* pixelMap, sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainmap,
+    ImagePlugin::HdrMetadata& metadata)
+{
+    if (pixelMap->GetAllocatorType() != Media::AllocatorType::DMA_ALLOC) {
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd()));
+    VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
+    VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, CM_BT2020_HLG_LIMIT);
+    VpeUtils::SetSbDynamicMetadata(hdrSurfaceBuffer, std::vector<uint8_t>());
+    VpeUtils::SetSbStaticMetadata(hdrSurfaceBuffer, std::vector<uint8_t>());
+    VpeSurfaceBuffers buffers = {
+        .sdr = base,
+        .gainmap = gainmap,
+        .hdr = hdrSurfaceBuffer,
+    };
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->ColorSpaceConverterDecomposeImage(buffers);
+    if (res != VPE_ERROR_OK || base == nullptr || gainmap == nullptr) {
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    metadata = GetHdrMetadata(hdrSurfaceBuffer, gainmap);
+    return SUCCESS;
+}
+
+static SkImageInfo GetSkInfo(ImageInfo info, bool isGainmap)
+{
+    SkColorType colorType = kRGBA_8888_SkColorType;
+    SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
+    sk_sp<SkColorSpace> colorSpace = nullptr;
+    int32_t width = info.size.width;
+    int32_t height = info.size.height;
+    if (isGainmap) {
+        colorSpace = SkColorSpace::MakeSRGB();
+        const int halfSizeDenominator = 2;
+        width = width / halfSizeDenominator;
+        height = height / halfSizeDenominator;
+    } else {
+        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
+    }
+    return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
+}
+
+uint32_t ExtEncoder::EncodeSingleVivid(ExtWStream& outputStream)
+{
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
+{
+    if (pixelmap_->GetPixelFormat() != Media::PixelFormat::RGBA_1010102 ||
+        (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF)) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    ImageInfo info;
+    pixelmap_->GetImageInfo(info);
+    SkImageInfo baseInfo = GetSkInfo(info, false);
+    SkImageInfo gainmapInfo = GetSkInfo(info, true);
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_DUAL, CM_P3_LIMIT);
+    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_METADATA_NONE, CM_SRGB_LIMIT);
+    if (baseSptr == nullptr || gainMapSptr == nullptr) {
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    HdrMetadata metadata;
+    uint32_t error = DecomposeImage(pixelmap_, baseSptr, gainMapSptr, metadata);
+    if (error != SUCCESS) {
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+        return error;
+    }
+    sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, true);
+    sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
+    FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+    if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, outputStream, metadata);
+    } else {
+        error = ERR_IMAGE_INVALID_PARAMETER;
+    }
+    return error;
+}
+
+uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
+{
+    if (pixelmap_->GetPixelFormat() != Media::PixelFormat::RGBA_1010102) {
+        return EncodeImageByPixelMap(pixelmap_, true, outputStream);
+    }
+    ImageInfo info;
+    pixelmap_->GetImageInfo(info);
+    SkImageInfo baseInfo = GetSkInfo(info, false);
+    SkImageInfo gainmapInfo = GetSkInfo(info, true);
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_DUAL, CM_P3_LIMIT);
+    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_METADATA_NONE, CM_SRGB_LIMIT);
+    if (baseSptr == nullptr || gainMapSptr == nullptr) {
+        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
+    }
+    HdrMetadata metadata;
+    uint32_t error = DecomposeImage(pixelmap_, baseSptr, gainMapSptr, metadata);
+    if (error != SUCCESS) {
+        FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+        return error;
+    }
+    error = EncodeImageBySurfaceBuffer(baseSptr, baseInfo, true, outputStream);
+    FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
+    return error;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

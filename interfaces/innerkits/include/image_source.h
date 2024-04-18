@@ -139,6 +139,8 @@ struct ASTCInfo {
 };
 
 class SourceStream;
+enum class ImageHdrType;
+struct HdrMetadata;
 class MetadataAccessor;
 class ExifMetadata;
 
@@ -211,6 +213,7 @@ public:
     NATIVEEXPORT size_t GetSourceSize() const;
 #endif
     void SetSource(const std::string &source);
+    NATIVEEXPORT bool IsHdrImage();
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -268,7 +271,17 @@ private:
     std::unique_ptr<PixelMap> CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts,
                                                      uint32_t &errorCode);
     std::unique_ptr<PixelMap> CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
-                                                    PixelMapAddrInfos &addrInfos, uint32_t &errorCode);
+                                                    ImagePlugin::DecodeContext& context, uint32_t &errorCode);
+    bool ApplyGainMap(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
+                      ImagePlugin::DecodeContext& hdrCtx, float scale);
+    bool ComposeHdrImage(ImageHdrType hdrType, ImagePlugin::DecodeContext& baseCtx,
+        ImagePlugin::DecodeContext& gainMapCtx, ImagePlugin::DecodeContext& hdrCtx, HdrMetadata metadata);
+    uint32_t SetGainMapDecodeOption(std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder,
+                                    ImagePlugin::PlImageInfo& plInfo, float scale);
+    ImagePlugin::DecodeContext DecodeImageDataToContext(uint32_t index, ImageInfo info,
+                                                        ImagePlugin::PlImageInfo& outInfo, uint32_t& errorCode);
+    bool DecodeJpegGainMap(ImageHdrType hdrType, float scale,
+        ImagePlugin::DecodeContext& gainMapCtx, HdrMetadata& metadata);
     void DumpInputData(const std::string& fileSuffix = "dat");
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
@@ -306,6 +319,7 @@ private:
     MemoryUsagePreference preference_ = MemoryUsagePreference::DEFAULT;
     std::optional<bool> isAstc_;
     uint64_t imageId_; // generated from the last six bits of the current timestamp
+    ImageHdrType sourceHdrType_; // source image hdr type;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed = false;

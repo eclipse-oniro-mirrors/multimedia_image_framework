@@ -67,6 +67,9 @@ constexpr int32_t RGB888_BYTES = 3;
 constexpr int32_t ARGB8888_BYTES = 4;
 constexpr int32_t RGBA_F16_BYTES = 8;
 constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
+constexpr uint8_t MOVE_BITS_8 = 8;
+constexpr uint8_t MOVE_BITS_16 = 16;
+constexpr uint8_t MOVE_BITS_24 = 24;
 constexpr int32_t ASTC_4X4_BYTES = 1;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
@@ -131,6 +134,7 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
         case PixelFormat::ARGB_8888:
         case PixelFormat::BGRA_8888:
         case PixelFormat::RGBA_8888:
+        case PixelFormat::RGBA_1010102:
         case PixelFormat::CMYK:
             pixelBytes = ARGB8888_BYTES;
             break;
@@ -497,6 +501,129 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
 #endif
     return pixelMapStr;
+}
+
+ // BytesToUint16 function will modify the offset value.
+uint16_t ImageUtils::BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint16_t data = 0;
+    if (bytes == nullptr) {
+        return data;
+    }
+    if (isBigEndian) {
+        data = (bytes[offset] << MOVE_BITS_8) | bytes[offset + NUM_1];
+    } else {
+        data = (bytes[offset + NUM_1] << MOVE_BITS_8) | bytes[offset];
+    }
+    offset += NUM_2;
+    return data;
+}
+
+// BytesToUint32 function will modify the offset value.
+uint32_t ImageUtils::BytesToUint32(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint32_t data = 0;
+    if (bytes == nullptr) {
+        return data;
+    }
+    if (isBigEndian) {
+        data = (bytes[offset] << MOVE_BITS_24) | (bytes[offset + NUM_1] << MOVE_BITS_16) |
+                (bytes[offset + NUM_2] << MOVE_BITS_8) | (bytes[offset + NUM_3]);
+    } else {
+        data = (bytes[offset + NUM_3] << MOVE_BITS_24) | (bytes[offset + NUM_2] << MOVE_BITS_16) |
+                (bytes[offset + NUM_1] << MOVE_BITS_8) | bytes[offset];
+    }
+    offset += NUM_4;
+    return data;
+}
+
+// BytesToInt32 function will modify the offset value.
+int32_t ImageUtils::BytesToInt32(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+{
+    int32_t data = 0;
+    if (bytes == nullptr) {
+        return data;
+    }
+    if (isBigEndian) {
+        data = (bytes[offset] << MOVE_BITS_24) | (bytes[offset + NUM_1] << MOVE_BITS_16) |
+                (bytes[offset + NUM_2] << MOVE_BITS_8) | (bytes[offset + NUM_3]);
+    } else {
+        data = (bytes[offset + NUM_3] << MOVE_BITS_24) | (bytes[offset + NUM_2] << MOVE_BITS_16) |
+                (bytes[offset + NUM_1] << MOVE_BITS_8) | bytes[offset];
+    }
+    offset += NUM_4;
+    return data;
+}
+
+// BytesToFloat function will modify the offset value.
+float ImageUtils::BytesToFloat(uint8_t* bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint32_t data = BytesToUint32(bytes, offset, isBigEndian);
+    union {
+        uint32_t i;
+        float f;
+    } u;
+    u.i = data;
+    return u.f;
+}
+
+void ImageUtils::Uint16ToBytes(uint16_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint8_t BYTE_ONE = (data >> MOVE_BITS_8) & 0xFF;
+    uint8_t BYTE_TWO = data & 0xFF;
+    if (isBigEndian) {
+        bytes[offset++] = BYTE_ONE;
+        bytes[offset++] = BYTE_TWO;
+    } else {
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_ONE;
+    }
+}
+
+void ImageUtils::Uint32ToBytes(uint32_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    uint8_t BYTE_ONE = (data >> MOVE_BITS_24) & 0xFF;
+    uint8_t BYTE_TWO = (data >> MOVE_BITS_16) & 0xFF;
+    uint8_t BYTE_THREE = (data >> MOVE_BITS_8) & 0xFF;
+    uint8_t BYTE_FOUR = data & 0xFF;
+    if (isBigEndian) {
+        bytes[offset++] = BYTE_ONE;
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_THREE;
+        bytes[offset++] = BYTE_FOUR;
+    } else {
+        bytes[offset++] = BYTE_FOUR;
+        bytes[offset++] = BYTE_THREE;
+        bytes[offset++] = BYTE_TWO;
+        bytes[offset++] = BYTE_ONE;
+    }
+}
+
+void ImageUtils::FloatToBytes(float data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    union {
+        uint32_t i;
+        float f;
+    } u;
+    u.f = data;
+    Uint32ToBytes(u.i, bytes, offset, isBigEndian);
+}
+
+void ImageUtils::Int32ToBytes(int32_t data, vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian)
+{
+    union {
+        uint32_t uit;
+        int32_t it;
+    } u;
+    u.it = data;
+    Uint32ToBytes(u.uit, bytes, offset, isBigEndian);
+}
+
+void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8_t>& bytes, uint32_t& offset)
+{
+    for (uint32_t i = 0; i < length; i++) {
+        bytes[offset++] = data[i] & 0xFF;
+    }
 }
 } // namespace Media
 } // namespace OHOS

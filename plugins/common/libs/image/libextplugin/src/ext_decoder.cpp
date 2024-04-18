@@ -35,6 +35,7 @@
 #include "heif_impl/HeifDecoder.h"
 #include "hardware/heif_hw_decoder.h"
 #endif
+#include "hdr_helper.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -1540,6 +1541,41 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
+}
+
+ImageHdrType ExtDecoder::CheckHdrType()
+{
+    if (!CheckCodec()) {
+        return Media::ImageHdrType::UNKNOWN;
+    }
+    SkEncodedImageFormat format = codec_->getEncodedFormat();
+    if (format != SkEncodedImageFormat::kJPEG && format != SkEncodedImageFormat::kHEIF) {
+        hdrType_ = Media::ImageHdrType::SDR;
+        gainMapOffset_ = 0;
+        return hdrType_;
+    }
+    hdrType_ = Media::HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+    return hdrType_;
+}
+
+uint32_t ExtDecoder::GetGainMapOffset()
+{
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
+        return 0;
+    }
+    if (hdrType_ == Media::ImageHdrType::UNKNOWN) {
+        hdrType_ = Media::HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+    }
+    return gainMapOffset_;
+}
+
+HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
+{
+    HdrMetadata metadata = {};
+    if (type > Media::ImageHdrType::SDR && Media::HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
+        return metadata;
+    }
+    return {};
 }
 } // namespace ImagePlugin
 } // namespace OHOS

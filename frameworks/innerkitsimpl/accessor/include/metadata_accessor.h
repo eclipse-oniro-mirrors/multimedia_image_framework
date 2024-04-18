@@ -33,6 +33,7 @@ public:
     virtual uint32_t WriteBlob(DataBuf &blob) = 0;
     virtual bool ReadBlob(DataBuf &blob) const = 0;
     virtual bool WriteToOutput(ImagePlugin::OutputDataStream &output) = 0;
+    virtual std::shared_ptr<MetadataStream> GetOutputStream() = 0;
     virtual std::shared_ptr<ExifMetadata> Get() = 0;
     virtual void Set(std::shared_ptr<ExifMetadata> &ptr) = 0;
 };

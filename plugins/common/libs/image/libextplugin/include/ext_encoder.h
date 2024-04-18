@@ -20,6 +20,10 @@
 
 #include "abs_image_encoder.h"
 #include "plugin_class_base.h"
+#include "SkEncodedImageFormat.h"
+#include "ext_wstream.h"
+#include "SkBitmap.h"
+#include "surface_buffer.h"
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -32,9 +36,17 @@ public:
     uint32_t FinalizeEncode() override;
 
 private:
-    uint32_t DoFinalizeEncode();
-
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
+    uint32_t EncodeSdrImage(ExtWStream& outputStream);
+    uint32_t EncodeDualVivid(ExtWStream& outputStream);
+    uint32_t EncodeSingleVivid(ExtWStream& outputStream);
+    uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
+    uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
+    uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
+        bool needExif, SkWStream& outputStream);
+    sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
+
+    SkEncodedImageFormat encodeFormat_;
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;

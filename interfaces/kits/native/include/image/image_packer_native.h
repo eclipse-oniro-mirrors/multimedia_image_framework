@@ -72,7 +72,7 @@ typedef enum {
     * Packing to standard dynamic range.
     */
     IMAGE_PACKER_DYNAMIC_RANGE_SDR = 1,
-}IMAGE_PACKER_DYNAMIC_RANGE;
+} IMAGE_PACKER_DYNAMIC_RANGE;
 
 /**
  * @brief Create a pointer for PackingOptions struct.
@@ -129,6 +129,26 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options,
     uint32_t quality);
 
 /**
+ * @brief Get desiredDynamicRange for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param desiredDynamicRange The number of dynamic range {@link IMAGE_PACKER_DYNAMIC_RANGE}.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_GetDesiredDynamicRange(OH_PackingOptions *options, int32_t* desiredDynamicRange);
+
+/**
+ * @brief Set desiredDynamicRange number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param desiredDynamicRange The number of dynamic range {@link IMAGE_PACKER_DYNAMIC_RANGE}.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_SetDesiredDynamicRange(OH_PackingOptions *options, int32_t desiredDynamicRange);
+
+/**
  * @brief delete DecodingOptions pointer.
  *
  * @param options The DecodingOptions pointer will be operated.
@@ -136,28 +156,6 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options,
  * @since 12
  */
 Image_ErrorCode OH_PackingOptions_Release(OH_PackingOptions *options);
-
-/**
- * @brief Set desiredDynamicRange number for OH_ImagePackerNative struct.
- *
- * @param opts The PackingOptions pointer will be operated.
- * @param desiredDynamicRange The number of image {@link IMAGE_PACKER_DYNAMIC_RANGE}.
- * @return Returns {@link Image_ErrorCode}
- * @since 12
- */
-Image_ErrorCode OH_PackingOptions_SetDesiredDynamicRange(OH_PackingOptions *opts,
-    int32_t desiredDynamicRange);
-
-/**
- * @brief Get desiredDynamicRange number for OH_ImagePackerNative struct.
- *
- * @param opts The PackingOptions pointer will be operated.
- * @param desiredDynamicRange The number of image {@link IMAGE_PACKER_DYNAMIC_RANGE}.
- * @return Returns {@link Image_ErrorCode}
- * @since 12
- */
-Image_ErrorCode OH_PackingOptions_GetDesiredDynamicRange(OH_PackingOptions *opts,
-    int32_t* desiredDynamicRange);
 
 /**
  * @brief Create a pointer for OH_ImagePackerNative struct.

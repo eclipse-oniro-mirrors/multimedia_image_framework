@@ -779,6 +779,10 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
             colorProc_ = RGBA8888ToARGB;
             break;
         }
+        case PixelFormat::RGBA_1010102: {
+            pixelBytes_ = ARGB_8888_BYTES;
+            break;
+        }
         case PixelFormat::BGRA_8888: {
             pixelBytes_ = ARGB_8888_BYTES;
             colorProc_ = BGRA8888ToARGB;
@@ -1186,6 +1190,23 @@ AlphaType PixelMap::GetAlphaType()
 const uint8_t *PixelMap::GetPixels()
 {
     return data_;
+}
+
+bool PixelMap::IsHdr()
+{
+    if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102) {
+        return false;
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorSpace = InnerGetGrColorSpace();
+    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
+        return false;
+    }
+#endif
+    return false;
 }
 
 uint8_t PixelMap::GetARGB32ColorA(uint32_t color)
@@ -2459,6 +2480,8 @@ static const string GetNamedPixelFormat(const PixelFormat pixelFormat)
             return "Pixel Format ASTC_6x6";
         case PixelFormat::ASTC_8x8:
             return "Pixel Format ASTC_8x8";
+        case PixelFormat::RGBA_1010102:
+            return "Pixel Format RGBA_1010102";
         default:
             return "Pixel Format UNKNOWN";
     }
@@ -2768,11 +2791,13 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         height += dstInfo.r.fTop;
     }
     dstInfo.info = srcInfo.info.makeWH(width, height);
+    PixelFormat format = ImageTypeConverter::ToPixelFormat(srcInfo.info.colorType());
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     Size desiredSize = {dstInfo.info.width(), dstInfo.info.height()};
-    MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize};
+    MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData", desiredSize, format};
 #else
     MemoryData memoryData = {nullptr, dstInfo.info.computeMinByteSize(), "Trans ImageData"};
+    memoryData.format = format;
 #endif
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(memoryInfo.allocType, memoryData);
     if (dstMemory == nullptr) {
@@ -2860,11 +2885,6 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
 
     ToImageInfo(imageInfo, dst.info);
-#ifdef IMAGE_COLORSPACE_FLAG
-    if (dst.bitmap.refColorSpace() != nullptr) {
-        grColorSpace_ = make_shared<OHOS::ColorManager::ColorSpace>(dst.bitmap.refColorSpace());
-    }
-#endif
     auto m = dstMemory.memory.get();
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
@@ -2961,7 +2981,8 @@ uint32_t PixelMap::crop(const Rect &rect)
     }
     dst.info = src.info.makeWH(dstIRect.width(), dstIRect.height());
     Size desiredSize = {dst.info.width(), dst.info.height()};
-    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize};
+    MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
+                             imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         return ERR_IMAGE_CROP;
@@ -2981,11 +3002,6 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
-#ifdef IMAGE_COLORSPACE_FLAG
-    if (dst.info.refColorSpace() != nullptr) {
-        grColorSpace_ = make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace());
-    }
-#endif
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     return SUCCESS;
@@ -3043,7 +3059,7 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     SkTransInfo dst;
     dst.info = ToSkImageInfo(imageInfo, grColorSpace.ToSkColorSpace());
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(),
-        "Trans ImageData", {dst.info.width(), dst.info.height()}};
+        "Trans ImageData", {dst.info.width(), dst.info.height()}, imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("applyColorSpace CreateMemory failed");

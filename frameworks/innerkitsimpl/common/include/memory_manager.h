@@ -29,6 +29,7 @@ struct MemoryData {
     size_t size;
     const char* tag;
     Size desiredSize;
+    PixelFormat format;
 };
 
 class AbsMemory {

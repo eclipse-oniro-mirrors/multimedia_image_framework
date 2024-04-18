@@ -31,6 +31,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
       "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
+      "src/vpe_utils.cpp",
     ]
 
     defines = image_decode_ios_defines
@@ -71,8 +72,11 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
       "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
+      "src/vpe_utils.cpp",
     ]
 
+    external_deps =
+        [ "drivers_interface_display:display_commontype_idl_headers" ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
@@ -113,7 +117,7 @@ if (use_clang_ios) {
 
       sources += [ "src/image_dfx.cpp" ]
       sources += [ "src/image_data_statistics.cpp" ]
-      external_deps = [
+      external_deps += [
         "c_utils:utils",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
@@ -150,6 +154,7 @@ ohos_static_library("image_utils_static") {
     "src/image_system_properties.cpp",
     "src/image_type_converter.cpp",
     "src/image_utils.cpp",
+    "src/vpe_utils.cpp",
   ]
 
   if (use_mingw_win) {
@@ -214,6 +219,7 @@ ohos_static_library("image_utils_static") {
       external_deps += [ "startup:syspara" ]
     }
   }
+
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }
