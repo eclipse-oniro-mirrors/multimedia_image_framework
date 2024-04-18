@@ -17,11 +17,18 @@
 #include <gtest/gtest.h>
 #include "media_errors.h"
 #include "native_image.h"
-
+#include "image_creator.h"
 
 using namespace testing::ext;
 namespace OHOS {
 namespace Media {
+const std::string DATA_SIZE_TAG = "dataSize";
+static constexpr int32_t NUMI_0 = 0;
+static constexpr uint32_t NUM_0 = 0;
+static constexpr int32_t RECEIVER_TEST_WIDTH = 8192;
+static constexpr int32_t RECEIVER_TEST_HEIGHT = 8;
+static constexpr int32_t RECEIVER_TEST_CAPACITY = 8;
+static constexpr int32_t RECEIVER_TEST_FORMAT = 4;
 class NativeImageTest : public testing::Test {
 public:
     NativeImageTest() {}
@@ -239,6 +246,288 @@ HWTEST_F(NativeImageTest, BuildComponent001, TestSize.Level3)
     image.CreateComponent(type, size, row, pixel, vir);
     ASSERT_EQ(1, image.components_.size());
     GTEST_LOG_(INFO) << "NativeImageTest: BuildComponent001 end";
+}
+
+/**
+ * @tc.name: GetSurfaceBufferAddrTest001
+ * @tc.desc: GetSurfaceBufferAddr
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetSurfaceBufferAddrTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetSurfaceBufferAddrTest001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    uint8_t *ret = image.GetSurfaceBufferAddr();
+    ASSERT_NE(ret, nullptr);
+    image.buffer_ = nullptr;
+    ret = image.GetSurfaceBufferAddr();
+    ASSERT_EQ(ret, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetSurfaceBufferAddrTest001 end";
+}
+
+/**
+ * @tc.name: SplitYUV422SPComponentTest002
+ * @tc.desc: SplitYUV422SPComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitYUV422SPComponentTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponentTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t ret = image.SplitYUV422SPComponent();
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitYUV422SPComponentTest002 end";
+}
+
+/**
+ * @tc.name: GetDataSizeTest002
+ * @tc.desc: GetDataSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetDataSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    uint64_t size = 0;
+    auto extraData = image.buffer_->GetExtraData();
+    ASSERT_NE(extraData, nullptr);
+    int32_t extraDataSize = NUMI_0;
+    auto res = extraData->ExtraGet(DATA_SIZE_TAG, extraDataSize);
+    ASSERT_NE(res, NUM_0);
+    int32_t ret = image.GetDataSize(size);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetDataSizeTest002 end";
+}
+
+/**
+ * @tc.name: GetSizeTest002
+ * @tc.desc: GetSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetSizeTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t ret = image.GetSize(width, height);
+    ASSERT_EQ(width, image.buffer_->GetWidth());
+    ASSERT_EQ(height, image.buffer_->GetHeight());
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetSizeTest002 end";
+}
+
+/**
+ * @tc.name: BuildComponentTest002
+ * @tc.desc: BuildComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, BuildComponentTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: BuildComponentTest002 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    size_t size = 10;
+    int32_t row = 10;
+    int32_t pixel = 10;
+    uint8_t *vir = nullptr;
+    int32_t type = 0;
+    image.components_.clear();
+    auto ret = image.CreateComponent(type, size, row, pixel, vir);
+    auto iter = image.components_.find(type);
+    ASSERT_EQ(iter->first, 10);
+    ASSERT_NE(iter->second.get(), nullptr);
+    ASSERT_NE(ret, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: BuildComponentTest002 end";
+}
+
+/**
+ * @tc.name: GetFormatTest002
+ * @tc.desc: GetFormat
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetFormatTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetFormatTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t format = 0;
+    int32_t ret = image.GetFormat(format);
+    ASSERT_EQ(format, image.buffer_->GetFormat());
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetFormatTest002 end";
+}
+
+/**
+ * @tc.name: SplitSurfaceToComponentTest002
+ * @tc.desc: SplitSurfaceToComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, SplitSurfaceToComponentTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponentTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    image.buffer_ = nullptr;
+    int32_t ret = image.SplitSurfaceToComponent();
+    ASSERT_EQ(ret, ERR_MEDIA_DATA_UNSUPPORT);
+    GTEST_LOG_(INFO) << "NativeImageTest: SplitSurfaceToComponentTest002 end";
+}
+
+/**
+ * @tc.name: CombineYUVComponentsTest002
+ * @tc.desc: CombineYUVComponents
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, CombineYUVComponentsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: CombineYUVComponentsTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    uint32_t res = image.CombineYUVComponents();
+    ASSERT_EQ(res, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: CombineYUVComponentsTest002 end";
+}
+
+/**
+ * @tc.name: CreateCombineComponentTest001
+ * @tc.desc: CreateCombineComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, CreateCombineComponentTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: CreateCombineComponentTest001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t type = 0;
+    auto ret = image.CreateCombineComponent(type);
+    ASSERT_NE(ret, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: CreateCombineComponentTest001 end";
+}
+
+/**
+ * @tc.name: GetTimestampTest001
+ * @tc.desc: GetTimestamp
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetTimestampTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetTimestampTest001 start";
+    sptr<SurfaceBuffer> buffer = nullptr;
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int64_t timestamp = 0;
+    int32_t ret = image.GetTimestamp(timestamp);
+    ASSERT_EQ(ret, ERR_MEDIA_DEAD_OBJECT);
+
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    NativeImage nativeImage(buffer, releaser);
+    ret = image.GetTimestamp(timestamp);
+    ASSERT_EQ(timestamp, nativeImage.timestamp_);
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetTimestampTest001 end";
+}
+
+/**
+ * @tc.name: GetComponentTest002
+ * @tc.desc: GetComponent
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, GetComponentTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: GetComponentTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<IBufferProcessor> releaser = nullptr;
+    NativeImage image(buffer, releaser);
+    int32_t type = 1;
+    NativeComponent* ret = image.GetComponent(type);
+    ASSERT_NE(ret, nullptr);
+
+    type = image.buffer_->GetFormat();
+    ret = image.GetComponent(type);
+    ASSERT_NE(ret, nullptr);
+
+    NativeComponent nativeComponent;
+    NativeComponent *native = &nativeComponent;
+    image.components_.insert(std::make_pair(type, native));
+    ret = image.GetComponent(type);
+    ASSERT_NE(ret, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: GetComponentTest002 end";
+}
+
+/**
+ * @tc.name: releaseTest002
+ * @tc.desc: release
+ * @tc.type: FUNC
+ */
+HWTEST_F(NativeImageTest, releaseTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NativeImageTest: releaseTest002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<SurfaceBuffer> buffer = creator->DequeueImage();
+    ASSERT_NE(buffer, nullptr);
+    std::shared_ptr<ImageReceiver> imageReceiver;
+    imageReceiver = ImageReceiver::CreateImageReceiver(RECEIVER_TEST_WIDTH,
+        RECEIVER_TEST_HEIGHT, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
+    std::shared_ptr<IBufferProcessor> releaser = imageReceiver->GetBufferProcessor();
+    ASSERT_NE(releaser, nullptr);
+    NativeImage image(buffer, releaser);
+
+    int32_t type = image.buffer_->GetFormat();
+    image.GetComponent(type);
+    NativeComponent nativeComponent;
+    NativeComponent *native = &nativeComponent;
+    image.components_.insert(std::make_pair(type, native));
+    image.GetComponent(type);
+    ASSERT_TRUE(image.components_.size() > 0);
+    image.release();
+    ASSERT_EQ(image.releaser_, nullptr);
+    ASSERT_EQ(image.buffer_, nullptr);
+    GTEST_LOG_(INFO) << "NativeImageTest: releaseTest002 end";
 }
 }
 }
