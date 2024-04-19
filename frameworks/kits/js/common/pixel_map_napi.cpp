@@ -800,9 +800,6 @@ STATIC_EXEC_FUNC(CreatePremultipliedPixelMap)
         bool isPremul = true;
         if (context->wPixelMap->IsEditable()) {
             context->status = context->rPixelMap->ConvertAlphaFormat(*context->wPixelMap.get(), isPremul);
-            if (context->status == SUCCESS) {
-                context->wPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
-            }
         } else {
             context->status = ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
         }
@@ -818,9 +815,6 @@ STATIC_EXEC_FUNC(CreateUnpremultipliedPixelMap)
         bool isPremul = false;
         if (context->wPixelMap->IsEditable()) {
             context->status = context->rPixelMap->ConvertAlphaFormat(*context->wPixelMap.get(), isPremul);
-            if (context->status == SUCCESS) {
-                context->wPixelMap->SetAlphaType(AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-            }
         } else {
             context->status = ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
         }

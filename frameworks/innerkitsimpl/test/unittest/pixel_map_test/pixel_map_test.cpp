@@ -2119,23 +2119,14 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest005, TestSize.Level3)
     EXPECT_TRUE(pixelMap1 != nullptr);
     std::unique_ptr<PixelMap> pixelMap2 = PixelMap::Create(opts1);
     EXPECT_TRUE(pixelMap2 != nullptr);
-    uint8_t *spixel = static_cast<uint8_t *>(pixelMap2->GetWritablePixels());
-    void *pixelMapData = pixelMap2->GetWritablePixels();
-    uint8_t *wpixel = static_cast<uint8_t *>(pixelMapData);
+    uint8_t *spixel = static_cast<uint8_t *>(pixelMap1->GetWritablePixels());
     uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
-    ASSERT_EQ(ret, SUCCESS);
-    for (int i = 0; i < colorLength; i += 4)
-    {
-        EXPECT_TRUE(std::abs(wpixel[i] - spixel[i]) <= 1);         // 1: Floating point to integer error
-        EXPECT_TRUE(std::abs(wpixel[i + 1] - spixel[i + 1]) <= 1); // 1: Floating point to integer error
-        EXPECT_TRUE(std::abs(wpixel[i + 2] - spixel[i + 2]) <= 1); // 1: Floating point to integer error
-        EXPECT_TRUE(wpixel[i + 3] == spixel[i + 3]);               // i + 3: alpha index
-    }
+    ASSERT_NE(ret, SUCCESS);
     std::unique_ptr<PixelMap> pixelMap3 = PixelMap::Create(opts1);
     EXPECT_TRUE(pixelMap3 != nullptr);
     void *pixelMapData3 = pixelMap3->GetWritablePixels();
     uint8_t *wpixel3 = static_cast<uint8_t *>(pixelMapData3);
-    ret = pixelMap2->ConvertAlphaFormat(*pixelMap3.get(), false);
+    ret = pixelMap1->ConvertAlphaFormat(*pixelMap3.get(), false);
     ASSERT_EQ(ret, SUCCESS);
     for (int i = 0; i < colorLength; i += 4)
     {
@@ -2251,7 +2242,7 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest008, TestSize.Level3)
     uint32_t ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), true);
     ASSERT_EQ(ret, SUCCESS);
     ret = pixelMap1->ConvertAlphaFormat(*pixelMap2.get(), false);
-    ASSERT_EQ(ret, SUCCESS);
+    ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest008 end";
 }
 }
