@@ -25,8 +25,9 @@ void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
 {
     uint8_t dest[size + 1];
     int ret = memcpy_s(dest, sizeof(dest), data, size);
-    if (ret != 0)
+    if (ret != 0) {
         return;
+    }
     dest[sizeof(dest) - 1] = '\0';
     Media::SourceOptions opts;
     uint32_t errorCode;
