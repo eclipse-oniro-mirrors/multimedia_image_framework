@@ -41,7 +41,7 @@
           "drivers_interface_codec",
           "drivers_interface_display",
           "hdf_core",
-          "memmgr_plugin",
+          "memmgr_override",
           "libyuv",
           "libjpeg-turbo",
           "libexif",
