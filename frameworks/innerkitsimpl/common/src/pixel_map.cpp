@@ -1988,11 +1988,16 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
     return true;
 }
 
+bool isYUV(const PixelFormat &format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
+}
+
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
-    if (isAstc_) {
+    if (isAstc_ || isYUV(imageInfo_.pixelFormat)) {
         bufferSize = pixelsSize_;
     }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
@@ -2097,7 +2102,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail");
         return false;
     }
-    if ((!isAstc) && bufferSize != rowDataSize * imgInfo.size.height) {
+    if ((!isAstc) && (!isYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         return false;
