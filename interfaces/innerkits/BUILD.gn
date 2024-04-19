@@ -50,6 +50,7 @@ config("image_external_config") {
     "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//drivers/peripheral/display/interfaces/include",
     "//drivers/peripheral/base",
+    "${image_subsystem}/frameworks/kits/js/common/ndk/include",
   ]
 
   include_dirs += [
