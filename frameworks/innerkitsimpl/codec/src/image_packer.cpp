@@ -89,7 +89,7 @@ uint32_t ImagePacker::StartPackingImpl(const PackOption &option)
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     encodeToSdr_ = ((option.desiredDynamicRange == EncodeDynamicRange::SDR) ||
-        (option.format != IMAGE_JPEG_FORMAT && option.format != IMAGE_HEIC_FORMAT));
+        (option.format != IMAGE_JPEG_FORMAT && option.format != IMAGE_HEIF_FORMAT));
     PlEncodeOptions plOpts;
     CopyOptionsToPlugin(option, plOpts);
     return DoEncodingFunc([this, &plOpts](ImagePlugin::AbsImageEncoder* encoder) {

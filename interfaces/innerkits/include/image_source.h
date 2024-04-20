@@ -307,6 +307,7 @@ private:
     // The main decoder is responsible for ordinary decoding (non-Incremental decoding),
     // as well as decoding SourceInfo and ImageInfo.
     std::unique_ptr<ImagePlugin::AbsImageDecoder> mainDecoder_;
+    std::unique_ptr<ImagePlugin::AbsImageDecoder> jpegGainmapDecoder_;
     DecodeOptions opts_;
     std::set<PeerListener *> listeners_;
     DecodeEvent decodeEvent_ = DecodeEvent::EVENT_COMPLETE_DECODE;

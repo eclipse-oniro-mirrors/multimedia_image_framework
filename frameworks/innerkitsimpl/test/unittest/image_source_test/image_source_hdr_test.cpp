@@ -36,10 +36,11 @@ using namespace OHOS::ImageSourceUtil;
 namespace OHOS {
 namespace Multimedia {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL_TEST = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceJpegTest"
+    LOG_CORE, LOG_TAG_DOMAIN_ID_IMAGE, "ImageSourceHdrTest"
 };
 
 static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_INPUT_HEIF_SDR_PATH = "/data/local/tmp/image/test.heic";
 
 class ImageSourceHdrTest : public testing::Test {
 public:
@@ -66,6 +67,24 @@ HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CheckImageSourceHdr002
+ * @tc.desc: Test IsHdrImage()
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckImageSourceHdr002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    bool isHdr = imageSource->IsHdrImage();
+    ASSERT_EQ(isHdr, false);
+}
+
+/**
  * @tc.name: CheckPixelMapHdr001
  * @tc.desc: Test PixelMap IsHdr()
  * @tc.type: FUNC
@@ -76,6 +95,33 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
         ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_SDR_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    HiLog::Debug(LABEL_TEST, "pixel map create");
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool isHdr = pixelMap->IsHdr();
+    ASSERT_EQ(isHdr, false);
+}
+
+/**
+ * @tc.name: CheckPixelMapHdr002
+ * @tc.desc: Test PixelMap IsHdr()
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr002, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_HEIF_SDR_PATH, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 

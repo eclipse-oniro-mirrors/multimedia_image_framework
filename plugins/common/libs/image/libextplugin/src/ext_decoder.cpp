@@ -35,6 +35,7 @@
 #include "heif_impl/HeifDecoder.h"
 #include "hardware/heif_hw_decoder.h"
 #endif
+#include "color_utils.h"
 #include "hdr_helper.h"
 
 #undef LOG_DOMAIN
@@ -1233,6 +1234,25 @@ static bool GetColorSpaceName(const skcms_ICCProfile* profile, OHOS::ColorManage
     return false;
 }
 
+static OHOS::ColorManager::ColorSpaceName GetHeifNclxColor(SkCodec* codec)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoder *>(codec->getHeifContext());
+    if (decoder == nullptr) {
+        return ColorManager::NONE;
+    }
+    HeifFrameInfo info;
+    if (!decoder->getImageInfo(&info)) {
+        return ColorManager::NONE;
+    }
+    if (info.hasNclxColor) {
+        return ColorUtils::CicpToColorSpace(info.nclxColor.colorPrimaries, info.nclxColor.transferCharacteristics,
+            info.nclxColor.matrixCoefficients, info.nclxColor.fullRangeFlag);
+    }
+#endif
+    return ColorManager::NONE;
+}
+
 OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
 {
     if (dstColorSpace_ != nullptr) {
@@ -1245,6 +1265,20 @@ OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
         if (profile != nullptr) {
             IMAGE_LOGD("profile got !!!!");
             GetColorSpaceName(profile, name);
+        }
+        if (profile != nullptr && profile->has_CICP) {
+            ColorManager::ColorSpaceName name = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
+                profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
+                profile->cicp.full_range_flag);
+            if (name != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, name);
+            }
+        }
+        if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
+            ColorManager::ColorSpaceName name = GetHeifNclxColor(codec_.get());
+            if (name != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, name);
+            }
         }
     }
     return OHOS::ColorManager::ColorSpace(skColorSpace, name);
@@ -1554,7 +1588,7 @@ ImageHdrType ExtDecoder::CheckHdrType()
         gainMapOffset_ = 0;
         return hdrType_;
     }
-    hdrType_ = Media::HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+    hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     return hdrType_;
 }
 
@@ -1564,7 +1598,7 @@ uint32_t ExtDecoder::GetGainMapOffset()
         return 0;
     }
     if (hdrType_ == Media::ImageHdrType::UNKNOWN) {
-        hdrType_ = Media::HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
+        hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     }
     return gainMapOffset_;
 }
@@ -1572,10 +1606,83 @@ uint32_t ExtDecoder::GetGainMapOffset()
 HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 {
     HdrMetadata metadata = {};
-    if (type > Media::ImageHdrType::SDR && Media::HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
+    if (type > Media::ImageHdrType::SDR && HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
         return metadata;
     }
     return {};
+}
+
+bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->GetEncodedFormat != SkEncodedImageFormat::kHEIF) {
+        return false;
+    }
+    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        return false;
+    }
+    HeifFrameInfo gainmapInfo;
+    decoder->getGainmapInfo(&gainmapInfo);
+    uint32_t width = gainmapInfo.mWidth;
+    uint32_t height = gainmapInfo.mHeight;
+    if (scale > 0.0 && scale < 1.0) {
+        width = gainmapInfo.mWidth * scale;
+        height = gainmapInfo.mHeight * scale;
+    }
+    if (width > INT_MAX || height > INT_MAX) {
+        return false;
+    }
+    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height),
+        dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace);
+    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize);
+    context.info.size.width = width;
+    context.info.size.height = height;
+    if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {
+        return false;
+    }
+    auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+    auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    int32_t rowStride = sbBuffer->GetStride();
+    if (rowStride <= 0) {
+        return false;
+    }
+    decoder->setGainmapDstBuffer(dstBuffer, static_cast<size_t>(rowStride));
+    if (!decoder->decodeGainmap()) {
+        return false;
+    }
+    return true;
+#endif
+    return false;
+}
+
+bool ExtDecoder::GetHeifHdrColorSpace(ColorManager::ColorSpaceName& gainmap, ColorManager::ColorSpaceName& hdr)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        return false;
+    }
+    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        return false;
+    }
+    HeifFrameInfo gainmapInfo;
+    decoder->getGainmapInfo(&gainmapInfo);
+    if (gainmapInfo.hasNclxColor) {
+        gainmap = ColorUtils::CicpToColorSpace(gainmapInfo.nclxColor.colorPrimaries,
+            gainmapInfo.nclxColor.transferCharacteristics, gainmapInfo.nclxColor.matrixCoefficients,
+            gainmapInfo.nclxColor.fullRangeFlag);
+    }
+    HeifFrameInfo tmapInfo;
+    decoder->getTmapInfo(&tmapInfo);
+    if (tmapInfo.hasNclxColor) {
+        hdr = ColorUtils::CicpToColorSpace(tmapInfo.nclxColor.colorPrimaries,
+            tmapInfo.nclxColor.transferCharacteristics, tmapInfo.nclxColor.matrixCoefficients,
+            tmapInfo.nclxColor.fullRangeFlag);
+    }
+    return true;
+#endif
+    return false;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

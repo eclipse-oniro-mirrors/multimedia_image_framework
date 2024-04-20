@@ -55,6 +55,10 @@ public:
     uint32_t GetProfileType() const override { return BOX_TYPE_NCLX; }
 
     heif_error Write(HeifStreamWriter& writer) const override;
+    uint16_t GetColorPrimaries() const { return colorPrimaries_; };
+    uint16_t GetTransferCharacteristics() const { return transferCharacteristics_; };
+    uint16_t GetMatrixCoefficients() const { return matrixCoefficients_; };
+    uint8_t GetFullRangeFlag() const { return fullRangeFlag_; };
 
 private:
     const static uint16_t NCLX_DATA_UNSPECIFIED = 2;
