@@ -16,6 +16,7 @@
 #include "file_metadata_stream.h"
 #include "image_log.h"
 #include "image_type.h"
+#include "heif_exif_metadata_accessor.h"
 #include "jpeg_exif_metadata_accessor.h"
 #include "metadata_accessor_factory.h"
 #include "png_exif_metadata_accessor.h"
@@ -31,10 +32,12 @@ namespace OHOS {
 namespace Media {
 const int IMAGE_HEADER_SIZE = 12;
 const int WEBP_HEADER_OFFSET = 8;
+const int IMAGE_HEIF_HEADER_OFFSET = 4;
 const byte jpegHeader[] = { 0xff, 0xd8, 0xff };
 const byte pngHeader[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 const byte webpHeader[] = { 0x57, 0x45, 0x42, 0x50 };
 const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
+const byte heifHeader[] = { 0x66, 0x74, 0x79, 0x70 };
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size,
     BufferMetadataStream::MemoryMode mode)
@@ -77,6 +80,8 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_pt
             return std::make_shared<PngExifMetadataAccessor>(stream);
         case EncodedFormat::WEBP:
             return std::make_shared<WebpExifMetadataAccessor>(stream);
+        case EncodedFormat::HEIF:
+            return std::make_shared<HeifExifMetadataAccessor>(stream);
         default:
             return nullptr;
     }
@@ -99,6 +104,10 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
     if (memcmp(buff, riffHeader, sizeof(riffHeader) * sizeof(byte)) == 0 &&
         memcmp(buff + WEBP_HEADER_OFFSET, webpHeader, sizeof(webpHeader) * sizeof(byte)) == 0) {
         return EncodedFormat::WEBP;
+    }
+
+    if (memcmp(buff + IMAGE_HEIF_HEADER_OFFSET, heifHeader, sizeof(heifHeader) * sizeof(byte)) == 0) {
+        return EncodedFormat::HEIF;
     }
 
     stream->Seek(0, SeekPos::BEGIN);

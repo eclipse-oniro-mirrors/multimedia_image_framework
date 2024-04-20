@@ -642,10 +642,14 @@ HWTEST_F(ImagePackerTest, StartPacking020, TestSize.Level3)
     uint32_t retFinalizePacking = pack.FinalizePacking();
     ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
 
-    const int fdDest = open(IMAGE_JPG_DEST.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
+    const int fdDest = open(IMAGE_PNG2JPG_DEST.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
     std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(fdDest, opts, errorCode);
     ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
     ASSERT_NE(imageSourceDest, nullptr);
+
+    close(fd);
+    close(fdDest);
+
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking020 end";
 }
 } // namespace Multimedia

@@ -37,7 +37,7 @@ public:
 
 /**
  * @tc.name: ModifyImageProperty001
- * @tc.desc: test ModifyImageProperty fd
+ * @tc.desc: test ModifyImageProperty fd jpeg
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceExifTest, ModifyImageProperty001, TestSize.Level3)
@@ -73,12 +73,14 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty001, TestSize.Level3)
     ASSERT_EQ(value, "E");
     retModify = imageSource->ModifyImageProperty(index, key, "W", fd);
     ASSERT_EQ(retModify, OHOS::Media::SUCCESS);
+    close(fd);
+
     GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyImageProperty001 end";
 }
 
 /**
  * @tc.name: ModifyImageProperty002
- * @tc.desc: test ModifyImageProperty const std::string &path
+ * @tc.desc: test ModifyImageProperty const std::string &path jpeg
  * @tc.type: FUNC
  */
 HWTEST_F(ImageSourceExifTest, ModifyImageProperty002, TestSize.Level3)
@@ -115,7 +117,6 @@ HWTEST_F(ImageSourceExifTest, ModifyImageProperty002, TestSize.Level3)
     ASSERT_EQ(retModify, OHOS::Media::SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceExifTest: ModifyImageProperty002 end";
 }
-
 
 /**
  * @tc.name: ModifyImageProperty003

@@ -30,6 +30,12 @@
 
 namespace OHOS {
 namespace Media {
+namespace {
+    constexpr auto TIFF_BYTEORDER_SIZE = 4;
+    static const std::array<byte, TIFF_BYTEORDER_SIZE> tiffByteOrderII { 0x49, 0x49, 0x2a, 0x00 };
+    static const std::array<byte, TIFF_BYTEORDER_SIZE> tiffByteOrderMM { 0x4d, 0x4d, 0x00, 0x2a };
+}
+
 void TiffParser::Decode(const unsigned char *dataPtr, const uint32_t &size, ExifData **exifData)
 {
     if (dataPtr == nullptr) {
@@ -67,6 +73,30 @@ void TiffParser::EncodeJpegExif(unsigned char **dataPtr, uint32_t &size, ExifDat
         return;
     }
     exif_data_save_data(exifData, dataPtr, &size);
+}
+
+size_t TiffParser::FindTiffPos(const DataBuf &dataBuf)
+{
+    return FindTiffPos(dataBuf.CData(), dataBuf.Size());
+}
+
+size_t TiffParser::FindTiffPos(const byte *dataBuf, size_t bufLength)
+{
+    size_t tiffPos = std::numeric_limits<size_t>::max();
+    if (dataBuf == nullptr) {
+        return tiffPos;
+    }
+
+    for (size_t i = 0; i < bufLength - TIFF_BYTEORDER_SIZE; i++) {
+        if (memcmp(dataBuf + i, tiffByteOrderII.data(), tiffByteOrderII.size()) == 0) {
+            tiffPos = i;
+            break;
+        } else if (memcmp(dataBuf + i, tiffByteOrderMM.data(), tiffByteOrderMM.size()) == 0) {
+            tiffPos = i;
+            break;
+        }
+    }
+    return tiffPos;
 }
 } // namespace Media
 } // namespace OHOS

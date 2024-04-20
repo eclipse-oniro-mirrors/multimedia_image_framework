@@ -38,13 +38,13 @@ bool AbstractExifMetadataAccessor::Create()
     return exifMetadata_->CreateExifdata();
 }
 
-bool AbstractExifMetadataAccessor::WriteToOutput(ImagePlugin::OutputDataStream &output)
+bool AbstractExifMetadataAccessor::WriteToOutput(SkWStream &output)
 {
     if (imageStream_ == nullptr) {
         return false;
     }
 
-    return output.Write(imageStream_->GetAddr(), imageStream_->GetSize());
+    return output.write(imageStream_->GetAddr(), imageStream_->GetSize());
 }
 
 std::shared_ptr<ExifMetadata> AbstractExifMetadataAccessor::Get()

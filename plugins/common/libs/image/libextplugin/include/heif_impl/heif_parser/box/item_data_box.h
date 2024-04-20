@@ -59,11 +59,16 @@ public:
                      const std::vector<uint8_t> &data,
                      uint8_t constructionMethod = 0);
 
+    heif_error UpdateData(heif_item_id itemID, const std::vector<uint8_t> &data, uint8_t constructionMethod);
+
     void InferFullBoxVersion() override;
 
     heif_error Write(HeifStreamWriter &writer) const override;
 
     heif_error WriteMdatBox(HeifStreamWriter &writer);
+
+    heif_error ReadToExtentData(Item &item, const std::shared_ptr<HeifInputStream> &stream,
+                                const std::shared_ptr<HeifIdatBox> &idatBox);
 
 protected:
     heif_error ParseContent(HeifStreamReader &reader) override;

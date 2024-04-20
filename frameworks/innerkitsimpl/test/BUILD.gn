@@ -153,6 +153,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
@@ -1402,11 +1403,13 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/heif_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/jpeg_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/png_exif_metadata_accessor_test.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/webp_exif_metadata_accessor_test.cpp",
@@ -1415,6 +1418,7 @@ ohos_unittest("imageaccessortest") {
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
     "//third_party/zlib:libz",
   ]
   if (enable_libexif) {

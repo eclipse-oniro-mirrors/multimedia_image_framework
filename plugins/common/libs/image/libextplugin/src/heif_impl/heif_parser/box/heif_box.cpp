@@ -213,6 +213,10 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<Hei
 
 heif_error HeifBox::Write(HeifStreamWriter &writer) const
 {
+    if (boxType_ == BOX_TYPE_MDAT || boxType_ == BOX_TYPE_IDAT) {
+        return heif_error_ok;
+    }
+
     size_t boxStart = ReserveHeader(writer);
 
     heif_error err = WriteChildren(writer);

@@ -103,7 +103,6 @@ ohos_shared_library("textureEncoderCL") {
       cfi = true
       cfi_cross_dso = true
       debug = false
-      blocklist = "./cfi_blocklist.txt"
     }
   }
   sources = [ "src/texture_encode/image_compressor.cpp" ]
@@ -145,6 +144,7 @@ ohos_shared_library("extplugin") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
@@ -197,6 +197,7 @@ ohos_shared_library("extplugin") {
   if (use_mingw_win) {
     configs += [ ":win_config" ]
     deps = [
+      ":heifparser",
       "${graphic_root}/ide/libs/skia:skia",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils_static",
       "${image_subsystem}/mock/native:log_mock_static",
@@ -206,6 +207,7 @@ ohos_shared_library("extplugin") {
   } else if (use_clang_mac) {
     configs += [ ":mac_config" ]
     deps = [
+      ":heifparser",
       "${graphic_root}/ide/libs/skia:skia",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils_static",
       "${image_subsystem}/mock/native:log_mock_static",
@@ -218,6 +220,7 @@ ohos_shared_library("extplugin") {
     deps = [
       ":exifhelper",
       ":heifimpl",
+      ":heifparser",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
