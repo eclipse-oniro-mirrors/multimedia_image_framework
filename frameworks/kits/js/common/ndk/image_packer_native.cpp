@@ -153,6 +153,9 @@ Image_ErrorCode OH_PackingOptions_SetMimeType(OH_PackingOptions *options,
     }
     options->mimeType.size = format->size;
     options->mimeType.data = static_cast<char *>(malloc(options->mimeType.size));
+    if (options->mimeType.data == nullptr) {
+        return IMAGE_ALLOC_FAILED;
+    }
     if (memcpy_s(options->mimeType.data, options->mimeType.size, format->data, format->size) != 0) {
         free(options->mimeType.data);
         options->mimeType.data = nullptr;
@@ -178,7 +181,7 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    options->quality = quality;
+    options->quality = static_cast<int>(quality);
     return IMAGE_SUCCESS;
 }
 

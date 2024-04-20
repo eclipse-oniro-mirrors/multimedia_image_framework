@@ -38,7 +38,7 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
 {
     std::shared_ptr<HeifParser> file = std::make_shared<HeifParser>(stream);
 
-    uint64_t maxSize = std::numeric_limits<int64_t>::max();
+    auto maxSize = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
     HeifStreamReader reader(stream, 0, maxSize);
 
     heif_error errorBox = file->AssembleBoxes(reader);

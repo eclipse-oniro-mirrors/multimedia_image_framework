@@ -111,7 +111,7 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob) const
             return false;
         }
         const uint32_t size = chunkSize.ReadUInt32(0, littleEndian);
-        const size_t imgSize = imageStream_->GetSize();
+        const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
         if (size > imgSize - imageStream_->Tell()) {
             IMAGE_LOGE("Read chunk length error.");
             return false;
@@ -509,7 +509,7 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     }
 
     DataBuf chunkHead(WEBP_CHUNK_ID_SIZE + WEBP_CHUNK_SIZE);
-    if (imageStream_->Read(chunkHead.Data(), chunkHead.Size()) != chunkHead.Size()) {
+    if (static_cast<size_t>(imageStream_->Read(chunkHead.Data(), chunkHead.Size())) != chunkHead.Size()) {
         return false;
     }
     if (bufStream.Write(chunkHead.Data(), chunkHead.Size()) != (ssize_t)chunkHead.Size()) {
@@ -518,7 +518,7 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
 
     const uint32_t size = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
     DataBuf chunkData(size);
-    if (imageStream_->Read(chunkData.Data(), chunkData.Size()) != chunkData.Size()) {
+    if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
         return false;
     }
     chunkData.Data()[0] |= WEBP_EXIF_FLAG_BIT;

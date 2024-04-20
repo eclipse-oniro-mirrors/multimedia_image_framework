@@ -135,7 +135,7 @@ heif_error HeifIlocBox::AppendData(heif_item_id itemId, const std::vector<uint8_
         extent.offset = idatOffset_;
         extent.length = data.size();
 
-        idatOffset_ += (int) data.size();
+        idatOffset_ += data.size();
     }
     items_[idx].extents.push_back(std::move(extent));
     return heif_error_ok;

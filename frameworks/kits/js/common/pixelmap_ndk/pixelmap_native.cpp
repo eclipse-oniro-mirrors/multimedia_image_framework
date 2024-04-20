@@ -313,8 +313,8 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     info.editable = true;
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
-    info.size.height = options->height;
-    info.size.width = options->width;
+    info.size.height = static_cast<int32_t>(options->height);
+    info.size.width = static_cast<int32_t>(options->width);
 
     auto pixelmap2 = new OH_PixelmapNative(reinterpret_cast<uint32_t*>(data), static_cast<uint32_t>(dataLength), info);
     if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
@@ -353,9 +353,9 @@ Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_P
     }
     ImageInfo srcInfo;
     pixelmap->GetInnerPixelmap()->GetImageInfo(srcInfo);
-    imageInfo->width = srcInfo.size.width;
-    imageInfo->height = srcInfo.size.height;
-    imageInfo->rowStride = pixelmap->GetInnerPixelmap()->GetRowStride();
+    imageInfo->width = static_cast<uint32_t>(srcInfo.size.width);
+    imageInfo->height = static_cast<uint32_t>(srcInfo.size.height);
+    imageInfo->rowStride = static_cast<uint32_t>(pixelmap->GetInnerPixelmap()->GetRowStride());
     imageInfo->pixelFormat = static_cast<int32_t>(srcInfo.pixelFormat);
     imageInfo->isHdr = pixelmap->GetInnerPixelmap()->IsHdr();
     return IMAGE_SUCCESS;
@@ -419,10 +419,10 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
         return IMAGE_BAD_PARAMETER;
     }
     Rect rect;
-    rect.left = region->x;
-    rect.top = region->y;
-    rect.width = region->width;
-    rect.height = region->height;
+    rect.left = static_cast<int32_t>(region->x);
+    rect.top = static_cast<int32_t>(region->y);
+    rect.width = static_cast<int32_t>(region->width);
+    rect.height = static_cast<int32_t>(region->height);
     pixelmap->GetInnerPixelmap()->crop(rect);
     return IMAGE_SUCCESS;
 }

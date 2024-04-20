@@ -34,8 +34,8 @@ Image_ErrorCode OH_ImageNative_GetImageSize(OH_ImageNative* image, Image_Size* s
     int32_t width = 0;
     int32_t height = 0;
     Image_ErrorCode err = (Image_ErrorCode)image->imgNative->GetSize(width, height);
-    size->width = width;
-    size->height = height;
+    size->width = static_cast<uint32_t>(width);
+    size->height = static_cast<uint32_t>(height);
     return err;
 }
 

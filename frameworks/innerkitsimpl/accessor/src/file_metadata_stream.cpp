@@ -57,7 +57,7 @@ FileMetadataStream::FileMetadataStream(int fileDescriptor)
 }
 
 FileMetadataStream::FileMetadataStream(const std::string &filePath, std::unique_ptr<FileWrapper> fileWrapper)
-    : fileWrapper_(std::move(fileWrapper))
+    : fp_(nullptr), fileWrapper_(std::move(fileWrapper))
 {
     initPath_ = INIT_FROM_PATH;
     Initialize(filePath);

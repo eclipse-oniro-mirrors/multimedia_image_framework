@@ -86,7 +86,7 @@ heif_error HeifIrefBox::Write(HeifStreamWriter &writer) const
 
     for (const auto &ref: references_) {
         auto box_size = uint32_t(UINT32_BYTES_NUM + UINT32_BYTES_NUM + UINT16_BYTES_NUM +
-                                 idSize * (UINT8_BYTES_NUM + ref.toItemIds.size()));
+                                 static_cast<size_t>(idSize) * (UINT8_BYTES_NUM + ref.toItemIds.size()));
 
         writer.Write32(box_size);
         writer.Write32(ref.box.GetBoxType());
