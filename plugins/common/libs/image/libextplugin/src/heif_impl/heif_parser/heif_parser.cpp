@@ -24,6 +24,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+
 HeifParser::HeifParser() = default;
 
 HeifParser::~HeifParser() = default;
@@ -57,6 +58,7 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
 
 void HeifParser::Write(HeifStreamWriter &writer)
 {
+    CheckExtentData();
     for (auto &box: topBoxes_) {
         box->InferAllFullBoxVersion();
         box->Write(writer);
@@ -597,6 +599,14 @@ void HeifParser::SetColorProfile(heif_item_id itemId, const std::shared_ptr<cons
     AddProperty(itemId, colr, false);
 }
 
+void HeifParser::CheckExtentData()
+{
+    const std::vector<HeifIlocBox::Item>& items = ilocBox_->GetItems();
+    for (const HeifIlocBox::Item& item: items) {
+        ilocBox_->ReadToExtentData(const_cast<HeifIlocBox::Item &>(item), inputStream_, idatBox_);
+    }
+}
+
 void HeifParser::SetPrimaryImage(const std::shared_ptr<HeifImage> &image)
 {
     if (primaryImage_) {
@@ -640,6 +650,30 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
     return SetMetadata(image, content, "Exif", nullptr);
 }
 
+heif_error HeifParser::UpdateExifMetadata(const std::shared_ptr<HeifImage> &master_image, const uint8_t *data,
+                                          uint32_t size, heif_item_id itemId)
+{
+    uint32_t offset = GetExifHeaderOffset(data, size);
+    if (offset >= (unsigned int) size) {
+        return heif_invalid_exif_data;
+    }
+
+    std::vector<uint8_t> content;
+    content.resize(size + UINT32_BYTES_NUM);
+    std::string offsetFourcc = code_to_fourcc(offset);
+    for (int index = 0; index < UINT32_BYTES_NUM; ++index) {
+        content[index] = (uint8_t)offsetFourcc[index];
+    }
+
+    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != 0) {
+        return heif_invalid_exif_data;
+    }
+
+    uint8_t construction_method = GetConstructMethod(itemId);
+
+    return ilocBox_->UpdateData(itemId, content, construction_method);
+}
+
 heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, const std::vector<uint8_t> &data,
                                    const char *item_type, const char *content_type)
 {
@@ -655,6 +689,19 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
     // store metadata in mdat
     AppendIlocData(metadataItemId, data, 0);
     return heif_error_ok;
+}
+
+uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
+{
+    auto items = ilocBox_->GetItems();
+    for (const auto &item: items) {
+        if (item.itemId == id) {
+            return item.constructionMethod;
+        }
+    }
+
+    // CONSTRUCTION_METHOD_FILE_OFFSET 0
+    return 0;
 }
 } // namespace ImagePlugin
 } // namespace OHOS

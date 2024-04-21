@@ -26,9 +26,13 @@
 
 #include <libexif/exif-data.h>
 
+#include "data_buf.h"
+
 namespace OHOS {
 namespace Media {
-
+namespace {
+    using uint_8 = byte;
+}
 class TiffParser {
 public:
     // For tiff exif, decode exif buffer to ExifData struct.
@@ -40,6 +44,10 @@ public:
     static void DecodeJpegExif(const unsigned char *dataPtr, const uint32_t &size, ExifData **exifData);
     // For jpeg exif, encode ExifData struct to exif buffer
     static void EncodeJpegExif(unsigned char **dataPtr, uint32_t &size, ExifData *exifData);
+
+    // For tiff, find tiff header pos
+    static size_t FindTiffPos(const DataBuf &dataBuf);
+    static size_t FindTiffPos(const byte *dataBuf, size_t bufLength);
 };
 
 

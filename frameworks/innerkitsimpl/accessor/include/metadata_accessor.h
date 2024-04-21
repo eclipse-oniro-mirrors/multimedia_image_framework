@@ -21,7 +21,7 @@
 #include "data_buf.h"
 #include "exif_metadata.h"
 #include "metadata_stream.h"
-#include "output_data_stream.h"
+#include "ext_wstream.h"
 
 namespace OHOS {
 namespace Media {
@@ -32,7 +32,7 @@ public:
     virtual bool Create() = 0;
     virtual uint32_t WriteBlob(DataBuf &blob) = 0;
     virtual bool ReadBlob(DataBuf &blob) const = 0;
-    virtual bool WriteToOutput(ImagePlugin::OutputDataStream &output) = 0;
+    virtual bool WriteToOutput(SkWStream &output) = 0;
     virtual std::shared_ptr<MetadataStream> GetOutputStream() = 0;
     virtual std::shared_ptr<ExifMetadata> Get() = 0;
     virtual void Set(std::shared_ptr<ExifMetadata> &ptr) = 0;

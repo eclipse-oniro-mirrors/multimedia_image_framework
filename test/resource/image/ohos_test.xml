@@ -290,6 +290,12 @@
             <option name="push" value="images/exif/test_webp_writemetadata018.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_writemetadata019.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_webp_writemetadata020.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_hw.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_exif.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_hw_property.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_append_exif.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_heif_writemetadata002.heic -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="exifmetadatatest">
