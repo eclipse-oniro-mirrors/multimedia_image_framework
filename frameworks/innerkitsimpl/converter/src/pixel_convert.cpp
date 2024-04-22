@@ -1312,7 +1312,7 @@ std::unique_ptr<PixelConvert> PixelConvert::Create(const ImageInfo &srcInfo, con
     if ((srcInfo.pixelFormat == dstInfo.pixelFormat) && (extension.alphaConvertType == AlphaConvertType::NO_CONVERT)) {
         isNeedConvert = false;
     }
-    return unique_ptr<PixelConvert>(new (nothrow) PixelConvert(funcPtr, extension, isNeedConvert));
+    return make_unique<PixelConvert>(funcPtr, extension, isNeedConvert);
 }
 
 AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType)

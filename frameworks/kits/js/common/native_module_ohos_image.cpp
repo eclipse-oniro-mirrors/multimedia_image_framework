@@ -24,7 +24,7 @@
 #define LOG_TAG "NAPITEST"
 
 namespace OHOS {
-namespace Media{
+namespace Media {
 /*
  * Function registering all props and functions of ohos.medialibrary module
  */

@@ -1426,7 +1426,7 @@ napi_value PixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_info inf
         nullptr, IMAGE_LOGE("empty native pixelmap"));
 
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
-            &(asyncContext->colorsBuffer), &(asyncContext->colorsBufferSize));
+        &(asyncContext->colorsBuffer), &(asyncContext->colorsBufferSize));
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("colors mismatch"));
 
@@ -1446,8 +1446,7 @@ napi_value PixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_info inf
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "ReadPixelsToBuffer",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             context->status = context->rPixelMap->ReadPixels(
                 context->colorsBufferSize, static_cast<uint8_t*>(context->colorsBuffer));
@@ -1551,8 +1550,7 @@ napi_value PixelMapNapi::ReadPixels(napi_env env, napi_callback_info info)
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "ReadPixels",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             auto area = context->area;
             context->status = context->rPixelMap->ReadPixels(
@@ -1649,8 +1647,7 @@ napi_value PixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WritePixels",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             auto area = context->area;
             context->status = context->rPixelMap->WritePixels(
@@ -1749,8 +1746,7 @@ napi_value PixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info in
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WriteBufferToPixels",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             context->status = context->rPixelMap->WritePixels(static_cast<uint8_t*>(context->colorsBuffer),
                 context->colorsBufferSize);
@@ -1898,8 +1894,7 @@ napi_value PixelMapNapi::GetImageInfo(napi_env env, napi_callback_info info)
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetImageInfo",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             context->rPixelMap->GetImageInfo(context->imageInfo);
             context->status = SUCCESS;
@@ -2141,8 +2136,7 @@ napi_value PixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback_info in
         [](napi_env env, void *data) {}, GeneralErrorComplete, asyncContext, asyncContext->work),
         result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreateAlphaPixelmap",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             InitializationOptions opts;
             opts.pixelFormat = PixelFormat::ALPHA_8;
@@ -2312,8 +2306,7 @@ napi_value PixelMapNapi::Release(napi_env env, napi_callback_info info)
         asyncContext->status = SUCCESS;
     }
     IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "Release",
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
         }, EmptyResultComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
@@ -2406,8 +2399,7 @@ napi_value PixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "SetAlpha", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             SetAlphaExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
@@ -2524,8 +2516,7 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "Scale", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             ScaleExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
@@ -2640,8 +2631,7 @@ napi_value PixelMapNapi::Translate(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "Translate", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             TranslateExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
@@ -2754,8 +2744,7 @@ napi_value PixelMapNapi::Rotate(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "Rotate", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             RotateExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
@@ -2866,8 +2855,7 @@ napi_value PixelMapNapi::Flip(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "Flip", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             FlipExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
@@ -2984,8 +2972,7 @@ napi_value PixelMapNapi::Crop(napi_env env, napi_callback_info info)
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "CropExec", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
-        [](napi_env env, void *data)
-        {
+        [](napi_env env, void *data) {
             auto context = static_cast<PixelMapAsyncContext*>(data);
             CropExec(env, context);
         }, EmptyResultComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));

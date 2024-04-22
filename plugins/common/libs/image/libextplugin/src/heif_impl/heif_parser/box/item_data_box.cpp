@@ -15,8 +15,10 @@
 
 #include "box/item_data_box.h"
 
-const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
-const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
+namespace {
+    const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
+    const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
+}
 
 namespace OHOS {
 namespace ImagePlugin {

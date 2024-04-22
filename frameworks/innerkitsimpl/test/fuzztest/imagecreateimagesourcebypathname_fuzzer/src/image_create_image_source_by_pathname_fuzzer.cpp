@@ -26,7 +26,7 @@ void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
 {
     std::string pathName = "/tmp/test.jpg";
     int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
-    if (write(fd, data, size) != (ssize_t)size) {
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
         close(fd);
         return;
     }

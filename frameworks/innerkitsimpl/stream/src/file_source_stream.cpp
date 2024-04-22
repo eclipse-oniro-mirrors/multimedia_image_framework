@@ -76,7 +76,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
         fclose(filePtr);
         return nullptr;
     }
-    return (unique_ptr<FileSourceStream>(new FileSourceStream(filePtr, size, offset, offset)));
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
@@ -110,7 +110,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return (unique_ptr<FileSourceStream>(new FileSourceStream(filePtr, size, offset, offset)));
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(

@@ -177,6 +177,7 @@ using ProcFuncType = void (*)(void *destinationRow, const uint8_t *sourceRow, ui
                               const ProcFuncExtension &extension);
 class PixelConvert {
 public:
+    PixelConvert(ProcFuncType funcPtr, ProcFuncExtension extension, bool isNeedConvert);
     ~PixelConvert() = default;
     static std::unique_ptr<PixelConvert> Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo);
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
@@ -185,7 +186,6 @@ public:
         void *dstPixels, const ImageInfo &dstInfo);
 
 private:
-    PixelConvert(ProcFuncType funcPtr, ProcFuncExtension extension, bool isNeedConvert);
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
 
     ProcFuncType procFunc_;

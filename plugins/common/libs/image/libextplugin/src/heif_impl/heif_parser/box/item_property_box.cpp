@@ -15,7 +15,9 @@
 
 #include "box/item_property_box.h"
 
-const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
+namespace {
+    const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
+}
 
 namespace OHOS {
 namespace ImagePlugin {

@@ -26,6 +26,7 @@ namespace Media {
 class BufferSourceStream : public SourceStream {
 public:
     static std::unique_ptr<BufferSourceStream> CreateSourceStream(const uint8_t *data, uint32_t size);
+    BufferSourceStream(uint8_t *data, uint32_t size, uint32_t offset);
     ~BufferSourceStream() override;
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;
     bool Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override;
@@ -39,7 +40,6 @@ public:
     ImagePlugin::OutputDataStream* ToOutputDataStream() override;
 
 private:
-    BufferSourceStream(uint8_t *data, uint32_t size, uint32_t offset);
     uint8_t *inputBuffer_ = nullptr;
     size_t dataSize_ = 0;
     size_t dataOffset_ = 0;
