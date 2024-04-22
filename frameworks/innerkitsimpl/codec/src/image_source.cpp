@@ -1272,10 +1272,8 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    IMAGE_LOGD("sourceStreamPtr GetDataPtr");
-    uint8_t* ptr = sourceStreamPtr_->GetDataPtr();
-    uint32_t size = sourceStreamPtr_->GetStreamSize();
-    auto metadataAccessor = MetadataAccessorFactory::Create(ptr, size);
+    IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
+    auto metadataAccessor = MetadataAccessorFactory::Create(sourceStreamPtr_);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
@@ -1336,7 +1334,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     if (key == "Orientation") {
         if (ORIENTATION_INT_MAP.count(strValue) == 0) {
             IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
-            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+            return ERR_IMAGE_SOURCE_DATA;
         }
         strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
     }

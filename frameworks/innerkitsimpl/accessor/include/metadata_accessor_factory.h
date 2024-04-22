@@ -23,6 +23,7 @@
 #include "image_type.h"
 #include "metadata_accessor.h"
 #include "metadata_stream.h"
+#include "source_stream.h"
 
 namespace OHOS {
 namespace Media {
@@ -32,6 +33,7 @@ public:
         BufferMetadataStream::MemoryMode mode = BufferMetadataStream::Fix);
     static std::shared_ptr<MetadataAccessor> Create(const int fd);
     static std::shared_ptr<MetadataAccessor> Create(const std::string &path);
+    static std::shared_ptr<MetadataAccessor> Create(std::unique_ptr<SourceStream> &sourceStream);
 
 private:
     static std::shared_ptr<MetadataAccessor> Create(std::shared_ptr<MetadataStream> &stream);
