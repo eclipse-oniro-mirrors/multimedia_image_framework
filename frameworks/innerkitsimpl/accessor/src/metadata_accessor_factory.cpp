@@ -38,7 +38,6 @@ const byte pngHeader[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 const byte webpHeader[] = { 0x57, 0x45, 0x42, 0x50 };
 const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
 const byte heifHeader[] = { 0x66, 0x74, 0x79, 0x70 };
-const size_t SMALL_FILE_SIZE = 1000 * 1000 * 10;
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size,
     BufferMetadataStream::MemoryMode mode)
@@ -68,33 +67,6 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const std::str
         return nullptr;
     }
     return Create(stream);
-}
-
-std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::unique_ptr<SourceStream> &sourceStream)
-{
-    size_t inputSize = sourceStream->GetStreamSize();
-    auto sharePtr = Create(sourceStream->GetDataPtr(), inputSize);
-    if (sharePtr != nullptr) {
-        return sharePtr;
-    }
-
-    if (inputSize == 0) {
-        return nullptr;
-    }
-
-    size_t copySize = std::min(inputSize, SMALL_FILE_SIZE);
-    auto tmpBuffer = std::make_unique<uint8_t[]>(copySize);
-    auto savePos = sourceStream->Tell();
-    sourceStream->Seek(0);
-    uint32_t readSize = 0;
-    bool ret = sourceStream->Read(copySize, tmpBuffer.get(), copySize, readSize);
-    sourceStream->Seek(savePos);
-    if (!ret) {
-        IMAGE_LOGE("sourceStream read failed.");
-        return nullptr;
-    }
-
-    return Create(tmpBuffer.get(), copySize);
 }
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_ptr<MetadataStream> &stream)
