@@ -342,6 +342,10 @@ bool JpegHardwareDecoder::GetCompressedDataStart()
     bufferMgr_->Mmap(*inputBufferHandle);
     (void)bufferMgr_->InvalidateCache(*inputBufferHandle);
     const uint8_t* data = static_cast<const uint8_t*>(inputBufferHandle->virAddr);
+    if (data == nullptr) {
+        JPEG_HW_LOGE("map inputBufferHandle failed");
+        return false;
+    }
     unsigned int totalLen = static_cast<unsigned int>(inputBufferHandle->size);
     unsigned int curPos = 0;
     bool findFlag = false;
