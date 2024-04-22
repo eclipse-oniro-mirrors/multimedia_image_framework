@@ -1,0 +1,34 @@
+# Copyright (c) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_fuzztest("ImageCreateIncrementalPixelMapFuzzTest") {
+  module_out_path = "multimedia_image/image_framework"
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagecreateincrementalpixelmap_fuzzer"
+
+  include_dirs = [
+    "./include",
+    "$image_subsystem/interfaces/innerkits/include",
+  ]
+
+  sources = [ "src/image_create_incremental_pixelmap.cpp" ]
+
+  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+  ]
+}
