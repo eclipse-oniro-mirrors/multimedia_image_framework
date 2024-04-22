@@ -100,7 +100,8 @@ std::atomic<uint32_t> PixelMap::currentId = 0;
 
 PixelMap::~PixelMap()
 {
-    IMAGE_LOGD("PixelMap::~PixelMap_id:%{public}d", GetUniqueId());
+    IMAGE_LOGD("PixelMap::~PixelMap_id:%{public}d width:%{public}d height:%{public}d",
+        GetUniqueId(), imageInfo_.size.width, imageInfo_.size.height);
     FreePixelMap();
 }
 
@@ -2701,7 +2702,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         IMAGE_LOGE(
             "Set alpha input should (0 < input <= 1). Current input %{public}f",
             percent);
-        return COMMON_ERR_INVALID_PARAMETER;
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
@@ -2718,7 +2719,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         (pixelFormat == PixelFormat::RGBA_F16 && pixelBytes_ != RGBA_F16_BYTES)) {
         IMAGE_LOGE("Pixel format %{public}s mismatch pixelByte %{public}d",
             GetNamedPixelFormat(pixelFormat).c_str(), pixelBytes_);
-        return COMMON_ERR_INVALID_PARAMETER;
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
     for (uint32_t i = 0; i < pixelsSize;) {
         uint8_t* pixel = data_ + i;
