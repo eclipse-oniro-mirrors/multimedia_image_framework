@@ -1700,7 +1700,7 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
 
 static uint32_t CheckExifDataValue(const std::string &key, const std::string &value, std::string &errorInfo)
 {
-    uint32_t status = ExifMetadatFormatter::Validate(key, value);
+    auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
     if (status != SUCCESS) {
         errorInfo = key + "has invalid exif value: ";
         errorInfo.append(value);

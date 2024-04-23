@@ -84,7 +84,7 @@ private:
     void ParseExtents(Item& item, HeifStreamReader &reader, int indexSize, int offsetSize, int lengthSize);
     void PackIlocHeader(HeifStreamWriter &writer) const;
 
-    int idatOffset_ = 0;
+    uint64_t idatOffset_ = 0;
 };
 
 class HeifIdatBox : public HeifBox {

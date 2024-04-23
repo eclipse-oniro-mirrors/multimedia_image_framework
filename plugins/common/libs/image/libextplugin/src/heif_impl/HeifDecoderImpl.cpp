@@ -259,7 +259,7 @@ void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
     info->mWidth = image->GetOriginalWidth();
     info->mHeight = image->GetOriginalHeight();
     info->mRotationAngle = (DEGREE_360 - image->GetRotateDegrees()) % DEGREE_360;
-    info->mBytesPerPixel = ImageUtils::GetPixelBytes(outPixelFormat_);
+    info->mBytesPerPixel = static_cast<uint32_t>(ImageUtils::GetPixelBytes(outPixelFormat_));
     info->mDurationUs = 0;
     auto &iccProfile = image->GetRawColorProfile();
     size_t iccSize = iccProfile != nullptr ? iccProfile->GetData().size() : 0;
@@ -317,7 +317,7 @@ bool HeifDecoderImpl::getSequenceInfo(HeifFrameInfo *frameInfo, size_t *frameCou
 bool HeifDecoderImpl::setOutputColor(SkHeifColorFormat heifColor)
 {
     outPixelFormat_ = SkHeifColorFormat2PixelFormat(heifColor);
-    imageInfo_.mBytesPerPixel = ImageUtils::GetPixelBytes(outPixelFormat_);
+    imageInfo_.mBytesPerPixel = static_cast<uint32_t>(ImageUtils::GetPixelBytes(outPixelFormat_));
     return outPixelFormat_ != PixelFormat::UNKNOWN;
 }
 

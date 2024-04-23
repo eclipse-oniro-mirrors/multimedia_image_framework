@@ -89,8 +89,8 @@ Image_ErrorCode OH_ImageReceiverOptions_GetSize(OH_ImageReceiverOptions* options
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    size->width = options->width;
-    size->height = options->height;
+    size->width = static_cast<uint32_t>(options->width);
+    size->height = static_cast<uint32_t>(options->height);
     return IMAGE_SUCCESS;
 }
 
@@ -101,8 +101,8 @@ Image_ErrorCode OH_ImageReceiverOptions_SetSize(OH_ImageReceiverOptions* options
         IMAGE_LOGE("Invalid parameter: options=null.");
         return IMAGE_BAD_PARAMETER;
     }
-    options->width = size.width;
-    options->height = size.height;
+    options->width = static_cast<int32_t>(size.width);
+    options->height = static_cast<int32_t>(size.height);
     return IMAGE_SUCCESS;
 }
 
@@ -321,8 +321,8 @@ Image_ErrorCode OH_ImageReceiverNative_GetSize(OH_ImageReceiverNative* receiver,
         return IMAGE_BAD_PARAMETER;
     }
 
-    size->width = receiver->ptrImgRcv->iraContext_->GetWidth();
-    size->height = receiver->ptrImgRcv->iraContext_->GetHeight();
+    size->width = static_cast<uint32_t>(receiver->ptrImgRcv->iraContext_->GetWidth());
+    size->height = static_cast<uint32_t>(receiver->ptrImgRcv->iraContext_->GetHeight());
     return IMAGE_SUCCESS;
 }
 

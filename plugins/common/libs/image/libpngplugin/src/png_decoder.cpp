@@ -908,7 +908,7 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
             png_set_progressive_read_fn(pngStructPtr_, this, nullptr, GetAllRows, nullptr);
         } else {
             png_set_progressive_read_fn(pngStructPtr_, this, nullptr, GetInterlacedRows, nullptr);
-            lastRow_ = pngImageInfo_.height - 1;  // decode begin to 0
+            lastRow_ = pngImageInfo_.height > 0 ? pngImageInfo_.height - 1 : 0;  // decode begin to 0
         }
         png_byte idat[] = { 0, 0, 0, 0, 'I', 'D', 'A', 'T' };
         png_save_uint_32(idat, idatLength_);

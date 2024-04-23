@@ -253,7 +253,7 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
-    byte marker = FindNextMarker();
+    byte marker = static_cast<byte>(FindNextMarker());
     while ((marker != JPEG_MARKER_SOS) && (marker != JPEG_MARKER_EOI)) {
         DataBuf buf = ReadNextSegment(marker);
         if (marker == JPEG_MARKER_APP0) {
@@ -362,7 +362,7 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
 
     imageStream_->Seek(0, SeekPos::BEGIN);
 
-    byte marker = FindNextMarker();
+    byte marker = static_cast<byte>(FindNextMarker());
     while (marker != JPEG_MARKER_SOS) {
         DataBuf buf = ReadNextSegment(marker);
         if (markerCount == insertPos) {

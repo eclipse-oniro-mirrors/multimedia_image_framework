@@ -432,7 +432,7 @@ bool ExifMetadata::SetRational(ExifEntry *ptrEntry, const ExifByteOrder &order, 
             IMAGE_LOGE("Failed to read ExifRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = icount * exif_format_get_size(ptrEntry->format);
+        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
         exif_set_rational(ptrEntry->data + offset, order, rat);
         icount++;
     }
@@ -450,7 +450,7 @@ bool ExifMetadata::SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &order,
             IMAGE_LOGE("Failed to read ExifSRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = icount * exif_format_get_size(ptrEntry->format);
+        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
         exif_set_srational(ptrEntry->data + offset, order, rat);
         icount++;
     }
@@ -466,7 +466,7 @@ bool ExifMetadata::SetByte(ExifEntry *ptrEntry, const std::string &value)
         }
     }
     const char *p = result.c_str();
-    int valueLen = result.length();
+    int valueLen = static_cast<int>(result.length());
     for (int i = 0; i < valueLen && i < static_cast<int>(ptrEntry->size); i++) {
         *(ptrEntry->data + i) = p[i] - '0';
     }
@@ -524,7 +524,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     }
 
     const char *capture_buf = value.c_str();
-    int capture_buf_length = value.length();
+    int capture_buf_length = static_cast<int>(value.length());
     int ret = mnote_huawei_entry_set_value(entry, capture_buf, capture_buf_length);
     return ret == 0;
 }

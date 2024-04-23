@@ -49,7 +49,7 @@ BufferMetadataStream::BufferMetadataStream(byte *originData, size_t size, Memory
 {
     buffer_ = originData;
     this->originData_ = originData;
-    capacity_ = size;
+    capacity_ = static_cast<long>(size);
     bufferSize_ = size;
     currentOffset_ = 0;
     memoryMode_ = mode;

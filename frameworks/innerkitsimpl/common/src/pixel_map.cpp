@@ -1278,7 +1278,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
                 IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
                 return ERR_IMAGE_READ_PIXELMAP_FAILED;
             }
-            tmpSize += readSize;
+            tmpSize += static_cast<uint64_t>(readSize);
         }
     } else {
         // Copy the actual pixel data without padding bytes
@@ -1542,7 +1542,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
                 IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
                 return ERR_IMAGE_READ_PIXELMAP_FAILED;
             }
-            tmpSize += readSize;
+            tmpSize += static_cast<uint64_t>(readSize);
         }
     } else {
         for (int i = 0; i < imageInfo_.size.height; ++i) {

@@ -52,26 +52,26 @@ int64_t HeifBufferInputStream::Tell() const
 
 bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 {
-    auto posAfterRead = static_cast<int64_t>(Tell() + target_size);
-    return (end < 0 || posAfterRead <= end) && posAfterRead <= length_;
+    auto posAfterRead = Tell() + static_cast<int64_t>(target_size);
+    return (end < 0 || posAfterRead <= end) && static_cast<size_t>(posAfterRead) <= length_;
 }
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
     auto end_pos = static_cast<int64_t>(pos_ + size);
-    if (end_pos > length_) {
+    if (static_cast<size_t>(end_pos) > length_) {
         return false;
     }
 
     memcpy_s(data, size, &data_[pos_], size);
-    pos_ = static_cast<int64_t>(pos_ + size);
+    pos_ = pos_ + static_cast<int64_t>(size);
 
     return true;
 }
 
 bool HeifBufferInputStream::Seek(int64_t position)
 {
-    if (position > length_ || position < 0)
+    if (static_cast<size_t>(position) > length_ || position < 0)
         return false;
 
     pos_ = position;
@@ -81,7 +81,7 @@ bool HeifBufferInputStream::Seek(int64_t position)
 HeifStreamReader::HeifStreamReader(std::shared_ptr<HeifInputStream> stream, int64_t start, size_t length)
     : inputStream_(std::move(stream)), start_(start)
 {
-    end_ = static_cast<int64_t>(start_ + length);
+    end_ = start_ + static_cast<int64_t>(length);
 }
 
 uint8_t HeifStreamReader::Read8()

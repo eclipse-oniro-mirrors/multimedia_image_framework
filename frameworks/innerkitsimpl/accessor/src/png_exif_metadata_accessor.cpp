@@ -98,7 +98,7 @@ bool PngExifMetadataAccessor::ProcessExifData(DataBuf &blob, std::string chunkTy
 {
     DataBuf chunkData(chunkLength);
     if (chunkLength > 0) {
-        if (ReadChunk(chunkData) != chunkData.Size()) {
+        if (static_cast<size_t>(ReadChunk(chunkData)) != chunkData.Size()) {
             IMAGE_LOGE("Failed to read chunk data. Expected size: %{public}zu", chunkData.Size());
             return false;
         }
@@ -123,11 +123,11 @@ bool PngExifMetadataAccessor::ReadBlob(DataBuf &blob) const
         return false;
     }
 
-    const size_t imgSize = imageStream_->GetSize();
+    const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
     while (!imageStream_->IsEof()) {
-        if (ReadChunk(chunkHead) != chunkHead.Size()) {
+        if (static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size()) {
             IMAGE_LOGE("Failed to read chunk head. Expected size: %{public}zu", chunkHead.Size());
             return false;
         }
@@ -252,7 +252,7 @@ bool PngExifMetadataAccessor::WriteExifData(BufferMetadataStream &bufStream, uin
 
 bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size)
 {
-    const size_t imgSize = imageStream_->GetSize();
+    const size_t imgSize = static_cast<size_t>(imageStream_->GetSize());
     DataBuf chunkHead(PNG_CHUNK_HEAD_SIZE);
 
     if (!WriteData(bufStream, pngSignature, PNG_SIGN_SIZE)) {
@@ -260,7 +260,7 @@ bool PngExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStream
     }
 
     while (!imageStream_->IsEof()) {
-        if (ReadChunk(chunkHead) != chunkHead.Size()) {
+        if (static_cast<size_t>(ReadChunk(chunkHead)) != chunkHead.Size()) {
             IMAGE_LOGE("Read chunk head error.");
             return false;
         }

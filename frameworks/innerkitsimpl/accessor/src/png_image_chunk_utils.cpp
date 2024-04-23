@@ -88,7 +88,7 @@ DataBuf PngImageChunkUtils::GetKeywordFromChunk(const DataBuf &chunkData)
             chunkData.Size());
         return {};
     }
-    const size_t keywordLength = std::distance(chunkData.CBegin(), keyword);
+    const size_t keywordLength = static_cast<size_t>(std::distance(chunkData.CBegin(), keyword));
     return { chunkData.CData(), keywordLength };
 }
 
@@ -135,7 +135,8 @@ std::string FetchString(const char *chunkData, size_t dataLength)
 
 DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText)
 {
-    const size_t nullCount = std::count(chunkData.CData(keySize + 3), chunkData.CData(chunkData.Size() - 1), '\0');
+    const size_t nullCount = static_cast<size_t>(std::count(chunkData.CData(keySize + 3),
+                                                            chunkData.CData(chunkData.Size() - 1), '\0'));
     if (nullCount < NULL_CHAR_AMOUNT) {
         IMAGE_LOGE("Metadata corruption detected: Null character count after "
             "Language tag is less than 2. Found: %{public}zu",

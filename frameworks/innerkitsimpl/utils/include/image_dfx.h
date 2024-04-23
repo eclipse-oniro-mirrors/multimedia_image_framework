@@ -65,7 +65,7 @@ public:
     }
     DecodeInfoOptions &GetDecodeInfoOptions();
 private:
-    DecodeInfoOptions options_;
+    DecodeInfoOptions options_ = {};
     uint64_t startTime_;
 };
 
