@@ -161,7 +161,7 @@ constexpr uint8_t BYTE_POS_0 = 0;
 constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
-static const std::string g_textureSuperDecSo = "/system/lib64/libtextureSuperDecompress.z.so";
+static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
 using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
 using SuperDecompressTexture = bool (*)(const uint8_t *, size_t, uint8_t *, size_t &);
