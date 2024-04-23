@@ -1276,8 +1276,8 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     std::shared_ptr<MetadataAccessor> metadataAccessor = nullptr;
+    auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
     if (bufferPtr == nullptr) {
-        auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
         sourceStreamPtr_->Seek(0);
         uint32_t readSize = 0;
         bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer.get(), bufferSize, readSize);
