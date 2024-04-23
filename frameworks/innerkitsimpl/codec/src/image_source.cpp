@@ -254,7 +254,6 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static int32_t ZERO = 0;
-const size_t SMALL_FILE_SIZE = 1000 * 1000 * 10;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
@@ -1274,8 +1273,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
-    uint32_t size = sourceStreamPtr_->GetStreamSize();
-    size_t copySize = std::min(size, SMALL_FILE_SIZE);
+    uint32_t copySize = sourceStreamPtr_->GetStreamSize();
     auto tmpBuffer = std::make_unique<uint8_t[]>(copySize);
     sourceStreamPtr_->Seek(0);
     uint32_t readSize = 0;
