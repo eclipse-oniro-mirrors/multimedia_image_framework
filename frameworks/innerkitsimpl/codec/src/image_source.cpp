@@ -1273,18 +1273,24 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
-    uint32_t copySize = sourceStreamPtr_->GetStreamSize();
-    auto tmpBuffer = std::make_unique<uint8_t[]>(copySize);
-    sourceStreamPtr_->Seek(0);
-    uint32_t readSize = 0;
-    bool retRead = sourceStreamPtr_->Read(copySize, tmpBuffer.get(), copySize, readSize);
-    sourceStreamPtr_->Seek(0);
-    if (!retRead) {
-        IMAGE_LOGE("sourceStream read failed.");
-        return ERR_IMAGE_SOURCE_DATA;
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    std::shared_ptr<MetadataAccessor> metadataAccessor = nullptr;
+    if (bufferPtr == nullptr) {
+        auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
+        sourceStreamPtr_->Seek(0);
+        uint32_t readSize = 0;
+        bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer.get(), bufferSize, readSize);
+        sourceStreamPtr_->Seek(0);
+        if (!retRead) {
+            IMAGE_LOGE("sourceStream read failed.");
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer.get(), bufferSize);
+    } else {
+        metadataAccessor = MetadataAccessorFactory::Create(bufferPtr, bufferSize);
     }
 
-    auto metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer.get(), copySize);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
