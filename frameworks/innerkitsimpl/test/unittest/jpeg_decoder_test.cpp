@@ -164,7 +164,6 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest006, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest006 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
-    mock->SetReturn(true);
     jpegDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
