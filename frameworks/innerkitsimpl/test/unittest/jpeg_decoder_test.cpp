@@ -167,7 +167,6 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest006, TestSize.Level3)
     mock->SetReturn(true);
     jpegDecoder->SetSource(*mock.get());
     ImagePlugin::PlSize plSize;
-    jpegDecoder->GetImageSize(1, plSize);
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest006 end";
