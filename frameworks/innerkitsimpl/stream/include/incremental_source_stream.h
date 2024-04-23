@@ -28,6 +28,7 @@ namespace Media {
 class IncrementalSourceStream : public SourceStream {
 public:
     static std::unique_ptr<IncrementalSourceStream> CreateSourceStream(IncrementalMode mode);
+    explicit IncrementalSourceStream(IncrementalMode mode);
     ~IncrementalSourceStream() = default;
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;
     bool Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize) override;
@@ -41,7 +42,6 @@ public:
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
 private:
-    explicit IncrementalSourceStream(IncrementalMode mode);
     IncrementalMode incrementalMode_;
     bool isFinalize_;
     std::vector<uint8_t> sourceData_;

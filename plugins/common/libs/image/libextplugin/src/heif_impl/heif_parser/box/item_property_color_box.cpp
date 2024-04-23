@@ -15,7 +15,9 @@
 
 #include "box/item_property_color_box.h"
 
-const uint8_t FILL_RANGE_FLAG_SHIFT = 7;
+namespace {
+    const uint8_t FILL_RANGE_FLAG_SHIFT = 7;
+}
 
 namespace OHOS {
 namespace ImagePlugin {

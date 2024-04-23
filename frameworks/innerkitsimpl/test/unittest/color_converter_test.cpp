@@ -28,8 +28,8 @@ constexpr bool IS_LITTLE_ENDIAN = false;
 #endif
 class ColorConverterTest : public testing::Test {
 public:
-    ColorConverterTest(){}
-    ~ColorConverterTest(){}
+    ColorConverterTest() {}
+    ~ColorConverterTest() {}
 };
 
 /**

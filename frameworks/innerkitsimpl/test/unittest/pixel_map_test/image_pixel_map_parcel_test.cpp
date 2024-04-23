@@ -25,8 +25,8 @@ namespace OHOS {
 namespace Multimedia {
     class ImagePixelMapParcelTest : public testing::Test {
     public:
-        ImagePixelMapParcelTest(){}
-        ~ImagePixelMapParcelTest(){}
+        ImagePixelMapParcelTest() {}
+        ~ImagePixelMapParcelTest() {}
     };
 
     std::unique_ptr<PixelMap> ConstructPixmap()

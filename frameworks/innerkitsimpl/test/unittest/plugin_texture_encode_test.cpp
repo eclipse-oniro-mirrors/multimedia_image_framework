@@ -586,11 +586,11 @@ TestEncRet EncodeMutiFrames(uint8_t **pixMapGroup, uint8_t **astcBuf, AstcEncTes
     size_t bytesPerFile = testPara.width * testPara.height * BYTES_PER_PIXEL;
     std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
     for (size_t idx = 0; idx < testPara.frames; idx++) {
-        pixMapGroup[idx] = (uint8_t *) malloc (bytesPerFile * sizeof(uint8_t));
+        pixMapGroup[idx] = reinterpret_cast<uint8_t *>(malloc(bytesPerFile * sizeof(uint8_t)));
         if (pixMapGroup[idx] == nullptr) {
             return TestEncRet::ERR_LOW_LEVEL_FAILED;
         }
-        astcBuf[idx] = (uint8_t *) malloc (testPara.param.astcBytes * sizeof(uint8_t));
+        astcBuf[idx] = reinterpret_cast<uint8_t *>(malloc(testPara.param.astcBytes * sizeof(uint8_t)));
         if (astcBuf[idx] == nullptr) {
             return TestEncRet::ERR_LOW_LEVEL_FAILED;
         }

@@ -59,6 +59,8 @@ namespace {
     constexpr uint32_t OFFSET_0 = 0;
     constexpr uint32_t OFFSET_1 = 1;
     constexpr uint32_t OFFSET_2 = 2;
+
+    constexpr uint32_t NUM_256 = 256;
 }
 namespace OHOS {
 namespace Media {
@@ -392,13 +394,13 @@ void BasicTransformer::GetAroundPixelRGB888(const AroundPos aroundPos, uint8_t *
     uint32_t current1 = aroundPos.x1 * RGB888_BYTE;
     // The RGB888 format occupies 3 bytes, and an int integer is formed by OR operation.
     aroundPixels.color00 =
-        (row0[current0] << SHIFT_16_BIT) | (row0[current0 + 1] << SHIFT_8_BIT) | (row0[current0 + 2]);
+        (row0[current0] << SHIFT_16_BIT) | (row0[current0 + 1] << SHIFT_8_BIT) | (row0[current0 + OFFSET_2]);
     aroundPixels.color01 =
-        (row0[current1] << SHIFT_16_BIT) | (row0[current1 + 1] << SHIFT_8_BIT) | (row0[current1 + 2]);
+        (row0[current1] << SHIFT_16_BIT) | (row0[current1 + 1] << SHIFT_8_BIT) | (row0[current1 + OFFSET_2]);
     aroundPixels.color10 =
-        (row1[current0] << SHIFT_16_BIT) | (row1[current0 + 1] << SHIFT_8_BIT) | (row1[current0 + 2]);
+        (row1[current0] << SHIFT_16_BIT) | (row1[current0 + 1] << SHIFT_8_BIT) | (row1[current0 + OFFSET_2]);
     aroundPixels.color11 =
-        (row1[current1] << SHIFT_16_BIT) | (row1[current1 + 1] << SHIFT_8_BIT) | (row1[current1 + 2]);
+        (row1[current1] << SHIFT_16_BIT) | (row1[current1 + 1] << SHIFT_8_BIT) | (row1[current1 + OFFSET_2]);
 }
 
 void BasicTransformer::GetAroundPixelRGBA(const AroundPos aroundPos, uint8_t *data,
@@ -429,12 +431,12 @@ uint32_t BasicTransformer::RightShift16Bit(uint32_t num, int32_t maxNum)
      * When the original image coordinates are obtained,
      * the first 16 bits are shifted to the left, so the right shift is 16 bits here.
      */
-    return ClampMax(num >> 16, maxNum);
+    return ClampMax(static_cast<int>(num >> SHIFT_16_BIT), maxNum);
 }
 
 uint32_t BasicTransformer::FilterProc(const uint32_t subx, const uint32_t suby, const AroundPixels &aroundPixels)
 {
-    int32_t xy = subx * suby;
+    uint32_t xy = subx * suby;
     // Mask 0xFF00FF ensures that high and low 16 bits can be calculated simultaneously
     const uint32_t mask = 0xFF00FF;
 
@@ -443,22 +445,22 @@ uint32_t BasicTransformer::FilterProc(const uint32_t subx, const uint32_t suby, 
      * The subx is u, the suby is y,
      * color00 is f(i,j), color 01 is f(i,j+1), color 10 is f(i+1,j), color11 is f(i+1,j+1).
      */
-    int32_t scale = 256 - 16 * suby - 16 * subx + xy;
+    auto scale = static_cast<int32_t>(NUM_256 - SHIFT_16_BIT * suby - SHIFT_16_BIT * subx + xy);
     uint32_t lo = (aroundPixels.color00 & mask) * scale;
-    uint32_t hi = ((aroundPixels.color00 >> 8) & mask) * scale;
+    uint32_t hi = ((aroundPixels.color00 >> SHIFT_8_BIT) & mask) * scale;
 
-    scale = 16 * subx - xy;
+    scale = static_cast<int32_t>(SHIFT_16_BIT * subx - xy);
     lo += (aroundPixels.color01 & mask) * scale;
-    hi += ((aroundPixels.color01 >> 8) & mask) * scale;
+    hi += ((aroundPixels.color01 >> SHIFT_8_BIT) & mask) * scale;
 
-    scale = 16 * suby - xy;
+    scale = static_cast<int32_t>(SHIFT_16_BIT * suby - xy);
     lo += (aroundPixels.color10 & mask) * scale;
-    hi += ((aroundPixels.color10 >> 8) & mask) * scale;
+    hi += ((aroundPixels.color10 >> SHIFT_8_BIT) & mask) * scale;
 
     lo += (aroundPixels.color11 & mask) * xy;
-    hi += ((aroundPixels.color11 >> 8) & mask) * xy;
+    hi += ((aroundPixels.color11 >> SHIFT_8_BIT) & mask) * xy;
 
-    return ((lo >> 8) & mask) | (hi & ~mask);
+    return ((lo >> SHIFT_8_BIT) & mask) | (hi & ~mask);
 }
 } // namespace Media
 } // namespace OHOS

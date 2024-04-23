@@ -38,6 +38,7 @@ constexpr size_t WEBP_MINIMUM_LENGTH = 14;
 const char *WEBP_HEADER_PRE = "RIFF";
 constexpr int32_t WEBP_HEADER_PRE_LENGTH = 4;
 const char *WEBP_HEADER_POST = "WEBPVP";
+constexpr int32_t WEBP_HEADER_OFFSET = 8;
 constexpr int32_t WEBP_HEADER_POST_LENGTH = 6;
 } // namespace
 
@@ -65,7 +66,7 @@ bool WebpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
      */
     const char *head = static_cast<const char *>(headerData);
     return dataSize >= WEBP_MINIMUM_LENGTH && !memcmp(head, WEBP_HEADER_PRE, WEBP_HEADER_PRE_LENGTH) &&
-           !memcmp(&head[8], WEBP_HEADER_POST, WEBP_HEADER_POST_LENGTH);
+           !memcmp(&head[WEBP_HEADER_OFFSET], WEBP_HEADER_POST, WEBP_HEADER_POST_LENGTH);
 }
 } // namespace ImagePlugin
 } // namespace OHOS

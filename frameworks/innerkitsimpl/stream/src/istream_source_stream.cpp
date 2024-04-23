@@ -56,7 +56,7 @@ std::unique_ptr<IstreamSourceStream> IstreamSourceStream::CreateSourceStream(uni
     }
     size_t original = inputStream->tellg();
     size_t offset = original;
-    return (unique_ptr<IstreamSourceStream>(new IstreamSourceStream(move(inputStream), streamSize, original, offset)));
+    return make_unique<IstreamSourceStream>(move(inputStream), streamSize, original, offset);
 }
 
 bool IstreamSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

@@ -241,7 +241,8 @@ void Matrix::Print()
 {
     IMAGE_LOGD("[Matrix][%{public}8.4f %{public}8.4f %{public}8.4f]"
         "[%{public}8.4f %{public}8.4f %{public}8.4f][%{public}8.4f %{public}8.4f %{public}8.4f].",
-        fMat_[0], fMat_[1], fMat_[2], fMat_[3], fMat_[4], fMat_[5], fMat_[6], fMat_[7], fMat_[8]);
+        fMat_[IMAGE_SCALEX], fMat_[IMAGE_SKEWX], fMat_[IMAGE_TRANSX], fMat_[IMAGE_SKEWY],
+        fMat_[IMAGE_SCALEY], fMat_[IMAGE_TRANSY], fMat_[IMAGE_PERSP0], fMat_[IMAGE_PERSP1], fMat_[IMAGE_PERSP2]);
 }
 } // namespace Media
 } // namespace OHOS

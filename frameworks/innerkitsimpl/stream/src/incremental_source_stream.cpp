@@ -42,7 +42,7 @@ IncrementalSourceStream::IncrementalSourceStream(IncrementalMode mode)
 unique_ptr<IncrementalSourceStream> IncrementalSourceStream::CreateSourceStream(IncrementalMode mode)
 {
     IMAGE_LOGD("[IncrementalSourceStream]mode:%{public}d.", mode);
-    return (unique_ptr<IncrementalSourceStream>(new IncrementalSourceStream(mode)));
+    return make_unique<IncrementalSourceStream>(mode);
 }
 
 bool IncrementalSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

@@ -65,7 +65,8 @@ Image_ErrorCode OH_ImageNative_GetComponentTypes(OH_ImageNative* image, uint32_t
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_ImageNative_GetByteBuffer(OH_ImageNative* image, uint32_t componentType, OH_NativeBuffer** nativeBuffer)
+Image_ErrorCode OH_ImageNative_GetByteBuffer(OH_ImageNative* image,
+                                             uint32_t componentType, OH_NativeBuffer** nativeBuffer)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == nativeBuffer) {
         IMAGE_LOGE("Invalid parameter: image=0x%{public}p, nativeBuffer=0x%{public}p", image, nativeBuffer);

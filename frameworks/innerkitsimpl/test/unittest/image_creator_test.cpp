@@ -61,7 +61,7 @@ HWTEST_F(ImageCreatorTest, SaveSTP001, TestSize.Level3)
     ImageCreator creat;
     uint32_t *buffer = nullptr;
     uint8_t *tempBuffer = nullptr;
-    uint32_t bufferSize= 1;
+    uint32_t bufferSize = 1;
     InitializationOptions initializationOpts;
     int32_t savesp = creat.SaveSTP(buffer, tempBuffer, bufferSize, initializationOpts);
     ASSERT_EQ(savesp, -1);
@@ -79,7 +79,7 @@ HWTEST_F(ImageCreatorTest, SaveSTP002, TestSize.Level3)
     ImageCreator creat;
     uint32_t *buffer = nullptr;
     uint8_t *tempBuffer = nullptr;
-    uint32_t bufferSize= 0;
+    uint32_t bufferSize = 0;
     InitializationOptions initializationOpts;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(buffer, bufferSize, initializationOpts);
     ASSERT_EQ(pixelMap, nullptr);

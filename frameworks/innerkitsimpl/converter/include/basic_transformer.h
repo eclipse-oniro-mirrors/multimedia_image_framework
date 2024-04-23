@@ -71,7 +71,7 @@ struct PixmapInfo {
     bool isAutoDestruct = true;
     int32_t *context = nullptr;
     uint32_t uniqueId = -1;
-    PixmapInfo(){}
+    PixmapInfo() {}
 
     ~PixmapInfo()
     {
@@ -116,7 +116,7 @@ public:
     {
         ResetParam();
     }
-    ~BasicTransformer(){}
+    ~BasicTransformer() {}
 
     // Reset pixel map info transform param, back to the original state
     void ResetParam();

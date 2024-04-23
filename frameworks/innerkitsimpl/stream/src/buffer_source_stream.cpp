@@ -65,7 +65,7 @@ std::unique_ptr<BufferSourceStream> BufferSourceStream::CreateSourceStream(const
         IMAGE_LOGE("[BufferSourceStream]copy the input data fail, ret:%{public}d.", ret);
         return nullptr;
     }
-    return (unique_ptr<BufferSourceStream>(new BufferSourceStream(dataCopy, size, 0)));
+    return make_unique<BufferSourceStream>(dataCopy, size, 0);
 }
 
 bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)

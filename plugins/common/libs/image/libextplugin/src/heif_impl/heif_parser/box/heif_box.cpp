@@ -30,8 +30,10 @@ case fourcc_to_code(box_type):                     \
     box = std::make_shared<box_class_type>();      \
     break
 
-const uint8_t UUID_TYPE_BYTE_NUM = 16;
-const uint8_t LARGE_BOX_SIZE_TAG = 1;
+namespace {
+    const uint8_t UUID_TYPE_BYTE_NUM = 16;
+    const uint8_t LARGE_BOX_SIZE_TAG = 1;
+}
 
 namespace OHOS {
 namespace ImagePlugin {
