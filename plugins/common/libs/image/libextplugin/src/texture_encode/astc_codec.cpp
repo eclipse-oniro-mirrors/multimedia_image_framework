@@ -51,7 +51,7 @@ constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
 #endif
 
 #ifdef SUT_ENCODE_ENABLE
-static const std::string g_textureSuperEncSo = "/system/lib64/libtextureSuperCompress.z.so";
+static const std::string g_textureSuperEncSo = "/system/lib64/module/hms/graphic/libtextureSuperCompress.z.so";
 using SuperCompressTexture = bool (*)(uint8_t*, int32_t, uint8_t*, int32_t&, uint32_t);
 
 class SutEncSoManager {
@@ -496,11 +496,11 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
         (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
-        if (TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath)) {
+        if (CheckClBinIsExist(clBinPath) && TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath)) {
             param.hardwareFlag = true;
             IMAGE_LOGI("astc hardware encode success!");
         } else {
-            IMAGE_LOGI("astc hardware encode failed!");
+            IMAGE_LOGI("astc AstcEncShader binany file is not exist, otherwise hardware encode failed!");
         }
     }
 #endif
