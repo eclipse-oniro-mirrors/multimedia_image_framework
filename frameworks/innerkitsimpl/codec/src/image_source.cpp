@@ -1282,7 +1282,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t readSize = 0;
     auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("tmpBuffer is null.");
+        IMAGE_LOGE("Make unique buffer failed, tmpBuffer is nullptr.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1299,7 +1299,6 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
 {
     auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
-
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
