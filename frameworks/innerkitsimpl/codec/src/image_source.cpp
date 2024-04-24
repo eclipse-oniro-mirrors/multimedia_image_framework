@@ -1286,9 +1286,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
     sourceStreamPtr_->Seek(0);
     bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer.get(), bufferSize, readSize);
-    sourceStreamPtr_->Seek(0);
+    sourceStreamPtr_->Seek(savedPosition);
     if (!retRead) {
         IMAGE_LOGE("sourceStream read failed.");
         return ERR_IMAGE_SOURCE_DATA;
