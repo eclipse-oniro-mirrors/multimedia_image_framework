@@ -26,7 +26,8 @@ using namespace OHOS::MultimediaPlugin;
 namespace OHOS {
 namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg";
-
+static constexpr uint8_t LOWER_BOUND_INDEX = 0;
+static constexpr uint8_t UPPER_BOUND_INDEX = 1;
 class AttrDataTest : public testing::Test {
 public:
     AttrDataTest() {}
@@ -1272,6 +1273,176 @@ HWTEST_F(AttrDataTest, InRangeTest0074, TestSize.Level3)
     res = aData.InRange(value);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "AttrDataTest: InRange1Test0074 end";
+}
+
+/**
+ * @tc.name: SetDataTest001
+ * @tc.desc: test SetData
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, SetDataTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: SetDataTest001 start";
+    string &&value = "AttrData";
+    AttrData attrData(std::move(value));
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING);
+    ASSERT_EQ(*(attrData.value_.stringValue), "AttrData");
+    ASSERT_EQ(value, "");
+
+    attrData.type_ = AttrDataType::ATTR_DATA_STRING;
+    string &&value1 = "SetData";
+    uint32_t ret = attrData.SetData(std::move(value1));
+    ASSERT_EQ(*(attrData.value_.stringValue), "SetData");
+    ASSERT_EQ(value1, "");
+    ASSERT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "AttrDataTest: SetDataTest001 end";
+}
+
+/**
+ * @tc.name: InsertSetTest001
+ * @tc.desc: test InsertSet
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InsertSetTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InsertSetTest001 start";
+    string &&value = "AttrData";
+    AttrData attrData(std::move(value));
+    attrData.type_ = AttrDataType::ATTR_DATA_NULL;
+    string &&value1 = "SetData";
+    uint32_t ret = attrData.InsertSet(std::move(value1));
+    ASSERT_EQ(attrData.type_, AttrDataType::ATTR_DATA_STRING_SET);
+    ASSERT_EQ(ret, SUCCESS);
+
+    attrData.type_ = AttrDataType::ATTR_DATA_BOOL;
+    ret = attrData.InsertSet(std::move(value1));
+    ASSERT_EQ(ret, ERR_UNSUPPORTED);
+
+    attrData.type_ = AttrDataType::ATTR_DATA_STRING_SET;
+    ret = attrData.InsertSet(std::move(value1));
+    ASSERT_EQ(ret, SUCCESS);
+
+    attrData.value_.stringSet->insert(std::move(value1));
+    ret = attrData.InsertSet(std::move(value1));
+    ASSERT_EQ(ret, ERR_INTERNAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: InsertSetTest001 end";
+}
+
+/**
+ * @tc.name: InRangeTest001
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest001 start";
+    AttrData attr;
+    AttrData attrData(attr);
+    attr.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    bool ret = attrData.InRange(attr);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest001 end";
+}
+
+/**
+ * @tc.name: AttrDataTest075
+ * @tc.desc: test GetMinValue and GetMaxValue
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest075, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest075 start";
+    uint32_t value = 0;
+    AttrData attrData(value);
+    uint32_t value1 = 0;
+    attrData.type_ = AttrDataType::ATTR_DATA_UINT32_SET;
+    attrData.value_.uint32Set = new (std::nothrow) std::set<uint32_t>();
+    ASSERT_NE(attrData.value_.uint32Set, nullptr);
+
+    attrData.value_.uint32Set->begin() = attrData.value_.uint32Set->end();
+    uint32_t ret = attrData.GetMinValue(value1);
+    ASSERT_EQ(ret, ERR_GENERAL);
+
+    attrData.value_.uint32Set->rbegin() = attrData.value_.uint32Set->rend();
+    ret = attrData.GetMaxValue(value1);
+    ASSERT_EQ(ret, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest075 end";
+}
+
+/**
+ * @tc.name: AttrDataTest076
+ * @tc.desc: test GetMinValue and GetMaxValue
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, AttrDataTest076, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest076 start";
+    string value = "AttrData";
+    AttrData attrData(value);
+    const string *value1 = nullptr;
+    attrData.type_ = AttrDataType::ATTR_DATA_STRING_SET;
+    attrData.value_.uint32Set = new (std::nothrow) std::set<uint32_t>();
+    ASSERT_NE(attrData.value_.uint32Set, nullptr);
+
+    attrData.value_.uint32Set->begin() = attrData.value_.uint32Set->end();
+    uint32_t ret = attrData.GetMinValue(value1);
+    ASSERT_EQ(ret, ERR_GENERAL);
+
+    attrData.value_.uint32Set->rbegin() = attrData.value_.uint32Set->rend();
+    ret = attrData.GetMaxValue(value1);
+    ASSERT_EQ(ret, ERR_GENERAL);
+    GTEST_LOG_(INFO) << "AttrDataTest: AttrDataTest076 end";
+}
+
+/**
+ * @tc.name: InRangeTest002
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest002 start";
+    AttrData attrData;
+    std::set<uint32_t> uint32Set;
+    ASSERT_EQ(uint32Set.empty(), true);
+    bool ret = attrData.InRange(uint32Set);
+    ASSERT_EQ(ret, false);
+
+    attrData.type_ = AttrDataType::ATTR_DATA_UINT32;
+    uint32Set.insert(attrData.value_.uint32Value);
+    ASSERT_EQ(uint32Set.empty(), false);
+    ret = attrData.InRange(uint32Set);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest002 end";
+}
+
+/**
+ * @tc.name: InRangeTest003
+ * @tc.desc: test InRange
+ * @tc.type: FUNC
+ */
+HWTEST_F(AttrDataTest, InRangeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest003 start";
+    AttrData attrData(1, 0);
+    bool ret = attrData.InRange(attrData.value_.uint32Rang);
+    ASSERT_EQ(attrData.value_.uint32Rang[LOWER_BOUND_INDEX], 1);
+    ASSERT_EQ(attrData.value_.uint32Rang[UPPER_BOUND_INDEX], 0);
+    ASSERT_EQ(ret, false);
+
+    AttrData attr(0, 1);
+    attr.type_ = AttrDataType::ATTR_DATA_UINT32;
+    ret = attrData.InRange(attr.value_.uint32Rang);
+    ASSERT_EQ(ret, false);
+
+    attr.type_ = AttrDataType::ATTR_DATA_UINT32_RANGE;
+    ret = attr.InRange(attr.value_.uint32Rang);
+    ASSERT_EQ(ret, true);
+
+    attr.type_ = AttrDataType::ATTR_DATA_TYPE_INVALID;
+    ret = attr.InRange(attr.value_.uint32Rang);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "AttrDataTest: InRangeTest003 end";
 }
 }
 }
