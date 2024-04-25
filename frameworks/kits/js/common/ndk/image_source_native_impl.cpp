@@ -73,6 +73,19 @@ OH_ImageSourceNative::OH_ImageSourceNative(uint8_t *data, size_t dataSize, Sourc
     innerImageSource_ = std::move(nativeImageSource);
 }
 
+OH_ImageSourceNative::OH_ImageSourceNative(RawFileDescriptor rawFile, SourceOptions opts)
+{
+    uint32_t errorCode = IMAGE_BAD_PARAMETER;
+    int32_t rawFileLength = rawFile.start + rawFile.length;
+    std::unique_ptr<ImageSource> nativeImageSource = ImageSource::CreateImageSource(
+        rawFile.fd, rawFile.start, rawFileLength, opts, errorCode);
+    if (nativeImageSource == nullptr) {
+        innerImageSource_ = nullptr;
+        return;
+    }
+    innerImageSource_ = std::move(nativeImageSource);
+}
+
 #ifdef __cplusplus
 };
 #endif

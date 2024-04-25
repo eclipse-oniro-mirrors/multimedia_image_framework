@@ -37,6 +37,7 @@
 #include "image_common.h"
 
 #include "pixelmap_native.h"
+#include "raw_file.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -313,6 +314,16 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromFd(int32_t fd, OH_ImageSourceNati
  * @since 12
  */
 Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSize, OH_ImageSourceNative **res);
+
+/**
+ * @brief Creates an void pointer
+ *
+ * @param rawFile Indicates the raw file's file descriptor.
+ * @param res Indicates a void pointer to the <b>ImageSource</b> object created at the C++ native layer.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFile, OH_ImageSourceNative **res);
 
 /**
  * @brief Decodes an void pointer

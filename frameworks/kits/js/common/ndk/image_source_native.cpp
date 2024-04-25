@@ -389,6 +389,25 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSi
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreateFromRawFile(RawFileDescriptor *rawFile, OH_ImageSourceNative **res)
+{
+    if (rawFile == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    SourceOptions options;
+    auto imageSource = new OH_ImageSourceNative(*rawFile, options);
+    if (imageSource == nullptr || imageSource->GetInnerImageSource() == nullptr) {
+        if (imageSource) {
+            delete imageSource;
+        }
+        *res = nullptr;
+        return IMAGE_BAD_PARAMETER;
+    }
+    *res = imageSource;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {
