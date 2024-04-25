@@ -370,7 +370,7 @@ bool HeifDecoderImpl::setOutputColor(SkHeifColorFormat heifColor)
 bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    ImageTrace trace("HeifDecoderImpl::decodeGainmap");
+    ImageTrace trace("HeifDecoderImpl::decode");
 
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
@@ -419,7 +419,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 bool HeifDecoderImpl::decodeGainmap()
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    ImageTrace trace("HeifDecoderImpl::decode");
+    ImageTrace trace("HeifDecoderImpl::decodeGainmap");
 
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
