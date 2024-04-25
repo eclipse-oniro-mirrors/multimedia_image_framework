@@ -39,7 +39,6 @@ config("utils_mock_config") {
   visibility = [ ":*" ]
   include_dirs = [
     "include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
 }

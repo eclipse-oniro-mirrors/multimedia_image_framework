@@ -40,6 +40,7 @@ ohos_shared_library("ohimage") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 
@@ -66,6 +67,8 @@ ohos_shared_library("image_receiver") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 

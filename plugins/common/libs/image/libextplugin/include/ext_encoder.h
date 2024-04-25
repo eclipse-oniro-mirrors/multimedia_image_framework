@@ -20,9 +20,9 @@
 
 #include "abs_image_encoder.h"
 #include "plugin_class_base.h"
-#include "SkEncodedImageFormat.h"
 #include "ext_wstream.h"
-#include "SkBitmap.h"
+#include "include/core/SkBitmap.h"
+#include "include/core/SkEncodedImageFormat.h"
 #include "surface_buffer.h"
 
 namespace OHOS {

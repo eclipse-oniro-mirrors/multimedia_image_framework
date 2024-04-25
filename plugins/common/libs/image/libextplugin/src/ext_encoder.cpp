@@ -17,8 +17,7 @@
 #include <algorithm>
 #include <map>
 
-#include "SkBitmap.h"
-#include "SkImageEncoder.h"
+#include "include/core/SkImageEncoder.h"
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif

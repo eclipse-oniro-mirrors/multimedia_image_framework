@@ -18,7 +18,7 @@
 
 #include <cstddef>
 
-#include "SkStream.h"
+#include "include/core/SkStream.h"
 #include "input_data_stream.h"
 #include "nocopyable.h"
 

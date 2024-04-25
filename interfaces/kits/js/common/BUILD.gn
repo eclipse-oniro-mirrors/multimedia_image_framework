@@ -13,15 +13,12 @@
 
 import("//build/ohos.gni")
 import("//build/ohos/ace/ace.gni")
-import("//foundation/graphic/graphic_2d/graphic_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 config("image_external_config") {
   include_dirs = [
     "include",
-    "//utils/system/safwk/native/include",
     "${image_subsystem}/frameworks/kits/js/common/ndk/include",
-    "//foundation/ability/ability_runtime/interfaces/inner_api/runtime/include/",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
@@ -33,25 +30,11 @@ config("image_external_config") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
-    "//utils/jni/jnikit/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "$graphic_surface_root/interfaces/inner_api/surface",
-    "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-    "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager/color_space_object_convertor",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "$resource_management_subsystem/interfaces/native/resource/include",
-    "//drivers/peripheral/display/interfaces/include",
-    "//drivers/peripheral/base",
-    "$skia_root/skia/third_party/externals/libjpeg-turbo",
-    "$ipc_subsystem/communication/ipc/ipc/native/src/napi_common/include",
   ]
 
   include_dirs += [
@@ -59,13 +42,6 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
-    "$skia_root/skia/include/codec",
-    "$skia_root/skia",
-    "$skia_root/skia/include/core",
-    "$skia_root/skia/third_party/libjpeg-turbo",
-    "$skia_root/skia/third_party/skcms",
-    "//third_party/libexif",
-    "//third_party/zlib",
   ]
 
   if (use_mingw_win) {
@@ -86,10 +62,6 @@ config("image_external_config") {
     include_dirs -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
-      "$graphic_surface_root/interfaces/inner_api/surface",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-      "//foundation/graphic/graphic_2d/utils/color_manager/export",
     ]
   } else if (use_clang_android) {
     include_dirs += [
@@ -100,15 +72,6 @@ config("image_external_config") {
     include_dirs -= [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
-      "$graphic_surface_root/interfaces/inner_api/surface",
-      "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-      "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-      "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    ]
-  } else {
-    include_dirs += [
-      "//commonlibrary/c_utils/base/include",
-      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
   }
 }
@@ -177,6 +140,9 @@ if (use_clang_ios) {
     ]
 
     external_deps = [
+      "drivers_peripheral_display:hdi_gralloc_client",
+      "graphic_2d:color_manager",
+      "graphic_surface:surface",
       "hilog:libhilog",
       "napi:ace_napi",
     ]
@@ -249,6 +215,7 @@ if (use_clang_ios) {
     }
 
     external_deps += [
+      "ability_runtime:runtime",
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_2d:color_space_object_convertor",
@@ -259,7 +226,10 @@ if (use_clang_ios) {
       "hitrace:hitrace_meter",
       "ipc:ipc_napi",
       "napi:ace_napi",
+      "resource_management:librawfile",
     ]
+
+    public_external_deps = [ "graphic_2d:color_manager" ]
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.hiviewdfx_hichecker)) {

@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <string>
 
-#include "SkCodec.h"
 #include "abs_image_decoder.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "display_type.h"
@@ -27,6 +26,7 @@
 #endif
 #include "ext_stream.h"
 #include "exif_info.h"
+#include "include/codec/SkCodec.h"
 #include "nocopyable.h"
 #include "plugin_class_base.h"
 #include "jpeg_yuv_decoder/jpeg_decoder_yuv.h"

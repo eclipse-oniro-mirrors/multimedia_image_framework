@@ -29,14 +29,12 @@ ohos_shared_library("svgplugin") {
   ]
 
   include_dirs = [
-    "$graphic_subsystem/utils/color_manager/export",
     "$image_subsystem/plugins/manager/include",
     "$image_subsystem/plugins/manager/include/image",
     "$image_subsystem/plugins/manager/include/pluginbase",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
-    "$skia_root/skia",
   ]
 
   deps = [

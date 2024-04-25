@@ -51,6 +51,8 @@ ohos_unittest("pixelmaptest") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]
@@ -199,6 +201,8 @@ ohos_unittest("imagesourcetest") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 
@@ -236,7 +240,11 @@ ohos_unittest("jpegdecoderextest") {
     "//third_party/googletest:gtest_main",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "libexif:libexif",
+    "skia:libjpeg",
+  ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
@@ -265,6 +273,8 @@ ohos_unittest("jpegutilstest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "libexif:libexif",
+    "skia:libjpeg",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -294,6 +304,8 @@ ohos_unittest("exifmakernotetest") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "libexif:libexif",
+    "skia:libjpeg",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -476,6 +488,8 @@ ohos_unittest("interfacetest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
@@ -733,6 +747,8 @@ ohos_unittest("receivertest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
@@ -804,6 +820,8 @@ ohos_unittest("creatortest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
@@ -1069,6 +1087,11 @@ ohos_unittest("ndktest2") {
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
+
+  external_deps = [
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+  ]
 }
 
 ohos_unittest("napitest") {
@@ -1090,6 +1113,8 @@ ohos_unittest("napitest") {
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
+
+  external_deps = [ "graphic_2d:color_manager" ]
 }
 
 ohos_unittest("jpeg_hw_decoder_test") {
@@ -1137,10 +1162,13 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "drivers_interface_display:display_composer_idl_headers",
     "drivers_interface_display:libdisplay_buffer_hdi_impl",
     "drivers_interface_display:libdisplay_composer_hdi_impl",
+    "graphic_surface:surface",
     "hdf_core:libhdf_utils",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "libexif:libexif",
+    "skia:libjpeg",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1347,7 +1375,10 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "${image_subsystem}/plugins/manager:pluginmanager",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "skia:libjpeg",
+  ]
 }
 
 ohos_unittest("imagestreamtest") {
@@ -1519,7 +1550,11 @@ ohos_unittest("image_native_test") {
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
+  ]
 }
 
 ohos_unittest("image_receiver_native_test") {
@@ -1543,7 +1578,11 @@ ohos_unittest("image_receiver_native_test") {
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "drivers_peripheral_display:hdi_gralloc_client",
+    "graphic_surface:surface",
+  ]
 }
 
 ohos_unittest("datastatisticstest") {

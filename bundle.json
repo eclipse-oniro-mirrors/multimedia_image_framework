@@ -26,6 +26,7 @@
       "hisysevent_config": [ "//foundation/multimedia/image_framework/hisysevent.yaml" ],
       "deps": {
         "components": [
+          "ability_runtime",
           "c_utils",
           "graphic_2d",
           "graphic_surface",
@@ -40,25 +41,26 @@
           "memory_utils",
           "drivers_interface_codec",
           "drivers_interface_display",
+          "drivers_peripheral_display",
           "hdf_core",
           "memmgr_override",
           "libyuv",
           "libjpeg-turbo",
           "libexif",
-          "zlib",
-          "resource_management"
+          "libpng",
+          "opencl-headers",
+          "ffmpeg",
+          "astc-encoder",
+          "skia",
+          "resource_management",
+          "json",
+          "openmax"
         ],
         "third_party": [
           "flutter",
-          "libpng",
           "bounds_checking_function",
           "expat",
-          "json",
-          "skia",
-          "astc-encoder",
-          "opencl-headers",
-          "ffmpeg",
-          "zlib"
+          "skia"
         ]
       },
       "build": {

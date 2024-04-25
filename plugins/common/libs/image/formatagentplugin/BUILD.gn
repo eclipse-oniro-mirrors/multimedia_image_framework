@@ -36,7 +36,6 @@ ohos_shared_library("imageformatagent") {
   ]
 
   include_dirs = [
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
@@ -63,7 +62,6 @@ ohos_shared_library("imageformatagent") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     ]
   } else {
-    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     deps = [
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]

@@ -18,7 +18,7 @@
 
 #include <cstdint>
 #include <string>
-#include "SkCodec.h"
+#include "include/codec/SkCodec.h"
 #include "abs_image_decoder.h"
 #include "bmp_stream.h"
 #include "plugin_class_base.h"

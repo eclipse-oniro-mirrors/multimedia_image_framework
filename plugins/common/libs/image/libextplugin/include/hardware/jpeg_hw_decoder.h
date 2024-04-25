@@ -21,8 +21,8 @@
 #include "v1_0/include/idisplay_buffer.h"
 #include "image/image_plugin_type.h"
 #include "image/input_data_stream.h"
+#include "include/codec/SkCodec.h"
 #include "image_log.h"
-#include "SkCodec.h"
 #include "jpeglib.h"
 
 #undef LOG_DOMAIN
