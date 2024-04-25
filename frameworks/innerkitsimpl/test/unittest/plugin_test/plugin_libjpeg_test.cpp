@@ -2059,7 +2059,7 @@ HWTEST_F(PluginLibJpegTest, GetExifData002, TestSize.Level3)
  * @tc.desc: GetExifIfdByExifTag
  * @tc.type: FUNC
  */
-HWTEST_F(PluginLibJpegTest, GetExifData002, TestSize.Level3)
+HWTEST_F(PluginLibJpegTest, GetExifIfdByExifTag001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifIfdByExifTag001 start";
     EXIFInfo exinfo;
