@@ -125,7 +125,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         auto tag = exif_tag_from_name(key.c_str());
         ExifEntry *entry = GetEntry(key);
         if (entry == nullptr) {
-            IMAGE_LOGE("Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
+            IMAGE_LOGD("Exif data entry returned null for key: %{public}s, tag: %{public}d", key.c_str(), tag);
             value = "";
             return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }

@@ -52,12 +52,12 @@ void TiffParser::Encode(unsigned char **dataPtr, uint32_t &size, ExifData *exifD
         return;
     }
     exif_data_save_data_general(exifData, dataPtr, &size);
-    IMAGE_LOGE("Encode dataPtr size is: %{public}u", size);
+    IMAGE_LOGD("Encode dataPtr size is: %{public}u", size);
 }
 
 void TiffParser::DecodeJpegExif(const unsigned char *dataPtr, const uint32_t &size, ExifData **exifData)
 {
-    IMAGE_LOGE("Decoding Jpeg Exif data.");
+    IMAGE_LOGD("Decoding Jpeg Exif data.");
     if (dataPtr == nullptr) {
         return;
     }
@@ -68,7 +68,7 @@ void TiffParser::DecodeJpegExif(const unsigned char *dataPtr, const uint32_t &si
 
 void TiffParser::EncodeJpegExif(unsigned char **dataPtr, uint32_t &size, ExifData *exifData)
 {
-    IMAGE_LOGE("Encoding Jpeg Exif data.");
+    IMAGE_LOGD("Encoding Jpeg Exif data.");
     if (exifData == nullptr) {
         return;
     }

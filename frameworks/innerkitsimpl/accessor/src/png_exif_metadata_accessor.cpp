@@ -161,7 +161,7 @@ uint32_t PngExifMetadataAccessor::Read()
 {
     DataBuf tiffBuf;
     if (!ReadBlob(tiffBuf)) {
-        IMAGE_LOGE("Failed to read the blob.");
+        IMAGE_LOGD("Failed to read the blob.");
         return ERR_IMAGE_SOURCE_DATA;
     }
     ExifData *exifData;

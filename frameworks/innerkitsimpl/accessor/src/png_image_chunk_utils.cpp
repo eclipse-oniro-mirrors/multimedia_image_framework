@@ -58,17 +58,18 @@ int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType c
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
 
+    bool foundExifKeyword = FindExifKeyword(keyword.CData(), keyword.Size());
+    if (!foundExifKeyword) {
+        IMAGE_LOGI("Ignoring the text chunk without an Exif keyword");
+        return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
+    }
+
     DataBuf rawText = GetRawTextFromChunk(chunkData, keyword.Size(), chunkType);
     if (rawText.Empty()) {
         IMAGE_LOGE("Failed to read the raw text from the chunk data. Chunk data size: %{public}zu", chunkData.Size());
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
 
-    bool foundExifKeyword = FindExifKeyword(keyword.CData(), keyword.Size());
-    if (!foundExifKeyword) {
-        IMAGE_LOGI("Ignoring the text chunk without an Exif keyword");
-        return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
-    }
     return GetTiffDataFromRawText(rawText, tiffData);
 }
 
