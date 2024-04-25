@@ -2079,7 +2079,7 @@ HWTEST_F(PluginLibJpegTest, GetExifFormatByExifTag001, TestSize.Level3)
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifFormatByExifTag001 start";
     EXIFInfo exinfo;
     ExifTag tag = static_cast<ExifTag>(0xea1c);
-    ExifIfd ret = exinfo.GetExifFormatByExifTag(tag);
+    ExifFormat ret = exinfo.GetExifFormatByExifTag(tag);
     ASSERT_EQ(ret, EXIF_FORMAT_UNDEFINED);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifFormatByExifTag001 end";
 }
@@ -2122,7 +2122,7 @@ HWTEST_F(PluginLibJpegTest, SetGpsDegreeRational001, TestSize.Level3)
     ExifEntry *ptrEntry = nullptr;
     ExifByteOrder order = EXIF_BYTE_ORDER_INTEL;
     ExifTag tag = EXIF_TAG_GPS_LATITUDE;
-    std::vector<ExifRational> exifRationals;
+    std::vector<std::string> exifRationals;
     exifRationals.resize(3);
     ASSERT_NE(exifRationals.size(), 2);
     unsigned char data = 'a';
