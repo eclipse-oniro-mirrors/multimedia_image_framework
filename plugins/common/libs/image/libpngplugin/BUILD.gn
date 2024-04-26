@@ -29,25 +29,15 @@ ohos_shared_library("pngplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/src/png_ninepatch_res.cpp",
   ]
   include_dirs = [
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
-    "//third_party/zlib",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//third_party/skia/third_party/libjpeg-turbo",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "$skia_root/skia/include/codec",
-    "$skia_root/skia",
-    "$skia_root/skia/include/core",
-    "//third_party/skia/third_party/skcms",
   ]
-  deps = [
-    "//third_party/libpng:png_static",
-    "//third_party/zlib:shared_libz",
-  ]
+  deps = []
+  external_deps = [ "zlib:shared_libz" ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
@@ -77,24 +67,20 @@ ohos_shared_library("pngplugin") {
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
-    include_dirs += [
-      "//commonlibrary/c_utils/base/include",
-      "//third_party/libpng",
-    ]
     deps += [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/libpng:png_static",
     ]
     if (DUAL_ADAPTER) {
     } else {
       deps += [ "//third_party/libpng:libpng" ]
     }
-    external_deps = [
+    external_deps += [
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
+      "libpng:libpng",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

@@ -19,8 +19,7 @@
 #include "plugin_class_base.h"
 #include "webp/encode.h"
 #include "src/images/SkImageEncoderFns.h"
-#include "SkImageEncoderFns.h"
-#include "SkStream.h"
+#include "include/core/SkStream.h"
 namespace OHOS {
 namespace ImagePlugin {
 class WebpEncoder : public AbsImageEncoder, public OHOS::MultimediaPlugin::PluginClassBase {

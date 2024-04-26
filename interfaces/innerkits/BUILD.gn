@@ -21,8 +21,6 @@ import("$image_subsystem/plugins/cross/image_native_ios.gni")
 config("image_external_config") {
   include_dirs = [
     "include",
-    "//utils/system/safwk/native/include",
-    "//foundation/ability/ability_runtime/interfaces/inner_api/runtime/include/",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
@@ -34,23 +32,12 @@ config("image_external_config") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "//foundation/multimedia/image_framework/frameworks/kits/js/common/include",
     "//foundation/multimedia/image_framework/interfaces/kits/js/common/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
-    "//utils/jni/jnikit/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "$graphic_surface_root/interfaces/inner_api/surface",
-    "//foundation/graphic/graphic_2d/interfaces/inner_api/common",
-    "//foundation/graphic/graphic_2d/interfaces/kits/napi/graphic/color_manager/color_space_object_convertor",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-    "//foundation/graphic/graphic_2d/utils/buffer_handle/export",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//drivers/peripheral/display/interfaces/include",
-    "//drivers/peripheral/base",
     "${image_subsystem}/frameworks/kits/js/common/ndk/include",
   ]
 
@@ -60,12 +47,6 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser",
-    "$skia_root/skia",
-    "$skia_root/skia/include/core",
-    "$skia_root/skia/include/codec",
-    "$skia_root/skia/third_party/externals/libjpeg-turbo",
-    "$skia_root/skia/third_party/skcms",
-    "//third_party/libexif",
   ]
 
   if (use_mingw_win) {
@@ -75,11 +56,6 @@ config("image_external_config") {
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
       "//third_party/bounds_checking_function/include",
-      "//commonlibrary/c_utils/base/include",
-      "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    ]
-  } else {
-    include_dirs += [
       "//commonlibrary/c_utils/base/include",
       "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     ]
@@ -139,7 +115,6 @@ if (use_clang_android) {
       }
     }
     public_configs = [ ":image_external_config" ]
-    configs = [ ":image_postproc_config" ]
 
     cflags = [
       "-DIMAGE_DEBUG_FLAG",
@@ -235,7 +210,6 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-        "//third_party/ffmpeg:libohosffmpeg",
       ]
       deps += skia_platform
 
@@ -246,13 +220,18 @@ if (use_clang_android) {
       external_deps = [
         "c_utils:utils",
         "drivers_interface_display:display_commontype_idl_headers",
-        "graphic_2d:color_manager",
-        "graphic_surface:surface",
+        "ffmpeg:libohosffmpeg",
         "hilog:libhilog",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
         "napi:ace_napi",
+        "skia:libjpeg",
         "zlib:libz",
+      ]
+      public_external_deps = [
+        "drivers_peripheral_display:hdi_gralloc_client",
+        "graphic_2d:color_manager",
+        "graphic_surface:surface",
       ]
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]
@@ -387,12 +366,14 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
   } else {
-    defines = [ "DUAL_ADAPTER" ]
+    defines = [
+      "DUAL_ADAPTER",
+      "IMAGE_COLORSPACE_FLAG",
+    ]
     DUAL_ADAPTER = true
 
     deps = [
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
-      "//foundation/arkui/napi:ace_napi",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
@@ -404,10 +385,16 @@ ohos_static_library("image_static") {
     external_deps = [
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_peripheral_display:hdi_gralloc_client",
+      "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
+      "napi:ace_napi",
     ]
+    if (enable_libexif) {
+      external_deps += [ "libexif:libexif" ]
+    }
   }
   external_deps += [ "zlib:libz" ]
 

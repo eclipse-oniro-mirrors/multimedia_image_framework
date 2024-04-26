@@ -13,10 +13,12 @@
 
 import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
-third_party_dir = "/third_party"
-third_party_root = "/${third_party_dir}"
 if (use_mingw_win || use_clang_mac) {
   graphic_root = "/${image_sep_f}${image_oundation}/${graphic_multimedia}"
+}
+if (use_clang_mac) {
+  third_party_dir = "/third_party"
+  third_party_root = "/${third_party_dir}"
 }
 
 ohos_static_library("exifhelper") {
@@ -35,7 +37,6 @@ ohos_static_library("exifhelper") {
     "../libjpegplugin/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "//third_party/libexif",
   ]
 
   external_deps = [
@@ -65,10 +66,7 @@ config("skia_includes") {
   ]
 }
 config("third_part_includes") {
-  include_dirs = [
-    "../libjpegplugin/include",
-    "${third_party_root}/libexif",
-  ]
+  include_dirs = [ "../libjpegplugin/include" ]
 }
 config("win_config") {
   if (use_mingw_win) {
@@ -116,10 +114,10 @@ ohos_shared_library("textureEncoderCL") {
   } else if (use_clang_mac) {
     configs += [ ":mac_config" ]
   } else {
-    deps = [ "//third_party/opencl-headers:libcl" ]
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
+      "opencl-headers:libcl",
     ]
   }
   cflags = [ "-O3" ]
@@ -168,7 +166,6 @@ ohos_shared_library("extplugin") {
   }
   configs = [
     ":plugins_includes",
-    ":skia_includes",
     ":third_part_includes",
   ]
   include_dirs = [
@@ -180,20 +177,6 @@ ohos_shared_library("extplugin") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
-    "${image_subsystem}/../../../drivers/peripheral/base/",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
-    "${image_subsystem}/../../../third_party/skia/",
-    "${image_subsystem}/../../../third_party/skia/include/codec/",
-    "${image_subsystem}/../../../third_party/skia/include/core/",
-    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
-    "//third_party/astc-encoder/Source",
-    "//third_party/skia",
-    "//third_party/skia/include/codec",
-    "//third_party/skia/include/core",
-    "//third_party/libjpeg-turbo",
-    "${image_subsystem}/../../../drivers/peripheral/base",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include",
   ]
   if (use_mingw_win) {
     configs += [ ":win_config" ]
@@ -216,7 +199,6 @@ ohos_shared_library("extplugin") {
       "${third_party_root}/bounds_checking_function:libsec_static",
     ]
   } else {
-    include_dirs += [ "${commonlibrary_subsystem}/base/include" ]
     defines = []
     deps = [
       ":exifhelper",
@@ -225,28 +207,30 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "${image_subsystem}/interfaces/innerkits:image_native",
       "${image_subsystem}/plugins/manager:pluginmanager",
-      "//third_party/astc-encoder:astc_encoder_shared",
     ]
-    if (defined(global_parts_info) &&
-        defined(global_parts_info.open_source_libyuv)) {
-      defines += [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
-      deps += [
-        ":textureEncoderCL",
-        "//third_party/opencl-headers:libcl",
-      ]
-    }
     deps += skia_platform
 
     external_deps = [
+      "astc-encoder:astc_encoder_shared",
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_peripheral_display:hdi_gralloc_client",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
+      "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
+      "skia:libjpeg",
       "zlib:libz",
     ]
+
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.open_source_libyuv)) {
+      defines += [ "ENABLE_ASTC_ENCODE_BASED_GPU" ]
+      deps += [ ":textureEncoderCL" ]
+      external_deps += [ "opencl-headers:libcl" ]
+    }
 
     if (defined(global_parts_info) &&
         defined(global_parts_info.graphic_graphic_2d_ext)) {
@@ -270,13 +254,11 @@ ohos_shared_library("extplugin") {
 
     if (enable_heif_hw_decode) {
       defines += [ "HEIF_HW_DECODE_ENABLE" ]
-      include_dirs += [
-        "include/heif_impl/heif_parser",
-        "//third_party/openmax/api/1.1.2",
-      ]
+      include_dirs += [ "include/heif_impl/heif_parser" ]
       external_deps += [
         "drivers_interface_codec:codec_idl_headers",
         "drivers_peripheral_codec:libcodec_hdi_omx_client",
+        "openmax:libopenmax_static",
       ]
     }
   }
@@ -383,13 +365,6 @@ ohos_shared_library("heifimpl") {
     "${image_subsystem}/interfaces/innerkits/include",
   ]
 
-  if (enable_heif_hw_decode) {
-    include_dirs += [
-      "//third_party/ffmpeg",
-      "//third_party/openmax/api/1.1.2",
-    ]
-  }
-
   sources = [ "src/heif_impl/HeifDecoderImpl.cpp" ]
 
   if (enable_heif_hw_decode) {
@@ -414,10 +389,6 @@ ohos_shared_library("heifimpl") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
 
-  if (enable_heif_hw_decode) {
-    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
-  }
-
   external_deps = [
     "graphic_2d:color_manager",
     "graphic_surface:surface",
@@ -430,9 +401,11 @@ ohos_shared_library("heifimpl") {
       "drivers_interface_codec:codec_idl_headers",
       "drivers_interface_codec:libcodec_proxy_2.0",
       "drivers_peripheral_codec:libcodec_hdi_omx_client",
+      "ffmpeg:libohosffmpeg",
       "hdf_core:libhdi",
       "init:libbegetutil",
       "ipc:ipc_core",
+      "openmax:libopenmax_static",
       "qos_manager:qos",
     ]
   }

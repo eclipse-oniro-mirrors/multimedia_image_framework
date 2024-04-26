@@ -58,14 +58,8 @@ if (use_clang_ios) {
     }
     include_dirs = [
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-      "//foundation/multimedia/utils/include",
       "//foundation/multimedia/image_framework/plugins/manager/include",
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-      "//commonlibrary/c_utils/base/include",
-      "//foundation/multimedia/media_utils_lite/interfaces/kits",
-      "//foundation/communication/ipc/utils/include",
-      "$skia_root/skia",
-      "${graphic_subsystem}/interfaces/inner_api/surface",
     ]
 
     sources = [
@@ -145,11 +139,8 @@ if (use_clang_ios) {
 ohos_static_library("image_utils_static") {
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//commonlibrary/c_utils/base/include",
-    "$skia_root/skia",
   ]
 
   sources = [
@@ -211,6 +202,9 @@ ohos_static_library("image_utils_static") {
 
     external_deps = [
       "c_utils:utils",
+      "drivers_interface_display:display_commontype_idl_headers",
+      "graphic_2d:color_manager",
+      "graphic_surface:surface",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",

@@ -12,7 +12,6 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
-import("//foundation/arkui/ace_engine/ace_config.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("jpegplugin") {
@@ -38,7 +37,6 @@ ohos_shared_library("jpegplugin") {
   ]
 
   include_dirs = [
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
@@ -46,14 +44,6 @@ ohos_shared_library("jpegplugin") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "$skia_root/skia/include/codec",
-    "$skia_root/skia",
-    "$skia_root/skia/include/core",
-    "//third_party/skia/third_party/libjpeg-turbo",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/skia/third_party/skcms",
-    "//third_party/libexif",
   ]
 
   if (use_mingw_win) {
@@ -91,17 +81,14 @@ ohos_shared_library("jpegplugin") {
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
-    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
     sources += [
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
       "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
     ]
     deps = [
-      #"//third_party/skia/third_party/libjpeg-turbo:libjpeg",
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
     ]
     deps += skia_skcms
     deps += skia_platform
@@ -122,6 +109,7 @@ ohos_shared_library("jpegplugin") {
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "libexif:libexif",
+      "skia:libjpeg",
     ]
   }
 

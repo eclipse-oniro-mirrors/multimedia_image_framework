@@ -18,7 +18,7 @@
 
 #include <cstddef>
 #include <vector>
-#include "SkStream.h"
+#include "include/core/SkStream.h"
 #include "output_data_stream.h"
 #include "nocopyable.h"
 #include "buffer_metadata_stream.h"

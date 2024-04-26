@@ -34,7 +34,6 @@ ohos_shared_library("rawplugin") {
   ]
 
   include_dirs = [
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
@@ -43,10 +42,6 @@ ohos_shared_library("rawplugin") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
-    "//third_party/libexif",
-    "//third_party/skia",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
   ]
 
   if (use_mingw_win) {
@@ -68,7 +63,6 @@ ohos_shared_library("rawplugin") {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-      "//third_party/skia/third_party/piex",
     ]
 
     if (DUAL_ADAPTER) {
@@ -77,6 +71,9 @@ ohos_shared_library("rawplugin") {
     external_deps = [
       "graphic_2d:color_manager",
       "hilog:libhilog",
+      "libexif:libexif",
+      "skia:libjpeg",
+      "skia:piex",
     ]
   }
 
