@@ -103,8 +103,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         return HandleMakerNote(value);
     }
     char tagValueChar[TAG_VALUE_SIZE];
-    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
-        IsSpecialHwKey(key)) {
+    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
         value = DEFAULT_EXIF_VALUE;
         ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
         if (md == nullptr) {
@@ -616,9 +615,9 @@ bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &val
 bool ExifMetadata::RemoveEntry(const std::string &key)
 {
     bool isSuccess = false;
-    if(!(exifData_ && ExifMetadatFormatter::IsModifyAllowed(key))) {
-       IMAGE_LOGD("RemoveEntry failed, can not remove entry for key: %{public}s", key.c_str());
-       return isSuccess;
+    if (!(exifData_ && ExifMetadatFormatter::IsModifyAllowed(key))) {
+        IMAGE_LOGD("RemoveEntry failed, can not remove entry for key: %{public}s", key.c_str());
+        return isSuccess;
     }
 
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
@@ -658,7 +657,8 @@ bool ExifMetadata::RemoveHwEntry(const std::string &key)
     return true;
 }
 
-bool ExifMetadata::IsSpecialHwKey(const std::string &key) const {
+bool ExifMetadata::IsSpecialHwKey(const std::string &key) const
+{
     auto iter = HW_SPECIAL_KEYS.find(key);
     return (iter != HW_SPECIAL_KEYS.end());
 }
