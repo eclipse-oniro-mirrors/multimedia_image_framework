@@ -397,7 +397,11 @@ ohos_static_library("image_static") {
       "hilog:libhilog",
     ]
   }
-  external_deps += [ "zlib:libz" ]
+  if (is_arkui_x) {
+    deps += [ "//third_party/zlib:libz" ]
+  } else {
+    external_deps += [ "zlib:libz" ]
+  }
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

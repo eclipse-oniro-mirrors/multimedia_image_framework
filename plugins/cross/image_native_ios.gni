@@ -65,19 +65,19 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/incremental_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/istream_source_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/src/ostream_packer_stream.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
 
   # accessor
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_exif_metadata_accessor.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/png_image_chunk_utils.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
 
   # image_napi

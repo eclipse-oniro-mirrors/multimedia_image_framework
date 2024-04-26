@@ -1140,7 +1140,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
     
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
