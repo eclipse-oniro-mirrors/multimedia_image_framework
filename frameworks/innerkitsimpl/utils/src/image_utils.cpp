@@ -377,12 +377,16 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         GetPixelMapName(pixelMap.get()) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
     if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
             totalSize = static_cast<int32_t>(sbBuffer->GetSize());
         } else {
             totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
         }
+#else
+        totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
+#endif
         IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 totalSize is %{public}d", totalSize);
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
