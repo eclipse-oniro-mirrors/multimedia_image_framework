@@ -66,7 +66,8 @@ public:
     Media::ImageHdrType CheckHdrType() override;
     uint32_t GetGainMapOffset() override;
     Media::HdrMetadata GetHdrMetadata(Media::ImageHdrType type) override;
-
+    bool DecodeHeifGainMap(DecodeContext &context, float scale) override;
+    bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace getGrColorSpace() override;
     bool IsSupportICCProfile() override;

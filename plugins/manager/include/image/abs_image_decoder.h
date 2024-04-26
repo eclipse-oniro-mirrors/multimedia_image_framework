@@ -222,6 +222,17 @@ public:
     {
         return {};
     }
+
+    virtual bool DecodeHeifGainMap(DecodeContext& context, float scale)
+    {
+        return false;
+    }
+
+    virtual bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr)
+    {
+        return false;
+    }
+
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };

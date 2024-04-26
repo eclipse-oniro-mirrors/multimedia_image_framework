@@ -215,5 +215,61 @@ void HeifImage::SetColorProfile(const std::shared_ptr<const HeifColorProfile> &p
         nclxColorProfile_ = std::move(nclx);
     }
 }
+
+void HeifImage::SetGainmapMasterImage(heif_item_id id)
+{
+    gainmapMasterItemid_ = id;
+}
+
+void HeifImage::AddGainmapImage(std::shared_ptr<HeifImage>& img)
+{
+    gainmapImage_ = img;
+}
+
+std::shared_ptr<HeifImage> HeifImage::GetGainmapImage() const
+{
+    return gainmapImage_;
+}
+
+void HeifImage::SetTmapBoxId(heif_item_id id)
+{
+    tmapId_ = id;
+}
+
+void HeifImage::SetStaticMetadata(std::vector<uint8_t>& displayInfo, std::vector<uint8_t>& lightInfo)
+{
+    displayInfo_ = displayInfo;
+    lightInfo_ = lightInfo;
+}
+
+void HeifImage::SetUWAInfo(std::vector<uint8_t>& uwaInfo)
+{
+    uwaInfo_ = uwaInfo;
+}
+
+void HeifImage::SetISOMetadata(std::vector<uint8_t>& isoMetadata)
+{
+    isoMetadata_ = isoMetadata;
+}
+
+std::vector<uint8_t> HeifImage::GetDisplayInfo()
+{
+    return displayInfo_;
+}
+
+std::vector<uint8_t> HeifImage::GetLightInfo()
+{
+    return lightInfo_;
+}
+
+std::vector<uint8_t> HeifImage::GetUWAInfo()
+{
+    return uwaInfo_;
+}
+
+std::vector<uint8_t> HeifImage::GetISOMetadata()
+{
+    return isoMetadata_;
+}
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -17,6 +17,7 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_PARSER_HEIF_IMAGE_H
 
 #include "box/item_property_color_box.h"
+#include "box/item_property_display_box.h"
 #include "heif_type.h"
 
 namespace OHOS {
@@ -96,6 +97,17 @@ public:
     const std::shared_ptr<const HeifRawColorProfile> &GetRawColorProfile() const;
 
     void SetColorProfile(const std::shared_ptr<const HeifColorProfile> &profile);
+    void SetGainmapMasterImage(heif_item_id id);
+    void AddGainmapImage(std::shared_ptr<HeifImage>& img);
+    std::shared_ptr<HeifImage> GetGainmapImage() const;
+    void SetTmapBoxId(heif_item_id id);
+    void SetStaticMetadata(std::vector<uint8_t>& display, std::vector<uint8_t>& lightInfo);
+    void SetUWAInfo(std::vector<uint8_t>& uwaInfo);
+    void SetISOMetadata(std::vector<uint8_t>& isoMetadata);
+    std::vector<uint8_t> GetDisplayInfo();
+    std::vector<uint8_t> GetLightInfo();
+    std::vector<uint8_t> GetUWAInfo();
+    std::vector<uint8_t> GetISOMetadata();
 
 private:
     heif_item_id itemId_ = 0;
@@ -123,6 +135,14 @@ private:
 
     std::shared_ptr<const HeifNclxColorProfile> nclxColorProfile_;
     std::shared_ptr<const HeifRawColorProfile> rawColorProfile_;
+
+    heif_item_id gainmapMasterItemid_ = 0;
+    std::shared_ptr<HeifImage> gainmapImage_;
+    heif_item_id tmapId_;
+    std::vector<uint8_t> lightInfo_;
+    std::vector<uint8_t> displayInfo_;
+    std::vector<uint8_t> uwaInfo_;
+    std::vector<uint8_t> isoMetadata_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

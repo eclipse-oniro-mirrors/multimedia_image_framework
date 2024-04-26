@@ -13,23 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNERKITS_INCLUDE_IMAGE_MIME_TYPE_H
-#define INTERFACES_INNERKITS_INCLUDE_IMAGE_MIME_TYPE_H
+#ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_COLOR_UTILS_H
+#define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_COLOR_UTILS_H
 
+#include <cstdlib>
+#include <cstdio>
 #include <string>
+#include "image_type.h"
 
 namespace OHOS {
 namespace Media {
 
-static const std::string IMAGE_BMP_FORMAT = "image/bmp";
-static const std::string IMAGE_JPEG_FORMAT = "image/jpeg";
-static const std::string IMAGE_HEIF_FORMAT = "image/heif";
-static const std::string IMAGE_PNG_FORMAT = "image/png";
-static const std::string IMAGE_WEBP_FORMAT = "image/webp";
-static const std::string IMAGE_GIF_FORMAT = "image/gif";
-static const std::string IMAGE_ICO_FORMAT = "image/x-ico";
-
+class ColorUtils {
+public:
+    static ColorManager::ColorSpaceName CicpToColorSpace(uint16_t primaries, uint16_t transfer,
+        uint16_t matrix, uint8_t range);
+    static void ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& primaries, uint16_t& transfer,
+        uint16_t& matrix, uint8_t& range);
+};
 } // namespace Media
 } // namespace OHOS
-
-#endif // INTERFACES_INNERKITS_INCLUDE_IMAGE_MIME_TYPE_H
+#endif // FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_COLOR_UTILS_H

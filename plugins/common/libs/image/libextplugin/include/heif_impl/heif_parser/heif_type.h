@@ -49,6 +49,10 @@ static const uint32_t BOX_TYPE_THMB = fourcc_to_code("thmb");
 static const uint32_t BOX_TYPE_DIMG = fourcc_to_code("dimg");
 static const uint32_t BOX_TYPE_CDSC = fourcc_to_code("cdsc");
 
+static const uint32_t BOX_TYPE_CLLI = fourcc_to_code("clli");
+static const uint32_t BOX_TYPE_MDCV = fourcc_to_code("mdcv");
+static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
+
 static const uint32_t HANDLER_TYPE_PICT = fourcc_to_code("pict");
 
 static const uint32_t ITEM_TYPE_MIME = fourcc_to_code("mime");

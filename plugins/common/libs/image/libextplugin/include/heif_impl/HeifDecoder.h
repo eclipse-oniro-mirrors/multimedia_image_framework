@@ -40,6 +40,13 @@ struct HeifStream {
     virtual size_t getPosition() const = 0;
 };
 
+struct HeifNclxColor {
+    uint16_t colorPrimaries;
+    uint16_t transferCharacteristics;
+    uint16_t matrixCoefficients;
+    uint8_t fullRangeFlag;
+};
+
 struct HeifFrameInfo {
     uint32_t mWidth;
     uint32_t mHeight;
@@ -47,6 +54,16 @@ struct HeifFrameInfo {
     uint32_t mBytesPerPixel;           // Number of bytes for one pixel
     int64_t mDurationUs;               // Duration of the frame in us
     std::vector<uint8_t> mIccData;     // ICC data array
+    bool hasNclxColor = false;
+    HeifNclxColor nclxColor;
+};
+
+enum class HeifImageHdrType {
+    UNKNOWN = 0,
+    VIVID_DUAL = 1,
+    VIVID_SINGLE,
+    ISO_DUAL,
+    ISO_SINGLE,
 };
 
 struct HeifDecoder {
@@ -69,6 +86,15 @@ struct HeifDecoder {
     virtual bool getScanline(uint8_t* dst) = 0;
 
     virtual size_t skipScanlines(int count) = 0;
+    virtual bool getImageInfo(HeifFrameInfo *frameInfo) = 0;
+    virtual bool decodeGainmap() = 0;
+    virtual void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) = 0;
+    virtual bool getGainmapInfo(HeifFrameInfo* frameInfo) = 0;
+    virtual bool getTmapInfo(HeifFrameInfo* frameInfo) = 0;
+    virtual HeifImageHdrType getHdrType() = 0;
+    virtual void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
+        std::vector<uint8_t>& lightInfo) = 0;
+    virtual void getISOMetadata(std::vector<uint8_t>& isoMetadata) = 0;
 };
 
 #endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_H

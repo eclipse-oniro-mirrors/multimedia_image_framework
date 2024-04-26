@@ -49,6 +49,15 @@ public:
 
     size_t skipScanlines(int count) override;
 
+    bool getImageInfo(HeifFrameInfo *frameInfo) override;
+    bool decodeGainmap() override;
+    void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) override;
+    bool getGainmapInfo(HeifFrameInfo* frameInfo) override;
+    bool getTmapInfo(HeifFrameInfo* frameInfo) override;
+    HeifImageHdrType getHdrType() override;
+    void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
+        std::vector<uint8_t>& lightInfo) override;
+    void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -60,13 +69,15 @@ private:
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
 
-    bool DecodeGrids(sptr<SurfaceBuffer> &hwBuffer);
+    bool DecodeGrids(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
 
-    bool DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer);
+    bool DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
 
-    bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer);
+    bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
 
     bool IsDirectYUVDecode();
+
+    void SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image);
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
@@ -83,8 +94,17 @@ private:
     size_t dstRowStride_;
     SurfaceBuffer *dstHwBuffer_;
 
+    std::shared_ptr<HeifImage> gainmapImage_ = nullptr;
+    HeifFrameInfo gainmapImageInfo_;
+    uint8_t* gainmapDstMemory_;
+    size_t gainmapDstRowStride_;
+
+    HeifFrameInfo tmapInfo_;
+
 #ifdef HEIF_HW_DECODE_ENABLE
+    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
     std::shared_ptr<HeifHardwareDecoder> hwDecoder_;
+    std::shared_ptr<HeifHardwareDecoder> hwGainmapDecoder_
 #endif
 };
 } // namespace ImagePlugin

@@ -1207,7 +1207,7 @@ bool PixelMap::IsHdr()
         return false;
     }
 #endif
-    return false;
+    return true;
 }
 
 uint8_t PixelMap::GetARGB32ColorA(uint32_t color)

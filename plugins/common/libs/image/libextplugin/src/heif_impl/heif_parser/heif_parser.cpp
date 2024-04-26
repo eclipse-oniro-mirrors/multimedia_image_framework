@@ -16,6 +16,7 @@
 #include "heif_parser.h"
 #include "box/item_property_aux_box.h"
 #include "box/item_property_basic_box.h"
+#include "box/item_property_display_box.h"
 #include "box/item_property_transform_box.h"
 #include "securec.h"
 
@@ -283,11 +284,15 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid") {
+        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap") {
             continue;
         }
-
         auto image = std::make_shared<HeifImage>(itemId);
+        if (itemType == "tmap") {
+            tmapImage_ = image;
+            ExtractImageProperties(tmapImage_);
+            continue;
+        }
         images_.insert(std::make_pair(itemId, image));
         if (!infe->IsHidden() && itemId == GetPrimaryItemId()) {
             image->SetPrimaryImage(true);
@@ -301,10 +306,86 @@ heif_error HeifParser::AssembleImages()
         return heif_error_primary_item_not_found;
     }
 
+    ExtractGainmap(allItemIds);
     ExtractGridImageProperties();
     ExtractNonMasterImages();
     ExtractMetadata(allItemIds);
     return heif_error_ok;
+}
+
+void HeifParser::ExtractIT35Metadata(const heif_item_id& metadataItemId)
+{
+    if (GetItemType(metadataItemId) != "it35") {
+        return;
+    }
+    std::vector<uint8_t> extendInfo;
+    heif_error err = GetItemData(metadataItemId, &(extendInfo));
+    if (err != heif_error_ok || extendInfo.empty()) {
+        return;
+    }
+    primaryImage_->SetUWAInfo(extendInfo);
+}
+
+void HeifParser::ExtractISOMetadata(const heif_item_id& itemId)
+{
+    if (GetItemType(itemId) != "tmap") {
+        return;
+    }
+    std::vector<uint8_t> extendInfo;
+    heif_error err = GetItemData(itemId, &extendInfo);
+    if (err != heif_error_ok || extendInfo.empty()) {
+        return ;
+    }
+    primaryImage_->SetISOMetadata(extendInfo);
+}
+
+void HeifParser::ExtractDisplayData(std::shared_ptr<HeifImage>& image, heif_item_id& itemId)
+{
+    auto mdcv = GetProperty<HeifMdcvBox>(itemId);
+    auto clli = GetProperty<HeifClliBox>(itemId);
+    if (mdcv == nullptr && clli == nullptr) {
+        return;
+    }
+    DisplayColourVolume displayColourVolume{};
+    ContentLightLevelInfo lightInfo{};
+    uint32_t displaySize = sizeof(DisplayColourVolume);
+    std::vector<uint8_t> displayVec(displaySize);
+    if (mdcv) {
+        displayColourVolume = mdcv->GetColourVolume();
+        if (memcpy_s(displayVec.data(), displaySize, &displayColourVolume, displaySize) != EOK) {
+            displayVec.resize(0);
+        }
+    }
+
+    uint32_t lightInfoSize = sizeof(ContentLightLevelInfo);
+    std::vector<uint8_t> lightInfoVec(lightInfoSize);
+    if (clli) {
+        lightInfo = clli->GetLightLevel();
+        if (memcpy_s(lightInfoVec.data(), lightInfoSize, &lightInfo, lightInfoSize) != EOK) {
+            lightInfoVec.resize(0);
+        }
+    }
+
+    image->SetStaticMetadata(displayVec, lightInfoVec);
+}
+
+void HeifParser::ExtractGainmap(const std::vector<heif_item_id>& allItemIds)
+{
+    for (heif_item_id itemId: allItemIds) {
+        // extract Image Item
+        auto infe = GetInfeBox(itemId);
+        if (!infe) {
+            continue;
+        }
+        const std::string& itemType = infe->GetItemType();
+        if (itemType == "it35") {
+            ExtractIT35Metadata(itemId);
+        }
+        if (itemType == "tmap") {
+            ExtractISOMetadata(itemId);
+            ExtractGainmapImage(itemId);
+        }
+    }
 }
 
 void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
@@ -350,6 +431,7 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetChromaBitNum(hvccConfig.bitDepthChroma);
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
     }
+    ExtractDisplayData(image, itemId);
 }
 
 void HeifParser::ExtractGridImageProperties()
@@ -424,6 +506,42 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
     masterImage->AddAuxImage(auxImage);
 }
 
+void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
+{
+    std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(tmapId);
+    for (const HeifIrefBox::Reference &ref : references) {
+        uint32_t type = ref.box.GetBoxType();
+        if (type != BOX_TYPE_DIMG) {
+            continue;
+        }
+        heif_item_id fromItemId = ref.fromItemId;
+        auto fromItemInfeBox = GetInfeBox(fromItemId);
+        if (fromItemInfeBox->GetItemType() != "tmap") {
+            return;
+        }
+        std::vector<heif_item_id> toItemIds = ref.toItemIds;
+        const size_t tmapToItemSize = 2;
+        if (toItemIds.size() != tmapToItemSize) {
+            return;
+        }
+        const uint8_t baseIndex = 0;
+        const uint8_t gainmapIndex = 1;
+        heif_item_id baseId = toItemIds[baseIndex];
+        if (baseId != primaryImage_->GetItemId()) {
+            return;
+        }
+        heif_item_id gainmapId = toItemIds[gainmapIndex];
+        auto gainmapImage = GetImage(gainmapId);
+        if (gainmapImage == nullptr) {
+            return;
+        }
+        gainmapImage->SetGainmapMasterImage(baseId);
+        gainmapImage->SetTmapBoxId(tmapId);
+        primaryImage_->AddGainmapImage(gainmapImage);
+        primaryImage_->SetTmapBoxId(tmapId);
+    }
+}
+
 void HeifParser::ExtractNonMasterImages()
 {
     if (!irefBox_) {
@@ -489,6 +607,16 @@ std::shared_ptr<HeifImage> HeifParser::GetImage(heif_item_id itemId)
 std::shared_ptr<HeifImage> HeifParser::GetPrimaryImage()
 {
     return primaryImage_;
+}
+
+std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
+{
+    return primaryImage_->GetGainmapImage();
+}
+
+std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
+{
+    return tmapImage_;
 }
 
 heif_item_id HeifParser::GetNextItemId() const
