@@ -30,6 +30,7 @@ namespace Multimedia {
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
 static const std::string IMAGE_INPUT_JPEG_BLANKEXIF_PATH = "/data/local/tmp/image/test_exif_blank.jpg";
 static const std::string IMAGE_INPUT_JPEG_HW_PATH = "/data/local/tmp/image/test_hwkey.jpg";
+static const std::string IMAGE_INPUT_JPEG_RM_ENTRY_PATH = "/data/local/tmp/image/test_entrys.jpg";
 
 class ExifMetadataTest : public testing::Test {
 public:
@@ -1064,6 +1065,10 @@ std::string g_batchData006[][3] = {
     {"SubfileType", "2", "2"},
     {"GPSHPositioningError", "5/2", "2.5"},
     {"PhotographicSensitivity", "1", "1"},
+    {"HwMnoteCaptureMode", "121", "121"},
+    {"MovingPhotoId", "110", "110"},
+    {"MovingPhotoVersion", "1", "1"},
+    {"MicroVideoPresentationTimestampUS", "123232", "123232"},
 };
 
 HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
@@ -1076,6 +1081,7 @@ HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
 
     int rows = sizeof(g_batchData006) / sizeof(g_batchData006[0]);
     for (int i = 0; i < rows; ++i) {
+        printf("set tag: %s\n", g_batchData006[i][0].c_str());
         std::string key = g_batchData006[i][0];
         std::string modifyvalue = g_batchData006[i][1];
         auto iv = ExifMetadatFormatter::Validate(key, modifyvalue);
@@ -1090,7 +1096,6 @@ HWTEST_F(ExifMetadataTest, SetValueBatch006, TestSize.Level3)
         ASSERT_EQ(retvalue, g_batchData006[i][2]);
     }
 }
-
 
 std::string g_error[][2] = {
     {"BitsPerSample", "8,8"},
@@ -1380,5 +1385,41 @@ HWTEST_F(ExifMetadataTest, GetIFD001, TestSize.Level3)
         ASSERT_EQ(ifd, it.second);
     }
 }
+
+std::string g_RemoveBatch001[] = {
+    {"ImageLength"},
+    {"HwMnoteCaptureMode"},
+    {"MovingPhotoId"},
+    {"MovingPhotoVersion"},
+    {"MicroVideoPresentationTimestampUS"},
+};
+
+HWTEST_F(ExifMetadataTest, RemoveBatch001, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_RM_ENTRY_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+    ExifMetadata metadata(exifData);
+    int rows = sizeof(g_RemoveBatch001) / sizeof(g_RemoveBatch001[0]);
+    for (int i = 0; i < rows; ++i) {
+        std::string value;
+        int ret = metadata.GetValue(g_RemoveBatch001[i], value);
+        printf("remove entry '%s' before, get value: %s\n", g_RemoveBatch001[i].c_str(), value.c_str());
+        ASSERT_NE(value, DEFAULT_EXIF_VALUE);
+
+        printf("remove entry: %s\n", g_RemoveBatch001[i].c_str());
+        auto isRemoved = metadata.RemoveEntry(g_RemoveBatch001[i]);
+        ASSERT_TRUE(isRemoved);
+
+        ret = metadata.GetValue(g_RemoveBatch001[i], value);
+        printf("remove entry '%s' after, get value: %s\n", g_RemoveBatch001[i].c_str(), value.c_str());
+        if (i == 0) {
+            ASSERT_EQ(value, "");
+        } else {
+            ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
+        }
+    }
+}
+
 } // namespace Multimedia
 } // namespace OHOS

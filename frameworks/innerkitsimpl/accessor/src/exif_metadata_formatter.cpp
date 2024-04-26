@@ -193,6 +193,9 @@ const std::set<std::string> READ_WRITE_KEYS = {
     "OffsetTime",
     "PhotographicSensitivity",
     "HwMnoteCaptureMode",
+    "MovingPhotoId",
+    "MovingPhotoVersion",
+    "MicroVideoPresentationTimestampUS",
 };
 
 const std::set<std::string> READ_ONLY_KEYS = {
@@ -1111,6 +1114,8 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"SourceImageNumberOfCompositeImage", doubleIntWithComma},
     {"YCbCrSubSampling", doubleIntWithBlank},
     {"YCbCrSubSampling", doubleIntWithComma},
+    {"MovingPhotoVersion", singleInt},
+    {"MicroVideoPresentationTimestampUS", singleInt},
 };
 
 // validate the value range. For example GPSLatitudeRef the value must be 'N' or 'S'.

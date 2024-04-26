@@ -303,6 +303,7 @@
             <option name="push" value="images/test_exif_blank.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_hwkey.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_entrys.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagetiffparsertest">
