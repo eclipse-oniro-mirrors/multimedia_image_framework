@@ -2020,5 +2020,118 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest001, TestSize.Level3)
     ASSERT_EQ(componentsNum, 0);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest001 end";
 }
+
+/**
+ * @tc.name: GenerateDEArray004
+ * @tc.desc: GenerateDEArray
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GenerateDEArray004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray004 start";
+    const uint8_t buf = 'a';
+    ByteOrderedBuffer byteorder(&buf, 10);
+    byteorder.curPosition_ = 2;
+    byteorder.bufferLength_ = 7;
+    byteorder.GenerateDEArray();
+    ASSERT_EQ(true, byteorder.curPosition_ + 2 > byteorder.bufferLength_);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GenerateDEArray004 end";
+}
+
+/**
+ * @tc.name: GetExifData002
+ * @tc.desc: GetExifData
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifData002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData002 start";
+    EXIFInfo exinfo;
+    std::string value = "test";
+    const std::string name = "test";
+    uint32_t ret = exinfo.GetExifData(name, value);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifData002 end";
+}
+
+/**
+ * @tc.name: GetExifIfdByExifTag001
+ * @tc.desc: GetExifIfdByExifTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifIfdByExifTag001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifIfdByExifTag001 start";
+    EXIFInfo exinfo;
+    ExifTag tag = static_cast<ExifTag>(0xea1c);
+    ExifIfd ret = exinfo.GetExifIfdByExifTag(tag);
+    ASSERT_EQ(ret, EXIF_IFD_COUNT);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifIfdByExifTag001 end";
+}
+
+/**
+ * @tc.name: GetExifFormatByExifTag001
+ * @tc.desc: GetExifFormatByExifTag
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, GetExifFormatByExifTag001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifFormatByExifTag001 start";
+    EXIFInfo exinfo;
+    ExifTag tag = static_cast<ExifTag>(0xea1c);
+    ExifFormat ret = exinfo.GetExifFormatByExifTag(tag);
+    ASSERT_EQ(ret, EXIF_FORMAT_UNDEFINED);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: GetExifFormatByExifTag001 end";
+}
+
+/**
+ * @tc.name: SetGpsRationals001
+ * @tc.desc: SetGpsRationals
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetGpsRationals001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetGpsRationals001 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData = nullptr;
+    ExifEntry *ptrEntry = nullptr;
+    ExifByteOrder order = EXIF_BYTE_ORDER_INTEL;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::vector<ExifRational> exifRationals;
+    exifRationals.resize(3);
+    ASSERT_EQ(exifRationals.size(), 3);
+    unsigned char data = 'a';
+    uint32_t size = 10;
+    bool isNewExifData = true;
+    exinfo.CreateExifData(&data, size, &ptrExifData, isNewExifData);
+    bool ret = exinfo.SetGpsRationals(ptrExifData, &ptrEntry, order, tag, exifRationals);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetGpsRationals001 end";
+}
+
+/**
+ * @tc.name: SetGpsDegreeRational001
+ * @tc.desc: SetGpsDegreeRational
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, SetGpsDegreeRational001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetGpsDegreeRational001 start";
+    EXIFInfo exinfo;
+    ExifData *ptrExifData = nullptr;
+    ExifEntry *ptrEntry = nullptr;
+    ExifByteOrder order = EXIF_BYTE_ORDER_INTEL;
+    ExifTag tag = EXIF_TAG_GPS_LATITUDE;
+    std::vector<std::string> exifRationals;
+    exifRationals.resize(3);
+    ASSERT_NE(exifRationals.size(), 2);
+    unsigned char data = 'a';
+    uint32_t size = 10;
+    bool isNewExifData = true;
+    exinfo.CreateExifData(&data, size, &ptrExifData, isNewExifData);
+    bool ret = exinfo.SetGpsDegreeRational(ptrExifData, &ptrEntry, order, tag, exifRationals);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: SetGpsDegreeRational001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
