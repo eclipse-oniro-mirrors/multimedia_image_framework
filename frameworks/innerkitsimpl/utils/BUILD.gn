@@ -53,6 +53,7 @@ if (use_clang_ios) {
       sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
       }
     }
@@ -137,6 +138,13 @@ if (use_clang_ios) {
 }
 
 ohos_static_library("image_utils_static") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",

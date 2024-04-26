@@ -26,6 +26,7 @@ ohos_static_library("exifhelper") {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
+      cfi_vcall_icall_only = true
       debug = false
     }
   }
@@ -100,6 +101,7 @@ ohos_shared_library("textureEncoderCL") {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
+      cfi_vcall_icall_only = true
       debug = false
     }
   }
@@ -132,6 +134,7 @@ ohos_shared_library("extplugin") {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
+      cfi_vcall_icall_only = true
       debug = false
     }
   }
@@ -292,6 +295,7 @@ ohos_shared_library("heifparser") {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
+      cfi_vcall_icall_only = true
       debug = false
     }
   }
@@ -340,6 +344,7 @@ ohos_shared_library("heifimpl") {
     sanitize = {
       cfi = true
       cfi_cross_dso = true
+      cfi_vcall_icall_only = true
       debug = false
     }
   }

@@ -26,6 +26,7 @@ ohos_shared_library("ohimage") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
+    cfi_vcall_icall_only = true
     debug = false
   }
   output_name = "ohimage"
@@ -53,6 +54,7 @@ ohos_shared_library("image_receiver") {
   sanitize = {
     cfi = true
     cfi_cross_dso = true
+    cfi_vcall_icall_only = true
     debug = false
   }
   output_name = "image_receiver"

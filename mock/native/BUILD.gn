@@ -22,6 +22,12 @@ config("log_mock_config") {
 }
 
 ohos_static_library("log_mock_static") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
   configs = [ ":log_mock_config" ]
   sources = [
     "//foundation/multimedia/image_framework/mock/native/src/HiLog.cpp",
@@ -44,6 +50,12 @@ config("utils_mock_config") {
 }
 
 ohos_static_library("utils_mock_static") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
   if (use_mingw_win) {
     defines = image_decode_windows_defines
   } else if (use_clang_mac) {

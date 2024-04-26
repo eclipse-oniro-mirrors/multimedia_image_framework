@@ -111,6 +111,7 @@ if (use_clang_android) {
       sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
       }
     }
@@ -259,6 +260,12 @@ if (use_clang_android) {
 }
 
 ohos_static_library("image_static") {
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
   public_configs = [ ":image_external_config" ]
 
   sources = [
