@@ -46,6 +46,11 @@ namespace Media {
 const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+const std::set<std::string_view> HW_SPECIAL_KEYS = {
+    "MovingPhotoId",
+    "MovingPhotoVersion",
+    "MicroVideoPresentationTimestampUS"
+};
 
 template <typename T> std::istream &OutputRational(std::istream &is, T &r)
 {
@@ -99,7 +104,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     }
     char tagValueChar[TAG_VALUE_SIZE];
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
-        IsSpecialHwKey(key)) { 
+        IsSpecialHwKey(key)) {
         value = DEFAULT_EXIF_VALUE;
         ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
         if (md == nullptr) {
@@ -521,7 +526,7 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
     }
 
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
-        IsSpecialHwKey(key)) { 
+        IsSpecialHwKey(key)) {
         IMAGE_LOGD("Set HwMoteValue %{public}s", value.c_str());
         return SetHwMoteValue(key, result.second);
     }
@@ -542,7 +547,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
         IMAGE_LOGD("The key: %{public}s is unknow hwTag", key.c_str());
         return false;
     }
-    
+
     auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, hwTag);
     if (!entry) {
         entry = CreateHwEntry(key);
@@ -617,15 +622,15 @@ bool ExifMetadata::RemoveEntry(const std::string &key)
     }
 
     if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
-        IsSpecialHwKey(key)) { 
+        IsSpecialHwKey(key)) {
         return RemoveHwEntry(key);
-    } 
+    }
 
     ExifEntry *entry = GetEntry(key);
     if (!entry) {
         IMAGE_LOGD("RemoveEntry failed, can not find entry for key: %{public}s", key.c_str());
         return isSuccess;
-    } 
+    }
 
     IMAGE_LOGD("RemoveEntry for key: %{public}s", key.c_str());
     exif_content_remove_entry(entry->parent, entry);
@@ -654,11 +659,8 @@ bool ExifMetadata::RemoveHwEntry(const std::string &key)
 }
 
 bool ExifMetadata::IsSpecialHwKey(const std::string &key) const {
-    std::set<std::string_view> hwSpecialKeys = {"MovingPhotoId", 
-                                                "MovingPhotoVersion", 
-                                                "MicroVideoPresentationTimestampUS"};
-    auto iter = hwSpecialKeys.find(key);
-    return (iter != hwSpecialKeys.end());
+    auto iter = HW_SPECIAL_KEYS.find(key);
+    return (iter != HW_SPECIAL_KEYS.end());
 }
 
 } // namespace Media
