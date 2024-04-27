@@ -16,8 +16,8 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 
-#include "v1_0/cm_color_space.h"
-#include "v1_0/hdr_static_metadata.h"
+#include "v2_0/cm_color_space.h"
+#include "v2_0/hdr_static_metadata.h"
 #include "surface_buffer.h"
 #include "hdr_type.h"
 
@@ -39,19 +39,19 @@ public:
     int32_t ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy);
     int32_t ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,
-        const HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
+        const HDI::Display::Graphic::Common::V2_0::CM_ColorSpaceType& colorSpaceType);
     static bool GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer,
-        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
+        HDI::Display::Graphic::Common::V2_0::CM_ColorSpaceType& colorSpaceType);
     static bool SetSbMetadataType(sptr<SurfaceBuffer>& buffer,
-        const HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type& metadataType);
+        const HDI::Display::Graphic::Common::V2_0::CM_HDR_Metadata_Type& metadataType);
     static bool GetSbMetadataType(const sptr<SurfaceBuffer>& buffer,
-        HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type& metadataType);
+        HDI::Display::Graphic::Common::V2_0::CM_HDR_Metadata_Type& metadataType);
     static bool SetSbDynamicMetadata(sptr<SurfaceBuffer>& buffer, const std::vector<uint8_t>& dynamicMetadata);
     static bool GetSbDynamicMetadata(const sptr<SurfaceBuffer>& buffer, std::vector<uint8_t>& dynamicMetadata);
     static bool SetSbStaticMetadata(sptr<SurfaceBuffer>& buffer, const std::vector<uint8_t>& staticMetadata);
     static bool GetSbStaticMetadata(const sptr<SurfaceBuffer>& buffer, std::vector<uint8_t>& staticMetadata);
     static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap, ImageHdrType type,
-        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color, HdrMetadata& metadata);
+        HDI::Display::Graphic::Common::V2_0::CM_ColorSpaceType color, HdrMetadata& metadata);
 
 private:
     int32_t ColorSpaceConverterCreate(void* handle, int32_t* instanceId);

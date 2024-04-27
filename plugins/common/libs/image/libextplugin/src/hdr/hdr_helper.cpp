@@ -27,7 +27,7 @@
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "heif_impl/HeifDecoder.h"
-#include "v1_0/hdr_static_metadata.h"
+#include "v2_0/hdr_static_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -39,7 +39,7 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace std;
 using namespace Media;
-using namespace HDI::Display::Graphic::Common::V1_0;
+using namespace HDI::Display::Graphic::Common::V2_0;
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP0 = 0xE0;
 
@@ -486,49 +486,49 @@ static bool ParseTransformInfo(uint8_t* data, uint32_t& offset, uint32_t length,
     return true;
 }
 
-static void ConvertExtendInfoMain(ExtendInfoMain info, HDRVividGainmapMetadata& metadata)
+static void ConvertExtendInfoMain(ExtendInfoMain info, HDRVividExtendMetadata& metadata)
 {
-    metadata.enhanceClippedThreholdMaxGainmap[INDEX_ZERO] = info.gainMapMax[INDEX_ZERO];
-    metadata.enhanceClippedThreholdMaxGainmap[INDEX_ONE] = info.gainMapMax[INDEX_ONE];
-    metadata.enhanceClippedThreholdMaxGainmap[INDEX_TWO] = info.gainMapMax[INDEX_TWO];
-    metadata.enhanceClippedThreholdMinGainmap[INDEX_ZERO] = info.gainMapMin[INDEX_ZERO];
-    metadata.enhanceClippedThreholdMinGainmap[INDEX_ONE] = info.gainMapMin[INDEX_ONE];
-    metadata.enhanceClippedThreholdMinGainmap[INDEX_TWO] = info.gainMapMin[INDEX_TWO];
-    metadata.enhanceMappingGamma[INDEX_ZERO] = info.gamma[INDEX_ZERO];
-    metadata.enhanceMappingGamma[INDEX_ONE] = info.gamma[INDEX_ONE];
-    metadata.enhanceMappingGamma[INDEX_TWO] = info.gamma[INDEX_TWO];
-    metadata.enhanceMappingBaselineOffset[INDEX_ZERO] = info.baseSdrImageOffset[INDEX_ZERO];
-    metadata.enhanceMappingBaselineOffset[INDEX_ONE] = info.baseSdrImageOffset[INDEX_ONE];
-    metadata.enhanceMappingBaselineOffset[INDEX_TWO] = info.baseSdrImageOffset[INDEX_TWO];
-    metadata.enhanceMappingAlternateOffset[INDEX_ZERO] = info.altHdrImageOffset[INDEX_ZERO];
-    metadata.enhanceMappingAlternateOffset[INDEX_ONE] = info.altHdrImageOffset[INDEX_ONE];
-    metadata.enhanceMappingAlternateOffset[INDEX_TWO] = info.altHdrImageOffset[INDEX_TWO];
+    metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO] = info.gainMapMax[INDEX_ZERO];
+    metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE] = info.gainMapMax[INDEX_ONE];
+    metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO] = info.gainMapMax[INDEX_TWO];
+    metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO] = info.gainMapMin[INDEX_ZERO];
+    metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE] = info.gainMapMin[INDEX_ONE];
+    metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO] = info.gainMapMin[INDEX_TWO];
+    metadata.metaISO.enhanceMappingGamma[INDEX_ZERO] = info.gamma[INDEX_ZERO];
+    metadata.metaISO.enhanceMappingGamma[INDEX_ONE] = info.gamma[INDEX_ONE];
+    metadata.metaISO.enhanceMappingGamma[INDEX_TWO] = info.gamma[INDEX_TWO];
+    metadata.metaISO.enhanceMappingBaselineOffset[INDEX_ZERO] = info.baseSdrImageOffset[INDEX_ZERO];
+    metadata.metaISO.enhanceMappingBaselineOffset[INDEX_ONE] = info.baseSdrImageOffset[INDEX_ONE];
+    metadata.metaISO.enhanceMappingBaselineOffset[INDEX_TWO] = info.baseSdrImageOffset[INDEX_TWO];
+    metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO] = info.altHdrImageOffset[INDEX_ZERO];
+    metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ONE] = info.altHdrImageOffset[INDEX_ONE];
+    metadata.metaISO.enhanceMappingAlternateOffset[INDEX_TWO] = info.altHdrImageOffset[INDEX_TWO];
 }
 
-static void ConvertExtendInfoExtention(ExtendInfoExtention ext, HDRVividGainmapMetadata& metadata)
+static void ConvertExtendInfoExtention(ExtendInfoExtention ext, HDRVividExtendMetadata& metadata)
 {
-    metadata.baseColorPrimary = ext.baseColor.primary;
-    metadata.baseTransFunction = ext.baseColor.transFunc;
-    metadata.baseColorModel = ext.baseColor.model;
-    metadata.enhanceDataColorPrimary = ext.enhanceDataColor.primary;
-    metadata.enhanceDataTransFunction = ext.enhanceDataColor.transFunc;
-    metadata.enhanceDataColorModel = ext.enhanceDataColor.model;
-    metadata.combineColorPrimary = ext.combineColor.primary;
-    metadata.combineTransFunction = ext.combineColor.transFunc;
-    metadata.combineColorModel = ext.combineColor.model;
-    metadata.enhanceColorPrimary = ext.enhanceColor.primary;
-    metadata.enhanceTransFunction = ext.enhanceColor.transFunc;
-    metadata.enhanceColorModel = ext.enhanceColor.model;
-    metadata.baseMappingFlag = ext.baseMapping.mappingFlag;
-    metadata.baseMapping = ext.baseMapping.mapping;
-    metadata.baseMappingSize = ext.baseMapping.mapping.size();
-    metadata.combineMappingFlag = ext.combineMapping.mappingFlag;
-    metadata.combineMapping = ext.combineMapping.mapping;
-    metadata.combineMappingSize = ext.combineMapping.mapping.size();
-    metadata.baseIccSize = EMPTY_SIZE;
-    metadata.baseICC.resize(EMPTY_SIZE);
-    metadata.enhanceICCSize = EMPTY_SIZE;
-    metadata.enhanceICC.resize(EMPTY_SIZE);
+    metadata.baseColorMeta.baseColorPrimary = ext.baseColor.primary;
+    metadata.baseColorMeta.baseTransFunction = ext.baseColor.transFunc;
+    metadata.baseColorMeta.baseColorModel = ext.baseColor.model;
+    metadata.gainmapColorMeta.enhanceDataColorPrimary = ext.enhanceDataColor.primary;
+    metadata.gainmapColorMeta.enhanceDataTransFunction = ext.enhanceDataColor.transFunc;
+    metadata.gainmapColorMeta.enhanceDataColorModel = ext.enhanceDataColor.model;
+    metadata.gainmapColorMeta.combineColorPrimary = ext.combineColor.primary;
+    metadata.gainmapColorMeta.combineTransFunction = ext.combineColor.transFunc;
+    metadata.gainmapColorMeta.combineColorModel = ext.combineColor.model;
+    metadata.gainmapColorMeta.alternateColorPrimary = ext.enhanceColor.primary;
+    metadata.gainmapColorMeta.alternateTransFunction = ext.enhanceColor.transFunc;
+    metadata.gainmapColorMeta.alternateColorModel = ext.enhanceColor.model;
+    metadata.baseColorMeta.baseMappingFlag = ext.baseMapping.mappingFlag;
+    metadata.baseColorMeta.baseMapping = ext.baseMapping.mapping;
+    metadata.baseColorMeta.baseMappingSize = ext.baseMapping.mapping.size();
+    metadata.gainmapColorMeta.combineMappingFlag = ext.combineMapping.mappingFlag;
+    metadata.gainmapColorMeta.combineMapping = ext.combineMapping.mapping;
+    metadata.gainmapColorMeta.combineMappingSize = ext.combineMapping.mapping.size();
+    metadata.baseColorMeta.baseIccSize = EMPTY_SIZE;
+    metadata.baseColorMeta.baseICC.resize(EMPTY_SIZE);
+    metadata.gainmapColorMeta.enhanceICCSize = EMPTY_SIZE;
+    metadata.gainmapColorMeta.enhanceICC.resize(EMPTY_SIZE);
 }
 
 static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t length, HdrMetadata& metadata)
@@ -545,19 +545,17 @@ static bool ParseVividJpegMetadata(uint8_t* data, uint32_t& dataOffset, uint32_t
         if (dynamicMetaSize > length - dataOffset) {
             return false;
         }
-        // skip 5 unused bytes, (itu35countryCode,terminalProvideCode,terminalProvideOrientedCode)
         metadata.dynamicMetadata.resize(dynamicMetaSize);
         if (memcpy_s(metadata.dynamicMetadata.data(), dynamicMetaSize, data + dataOffset, dynamicMetaSize) != 0) {
             IMAGE_LOGD("get vivid dynamic metadata failed");
             return false;
         }
-
         dataOffset += dynamicMetaSize;
     }
     return true;
 }
 
-static bool ParseVividJpegExtendInfo(uint8_t* data, uint32_t length, HDRVividGainmapMetadata& metadata)
+static bool ParseVividJpegExtendInfo(uint8_t* data, uint32_t length, HDRVividExtendMetadata& metadata)
 {
     uint32_t dataOffset = 0;
     uint16_t metadataSize = ImageUtils::BytesToUint16(data, dataOffset);
@@ -619,9 +617,11 @@ static bool ParseVividMetadata(uint8_t* data, uint32_t length, HdrMetadata& meta
     }
     const uint8_t hasEnhanceInfo = 1;
     if (enhanceType == hasEnhanceInfo && length > dataOffset + UINT16_BYTE_COUNT) {
-        metadata.gainmapMetadataFlag =
-            ParseVividJpegExtendInfo(data + dataOffset, length - dataOffset, metadata.gainmapMetadata);
-        IMAGE_LOGD("vivid get extend info result = %{public}d", metadata.gainmapMetadataFlag);
+        metadata.extendMetaFlag =
+            ParseVividJpegExtendInfo(data + dataOffset, length - dataOffset, metadata.extendMeta);
+        IMAGE_LOGD("vivid get extend info result = %{public}d", metadata.extendMetaFlag);
+    } else {
+        metadata.extendMetaFlag = false;
     }
     return getMetadata;
 }
@@ -635,37 +635,9 @@ static bool GetVividJpegMetadata(jpeg_marker_struct* markerList, HdrMetadata& me
         if (memcmp(marker->data, ITUT35_TAG, ITUT35_TAG_SIZE) != 0) {
             continue;
         }
-        uint32_t dataOffset = 0;
         uint8_t* data = marker->data + ITUT35_TAG_SIZE;
         uint32_t length = marker->data_length - ITUT35_TAG_SIZE;
-        uint8_t itut35CountryCode = data[dataOffset++];
-        uint16_t terminalProvideCode = ImageUtils::BytesToUint16(data, dataOffset);
-        uint16_t terminalProvideOrientedCode = ImageUtils::BytesToUint16(data, dataOffset);
-        IMAGE_LOGD("vivid metadata countryCode=%{public}d,terminalCode=%{public}d,orientedcode=%{public}d",
-            itut35CountryCode, terminalProvideCode, terminalProvideOrientedCode);
-        uint8_t extendedFrameNumber = data[dataOffset++];
-        if (extendedFrameNumber < JPEG_IMAGE_NUM) {
-            return false;
-        }
-        uint8_t fileType = data[dataOffset++];
-        uint8_t metaType = data[dataOffset++];
-        uint8_t enhanceType = data[dataOffset++];
-        uint8_t hdrType = data[dataOffset++];
-        IMAGE_LOGD("vivid metadata info hdrType=%{public}d, enhanceType=%{public}d", hdrType, enhanceType);
-        if (fileType != VIVID_FILE_TYPE_GAINMAP) {
-            return false;
-        }
-        bool getMetadata = false;
-        if (metaType > 0 && length > dataOffset + UINT16_BYTE_COUNT) {
-            getMetadata = ParseVividJpegMetadata(data, dataOffset, length, metadata);
-        }
-        const uint8_t hasEnhanceInfo = 1;
-        if (enhanceType == hasEnhanceInfo && length > dataOffset + UINT16_BYTE_COUNT) {
-            metadata.gainmapMetadataFlag =
-                ParseVividJpegExtendInfo(data + dataOffset, length - dataOffset, metadata.gainmapMetadata);
-            IMAGE_LOGD("vivid get extend info result = %{public}d", metadata.gainmapMetadataFlag);
-        }
-        return getMetadata;
+        return ParseVividMetadata(data, length, metadata);
     }
     return false;
 }
@@ -716,10 +688,10 @@ static void ParseISOExtendInfoMain(uint8_t* data, uint32_t& offset, ExtendInfoMa
     }
 }
 
-static void ParseISOExtendInfoThreeCom(uint8_t* data, uint32_t& offset, bool threeCom, ExtendInfoMain& info)
+static void ParseISOExtendInfoThreeCom(uint8_t* data, uint32_t& offset, uint8_t channelNum, ExtendInfoMain& info)
 {
     ParseISOExtendInfoMain(data, offset, info, INDEX_ZERO);
-    if (threeCom) {
+    if (channelNum == THREE_COMPONENTS) {
         ParseISOExtendInfoMain(data, offset, info, INDEX_ONE);
         ParseISOExtendInfoMain(data, offset, info, INDEX_TWO);
     } else {
@@ -742,31 +714,34 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
     if (length < ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE) {
         return false;
     }
-    uint32_t version = ImageUtils::BytesToUint32(data, dataOffset);
-    if ((version & 0xFF) != EMPTY_SIZE) {
+    metadata.extendMeta.metaISO.writeVersion = ImageUtils::BytesToUint32(data, dataOffset);
+    metadata.extendMeta.metaISO.miniVersion = metadata.extendMeta.metaISO.writeVersion & 0xFF;
+    if (metadata.extendMeta.metaISO.miniVersion != EMPTY_SIZE) {
         return false;
     }
     uint8_t flag = data[dataOffset++];
+    metadata.extendMeta.metaISO.gainmapChannelNum = (flag & 0x01) * INDEX_TWO + INDEX_ONE;
+    metadata.extendMeta.metaISO.useBaseColorFlag = (flag >> INDEX_ONE) & 0x01;
 
     uint32_t baseHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
     uint32_t baseHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
     uint32_t altHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
     uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
-    float baseHeadroom = (float)EMPTY_SIZE;
-    float altHeadroom = (float)EMPTY_SIZE;
+
     if (baseHeadroomDenominator != EMPTY_SIZE) {
-        baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
+        metadata.extendMeta.metaISO.baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
+    } else {
+        metadata.extendMeta.metaISO.baseHeadroom = (float)EMPTY_SIZE;
     }
     if (altHeadroomDenominator != EMPTY_SIZE) {
-        altHeadroom = (float)altHeadroomNumerator / (float)altHeadroomDenominator;
+        metadata.extendMeta.metaISO.alternateHeadroom = (float)altHeadroomNumerator / (float)altHeadroomDenominator;
+    } else {
+        metadata.extendMeta.metaISO.alternateHeadroom = (float)EMPTY_SIZE;
     }
-    IMAGE_LOGD("iso version = %{public}d, flag = %{public}d, baseHeadroom = %{public}f,"
-        "altHeadroom = %{public}f", version, flag, baseHeadroom, altHeadroom);
-    bool isThreeCom = (flag & 0x01) ? true : false;
     ExtendInfoMain infoMain{};
-    ParseISOExtendInfoThreeCom(data, dataOffset, isThreeCom, infoMain);
-    ConvertExtendInfoMain(infoMain, metadata.gainmapMetadata);
-    metadata.gainmapMetadataFlag = true;
+    ParseISOExtendInfoThreeCom(data, dataOffset, metadata.extendMeta.metaISO.gainmapChannelNum, infoMain);
+    ConvertExtendInfoMain(infoMain, metadata.extendMeta);
+    metadata.extendMetaFlag = true;
     return true;
 }
 
@@ -782,36 +757,7 @@ static bool GetISOGainmapMetadata(jpeg_marker_struct* markerList, HdrMetadata& m
         }
         uint8_t* data = marker->data + ISO_GAINMAP_TAG_SIZE;
         uint32_t length = marker->data_length - ISO_GAINMAP_TAG_SIZE;
-        uint32_t dataOffset = 0;
-        if (length < ISO_GAINMAP_METADATA_PAYLOAD_MIN_SIZE) {
-            return false;
-        }
-        uint32_t version = ImageUtils::BytesToUint32(data, dataOffset);
-        if ((version & 0xFF) != EMPTY_SIZE) {
-            return false;
-        }
-        uint8_t flag = data[dataOffset++];
-
-        uint32_t baseHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
-        uint32_t baseHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
-        uint32_t altHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
-        uint32_t altHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
-        float baseHeadroom = (float)EMPTY_SIZE;
-        float altHeadroom = (float)EMPTY_SIZE;
-        if (baseHeadroomDenominator != EMPTY_SIZE) {
-            baseHeadroom = (float)baseHeadroomNumerator / (float)baseHeadroomDenominator;
-        }
-        if (altHeadroomDenominator != EMPTY_SIZE) {
-            altHeadroom = (float)altHeadroomNumerator / (float)altHeadroomDenominator;
-        }
-        IMAGE_LOGD("iso version = %{public}d, flag = %{public}d, baseHeadroom = %{public}f,"
-            "altHeadroom = %{public}f", version, flag, baseHeadroom, altHeadroom);
-        bool isThreeCom = (flag & 0x01) ? true : false;
-        ExtendInfoMain infoMain{};
-        ParseISOExtendInfoThreeCom(data, dataOffset, isThreeCom, infoMain);
-        ConvertExtendInfoMain(infoMain, metadata.gainmapMetadata);
-        metadata.gainmapMetadataFlag = true;
-        return true;
+        return ParseISOMetadata(data, length, metadata);
     }
     return false;
 }
@@ -828,7 +774,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
     switch (type) {
         case ImageHdrType::HDR_VIVID_DUAL: {
             bool res = GetVividJpegMetadata(markerList, metadata);
-            if (res && !metadata.gainmapMetadataFlag) {
+            if (res && !metadata.extendMetaFlag) {
                 GetISOGainmapMetadata(markerList, metadata);
             }
             return res;
@@ -844,7 +790,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
 
 static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInfo, const vector<uint8_t>& lightInfo)
 {
-    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
+    HDI::Display::Graphic::Common::V2_0::HdrStaticMetadata staticMetadata{};
     DisplayColourVolume displayColourVolume{};
     ContentLightLevelInfo lightLevelInfo{};
     if (!lightInfo.empty()) {
@@ -872,7 +818,7 @@ static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInf
     staticMetadata.smpte2086.minLuminance = lumScale * (float)displayColourVolume.luminanceMin;
     staticMetadata.cta861.maxContentLightLevel = (float)lightLevelInfo.maxContentLightLevel;
     staticMetadata.cta861.maxFrameAverageLightLevel = (float)lightLevelInfo.maxPicAverageLightLevel;
-    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V2_0::HdrStaticMetadata);
     std::vector<uint8_t> staticMetadataVec(vecSize);
     if (memcpy_s(staticMetadataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
         return {};
@@ -899,7 +845,7 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
             IMAGE_LOGI("get heif vivid metadata failed");
             return false;
         }
-        if (!metadata.gainmapMetadataFlag) {
+        if (!metadata.extendMetaFlag) {
             vector<uint8_t> isoMetadata;
             heifDecoder->getISOMetadata(isoMetadata);
             if (isoMetadata.empty()) {
@@ -1017,25 +963,25 @@ vector<uint8_t> HdrJpegPackerHelper::PackBaseISOMarker()
     return bytes;
 }
 
-static void PackExtendInfoMain(vector<uint8_t>& bytes, uint32_t& offset, HDRVividGainmapMetadata& metadata)
+static void PackExtendInfoMain(vector<uint8_t>& bytes, uint32_t& offset, HDRVividExtendMetadata& metadata)
 {
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMinGainmap[INDEX_ZERO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMaxGainmap[INDEX_ZERO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingGamma[INDEX_ZERO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingBaselineOffset[INDEX_ZERO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingAlternateOffset[INDEX_ZERO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingGamma[INDEX_ZERO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingBaselineOffset[INDEX_ZERO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO], bytes, offset);
 
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMinGainmap[INDEX_ONE], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMaxGainmap[INDEX_ONE], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingGamma[INDEX_ONE], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingBaselineOffset[INDEX_ONE], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingAlternateOffset[INDEX_ONE], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingGamma[INDEX_ONE], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingBaselineOffset[INDEX_ONE], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ONE], bytes, offset);
 
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMinGainmap[INDEX_TWO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceClippedThreholdMaxGainmap[INDEX_TWO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingGamma[INDEX_TWO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingBaselineOffset[INDEX_TWO], bytes, offset);
-    ImageUtils::FloatToBytes(metadata.enhanceMappingAlternateOffset[INDEX_TWO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingGamma[INDEX_TWO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingBaselineOffset[INDEX_TWO], bytes, offset);
+    ImageUtils::FloatToBytes(metadata.metaISO.enhanceMappingAlternateOffset[INDEX_TWO], bytes, offset);
 }
 
 static void PackTransformInfo(vector<uint8_t>& bytes, uint32_t& offset, uint8_t flag, vector<uint8_t> mapping)
@@ -1055,50 +1001,54 @@ static void PackTransformInfo(vector<uint8_t>& bytes, uint32_t& offset, uint8_t 
     offset += flag;
 }
 
-static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, HDRVividGainmapMetadata& metadata)
+static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, HDRVividExtendMetadata& metadata)
 {
     bytes[offset++] = COLOR_INFO_BYTES;
-    bytes[offset++] = metadata.baseColorPrimary;
-    bytes[offset++] = metadata.baseTransFunction;
-    bytes[offset++] = metadata.baseColorModel;
+    bytes[offset++] = metadata.baseColorMeta.baseColorPrimary;
+    bytes[offset++] = metadata.baseColorMeta.baseTransFunction;
+    bytes[offset++] = metadata.baseColorMeta.baseColorModel;
     bytes[offset++] = COLOR_INFO_BYTES;
-    bytes[offset++] = metadata.enhanceDataColorPrimary;
-    bytes[offset++] = metadata.enhanceDataTransFunction;
-    bytes[offset++] = metadata.enhanceDataColorModel;
+    bytes[offset++] = metadata.gainmapColorMeta.enhanceDataColorPrimary;
+    bytes[offset++] = metadata.gainmapColorMeta.enhanceDataTransFunction;
+    bytes[offset++] = metadata.gainmapColorMeta.enhanceDataColorModel;
     bytes[offset++] = COLOR_INFO_BYTES;
-    bytes[offset++] = metadata.enhanceColorPrimary;
-    bytes[offset++] = metadata.enhanceTransFunction;
-    bytes[offset++] = metadata.enhanceColorModel;
+    bytes[offset++] = metadata.gainmapColorMeta.alternateColorPrimary;
+    bytes[offset++] = metadata.gainmapColorMeta.alternateTransFunction;
+    bytes[offset++] = metadata.gainmapColorMeta.alternateColorModel;
     bytes[offset++] = COLOR_INFO_BYTES;
-    bytes[offset++] = metadata.combineColorPrimary;
-    bytes[offset++] = metadata.combineTransFunction;
-    bytes[offset++] = metadata.combineColorModel;
-    PackTransformInfo(bytes, offset, metadata.baseMappingFlag, metadata.baseMapping);
-    PackTransformInfo(bytes, offset, metadata.combineMappingFlag, metadata.combineMapping);
+    bytes[offset++] = metadata.gainmapColorMeta.combineColorPrimary;
+    bytes[offset++] = metadata.gainmapColorMeta.combineTransFunction;
+    bytes[offset++] = metadata.gainmapColorMeta.combineColorModel;
+    PackTransformInfo(bytes, offset, metadata.baseColorMeta.baseMappingFlag, metadata.baseColorMeta.baseMapping);
+    PackTransformInfo(bytes, offset, metadata.gainmapColorMeta.combineMappingFlag,
+        metadata.gainmapColorMeta.combineMapping);
 }
 
-static uint16_t GetExtendMetadataSize(bool vividExtendFlag, HDRVividGainmapMetadata& metadata)
+static uint16_t GetExtendMetadataSize(bool vividExtendFlag, HDRVividExtendMetadata& metadata)
 {
-    if (vividExtendFlag) {
+    if (!vividExtendFlag) {
         return EMPTY_SIZE;
     }
     const uint8_t colorInfoNum = 4;
     uint16_t extendInfoExtentionSize = (COLOR_INFO_BYTES + UINT8_BYTE_COUNT) * colorInfoNum +
         UINT16_BYTE_COUNT + UINT16_BYTE_COUNT; // "baseTransformInfoSize" count + "EnhanceTransformInfoSize" count
-    if (metadata.baseMappingFlag > EMPTY_SIZE) {
+    if (metadata.baseColorMeta.baseMappingFlag > EMPTY_SIZE) {
         // "mapping" + "mapping" bytes
-        extendInfoExtentionSize += metadata.baseMappingFlag + UINT8_BYTE_COUNT;
+        extendInfoExtentionSize += metadata.baseColorMeta.baseMappingFlag + UINT8_BYTE_COUNT;
     }
-    if (metadata.combineMappingFlag > EMPTY_SIZE) {
-        extendInfoExtentionSize += metadata.combineMappingFlag + UINT8_BYTE_COUNT;
+    if (metadata.gainmapColorMeta.combineMappingFlag > EMPTY_SIZE) {
+        extendInfoExtentionSize += metadata.gainmapColorMeta.combineMappingFlag + UINT8_BYTE_COUNT;
     }
     uint16_t extendSize = UINT8_BYTE_COUNT + EXTEND_INFO_MAIN_SIZE + extendInfoExtentionSize;
     return extendSize;
 }
 
-static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVividGainmapMetadata metadata)
+static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVividExtendMetadata& metadata)
 {
     uint16_t length = GetExtendMetadataSize(true, metadata);
+    if (index + length > bytes.size()) {
+        return;
+    }
     ImageUtils::Uint16ToBytes(length, bytes, index);
     bytes[index++] = THREE_COMPONENTS;
     PackExtendInfoMain(bytes, index, metadata);
@@ -1133,7 +1083,7 @@ static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetada
     uint32_t dynamicMetadataSize = metadata.dynamicMetadata.size();
     const uint32_t metadataSize =
         UINT16_BYTE_COUNT + VIVID_STATIC_METADATA_SIZE_IN_IMAGE + UINT16_BYTE_COUNT + dynamicMetadataSize;
-    PackVividPreInfo(bytes, index, false, metadata.gainmapMetadataFlag);
+    PackVividPreInfo(bytes, index, false, false);
     ImageUtils::Uint16ToBytes(metadataSize, bytes, index);
     if (!PackVividStaticMetadata(bytes, index, metadata.staticMetadata)) {
         return false;
@@ -1144,9 +1094,7 @@ static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetada
         return false;
     }
     index += metadata.dynamicMetadata.size();
-    if (metadata.gainmapMetadataFlag) {
-        PackExtendMetadata(bytes, index, metadata.gainmapMetadata);
-    }
+    PackExtendMetadata(bytes, index, metadata.extendMeta);
     return true;
 }
 
@@ -1156,7 +1104,7 @@ std::vector<uint8_t> HdrJpegPackerHelper::PackVividMetadataMarker(HdrMetadata& m
     // metadataSize + staticMetadataSize + staticMetadata + dynamicMetadataSize + dynamicMetadata
     const uint32_t metadataSize = UINT16_BYTE_COUNT + UINT16_BYTE_COUNT + VIVID_STATIC_METADATA_SIZE_IN_IMAGE +
         UINT16_BYTE_COUNT + dynamicMetadataSize;
-    uint32_t extendInfoSize = GetExtendMetadataSize(metadata.gainmapMetadataFlag, metadata.gainmapMetadata);
+    uint32_t extendInfoSize = GetExtendMetadataSize(false, metadata.extendMeta);
     uint32_t markerLength = UINT32_BYTE_COUNT + ITUT35_TAG_SIZE + VIVID_METADATA_PRE_INFO_SIZE +
         metadataSize + UINT16_BYTE_COUNT + extendInfoSize;
     vector<uint8_t> bytes(markerLength);
@@ -1173,14 +1121,7 @@ std::vector<uint8_t> HdrJpegPackerHelper::PackVividMetadataMarker(HdrMetadata& m
     return bytes;
 }
 
-static float GetMaxGainmapMax(float gainmapMax[THREE_COMPONENTS])
-{
-    float max = gainmapMax[INDEX_ZERO] > gainmapMax[INDEX_ONE] ? gainmapMax[INDEX_ZERO] : gainmapMax[INDEX_ONE];
-    return max > gainmapMax[INDEX_TWO] ? max : gainmapMax[INDEX_TWO];
-}
-
-
-static void PackISOExtendInfo(vector<uint8_t>& bytes, uint32_t& offset, HDRVividGainmapMetadata& metadata)
+static void PackISOExtendInfo(vector<uint8_t>& bytes, uint32_t& offset, ISOMetadata& metadata)
 {
     ImageUtils::Int32ToBytes(
         (int32_t)(metadata.enhanceClippedThreholdMinGainmap[INDEX_ZERO] * DENOMINATOR), bytes, offset);
@@ -1230,7 +1171,7 @@ static void PackISOExtendInfo(vector<uint8_t>& bytes, uint32_t& offset, HDRVivid
 
 vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata)
 {
-    HDRVividGainmapMetadata gainmapMetadata = metadata.gainmapMetadata;
+    HDRVividExtendMetadata extendMeta = metadata.extendMeta;
     // flag(u8)+baseheadroomNumerator(u32)+baseheadroomDenomintor(u32)+altheadroom(u32)+altheadroomDenominator(u32)
     uint32_t isoInfoSize =
         UINT8_BYTE_COUNT + UINT32_BYTE_COUNT + UINT32_BYTE_COUNT + UINT32_BYTE_COUNT + UINT32_BYTE_COUNT;
@@ -1249,23 +1190,24 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
         return {};
     }
     index += ISO_GAINMAP_TAG_SIZE;
-    const uint32_t isoVersion = 0;
-    ImageUtils::Uint32ToBytes(isoVersion, bytes, index);
-    bytes[index++] = 0x01; // flag three components
-    uint32_t baseHeadroomNumerator = 0x00;
-    uint32_t baseHeadroomDenominator = 0x01;
+    ImageUtils::Uint32ToBytes(extendMeta.metaISO.writeVersion, bytes, index);
+    bytes[index++] = (extendMeta.metaISO.useBaseColorFlag << INDEX_ONE) | (extendMeta.metaISO.gainmapChannelNum & 0x01);
+    uint32_t baseHeadroomNumerator = EMPTY_SIZE;
+    if (extendMeta.metaISO.baseHeadroom > (float)EMPTY_SIZE) {
+        baseHeadroomNumerator = (uint32_t)(extendMeta.metaISO.baseHeadroom * DENOMINATOR);
+    }
+    uint32_t baseHeadroomDenominator = DENOMINATOR;
     ImageUtils::Uint32ToBytes(baseHeadroomNumerator, bytes, index);
     ImageUtils::Uint32ToBytes(baseHeadroomDenominator, bytes, index);
-    float alternateHeadroom = GetMaxGainmapMax(gainmapMetadata.enhanceClippedThreholdMaxGainmap);
-    uint32_t altHeadroomNumerator = 0x00;
+    uint32_t altHeadroomNumerator = EMPTY_SIZE;
     uint32_t altHeadroomDenominator = 0x01;
-    if (alternateHeadroom > (float)EMPTY_SIZE) {
-        altHeadroomNumerator = (uint32_t)(DENOMINATOR * alternateHeadroom);
+    if (extendMeta.metaISO.alternateHeadroom > (float)EMPTY_SIZE) {
+        altHeadroomNumerator = (uint32_t)(extendMeta.metaISO.alternateHeadroom * DENOMINATOR);
         altHeadroomDenominator = DENOMINATOR;
     }
     ImageUtils::Uint32ToBytes(altHeadroomNumerator, bytes, index);
     ImageUtils::Uint32ToBytes(altHeadroomDenominator, bytes, index);
-    PackISOExtendInfo(bytes, index, gainmapMetadata);
+    PackISOExtendInfo(bytes, index, extendMeta.metaISO);
     return bytes;
 }
 

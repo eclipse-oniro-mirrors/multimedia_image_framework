@@ -217,6 +217,7 @@ ohos_shared_library("extplugin") {
       "astc-encoder:astc_encoder_shared",
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_interface_display:display_commontype_idl_headers_2.0",
       "drivers_peripheral_display:hdi_gralloc_client",
       "graphic_2d:color_manager",
       "graphic_surface:surface",

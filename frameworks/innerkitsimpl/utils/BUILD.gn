@@ -72,8 +72,10 @@ if (use_clang_ios) {
       "src/vpe_utils.cpp",
     ]
 
-    external_deps =
-        [ "drivers_interface_display:display_commontype_idl_headers" ]
+    external_deps = [
+      "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_interface_display:display_commontype_idl_headers_2.0",
+    ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
@@ -211,6 +213,7 @@ ohos_static_library("image_utils_static") {
     external_deps = [
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_interface_display:display_commontype_idl_headers_2.0",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",

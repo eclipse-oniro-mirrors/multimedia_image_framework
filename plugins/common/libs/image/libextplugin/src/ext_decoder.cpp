@@ -1615,11 +1615,13 @@ HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
-    if (codec_ == nullptr || codec_->GetEncodedFormat != SkEncodedImageFormat::kHEIF) {
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        IMAGE_LOGE("decode heif gainmap, codec error");
         return false;
     }
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
     if (decoder == nullptr) {
+        IMAGE_LOGE("decode heif gainmap, decoder error");
         return false;
     }
     HeifFrameInfo gainmapInfo;
@@ -1634,8 +1636,8 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
         return false;
     }
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height),
-        dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace);
-    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize);
+        dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
     context.info.size.width = width;
     context.info.size.height = height;
     if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {

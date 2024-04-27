@@ -192,7 +192,8 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
 HeifDecoderImpl::HeifDecoderImpl()
     : inPixelFormat_(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), outPixelFormat_(PixelFormat::RGBA_8888),
     tileWidth_(0), tileHeight_(0), colNum_(0), rowNum_(0),
-    dstMemory_(nullptr), dstRowStride_(0), dstHwBuffer_(nullptr) {}
+    dstMemory_(nullptr), dstRowStride_(0), dstHwBuffer_(nullptr),
+    gainmapDstMemory_(nullptr), gainmapDstRowStride_(0) {}
 
 HeifDecoderImpl::~HeifDecoderImpl()
 {
@@ -249,7 +250,7 @@ bool HeifDecoderImpl::Reinit(HeifFrameInfo *frameInfo)
     GetTileSize(primaryImage_, tileWidth_, tileHeight_);
 #ifdef HEIF_HW_DECODE_ENABLE
     if (gainmapImage_ != nullptr) {
-        InitFrameInfo(&gainmapImageInfo_, gainmapImage);
+        InitFrameInfo(&gainmapImageInfo_, gainmapImage_);
         GetTileSize(gainmapImage_, gainmapGridInfo_.tileWidth, gainmapGridInfo_.tileHeight);
         gainmapGridInfo_.displayWidth = gainmapImageInfo_.mWidth;
         gainmapGridInfo_.displayHeight = gainmapImageInfo_.mHeight;
@@ -545,7 +546,7 @@ bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
                    " imageType: hvc1, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
                    " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu, dataLen: %{public}zu",
                    err, gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat_, gridInfo.cols, gridInfo.rows,
-                   gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size()), inputs[1].size());
+                   gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size(), inputs[1].size());
         return false;
     }
     return IsDirectYUVDecode() || ConvertHwBufferPixelFormat(hwBuffer, isGainmap);

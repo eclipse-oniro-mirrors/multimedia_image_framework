@@ -44,9 +44,9 @@
 #include "hdr_helper.h"
 #include "vpe_utils.h"
 #include "image_mime_type.h"
-#include "v1_0/buffer_handle_meta_key_type.h"
-#include "v1_0/cm_color_space.h"
-#include "v1_0/hdr_static_metadata.h"
+#include "v2_0/buffer_handle_meta_key_type.h"
+#include "v2_0/cm_color_space.h"
+#include "v2_0/hdr_static_metadata.h"
 #include "securec.h"
 
 #undef LOG_DOMAIN
@@ -58,7 +58,7 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
-using namespace HDI::Display::Graphic::Common::V1_0;
+using namespace HDI::Display::Graphic::Common::V2_0;
 
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
@@ -249,13 +249,17 @@ static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>&
         .staticMetadata = staticMetadata,
         .dynamicMetadata = dynamicMetadata
     };
-    std::vector<uint8_t> gainmapMetadataVec = {};
-    VpeUtils::GetSbDynamicMetadata(gainmap, gainmapMetadataVec);
-    if (memcpy_s(&metadata.gainmapMetadata, sizeof(HDRVividGainmapMetadata),
-        gainmapMetadataVec.data(), gainmapMetadataVec.size()) != EOK) {
-        metadata.gainmapMetadataFlag = false;
+    std::vector<uint8_t> extendMetadataVec = {};
+    VpeUtils::GetSbDynamicMetadata(gainmap, extendMetadataVec);
+    if (extendMetadataVec.size() != sizeof(HDRVividExtendMetadata)) {
+        metadata.extendMetaFlag = false;
+        return metadata;
+    }
+    if (memcpy_s(&metadata.extendMeta, sizeof(HDRVividExtendMetadata),
+        extendMetadataVec.data(), extendMetadataVec.size()) != EOK) {
+        metadata.extendMetaFlag = false;
     } else {
-        metadata.gainmapMetadataFlag = true;
+        metadata.extendMetaFlag = true;
     }
     return metadata;
 }
@@ -352,10 +356,6 @@ static uint32_t DecomposeImage(PixelMap* pixelMap, sptr<SurfaceBuffer>& base, sp
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd()));
-    VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
-    VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, CM_BT2020_HLG_LIMIT);
-    VpeUtils::SetSbDynamicMetadata(hdrSurfaceBuffer, std::vector<uint8_t>());
-    VpeUtils::SetSbStaticMetadata(hdrSurfaceBuffer, std::vector<uint8_t>());
     VpeSurfaceBuffers buffers = {
         .sdr = base,
         .gainmap = gainmap,
@@ -412,8 +412,11 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
     }
     SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
     SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true);
-    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_DUAL, CM_P3_LIMIT);
-    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_METADATA_NONE, CM_SRGB_LIMIT);
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_SDR, CM_P3_FULL);
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
+    CM_ColorSpaceType color = CM_BT2020_HLG_FULL;
+    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, color);
+    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_IMAGE_HDR_VIVID_GAINMAP, color);
     if (baseSptr == nullptr || gainMapSptr == nullptr) {
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
@@ -443,8 +446,11 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     pixelmap_->GetImageInfo(info);
     SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
     SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true);
-    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_DUAL, CM_P3_LIMIT);
-    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_METADATA_NONE, CM_SRGB_LIMIT);
+    sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo, CM_IMAGE_HDR_VIVID_SDR, CM_P3_FULL);
+    CM_ColorSpaceType color = CM_BT2020_HLG_FULL;
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
+    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, color);
+    sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo, CM_IMAGE_HDR_VIVID_GAINMAP, color);
     if (baseSptr == nullptr || gainMapSptr == nullptr) {
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
