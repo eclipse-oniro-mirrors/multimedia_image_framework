@@ -25,6 +25,7 @@ struct OH_PixelmapNative {
 public:
     OH_PixelmapNative(std::shared_ptr<OHOS::Media::PixelMap> pixelMap);
     OH_PixelmapNative(const uint32_t *colors, uint32_t colorLength, const OHOS::Media::InitializationOptions &opts);
+    OH_PixelmapNative(const OHOS::Media::InitializationOptions &opts);
     OH_PixelmapNative(OH_PixelmapNative *OH_PixelmapNative, const OHOS::Media::InitializationOptions &opts);
     ~OH_PixelmapNative();
 

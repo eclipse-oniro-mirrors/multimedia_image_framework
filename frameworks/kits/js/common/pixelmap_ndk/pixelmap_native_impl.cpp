@@ -36,6 +36,12 @@ OH_PixelmapNative::OH_PixelmapNative(const uint32_t *colors, uint32_t colorLengt
     pixelmap_ = std::move(tmpPixelmap);
 }
 
+OH_PixelmapNative::OH_PixelmapNative(const InitializationOptions &opts)
+{
+    auto tmpPixelmap = PixelMap::Create(opts);
+    pixelmap_ = std::move(tmpPixelmap);
+}
+
 OH_PixelmapNative::OH_PixelmapNative(OH_PixelmapNative *OH_PixelmapNative, const InitializationOptions &opts)
 {
     if (OH_PixelmapNative == nullptr) {

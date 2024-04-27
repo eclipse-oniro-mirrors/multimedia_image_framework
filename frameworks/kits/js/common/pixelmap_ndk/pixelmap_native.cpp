@@ -45,6 +45,7 @@ static constexpr int32_t IMAGE_BASE_23 = 23;
 struct OH_Pixelmap_InitializationOptions {
     uint32_t width;
     uint32_t height;
+    PIXEL_FORMAT srcPixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_BGRA_8888;
     PIXEL_FORMAT pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
     uint32_t editable = false;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
@@ -70,7 +71,7 @@ static PIXEL_FORMAT ParsePixelForamt(int32_t val)
 
 static PIXELMAP_ALPHA_TYPE ParseAlphaType(int32_t val)
 {
-    if (val <= static_cast<int32_t>(PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_PREMULTIPLIED)) {
+    if (val <= static_cast<int32_t>(PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNPREMULTIPLIED)) {
         return PIXELMAP_ALPHA_TYPE(val);
     }
 
@@ -187,6 +188,28 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetPixelFormat(OH_Pixelmap_Init
         return IMAGE_BAD_PARAMETER;
     }
     ops->pixelFormat = ParsePixelForamt(pixelFormat);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_GetSrcPixelFormat(OH_Pixelmap_InitializationOptions *ops,
+    int32_t *srcpixelFormat)
+{
+    if (ops == nullptr || srcpixelFormat == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *srcpixelFormat = static_cast<int32_t>(ops->srcPixelFormat);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_SetSrcPixelFormat(OH_Pixelmap_InitializationOptions *ops,
+    int32_t srcpixelFormat)
+{
+    if (ops == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    ops->srcPixelFormat = ParsePixelForamt(srcpixelFormat);
     return IMAGE_SUCCESS;
 }
 
@@ -312,11 +335,38 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     InitializationOptions info;
     info.editable = true;
     info.alphaType = static_cast<AlphaType>(options->alphaType);
+    info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
 
     auto pixelmap2 = new OH_PixelmapNative(reinterpret_cast<uint32_t*>(data), static_cast<uint32_t>(dataLength), info);
+    if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
+        if (pixelmap2) {
+            delete pixelmap2;
+        }
+        return IMAGE_BAD_PARAMETER;
+    }
+    *pixelmap = pixelmap2;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
+    OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    InitializationOptions info;
+    info.editable = true;
+    info.alphaType = static_cast<AlphaType>(options->alphaType);
+    info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
+    info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
+    info.size.height = options->height;
+    info.size.width = options->width;
+
+    auto pixelmap2 = new OH_PixelmapNative(info);
     if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
         if (pixelmap2) {
             delete pixelmap2;
@@ -434,6 +484,17 @@ Image_ErrorCode OH_PixelmapNative_Release(OH_PixelmapNative *pixelmap)
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->~OH_PixelmapNative();
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ConvertAlphaFormat(OH_PixelmapNative* srcpixelmap,
+    OH_PixelmapNative* dstpixelmap, const bool isPremul)
+{
+    if (srcpixelmap == nullptr || dstpixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    srcpixelmap->GetInnerPixelmap()->ConvertAlphaFormat(*(dstpixelmap->GetInnerPixelmap()), isPremul);
     return IMAGE_SUCCESS;
 }
 
