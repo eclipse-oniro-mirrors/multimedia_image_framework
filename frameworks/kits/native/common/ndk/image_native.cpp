@@ -144,6 +144,7 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
         return IMAGE_BAD_PARAMETER;
     }
     if (nullptr != image->imgNative) {
+        image->imgNative->release();
         delete image->imgNative;
     }
     IMAGE_LOGI("OH_ImageNative 0x%{public}p has been deleted.", image);
