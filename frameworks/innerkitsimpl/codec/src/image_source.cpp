@@ -62,9 +62,9 @@
 #include "hdr_type.h"
 #include "vpe_utils.h"
 #include "image_mime_type.h"
-#include "v2_0/buffer_handle_meta_key_type.h"
-#include "v2_0/cm_color_space.h"
-#include "v2_0/hdr_static_metadata.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -77,7 +77,7 @@ namespace Media {
 using namespace std;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
-using namespace HDI::Display::Graphic::Common::V2_0;
+using namespace HDI::Display::Graphic::Common::V1_0;
 
 static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
@@ -3003,9 +3003,9 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     context.grColorSpaceName = ConvertColorSpaceName(color, false);
     CM_HDR_Metadata_Type type;
     if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
-        type = CM_IMAGE_HDR_VIVID_HDR;
+        type = CM_IMAGE_HDR_VIVID_SINGLE;
     } else if (hdrType == ImageHdrType::HDR_ISO_DUAL) {
-        type = CM_IMAGE_HDR_ISO_HDR;
+        type = CM_IMAGE_HDR_ISO_SINGLE;
     }
     VpeUtils::SetSbMetadataType(sb, type);
     VpeUtils::SetSbColorSpaceType(sb, color);

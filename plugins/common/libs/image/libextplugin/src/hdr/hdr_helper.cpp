@@ -27,7 +27,7 @@
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "heif_impl/HeifDecoder.h"
-#include "v2_0/hdr_static_metadata.h"
+#include "v1_0/hdr_static_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -39,7 +39,7 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace std;
 using namespace Media;
-using namespace HDI::Display::Graphic::Common::V2_0;
+using namespace HDI::Display::Graphic::Common::V1_0;
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP0 = 0xE0;
 
@@ -790,7 +790,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
 
 static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInfo, const vector<uint8_t>& lightInfo)
 {
-    HDI::Display::Graphic::Common::V2_0::HdrStaticMetadata staticMetadata{};
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
     DisplayColourVolume displayColourVolume{};
     ContentLightLevelInfo lightLevelInfo{};
     if (!lightInfo.empty()) {
@@ -818,7 +818,7 @@ static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInf
     staticMetadata.smpte2086.minLuminance = lumScale * (float)displayColourVolume.luminanceMin;
     staticMetadata.cta861.maxContentLightLevel = (float)lightLevelInfo.maxContentLightLevel;
     staticMetadata.cta861.maxFrameAverageLightLevel = (float)lightLevelInfo.maxPicAverageLightLevel;
-    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V2_0::HdrStaticMetadata);
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
     std::vector<uint8_t> staticMetadataVec(vecSize);
     if (memcpy_s(staticMetadataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
         return {};

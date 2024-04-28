@@ -20,7 +20,7 @@
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "image_log.h"
-#include "v2_0/buffer_handle_meta_key_type.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
 #include "metadata_convertor.h"
 #include "external_window.h"
 #include "native_window.h"
@@ -33,7 +33,7 @@
 
 namespace OHOS {
 namespace Media {
-using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 static constexpr uint32_t TRANSFUNC_OFFSET = 8;
 static constexpr uint32_t MATRIX_OFFSET = 16;
 static constexpr uint32_t RANGE_OFFSET = 21;
@@ -278,9 +278,9 @@ static CM_HDR_Metadata_Type ConvertHdrType(ImageHdrType hdrType, bool isGainmap)
     switch (hdrType) {
         case ImageHdrType::HDR_VIVID_DUAL :
         case ImageHdrType::HDR_CUVA :
-            return isGainmap ? CM_IMAGE_HDR_VIVID_GAINMAP : CM_IMAGE_HDR_VIVID_SDR;
+            return CM_IMAGE_HDR_VIVID_DUAL;
         case ImageHdrType::HDR_ISO_DUAL :
-            return isGainmap ? CM_IMAGE_HDR_ISO_GAINMAP : CM_IMAGE_HDR_ISO_SDR;
+            return CM_IMAGE_HDR_ISO_DUAL;
         default:
             return CM_METADATA_NONE;
     }
