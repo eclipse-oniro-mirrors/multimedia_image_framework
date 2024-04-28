@@ -86,6 +86,7 @@ private:
     static napi_ref alphaTypeRef_;
     static napi_ref scaleModeRef_;
     static napi_ref componentTypeRef_;
+    static napi_ref decodingDynamicRangeRef_;
 
     napi_env env_ = nullptr;
     bool isRelease = false;
