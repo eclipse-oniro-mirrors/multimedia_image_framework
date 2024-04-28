@@ -1867,7 +1867,7 @@ HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
     ASSERT_EQ(bmpHeight, pixelMap->GetHeight());
 
     int32_t desiredWidth = 200;
-    int32_t desiredHeight = 300;
+    int32_t desiredHeight = 75;
 
     decodeOpts.desiredSize.width = desiredWidth;
     decodeOpts.desiredSize.height = desiredHeight;
