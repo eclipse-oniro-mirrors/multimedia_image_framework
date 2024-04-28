@@ -1531,7 +1531,7 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
     return SUCCESS;
 }
 
-uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t size)
+uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t size) __attribute__((no_sanitize("cfi")))
 {
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]check image format, source stream is null.");
