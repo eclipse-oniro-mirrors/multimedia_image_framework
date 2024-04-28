@@ -18,6 +18,7 @@
 
 #include <libexif/exif-entry.h>
 #include <libexif/exif-tag.h>
+#include <libexif/huawei/exif-mnote-data-huawei.h>
 
 #include "metadata.h"
 
@@ -30,12 +31,14 @@ public:
     virtual ~ExifMetadata();
     virtual int GetValue(const std::string &key, std::string &value) const override;
     virtual bool SetValue(const std::string &key, const std::string &value) override;
+    virtual bool RemoveEntry(const std::string &key) override;
     ExifData* GetExifData();
     bool CreateExifdata();
     std::shared_ptr<ExifMetadata> Clone();
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
+    MnoteHuaweiEntry* CreateHwEntry(const std::string &key);
     ExifEntry* GetEntry(const std::string &key, const size_t len);
     ExifEntry* GetEntry(const std::string &key) const;
     int HandleMakerNote(std::string &value) const;
@@ -49,7 +52,9 @@ private:
     bool SetByte(ExifEntry *ptrEntry, const std::string &value);
     bool SetMem(ExifEntry *ptrEntry, const std::string &value, const size_t len);
     bool SetHwMoteValue(const std::string &key, const std::string &value);
+    bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
+    bool IsSpecialHwKey(const std::string &key) const;
     ExifData *exifData_;
 };
 } // namespace Media

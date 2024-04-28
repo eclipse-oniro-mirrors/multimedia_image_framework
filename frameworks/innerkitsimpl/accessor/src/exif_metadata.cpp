@@ -19,6 +19,7 @@
 #include <set>
 #include <sstream>
 #include <vector>
+#include <string_view>
 
 #include "exif_metadata.h"
 #include "exif_metadata_formatter.h"
@@ -45,6 +46,11 @@ namespace Media {
 const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+const std::set<std::string_view> HW_SPECIAL_KEYS = {
+    "MovingPhotoId",
+    "MovingPhotoVersion",
+    "MicroVideoPresentationTimestampUS"
+};
 
 template <typename T> std::istream &OutputRational(std::istream &is, T &r)
 {
@@ -97,7 +103,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         return HandleMakerNote(value);
     }
     char tagValueChar[TAG_VALUE_SIZE];
-    if (key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") {
+    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") || IsSpecialHwKey(key)) {
         value = DEFAULT_EXIF_VALUE;
         ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
         if (md == nullptr) {
@@ -288,6 +294,26 @@ ExifEntry *ExifMetadata::CreateEntry(const std::string &key, const ExifTag &tag,
         exif_mem_unref(exifMem);
         exif_entry_unref(entry);
     }
+    return entry;
+}
+
+MnoteHuaweiEntry *ExifMetadata::CreateHwEntry(const std::string &key)
+{
+    ExifMnoteData *md = exif_data_get_mnote_data (exifData_);
+    if (!is_huawei_md(md)) {
+        IMAGE_LOGE("Failed to create MnoteHuaweiEntry is not Huawei MakeNote.");
+        return nullptr;
+    }
+
+    ExifByteOrder order = exif_mnote_data_huawei_get_byte_order(md);
+    MnoteHuaweiEntry* entry = mnote_huawei_entry_new(md);
+    if (!entry) {
+        IMAGE_LOGE("Failed to create MnoteHuaweiEntry.");
+        return nullptr;
+    }
+
+    MnoteHuaweiTag tag = mnote_huawei_tag_from_name(key.c_str());
+    mnote_huawei_entry_initialize(entry, tag, order);
     return entry;
 }
 
@@ -498,7 +524,8 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
         return false;
     }
 
-    if (key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw" && key == "HwMnoteCaptureMode") {
+    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
+        IsSpecialHwKey(key)) {
         IMAGE_LOGD("Set HwMoteValue %{public}s", value.c_str());
         return SetHwMoteValue(key, result.second);
     }
@@ -509,24 +536,38 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
 bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)
 {
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
-    if (md == nullptr) {
-        IMAGE_LOGD("Exif data mnote data md is nullptr");
-        return false;
-    }
     if (!is_huawei_md(md)) {
-        IMAGE_LOGE("Exif data returned null for key: %{public}s", key.c_str());
+        IMAGE_LOGD("Makernote is not huawei makernote.");
         return false;
     }
 
-    auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, MNOTE_HUAWEI_CAPTURE_MODE);
+    MnoteHuaweiTag hwTag = mnote_huawei_tag_from_name(key.c_str());
+    if (hwTag == MNOTE_HUAWEI_INFO) {
+        IMAGE_LOGD("The key: %{public}s is unknow hwTag", key.c_str());
+        return false;
+    }
+
+    auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, hwTag);
     if (!entry) {
-        return false;
+        entry = CreateHwEntry(key);
+        if (!entry) {
+            return false;
+        }
+        auto ret = exif_mnote_data_add_entry(md, entry);
+        if (ret) {
+            mnote_huawei_entry_free(entry);
+            IMAGE_LOGE("Add new hw entry failed.");
+            return false;
+        }
+
+        mnote_huawei_entry_free_contour(entry);
+        entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, hwTag);
     }
 
-    const char *capture_buf = value.c_str();
-    int capture_buf_length = static_cast<int>(value.length());
-    int ret = mnote_huawei_entry_set_value(entry, capture_buf, capture_buf_length);
-    return ret == 0;
+    const char *data = value.c_str();
+    int dataLen = value.length();
+    int ret = mnote_huawei_entry_set_value(entry, data, dataLen);
+    return ret == 0 ? true : false;
 }
 
 bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &value)
@@ -569,6 +610,57 @@ bool ExifMetadata::SetCommonValue(const std::string &key, const std::string &val
             break;
     }
     return isSetSuccess;
+}
+
+bool ExifMetadata::RemoveEntry(const std::string &key)
+{
+    bool isSuccess = false;
+    if (!(exifData_ && ExifMetadatFormatter::IsModifyAllowed(key))) {
+        IMAGE_LOGD("RemoveEntry failed, can not remove entry for key: %{public}s", key.c_str());
+        return isSuccess;
+    }
+
+    if ((key.size() > KEY_SIZE && key.substr(0, KEY_SIZE) == "Hw") ||
+        IsSpecialHwKey(key)) {
+        return RemoveHwEntry(key);
+    }
+
+    ExifEntry *entry = GetEntry(key);
+    if (!entry) {
+        IMAGE_LOGD("RemoveEntry failed, can not find entry for key: %{public}s", key.c_str());
+        return isSuccess;
+    }
+
+    IMAGE_LOGD("RemoveEntry for key: %{public}s", key.c_str());
+    exif_content_remove_entry(entry->parent, entry);
+    isSuccess = true;
+    return isSuccess;
+}
+
+bool ExifMetadata::RemoveHwEntry(const std::string &key)
+{
+    ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
+
+    if (!is_huawei_md(md)) {
+        IMAGE_LOGD("Exif makernote is not huawei makernote");
+        return false;
+    }
+
+    MnoteHuaweiTag tag = mnote_huawei_tag_from_name(key.c_str());
+    auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, tag);
+    if (!entry) {
+        IMAGE_LOGE("Get entry by tag failed, there is no entry for key: %{public}s", key.c_str());
+        return false;
+    }
+
+    exif_mnote_data_remove_entry(md, entry);
+    return true;
+}
+
+bool ExifMetadata::IsSpecialHwKey(const std::string &key) const
+{
+    auto iter = HW_SPECIAL_KEYS.find(key);
+    return (iter != HW_SPECIAL_KEYS.end());
 }
 
 } // namespace Media
