@@ -21,14 +21,34 @@ ohos_fuzztest("ImageCreateImageSourceByFdFuzzTest") {
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/plugins/common/libs/image/libextplugin/include",
+    "$image_subsystem/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
+    "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
+  ]
+
+  defines = [
+    "JPEG_HW_DECODE_ENABLE",
+    "HEIF_HW_DECODE_ENABLE",
   ]
 
   sources = [ "src/image_create_image_source_by_fd_fuzz.cpp" ]
 
-  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  deps = [
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "$image_subsystem/plugins/common/libs/image/libextplugin:extplugin",
+    "$image_subsystem/plugins/common/libs/image/libsvgplugin:svgplugin",
+  ]
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_codec:image_idl_headers",
+    "drivers_interface_codec:libimage_proxy_1.0",
+    "drivers_interface_display:display_buffer_idl_headers",
+    "drivers_interface_display:display_composer_idl_headers",
+    "drivers_interface_display:libdisplay_buffer_hdi_impl",
+    "drivers_interface_display:libdisplay_composer_hdi_impl",
     "graphic_2d:color_manager",
+    "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
   ]
 }
