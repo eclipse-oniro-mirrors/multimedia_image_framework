@@ -41,6 +41,13 @@ constexpr uint8_t INDEX_ZERO = 0;
 constexpr uint8_t INDEX_ONE = 1;
 constexpr uint8_t INDEX_TWO = 2;
 const static char* VPE_SO_NAME = "libvideoprocessingengine.z.so";
+void* VpeUtils::dlHandler_ = nullptr;
+__attribute__((destructor)) void VpeUtilsDeinitLibVpe()
+{
+    IMAGE_LOGD("destructor VpeUtilsDeinitLibVpe");
+    VpeUtils::UnloadLibVpe();
+}
+
 using CreateT = int32_t (*)(int32_t*);
 using ComposeImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, OHNativeWindowBuffer*, bool);
@@ -51,6 +58,33 @@ using HdrProcessImageT =
 using SrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, int32_t);
 using DestoryT = int32_t (*)(int32_t*);
+
+VpeUtils::VpeUtils()
+{
+    static std::once_flag flag;
+    std::function<void()> func = std::bind(&VpeUtils::LoadLibVpe);
+    std::call_once(flag, func);
+}
+
+bool VpeUtils::LoadLibVpe()
+{
+    dlHandler_ = dlopen(VPE_SO_NAME, RTLD_LAZY);
+    if (dlHandler_ == nullptr) {
+        IMAGE_LOGE("VpeUtils LoadLibVpe, failed");
+        return false;
+    }
+    IMAGE_LOGD("VpeUtils LoadLibVpe, success");
+    return true;
+}
+
+void VpeUtils::UnloadLibVpe()
+{
+    IMAGE_LOGD("VpeUtils UnloadLibVpe");
+    if (dlHandler_) {
+        dlclose(dlHandler_);
+        dlHandler_ = nullptr;
+    }
+}
 
 VpeUtils::VpeUtils()
 {
@@ -87,19 +121,18 @@ int32_t VpeUtils::ColorSpaceConverterDestory(void* handle, int32_t* instanceId)
 int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    void* vpeHandle = dlopen(VPE_SO_NAME, RTLD_LAZY);
-    if (vpeHandle == nullptr) {
+    if (dlHandler_ == nullptr) {
         return VPE_ERROR_FAILED;
     }
     
     int32_t res;
     int32_t instanceId;
-    res = ColorSpaceConverterCreate(vpeHandle, &instanceId);
+    res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
     }
 
-    ComposeImageT composeImage = (ComposeImageT)dlsym(vpeHandle, "ColorSpaceConverterComposeImage");
+    ComposeImageT composeImage = (ComposeImageT)dlsym(dlHandler_, "ColorSpaceConverterComposeImage");
     if (!composeImage) {
         return VPE_ERROR_FAILED;
     }
@@ -113,27 +146,25 @@ int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool le
     OH_NativeWindow_DestroyNativeWindowBuffer(sdr);
     OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
-    ColorSpaceConverterDestory(vpeHandle, &instanceId);
-    dlclose(vpeHandle);
+    ColorSpaceConverterDestory(dlHandler_, &instanceId);
     return res;
 }
 
 int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    void* vpeHandle = dlopen(VPE_SO_NAME, RTLD_LAZY);
-    if (vpeHandle == nullptr) {
+    if (dlHandler_ == nullptr) {
         return VPE_ERROR_FAILED;
     }
  
     int32_t res;
     int32_t instanceId;
-    res = ColorSpaceConverterCreate(vpeHandle, &instanceId);
+    res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
     }
     
-    DecomposeImageT decomposeImage = (DecomposeImageT)dlsym(vpeHandle, "ColorSpaceConverterDecomposeImage");
+    DecomposeImageT decomposeImage = (DecomposeImageT)dlsym(dlHandler_, "ColorSpaceConverterDecomposeImage");
     if (!decomposeImage) {
         return VPE_ERROR_FAILED;
     }
@@ -147,8 +178,7 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     OH_NativeWindow_DestroyNativeWindowBuffer(sdr);
     OH_NativeWindow_DestroyNativeWindowBuffer(gainmap);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
-    ColorSpaceConverterDestory(vpeHandle, &instanceId);
-    dlclose(vpeHandle);
+    ColorSpaceConverterDestory(dlHandler_, &instanceId);
     return res;
 }
 
@@ -320,19 +350,18 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
 int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    void* vpeHandle = dlopen(VPE_SO_NAME, RTLD_LAZY);
-    if (vpeHandle == nullptr) {
+    if (dlHandler_ == nullptr) {
         return VPE_ERROR_FAILED;
     }
 
     int32_t res;
     int32_t instanceId;
-    res = ColorSpaceConverterCreate(vpeHandle, &instanceId);
+    res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
     }
 
-    HdrProcessImageT hdrProcessImage = (HdrProcessImageT)dlsym(vpeHandle, "ColorSpaceConverterProcessImage");
+    HdrProcessImageT hdrProcessImage = (HdrProcessImageT)dlsym(dlHandler_, "ColorSpaceConverterProcessImage");
     if (!hdrProcessImage) {
         return VPE_ERROR_FAILED;
     }
@@ -344,8 +373,7 @@ int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sp
     res = hdrProcessImage(instanceId, sdr, hdr);
     OH_NativeWindow_DestroyNativeWindowBuffer(sdr);
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
-    ColorSpaceConverterDestory(vpeHandle, &instanceId);
-    dlclose(vpeHandle);
+    ColorSpaceConverterDestory(dlHandler_, &instanceId);
     return res;
 }
 
@@ -376,19 +404,18 @@ int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
 int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output, int32_t level)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
-    void* vpeHandle = dlopen(VPE_SO_NAME, RTLD_LAZY);
-    if (vpeHandle == nullptr) {
+    if (dlHandler_ == nullptr) {
         return VPE_ERROR_FAILED;
     }
 
     int32_t res;
     int32_t instanceId;
-    res = DetailEnhancerCreate(vpeHandle, &instanceId);
+    res = DetailEnhancerCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
     }
 
-    SrProcessImageT srProcessImage = (SrProcessImageT)dlsym(vpeHandle, "DetailEnhancerProcessImage");
+    SrProcessImageT srProcessImage = (SrProcessImageT)dlsym(dlHandler_, "DetailEnhancerProcessImage");
     if (!srProcessImage) {
         return VPE_ERROR_FAILED;
     }
@@ -400,8 +427,7 @@ int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<Su
     res = srProcessImage(instanceId, inBuffer, outBuffer, level);
     OH_NativeWindow_DestroyNativeWindowBuffer(inBuffer);
     OH_NativeWindow_DestroyNativeWindowBuffer(outBuffer);
-    DetailEnhancerDestory(vpeHandle, &instanceId);
-    dlclose(vpeHandle);
+    DetailEnhancerDestory(dlHandler_, &instanceId);
     return res;
 }
 

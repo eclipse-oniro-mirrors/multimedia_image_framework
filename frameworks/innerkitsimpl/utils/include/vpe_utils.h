@@ -57,6 +57,8 @@ public:
     static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer,
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color);
     static bool SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer);
+    static bool LoadLibVpe();
+    static void UnloadLibVpe();
 
 private:
     int32_t ColorSpaceConverterCreate(void* handle, int32_t* instanceId);
@@ -64,6 +66,7 @@ private:
     int32_t DetailEnhancerCreate(void* handle, int32_t* instanceId);
     int32_t DetailEnhancerDestory(void* handle, int32_t* instanceId);
     std::mutex vpeMtx_;
+    static void* dlHandler_;
 };
 } // namespace Media
 } // namespace OHOS
