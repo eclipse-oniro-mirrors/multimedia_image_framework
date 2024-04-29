@@ -1363,7 +1363,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     if (key == "Orientation") {
         if (ORIENTATION_INT_MAP.count(strValue) == 0) {
             IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
-            return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+            return ERR_IMAGE_SOURCE_DATA;
         }
         strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
     }
