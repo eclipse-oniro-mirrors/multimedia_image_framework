@@ -86,10 +86,6 @@ void VpeUtils::UnloadLibVpe()
     }
 }
 
-VpeUtils::VpeUtils()
-{
-}
-
 VpeUtils::~VpeUtils()
 {
 }
