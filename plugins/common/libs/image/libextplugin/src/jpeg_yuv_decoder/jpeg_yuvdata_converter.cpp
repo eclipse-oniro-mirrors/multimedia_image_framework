@@ -18,9 +18,6 @@
 #include <algorithm>
 
 #include "jpeg_decoder_yuv.h"
-#ifdef LIBYUV_ENABLE
-#include "libyuv.h"
-#endif
 #include "securec.h"
 
 namespace OHOS {
@@ -218,66 +215,66 @@ int I4xxToI420_c(const YuvPlaneInfo &src, const YuvPlaneInfo &dest,
 
 int I444ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
-#ifdef LIBYUV_ENABLE
-    uint32_t width = src.imageWidth;
-    uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-        return -1;
+    if (JpegDecoderYuv::GetLibyuvConverter().I444ToI420) {
+        uint32_t width = src.imageWidth;
+        uint32_t height = src.imageHeight;
+        if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
+            return -1;
+        }
+        return JpegDecoderYuv::GetLibyuvConverter().I444ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
+            src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
+            dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
+    } else {
+        return I4xxToI420_c(src, dest, SCALE_444_X, SCALE_444_Y, true);
     }
-    return libyuv::I444ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM], src.strides[UCOM],
-        src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM], dest.planes[UCOM],
-        dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
-#else
-    return I4xxToI420_c(src, dest, SCALE_444_X, SCALE_444_Y, true);
-#endif
 }
 
 int I444ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
-#ifdef LIBYUV_ENABLE
-    uint32_t width = src.imageWidth;
-    uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-        return -1;
+    if (JpegDecoderYuv::GetLibyuvConverter().I444ToNV21) {
+        uint32_t width = src.imageWidth;
+        uint32_t height = src.imageHeight;
+        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
+            return -1;
+        }
+        return JpegDecoderYuv::GetLibyuvConverter().I444ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
+            src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
+            dest.planes[UVCOM], dest.strides[UVCOM], width, height);
+    } else {
+        return I4xxToI420_c(src, dest, SCALE_444_X, SCALE_444_Y, false);
     }
-    return libyuv::I444ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM], src.strides[UCOM],
-        src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM], dest.planes[UVCOM],
-        dest.strides[UVCOM], width, height);
-#else
-    return I4xxToI420_c(src, dest, SCALE_444_X, SCALE_444_Y, false);
-#endif
 }
 
 int I422ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
-#ifdef LIBYUV_ENABLE
-    uint32_t width = src.imageWidth;
-    uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
-        return -1;
+    if (JpegDecoderYuv::GetLibyuvConverter().I422ToI420) {
+        uint32_t width = src.imageWidth;
+        uint32_t height = src.imageHeight;
+        if (!IsValidYuvData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
+            return -1;
+        }
+        return JpegDecoderYuv::GetLibyuvConverter().I422ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
+            src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
+            dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
+    } else {
+        return I4xxToI420_c(src, dest, SCALE_422_X, SCALE_422_Y, true);
     }
-    return libyuv::I422ToI420(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM], src.strides[UCOM],
-        src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM], dest.planes[UCOM],
-        dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
-#else
-    return I4xxToI420_c(src, dest, SCALE_422_X, SCALE_422_Y, true);
-#endif
 }
 
 int I422ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
-#ifdef LIBYUV_ENABLE
-    uint32_t width = src.imageWidth;
-    uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-        return -1;
+    if (JpegDecoderYuv::GetLibyuvConverter().I422ToNV21) {
+        uint32_t width = src.imageWidth;
+        uint32_t height = src.imageHeight;
+        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
+            return -1;
+        }
+        return JpegDecoderYuv::GetLibyuvConverter().I422ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
+            src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
+            dest.planes[UVCOM], dest.strides[UVCOM], width, height);
+    } else {
+        return I4xxToI420_c(src, dest, SCALE_422_X, SCALE_422_Y, false);
     }
-    return libyuv::I422ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM], src.strides[UCOM],
-        src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM], dest.planes[UVCOM],
-        dest.strides[UVCOM], width, height);
-#else
-    return I4xxToI420_c(src, dest, SCALE_422_X, SCALE_422_Y, false);
-#endif
 }
 
 int I420ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
@@ -287,18 +284,18 @@ int I420ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 
 int I420ToNV21_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
 {
-#ifdef LIBYUV_ENABLE
-    uint32_t width = src.imageWidth;
-    uint32_t height = src.imageHeight;
-    if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
-        return -1;
+    if (JpegDecoderYuv::GetLibyuvConverter().I420ToNV21) {
+        uint32_t width = src.imageWidth;
+        uint32_t height = src.imageHeight;
+        if (!IsValidYuvData(src) || !IsValidYuvNVData(dest) || !IsValidSize(width, height)) {
+            return -1;
+        }
+        return JpegDecoderYuv::GetLibyuvConverter().I420ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM],
+            src.strides[UCOM], src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM],
+            dest.planes[UVCOM], dest.strides[UVCOM], width, height);
+    } else {
+        return I4xxToI420_c(src, dest, SCALE_420_X, SCALE_420_Y, false);
     }
-    return libyuv::I420ToNV21(src.planes[YCOM], src.strides[YCOM], src.planes[UCOM], src.strides[UCOM],
-        src.planes[VCOM], src.strides[VCOM], dest.planes[YCOM], dest.strides[YCOM], dest.planes[UVCOM],
-        dest.strides[UVCOM], width, height);
-#else
-    return I4xxToI420_c(src, dest, SCALE_420_X, SCALE_420_Y, false);
-#endif
 }
 
 int I440ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
@@ -328,30 +325,30 @@ int I400ToI420_wrapper(const YuvPlaneInfo &src, const YuvPlaneInfo &dest)
     if (!IsValidYuvGrayData(src) || !IsValidYuvData(dest) || !IsValidSize(width, height)) {
         return -1;
     }
-#ifdef LIBYUV_ENABLE
-    return libyuv::I400ToI420(src.planes[YCOM], src.strides[YCOM], dest.planes[YCOM], dest.strides[YCOM],
-        dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM], width, height);
-#else
-    const uint8_t* srcY = nullptr;
-    for (uint32_t k = 0; k < height; k++) {
-        srcY = src.planes[YCOM] + k * src.strides[YCOM];
-        uint8_t* outY = dest.planes[YCOM] + k * dest.strides[YCOM];
-        CopyLineData(outY, dest.strides[YCOM], srcY, std::min(src.strides[YCOM], dest.strides[YCOM]));
+    if (JpegDecoderYuv::GetLibyuvConverter().I400ToI420) {
+        return JpegDecoderYuv::GetLibyuvConverter().I400ToI420(src.planes[YCOM], src.strides[YCOM], dest.planes[YCOM],
+            dest.strides[YCOM], dest.planes[UCOM], dest.strides[UCOM], dest.planes[VCOM], dest.strides[VCOM],
+            width, height);
+    } else {
+        const uint8_t* srcY = nullptr;
+        for (uint32_t k = 0; k < height; k++) {
+            srcY = src.planes[YCOM] + k * src.strides[YCOM];
+            uint8_t* outY = dest.planes[YCOM] + k * dest.strides[YCOM];
+            CopyLineData(outY, dest.strides[YCOM], srcY, std::min(src.strides[YCOM], dest.strides[YCOM]));
+        }
+        if (dest.planeHeight[YCOM] > height && srcY) {
+            uint8_t* outY = dest.planes[YCOM] + height * dest.strides[YCOM];
+            CopyLineData(outY, dest.strides[YCOM], srcY, src.strides[YCOM]);
+        }
+        const uint8_t chromaValueForGray = 0x80;
+        uint32_t UVCOMSize = dest.planeWidth[UCOM] * dest.planeHeight[UCOM];
+        UVCOMSize += dest.planeWidth[VCOM] * dest.planeHeight[VCOM];
+        errno_t ret = memset_s(dest.planes[UCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
+        if (ret != EOK) {
+            return -1;
+        }
+        return 0;
     }
-    if (dest.planeHeight[YCOM] > height && srcY) {
-        uint8_t* outY = dest.planes[YCOM] + height * dest.strides[YCOM];
-        CopyLineData(outY, dest.strides[YCOM], srcY, src.strides[YCOM]);
-    }
-    const uint8_t chromaValueForGray = 0x80;
-    uint32_t UVCOMSize = dest.planeWidth[UCOM] * dest.planeHeight[UCOM];
-    UVCOMSize += dest.planeWidth[VCOM] * dest.planeHeight[VCOM];
-    errno_t ret = memset_s(dest.planes[UCOM], UVCOMSize, chromaValueForGray, UVCOMSize);
-    if (ret != EOK) {
-        return -1;
-    }
-
-    return 0;
-#endif
 }
 
 }

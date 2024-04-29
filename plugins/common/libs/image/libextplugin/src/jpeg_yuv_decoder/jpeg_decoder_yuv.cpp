@@ -15,7 +15,9 @@
 
 #include "jpeg_decoder_yuv.h"
 
+#include <dlfcn.h>
 #include <map>
+#include <mutex>
 #include <utility>
 
 #include "image_log.h"
@@ -26,6 +28,16 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace OHOS::Media;
 
+const std::string YUV_LIB_PATH = "libyuv.z.so";
+
+void* JpegDecoderYuv::dlHandler_ = nullptr;
+LibYuvConvertFuncs JpegDecoderYuv::libyuvFuncs_ = { nullptr };
+
+__attribute__((destructor)) void JpgYuvDeinitLibyuv()
+{
+    JpegDecoderYuv::UnloadLibYuv();
+}
+
 #define AVERAGE_FACTOR 2
 
 static const std::map<int, ConverterPair> CONVERTER_MAP = {
@@ -35,6 +47,40 @@ static const std::map<int, ConverterPair> CONVERTER_MAP = {
     {TJSAMP_440, {&I440ToI420_wrapper, &I440ToNV21_wrapper}},
     {TJSAMP_411, {&I411ToI420_wrapper, &I411ToNV21_wrapper}}
 };
+
+JpegDecoderYuv::JpegDecoderYuv()
+{
+    static std::once_flag flag;
+    std::function<void()> func = std::bind(&JpegDecoderYuv::LoadLibYuv);
+    std::call_once(flag, func);
+}
+
+bool JpegDecoderYuv::LoadLibYuv()
+{
+    dlHandler_ = dlopen(YUV_LIB_PATH.c_str(), RTLD_LAZY | RTLD_NODELETE);
+    if (dlHandler_ == nullptr) {
+        IMAGE_LOGE("JpegDecoderYuv LoadLibYuv, failed");
+        return false;
+    }
+    IMAGE_LOGI("JpegDecoderYuv LoadLibYuv, success");
+    libyuvFuncs_.I444ToI420 = (FUNC_I444ToI420)dlsym(dlHandler_, "I444ToI420");
+    libyuvFuncs_.I444ToNV21 = (FUNC_I444ToNV21)dlsym(dlHandler_, "I444ToNV21");
+    libyuvFuncs_.I422ToI420 = (FUNC_I422ToI420)dlsym(dlHandler_, "I422ToI420");
+    libyuvFuncs_.I422ToNV21 = (FUNC_I422ToNV21)dlsym(dlHandler_, "I422ToNV21");
+    libyuvFuncs_.I420ToNV21 = (FUNC_I420ToNV21)dlsym(dlHandler_, "I420ToNV21");
+    libyuvFuncs_.I400ToI420 = (FUNC_I400ToI420)dlsym(dlHandler_, "I400ToI420");
+    return true;
+}
+
+void JpegDecoderYuv::UnloadLibYuv()
+{
+    IMAGE_LOGI("JpegDecoderYuv UnloadLibYuv");
+    memset_s(&libyuvFuncs_, sizeof(libyuvFuncs_), 0, sizeof(libyuvFuncs_));
+    if (dlHandler_) {
+        dlclose(dlHandler_);
+        dlHandler_ = nullptr;
+    }
+}
 
 bool JpegDecoderYuv::IsSupportedSubSample(int jpegSubsamp)
 {
