@@ -293,6 +293,18 @@ private:
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
     void UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent);
+    bool CheckDecodeOptions(Size imageSize, bool &needAisr, bool &needHdr);
+    uint32_t DecodeImageDataToContext(uint32_t index, ImageInfo &info, ImagePlugin::PlImageInfo &plInfo,
+                                      ImagePlugin::DecodeContext &context, uint32_t &errorCode);
+    void TransformSizeWithDensity(const Size &srcSize, int32_t srcDensity, const Size &wantSize,
+                                  int32_t wantDensity, Size &dstSize);
+    uint32_t DoAiHdrProcessDl(const ImagePlugin::DecodeContext &srcCtx, ImagePlugin::DecodeContext &dstCtx,
+                              bool needAisr, bool needHdr);
+    uint32_t ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr,
+                            ImagePlugin::DecodeContext &context);
+    ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
+        ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
+
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
     static MultimediaPlugin::PluginServer &pluginServer_;

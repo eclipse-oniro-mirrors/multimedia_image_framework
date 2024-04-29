@@ -38,6 +38,8 @@ public:
     ~VpeUtils();
     int32_t ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy);
     int32_t ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb);
+    int32_t ColorSpaceConverterImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output);
+    int32_t DetailEnhancerImageProcess(sptr<SurfaceBuffer>& input, sptr<SurfaceBuffer>& output, int32_t level);
     static bool SetSbColorSpaceType(sptr<SurfaceBuffer>& buffer,
         const HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType& colorSpaceType);
     static bool GetSbColorSpaceType(const sptr<SurfaceBuffer>& buffer,
@@ -52,10 +54,15 @@ public:
     static bool GetSbStaticMetadata(const sptr<SurfaceBuffer>& buffer, std::vector<uint8_t>& staticMetadata);
     static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap, ImageHdrType type,
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color, HdrMetadata& metadata);
+    static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer,
+        HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color);
+    static bool SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer);
 
 private:
     int32_t ColorSpaceConverterCreate(void* handle, int32_t* instanceId);
     int32_t ColorSpaceConverterDestory(void* handle, int32_t* instanceId);
+    int32_t DetailEnhancerCreate(void* handle, int32_t* instanceId);
+    int32_t DetailEnhancerDestory(void* handle, int32_t* instanceId);
     std::mutex vpeMtx_;
 };
 } // namespace Media
