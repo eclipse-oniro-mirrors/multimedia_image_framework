@@ -59,6 +59,7 @@ napi_ref ImageSourceNapi::imageFormatRef_ = nullptr;
 napi_ref ImageSourceNapi::alphaTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
+napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -207,6 +208,11 @@ static std::vector<struct ImageEnum> sComponentTypeMap = {
     {"YUV_U", 2, ""},
     {"YUV_V", 3, ""},
     {"JPEG", 4, ""},
+};
+static std::vector<struct ImageEnum> sDecodingDynamicRangeMap = {
+    {"AUTO", 1, ""},
+    {"SDR", 2, ""},
+    {"HDR", 3, ""},
 };
 
 static std::string GetStringArgument(napi_env env, napi_value value)
@@ -634,16 +640,14 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
         DECLARE_NAPI_PROPERTY("PixelMapFormat",
             CreateEnumTypeObject(env, napi_number, &pixelMapFormatRef_, sPixelMapFormatMap)),
-        DECLARE_NAPI_PROPERTY("PropertyKey",
-            CreateEnumTypeObject(env, napi_string, &propertyKeyRef_, sPropertyKeyMap)),
-        DECLARE_NAPI_PROPERTY("ImageFormat",
-            CreateEnumTypeObject(env, napi_number, &imageFormatRef_, sImageFormatMap)),
-        DECLARE_NAPI_PROPERTY("AlphaType",
-            CreateEnumTypeObject(env, napi_number, &alphaTypeRef_, sAlphaTypeMap)),
-        DECLARE_NAPI_PROPERTY("ScaleMode",
-            CreateEnumTypeObject(env, napi_number, &scaleModeRef_, sScaleModeMap)),
+        DECLARE_NAPI_PROPERTY("PropertyKey", CreateEnumTypeObject(env, napi_string, &propertyKeyRef_, sPropertyKeyMap)),
+        DECLARE_NAPI_PROPERTY("ImageFormat", CreateEnumTypeObject(env, napi_number, &imageFormatRef_, sImageFormatMap)),
+        DECLARE_NAPI_PROPERTY("AlphaType", CreateEnumTypeObject(env, napi_number, &alphaTypeRef_, sAlphaTypeMap)),
+        DECLARE_NAPI_PROPERTY("ScaleMode", CreateEnumTypeObject(env, napi_number, &scaleModeRef_, sScaleModeMap)),
         DECLARE_NAPI_PROPERTY("ComponentType",
             CreateEnumTypeObject(env, napi_number, &componentTypeRef_, sComponentTypeMap)),
+        DECLARE_NAPI_PROPERTY("DecodingDynamicRange",
+            CreateEnumTypeObject(env, napi_number, &decodingDynamicRangeRef_, sDecodingDynamicRangeMap)),
     };
 
     struct ImageConstructorInfo info = {
@@ -659,8 +663,6 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
     if (DoInit(env, exports, info)) {
         return nullptr;
     }
-
-    IMAGE_LOGD("Init success");
     return exports;
 }
 

@@ -80,6 +80,8 @@ struct DecodeContext {
     std::string hardDecodeError;
     // Out: hdr type
     Media::ImageHdrType hdrType = Media::ImageHdrType::UNKNOWN;
+    // Out: colorSpace
+    ColorManager::ColorSpaceName grColorSpaceName = ColorManager::NONE;
 };
 
 struct ProgDecodeContext {

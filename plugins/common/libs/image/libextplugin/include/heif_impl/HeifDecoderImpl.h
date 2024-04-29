@@ -104,7 +104,7 @@ private:
 #ifdef HEIF_HW_DECODE_ENABLE
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
     std::shared_ptr<HeifHardwareDecoder> hwDecoder_;
-    std::shared_ptr<HeifHardwareDecoder> hwGainmapDecoder_
+    std::shared_ptr<HeifHardwareDecoder> hwGainmapDecoder_;
 #endif
 };
 } // namespace ImagePlugin
