@@ -50,6 +50,13 @@ constexpr int32_t WIDTH_CL_THRESHOLD = 256;
 constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
 #endif
 
+#if (defined SUT_ENCODE_ENABLE) || (defined ENABLE_ASTC_ENCODE_BASED_GPU)
+static bool CheckClBinIsExist(const std::string &name)
+{
+    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
+}
+#endif
+
 #ifdef SUT_ENCODE_ENABLE
 static const std::string g_textureSuperEncSo = "/system/lib64/module/hms/graphic/libtextureSuperCompress.z.so";
 using SuperCompressTexture = bool (*)(uint8_t*, int32_t, uint8_t*, int32_t&, uint32_t);
@@ -87,11 +94,6 @@ SutEncSoManager::~SutEncSoManager()
         IMAGE_LOGD("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
         return;
     }
-}
-
-static bool CheckClBinIsExist(const std::string &name)
-{
-    return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 
 bool SutEncSoManager::LoadSutEncSo()
