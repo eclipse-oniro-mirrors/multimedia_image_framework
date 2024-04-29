@@ -70,9 +70,39 @@ struct JpegScaleFactor {
     uint32_t denom;
 };
 
+typedef int (*FUNC_I444ToI420)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+    const uint8_t* src_v, int src_stride_v, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_u,
+    int dst_stride_u, uint8_t* dst_v, int dst_stride_v, int width, int height);
+typedef int (*FUNC_I444ToNV21)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+    const uint8_t* src_v, int src_stride_v, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_vu,
+    int dst_stride_vu, int width, int height);
+typedef int (*FUNC_I422ToI420)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+    const uint8_t* src_v, int src_stride_v, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_u,
+    int dst_stride_u, uint8_t* dst_v, int dst_stride_v, int width, int height);
+typedef int (*FUNC_I422ToNV21)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+    const uint8_t* src_v, int src_stride_v, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_vu,
+    int dst_stride_vu, int width, int height);
+typedef int (*FUNC_I420ToNV21)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_u, int src_stride_u,
+    const uint8_t* src_v, int src_stride_v, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_vu,
+    int dst_stride_vu, int width, int height);
+typedef int (*FUNC_I400ToI420)(const uint8_t* src_y, int src_stride_y, uint8_t* dst_y, int dst_stride_y,
+    uint8_t* dst_u, int dst_stride_u, uint8_t* dst_v, int dst_stride_v, int width, int height);
+
+struct LibYuvConvertFuncs {
+    FUNC_I444ToI420 I444ToI420 = nullptr;
+    FUNC_I444ToNV21 I444ToNV21 = nullptr;
+    FUNC_I422ToI420 I422ToI420 = nullptr;
+    FUNC_I422ToNV21 I422ToNV21 = nullptr;
+    FUNC_I420ToNV21 I420ToNV21 = nullptr;
+    FUNC_I400ToI420 I400ToI420 = nullptr;
+};
+
 class JpegDecoderYuv {
 public:
-    JpegDecoderYuv() = default;
+    JpegDecoderYuv();
+    static bool LoadLibYuv();
+    static void UnloadLibYuv();
+    static LibYuvConvertFuncs& GetLibyuvConverter() { return libyuvFuncs_; }
     int DoDecode(DecodeContext &context, JpegDecoderYuvParameter &decodeParameter);
     static bool GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, uint32_t &width, uint32_t &height);
     static uint32_t GetYuvOutSize(uint32_t width, uint32_t height);
@@ -103,6 +133,8 @@ protected:
 
 protected:
     JpegDecoderYuvParameter decodeParameter_;
+    static void* dlHandler_;
+    static LibYuvConvertFuncs libyuvFuncs_;
 };
 
 }

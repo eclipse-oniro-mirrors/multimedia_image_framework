@@ -272,11 +272,6 @@ ohos_shared_library("extplugin") {
   cflags_cc = [ "-O3" ]
   innerapi_tags = [ "platformsdk" ]
 
-  if (defined(global_parts_info) &&
-      defined(global_parts_info.open_source_libyuv)) {
-    cflags += [ "-DLIBYUV_ENABLE" ]
-    external_deps += [ "libyuv:yuv" ]
-  }
   external_deps += [ "zlib:libz" ]
 
   subsystem_name = "multimedia"
