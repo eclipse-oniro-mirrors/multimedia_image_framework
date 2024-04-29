@@ -151,6 +151,12 @@ enum class FinalOutputStep : int32_t {
     DENSITY_CHANGE = 4
 };
 
+enum class ResolutionQuality : int32_t {
+    LOW = 1,
+    MEDIUM,
+    HIGH
+};
+
 struct Position {
     int32_t x = 0;
     int32_t y = 0;
@@ -229,6 +235,8 @@ struct DecodeOptions {
     bool fastAstc = false;
     uint16_t invokeType = 0;
     DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::AUTO;
+    ResolutionQuality resolutionQuality = ResolutionQuality::LOW;
+    bool isAisr = false;
 };
 
 enum class ScaleMode : int32_t {

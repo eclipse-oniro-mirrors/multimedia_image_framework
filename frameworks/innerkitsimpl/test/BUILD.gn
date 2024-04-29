@@ -163,6 +163,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
@@ -227,7 +228,11 @@ ohos_unittest("jpegdecoderextest") {
     "$image_subsystem/plugins/manager/include",
     "//third_party/googletest/googletest/include",
   ]
-  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  cflags = [
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprivate=public",
+    "-Dprotected=public",
+  ]
   sources = [
     "unittest/jpeg_decoder_ex_test.cpp",
     "unittest/jpeg_decoder_test.cpp",
