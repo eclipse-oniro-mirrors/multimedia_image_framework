@@ -736,7 +736,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
-    int fd = 0;
+    int fd = -1;
     void *dstPixels = nullptr;
     if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
         dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
@@ -753,7 +753,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    if (fd <= 0) {
+    if (fd < 0) {
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
