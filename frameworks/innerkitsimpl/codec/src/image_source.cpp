@@ -301,8 +301,8 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
+        IMAGE_LOGD("[ImageSource]failed to create source stream.");
         ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
-        IMAGE_LOGE("[ImageSource]failed to create source stream.");
         return nullptr;
     }
 
@@ -1245,7 +1245,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
     if (fd <= STDERR_FILENO) {
-        IMAGE_LOGE("Invalid file descriptor.");
+        IMAGE_LOGD("Invalid file descriptor.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1270,7 +1270,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     if (sourceStreamPtr_ == nullptr) {
-        IMAGE_LOGE("sourceStreamPtr_ not exist return ERR");
+        IMAGE_LOGD("sourceStreamPtr_ not exist return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1303,19 +1303,19 @@ uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool
 {
     auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
     if (metadataAccessor == nullptr) {
-        IMAGE_LOGE("metadataAccessor nullptr return ERR");
+        IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
-        IMAGE_LOGE("get metadataAccessor ret %{public}d", ret);
+        IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
         if (!metadataAccessor->Create()) {
-            IMAGE_LOGE("metadataAccessor create failed.");
+            IMAGE_LOGD("metadataAccessor create failed.");
             return ERR_IMAGE_SOURCE_DATA;
         }
     }
@@ -1362,7 +1362,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     uint32_t ret = GetImagePropertyCommon(index, key, strValue);
     if (key == "Orientation") {
         if (ORIENTATION_INT_MAP.count(strValue) == 0) {
-            IMAGE_LOGE("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
+            IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
             return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
         }
         strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
@@ -1370,7 +1370,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
     std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
     if (res.ec != std::errc()) {
-        IMAGE_LOGE("convert string to int failed");
+        IMAGE_LOGD("convert string to int failed");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1763,7 +1763,7 @@ uint32_t GetSourceDecodingState(SourceDecodingState decodeState_)
     switch (decodeState_) {
         case SourceDecodingState::SOURCE_ERROR: {
             ret = ERR_IMAGE_SOURCE_DATA;
-            IMAGE_LOGE("[ImageSource]source error.");
+            IMAGE_LOGD("[ImageSource]source error.");
             break;
         }
         case SourceDecodingState::UNKNOWN_FORMAT: {
