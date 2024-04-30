@@ -303,6 +303,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     errorCode = ERR_IMAGE_SOURCE_DATA;
     auto streamPtr = stream();
     if (streamPtr == nullptr) {
+        IMAGE_LOGD("[ImageSource]failed to create source stream.");
         ReportCreateImageSourceFault(opts.size.width, opts.size.height, traceName, "stream failed");
         return nullptr;
     }
@@ -1233,6 +1234,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by fd.");
     if (fd <= STDERR_FILENO) {
+        IMAGE_LOGD("Invalid file descriptor.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1302,6 +1304,7 @@ uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool
 
     if (metadataAccessor->Get() == nullptr) {
         if (!metadataAccessor->Create()) {
+            IMAGE_LOGD("metadataAccessor create failed.");
             return ERR_IMAGE_SOURCE_DATA;
         }
     }
@@ -1356,6 +1359,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     IMAGE_LOGD("convert string to int %{public}s", strValue.c_str());
     std::from_chars_result res = std::from_chars(strValue.data(), strValue.data() + strValue.size(), value);
     if (res.ec != std::errc()) {
+        IMAGE_LOGD("convert string to int failed");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
@@ -1748,6 +1752,7 @@ uint32_t GetSourceDecodingState(SourceDecodingState decodeState_)
     switch (decodeState_) {
         case SourceDecodingState::SOURCE_ERROR: {
             ret = ERR_IMAGE_SOURCE_DATA;
+            IMAGE_LOGD("[ImageSource]source error.");
             break;
         }
         case SourceDecodingState::UNKNOWN_FORMAT: {

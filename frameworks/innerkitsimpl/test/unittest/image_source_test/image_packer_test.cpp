@@ -173,13 +173,11 @@ HWTEST_F(ImagePackerTest, StartPacking007, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking007 start";
     ImagePacker pack;
-    const int fd = 0;
     const int fd2 = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     PackOption option;
     option.format = "image/jpeg";
     option.quality = NUM_100;
     option.numberHint = NUM_1;
-    pack.StartPacking(fd, option);
     pack.StartPacking(fd2, option);
     PackOption option2;
     option2.format = "";

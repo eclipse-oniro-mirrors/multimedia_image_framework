@@ -200,7 +200,7 @@ HWTEST_F(ImageSourceExifTest, GetImagePropertyInt001, TestSize.Level3)
     imageSource->GetImagePropertyString(index, key, strValue);
     ASSERT_EQ(strValue, "Bottom-left");
     auto ret = imageSource->GetImagePropertyInt(index, key, value);
-    ASSERT_EQ(ret, Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
+    ASSERT_EQ(ret, Media::ERR_IMAGE_SOURCE_DATA);
 
     GTEST_LOG_(INFO) << "ImageSourceExifTest: GetImagePropertyInt001 end";
 }

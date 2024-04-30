@@ -1037,7 +1037,7 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR001, TestSize.Level3)
 HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR002, TestSize.Level3)
 {
     // Create and open a temporary file
-    std::string tempFile = "/tmp/testfile";
+    std::string tempFile = tmpDirectory + "/testfile";
     int fileDescription = open(tempFile.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_NE(fileDescription, -1);
 
@@ -1083,7 +1083,8 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR002, TestSize.Level3)
 HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR003, TestSize.Level3)
 {
     int fdCount = CountOpenFileDescriptors();
-    int fileDescriptor = open("/tmp/testfile", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::string tempFile = tmpDirectory + "/testfile";
+    int fileDescriptor = open(tempFile.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_EQ(fdCount + 1, CountOpenFileDescriptors());
     int dupFD = dup(fileDescriptor);
     ASSERT_EQ(fdCount + 2, CountOpenFileDescriptors());
@@ -1127,7 +1128,8 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR003, TestSize.Level3)
  */
 HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR004, TestSize.Level3)
 {
-    int fileDescriptor = open("/tmp/testfile", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    std::string tempFile = tmpDirectory + "/testfile";
+    int fileDescriptor = open(tempFile.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     FileMetadataStream stream(fileDescriptor);
     int dupFD = stream.dupFD_;
     ASSERT_NE(fileDescriptor, -1);
@@ -1386,7 +1388,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write007, TestSize.Level3)
 HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write008, TestSize.Level3)
 {
     BufferMetadataStream stream;
-    byte *buf = new byte[13];
+    byte *buf = new byte[14];
     ASSERT_TRUE(stream.Open());
     stream.Write((uint8_t *)"Hello, world!", 13);
     stream.Seek(4, SeekPos::BEGIN);
