@@ -116,8 +116,11 @@ static Image_ErrorCode ToNewErrorCode(int code)
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_Create(OH_Pixelmap_InitializationOptions **ops)
 {
-    *ops = new OH_Pixelmap_InitializationOptions();
     if (ops == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *ops = new OH_Pixelmap_InitializationOptions();
+    if (*ops == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     return IMAGE_SUCCESS;
@@ -224,6 +227,9 @@ Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_Initializat
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapImageInfo_Create(OH_Pixelmap_ImageInfo **info)
 {
+    if (info == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
     *info = new OH_Pixelmap_ImageInfo();
     if (*info == nullptr) {
         return IMAGE_BAD_PARAMETER;
@@ -295,7 +301,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap)
 {
-    if (data == nullptr || options == nullptr) {
+    if (data == nullptr || options == nullptr || pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     InitializationOptions info;
@@ -319,7 +325,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
 {
-    if (pixelmap == nullptr || destination == nullptr) {
+    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(*bufferSize, destination));
@@ -403,7 +409,7 @@ Image_ErrorCode OH_PixelmapNative_Flip(OH_PixelmapNative *pixelmap, bool shouldF
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region *region)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || region == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     Rect rect;
