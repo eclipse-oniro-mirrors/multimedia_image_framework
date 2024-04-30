@@ -1269,7 +1269,17 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     uint32_t readSize = 0;
-    auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
+    if (bufferSize == 0) {
+        IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    std::unique_ptr<uint8_t[]> tmpBuffer(new (std::nothrow) uint8_t[bufferSize]);
     if (tmpBuffer == nullptr) {
         IMAGE_LOGE("Make unique buffer failed, tmpBuffer is nullptr.");
         return ERR_IMAGE_SOURCE_DATA;
