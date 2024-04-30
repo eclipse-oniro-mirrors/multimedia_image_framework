@@ -1309,9 +1309,9 @@ HWTEST_F(JpegExifMetadataAccessorTest, testGPSFormat001, TestSize.Level3)
     auto exifMetadata = imageAccessor.Get();
     ASSERT_NE(exifMetadata, nullptr);
 
-    bool ret = exifMetadata->SetValue( "GPSLatitude", " 10, 20, 25.16513");
+    bool ret = exifMetadata->SetValue("GPSLatitude", " 10, 20, 25.16513");
     ASSERT_EQ(ret, true);
-    ret = exifMetadata->SetValue( "GPSLongitude", " 10.0, 20, 25.16513");
+    ret = exifMetadata->SetValue("GPSLongitude", " 10.0, 20, 25.16513");
     ASSERT_EQ(ret, true);
 
     ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitude"), "10, 20, 25.16513");
