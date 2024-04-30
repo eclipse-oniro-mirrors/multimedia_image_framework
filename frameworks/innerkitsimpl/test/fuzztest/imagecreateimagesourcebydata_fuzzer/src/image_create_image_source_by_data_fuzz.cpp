@@ -15,12 +15,62 @@
 
 #include "image_create_image_source_by_data_fuzz.h"
 
+#define private public
 #include <cstdint>
 #include <string>
 
 #include "securec.h"
 #include "image_source.h"
+
 namespace OHOS {
+namespace Media {
+void ImageSourceFuncTest001(std::unique_ptr<ImageSource>& imageSource)
+{
+    std::set<std::string> formats;
+    imageSource->GetSupportedFormats(formats);
+    imageSource->GetDecodeEvent();
+    std::string key = "ImageWidth";
+    std::string value = "500";
+    int32_t valueInt = 0;
+    uint32_t errCode = 0;
+    imageSource->ModifyImageProperty(key, value);
+    imageSource->ModifyImageProperty(nullptr, key, value);
+    imageSource->ModifyImageProperty(0, key, value, "");
+    imageSource->ModifyImageProperty(0, key, value, 0);
+    imageSource->ModifyImageProperty(0, key, value, nullptr, 0);
+    imageSource->GetImagePropertyCommon(0, key, value);
+    imageSource->GetImagePropertyInt(0, key, valueInt);
+    imageSource->GetImagePropertyString(0, key, value);
+    imageSource->GetSourceInfo(errCode);
+    imageSource->RegisterListener(nullptr);
+    imageSource->UnRegisterListener(nullptr);
+    imageSource->AddDecodeListener(nullptr);
+    imageSource->RemoveDecodeListener(nullptr);
+    imageSource->IsStreamCompleted();
+    auto agentIter = imageSource->formatAgentMap_.begin();
+    imageSource->CheckEncodedFormat(*(agentIter->second));
+    imageSource->CheckFormatHint(key, agentIter);
+    imageSource->DecodeSourceInfo(false);
+    imageSource->DecodeSourceInfo(true);
+    imageSource->CreateDecoder(errCode);
+    DecodeOptions opts;
+    DecodeOptions procOpts;
+    PixelMap pixelMap;
+    imageSource->CopyOptionsToProcOpts(opts, procOpts, pixelMap);
+    MemoryUsagePreference preference = MemoryUsagePreference::LOW_RAM;
+    imageSource->SetMemoryUsagePreference(preference);
+    imageSource->ImageSizeChange(1, 1, 1, 1);
+    Rect cropRect;
+    ImageInfo imageInfo;
+    imageSource->ImageConverChange(cropRect, imageInfo, imageInfo);
+    imageSource->CreatePixelMapForYUV(errCode);
+    imageSource->GetImageInfoForASTC(imageInfo);
+    imageSource->CreatePixelMapList(opts, errCode);
+    imageSource->GetDelayTime(errCode);
+    imageSource->GetDisposalType(errCode);
+    imageSource->GetFrameCount(errCode);
+}
+
 void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
 {
     uint8_t dest[size + 1];
@@ -32,15 +82,18 @@ void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
     Media::SourceOptions opts;
     uint32_t errorCode;
     auto imagesource = Media::ImageSource::CreateImageSource(dest, sizeof(dest), opts, errorCode);
+    ImageSourceFuncTest001(imagesource);
     Media::DecodeOptions dopts;
     imagesource->CreatePixelMap(dopts, errorCode);
+    imagesource->Reset();
 }
+} // namespace Media
 } // namespace OHOS
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::CreateImageSourceByDataFuzz(data, size);
+    OHOS::Media::CreateImageSourceByDataFuzz(data, size);
     return 0;
 }
