@@ -1142,5 +1142,107 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0053, TestSize.Level3)
     ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0053 end";
 }
+
+/**
+ * @tc.name: JpegDecoderTest0054
+ * @tc.desc: Test of GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, JpegDecoderTest0054, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0054 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    uint32_t index = 0;
+    PlSize size;
+    jpegDecoder->state_ = JpegDecodingState::IMAGE_DECODED;
+    uint32_t ret = jpegDecoder->GetImageSize(index, size);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0054 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest0055
+ * @tc.desc: Test of IsMarker
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, JpegDecoderTest0055, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0055 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    uint8_t rawMarkerPrefix = JPG_MARKER_RST;
+    uint8_t rawMarkderCode = JPG_MARKER_RST;
+    uint8_t markerCode = 0;
+    bool ret = jpegDecoder->IsMarker(rawMarkerPrefix, rawMarkderCode, markerCode);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0055 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest0056
+ * @tc.desc: Test of GetMakerImagePropertyString
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, JpegDecoderTest0056, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0056 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    std::string key = "test";
+    std::string value = "test";
+    EXIFInfo ei;
+    jpegDecoder->exifInfo_ = ei;
+    jpegDecoder->exifInfo_.makerInfoTagValueMap.insert(std::make_pair(key, value));
+    uint32_t ret = jpegDecoder->GetMakerImagePropertyString(key, value);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0056 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest0057
+ * @tc.desc: Test of GetImagePropertyString
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, JpegDecoderTest0057, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0057 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = ISO_SPEED_RATINGS;
+    std::string value = "";
+    EXIFInfo ei;
+    jpegDecoder->exifInfo_ = ei;
+    jpegDecoder->exifInfo_.isoSpeedRatings_ = "ISOSpeedRatings";
+    jpegDecoder->GetImagePropertyString(key, value);
+    ASSERT_EQ(value, jpegDecoder->exifInfo_.isoSpeedRatings_);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0057 end";
+}
+
+/**
+ * @tc.name: JpegDecoderTest0058
+ * @tc.desc: Test of GetImagePropertyInt
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegDecoderTest, JpegDecoderTest0058, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0058 start";
+    auto jpegDecoder = std::make_shared<JpegDecoder>();
+    int size = STREAM_SIZE;
+    std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
+    auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
+    jpegDecoder->SetSource(*streamPtr.release());
+    std::string key = ORIENTATION;
+    int32_t value = 0;
+    uint32_t index = 0;
+    EXIFInfo ei;
+    jpegDecoder->exifInfo_ = ei;
+    jpegDecoder->exifInfo_.isExifDataParsed_ = true;
+    jpegDecoder->exifInfo_.orientation_ = "Right-top";
+    uint32_t ret = jpegDecoder->GetImagePropertyInt(index, key, value);
+    ASSERT_EQ(value, 90);
+    ASSERT_EQ(ret, Media::SUCCESS);
+    GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0058 end";
+}
 }
 }
