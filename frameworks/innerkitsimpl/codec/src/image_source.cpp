@@ -2811,6 +2811,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
     if (decodedHdrType > ImageHdrType::SDR && ApplyGainMap(decodedHdrType, context, hdrContext, scale)) {
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         plInfo = hdrContext.info;
+        hdrContext.outInfo.size = hdrContext.info.size;
         return hdrContext;
     }
     return context;

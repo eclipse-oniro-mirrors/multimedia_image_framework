@@ -300,6 +300,12 @@ static HDRVividExtendMetadata GetDefaultGainmapMetadata()
     extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO] = alternateOffset;
     extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_ONE] = alternateOffset;
     extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_TWO] = alternateOffset;
+    extendMetadata.metaISO.gainmapChannelNum = 0x01;
+    extendMetadata.metaISO.useBaseColorFlag = 0x00;
+    extendMetadata.baseColorMeta.baseColorPrimary = COLORPRIMARIES_SRGB;
+    extendMetadata.gainmapColorMeta.combineColorPrimary = COLORPRIMARIES_BT2020;
+    extendMetadata.gainmapColorMeta.enhanceDataColorModel = COLORPRIMARIES_BT2020;
+    extendMetadata.gainmapColorMeta.alternateColorPrimary = COLORPRIMARIES_BT2020;
     return extendMetadata;
 }
 
