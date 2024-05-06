@@ -41,7 +41,7 @@ void ErrorExit(j_common_ptr dinfo)
     longjmp(err->setjmp_buffer, SET_JUMP_VALUE);
 }
 
-void OutputErrorMessage(j_common_ptr dinfo)
+void OutputErrorMessage(j_common_ptr dinfo) __attribute__((no_sanitize("cfi")))
 {
     if ((dinfo == nullptr) || (dinfo->err == nullptr)) {
         return;
