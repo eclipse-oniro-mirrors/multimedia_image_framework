@@ -71,6 +71,12 @@ public:
         return nullptr;
     }
 
+    // get raw pointer mmap populate for FILE TYPE
+    virtual uint8_t *GetDataPtr(bool populate)
+    {
+        return nullptr;
+    }
+
     // whether the stream data is completed or not.
     virtual bool IsStreamCompleted()
     {

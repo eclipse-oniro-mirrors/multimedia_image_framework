@@ -310,6 +310,11 @@ static bool DupFd(FILE *f, int &res)
 
 uint8_t *FileSourceStream::GetDataPtr()
 {
+    return GetDataPtr(false);
+}
+
+uint8_t *FileSourceStream::GetDataPtr(bool populate)
+{
     if (fileData_ != nullptr) {
         return fileData_;
     }
@@ -317,7 +322,7 @@ uint8_t *FileSourceStream::GetDataPtr()
     if (!DupFd(filePtr_, mmapFd_)) {
         return nullptr;
     }
-    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, MAP_SHARED, mmapFd_, 0);
+    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, 0);
     if (mmptr == MAP_FAILED) {
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;
