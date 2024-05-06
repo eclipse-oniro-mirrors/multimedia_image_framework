@@ -194,6 +194,8 @@ private:
     static constexpr int FOURTH_EXPANSION = 3;
     static constexpr int FIFTH_EXPANSION = 4;
 
+    static constexpr int METADATA_STREAM_MAX_CAPACITY = 1024 * 1024 * 1024;
+
     /* *
      * @brief Closes the BufferImageStream.
      */
