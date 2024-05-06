@@ -1271,23 +1271,35 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     uint32_t readSize = 0;
-    auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
+    if (bufferSize == 0) {
+        IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    uint8_t* tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("Make unique buffer failed, tmpBuffer is nullptr.");
+        IMAGE_LOGE("Allocate buffer failed, tmpBuffer is nullptr.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t savedPosition = sourceStreamPtr_->Tell();
     sourceStreamPtr_->Seek(0);
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer.get(), bufferSize, readSize);
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
     sourceStreamPtr_->Seek(savedPosition);
     if (!retRead) {
         IMAGE_LOGE("sourceStream read failed.");
+        delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
         return ERR_IMAGE_SOURCE_DATA;
     }
-    return SetExifMetadata(tmpBuffer.get(), bufferSize, addFlag);
+    uint32_t result = SetExifMetadata(tmpBuffer, bufferSize, addFlag);
+    delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
+    return result;
 }
-
 uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
 {
     auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);

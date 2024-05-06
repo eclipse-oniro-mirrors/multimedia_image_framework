@@ -33,6 +33,7 @@
 namespace OHOS {
 namespace MultimediaPlugin {
 constexpr float EPSILON = 1e-6;
+const int MAX_BUFFER_SIZE = 1024 * 1024 * 1024;
 
 class PluginServer;
 } // namespace MultimediaPlugin
