@@ -74,8 +74,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
         // Calculate the new capacity, ensuring it is a multiple of
         // BUFFER_IMAGE_STREAM_PAGE_SIZE
         long newCapacity = CalculateNewCapacity(currentOffset_, size);
-
-        if(newCapacity > METADATA_STREAM_MAX_CAPACITY) {
+        if (newCapacity > METADATA_STREAM_MAX_CAPACITY) {
             IMAGE_LOGE("BufferMetadataStream::Write failed, new capacity exceeds maximum capacity, "
                 "newCapacity:%{public}ld, maxCapacity:%{public}d",
                 newCapacity, METADATA_STREAM_MAX_CAPACITY);
