@@ -73,8 +73,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 
         // Calculate the new capacity, ensuring it is a multiple of
         // BUFFER_IMAGE_STREAM_PAGE_SIZE
-        long newCapacity = ((currentOffset_ + size + METADATA_STREAM_PAGE_SIZE - 1) / METADATA_STREAM_PAGE_SIZE) *
-            METADATA_STREAM_PAGE_SIZE;
+        long newCapacity = CalculateNewCapacity(currentOffset_, size);
 
         // Allocate the new buffer
         byte *newBuffer = new (std::nothrow) byte[newCapacity];
@@ -101,6 +100,11 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
         // Update the buffer and capacity
         buffer_ = newBuffer;
         capacity_ = newCapacity;
+
+        // Update expansion count
+        if (memoryMode_ == Dynamic) {
+            expandCount_++;
+        }
     }
 
     // Copy the new data into the buffer
@@ -301,6 +305,40 @@ byte *BufferMetadataStream::Release()
     bufferSize_ = 0;
     currentOffset_ = 0;
     return ret;
+}
+
+long BufferMetadataStream::CalculateNewCapacity(long currentOffset, ssize_t size)
+{
+    long newCapacity;
+    switch (expandCount_) {
+        case INITIAL_EXPANSION:
+            newCapacity =
+                ((currentOffset + size + METADATA_STREAM_INITIAL_CAPACITY - 1) / METADATA_STREAM_INITIAL_CAPACITY) *
+                METADATA_STREAM_INITIAL_CAPACITY;
+            break;
+        case SECOND_EXPANSION:
+            newCapacity =
+                ((currentOffset + size + METADATA_STREAM_CAPACITY_512KB - 1) / METADATA_STREAM_CAPACITY_512KB) *
+                METADATA_STREAM_CAPACITY_512KB;
+            break;
+        case THIRD_EXPANSION:
+            newCapacity = ((currentOffset + size + METADATA_STREAM_CAPACITY_2MB - 1) / METADATA_STREAM_CAPACITY_2MB) *
+                METADATA_STREAM_CAPACITY_2MB;
+            break;
+        case FOURTH_EXPANSION:
+            newCapacity = ((currentOffset + size + METADATA_STREAM_CAPACITY_5MB - 1) / METADATA_STREAM_CAPACITY_5MB) *
+                METADATA_STREAM_CAPACITY_5MB;
+            break;
+        case FIFTH_EXPANSION:
+            newCapacity = ((currentOffset + size + METADATA_STREAM_CAPACITY_15MB - 1) / METADATA_STREAM_CAPACITY_15MB) *
+                METADATA_STREAM_CAPACITY_15MB;
+            break;
+        default:
+            newCapacity = ((currentOffset + size + METADATA_STREAM_CAPACITY_30MB - 1) / METADATA_STREAM_CAPACITY_30MB) *
+                METADATA_STREAM_CAPACITY_30MB;
+            break;
+    }
+    return newCapacity;
 }
 } // namespace Media
 } // namespace OHOS
