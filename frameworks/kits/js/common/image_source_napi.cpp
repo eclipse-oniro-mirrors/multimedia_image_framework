@@ -889,12 +889,12 @@ static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
         IMAGE_LOGD("no desiredDynamicRange");
-        return DecodeDynamicRange::AUTO;
+        return DecodeDynamicRange::SDR;
     }
     if (tmpNumber <= static_cast<uint32_t>(DecodeDynamicRange::HDR)) {
         return DecodeDynamicRange(tmpNumber);
     }
-    return DecodeDynamicRange::AUTO;
+    return DecodeDynamicRange::SDR;
 }
 
 

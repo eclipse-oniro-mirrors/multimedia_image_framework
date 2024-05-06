@@ -70,7 +70,7 @@ static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
         return DecodeDynamicRange(val);
     }
 
-    return DecodeDynamicRange::AUTO;
+    return DecodeDynamicRange::SDR;
 }
 
 MIDK_EXPORT

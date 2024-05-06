@@ -234,7 +234,7 @@ struct DecodeOptions {
     bool preferDma = false;
     bool fastAstc = false;
     uint16_t invokeType = 0;
-    DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::AUTO;
+    DecodeDynamicRange desiredDynamicRange = DecodeDynamicRange::SDR;
     ResolutionQuality resolutionQuality = ResolutionQuality::LOW;
     bool isAisr = false;
 };

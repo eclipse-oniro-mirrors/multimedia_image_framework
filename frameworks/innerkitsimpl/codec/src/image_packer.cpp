@@ -297,7 +297,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.quality = opts.quality;
     plOpts.format = opts.format;
     auto search = DYNAMIC_RANGE_MAP.find(opts.desiredDynamicRange);
-    plOpts.desiredDynamicRange = (search != DYNAMIC_RANGE_MAP.end()) ? search->second : PlEncodeDynamicRange::AUTO;
+    plOpts.desiredDynamicRange = (search != DYNAMIC_RANGE_MAP.end()) ? search->second : PlEncodeDynamicRange::SDR;
 }
 
 void ImagePacker::FreeOldPackerStream()
