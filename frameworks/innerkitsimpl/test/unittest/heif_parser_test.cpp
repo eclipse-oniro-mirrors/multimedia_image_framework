@@ -435,5 +435,76 @@ HWTEST_F(HeifParserTest, HeifParserTest001, TestSize.Level3)
     heifParser.CheckExtentData();
     GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest001 end";
 }
+
+/**
+ * @tc.name: HeifParserTest002
+ * @tc.desc: HeifParser
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, HeifParserTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 start";
+    HeifParser heifParser;
+    heif_item_id itemId = 0;
+    std::vector<uint8_t> data;
+    ImagePlugin::HvccConfig config;
+    heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
+    heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
+    ASSERT_EQ(heifParser.GetImage(itemId), nullptr);
+    heifParser.AppendHvccNalData(itemId, data);
+    heifParser.SetHvccConfig(itemId, config);
+    GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 end";
+}
+
+/**
+ * @tc.name: HeifParserTest003
+ * @tc.desc: HeifParser
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, HeifParserTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest003 start";
+    HeifParser heifParser;
+    heif_item_id itemId = 0;
+    std::vector<uint8_t> data;
+    uint8_t construction_method = 0;
+    heif_item_id fromItemId = 0;
+    uint32_t type = 0;
+    const std::vector<heif_item_id> toItemIds;
+    heifParser.ilocBox_ = nullptr;
+    heifParser.pitmBox_ = nullptr;
+    heifParser.irefBox_ = nullptr;
+    heifParser.metaBox_ = std::make_shared<HeifMetaBox>();
+    heifParser.AppendIlocData(itemId, data, construction_method);
+    heifParser.SetPrimaryItemId(itemId);
+    heifParser.AddReference(fromItemId, type, toItemIds);
+    heifParser.ilocBox_ = std::make_shared<HeifIlocBox>();
+    heifParser.pitmBox_ = std::make_shared<HeifPtimBox>();
+    heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
+    heifParser.AppendIlocData(itemId, data, construction_method);
+    heifParser.SetPrimaryItemId(itemId);
+    heifParser.AddReference(fromItemId, type, toItemIds);
+    GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest003 end";
+}
+
+/**
+ * @tc.name: SetPrimaryImageTest001
+ * @tc.desc: HeifParser
+ * @tc.type: FUNC
+ */
+HWTEST_F(HeifParserTest, SetPrimaryImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "HeifParserTest: SetPrimaryImageTest001 start";
+    HeifParser heifParser;
+    std::shared_ptr<HeifImage> image = std::make_shared<HeifImage>(0);
+    heifParser.primaryImage_ = std::make_shared<HeifImage>(0);
+    ASSERT_EQ(heifParser.primaryImage_->GetItemId(), image->GetItemId());
+    heifParser.SetPrimaryImage(image);
+    heifParser.primaryImage_->itemId_ = 1;
+    ASSERT_NE(heifParser.primaryImage_->GetItemId(), image->GetItemId());
+    heifParser.pitmBox_ = nullptr;
+    heifParser.SetPrimaryImage(image);
+    GTEST_LOG_(INFO) << "HeifParserTest: SetPrimaryImageTest001 end";
+}
 }
 }

@@ -24,6 +24,7 @@
 #include "image_system_properties.h"
 
 static const uint8_t NUM_0 = 0;
+static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
 constexpr int32_t ALPHA8_BYTES = 1;
 constexpr int32_t RGB565_BYTES = 2;
@@ -499,6 +500,40 @@ HWTEST_F(ImageUtilsTest, GetLocalTimeTest001, TestSize.Level3)
     std::string ret = ImageUtils::GetLocalTime();
     ASSERT_EQ(ret, ss.str());
     GTEST_LOG_(INFO) << "ImageUtilsTest: GetLocalTimeTest001 end";
+}
+
+/**
+ * @tc.name: ImageUtilsTest001
+ * @tc.desc: test ImageUtils
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 start";
+    uint32_t offset = 0;
+    uint8_t* nullBytes = nullptr;
+    uint8_t bytes[NUM_2] = {0x01, 0x02};
+    std::vector<uint8_t> byte(128);
+    bool isBigEndian = true;
+    ImageUtils::BytesToUint16(nullBytes, offset, isBigEndian);
+    ImageUtils::BytesToUint32(nullBytes, offset, isBigEndian);
+    ImageUtils::BytesToInt32(nullBytes, offset, isBigEndian);
+    ImageUtils::BytesToUint16(bytes, offset, isBigEndian);
+    ImageUtils::BytesToUint32(bytes, offset, isBigEndian);
+    ImageUtils::BytesToInt32(bytes, offset, isBigEndian);
+    ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::FloatToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::Int32ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::ArrayToBytes(bytes, 2, byte, offset);
+    isBigEndian = false;
+    ImageUtils::BytesToUint16(bytes, offset, isBigEndian);
+    ImageUtils::BytesToUint32(bytes, offset, isBigEndian);
+    ImageUtils::BytesToInt32(bytes, offset, isBigEndian);
+    ImageUtils::BytesToFloat(bytes, offset, isBigEndian);
+    ImageUtils::Uint16ToBytes(0, byte, offset, isBigEndian);
+    ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
 }
 }
 }
