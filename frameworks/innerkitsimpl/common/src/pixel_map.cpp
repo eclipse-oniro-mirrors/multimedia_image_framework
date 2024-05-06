@@ -55,17 +55,6 @@
 #include "surface_buffer.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libswscale/swscale.h"
-#include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
-#include "libavcodec/avcodec.h"
-#ifdef __cplusplus
-}
-#endif
-
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
@@ -76,6 +65,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 constexpr int32_t MAX_DIMENSION = INT32_MAX >> 2;
+constexpr uint8_t FOUR_BYTE_SHIFT = 2;
 constexpr int8_t INVALID_ALPHA_INDEX = -1;
 constexpr uint8_t ARGB_ALPHA_INDEX = 0;
 constexpr uint8_t BGRA_ALPHA_INDEX = 3;
@@ -83,7 +73,6 @@ constexpr uint8_t ALPHA_BYTES = 1;
 constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
-constexpr uint32_t MAX_READ_COUNT = 2048;
 
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
@@ -223,20 +212,20 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     return Create(colors, colorLength, 0, opts.size.width, opts);
 }
 
-unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
+unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
                                       const InitializationOptions &opts)
 {
     IMAGE_LOGD("PixelMap::Create2 enter");
-    return Create(colors, colorLength, 0, opts.size.width, opts, true);
+    return Create(colors, colorLength, 0, opts.size.width, opts, false);
 }
 
-unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
+unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
                                       const InitializationOptions &opts, bool useCustomFormat)
 {
     int errorCode;
     BUILD_PARAM info;
     info.offset_ = offset;
-    info.width_ = width;
+    info.stride_ = stride;
     info.flag_ = useCustomFormat;
     return Create(colors, colorLength, info, opts, errorCode);
 }
@@ -253,106 +242,33 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 #endif
 }
 
-static const map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
-    { PixelFormat::UNKNOWN, AVPixelFormat::AV_PIX_FMT_NONE },
-    { PixelFormat::ARGB_8888, AVPixelFormat::AV_PIX_FMT_ARGB },
-    { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565 },
-    { PixelFormat::RGBA_8888, AVPixelFormat::AV_PIX_FMT_RGBA },
-    { PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA },
-    { PixelFormat::RGB_888, AVPixelFormat::AV_PIX_FMT_RGB24 },
-    { PixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21 },
-    { PixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12 },
-    { PixelFormat::CMYK, AVPixelFormat::AV_PIX_FMT_GBRP },
-};
-
-static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
-{
-    auto formatSearch = FFMPEG_PIXEL_FORMAT_MAP.find(pixelFormat);
-    return (formatSearch != FFMPEG_PIXEL_FORMAT_MAP.end()) ? formatSearch->second : AVPixelFormat::AV_PIX_FMT_NONE;
-}
-
-int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
-{
-    if (info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::NV21) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
-        return -1;
-    }
-    int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
-    if (pixelBytes < 0) {
-        IMAGE_LOGE("[ImageUtil]get rgbx pixel bytes failed");
-        return -1;
-    }
-    return pixelBytes * info.size.width;
-}
-
-int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
-{
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
-        return -1;
-    }
-    int32_t rowDataSize = GetRGBxRowDataSize(info);
-    if (rowDataSize < 0) {
-        IMAGE_LOGE("[ImageUtil]get rgbx row data size failed");
-        return -1;
-    }
-    return rowDataSize * info.size.height;
-}
-
-int32_t PixelMap::GetYUVByteCount(const ImageInfo& info)
-{
-    if (info.pixelFormat != PixelFormat::NV21 && info.pixelFormat != PixelFormat::NV12) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
-        return -1;
-    }
-    if (info.size.width <= 0 || info.size.height <= 0) {
-        IMAGE_LOGE("[ImageUtil]image size error");
-        return -1;
-    }
-    AVPixelFormat avPixelFormat = PixelFormatToAVPixelFormat(info.pixelFormat);
-    if (avPixelFormat == AVPixelFormat::AV_PIX_FMT_NONE) {
-        IMAGE_LOGE("[ImageUtil]pixel format to ffmpeg pixel format failed");
-        return -1;
-    }
-    return av_image_get_buffer_size(avPixelFormat, info.size.width, info.size.height, 1);
-}
-
-int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
-{
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
-        return GetYUVByteCount(info);
-    } else {
-        return GetRGBxByteCount(info);
-    }
-}
-
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
     int offset = info.offset_;
-    if (!CheckParams(colors, colorLength, offset, info.width_, opts)) {
+    int32_t stride = info.stride_;
+    bool useCustomFormat = info.flag_;
+    if (!CheckParams(colors, colorLength, offset, stride, opts)) {
         return nullptr;
     }
 
     unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
     if (dstPixelMap == nullptr) {
-        IMAGE_LOGE("[image]Create: make pixelmap failed!");
         errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
         return nullptr;
     }
     PixelFormat format = PixelFormat::BGRA_8888;
-    if (info.flag_) {
+    if (useCustomFormat) {
         format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
     }
     ImageInfo srcImageInfo =
-        MakeImageInfo(info.width_, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        MakeImageInfo(stride, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
     AlphaType dstAlphaType =
         (opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
-        IMAGE_LOGE("[PixelMap]Create: check pixelmap failed!");
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
@@ -361,20 +277,20 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     uint32_t bufferSize = dstPixelMap->GetByteCount();
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Create: allocate memory size %{public}u fail", bufferSize);
+        IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
-    int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset),
-                                                    colorLength, srcImageInfo, dstPixels, dstImageInfo);
-    if (dstLength < 0) {
-        IMAGE_LOGE("[PixelMap]Create: pixel convert failed.");
+    Position dstPosition;
+    if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
+        static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
+        dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
+        IMAGE_LOGE("pixel convert in adapter failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
         dstPixels = nullptr;
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
-
     dstPixelMap->SetEditable(opts.editable);
     MakePixelMap(dstPixels, fd, dstPixelMap);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
@@ -430,7 +346,7 @@ void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t u
 #endif
 }
 
-bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t width,
+bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
     const InitializationOptions &opts)
 {
     if (colors == nullptr || colorLength <= 0) {
@@ -443,18 +359,18 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
         IMAGE_LOGE("initial options size invalid");
         return false;
     }
-    if (width < dstWidth) {
-        IMAGE_LOGE("width: %{public}d must >= width: %{public}d", width, dstWidth);
+    if (stride < dstWidth) {
+        IMAGE_LOGE("stride: %{public}d must >= width: %{public}d", stride, dstWidth);
         return false;
     }
-    if (width > MAX_DIMENSION) {
-        IMAGE_LOGE("stride %{public}d is out of range", width);
+    if (stride > MAX_DIMENSION) {
+        IMAGE_LOGE("stride %{public}d is out of range", stride);
         return false;
     }
-    int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * width + offset;
+    int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * stride + offset;
     if (offset < 0 || static_cast<int64_t>(offset) + dstWidth > colorLength || lastLine + dstWidth > colorLength) {
-        IMAGE_LOGE("colors length: %{public}u, offset: %{public}d, width: %{public}d  is invalid",
-            colorLength, offset, width);
+        IMAGE_LOGE("colors length: %{public}u, offset: %{public}d, stride: %{public}d  is invalid",
+            colorLength, offset, stride);
         return false;
     }
     return true;
@@ -1135,11 +1051,7 @@ int32_t PixelMap::GetRowBytes()
 int32_t PixelMap::GetByteCount()
 {
     IMAGE_LOGD("GetByteCount");
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
-        return GetYUVByteCount(imageInfo_);
-    } else {
-        return rowDataSize_ * imageInfo_.size.height;
-    }
+    return rowDataSize_ * imageInfo_.size.height;
 }
 
 int32_t PixelMap::GetWidth()
@@ -1265,30 +1177,15 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
-        uint64_t tmpSize = 0;
-        int readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize) {
-            if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = (int)(bufferSize - tmpSize);
-            }
-            errno_t ret = memcpy_s(dst + tmpSize, readSize, data_ + tmpSize, readSize);
-            if (ret != 0) {
-                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_READ_PIXELMAP_FAILED;
-            }
-            tmpSize += readSize;
+
+    // Copy the actual pixel data without padding bytes
+    for (int i = 0; i < imageInfo_.size.height; ++i) {
+        errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
+        if (ret != 0) {
+            IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
-    } else {
-        // Copy the actual pixel data without padding bytes
-        for (int i = 0; i < imageInfo_.size.height; ++i) {
-            errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
-            if (ret != 0) {
-                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_READ_PIXELMAP_FAILED;
-            }
-            dst += rowDataSize_; // Move the destination buffer pointer to the next row
-        }
+        dst += rowDataSize_; // Move the destination buffer pointer to the next row
     }
     return SUCCESS;
 }
@@ -1529,28 +1426,12 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
-        uint64_t tmpSize = 0;
-        int readSize = MAX_READ_COUNT;
-        while (tmpSize < bufferSize) {
-            if (tmpSize + MAX_READ_COUNT > bufferSize) {
-                readSize = (int)(bufferSize - tmpSize);
-            }
-            errno_t ret = memcpy_s(data_ + tmpSize, readSize, source + tmpSize, readSize);
-            if (ret != 0) {
-                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_READ_PIXELMAP_FAILED;
-            }
-            tmpSize += readSize;
-        }
-    } else {
-        for (int i = 0; i < imageInfo_.size.height; ++i) {
-            const uint8_t* sourceRow = source + i * rowDataSize_;
-            errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
-            if (ret != 0) {
-                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-                return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
-            }
+    for (int i = 0; i < imageInfo_.size.height; ++i) {
+        const uint8_t* sourceRow = source + i * rowDataSize_;
+        errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
+        if (ret != 0) {
+            IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
     }
     return SUCCESS;
