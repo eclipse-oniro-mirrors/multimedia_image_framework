@@ -41,6 +41,7 @@ public:
     bool Seek(uint32_t position) override;
     size_t GetStreamSize() override;
     uint8_t *GetDataPtr() override;
+    uint8_t *GetDataPtr(bool populate) override;
     uint32_t GetStreamType() override;
     ImagePlugin::OutputDataStream* ToOutputDataStream() override;
     int GetMMapFd();
