@@ -472,6 +472,7 @@ static int32_t ImageSourceNapiCreatePixelmap(struct ImageSourceArgs* args)
             ParseDecodingOps(decOps, args->decodingOps);
             index = args->decodingOps->index;
         }
+        decOps.desiredDynamicRange = DecodeDynamicRange::SDR;
         IMAGE_LOGD("ImageSourceNapiCreatePixelmap CreatePixelMapEx");
         decOps.invokeType = C_INTERFACE;
         auto tmpPixelmap = native->CreatePixelMapEx(index, decOps, errorCode);
@@ -504,6 +505,7 @@ static int32_t ImageSourceNapiCreatePixelmapList(struct ImageSourceArgs* args)
     if (args->decodingOps != nullptr) {
         ParseDecodingOps(decOps, args->decodingOps);
     }
+    decOps.desiredDynamicRange = DecodeDynamicRange::SDR;
     decOps.invokeType = C_INTERFACE;
     auto pixelMapList = native->CreatePixelMapList(decOps, errorCode);
     if (pixelMapList == nullptr) {

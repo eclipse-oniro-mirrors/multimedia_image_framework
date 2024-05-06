@@ -413,12 +413,12 @@ static EncodeDynamicRange parseDynamicRange(napi_env env, napi_value root)
 {
     uint32_t tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
-        return EncodeDynamicRange::AUTO;
+        return EncodeDynamicRange::SDR;
     }
     if (tmpNumber <= static_cast<uint32_t>(EncodeDynamicRange::SDR)) {
         return EncodeDynamicRange(tmpNumber);
     }
-    return EncodeDynamicRange::AUTO;
+    return EncodeDynamicRange::SDR;
 }
 
 static int64_t parseBufferSize(napi_env env, napi_value root)

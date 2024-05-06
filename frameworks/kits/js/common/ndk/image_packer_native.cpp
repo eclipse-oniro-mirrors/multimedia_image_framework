@@ -100,7 +100,7 @@ static EncodeDynamicRange ParseDynamicRange(int32_t val)
         return EncodeDynamicRange(val);
     }
 
-    return EncodeDynamicRange::AUTO;
+    return EncodeDynamicRange::SDR;
 }
 
 MIDK_EXPORT

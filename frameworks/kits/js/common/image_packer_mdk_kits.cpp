@@ -112,6 +112,7 @@ static int32_t DoStartPacking(std::shared_ptr<ImagePacker> &packer, struct Image
     PackOption option;
     option.format = args->inOpts->format;
     option.quality = args->inOpts->quality;
+    option.desiredDynamicRange = EncodeDynamicRange::SDR;
     if (args->outData != nullptr && args->dataSize != nullptr && *(args->dataSize) != SIZE_ZERO) {
         return packer->StartPacking(args->outData, *(args->dataSize), option);
     } else if (args->inNum0 > INVALID_FD) {
