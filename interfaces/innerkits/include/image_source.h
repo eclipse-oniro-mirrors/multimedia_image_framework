@@ -201,6 +201,13 @@ public:
         const int fd);
     NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         uint8_t *data, uint32_t size);
+    NATIVEEXPORT uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
+        const std::string &path);
+    NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
+        const int fd);
+    NATIVEEXPORT uint32_t RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
+        uint8_t *data, uint32_t size);
     NATIVEEXPORT const NinePatchInfo &GetNinePatchInfo() const;
     NATIVEEXPORT void SetMemoryUsagePreference(const MemoryUsagePreference preference);
     NATIVEEXPORT MemoryUsagePreference GetMemoryUsagePreference();
@@ -287,6 +294,8 @@ private:
     static uint64_t GetNowTimeMicroSeconds();
     uint32_t ModifyImageProperty(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                  const std::string &key, const std::string &value);
+    uint32_t RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
+                                    const std::set<std::string> &key);
     uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
     uint32_t CreatExifMetadataByImageSource(bool addFlag = false);
     uint32_t SetExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag);

@@ -73,6 +73,12 @@
             <option name="push" value="images/test_raw_file.jpg -> /data/test" src="res"/>
             <option name="push" value="images/exif/test_jpeg_readmetadata004.jpg -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/hasNoExif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_no_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_exif.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_exif.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_exif.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/test_remove_hw_exif.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
