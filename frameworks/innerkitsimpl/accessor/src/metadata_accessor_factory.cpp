@@ -22,8 +22,8 @@
 #include "jpeg_exif_metadata_accessor.h"
 #include "metadata_accessor_factory.h"
 #include "png_exif_metadata_accessor.h"
-#include "webp_exif_metadata_accessor.h"
 #include "tiff_parser.h"
+#include "webp_exif_metadata_accessor.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE

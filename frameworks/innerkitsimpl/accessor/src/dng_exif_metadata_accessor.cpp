@@ -79,7 +79,7 @@ bool DngExifMetadataAccessor::ReadBlob(DataBuf &blob) const
 
 uint32_t DngExifMetadataAccessor::Write()
 {
-    return SUCCESS;
+    return ERROR;
 }
 
 uint32_t DngExifMetadataAccessor::WriteBlob(DataBuf &blob)
