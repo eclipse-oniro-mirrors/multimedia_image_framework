@@ -1213,11 +1213,17 @@ uint32_t ImageSource::ModifyImageProperty(std::shared_ptr<MetadataAccessor> meta
     return metadataAccessor->Write();
 }
 
+uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value)
+{
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    return ModifyImageProperty(key, value);
+}
+
 uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
     const std::string &path)
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
-    
+
 #if !defined(IOS_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
@@ -1465,6 +1471,36 @@ bool ImageSource::IsHdrImage()
     }
     sourceHdrType_ = mainDecoder_->CheckHdrType();
     return sourceHdrType_ > ImageHdrType::SDR;
+}
+
+uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
+{
+#if !defined(IOS_PLATFORM)
+    if (!std::filesystem::exists(path)) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+#endif
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    auto metadataAccessor = MetadataAccessorFactory::Create(path);
+    return RemoveImageProperties(metadataAccessor, keys);
+}
+
+uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const int fd)
+{
+    if (fd <= STDERR_FILENO) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    auto metadataAccessor = MetadataAccessorFactory::Create(fd);
+    return RemoveImageProperties(metadataAccessor, keys);
+}
+
+uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys,
+                                            uint8_t *data, uint32_t size)
+{
+    return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
 // ------------------------------- private method -------------------------------
@@ -3075,6 +3111,33 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         return false;
     }
     return true;
+}
+
+uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
+                                            const std::set<std::string> &keys)
+{
+    if (metadataAccessor == nullptr) {
+        IMAGE_LOGE("Failed to create image accessor when attempting to modify image property.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    uint32_t ret = CreatExifMetadataByImageSource();
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Failed to create ExifMetadata.");
+        return ret;
+    }
+
+    bool deletFlag = false;
+    for (auto key: keys) {
+        bool result = exifMetadata_->RemoveEntry(key);
+        deletFlag |= result;
+    }
+
+    if (!deletFlag) {
+        return ERR_MEDIA_NO_EXIF_DATA;
+    }
+
+    metadataAccessor->Set(exifMetadata_);
+    return metadataAccessor->Write();
 }
 
 static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
