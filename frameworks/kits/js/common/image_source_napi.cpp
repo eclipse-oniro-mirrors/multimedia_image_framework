@@ -188,6 +188,7 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"SCENE_TEXT_CONF", 0, "HwMnoteSceneTextConf"},
     {"FACE_COUNT", 0, "HwMnoteFaceCount"},
     {"FOCUS_MODE", 0, "HwMnoteFocusMode"},
+    {"GIF_LOOP_COUNT", 0, "GIFLoopCount"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
     {"YCBCR_422_SP", 1000, ""},

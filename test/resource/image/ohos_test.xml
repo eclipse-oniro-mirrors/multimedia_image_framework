@@ -79,6 +79,9 @@
             <option name="push" value="images/exif/test_remove_exif.webp -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_remove_exif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_remove_hw_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/moving_test_loop0.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/moving_test_loop1.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/moving_test_loop5.gif -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">
