@@ -2911,9 +2911,11 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
     canvas.concat(infos.matrix);
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
-    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
-        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO,
-            SkSamplingOptions(SkFilterMode::kLinear, SkMipmapMode::kLinear));
+    if (infos.matrix.rectStaysRect()) {
+        SkRect skrect = SkRect::MakeXYWH(0, 0, skimage->width(), skimage->height());
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        canvas.drawImageRect(skimage, skrect, ToSkSamplingOption(option), &paint);
     } else {
         canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
     }
