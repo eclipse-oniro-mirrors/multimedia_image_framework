@@ -2415,7 +2415,13 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
 bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo)
 {
     ASTCInfo astcInfo;
-    if (!GetASTCInfo(sourceStreamPtr_->GetDataPtr(true), sourceStreamPtr_->GetStreamSize(), astcInfo)) {
+    if (!sourceStreamPtr_) {
+        IMAGE_LOGE("[ImageSource] get astc image info null.");
+        return false;
+    }
+    if (!GetASTCInfo(sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE ?
+        sourceStreamPtr_->GetDataPtr(true) : sourceStreamPtr_->GetDataPtr(),
+        sourceStreamPtr_->GetStreamSize(), astcInfo)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return false;
     }
