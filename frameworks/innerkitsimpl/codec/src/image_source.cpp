@@ -1573,7 +1573,7 @@ uint32_t ImageSource::CheckFormatHint(const string &formatHint, FormatAgentMap::
 }
 
 AbsImageDecoder *DoCreateDecoder(std::string codecFormat, PluginServer &pluginServer, InputDataStream &sourceData,
-    uint32_t &errorCode)
+    uint32_t &errorCode) __attribute__((no_sanitize("cfi")))
 {
     map<string, AttrData> capabilities = { { IMAGE_ENCODE_FORMAT, AttrData(codecFormat) } };
     for (const auto &capability : capabilities) {
