@@ -58,6 +58,7 @@ public:
     void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
         std::vector<uint8_t>& lightInfo) override;
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
+    void getErrMsg(std::string& errMsg) override;
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -78,6 +79,8 @@ private:
     bool IsDirectYUVDecode();
 
     void SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image);
+
+    void SetHardwareDecodeErrMsg(const uint32_t width, const uint32_t height);
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
@@ -100,6 +103,7 @@ private:
     size_t gainmapDstRowStride_;
 
     HeifFrameInfo tmapInfo_;
+    std::string errMsg_;
 
 #ifdef HEIF_HW_DECODE_ENABLE
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
