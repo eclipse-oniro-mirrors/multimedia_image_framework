@@ -50,7 +50,7 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
 
     heif_error errorImage = file->AssembleImages();
     if (errorImage != heif_error_ok) {
-        return errorBox;
+        return errorImage;
     }
 
     *out = std::move(file);

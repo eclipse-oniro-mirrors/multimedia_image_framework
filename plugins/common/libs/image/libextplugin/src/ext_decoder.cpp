@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <map>
+#include <sstream>
 
 #include "ext_pixel_convert.h"
 #include "image_log.h"
@@ -37,6 +38,8 @@
 #endif
 #include "color_utils.h"
 #include "hdr_helper.h"
+#include "heif_parser.h"
+#include "heif_format_agent.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -721,6 +724,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     if (ret != SkCodec::kSuccess) {
         IMAGE_LOGE("Decode failed, get pixels failed, ret=%{public}d", ret);
+        SetHeifDecodeError(context);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
@@ -1039,6 +1043,7 @@ bool ExtDecoder::CheckCodec()
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
         IMAGE_LOGE("create codec from stream failed");
+        SetHeifParseError();
         return false;
     }
     return codec_ != nullptr;
@@ -1571,6 +1576,9 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
                           dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->decode(nullptr);
+    if (!decodeRet) {
+        decoder->getErrMsg(context.hardDecodeError);
+    }
     return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
@@ -1685,6 +1693,65 @@ bool ExtDecoder::GetHeifHdrColorSpace(ColorManager::ColorSpaceName& gainmap, Col
     return true;
 #endif
     return false;
+}
+
+uint32_t ExtDecoder::GetHeifParseErr()
+{
+    return heifParseErr_;
+}
+
+void ExtDecoder::SetHeifDecodeError(OHOS::ImagePlugin::DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        return;
+    }
+    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        return;
+    }
+    decoder->getErrMsg(context.hardDecodeError);
+#endif
+}
+
+void ExtDecoder::SetHeifParseError()
+{
+    if (stream_ == nullptr) {
+        return;
+    }
+    uint32_t originOffset = stream_->Tell();
+    stream_->Seek(0);
+
+    uint32_t readSize = 0;
+    HeifFormatAgent agent;
+    uint32_t headerSize = agent.GetHeaderSize();
+    uint8_t headerBuf[headerSize];
+    bool readRet = stream_->Peek(headerSize, headerBuf, headerSize, readSize);
+    if (!readRet || readSize != headerSize) {
+        stream_->Seek(originOffset);
+        return;
+    }
+
+    if (!agent.CheckFormat(headerBuf, headerSize)) {
+        stream_->Seek(originOffset);
+        return;
+    }
+
+    size_t fileLength = stream_->GetStreamSize();
+    uint8_t fileMem[fileLength];
+    readRet = stream_->Read(fileLength, fileMem, fileLength, readSize);
+    if (!readRet || readSize != fileLength) {
+        stream_->Seek(originOffset);
+        return;
+    }
+
+    std::shared_ptr<HeifParser> parser;
+    heif_error parseRet = HeifParser::MakeFromMemory(fileMem, fileLength, false, &parser);
+    if (parseRet != heif_error_ok) {
+        heifParseErr_ = static_cast<uint32_t>(parseRet);
+    }
+
+    stream_->Seek(originOffset);
 }
 } // namespace ImagePlugin
 } // namespace OHOS

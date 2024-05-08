@@ -874,6 +874,16 @@ void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &cont
     options.hardDecodeError = context.hardDecodeError;
 }
 
+void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
+{
+    if (heifParseErr_ == 0) {
+        return;
+    }
+    event.GetDecodeInfoOptions().isHardDecode = true;
+    event.GetDecodeInfoOptions().hardDecodeError
+        = std::string("parse heif file failed, err: ") + std::to_string(heifParseErr_);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -886,6 +896,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     auto iter = GetValidImageStatus(index, errorCode);
     if (iter == imageStatusMap_.end()) {
         IMAGE_LOGE("[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
+        ImageEvent imageEvent;
+        imageEvent.SetDecodeErrorMsg("[ImageSource]get valid image status fail on create pixel map, ret: "
+                                     + std::to_string(errorCode));
+        SetImageEventHeifParseErr(imageEvent);
         return nullptr;
     }
     if (ImageSystemProperties::GetSkiaEnabled()) {
@@ -1660,6 +1674,9 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {
+        if (decoderPtr->GetHeifParseErr() != 0) {
+            heifParseErr_ = decoderPtr->GetHeifParseErr();
+        }
         IMAGE_LOGE("Failed to get extended format. Error code: %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
