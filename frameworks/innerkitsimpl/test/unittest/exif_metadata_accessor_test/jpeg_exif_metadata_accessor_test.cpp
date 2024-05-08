@@ -1294,5 +1294,29 @@ std::string JpegExifMetadataAccessorTest::GetProperty(const std::shared_ptr<Exif
     return value;
 }
 
+/**
+ * @tc.name: testGPSFormat001
+ * @tc.desc: test GPSLatitude, GPSLongitude Format
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, testGPSFormat001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE5_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(readStream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    bool ret = exifMetadata->SetValue("GPSLatitude", " 10, 20, 25.16513");
+    ASSERT_EQ(ret, true);
+    ret = exifMetadata->SetValue("GPSLongitude", " 10.0, 20, 25.16513");
+    ASSERT_EQ(ret, true);
+
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLatitude"), "10, 20, 25.16513");
+    ASSERT_EQ(GetProperty(exifMetadata, "GPSLongitude"), "10, 20, 25.16513");
+}
+
 } // namespace Multimedia
 } // namespace OHOS

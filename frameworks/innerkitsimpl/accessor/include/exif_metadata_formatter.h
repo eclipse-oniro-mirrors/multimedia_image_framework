@@ -79,6 +79,7 @@ private:
     static ValueFormatDelegate tribleIntToRationalWithComma;
     static ValueFormatDelegate tribleDecimalToRationalWithBlank;
     static ValueFormatDelegate tribleDecimalToRatiionalWithComma;
+    static ValueFormatDelegate tribleMixToRationalWithComma;
     static ValueFormatDelegate fourRationalWithBlank;
     static ValueFormatDelegate fourIntToRationalWithBlank;
     static ValueFormatDelegate fourIntToRationalWithComma;

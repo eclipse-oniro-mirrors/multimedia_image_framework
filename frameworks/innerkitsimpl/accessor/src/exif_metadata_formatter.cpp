@@ -606,6 +606,7 @@ const auto TRIBLE_INT_WITH_COMMA_REGEX = R"(^[0-9]+,(\s)?[0-9]+,(\s)?[0-9]+$)";
 const auto TRIBLE_RATIONAL_WITH_BLANK_REGEX = R"(^[0-9]+/[1-9][0-9]*\s[0-9]+/[1-9][0-9]*\s[0-9]+/[1-9][0-9]*$)";
 const auto TRIBLE_DECIMAL_WITH_BLANK_REGEX = "(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?\\s(\\d+)(\\.\\d+)?";
 const auto TRIBLE_DECIMAL_WITH_COMMA_REGEX = "(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?,(\\d+)(\\.\\d+)?";
+const auto TRIBLE_MIX_WITH_COMMA_REGEX = "^\\s*\\d+(\\.\\d+)?(,\\s*\\d+(\\.\\d+)?)*\\s*$";
 const auto TRIBLE_INT_WITH_COLON_REGEX = R"(^[1-9][0-9]*:[1-9][0-9]*:[1-9][0-9]*$)";
 const auto TRIBLE_INT_WITH_DOT_REGEX = R"(^[0-9]+.[0-9]+.[0-9]+.[0-9]+$)";
 const auto FOUR_INT_WITH_BLANK_REGEX = R"(^[0-9]+\s[0-9]+\s[0-9]+\s[0-9]+$)";
@@ -911,6 +912,10 @@ ValueFormatDelegate ExifMetadatFormatter::tribleDecimalToRationalWithBlank =
 ValueFormatDelegate ExifMetadatFormatter::tribleDecimalToRatiionalWithComma =
     std::make_pair(ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat, TRIBLE_DECIMAL_WITH_COMMA_REGEX);
 
+// regex validation for three decimal like GPS 10, 20, 20.123 --> 10 20 20.123 --> 10/1 20/1 20.123/1
+ValueFormatDelegate ExifMetadatFormatter::tribleMixToRationalWithComma =
+    std::make_pair(ExifMetadatFormatter::ValidRegxWithCommaDecimalRationalFormat, TRIBLE_MIX_WITH_COMMA_REGEX);
+
 // regex validation for four rational like LensSpecification 1/1 3/2 1/1 2/1
 ValueFormatDelegate ExifMetadatFormatter::fourRationalWithBlank =
     std::make_pair(ExifMetadatFormatter::ValidRegex, FOUR_RATIONAL_WITH_BLANK_REGEX);
@@ -960,10 +965,12 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"GPSLatitude", tribleRationalWithBlank},
     {"GPSLatitude", tribleIntToRationalWithBlank},
     {"GPSLatitude", tribleIntToRationalWithComma},
+    {"GPSLatitude", tribleMixToRationalWithComma},
     {"GPSLongitude", doubleIntToOneRationalWithComma},
     {"GPSLongitude", tribleRationalWithBlank},
     {"GPSLongitude", tribleIntToRationalWithBlank},
     {"GPSLongitude", tribleIntToRationalWithComma},
+    {"GPSLongitude", tribleMixToRationalWithComma},
     {"ApertureValue", singleRational},
     {"ApertureValue", singleIntToRational},
     {"ApertureValue", singleDecimalToRational},
