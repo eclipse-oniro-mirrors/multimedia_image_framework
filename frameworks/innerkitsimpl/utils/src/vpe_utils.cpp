@@ -20,10 +20,12 @@
 #include "hilog/log.h"
 #include "log_tags.h"
 #include "image_log.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "metadata_convertor.h"
 #include "external_window.h"
 #include "native_window.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -33,6 +35,7 @@
 
 namespace OHOS {
 namespace Media {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
 static constexpr uint32_t TRANSFUNC_OFFSET = 8;
 static constexpr uint32_t MATRIX_OFFSET = 16;
@@ -40,6 +43,7 @@ static constexpr uint32_t RANGE_OFFSET = 21;
 constexpr uint8_t INDEX_ZERO = 0;
 constexpr uint8_t INDEX_ONE = 1;
 constexpr uint8_t INDEX_TWO = 2;
+#endif
 const static char* VPE_SO_NAME = "libvideoprocessingengine.z.so";
 void* VpeUtils::dlHandler_ = nullptr;
 __attribute__((destructor)) void VpeUtilsDeinitLibVpe()
@@ -49,6 +53,9 @@ __attribute__((destructor)) void VpeUtilsDeinitLibVpe()
 }
 
 using CreateT = int32_t (*)(int32_t*);
+using DestoryT = int32_t (*)(int32_t*);
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using ComposeImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, OHNativeWindowBuffer*, bool);
 using DecomposeImageT =
@@ -57,7 +64,8 @@ using HdrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*);
 using SrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, int32_t);
-using DestoryT = int32_t (*)(int32_t*);
+#endif
+
 
 VpeUtils::VpeUtils()
 {
@@ -114,6 +122,31 @@ int32_t VpeUtils::ColorSpaceConverterDestory(void* handle, int32_t* instanceId)
     return destory(instanceId);
 }
 
+int32_t VpeUtils::DetailEnhancerCreate(void* handle, int32_t* instanceId)
+{
+    if (handle == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    CreateT create = (CreateT)dlsym(handle, "DetailEnhancerCreate");
+    if (!create) {
+        return VPE_ERROR_FAILED;
+    }
+    return create(instanceId);
+}
+
+int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
+{
+    if (*instanceId == VPE_ERROR_FAILED || handle == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    DestoryT destory = (DestoryT)dlsym(handle, "DetailEnhancerDestroy");
+    if (!destory) {
+        return VPE_ERROR_FAILED;
+    }
+    return destory(instanceId);
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool legacy)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
@@ -379,30 +412,6 @@ int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sp
     return res;
 }
 
-int32_t VpeUtils::DetailEnhancerCreate(void* handle, int32_t* instanceId)
-{
-    if (handle == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
-    CreateT create = (CreateT)dlsym(handle, "DetailEnhancerCreate");
-    if (!create) {
-        return VPE_ERROR_FAILED;
-    }
-    return create(instanceId);
-}
-
-int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
-{
-    if (*instanceId == VPE_ERROR_FAILED || handle == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
-    DestoryT destory = (DestoryT)dlsym(handle, "DetailEnhancerDestroy");
-    if (!destory) {
-        return VPE_ERROR_FAILED;
-    }
-    return destory(instanceId);
-}
-
 int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output, int32_t level)
 {
     std::lock_guard<std::mutex> lock(vpeMtx_);
@@ -450,5 +459,6 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, CM_ColorSpaceTy
 {
     VpeUtils::SetSbColorSpaceType(buffer, color);
 }
+#endif
 }
 }
