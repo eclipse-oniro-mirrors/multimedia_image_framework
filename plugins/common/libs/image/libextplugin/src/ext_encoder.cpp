@@ -39,13 +39,13 @@
 #include "image_dfx.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
-#endif
-#include "hdr_helper.h"
-#include "vpe_utils.h"
-#include "image_mime_type.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
+#include "hdr_helper.h"
+#endif
+#include "image_mime_type.h"
 #include "securec.h"
 
 #undef LOG_DOMAIN
@@ -57,7 +57,9 @@
 namespace OHOS {
 namespace ImagePlugin {
 using namespace Media;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
@@ -183,6 +185,9 @@ uint32_t ExtEncoder::FinalizeEncode()
     encodeFormat_ = iter->first;
     ExtWStream wStream(output_);
 
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    return EncodeImageByPixelMap(pixelmap_, true, wStream);
+#else
     switch (opts_.desiredDynamicRange) {
         case PlEncodeDynamicRange::AUTO:
             if (pixelmap_->IsHdr() &&
@@ -198,65 +203,7 @@ uint32_t ExtEncoder::FinalizeEncode()
             return EncodeSingleVivid(wStream);
     }
     return ERR_IMAGE_ENCODE_FAILED;
-}
-
-static sptr<SurfaceBuffer> AllocSurfaceBuffer(SkImageInfo info, CM_HDR_Metadata_Type type, CM_ColorSpaceType color)
-{
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    IMAGE_LOGE("Unsupport dma mem alloc");
-    return ERR_IMAGE_DATA_UNSUPPORT;
-#else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-    BufferRequestConfig requestConfig = {
-        .width = info.width(),
-        .height = info.height(),
-        .strideAlignment = 0x8,
-        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_DISPLAY_P3,
-        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
-    };
-    GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        return nullptr;
-    }
-    void* nativeBuffer = sb.GetRefPtr();
-    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        return nullptr;
-    }
-    VpeUtils::SetSbMetadataType(sb, type);
-    VpeUtils::SetSbColorSpaceType(sb, color);
-    return sb;
 #endif
-}
-
-static void FreeBaseAndGainMapSurfaceBuffer(sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainMap)
-{
-    ImageUtils::SurfaceBuffer_Unreference(base.GetRefPtr());
-    ImageUtils::SurfaceBuffer_Unreference(gainMap.GetRefPtr());
-}
-
-static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& gainmap)
-{
-    std::vector<uint8_t> dynamicMetadata = {};
-    VpeUtils::GetSbDynamicMetadata(hdr, dynamicMetadata);
-    std::vector<uint8_t> staticMetadata = {};
-    VpeUtils::GetSbStaticMetadata(hdr, staticMetadata);
-    HdrMetadata metadata = {
-        .staticMetadata = staticMetadata,
-        .dynamicMetadata = dynamicMetadata
-    };
-    std::vector<uint8_t> gainmapMetadataVec = {};
-    VpeUtils::GetSbDynamicMetadata(gainmap, gainmapMetadataVec);
-    if (memcpy_s(&metadata.gainmapMetadata, sizeof(HDRVividGainmapMetadata),
-        gainmapMetadataVec.data(), gainmapMetadataVec.size()) != EOK) {
-        metadata.gainmapMetadataFlag = false;
-    } else {
-        metadata.gainmapMetadataFlag = true;
-    }
-    return metadata;
 }
 
 uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream)
@@ -312,6 +259,66 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needE
         return ERR_IMAGE_ENCODE_FAILED;
     }
     return EncodeImageByBitmap(bitmap, needExif, outputStream);
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static sptr<SurfaceBuffer> AllocSurfaceBuffer(SkImageInfo info, CM_HDR_Metadata_Type type, CM_ColorSpaceType color)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("Unsupport dma mem alloc");
+    return nullptr;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = info.width(),
+        .height = info.height(),
+        .strideAlignment = 0x8,
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_DISPLAY_P3,
+        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        return nullptr;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        return nullptr;
+    }
+    VpeUtils::SetSbMetadataType(sb, type);
+    VpeUtils::SetSbColorSpaceType(sb, color);
+    return sb;
+#endif
+}
+
+static void FreeBaseAndGainMapSurfaceBuffer(sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainMap)
+{
+    ImageUtils::SurfaceBuffer_Unreference(base.GetRefPtr());
+    ImageUtils::SurfaceBuffer_Unreference(gainMap.GetRefPtr());
+}
+
+static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& gainmap)
+{
+    std::vector<uint8_t> dynamicMetadata = {};
+    VpeUtils::GetSbDynamicMetadata(hdr, dynamicMetadata);
+    std::vector<uint8_t> staticMetadata = {};
+    VpeUtils::GetSbStaticMetadata(hdr, staticMetadata);
+    HdrMetadata metadata = {
+        .staticMetadata = staticMetadata,
+        .dynamicMetadata = dynamicMetadata
+    };
+    std::vector<uint8_t> gainmapMetadataVec = {};
+    VpeUtils::GetSbDynamicMetadata(gainmap, gainmapMetadataVec);
+    if (memcpy_s(&metadata.gainmapMetadata, sizeof(HDRVividGainmapMetadata),
+        gainmapMetadataVec.data(), gainmapMetadataVec.size()) != EOK) {
+        metadata.gainmapMetadataFlag = false;
+    } else {
+        metadata.gainmapMetadataFlag = true;
+    }
+    return metadata;
 }
 
 uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
@@ -448,5 +455,6 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
     return error;
 }
+#endif
 } // namespace ImagePlugin
 } // namespace OHOS
