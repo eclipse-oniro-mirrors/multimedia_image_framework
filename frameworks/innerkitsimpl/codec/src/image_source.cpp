@@ -53,6 +53,10 @@
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
 #endif
 #include "include/utils/SkBase64.h"
 #if defined(NEW_SKIA)
@@ -60,11 +64,7 @@
 #endif
 #include "string_ex.h"
 #include "hdr_type.h"
-#include "vpe_utils.h"
 #include "image_mime_type.h"
-#include "v1_0/buffer_handle_meta_key_type.h"
-#include "v1_0/cm_color_space.h"
-#include "v1_0/hdr_static_metadata.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -77,7 +77,9 @@ namespace Media {
 using namespace std;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
@@ -2740,6 +2742,7 @@ static float GetScaleSize(ImageInfo info, DecodeOptions opts)
     return scale;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
 {
     context.allocatorType = AllocatorType::DMA_ALLOC;
@@ -2751,6 +2754,7 @@ static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void*
     context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
     context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 }
+#endif
 
 static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType)
 {
@@ -2915,6 +2919,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     return result;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static CM_ColorSpaceType ConvertColorSpaceType(OHOS::ColorManager::ColorSpace colorSpace)
 {
     switch (colorSpace.GetColorSpaceName()) {
@@ -2929,10 +2934,15 @@ static CM_ColorSpaceType ConvertColorSpaceType(OHOS::ColorManager::ColorSpace co
     }
     return CM_SRGB_LIMIT;
 }
+#endif
 
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    IMAGE_LOGE("unsupport hdr");
+    return false;
+#else
     if (baseCtx.allocatorType != AllocatorType::DMA_ALLOC || gainMapCtx.allocatorType != AllocatorType::DMA_ALLOC) {
         return false;
     }
@@ -2963,6 +2973,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         return false;
     }
     return true;
+#endif
 }
 } // namespace Media
 } // namespace OHOS
