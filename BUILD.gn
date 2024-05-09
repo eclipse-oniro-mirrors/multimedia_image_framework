@@ -19,6 +19,7 @@ group("image_framework") {
     defines = image_decode_ios_defines
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
+      "frameworks/kits/cj:cj_image_ffi",
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:image",
     ]
@@ -26,12 +27,14 @@ group("image_framework") {
     defines = image_decode_android_defines
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
+      "frameworks/kits/cj:cj_image_ffi",
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:multimedia_image",
     ]
   } else {
     deps = [
       "frameworks/innerkitsimpl/utils:image_utils",
+      "frameworks/kits/cj:cj_image_ffi",
       "frameworks/kits/js/common/ndk:image_ndk",
       "frameworks/kits/js/common/ndk:image_receiver_ndk",
       "frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",

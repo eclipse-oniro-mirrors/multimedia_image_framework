@@ -1,0 +1,90 @@
+# Copyright (C) 2022-2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+config("ffi_image_native_config") {
+  include_dirs = [ "include" ]
+  cflags_cc = [ "-std=c++17" ]
+}
+
+ohos_shared_library("cj_image_ffi") {
+  public_configs = [ ":ffi_image_native_config" ]
+
+  include_dirs = [
+    "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/image_framework/frameworks/innerkitsimpl/utils/include",
+  ]
+
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+  }
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  if (!defined(defines)) {
+    defines = []
+  }
+
+  if (product_name != "ohos-sdk") {
+    deps = [
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+      "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+      "$image_subsystem/interfaces/innerkits:image_native",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "graphic_2d:cj_color_manager_ffi",
+      "hilog:libhilog",
+      "hitrace:hitrace_meter",
+      "ipc:ipc_napi",
+      "napi:ace_napi",
+      "napi:cj_bind_ffi",
+      "napi:cj_bind_native",
+    ]
+    sources = [
+      "src/image_creator_impl.cpp",
+      "src/image_ffi.cpp",
+      "src/image_image_impl.cpp",
+      "src/image_image_receiver_impl.cpp",
+      "src/image_packer_impl.cpp",
+      "src/image_source_impl.cpp",
+      "src/pixel_map_impl.cpp",
+    ]
+  } else {
+    defines += [ "PREVIEWER" ]
+    sources = [ "src/cj_image_mock.cpp" ]
+  }
+
+  if (current_os == "ohos") {
+    defines += [ "OHOS_PLATFORM" ]
+  }
+
+  if (current_os == "mingw") {
+    defines += [ "WINDOWS_PLATFORM" ]
+  }
+
+  innerapi_tags = [ "platformsdk" ]
+
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}

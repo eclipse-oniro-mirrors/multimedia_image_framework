@@ -71,6 +71,21 @@
           {
             "header":{
               "header_files":[
+                "image_image_receiver_impl.h",
+                "image_image_impl.h",
+                "image_creator_impl.h",
+                "image_ffi.h",
+                "image_packer_impl.h",
+                "image_source_impl.h",
+                "pixel_map_impl.h"
+              ],
+              "header_base": "//foundation/multimedia/image_framework/frameworks/kits/cj/include"
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/cj:cj_image_ffi"
+          },
+          {
+            "header":{
+              "header_files":[
                 "pixel_convert_adapter.h",
                 "pixel_map_jni_utils.h"
               ],
