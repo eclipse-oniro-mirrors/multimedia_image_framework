@@ -26,8 +26,12 @@
 #include "media_errors.h"
 #include "src/codec/SkJpegCodec.h"
 #include "src/codec/SkJpegDecoderMgr.h"
+#ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_impl/HeifDecoder.h"
+#endif
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/hdr_static_metadata.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -39,7 +43,9 @@ namespace OHOS {
 namespace ImagePlugin {
 using namespace std;
 using namespace Media;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP0 = 0xE0;
 
@@ -88,11 +94,13 @@ constexpr uint8_t ISO_GAINMAP_TAG[ISO_GAINMAP_TAG_SIZE] = {
     '6', ':', '-', '1', '\0'
 };
 
+#ifdef HEIF_HW_DECODE_ENABLE
 static const map<HeifImageHdrType, ImageHdrType> HEIF_HDR_TYPE_MAP = {
     { HeifImageHdrType::UNKNOWN, ImageHdrType::UNKNOWN},
     { HeifImageHdrType::VIVID_DUAL, ImageHdrType::HDR_VIVID_DUAL},
     { HeifImageHdrType::ISO_DUAL, ImageHdrType::HDR_ISO_DUAL},
 };
+#endif
 
 typedef bool (*GetCuvaGainMapOffsetT)(jpeg_marker_struct* marker, uint32_t appSize, uint32_t& offset);
 typedef bool (*GetCuvaGainMapMetadataT)(jpeg_marker_struct* marker, std::vector<uint8_t>& metadata);
@@ -301,6 +309,7 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec, uint32_t& of
     return ImageHdrType::SDR;
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
 static ImageHdrType CheckHeifHdrType(HeifDecoder* decoder)
 {
     if (decoder == nullptr) {
@@ -316,6 +325,7 @@ static ImageHdrType CheckHeifHdrType(HeifDecoder* decoder)
     }
     return findItem->second;
 }
+#endif
 
 ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset)
 {
@@ -334,11 +344,13 @@ ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset)
             break;
         }
         case SkEncodedImageFormat::kHEIF: {
+#ifdef HEIF_HW_DECODE_ENABLE
             auto decoder = reinterpret_cast<HeifDecoder*>(codec->getHeifContext());
             if (decoder == nullptr) {
                 break;
             }
             type = CheckHeifHdrType(decoder);
+#endif
             break;
         }
         default:
@@ -376,6 +388,9 @@ static bool GetCuvaGainMapMetadata(jpeg_marker_struct* markerList, std::vector<u
 
 static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32_t size, vector<uint8_t>& staticMetaVec)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return false;
+#else
     uint16_t staticMetadataSize = ImageUtils::BytesToUint16(data, offset);
     if (staticMetadataSize == EMPTY_SIZE) {
         staticMetaVec.resize(EMPTY_SIZE);
@@ -407,6 +422,7 @@ static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32
         offset += (staticMetadataSize - VIVID_STATIC_METADATA_SIZE_IN_IMAGE);
     }
     return true;
+#endif
 }
 
 static ExtendInfoMain ParseExtendInfoMain(uint8_t* data, uint32_t& offset, bool isThreeCom)
@@ -788,8 +804,12 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
     }
 }
 
+#ifdef HEIF_HW_DECODE_ENABLE
 static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInfo, const vector<uint8_t>& lightInfo)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return {};
+#else
     HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
     DisplayColourVolume displayColourVolume{};
     ContentLightLevelInfo lightLevelInfo{};
@@ -824,6 +844,7 @@ static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInf
         return {};
     }
     return staticMetadataVec;
+#endif
 }
 
 static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMetadata& metadata)
@@ -864,6 +885,7 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
     }
     return false;
 }
+#endif
 
 bool HdrHelper::GetMetadata(SkCodec* codec, ImageHdrType type, HdrMetadata& metadata)
 {
@@ -876,8 +898,12 @@ bool HdrHelper::GetMetadata(SkCodec* codec, ImageHdrType type, HdrMetadata& meta
             return GetJpegGainMapMetadata(jpegCodec, type, metadata);
         }
         case SkEncodedImageFormat::kHEIF: {
+#ifdef HEIF_HW_DECODE_ENABLE
             auto decoder = reinterpret_cast<HeifDecoder*>(codec->getHeifContext());
             return GetHeifMetadata(decoder, type, metadata);
+#else
+            return false;
+#endif
         }
         default:
             return false;
@@ -1057,6 +1083,9 @@ static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVivid
 
 static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vector<uint8_t>& staticVec)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return false;
+#else
     HdrStaticMetadata staticMeta;
     uint32_t vecSize = sizeof(HdrStaticMetadata);
     if (memcpy_s(&staticMeta, vecSize, staticVec.data(), vecSize) != EOK) {
@@ -1076,6 +1105,7 @@ static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vec
     ImageUtils::Uint16ToBytes((uint16_t)staticMeta.cta861.maxContentLightLevel, bytes, index);
     ImageUtils::Uint16ToBytes((uint16_t)staticMeta.cta861.maxFrameAverageLightLevel, bytes, index);
     return true;
+#endif
 }
 
 static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetadata& metadata)
