@@ -142,6 +142,7 @@ ohos_shared_library("extplugin") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",

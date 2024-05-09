@@ -69,6 +69,7 @@ image_native_ios_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",

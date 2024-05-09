@@ -70,6 +70,7 @@ FileMetadataStream::~FileMetadataStream()
 
 void FileMetadataStream::Initialize(const std::string &filePath, int fileDescriptor)
 {
+    this->fp_ = nullptr;
     this->filePath_ = filePath;
     this->dupFD_ = dup(fileDescriptor);
     if (!fileWrapper_) {
