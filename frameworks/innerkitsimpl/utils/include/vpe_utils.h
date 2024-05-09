@@ -17,11 +17,13 @@
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_VPE_UTILS_H
 
 #include <mutex>
+
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
 #include "surface_buffer.h"
 #endif
+
 #include "hdr_type.h"
 
 namespace OHOS {

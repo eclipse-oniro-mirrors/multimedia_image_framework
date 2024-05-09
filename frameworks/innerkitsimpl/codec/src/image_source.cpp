@@ -3088,7 +3088,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGE("unsupport hdr");
     return false;
 #else
@@ -3179,7 +3179,7 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
 
 static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGE("UnSupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -3431,7 +3431,7 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
 #endif
 uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr, DecodeContext &context)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return ERR_MEDIA_INVALID_OPERATION;
 #else
     bool needAisr = false;

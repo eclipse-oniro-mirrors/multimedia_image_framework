@@ -1587,7 +1587,7 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
 
 ImageHdrType ExtDecoder::CheckHdrType()
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return Media::ImageHdrType::SDR;
 #else
     if (!CheckCodec()) {
@@ -1606,7 +1606,7 @@ ImageHdrType ExtDecoder::CheckHdrType()
 
 uint32_t ExtDecoder::GetGainMapOffset()
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return OFFSET_0;
 #else
     if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
@@ -1621,7 +1621,7 @@ uint32_t ExtDecoder::GetGainMapOffset()
 
 HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return {};
 #else
     HdrMetadata metadata = {};
@@ -1641,7 +1641,7 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
     }
     auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
     if (decoder == nullptr) {
-        IMAGE_LOGE("decode heif gainmap, codec error");
+        IMAGE_LOGE("decode heif gainmap, decoder error");
         return false;
     }
     HeifFrameInfo gainmapInfo;

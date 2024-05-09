@@ -388,7 +388,7 @@ static bool GetCuvaGainMapMetadata(jpeg_marker_struct* markerList, std::vector<u
 
 static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32_t size, vector<uint8_t>& staticMetaVec)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return false;
 #else
     uint16_t staticMetadataSize = ImageUtils::BytesToUint16(data, offset);
@@ -807,7 +807,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
 #ifdef HEIF_HW_DECODE_ENABLE
 static vector<uint8_t> ParseHeifStaticMetadata(const vector<uint8_t>& displayInfo, const vector<uint8_t>& lightInfo)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return {};
 #else
     HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
@@ -1083,7 +1083,7 @@ static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVivid
 
 static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vector<uint8_t>& staticVec)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return false;
 #else
     HdrStaticMetadata staticMeta;

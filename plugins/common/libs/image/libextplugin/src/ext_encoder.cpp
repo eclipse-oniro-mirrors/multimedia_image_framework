@@ -185,7 +185,7 @@ uint32_t ExtEncoder::FinalizeEncode()
     imageDataStatistics.AddTitle("width = %d, height =%d", imageInfo.size.width, imageInfo.size.height);
     encodeFormat_ = iter->first;
     ExtWStream wStream(output_);
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return EncodeImageByPixelMap(pixelmap_, true, wStream);
 #else
     switch (opts_.desiredDynamicRange) {
@@ -264,7 +264,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static sptr<SurfaceBuffer> AllocSurfaceBuffer(SkImageInfo info, CM_HDR_Metadata_Type type, CM_ColorSpaceType color)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");
     return nullptr;
 #else
