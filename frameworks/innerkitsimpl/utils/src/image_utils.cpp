@@ -433,6 +433,12 @@ uint64_t ImageUtils::GetNowTimeMilliSeconds()
     return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 }
 
+uint64_t ImageUtils::GetNowTimeMicroSeconds()
+{
+    auto now = std::chrono::system_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
+}
+
 std::string ImageUtils::GetCurrentProcessName()
 {
     std::string processName;

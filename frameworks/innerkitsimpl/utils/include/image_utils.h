@@ -51,6 +51,7 @@ public:
     static void DumpDataIfDumpEnabled(const char* data, const size_t& totalSize, const std::string& fileSuffix = "dat",
         uint64_t imageId = 0);
     static uint64_t GetNowTimeMilliSeconds();
+    static uint64_t GetNowTimeMicroSeconds();
     static std::string GetCurrentProcessName();
     // BytesToXXX and xxxToBytes function will modify the offset value.
     static uint16_t BytesToUint16(uint8_t* bytes, uint32_t& offset, bool isBigEndian = true);
