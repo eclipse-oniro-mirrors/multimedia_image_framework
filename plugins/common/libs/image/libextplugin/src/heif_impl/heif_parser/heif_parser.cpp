@@ -671,7 +671,7 @@ void HeifParser::AddHvccProperty(heif_item_id itemId)
 heif_error HeifParser::AppendHvccNalData(heif_item_id itemId, const std::vector<uint8_t> &data)
 {
     auto hvcc = GetProperty<HeifHvccBox>(itemId);
-    if (hvcc) {
+    if (!hvcc) {
         return heif_error_no_hvcc;
     }
     hvcc->AppendNalData(data);
