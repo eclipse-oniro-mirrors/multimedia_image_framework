@@ -169,7 +169,6 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
@@ -181,6 +180,11 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/jpeg_mpf_parser.cpp",
   ]
+
+  if (enable_heif_hw_decode) {
+    source += [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp" ]
+  }
+
   if (DUAL_ADAPTER) {
     sources += [
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
@@ -1708,7 +1712,6 @@ group("unittest") {
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
-    ":heifyuvtest",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
@@ -1743,6 +1746,10 @@ group("unittest") {
 
   if (enable_jpeg_hw_decode) {
     deps += [ ":jpeg_hw_decoder_test" ]
+  }
+
+  if (enable_heif_hw_decode) {
+    deps += [ ":heifyuvtest" ]
   }
 }
 ################################################
