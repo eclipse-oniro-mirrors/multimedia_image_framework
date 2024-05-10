@@ -1184,10 +1184,34 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    IMAGE_LOGD("sourceStreamPtr GetDataPtr");
-    uint8_t* ptr = sourceStreamPtr_->GetDataPtr();
-    uint32_t size = sourceStreamPtr_->GetStreamSize();
-    auto metadataAccessor = MetadataAccessorFactory::Create(ptr, size);
+    IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    if (bufferPtr != nullptr) {
+        return SetExifMetadata(bufferPtr, bufferSize, addFlag);
+    }
+
+    uint32_t readSize = 0;
+    auto tmpBuffer = std::make_unique<uint8_t[]>(bufferSize);
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("Make unique buffer failed, tmpBuffer is nullptr.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer.get(), bufferSize, readSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("sourceStream read failed.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return SetExifMetadata(tmpBuffer.get(), bufferSize, addFlag);
+}
+
+uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
+{
+    auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
         return ERR_IMAGE_SOURCE_DATA;
@@ -1248,7 +1272,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
     if (key == "Orientation") {
         if (ORIENTATION_INT_MAP.count(strValue) == 0) {
             IMAGE_LOGD("ORIENTATION_INT_MAP not find %{public}s", strValue.c_str());
-            return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+            return ERR_IMAGE_SOURCE_DATA;
         }
         strValue = std::to_string(ORIENTATION_INT_MAP.at(strValue));
     }
