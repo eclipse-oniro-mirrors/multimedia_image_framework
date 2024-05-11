@@ -52,7 +52,7 @@ struct OH_DecodingOptions {
     uint32_t rotate;
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
-    int32_t desiredDynamicRange;
+    int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
 };
 
 struct OH_ImageSource_Info {

@@ -1969,6 +1969,9 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
     plOptions.desiredPixelFormat = plDesiredFormat;
+    if (IsHdrImage() && opts.desiredDynamicRange != DecodeDynamicRange::SDR) {
+        plOptions.desiredPixelFormat = PlPixelFormat::RGBA_8888;
+    }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -3102,20 +3105,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, metadata);
     // gainmap image
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
-    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_LIMIT;
-    CM_ColorSpaceType gainmapCmColor = hdrCmColor;
-    string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    if ((format == IMAGE_JPEG_FORMAT) && (jpegGainmapDecoder_ != nullptr)) {
-        hdrCmColor = ConvertColorSpaceType(jpegGainmapDecoder_->getGrColorSpace().GetColorSpaceName(), false);
-    } else if (format == IMAGE_HEIF_FORMAT) {
-        ColorManager::ColorSpaceName gainmapColorName;
-        ColorManager::ColorSpaceName hdrColorName;
-        if (mainDecoder_->GetHeifHdrColorSpace(gainmapColorName, hdrColorName)) {
-            gainmapCmColor = ConvertColorSpaceType(gainmapColorName, false);
-            hdrCmColor = ConvertColorSpaceType(hdrColorName, false);
-        }
-    }
-    gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
+    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
+    CM_ColorSpaceType gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
     // hdr image

@@ -49,8 +49,8 @@ struct ImageEnum {
     std::string strVal;
 };
 static std::vector<struct ImageEnum> sPackingDynamicRangeMap = {
-    {"AUTO", 1, ""},
-    {"SDR", 2, ""},
+    {"AUTO", 0, ""},
+    {"SDR", 1, ""},
 };
 
 const int ARGS_THREE = 3;

@@ -519,6 +519,17 @@ static void ConvertExtendInfoMain(ExtendInfoMain info, HDRVividExtendMetadata& m
     metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO] = info.altHdrImageOffset[INDEX_ZERO];
     metadata.metaISO.enhanceMappingAlternateOffset[INDEX_ONE] = info.altHdrImageOffset[INDEX_ONE];
     metadata.metaISO.enhanceMappingAlternateOffset[INDEX_TWO] = info.altHdrImageOffset[INDEX_TWO];
+    const float eps = 1e-5;
+    if ((fabs(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO] -
+            metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE]) < eps) &&
+        (fabs(metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO] -
+            metadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO]) < eps) &&
+        (fabs(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO] -
+            metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE]) < eps) &&
+        (fabs(metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO] -
+            metadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO]) < eps)) {
+        metadata.metaISO.gainmapChannelNum = INDEX_ONE;
+    }
 }
 
 static void ConvertExtendInfoExtention(ExtendInfoExtention ext, HDRVividExtendMetadata& metadata)
@@ -872,7 +883,9 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
             if (isoMetadata.empty()) {
                 return res;
             }
-            ParseISOMetadata(isoMetadata.data(), isoMetadata.size(), metadata);
+            if (isoMetadata.size() > EMPTY_SIZE && isoMetadata[INDEX_ZERO] == EMPTY_SIZE) {
+                ParseISOMetadata(isoMetadata.data() + INDEX_ONE, isoMetadata.size() - INDEX_ONE, metadata);
+            }
         }
         return res;
     } else if (type == ImageHdrType::HDR_ISO_DUAL) {
@@ -881,7 +894,9 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
         if (isoMetadata.empty()) {
             return false;
         }
-        return ParseISOMetadata(isoMetadata.data(), isoMetadata.size(), metadata);
+        if (isoMetadata.size() > EMPTY_SIZE && isoMetadata[INDEX_ZERO] == EMPTY_SIZE) {
+            return ParseISOMetadata(isoMetadata.data() + INDEX_ONE, isoMetadata.size() - INDEX_ONE, metadata);
+        }
     }
     return false;
 }
@@ -1136,7 +1151,10 @@ std::vector<uint8_t> HdrJpegPackerHelper::PackVividMetadataMarker(HdrMetadata& m
         UINT16_BYTE_COUNT + dynamicMetadataSize;
     uint32_t extendInfoSize = GetExtendMetadataSize(false, metadata.extendMeta);
     uint32_t markerLength = UINT32_BYTE_COUNT + ITUT35_TAG_SIZE + VIVID_METADATA_PRE_INFO_SIZE +
-        metadataSize + UINT16_BYTE_COUNT + extendInfoSize;
+        metadataSize;
+    if (extendInfoSize != EMPTY_SIZE) {
+        markerLength += (UINT16_BYTE_COUNT + extendInfoSize);
+    }
     vector<uint8_t> bytes(markerLength);
     uint32_t index = 0;
     bytes[index++] = JPEG_MARKER_PREFIX;
