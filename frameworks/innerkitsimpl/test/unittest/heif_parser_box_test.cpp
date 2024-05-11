@@ -182,7 +182,7 @@ HWTEST_F(HeifParserBoxTest, InferFullBoxVersionTest001, TestSize.Level3)
     heifIpmaBox->entries_.clear();
     struct PropertyAssociation rec {
         .essential = false,
-        .propertyIndex = 8F,
+        .propertyIndex = 0x8F,
     };
     std::vector<PropertyAssociation> proPerty;
     proPerty.push_back(rec);
@@ -281,11 +281,11 @@ HWTEST_F(HeifParserBoxTest, ParseContentTest002, TestSize.Level3)
 HWTEST_F(HeifParserBoxTest, InferFullBoxVersionTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "HeifParserBoxTest: InferFullBoxVersionTest003 start";
-    auto heifInfeBox = std::make_shared<HeifInfeBox>();
+    HeifInfeBox heifInfeBox;
     heifInfeBox.isHidden_ = false;
     heifInfeBox.itemType_ = "";
     ASSERT_EQ(heifInfeBox.itemType_.empty(), true);
-    heifInfeBox.itemId = 0xFFFFFFFF;
+    heifInfeBox.itemId_ = 0xFFFFFFFF;
     heifInfeBox.InferFullBoxVersion();
     GTEST_LOG_(INFO) << "HeifParserBoxTest: InferFullBoxVersionTest003 end";
 }
@@ -363,9 +363,9 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
  * @tc.desc: HeifIlocBox
  * @tc.type: FUNC
  */
-HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
+HWTEST_F(HeifParserBoxTest, ParseExtentsTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest001 start";
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseExtentsTest001 start";
     HeifIlocBox heifIlocBox;
     HeifIlocBox::Item item;
     auto stream = std::make_shared<HeifBufferInputStream>(nullptr, 0, true);
@@ -373,7 +373,7 @@ HWTEST_F(HeifParserBoxTest, AppendNalDataTest001, TestSize.Level3)
     heifIlocBox.version_ = HEIF_BOX_VERSION_ONE;
     heifIlocBox.ParseExtents(item, reader, 4, 4, 4);
     heifIlocBox.ParseExtents(item, reader, 8, 8, 8);
-    GTEST_LOG_(INFO) << "HeifParserBoxTest: AppendNalDataTest001 end";
+    GTEST_LOG_(INFO) << "HeifParserBoxTest: ParseExtentsTest001 end";
 }
 
 /**
