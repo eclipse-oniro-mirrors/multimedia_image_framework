@@ -210,9 +210,9 @@ static std::vector<struct ImageEnum> sComponentTypeMap = {
     {"JPEG", 4, ""},
 };
 static std::vector<struct ImageEnum> sDecodingDynamicRangeMap = {
-    {"AUTO", 1, ""},
-    {"SDR", 2, ""},
-    {"HDR", 3, ""},
+    {"AUTO", 0, ""},
+    {"SDR", 1, ""},
+    {"HDR", 2, ""},
 };
 
 static std::string GetStringArgument(napi_env env, napi_value value)
