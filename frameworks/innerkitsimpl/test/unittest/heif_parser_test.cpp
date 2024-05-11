@@ -446,12 +446,10 @@ HWTEST_F(HeifParserTest, HeifParserTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 start";
     HeifParser heifParser;
     heif_item_id itemId = 0;
-    std::vector<uint8_t> data;
     ImagePlugin::HvccConfig config;
     heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
     heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
     ASSERT_EQ(heifParser.GetImage(itemId), nullptr);
-    heifParser.AppendHvccNalData(itemId, data);
     heifParser.SetHvccConfig(itemId, config);
     GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 end";
 }
