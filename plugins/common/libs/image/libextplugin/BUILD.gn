@@ -290,49 +290,96 @@ ohos_prebuilt_etc("extpluginmetadata") {
   part_name = "image_framework"
 }
 
-ohos_shared_library("heifparser") {
-  if (!use_clang_android && !use_clang_ios) {
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
+if (is_arkui_x) {
+  ohos_source_set("heifparser") {
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
     }
+
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
+
+    configs = [ "//build/config/compiler:rtti" ]
+
+    include_dirs = [
+      "include/heif_impl/heif_parser",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    ]
+
+    sources = [
+      "src/heif_impl/heif_parser/box/basic_box.cpp",
+      "src/heif_impl/heif_parser/box/heif_box.cpp",
+      "src/heif_impl/heif_parser/box/item_data_box.cpp",
+      "src/heif_impl/heif_parser/box/item_info_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_display_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
+      "src/heif_impl/heif_parser/box/item_ref_box.cpp",
+      "src/heif_impl/heif_parser/heif_image.cpp",
+      "src/heif_impl/heif_parser/heif_parser.cpp",
+      "src/heif_impl/heif_parser/heif_stream.cpp",
+      "src/heif_impl/heif_parser/heif_utils.cpp",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+
+    subsystem_name = "multimedia"
+    deps = [ "${third_party_root}/bounds_checking_function:libsec_static" ]
+    part_name = "image_framework"
   }
+} else {
+  ohos_shared_library("heifparser") {
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
+    }
 
-  remove_configs = [ "//build/config/compiler:no_rtti" ]
+    remove_configs = [ "//build/config/compiler:no_rtti" ]
 
-  configs = [ "//build/config/compiler:rtti" ]
+    configs = [ "//build/config/compiler:rtti" ]
 
-  include_dirs = [
-    "include/heif_impl/heif_parser",
-    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-  ]
+    include_dirs = [
+      "include/heif_impl/heif_parser",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    ]
 
-  sources = [
-    "src/heif_impl/heif_parser/box/basic_box.cpp",
-    "src/heif_impl/heif_parser/box/heif_box.cpp",
-    "src/heif_impl/heif_parser/box/item_data_box.cpp",
-    "src/heif_impl/heif_parser/box/item_info_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_display_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
-    "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
-    "src/heif_impl/heif_parser/box/item_ref_box.cpp",
-    "src/heif_impl/heif_parser/heif_image.cpp",
-    "src/heif_impl/heif_parser/heif_parser.cpp",
-    "src/heif_impl/heif_parser/heif_stream.cpp",
-    "src/heif_impl/heif_parser/heif_utils.cpp",
-  ]
+    sources = [
+      "src/heif_impl/heif_parser/box/basic_box.cpp",
+      "src/heif_impl/heif_parser/box/heif_box.cpp",
+      "src/heif_impl/heif_parser/box/item_data_box.cpp",
+      "src/heif_impl/heif_parser/box/item_info_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_aux_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_display_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
+      "src/heif_impl/heif_parser/box/item_ref_box.cpp",
+      "src/heif_impl/heif_parser/heif_image.cpp",
+      "src/heif_impl/heif_parser/heif_parser.cpp",
+      "src/heif_impl/heif_parser/heif_stream.cpp",
+      "src/heif_impl/heif_parser/heif_utils.cpp",
+    ]
 
-  external_deps = [ "c_utils:utils" ]
+    external_deps = [ "c_utils:utils" ]
 
-  subsystem_name = "multimedia"
-  innerapi_tags = [ "platformsdk_indirect" ]
-  part_name = "image_framework"
+    subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk_indirect" ]
+    part_name = "image_framework"
+  }
 }
 
 config("heif_hw_decoder_cfg") {
