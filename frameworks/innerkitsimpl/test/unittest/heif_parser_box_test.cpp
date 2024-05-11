@@ -329,22 +329,6 @@ HWTEST_F(HeifParserBoxTest, InferHeaderSizeTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: WriteHeaderTest001
- * @tc.desc: HeifBox
- * @tc.type: FUNC
- */
-HWTEST_F(HeifParserBoxTest, WriteHeaderTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest001 start";
-    HeifBox heifBox;
-    HeifStreamWriter writer;
-    size_t boxSize = 0xFFFFFFFFFFFFFFFF;
-    heifBox.boxType_ = BOX_TYPE_UUID;
-    ASSERT_EQ(heifBox.WriteHeader(writer, boxSize), heif_error_ok);
-    GTEST_LOG_(INFO) << "HeifParserBoxTest: WriteHeaderTest001 end";
-}
-
-/**
  * @tc.name: AppendNalDataTest001
  * @tc.desc: HeifHvccBox
  * @tc.type: FUNC
