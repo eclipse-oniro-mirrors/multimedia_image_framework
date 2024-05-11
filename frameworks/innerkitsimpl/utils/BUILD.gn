@@ -36,6 +36,10 @@ if (use_clang_ios) {
 
     defines = image_decode_ios_defines
     sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_dfx.cpp",
+      "src/image_data_statistics.cpp", 
+    ]
     include_dirs += [ "$image_subsystem/mock/native/include/log" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -101,6 +105,10 @@ if (use_clang_ios) {
     } else if (use_clang_android) {
       defines = image_decode_android_defines
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+      sources += [
+        "src/image_dfx.cpp",
+        "src/image_data_statistics.cpp", 
+      ]
       include_dirs += [ "$image_subsystem/mock/native/include/log" ]
       deps = [
         "//commonlibrary/c_utils/base:utils",
@@ -187,6 +195,10 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_dfx.cpp",
+      "src/image_data_statistics.cpp", 
+    ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
@@ -198,6 +210,10 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_dfx.cpp",
+      "src/image_data_statistics.cpp", 
+    ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [ "src/image_dfx.cpp" ]

@@ -19,7 +19,9 @@
 #include <fstream>
 #include <chrono>
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "hisysevent.h"
+#endif
 #include "image_utils.h"
 #include "image_log.h"
 
@@ -71,7 +73,7 @@ void ImageEvent::ReportDecodeFault()
         default:
             temp = "inner_interface";
     }
-    
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     HiSysEventWrite(IMAGE_FWK_UE,
                     "DECODE_FAULT",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -102,6 +104,7 @@ void ImageEvent::ReportDecodeFault()
                     "HARD_DECODE", options_.isHardDecode,
                     "HARD_DECODE_ERROR", options_.hardDecodeError,
                     "ERROR_MSG", options_.errorMsg);
+#endif
 }
 
 void ImageEvent::ReportDecodeInfo()
@@ -120,6 +123,7 @@ void ImageEvent::ReportDecodeInfo()
             temp = "inner_interface";
     }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     HiSysEventWrite(IMAGE_FWK_UE,
                     "DECODE_INFORMATION",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -150,11 +154,13 @@ void ImageEvent::ReportDecodeInfo()
                     "HARD_DECODE", options_.isHardDecode,
                     "HARD_DECODE_ERROR", options_.hardDecodeError,
                     "COST_TIME", costTime);
+#endif
 }
 
 void ReportCreateImageSourceFault(uint32_t width, uint32_t height, std::string type, std::string message)
 {
     std::string packageName = ImageUtils::GetCurrentProcessName();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     HiSysEventWrite(IMAGE_FWK_UE,
                     "CREATE_IMAGESOURCE_FAULT",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -164,11 +170,13 @@ void ReportCreateImageSourceFault(uint32_t width, uint32_t height, std::string t
                     "HEIGHT", height,
                     "TYPE", type,
                     "ERROR_MSG", message);
+#endif
 }
 
 void ReportEncodeFault(uint32_t width, uint32_t height, std::string mimeType, std::string message)
 {
     std::string packageName = ImageUtils::GetCurrentProcessName();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     HiSysEventWrite(IMAGE_FWK_UE,
                     "ENCODE_FAULT",
                     OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
@@ -178,6 +186,7 @@ void ReportEncodeFault(uint32_t width, uint32_t height, std::string mimeType, st
                     "HEIGHT", height,
                     "MIME_TYPE", mimeType,
                     "ERROR_MSG", message);
+#endif
 }
 } // namespace Media
 } // namespace OHOS
