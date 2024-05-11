@@ -296,6 +296,7 @@ if (is_arkui_x) {
       sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
       }
     }
@@ -304,7 +305,10 @@ if (is_arkui_x) {
 
     configs = [ "//build/config/compiler:rtti" ]
 
-    include_dirs = [ "include/heif_impl/heif_parser" ]
+    include_dirs = [
+      "include/heif_impl/heif_parser",
+      "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    ]
 
     sources = [
       "src/heif_impl/heif_parser/box/basic_box.cpp",
@@ -315,6 +319,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_display_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
       "src/heif_impl/heif_parser/box/item_ref_box.cpp",
@@ -336,6 +341,7 @@ if (is_arkui_x) {
       sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
       }
     }
@@ -355,6 +361,7 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/box/item_property_basic_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_color_box.cpp",
+      "src/heif_impl/heif_parser/box/item_property_display_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_hvcc_box.cpp",
       "src/heif_impl/heif_parser/box/item_property_transform_box.cpp",
       "src/heif_impl/heif_parser/box/item_ref_box.cpp",
