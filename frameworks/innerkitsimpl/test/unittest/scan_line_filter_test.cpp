@@ -143,14 +143,14 @@ HWTEST_F(ScanLineFilterTest, FilterLineTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "ScanLineFilterTest: FilterLineTest002 start";
     ScanlineFilter scanlineFilter;
     void *destRowPixels = nullptr;
-    uint32_t destRowBytes = 256;
+    uint32_t destRowBytes = 0;
     void *srcRowPixels = nullptr;
     uint32_t ret = scanlineFilter.FilterLine(destRowPixels, destRowBytes, srcRowPixels);
     ASSERT_EQ(ret, ERR_IMAGE_CROP);
     destRowPixels = new uint8_t;
     srcRowPixels = new uint8_t;
     scanlineFilter.srcRegion_.width = 1;
-    scanlineFilter.srcBpp_ = -1;
+    scanlineFilter.srcBpp_ = 1;
     ret = scanlineFilter.FilterLine(destRowPixels, destRowBytes, srcRowPixels);
     ASSERT_EQ(ret, ERR_IMAGE_CROP);
     scanlineFilter.needPixelConvert_ = true;
