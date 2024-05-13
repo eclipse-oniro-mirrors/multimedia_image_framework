@@ -17,7 +17,6 @@
 #define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_TIFF_PARSER_H
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
