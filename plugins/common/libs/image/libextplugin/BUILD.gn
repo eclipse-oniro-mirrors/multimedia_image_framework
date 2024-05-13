@@ -379,11 +379,12 @@ if (is_arkui_x) {
       "src/heif_impl/heif_parser/heif_utils.cpp",
     ]
 
-  external_deps = [ "c_utils:utils" ]
+    external_deps = [ "c_utils:utils" ]
 
-  subsystem_name = "multimedia"
-  innerapi_tags = [ "platformsdk_indirect" ]
-  part_name = "image_framework"
+    subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk_indirect" ]
+    part_name = "image_framework"
+  }
 }
 
 config("heif_hw_decoder_cfg") {
