@@ -309,7 +309,7 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
     return ERR_IMAGE_DECODE_FAILED;
 }
 
-uint32_t WebpDecoder::DoIncrementalDecode(ProgDecodeContext &context)
+uint32_t WebpDecoder::DoIncrementalDecode(ProgDecodeContext &context) __attribute__((no_sanitize("cfi")))
 {
     WebPDecoderConfig config;
     if (!PreDecodeProc(context.decodeContext, config, true)) {
