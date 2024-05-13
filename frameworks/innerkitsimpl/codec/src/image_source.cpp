@@ -65,6 +65,9 @@
 #include "string_ex.h"
 #include "hdr_type.h"
 #include "image_mime_type.h"
+#ifdef IMAGE_QOS_ENABLE
+#include "qos.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -666,6 +669,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+#ifdef IMAGE_QOS_ENABLE
+    if (IsSupportSize(info.size) && getpid() != gettid()) {
+        OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    }
+#endif
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     ImageTrace imageTrace("CreatePixelMapExtended, info.size:(%d, %d)", info.size.width, info.size.height);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {

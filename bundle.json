@@ -53,7 +53,8 @@
           "skia",
           "resource_management",
           "json",
-          "openmax"
+          "openmax",
+          "qos_manager"
         ],
         "third_party": [
           "flutter",
