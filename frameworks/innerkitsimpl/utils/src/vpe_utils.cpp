@@ -445,7 +445,7 @@ int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<Su
 bool VpeUtils::SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer)
 {
     constexpr CM_ColorSpaceInfo outputColorSpaceInfo = {
-        COLORPRIMARIES_BT2020, TRANSFUNC_HLG, MATRIX_BT2020, RANGE_LIMITED
+        COLORPRIMARIES_BT2020, TRANSFUNC_HLG, MATRIX_BT2020, RANGE_FULL
     };
     auto ret = SetColorSpaceInfo(buffer, outputColorSpaceInfo);
     if (ret != GSERROR_OK) {
