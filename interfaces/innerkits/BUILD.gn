@@ -236,6 +236,12 @@ if (use_clang_android) {
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]
       }
+      if (is_ohos && is_standard_system && !is_arkui_x &&
+          defined(global_parts_info) &&
+          defined(global_parts_info.resourceschedule_qos_manager)) {
+        defines += [ "IMAGE_QOS_ENABLE" ]
+        external_deps += [ "qos_manager:qos" ]
+      }
     }
 
     if (purgeable_ashmem_enable && defined(global_parts_info) &&
