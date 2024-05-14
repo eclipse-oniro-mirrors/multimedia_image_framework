@@ -121,8 +121,6 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
     if ((memcmp(buff, DNG_LITTLE_ENDIAN_HEADER, sizeof(DNG_LITTLE_ENDIAN_HEADER) * sizeof(byte)) == 0) ||
         (memcmp(buff, DNG_BIG_ENDIAN_HEADER, sizeof(DNG_BIG_ENDIAN_HEADER) * sizeof(byte)) == 0)) {
         return EncodedFormat::DNG;
-    } else if (TiffParser::FindTiffPos(stream->GetAddr(), stream->GetSize()) != std::numeric_limits<size_t>::max()) {
-        return EncodedFormat::DNG;
     }
 
     return EncodedFormat::UNKNOWN;
