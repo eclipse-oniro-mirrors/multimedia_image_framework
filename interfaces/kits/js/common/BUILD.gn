@@ -35,6 +35,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
+    "${image_subsystem}/interfaces/kits/js/common/include/sendable",
   ]
 
   include_dirs += [
@@ -154,6 +155,41 @@ if (use_clang_ios) {
     part_name = "image_framework"
   }
 
+  ohos_shared_library("sendableimage") {
+    if (!use_clang_android && !use_clang_ios) {
+      sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        cfi_vcall_icall_only = true
+        debug = false
+      }
+    }
+    sources = [ "$image_subsystem/frameworks/kits/js/common/sendable/native_module_image_sendable.cpp" ]
+
+    cflags = [
+      "-DIMAGE_DEBUG_FLAG",
+      "-DIMAGE_COLORSPACE_FLAG",
+    ]
+
+    deps = [
+      ":image",
+      "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
+    ]
+
+    external_deps = [
+      "drivers_peripheral_display:hdi_gralloc_client",
+      "graphic_2d:color_manager",
+      "graphic_surface:surface",
+      "hilog:libhilog",
+      "napi:ace_napi",
+    ]
+
+    output_name = "libsendableimage"
+    relative_install_dir = "module/multimedia"
+    subsystem_name = "multimedia"
+    part_name = "image_framework"
+  }
+
   ohos_shared_library("image") {
     if (!use_clang_android && !use_clang_ios) {
       sanitize = {
@@ -172,6 +208,7 @@ if (use_clang_ios) {
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_receiver_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_source_mdk_kits.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/sendable/sendable_pixel_map_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_creator_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
