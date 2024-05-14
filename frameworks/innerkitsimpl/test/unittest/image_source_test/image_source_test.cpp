@@ -36,6 +36,7 @@
 #include "buffer_source_stream.h"
 #include "file_source_stream.h"
 #include "memory_manager.h"
+#include "mock_data_stream.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -662,7 +663,7 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt001, TestSize.Level3)
     std::string key = "ImageWidth";
     imageSource->GetImagePropertyInt(index, key, value);
 
-    ASSERT_EQ(value, 500);
+    ASSERT_EQ(value, 3456);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt001 end";
 }
 
@@ -701,7 +702,7 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString001, TestSize.Level3)
     std::string key = "ImageWidth";
     std::string value;
     imageSource->GetImagePropertyString(index, key, value);
-    ASSERT_EQ(value, "500");
+    ASSERT_EQ(value, "3456");
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString001 end";
 }
 
@@ -1719,6 +1720,7 @@ HWTEST_F(ImageSourceTest, IsStreamCompletedTest001, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    imageSource->sourceStreamPtr_ = std::make_unique<ImagePlugin::MockInputDataStream>();
     bool ret = imageSource->IsStreamCompleted();
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImageSourceTest: IsStreamCompletedTest001 end";
@@ -1895,8 +1897,8 @@ HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    int32_t icoWidth = 48;
-    int32_t icoHeight = 48;
+    int32_t icoWidth = 64;
+    int32_t icoHeight = 64;
 
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
@@ -1998,12 +2000,12 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
-            ImageSource::CreateImageSource("/data/local/tmp/image/test.webp", opts, errorCode);
+            ImageSource::CreateImageSource("/data/local/tmp/image/test_large.webp", opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    int32_t webpWidth = 286;
-    int32_t webpHeight = 221;
+    int32_t webpWidth = 588;
+    int32_t webpHeight = 662;
 
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
@@ -2041,8 +2043,8 @@ HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
 
-    int32_t webpWidth = 160;
-    int32_t webpHeight = 120;
+    int32_t webpWidth = 5976;
+    int32_t webpHeight = 3992;
 
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
