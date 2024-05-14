@@ -42,6 +42,7 @@ private:
     ExifEntry* GetEntry(const std::string &key, const size_t len);
     ExifEntry* GetEntry(const std::string &key) const;
     int HandleMakerNote(std::string &value) const;
+    int HandleHwMnote(const std::string &key, std::string &value) const;
     void ReallocEntry(ExifEntry *ptrEntry, const size_t len);
     bool SetShort(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
     bool SetSShort(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);
