@@ -53,6 +53,10 @@
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "vpe_utils.h"
 #endif
 #include "include/utils/SkBase64.h"
 #if defined(NEW_SKIA)
@@ -60,11 +64,10 @@
 #endif
 #include "string_ex.h"
 #include "hdr_type.h"
-#include "vpe_utils.h"
 #include "image_mime_type.h"
-#include "v1_0/buffer_handle_meta_key_type.h"
-#include "v1_0/cm_color_space.h"
-#include "v1_0/hdr_static_metadata.h"
+#ifdef IMAGE_QOS_ENABLE
+#include "qos.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -77,7 +80,9 @@ namespace Media {
 using namespace std;
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
@@ -664,6 +669,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+#ifdef IMAGE_QOS_ENABLE
+    if (IsSupportSize(info.size) && getpid() != gettid()) {
+        OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
+    }
+#endif
     SetDecodeInfoOptions(index, opts, info, imageEvent);
     ImageTrace imageTrace("CreatePixelMapExtended, info.size:(%d, %d)", info.size.width, info.size.height);
     if (errorCode != SUCCESS || !IsSizeVailed(info.size)) {
@@ -874,6 +884,16 @@ void ImageSource::UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &cont
     options.hardDecodeError = context.hardDecodeError;
 }
 
+void ImageSource::SetImageEventHeifParseErr(ImageEvent &event)
+{
+    if (heifParseErr_ == 0) {
+        return;
+    }
+    event.GetDecodeInfoOptions().isHardDecode = true;
+    event.GetDecodeInfoOptions().hardDecodeError
+        = std::string("parse heif file failed, err: ") + std::to_string(heifParseErr_);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -886,6 +906,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
     auto iter = GetValidImageStatus(index, errorCode);
     if (iter == imageStatusMap_.end()) {
         IMAGE_LOGE("[ImageSource]get valid image status fail on create pixel map, ret:%{public}u.", errorCode);
+        ImageEvent imageEvent;
+        imageEvent.SetDecodeErrorMsg("[ImageSource]get valid image status fail on create pixel map, ret: "
+                                     + std::to_string(errorCode));
+        SetImageEventHeifParseErr(imageEvent);
         return nullptr;
     }
     if (ImageSystemProperties::GetSkiaEnabled()) {
@@ -1660,6 +1684,9 @@ uint32_t ImageSource::GetFormatExtended(string &format)
     }
     errorCode = decoderPtr->GetImagePropertyString(FIRST_FRAME, EXT_ENCODED_FORMAT_KEY, format);
     if (errorCode != SUCCESS) {
+        if (decoderPtr->GetHeifParseErr() != 0) {
+            heifParseErr_ = decoderPtr->GetHeifParseErr();
+        }
         IMAGE_LOGE("Failed to get extended format. Error code: %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
@@ -1950,6 +1977,9 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
     plOptions.desiredPixelFormat = plDesiredFormat;
+    if (IsHdrImage() && opts.desiredDynamicRange != DecodeDynamicRange::SDR) {
+        plOptions.desiredPixelFormat = PlPixelFormat::RGBA_8888;
+    }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("[ImageSource]decoder plugin set decode options fail (image index:%{public}u),"
@@ -2812,6 +2842,7 @@ static float GetScaleSize(ImageInfo info, DecodeOptions opts)
     return scale;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
 {
     context.allocatorType = AllocatorType::DMA_ALLOC;
@@ -2823,6 +2854,7 @@ static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void*
     context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
     context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 }
+#endif
 
 DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo info, ImagePlugin::PlImageInfo& plInfo,
                                                     uint32_t& errorCode)
@@ -2897,6 +2929,7 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     return errorCode;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
@@ -2947,6 +2980,7 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
     }
     return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
 }
+#endif
 
 bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
 {
@@ -3065,6 +3099,10 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGE("unsupport hdr");
+    return false;
+#else
     ImageTrace imageTrace("ImageSource::ComposeHdrImage hdr type is %{public}d", hdrType);
     if (baseCtx.allocatorType != AllocatorType::DMA_ALLOC || gainMapCtx.allocatorType != AllocatorType::DMA_ALLOC) {
         return false;
@@ -3075,20 +3113,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, metadata);
     // gainmap image
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
-    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_LIMIT;
-    CM_ColorSpaceType gainmapCmColor = hdrCmColor;
-    string format = GetExtendedCodecMimeType(mainDecoder_.get());
-    if ((format == IMAGE_JPEG_FORMAT) && (jpegGainmapDecoder_ != nullptr)) {
-        hdrCmColor = ConvertColorSpaceType(jpegGainmapDecoder_->getGrColorSpace().GetColorSpaceName(), false);
-    } else if (format == IMAGE_HEIF_FORMAT) {
-        ColorManager::ColorSpaceName gainmapColorName;
-        ColorManager::ColorSpaceName hdrColorName;
-        if (mainDecoder_->GetHeifHdrColorSpace(gainmapColorName, hdrColorName)) {
-            gainmapCmColor = ConvertColorSpaceType(gainmapColorName, false);
-            hdrCmColor = ConvertColorSpaceType(hdrColorName, false);
-        }
-    }
-    gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
+    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
+    CM_ColorSpaceType gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
     // hdr image
@@ -3111,6 +3137,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
         return false;
     }
     return true;
+#endif
 }
 
 uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
@@ -3151,7 +3178,7 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
 
 static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 {
-#if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGE("UnSupport dma mem alloc");
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
@@ -3227,6 +3254,7 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
 #endif
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx,
                                CM_ColorSpaceType cmColorSpaceType)
 {
@@ -3399,9 +3427,12 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
     }
     return res;
 }
-
+#endif
 uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr, DecodeContext &context)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return ERR_MEDIA_INVALID_OPERATION;
+#else
     bool needAisr = false;
     bool needHdr = false;
     auto bRet = IsNecessaryAiProcess(imageSize, opts, isHdr, needAisr, needHdr);
@@ -3439,6 +3470,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         CopyOutInfoOfContext(dstCtx, context);
     }
     return res;
+#endif
 }
 
 static void UpdatepPlImageInfo(DecodeContext context, bool isHdr, ImagePlugin::PlImageInfo &plInfo)

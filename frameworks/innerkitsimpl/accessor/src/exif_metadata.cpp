@@ -145,6 +145,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
 
 int ExifMetadata::HandleMakerNote(std::string &value) const
 {
+    value.clear();
     std::vector<char> tagValueChar(TAG_VALUE_SIZE, 0);
     ExifMnoteData *md = exif_data_get_mnote_data(exifData_);
     if (md == nullptr) {

@@ -50,7 +50,7 @@ heif_error HeifParser::MakeFromStream(const std::shared_ptr<HeifInputStream> &st
 
     heif_error errorImage = file->AssembleImages();
     if (errorImage != heif_error_ok) {
-        return errorBox;
+        return errorImage;
     }
 
     *out = std::move(file);
@@ -671,7 +671,7 @@ void HeifParser::AddHvccProperty(heif_item_id itemId)
 heif_error HeifParser::AppendHvccNalData(heif_item_id itemId, const std::vector<uint8_t> &data)
 {
     auto hvcc = GetProperty<HeifHvccBox>(itemId);
-    if (hvcc) {
+    if (!hvcc) {
         return heif_error_no_hvcc;
     }
     hvcc->AppendNalData(data);

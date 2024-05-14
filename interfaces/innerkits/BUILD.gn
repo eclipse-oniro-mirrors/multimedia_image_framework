@@ -126,6 +126,7 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
@@ -235,6 +236,12 @@ if (use_clang_android) {
       if (enable_libexif) {
         external_deps += [ "libexif:libexif" ]
       }
+      if (is_ohos && is_standard_system && !is_arkui_x &&
+          defined(global_parts_info) &&
+          defined(global_parts_info.resourceschedule_qos_manager)) {
+        defines += [ "IMAGE_QOS_ENABLE" ]
+        external_deps += [ "qos_manager:qos" ]
+      }
     }
 
     if (purgeable_ashmem_enable && defined(global_parts_info) &&
@@ -270,6 +277,7 @@ ohos_static_library("image_static") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",

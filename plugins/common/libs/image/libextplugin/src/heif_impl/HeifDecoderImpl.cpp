@@ -34,6 +34,7 @@ extern "C" {
 #endif
 
 #include <cmath>
+#include <sstream>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -507,6 +508,7 @@ bool HeifDecoderImpl::DecodeGrids(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap)
                    " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
                    err, gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat_, gridInfo.cols, gridInfo.rows,
                    gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size());
+        SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
         return false;
     }
     return IsDirectYUVDecode() || ConvertHwBufferPixelFormat(hwBuffer, isGainmap);
@@ -547,6 +549,7 @@ bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<
                    " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu, dataLen: %{public}zu",
                    err, gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat_, gridInfo.cols, gridInfo.rows,
                    gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size(), inputs[1].size());
+        SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
         return false;
     }
     return IsDirectYUVDecode() || ConvertHwBufferPixelFormat(hwBuffer, isGainmap);
@@ -704,6 +707,21 @@ void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vecto
 void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
 {
     isoMetadata = primaryImage_->GetISOMetadata();
+}
+
+void HeifDecoderImpl::getErrMsg(std::string& errMsg)
+{
+    errMsg = errMsg_;
+}
+
+void HeifDecoderImpl::SetHardwareDecodeErrMsg(const uint32_t width, const uint32_t height)
+{
+    std::stringstream sstream;
+    sstream << "HEIF Hardware Decode Failed, Width: ";
+    sstream << width;
+    sstream << ", Height: ";
+    sstream << height;
+    errMsg_ = sstream.str();
 }
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -303,6 +303,7 @@ private:
     void SetDecodeInfoOptions(uint32_t index, const DecodeOptions &opts, const ImagePlugin::PlImageInfo &plInfo,
         ImageEvent &imageEvent);
     void UpdateDecodeInfoOptions(const ImagePlugin::DecodeContext &context, ImageEvent &imageEvent);
+    void SetImageEventHeifParseErr(ImageEvent &event);
     bool CheckDecodeOptions(Size imageSize, bool &needAisr, bool &needHdr);
     uint32_t DecodeImageDataToContext(uint32_t index, ImageInfo &info, ImagePlugin::PlImageInfo &plInfo,
                                       ImagePlugin::DecodeContext &context, uint32_t &errorCode);
@@ -347,6 +348,7 @@ private:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::string source_; // Image source fd buffer etc
     bool isExifReadFailed = false;
+    uint32_t heifParseErr_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

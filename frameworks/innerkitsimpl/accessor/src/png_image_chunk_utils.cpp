@@ -37,7 +37,6 @@ namespace {
 constexpr auto ASCII_TO_HEX_MAP_SIZE = 103;
 constexpr auto IMAGE_SEG_MAX_SIZE = 65536;
 constexpr auto EXIF_HEADER_SIZE = 6;
-constexpr auto EXIF_BYTEORDER_SIZE = 4;
 constexpr auto PNG_CHUNK_KEYWORD_EXIF_APP1_SIZE = 21;
 constexpr auto HEX_BASE = 16;
 constexpr auto DECIMAL_BASE = 10;
@@ -249,29 +248,6 @@ size_t PngImageChunkUtils::VerifyExifIdCode(DataBuf &exifInfo, size_t exifInfoLe
         }
     }
     return exifIdPos;
-}
-
-size_t PngImageChunkUtils::FindTiffPos(DataBuf &exifInfo, size_t exifInfoLength)
-{
-    static const std::array<byte, EXIF_BYTEORDER_SIZE> tiffByteOrderII { 0x49, 0x49, 0x2a, 0x00 };
-    static const std::array<byte, EXIF_BYTEORDER_SIZE> tiffByteOrderMM { 0x4d, 0x4d, 0x00, 0x2a };
-    size_t byteOrderPos = std::numeric_limits<size_t>::max();
-
-    for (size_t i = 0; i < exifInfoLength - tiffByteOrderII.size(); i++) {
-        if (exifInfo.CmpBytes(i, tiffByteOrderII.data(), tiffByteOrderII.size()) == 0) {
-            byteOrderPos = i;
-            break;
-        }
-    }
-    if (byteOrderPos == std::numeric_limits<size_t>::max()) {
-        for (size_t i = 0; i < exifInfoLength - tiffByteOrderMM.size(); i++) {
-            if (exifInfo.CmpBytes(i, tiffByteOrderMM.data(), tiffByteOrderMM.size()) == 0) {
-                byteOrderPos = i;
-                break;
-            }
-        }
-    }
-    return byteOrderPos;
 }
 
 int PngImageChunkUtils::GetTiffDataFromRawText(const DataBuf &rawText, DataBuf &tiffData)

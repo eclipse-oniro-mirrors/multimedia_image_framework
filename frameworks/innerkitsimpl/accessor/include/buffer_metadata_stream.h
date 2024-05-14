@@ -176,12 +176,51 @@ public:
     byte *Release();
 
 private:
+    /*
+     * These constants are used in conjunction with CalculateNewCapacity to quickly approximate potential image sizes.
+     * Based on the value of expandCount_, an appropriate capacity level is selected to optimize memory management and
+     * reduce memory copy operations, thereby enhancing the efficiency of image processing.
+     */
+    static constexpr long METADATA_STREAM_INITIAL_CAPACITY = METADATA_STREAM_PAGE_SIZE;
+    static constexpr long METADATA_STREAM_CAPACITY_512KB = 512 * 1024;
+    static constexpr long METADATA_STREAM_CAPACITY_2MB = 2 * 1024 * 1024;
+    static constexpr long METADATA_STREAM_CAPACITY_5MB = 5 * 1024 * 1024;
+    static constexpr long METADATA_STREAM_CAPACITY_15MB = 15 * 1024 * 1024;
+    static constexpr long METADATA_STREAM_CAPACITY_30MB = 30 * 1024 * 1024;
+
+    static constexpr int INITIAL_EXPANSION = 0;
+    static constexpr int SECOND_EXPANSION = 1;
+    static constexpr int THIRD_EXPANSION = 2;
+    static constexpr int FOURTH_EXPANSION = 3;
+    static constexpr int FIFTH_EXPANSION = 4;
+
+    static constexpr int METADATA_STREAM_MAX_CAPACITY = 1024 * 1024 * 1024;
+
     /* *
      * @brief Closes the BufferImageStream.
      */
     virtual void Close() override;
     bool ReadAndWriteData(MetadataStream &src);
     void HandleWriteFailure();
+
+    /* *
+     * @brief To handle memory read/write operations where the image size is often unknown, a fixed incremental
+     * growth approach would result in numerous memory copy operations. Considering that the current scenario
+     * involves processing images, a leapfrogging approach is used to quickly approximate potential image sizes,
+     * thereby reducing the number of memory copies.
+     * @param currentOffset The current offset in the BufferImageStream.
+     * @param size The size to be added to the BufferImageStream.
+     * @return The new capacity of the BufferImageStream.
+     */
+    long CalculateNewCapacity(long currentOffset, ssize_t size);
+
+    /* *
+     * @brief Tracks the number of capacity expansions to facilitate the leapfrogging approach in capacity calculation.
+     * This count helps in selecting the appropriate predefined capacity level during memory allocation for image
+     * processing, optimizing the approach to quickly approximate potential image sizes and reduce memory copy
+     * operations.
+     */
+    int expandCount_ = 0;
 
     /* *
      * @brief The memory buffer of the BufferImageStream.

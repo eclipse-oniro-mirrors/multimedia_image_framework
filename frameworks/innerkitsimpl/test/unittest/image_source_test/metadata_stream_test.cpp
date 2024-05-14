@@ -1162,6 +1162,7 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_CONSTRUCTOR005, TestSize.Level3)
 {
     int fileDescriptor = open(filePathSource.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     FileMetadataStream *stream = new FileMetadataStream(fileDescriptor);
+    ASSERT_FALSE(stream->IsOpen());
     ASSERT_TRUE(stream->Open());
     delete stream;
     stream = new FileMetadataStream(fileDescriptor);

@@ -488,9 +488,13 @@ HWTEST_F(ImagePackerTest, StartPacking016, TestSize.Level3)
     uint32_t startpc = pack.StartPacking(fd, option);
     ASSERT_EQ(startpc, OHOS::Media::SUCCESS);
     uint32_t retAddimgae = pack.AddImage(*imageSource);
+    auto start = std::chrono::high_resolution_clock::now();
     ASSERT_EQ(retAddimgae, OHOS::Media::SUCCESS);
     uint32_t retFinalizePacking = pack.FinalizePacking();
     ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    std::cout << "Time taken by FinalizePacking: " << diff.count() << " s\n";
 
     const int fdDest = open(IMAGE_JPG_DEST.c_str(), O_RDWR, S_IRUSR | S_IWUSR);
     std::unique_ptr<ImageSource> imageSourceDest = ImageSource::CreateImageSource(fdDest, opts, errorCode);

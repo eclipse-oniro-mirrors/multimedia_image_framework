@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#include "buffer_metadata_stream.h"
+#include "dng_exif_metadata_accessor.h"
 #include "file_metadata_stream.h"
 #include "image_log.h"
 #include "image_type.h"
@@ -20,6 +22,7 @@
 #include "jpeg_exif_metadata_accessor.h"
 #include "metadata_accessor_factory.h"
 #include "png_exif_metadata_accessor.h"
+#include "tiff_parser.h"
 #include "webp_exif_metadata_accessor.h"
 
 #undef LOG_DOMAIN
@@ -38,6 +41,8 @@ const byte pngHeader[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
 const byte webpHeader[] = { 0x57, 0x45, 0x42, 0x50 };
 const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
 const byte heifHeader[] = { 0x66, 0x74, 0x79, 0x70 };
+const byte DNG_LITTLE_ENDIAN_HEADER[] = { 0x49, 0x49, 0x2A, 0x00 };
+const byte DNG_BIG_ENDIAN_HEADER[] = { 0x4D, 0x4D, 0x00, 0x2A };
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size,
     BufferMetadataStream::MemoryMode mode)
@@ -82,6 +87,8 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_pt
             return std::make_shared<WebpExifMetadataAccessor>(stream);
         case EncodedFormat::HEIF:
             return std::make_shared<HeifExifMetadataAccessor>(stream);
+        case EncodedFormat::DNG:
+            return std::make_shared<DngExifMetadataAccessor>(stream);
         default:
             return nullptr;
     }
@@ -92,6 +99,7 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
     byte buff[IMAGE_HEADER_SIZE] = {0};
     stream->Seek(0, SeekPos::BEGIN);
     stream->Read(buff, IMAGE_HEADER_SIZE * sizeof(byte));
+    stream->Seek(0, SeekPos::BEGIN);
 
     if (memcmp(buff, jpegHeader, sizeof(jpegHeader) * sizeof(byte)) == 0) {
         return EncodedFormat::JPEG;
@@ -110,7 +118,13 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
         return EncodedFormat::HEIF;
     }
 
-    stream->Seek(0, SeekPos::BEGIN);
+    if ((memcmp(buff, DNG_LITTLE_ENDIAN_HEADER, sizeof(DNG_LITTLE_ENDIAN_HEADER) * sizeof(byte)) == 0) ||
+        (memcmp(buff, DNG_BIG_ENDIAN_HEADER, sizeof(DNG_BIG_ENDIAN_HEADER) * sizeof(byte)) == 0)) {
+        return EncodedFormat::DNG;
+    } else if (TiffParser::FindTiffPos(stream->GetAddr(), stream->GetSize()) != std::numeric_limits<size_t>::max()) {
+        return EncodedFormat::DNG;
+    }
+
     return EncodedFormat::UNKNOWN;
 }
 } // namespace Media

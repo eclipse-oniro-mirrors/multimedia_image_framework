@@ -54,7 +54,7 @@ static constexpr int32_t IMAGE_BASE_23 = 23;
 struct OH_PackingOptions {
     Image_MimeType mimeType;
     int quality;
-    int32_t desiredDynamicRange;
+    int32_t desiredDynamicRange = IMAGE_PACKER_DYNAMIC_RANGE_SDR;
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
