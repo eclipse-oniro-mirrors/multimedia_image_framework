@@ -228,7 +228,7 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
             "pixelHeight:%{public}d, pixelFormat:%{public}d", opts.format.c_str(), pixelMap->GetWidth(),
             pixelMap->GetHeight(), pixelMap->GetPixelFormat());
     }
-    return false;
+    return isSupport;
 }
 
 uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat)

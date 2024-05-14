@@ -59,6 +59,7 @@ ImageFuncTimer::ImageFuncTimer(const char *fmt, ...)
             desc_ = "ImageTraceFmt Format Error";
         }
     }
+    startTime_ = ImageUtils::GetNowTimeMicroSeconds();
     StartTrace(HITRACE_TAG_ZIMAGE, desc_);
 #endif
 }

@@ -26,7 +26,7 @@
 #undef LOG_TAG
 #define LOG_TAG "ImageFwkExtManager"
 
-static const std::string IMAGE_FWK_EXT_NATIVE_SO = "/system/lib64/platformsdk/libimage_fwk_ext_native.so";
+static const std::string IMAGE_FWK_EXT_NATIVE_SO = "/system/lib64/platformsdk/libimage_codec_ext_native.so";
 
 namespace OHOS {
 namespace Media {
@@ -64,9 +64,9 @@ bool ImageFwkExtManager::LoadImageFwkExtNativeSo()
             IMAGE_LOGE("%{public}s dlopen falied", IMAGE_FWK_EXT_NATIVE_SO.c_str());
             return false;
         }
-        doHardWareEncodeFunc_ = reinterpret_cast<DoHardWareEncodeFunc>(dlsym(extNativeSoHandle_, "DoHardWareEncode"));
+        doHardWareEncodeFunc_ = reinterpret_cast<DoHardWareEncodeFunc>(dlsym(extNativeSoHandle_, "DoHardwareEncode"));
         if (doHardWareEncodeFunc_ == nullptr) {
-            IMAGE_LOGE("DoHardWareEncode dlsym falied");
+            IMAGE_LOGE("DoHardwareEncode dlsym falied");
             dlclose(extNativeSoHandle_);
             extNativeSoHandle_ = nullptr;
             return false;

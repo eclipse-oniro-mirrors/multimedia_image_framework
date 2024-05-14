@@ -96,9 +96,7 @@ config("mac_config") {
   }
 }
 config("ext_public_config") {
-  include_dirs = [
-    "${image_subsystem}/plugins/manager/include",
-  ]
+  include_dirs = [ "${image_subsystem}/plugins/manager/include" ]
 }
 
 ohos_shared_library("textureEncoderCL") {
