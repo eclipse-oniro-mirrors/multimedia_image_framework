@@ -13,35 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_PIXEL_MAP_NAPI_H
-#define INTERFACES_KITS_JS_COMMON_INCLUDE_PIXEL_MAP_NAPI_H
+#ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_SENDABLE_PIXEL_MAP_NAPI_H
+#define INTERFACES_KITS_JS_COMMON_INCLUDE_SENDABLE_PIXEL_MAP_NAPI_H
 
-#include "pixel_map.h"
-#include "image_type.h"
-#include "image_source.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "pixel_map_napi.h"
 
 namespace OHOS {
 namespace Media {
-enum class ImageType {
-    TYPE_UNKNOWN = 0,
-    TYPE_PIXEL_MAP = 1
-};
-class PixelMapNapi {
+class SendablePixelMapNapi {
 public:
-    PixelMapNapi();
-    ~PixelMapNapi();
+    SendablePixelMapNapi();
+    ~SendablePixelMapNapi();
 
     static napi_value Init(napi_env env, napi_value exports);
 
-    static napi_value CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
-    static std::shared_ptr<PixelMap> GetPixelMap(napi_env env, napi_value pixelmap);
-    std::shared_ptr<PixelMap>* GetPixelMap();
-    std::shared_ptr<PixelMap> GetPixelNapiInner()
-    {
-        return nativePixelMap_;
-    }
+    static napi_value CreateSendablePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap);
+    static std::shared_ptr<PixelMap> GetSendablePixelMap(napi_env env, napi_value pixelmap);
     void ReleasePixelNapiInner()
     {
         setPixelNapiEditable(false);
@@ -75,17 +64,19 @@ private:
     static napi_value GetIsStrideAlignment(napi_env env, napi_callback_info info);
 
     /* stattic method */
-    static napi_value CreatePixelMap(napi_env env, napi_callback_info info);
-    static napi_value CreatePremultipliedPixelMap(napi_env env, napi_callback_info info);
-    static napi_value CreateUnpremultipliedPixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreateSendablePixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreatePremultipliedSendablePixelMap(napi_env env, napi_callback_info info);
+    static napi_value CreateUnpremultipliedSendablePixelMap(napi_env env, napi_callback_info info);
     /* stattic method */
-    static napi_value CreatePixelMapSync(napi_env env, napi_callback_info info);
-    static void CreatePixelMapComplete(napi_env env, napi_status status, void *data);
+    static napi_value CreateSendablePixelMapSync(napi_env env, napi_callback_info info);
+    static napi_value ConvertFromPixelMap(napi_env env, napi_callback_info info);
+    static napi_value ConvertToPixelMap(napi_env env, napi_callback_info info);
+    static void CreateSendablePixelMapComplete(napi_env env, napi_status status, void *data);
     static napi_value Unmarshalling(napi_env env, napi_callback_info info);
     static void UnmarshallingComplete(napi_env env, napi_status status, void *data);
-    static napi_value CreatePixelMapFromParcel(napi_env env, napi_callback_info info);
-    static napi_value CreatePixelMapFromSurface(napi_env env, napi_callback_info info);
-    static void CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
+    static napi_value CreateSendablPixelMapFromParcel(napi_env env, napi_callback_info info);
+    static napi_value CreateSendablePixelMapFromSurface(napi_env env, napi_callback_info info);
+    static void CreateSendablePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data);
     static napi_value ThrowExceptionError(napi_env env,
         const std::string &tag, const std::uint32_t &code, const std::string &info);
 
@@ -139,64 +130,6 @@ private:
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
 };
-
-class PixelMapContainer {
-public:
-    static PixelMapContainer& GetInstance()
-    {
-        static PixelMapContainer source;
-        return source;
-    }
-
-    std::shared_ptr<PixelMap>& operator[](const uint32_t &key)
-    {
-        return map_[key];
-    }
-
-    bool IsEmpty()
-    {
-        return map_.empty();
-    }
-
-    bool Insert(const uint32_t &key, const std::shared_ptr<PixelMap> &value)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (!IsEmpty() && (map_.find(key) != map_.end())) map_.erase(key);
-        auto ret = map_.insert(std::pair<uint32_t, std::shared_ptr<PixelMap>>(key, value));
-        return ret.second;
-    }
-
-    bool Find(const uint32_t &key)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto it = map_.find(key);
-        return it != map_.end() ? true : false;
-    }
-
-    void Erase(const uint32_t &key)
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (map_.find(key) != map_.end()) {
-            map_.erase(key);
-        }
-        return;
-    }
-
-    void Clear()
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        map_.clear();
-        return;
-    }
-
-private:
-    PixelMapContainer() = default;
-    PixelMapContainer(const PixelMapContainer&) = delete;
-    PixelMapContainer(const PixelMapContainer&&) = delete;
-    PixelMapContainer &operator=(const PixelMapContainer&) = delete;
-    std::mutex mutex_;
-    std::map<uint32_t, std::shared_ptr<PixelMap>> map_;
-};
 } // namespace Media
 } // namespace OHOS
-#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_PIXEL_MAP_NAPI_H
+#endif // INTERFACES_KITS_JS_COMMON_INCLUDE_SENDABLE_PIXEL_MAP_NAPI_H
