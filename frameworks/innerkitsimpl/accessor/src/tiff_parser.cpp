@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <array>
 #include <cstring>
 #include <fcntl.h>
 #include <string>
