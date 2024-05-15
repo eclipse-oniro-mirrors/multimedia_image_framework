@@ -231,22 +231,31 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
     return isSupport;
 }
 
+uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
+{
+    static ImageFwkExtManager imageFwkExtManager;
+    if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
+        int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
+        if (retCode == SUCCESS) {
+            return SUCCESS;
+        }
+        IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
+        ImageInfo imageInfo;
+        pixelmap_->GetImageInfo(imageInfo);
+        ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "hardware encode failed");
+    } else {
+        IMAGE_LOGE("hardware encode failed because of load native so failed");
+    }
+    return ERR_IMAGE_ENCODE_FAILED;
+}
+
 uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat)
 {
     ImageFuncTimer imageFuncTimer("%s:(%d, %d)", __func__, pixelmap_->GetWidth(), pixelmap_->GetHeight());
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
-        static ImageFwkExtManager imageFwkExtManager;
-        if (imageFwkExtManager.LoadImageFwkExtNativeSo() && imageFwkExtManager.doHardWareEncodeFunc_ != nullptr) {
-            int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
-            if (retCode == SUCCESS) {
-                return SUCCESS;
-            }
-            IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
-        } else {
-            IMAGE_LOGE("hardware encode failed because of load native so failed");
-        }
+        return DoHardWareEncode(skStream);
     }
     if (!SkEncodeImage(skStream, src, skFormat, opts_.quality)) {
         IMAGE_LOGE("Failed to encode image without exif data");
