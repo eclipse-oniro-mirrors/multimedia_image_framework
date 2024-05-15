@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "image_image_receiver_impl.h"
+#include "image_receiver_impl.h"
 
 #include "image_log.h"
 #include "securec.h"
