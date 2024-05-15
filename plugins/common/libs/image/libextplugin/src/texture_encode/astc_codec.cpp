@@ -422,29 +422,34 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
-    if (astcBuffer == nullptr) {
-        IMAGE_LOGE("astc TryTextureSuperCompress: astcBuffer is nullptr!");
+    if (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM) {
+        IMAGE_LOGD("astc sut enc only support 4x4!");
+        param.sutProfile = SutProfile::SKIP_SUT;
+        return true;
+    }
+    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
+    if (sutBuffer == nullptr) {
+        IMAGE_LOGE("astc sutBuffer malloc failed!");
         return false;
     }
-    uint8_t *dstMem = nullptr;
-    int32_t dstSize = 0;
-    switch (param.sutProfile) {
-        case SutProfile::EXTREME_SPEED:
-            break;
-        default:
-            IMAGE_LOGI("astc could not be supported for sutProfile%{public}d", param.sutProfile);
-            return false;
-    }
     if (!g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] SUT enc so dlopen failed or sutEncSoEncFunc_ is nullptr!");
+        IMAGE_LOGE("sut enc so dlopen failed or sutEncSoEncFunc_ is nullptr!");
+        free(sutBuffer);
         return false;
     }
     if (!g_sutEncSoManager.sutEncSoEncFunc_(astcBuffer,
-        param.astcBytes, dstMem, dstSize, static_cast<uint32_t>(param.sutProfile))) {
-        IMAGE_LOGE("astc g_sutEncSoEncFunc failed. notice: astc memory may be polluted!");
+        param.astcBytes, sutBuffer, param.sutBytes, static_cast<uint32_t>(param.sutProfile))) {
+        IMAGE_LOGE("astc g_sutEncSoEncFunc failed!");
+        free(sutBuffer);
         return false;
     }
-    param.astcBytes = dstSize;
+    if (memcpy_s(astcBuffer, param.astcBytes, sutBuffer, param.sutBytes) < 0) {
+        IMAGE_LOGE("sut sutbuffer is failed to be copied to astcBuffer!");
+        free(sutBuffer);
+        return false;
+    }
+    free(sutBuffer);
+    param.astcBytes = param.sutBytes;
     return true;
 }
 #endif
