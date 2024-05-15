@@ -236,6 +236,15 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/native/common/ndk:image_receiver"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/plugins/manager/include",
+              "header_files": [
+                "image/abs_image_encoder.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/plugins/common/libs/image/libextplugin:extplugin"
           }
         ],
         "test": [

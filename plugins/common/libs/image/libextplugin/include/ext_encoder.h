@@ -20,6 +20,7 @@
 
 #include "abs_image_encoder.h"
 #include "plugin_class_base.h"
+#include "include/core/SkStream.h"
 #include "ext_wstream.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkEncodedImageFormat.h"
@@ -39,6 +40,9 @@ public:
 
 private:
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
+    static bool IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::PixelMap* pixelMap);
+    uint32_t DoHardWareEncode(SkWStream* skStream);
+    uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t EncodeSdrImage(ExtWStream& outputStream);
     uint32_t EncodeDualVivid(ExtWStream& outputStream);

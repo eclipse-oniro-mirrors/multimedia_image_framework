@@ -116,8 +116,12 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       ]
 
-      sources += [ "src/image_dfx.cpp" ]
-      sources += [ "src/image_data_statistics.cpp" ]
+      sources += [
+        "src/image_data_statistics.cpp",
+        "src/image_dfx.cpp",
+        "src/image_func_timer.cpp",
+        "src/image_fwk_ext_manager.cpp",
+      ]
       external_deps += [
         "c_utils:utils",
         "graphic_2d:color_manager",
@@ -210,8 +214,12 @@ ohos_static_library("image_utils_static") {
     sources += [ "src/image_data_statistics.cpp" ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
-    sources += [ "src/image_dfx.cpp" ]
-    sources += [ "src/image_data_statistics.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+      "src/image_func_timer.cpp",
+      "src/image_fwk_ext_manager.cpp",
+    ]
     deps = [
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]

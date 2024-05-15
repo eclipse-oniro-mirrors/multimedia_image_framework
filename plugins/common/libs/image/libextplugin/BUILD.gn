@@ -95,6 +95,9 @@ config("mac_config") {
     ]
   }
 }
+config("ext_public_config") {
+  include_dirs = [ "${image_subsystem}/plugins/manager/include" ]
+}
 
 ohos_shared_library("textureEncoderCL") {
   if (!use_clang_android && !use_clang_ios) {
@@ -206,6 +209,7 @@ ohos_shared_library("extplugin") {
       "${third_party_root}/bounds_checking_function:libsec_static",
     ]
   } else {
+    public_configs = [ ":ext_public_config" ]
     defines = []
     deps = [
       ":exifhelper",

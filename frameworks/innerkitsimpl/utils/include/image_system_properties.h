@@ -25,6 +25,7 @@ public:
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();
     static bool GetHardWareDecodeEnabled();
+    static bool GetHardWareEncodeEnabled();
     static bool GetAstcHardWareEncodeEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
