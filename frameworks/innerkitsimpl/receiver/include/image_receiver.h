@@ -29,6 +29,7 @@
 #include "display_type.h"
 #include "image_receiver_context.h"
 #include "native_image.h"
+#include "surface_utils.h"
 
 namespace OHOS {
 namespace Media {
