@@ -31,6 +31,9 @@ static napi_value Export(napi_env env, napi_value exports)
 {
     IMAGE_LOGE("SendablePixelMapNapi call");
     SendablePixelMapNapi::Init(env, exports);
+    SendableImageNapi::Init(env, exports);
+    SendableImageReceiverNapi::Init(env, exports);
+    SendableImageSourceNapi::Init(env, exports);
     return exports;
 }
 
