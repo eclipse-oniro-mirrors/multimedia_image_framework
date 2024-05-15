@@ -279,6 +279,7 @@ const static std::map<std::string, uint32_t> ORIENTATION_INT_MAP = {
 };
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
+const static string IMAGE_GIFLOOPCOUNT_TYPE = "GIFLoopCount";
 const static int32_t ZERO = 0;
 
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
@@ -1428,6 +1429,26 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
+    if (key.empty()) {
+        return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    }
+    uint32_t ret = SUCCESS;
+    if (IMAGE_GIFLOOPCOUNT_TYPE.compare(key) == ZERO) {
+        IMAGE_LOGD("GetImagePropertyString special key: %{public}s", key.c_str());
+        (void)GetFrameCount(ret);
+        if (ret != SUCCESS || mainDecoder_ == nullptr) {
+            IMAGE_LOGE("[ImageSource]GetFrameCount get frame sum error.");
+            return ret;
+        } else {
+            ret = mainDecoder_->GetImagePropertyString(index, key, value);
+            if (ret != SUCCESS) {
+                IMAGE_LOGE("[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", ret);
+                return ret;
+            }
+        }
+        return ret;
+    }
+
     std::unique_lock<std::mutex> guard(decodingMutex_);
     return GetImagePropertyCommon(index, key, value);
 }
@@ -2824,6 +2845,27 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
     errorCode = SUCCESS;
 
     return disposalTypes;
+}
+
+int32_t ImageSource::GetLoopCount(uint32_t &errorCode)
+{
+    (void)GetFrameCount(errorCode);
+    if (errorCode != SUCCESS || mainDecoder_ == nullptr) {
+        IMAGE_LOGE("[ImageSource]GetLoopCount get frame sum error.");
+        return errorCode;
+    }
+
+    int32_t loopCount = 0;
+    const string IMAGE_LOOP_COUNT = "GIFLoopCount";
+    errorCode = mainDecoder_->GetImagePropertyInt(0, IMAGE_LOOP_COUNT, loopCount);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("[ImageSource]GetLoopCount get loop count issue. errorCode=%{public}u", errorCode);
+        return errorCode;
+    }
+
+    errorCode = SUCCESS;
+
+    return loopCount;
 }
 
 uint32_t ImageSource::GetFrameCount(uint32_t &errorCode)

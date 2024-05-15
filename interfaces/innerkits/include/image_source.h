@@ -216,6 +216,7 @@ public:
         uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDelayTime(uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDisposalType(uint32_t &errorCode);
+    NATIVEEXPORT int32_t GetLoopCount(uint32_t &errorCode);
     NATIVEEXPORT uint32_t GetFrameCount(uint32_t &errorCode);
 #ifdef IMAGE_PURGEABLE_PIXELMAP
     NATIVEEXPORT size_t GetSourceSize() const;

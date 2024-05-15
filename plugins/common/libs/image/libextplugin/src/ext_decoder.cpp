@@ -73,6 +73,9 @@ namespace {
     constexpr static float ONE_EIGHTH = 0.125;
     constexpr static uint64_t ICC_HEADER_SIZE = 132;
     constexpr static size_t SMALL_FILE_SIZE = 1000 * 1000 * 10;
+    constexpr static int32_t LOOP_COUNT_INFINITE = 0;
+    constexpr static int32_t SK_REPETITION_COUNT_INFINITE = -1;
+    constexpr static int32_t SK_REPETITION_COUNT_ERROR_VALUE = -2;
 }
 
 namespace OHOS {
@@ -92,6 +95,7 @@ const static string TAG_ORIENTATION_STRING = "Orientation";
 const static string TAG_ORIENTATION_INT = "OrientationInt";
 const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
+const static string IMAGE_LOOP_COUNT = "GIFLoopCount";
 const static std::string HW_MNOTE_TAG_HEADER = "HwMnote";
 const static std::string HW_MNOTE_CAPTURE_MODE = "HwMnoteCaptureMode";
 const static std::string HW_MNOTE_PHYSICAL_APERTURE = "HwMnotePhysicalAperture";
@@ -1393,6 +1397,24 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
     return SUCCESS;
 }
 
+static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
+{
+    if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF) {
+        IMAGE_LOGE("[GetLoopCount] Should not get loop count in %{public}d", codec->getEncodedFormat());
+        return ERR_MEDIA_INVALID_PARAM;
+    }
+    auto count = codec->getRepetitionCount();
+    if (count == LOOP_COUNT_INFINITE || count <= SK_REPETITION_COUNT_ERROR_VALUE) {
+        IMAGE_LOGE("[GetLoopCount] getRepetitionCount error");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    if (count == SK_REPETITION_COUNT_INFINITE) {
+        count = LOOP_COUNT_INFINITE;
+    }
+    value = static_cast<int>(count);
+    return SUCCESS;
+}
+
 uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
@@ -1405,6 +1427,9 @@ uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key,
     }
     if (IMAGE_DISPOSAL_TYPE.compare(key) == ZERO) {
         return GetDisposalType(codec_.get(), index, value);
+    }
+    if (IMAGE_LOOP_COUNT.compare(key) == ZERO) {
+        return GetLoopCount(codec_.get(), value);
     }
     // There can add some not need exif property
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
@@ -1444,6 +1469,11 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
         int disposalType = ZERO;
         res = GetDisposalType(codec_.get(), index, disposalType);
         value = std::to_string(disposalType);
+        return res;
+    } else if (IMAGE_LOOP_COUNT.compare(key) == ZERO) {
+        int loopCount = ZERO;
+        res = GetLoopCount(codec_.get(), loopCount);
+        value = std::to_string(loopCount);
         return res;
     }
     if (res == Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
