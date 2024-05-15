@@ -148,9 +148,9 @@ static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
+static const uint8_t NUM_24 = 24;
 static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
-static const uint32_t SUT_MAGIC_ID = 0x5CA1AB14;
 static const size_t ASTC_HEADER_SIZE = 16;
 static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
@@ -170,6 +170,8 @@ static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic
 
 using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
 using SuperDecompressTexture = bool (*)(const uint8_t *, size_t, uint8_t *, size_t &);
+using IsSut = bool (*)(const uint8_t *, size_t);
+using GetTextureInfoFromSut = bool (*)(const uint8_t *, size_t, uint32_t &, uint32_t &, uint32_t &);
 
 class SutDecSoManager {
 public:
@@ -178,6 +180,8 @@ public:
     bool LoadSutDecSo();
     GetSuperCompressAstcSize sutDecSoGetSizeFunc_;
     SuperDecompressTexture sutDecSoDecFunc_;
+    IsSut isSutFunc_;
+    GetTextureInfoFromSut getTextureInfoFunc_;
 private:
     bool sutDecSoOpened_;
     void *textureDecSoHandle_;
@@ -191,6 +195,8 @@ SutDecSoManager::SutDecSoManager()
     textureDecSoHandle_ = nullptr;
     sutDecSoGetSizeFunc_ = nullptr;
     sutDecSoDecFunc_ = nullptr;
+    isSutFunc_ = nullptr;
+    getTextureInfoFunc_ = nullptr;
 }
 
 SutDecSoManager::~SutDecSoManager()
@@ -237,6 +243,21 @@ bool SutDecSoManager::LoadSutDecSo()
             reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTexture"));
         if (sutDecSoDecFunc_ == nullptr) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture dlsym failed!");
+            dlclose(textureDecSoHandle_);
+            textureDecSoHandle_ = nullptr;
+            return false;
+        }
+        isSutFunc_ = reinterpret_cast<IsSut>(dlsym(textureDecSoHandle_, "IsSut"));
+        if (isSutFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc IsSut dlsym failed!");
+            dlclose(textureDecSoHandle_);
+            textureDecSoHandle_ = nullptr;
+            return false;
+        }
+        getTextureInfoFunc_ =
+            reinterpret_cast<GetTextureInfoFromSut>(dlsym(textureDecSoHandle_, "GetTextureInfoFromSut"));
+        if (getTextureInfoFunc_ == nullptr) {
+            IMAGE_LOGE("[ImageSource] astc GetTextureInfoFromSut dlsym failed!");
             dlclose(textureDecSoHandle_);
             textureDecSoHandle_ = nullptr;
             return false;
@@ -2473,9 +2494,22 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
         IMAGE_LOGE("[ImageSource]IsASTC fileData incorrect.");
         return false;
     }
-    unsigned int magicVal = static_cast<unsigned int>(fileData[0]) + (static_cast<unsigned int>(fileData[1]) << 8) +
-        (static_cast<unsigned int>(fileData[2]) << 16) + (static_cast<unsigned int>(fileData[3]) << 24);
-    return ((magicVal == ASTC_MAGIC_ID) || (magicVal == SUT_MAGIC_ID));
+    uint32_t magicVal = static_cast<uint32_t>(fileData[NUM_0]) +
+        (static_cast<uint32_t>(fileData[NUM_1]) << NUM_8) +
+        (static_cast<uint32_t>(fileData[NUM_2]) << NUM_16) +
+        (static_cast<uint32_t>(fileData[NUM_3]) << NUM_24);
+    if (magicVal == ASTC_MAGIC_ID) {
+        return true;
+    }
+#ifdef SUT_DECODE_ENABLE
+    if (!g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.isSutFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec so dlopen failed or isSutFunc_ is nullptr!");
+        return false;
+    }
+    return g_sutDecSoManager.isSutFunc_(fileData, fileSize);
+#else
+    return false;
+#endif
 }
 
 bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo)
@@ -2666,15 +2700,39 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
         IMAGE_LOGE("[ImageSource]GetASTCInfo fileData incorrect.");
         return false;
     }
-    astcInfo.size.width = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
-        (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + 1]) << NUM_8) +
-        (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + NUM_2]) << NUM_16);
-    astcInfo.size.height = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y]) +
-        (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + 1]) << NUM_8) +
-        (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + NUM_2]) << NUM_16);
-    astcInfo.blockFootprint.width = fileData[ASTC_HEADER_BLOCK_X];
-    astcInfo.blockFootprint.height = fileData[ASTC_HEADER_BLOCK_Y];
-    return true;
+    uint32_t magicVal = static_cast<uint32_t>(fileData[NUM_0]) +
+        (static_cast<uint32_t>(fileData[NUM_1]) << NUM_8) +
+        (static_cast<uint32_t>(fileData[NUM_2]) << NUM_16) +
+        (static_cast<uint32_t>(fileData[NUM_3]) << NUM_24);
+    if (magicVal == ASTC_MAGIC_ID) {
+        astcInfo.size.width = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
+            (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + 1]) << NUM_8) +
+            (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + NUM_2]) << NUM_16);
+        astcInfo.size.height = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y]) +
+            (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + 1]) << NUM_8) +
+            (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + NUM_2]) << NUM_16);
+        astcInfo.blockFootprint.width = fileData[ASTC_HEADER_BLOCK_X];
+        astcInfo.blockFootprint.height = fileData[ASTC_HEADER_BLOCK_Y];
+        return true;
+    }
+#ifdef SUT_DECODE_ENABLE
+    if (!g_sutDecSoManager.LoadSutDecSo() || g_sutDecSoManager.getTextureInfoFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec so dlopen failed or getTextureInfoFunc_ is nullptr!");
+        return false;
+    }
+    uint32_t blockXY;
+    uint32_t width;
+    uint32_t height;
+    if (g_sutDecSoManager.getTextureInfoFunc_(fileData, fileSize,
+        width, height, blockXY)) {
+        astcInfo.size.width = width;
+        astcInfo.size.height = height;
+        astcInfo.blockFootprint.width = blockXY;
+        astcInfo.blockFootprint.height = blockXY;
+        return true;
+    }
+#endif
+    return false;
 }
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)

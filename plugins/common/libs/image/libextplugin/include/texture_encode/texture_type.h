@@ -23,8 +23,8 @@
 namespace OHOS {
 namespace ImagePlugin {
 enum class SutProfile {
-    SKIP_SUT = 0,
-    EXTREME_SPEED
+    EXTREME_SPEED = 0,
+    SKIP_SUT = 255
 }; // the profile of superCompress for texture
 
 struct TextureEncodeOptions {
@@ -39,6 +39,7 @@ struct TextureEncodeOptions {
     bool enableQualityCheck;
     bool hardwareFlag;
     SutProfile sutProfile;
+    int32_t sutBytes;
 };
 
 struct AstcEncoder {
