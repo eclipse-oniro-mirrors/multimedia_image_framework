@@ -281,8 +281,6 @@ const static string IMAGE_DELAY_TIME = "DelayTime";
 const static string IMAGE_DISPOSAL_TYPE = "DisposalType";
 const static int32_t ZERO = 0;
 
-static void UpdatepPlImageInfo(DecodeContext context, bool isHdr, ImagePlugin::PlImageInfo &plInfo);
-
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 
@@ -716,11 +714,10 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         return nullptr;
     }
     bool isHdr = context.hdrType > Media::ImageHdrType::SDR;
-    auto res = ImageAiProcess(info.size, opts, isHdr, context);
+    auto res = ImageAiProcess(info.size, opts, isHdr, context, plInfo);
     if (res != SUCCESS) {
         IMAGE_LOGD("[ImageSource] ImageAiProcess fail, isHdr%{public}d, ret:%{public}u.", isHdr, res);
     }
-    UpdatepPlImageInfo(context, isHdr, plInfo);
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
@@ -3340,6 +3337,9 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
         hdrCtx.pixelsBuffer.bufferSize = output->GetSize();
         hdrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         hdrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
+        hdrCtx.pixelFormat = PlPixelFormat::RGBA_1010102;
+        hdrCtx.info.pixelFormat = PlPixelFormat::RGBA_1010102;
+        hdrCtx.allocatorType = AllocatorType::DMA_ALLOC;
     }
     return res;
 }
@@ -3486,7 +3486,26 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
     return res;
 }
 #endif
-uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr, DecodeContext &context)
+
+static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo)
+{
+    if (context.hdrType > Media::ImageHdrType::SDR) {
+        plInfo.colorSpace = context.colorSpace;
+        plInfo.pixelFormat = context.pixelFormat;
+    }
+
+    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
+        plInfo.size = context.outInfo.size;
+    }
+    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
+        context.yuvInfo.imageSize.width != 0) {
+        plInfo.yuvDataInfo = context.yuvInfo;
+        plInfo.size = context.yuvInfo.imageSize;
+    }
+}
+
+uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr, DecodeContext &context,
+    ImagePlugin::PlImageInfo &plInfo)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return ERR_MEDIA_INVALID_OPERATION;
@@ -3526,26 +3545,10 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         FreeContextBuffer(srcCtx.freeFunc, srcCtx.allocatorType, srcCtx.pixelsBuffer);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         CopyOutInfoOfContext(dstCtx, context);
+        UpdatePlImageInfo(dstCtx, plInfo);
     }
     return res;
 #endif
-}
-
-static void UpdatepPlImageInfo(DecodeContext context, bool isHdr, ImagePlugin::PlImageInfo &plInfo)
-{
-    if (isHdr) {
-        plInfo.colorSpace = context.colorSpace;
-        plInfo.pixelFormat = context.pixelFormat;
-    }
-
-    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
-        plInfo.size = context.outInfo.size;
-    }
-    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
-        context.yuvInfo.imageSize.width != 0) {
-        plInfo.yuvDataInfo = context.yuvInfo;
-        plInfo.size = context.yuvInfo.imageSize;
-    }
 }
 
 DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
