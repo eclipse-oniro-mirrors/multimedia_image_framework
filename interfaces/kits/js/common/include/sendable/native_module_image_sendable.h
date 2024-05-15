@@ -18,5 +18,8 @@
 
 #include "napi/native_node_api.h"
 #include "sendable_pixel_map_napi.h"
+#include "sendable_image_receiver_napi.h"
+#include "sendable_image_source_napi.h"
+#include "sendable_image_napi.h"
 
 #endif // INTERFACES_KITS_JS_COMMON_INCLUDE_NATIVE_MODULE_IMAGE_SENDABLE_H
