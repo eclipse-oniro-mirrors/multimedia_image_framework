@@ -16,6 +16,7 @@
 #ifndef INTERFACES_KITS_JS_COMMON_INCLUDE_SENDABLE_PIXEL_MAP_NAPI_H
 #define INTERFACES_KITS_JS_COMMON_INCLUDE_SENDABLE_PIXEL_MAP_NAPI_H
 
+#include <shared_mutex>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "pixel_map_napi.h"
@@ -123,6 +124,7 @@ private:
 
     void release();
     static thread_local napi_ref sConstructor_;
+    static std::shared_mutex mutex_;
     napi_env env_ = nullptr;
     std::shared_ptr<PixelMap> nativePixelMap_;
     int32_t lockCount = 0;

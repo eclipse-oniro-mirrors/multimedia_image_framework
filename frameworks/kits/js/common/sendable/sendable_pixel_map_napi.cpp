@@ -14,6 +14,7 @@
  */
 
 #include "sendable_pixel_map_napi.h"
+#include <mutex>
 #include "media_errors.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
@@ -54,6 +55,7 @@ static const std::int32_t NEW_INSTANCE_ARGC = 1;
 thread_local napi_ref SendablePixelMapNapi::sConstructor_ = nullptr;
 NAPI_MessageSequence* napi_messageSequence_sendable = nullptr;
 
+std::shared_mutex SendablePixelMapNapi::mutex_;
 static std::mutex pixelMapCrossThreadMutex_;
 struct PositionArea {
     void* pixels;
@@ -1100,6 +1102,7 @@ void SendablePixelMapNapi::UnmarshallingComplete(napi_env env, napi_status statu
 
 napi_value SendablePixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     if (SendablePixelMapNapi::GetConstructor() == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -1209,6 +1212,7 @@ napi_value SendablePixelMapNapi::CreateSendablPixelMapFromParcel(napi_env env, n
 
 napi_value SendablePixelMapNapi::GetIsEditable(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1239,6 +1243,7 @@ napi_value SendablePixelMapNapi::GetIsEditable(napi_env env, napi_callback_info 
 
 napi_value SendablePixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1267,6 +1272,7 @@ napi_value SendablePixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callbac
 
 napi_value SendablePixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::ReadPixelsToBuffer");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1325,6 +1331,7 @@ napi_value SendablePixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_
 
 napi_value SendablePixelMapNapi::ReadPixelsToBufferSync(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::ReadPixelsToBufferSync");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1372,6 +1379,7 @@ napi_value SendablePixelMapNapi::ReadPixelsToBufferSync(napi_env env, napi_callb
 
 napi_value SendablePixelMapNapi::ReadPixels(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1429,6 +1437,7 @@ napi_value SendablePixelMapNapi::ReadPixels(napi_env env, napi_callback_info inf
 
 napi_value SendablePixelMapNapi::ReadPixelsSync(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1471,6 +1480,7 @@ napi_value SendablePixelMapNapi::ReadPixelsSync(napi_env env, napi_callback_info
 
 napi_value SendablePixelMapNapi::WritePixels(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1526,6 +1536,7 @@ napi_value SendablePixelMapNapi::WritePixels(napi_env env, napi_callback_info in
 
 napi_value SendablePixelMapNapi::WritePixelsSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -1567,6 +1578,7 @@ napi_value SendablePixelMapNapi::WritePixelsSync(napi_env env, napi_callback_inf
 
 napi_value SendablePixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::WriteBufferToPixels");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1625,6 +1637,7 @@ napi_value SendablePixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback
 
 napi_value SendablePixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::WriteBufferToPixelsSync");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1729,6 +1742,7 @@ STATIC_COMPLETE_FUNC(GetImageInfo)
 }
 napi_value SendablePixelMapNapi::GetImageInfo(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     int32_t refCount = 1;
@@ -1772,6 +1786,7 @@ napi_value SendablePixelMapNapi::GetImageInfo(napi_env env, napi_callback_info i
 
 napi_value SendablePixelMapNapi::GetImageInfoSync(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -1804,6 +1819,7 @@ napi_value SendablePixelMapNapi::GetImageInfoSync(napi_env env, napi_callback_in
 
 napi_value SendablePixelMapNapi::GetBytesNumberPerRow(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::GetBytesNumberPerRow");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1841,6 +1857,7 @@ napi_value SendablePixelMapNapi::GetBytesNumberPerRow(napi_env env, napi_callbac
 
 napi_value SendablePixelMapNapi::GetPixelBytesNumber(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     ImageTrace imageTrace("SendablePixelMapNapi::GetPixelBytesNumber");
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
@@ -1878,6 +1895,7 @@ napi_value SendablePixelMapNapi::GetPixelBytesNumber(napi_env env, napi_callback
 
 napi_value SendablePixelMapNapi::IsSupportAlpha(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1915,6 +1933,7 @@ napi_value SendablePixelMapNapi::IsSupportAlpha(napi_env env, napi_callback_info
 
 napi_value SendablePixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -1971,6 +1990,7 @@ static void CreateAlphaPixelmapComplete(napi_env env, napi_status status, void *
 
 napi_value SendablePixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     int32_t refCount = 1;
@@ -2017,6 +2037,7 @@ napi_value SendablePixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback
 
 napi_value SendablePixelMapNapi::CreateAlphaPixelmapSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2054,6 +2075,7 @@ napi_value SendablePixelMapNapi::CreateAlphaPixelmapSync(napi_env env, napi_call
 
 napi_value SendablePixelMapNapi::GetDensity(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -2090,6 +2112,7 @@ napi_value SendablePixelMapNapi::GetDensity(napi_env env, napi_callback_info inf
 
 napi_value SendablePixelMapNapi::SetDensity(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -2130,6 +2153,7 @@ napi_value SendablePixelMapNapi::SetDensity(napi_env env, napi_callback_info inf
 
 napi_value SendablePixelMapNapi::Release(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
@@ -2227,6 +2251,7 @@ static void SetAlphaExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_2;
     napi_value argValue[NUM_2] = {0};
@@ -2279,6 +2304,7 @@ napi_value SendablePixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2342,6 +2368,7 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::Scale(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_3;
     napi_value argValue[NUM_3] = {0};
@@ -2396,6 +2423,7 @@ napi_value SendablePixelMapNapi::Scale(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2456,6 +2484,7 @@ static void TranslateExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::Translate(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_3;
     napi_value argValue[NUM_3] = {0};
@@ -2510,6 +2539,7 @@ napi_value SendablePixelMapNapi::Translate(napi_env env, napi_callback_info info
 
 napi_value SendablePixelMapNapi::TranslateSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2572,6 +2602,7 @@ static void RotateExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::Rotate(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_2;
     napi_value argValue[NUM_2] = {0};
@@ -2622,6 +2653,7 @@ napi_value SendablePixelMapNapi::Rotate(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::RotateSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2678,6 +2710,7 @@ static void FlipExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::Flip(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_3;
     napi_value argValue[NUM_3] = {0};
@@ -2732,6 +2765,7 @@ napi_value SendablePixelMapNapi::Flip(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::FlipSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2799,6 +2833,7 @@ static void CropExec(napi_env env, PixelMapAsyncContext* context)
 
 napi_value SendablePixelMapNapi::Crop(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_2;
     napi_value argValue[NUM_2] = {0};
@@ -2849,6 +2884,7 @@ napi_value SendablePixelMapNapi::Crop(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::CropSync(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     napi_status napiStatus;
@@ -2893,6 +2929,7 @@ napi_value SendablePixelMapNapi::CropSync(napi_env env, napi_callback_info info)
 
 napi_value SendablePixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)
 {
+    std::shared_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_0;
     IMAGE_LOGD("GetColorSpace IN");
@@ -2930,6 +2967,7 @@ napi_value SendablePixelMapNapi::GetColorSpace(napi_env env, napi_callback_info 
 
 napi_value SendablePixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_1;
     napi_value argValue[NUM_1] = {0};
@@ -2964,6 +3002,7 @@ napi_value SendablePixelMapNapi::SetColorSpace(napi_env env, napi_callback_info 
 
 napi_value SendablePixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_1;
     napi_value argValue[NUM_1] = {0};
@@ -3030,6 +3069,7 @@ static void ParseColorSpaceVal(napi_env env, napi_value val, PixelMapAsyncContex
 
 napi_value SendablePixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_info info)
 {
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     NapiValues nVal;
     nVal.argc = NUM_2;
     napi_value argValue[NUM_2] = {0};
