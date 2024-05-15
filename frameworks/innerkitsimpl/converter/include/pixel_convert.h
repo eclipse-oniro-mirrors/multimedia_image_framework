@@ -182,9 +182,6 @@ public:
     static std::unique_ptr<PixelConvert> Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo);
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
 
-    static int32_t PixelsConvert(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-        void *dstPixels, const ImageInfo &dstInfo);
-
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
 
