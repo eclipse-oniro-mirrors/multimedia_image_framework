@@ -588,7 +588,7 @@ static void CreatePixelMapComplete(napi_env env, napi_status status, void *data)
     auto context = static_cast<ImageSourceAsyncContext*>(data);
 
     if (context->status == SUCCESS) {
-        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+        result = SendablePixelMapNapi::CreateSendablePixelMap(env, context->rPixelMap);
     } else {
         napi_get_undefined(env, &result);
     }
