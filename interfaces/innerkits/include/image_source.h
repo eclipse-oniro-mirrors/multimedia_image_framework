@@ -312,7 +312,7 @@ private:
     uint32_t DoAiHdrProcessDl(const ImagePlugin::DecodeContext &srcCtx, ImagePlugin::DecodeContext &dstCtx,
                               bool needAisr, bool needHdr);
     uint32_t ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr,
-                            ImagePlugin::DecodeContext &context);
+                            ImagePlugin::DecodeContext &context, ImagePlugin::PlImageInfo &plInfo);
     ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
         ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
 
