@@ -383,7 +383,7 @@ napi_value SendableImageNapi::JSGetClipRect(napi_env env, napi_callback_info inf
         return BuildJsRegion(env, WIDTH, HEIGHT, NUM0, NUM0);
     }
     if (context == nullptr || context->image == nullptr) {
-        IMAGE_ERR("Image surface buffer is nullptr");
+        IMAGE_ERR("Image surfacebuffer is nullptr");
         return result;
     }
 
@@ -409,7 +409,7 @@ napi_value SendableImageNapi::JsGetSize(napi_env env, napi_callback_info info)
         return BuildJsSize(env, WIDTH, HEIGHT);
     }
     if (context == nullptr || context->image == nullptr) {
-        IMAGE_ERR("Image surface buffer is nullptr");
+        IMAGE_ERR("Image surfacebuffer is nullptr");
         return result;
     }
 
@@ -435,7 +435,7 @@ napi_value SendableImageNapi::JsGetFormat(napi_env env, napi_callback_info info)
         return result;
     }
     if (context == nullptr || context->image == nullptr) {
-        IMAGE_ERR("Image surface buffer is nullptr");
+        IMAGE_ERR("Image surfacebuffer is nullptr");
         return result;
     }
 

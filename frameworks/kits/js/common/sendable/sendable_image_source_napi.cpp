@@ -782,7 +782,7 @@ static napi_value DoInit(napi_env env, napi_value exports, struct ImageConstruct
         return nullptr;
     }
 
-    status = napi_set_named_property(env, global, info.className.c_str(), constructor);//remove
+    status = napi_set_named_property(env, global, info.className.c_str(), constructor);
     if (status != napi_ok) {
         IMAGE_LOGE("Init:set global named property fail");
         return nullptr;
@@ -796,7 +796,8 @@ static napi_value DoInit(napi_env env, napi_value exports, struct ImageConstruct
     return exports;
 }
 
-napi_value SendableImageSourceNapi::Init(napi_env env, napi_value exports) {
+napi_value SendableImageSourceNapi::Init(napi_env env, napi_value exports)
+{
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_FUNCTION("release", Release),

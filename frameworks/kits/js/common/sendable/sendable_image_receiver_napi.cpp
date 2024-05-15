@@ -927,7 +927,7 @@ static void Callback(uv_work_t *work, int status)
 }
 
 void SendableImageReceiverNapi::DoCallBack(shared_ptr<SendableImageReceiverAsyncContext> context,
-                                   string name, CompleteCallback callBack)
+                                           string name, CompleteCallback callBack)
 {
     IMAGE_FUNCTION_IN();
     if (context == nullptr) {
