@@ -1297,7 +1297,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
-        return SetExifMetadata(bufferPtr, bufferSize, addFlag);
+        return CreateExifMetadata(bufferPtr, bufferSize, addFlag);
     }
 
     uint32_t readSize = 0;
@@ -1326,11 +1326,12 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
         return ERR_IMAGE_SOURCE_DATA;
     }
-    uint32_t result = SetExifMetadata(tmpBuffer, bufferSize, addFlag);
+    uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
     delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
     return result;
 }
-uint32_t ImageSource::SetExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
+
+uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
 {
     auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
     if (metadataAccessor == nullptr) {
@@ -1495,6 +1496,24 @@ bool ImageSource::IsHdrImage()
     }
     sourceHdrType_ = mainDecoder_->CheckHdrType();
     return sourceHdrType_ > ImageHdrType::SDR;
+}
+
+NATIVEEXPORT std::shared_ptr<ExifMetadata> ImageSource::GetExifMetadata()
+{
+    if (exifMetadata_ != nullptr) {
+        return exifMetadata_;
+    }
+
+    if (SUCCESS != CreatExifMetadataByImageSource(false)) {
+        return nullptr;
+    }
+
+    return exifMetadata_;
+}
+
+NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr)
+{
+    exifMetadata_ = ptr;
 }
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
