@@ -3313,6 +3313,26 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 #endif
 }
 
+static bool CopyData(uint8_t* src, uint8_t* dst, const PlImageInfo& info, uint64_t srcStride, uint64_t dstStride)
+{
+    if (src == nullptr || dst == nullptr) {
+        return false;
+    }
+    uint32_t dstHeight = info.size.height;
+    uint8_t* srcRow = src;
+    uint8_t* dstRow = dst;
+    for (uint32_t i = 0; i < dstHeight; i++) {
+        errno_t err = memcpy_s(dstRow, dstStride, srcRow, srcStride);
+        if (err != EOK) {
+            IMAGE_LOGE("copy data failed");
+            return false;
+        }
+        srcRow += srcStride;
+        dstRow += dstStride;
+    }
+    return true;
+}
+
 static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -3344,8 +3364,10 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
-    memcpy_s(static_cast<void*>(sb->GetVirAddr()), context.pixelsBuffer.bufferSize, context.pixelsBuffer.buffer,
-        context.pixelsBuffer.bufferSize);
+    if (!CopyData(static_cast<uint8_t*>(context.pixelsBuffer.buffer), static_cast<uint8_t*>(sb->GetVirAddr()),
+        context.info, context.info.size.width * NUM_4, sb->GetStride())) {
+        return ERR_DMA_DATA_ABNORMAL;
+    }
     SetContext(dstCtx, sb, nativeBuffer);
     return SUCCESS;
 #endif
