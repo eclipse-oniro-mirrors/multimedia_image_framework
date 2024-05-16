@@ -23,7 +23,9 @@
 #include "ext_wstream.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkEncodedImageFormat.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
+#endif
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -37,15 +39,16 @@ public:
 
 private:
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t EncodeSdrImage(ExtWStream& outputStream);
     uint32_t EncodeDualVivid(ExtWStream& outputStream);
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);
-    uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
-    uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
+    sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
         bool needExif, SkWStream& outputStream);
-    sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
-
+#endif
+    uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
+    uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
     SkEncodedImageFormat encodeFormat_;
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;

@@ -30,13 +30,15 @@
 #include "string_ex.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
+#include "hdr_helper.h"
 #endif
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_impl/HeifDecoder.h"
 #include "hardware/heif_hw_decoder.h"
 #endif
 #include "color_utils.h"
-#include "hdr_helper.h"
+#include "heif_parser.h"
+#include "heif_format_agent.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -1579,6 +1581,9 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
 
 ImageHdrType ExtDecoder::CheckHdrType()
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return Media::ImageHdrType::SDR;
+#else
     if (!CheckCodec()) {
         return Media::ImageHdrType::UNKNOWN;
     }
@@ -1590,10 +1595,14 @@ ImageHdrType ExtDecoder::CheckHdrType()
     }
     hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     return hdrType_;
+#endif
 }
 
 uint32_t ExtDecoder::GetGainMapOffset()
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return OFFSET_0;
+#else
     if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kJPEG) {
         return 0;
     }
@@ -1601,15 +1610,20 @@ uint32_t ExtDecoder::GetGainMapOffset()
         hdrType_ = HdrHelper::CheckHdrType(codec_.get(), gainMapOffset_);
     }
     return gainMapOffset_;
+#endif
 }
 
 HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return {};
+#else
     HdrMetadata metadata = {};
     if (type > Media::ImageHdrType::SDR && HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
         return metadata;
     }
     return {};
+#endif
 }
 
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
