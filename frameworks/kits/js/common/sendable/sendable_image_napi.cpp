@@ -489,7 +489,7 @@ static void JSReleaseCallBack(napi_env env, napi_status status,
         napi_delete_reference(env, context->thisRef);
         if (thisVar != nullptr) {
             SendableImageNapi *tmp = nullptr;
-            auto status_ = napi_remove_wrap(env, thisVar, reinterpret_cast<void**>(&tmp));
+            auto status_ = napi_remove_wrap_sendable(env, thisVar, reinterpret_cast<void**>(&tmp));
             if (status_ != napi_ok) {
                 IMAGE_ERR("NAPI remove wrap failed status %{public}d", status_);
             }
