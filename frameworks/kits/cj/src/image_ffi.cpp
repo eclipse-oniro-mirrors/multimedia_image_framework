@@ -18,7 +18,7 @@
 #include <cstdint>
 #include "media_errors.h"
 #include "pixel_map_impl.h"
-#include "image_image_receiver_impl.h"
+#include "image_receiver_impl.h"
 #include "image_creator_impl.h"
 #include "image_packer_impl.h"
 #include "cj_color_manager.h"
@@ -381,7 +381,7 @@ extern "C"
             auto size = data.size();
             if (size <= 0) {
                 *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
-                IMAGE_LOGE("[ImageSource] CreatePixelMapList size: %{public}u", size);
+                IMAGE_LOGE("[ImageSource] CreatePixelMapList size error.");
                 return ret;
             }
             

@@ -12,25 +12,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef IMAGE_IMAGE_IMPL_H
-#define IMAGE_IMAGE_IMPL_H
+#ifndef IMAGE_RECEIVER_IMPL_H
+#define IMAGE_RECEIVER_IMPL_H
 
 #include "ffi_remote_data.h"
 #include "image_utils.h"
-#include "image_holder_manager.h"
-#include "native_image.h"
+#include "image_receiver.h"
+#include "image_receiver_manager.h"
+#include "image_impl.h"
 
 namespace OHOS {
 namespace Media {
-
-class ImageImpl : public OHOS::FFI::FFIData {
+class ImageReceiverImpl : public OHOS::FFI::FFIData {
 public:
-    explicit ImageImpl(std::shared_ptr<NativeImage> nativeImage);
-    std::shared_ptr<NativeImage> GetNativeImage();
-    int64_t GetClipRect(CRegion *ret);
+    explicit ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceiver);
+    static int64_t CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity);
     int64_t GetSize(CSize *ret);
+    int64_t GetCapacity(int32_t *ret);
     int64_t GetFormat(int32_t *ret);
-    int64_t GetComponent(int32_t componentType, CRetComponent *ret);
+    char *GetReceivingSurfaceId();
+    sptr<ImageImpl> ReadNextImage();
+    sptr<ImageImpl> ReadLatestImage();
     void Release();
     OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
@@ -40,14 +42,12 @@ private:
     static OHOS::FFI::RuntimeType *GetClassType()
     {
         static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageImpl");
+            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageReceiverImpl");
         return &runtimeType;
     }
-    static int64_t Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeImage);
-    std::shared_ptr<NativeImage> native_;
-    bool isTestImage_;
-    static ImageHolderManager<NativeImage> sNativeImageHolder_;
+    std::shared_ptr<ImageReceiver> imageReceiver_;
 };
+
 }
 }
 

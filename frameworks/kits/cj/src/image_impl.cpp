@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "image_image_impl.h"
+#include "image_impl.h"
 #include "image_log.h"
 namespace OHOS {
 namespace Media {
@@ -65,7 +65,7 @@ int64_t ImageImpl::GetClipRect(CRegion *ret)
     ret->x = 0;
     ret->y = 0;
     if (retCode != IMAGE_SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed %lld", retCode);
+        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
     }
     return retCode;
 }
@@ -83,7 +83,7 @@ int64_t ImageImpl::GetSize(CSize *ret)
     }
     int64_t retCode = native_->GetSize(ret->width, ret->height);
     if (retCode != IMAGE_SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed %lld", retCode);
+        IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
     }
     return retCode;
 }
@@ -100,7 +100,7 @@ int64_t ImageImpl::GetFormat(int32_t *ret)
     }
     int64_t retCode = native_->GetFormat(*ret);
     if (retCode != IMAGE_SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] GetFormat : Image native get format failed %lld", retCode);
+        IMAGE_LOGE("[ImageImpl] GetFormat : Image native get format failed.");
     }
     return retCode;
 }

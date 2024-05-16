@@ -72,8 +72,8 @@
           {
             "header":{
               "header_files":[
-                "image_image_receiver_impl.h",
-                "image_image_impl.h",
+                "image_receiver_impl.h",
+                "image_impl.h",
                 "image_creator_impl.h",
                 "image_ffi.h",
                 "image_packer_impl.h",
