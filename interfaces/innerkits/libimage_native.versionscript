@@ -33,6 +33,7 @@
     *BasicTransformer*;
     *IncrementalSourceStream*CreateSourceStream*;
     *NativeImage*;
+    *ExifMetadata*;
   local:
     *;
 };
