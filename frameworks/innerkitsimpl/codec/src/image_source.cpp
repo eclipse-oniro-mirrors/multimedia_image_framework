@@ -681,6 +681,23 @@ uint64_t ImageSource::GetNowTimeMicroSeconds()
     return std::chrono::duration_cast<std::chrono::microseconds>(now.time_since_epoch()).count();
 }
 
+static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo)
+{
+    if (context.hdrType > Media::ImageHdrType::SDR) {
+        plInfo.colorSpace = context.colorSpace;
+        plInfo.pixelFormat = context.pixelFormat;
+    }
+
+    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
+        plInfo.size = context.outInfo.size;
+    }
+    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
+        context.yuvInfo.imageSize.width != 0) {
+        plInfo.yuvDataInfo = context.yuvInfo;
+        plInfo.size = context.yuvInfo.imageSize;
+    }
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -718,7 +735,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     auto res = ImageAiProcess(info.size, opts, isHdr, context, plInfo);
     if (res != SUCCESS) {
         IMAGE_LOGD("[ImageSource] ImageAiProcess fail, isHdr%{public}d, ret:%{public}u.", isHdr, res);
+        if (opts_.resolutionQuality == ResolutionQuality::HIGH && (opts_.desiredSize.width != opts.desiredSize.width ||
+            opts_.desiredSize.height != opts.desiredSize.height)) {
+            opts_.desiredSize.width = opts.desiredSize.width;
+            opts_.desiredSize.height = opts.desiredSize.height;
+        }
     }
+    UpdatePlImageInfo(context, plInfo);
 
     auto pixelMap = CreatePixelMapByInfos(plInfo, context, errorCode);
     if (pixelMap == nullptr) {
@@ -3327,19 +3350,29 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
         context.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
         context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
         context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
     }
     return SUCCESS;
 #endif
 }
 
-static bool CopyData(uint8_t* src, uint8_t* dst, const PlImageInfo& info, uint64_t srcStride, uint64_t dstStride)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
 {
-    if (src == nullptr || dst == nullptr) {
+    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
         return false;
     }
-    uint32_t dstHeight = info.size.height;
-    uint8_t* srcRow = src;
-    uint8_t* dstRow = dst;
+    uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+    uint8_t* dstRow = static_cast<uint8_t*>(sb->GetVirAddr());
+    if (srcRow == nullptr || dstRow == nullptr) {
+        return false;
+    }
+    if (sb->GetStride() < 0) {
+        return false;
+    }
+    uint64_t dstStride = sb->GetStride();
+    uint64_t srcStride = plInfo.size.width * NUM_4;
+    uint32_t dstHeight = plInfo.size.height;
     for (uint32_t i = 0; i < dstHeight; i++) {
         errno_t err = memcpy_s(dstRow, dstStride, srcRow, srcStride);
         if (err != EOK) {
@@ -3352,7 +3385,44 @@ static bool CopyData(uint8_t* src, uint8_t* dst, const PlImageInfo& info, uint64
     return true;
 }
 
-static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx)
+static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& buffer, PlImageInfo plInfo)
+{
+    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::NV12 &&
+        context.info.pixelFormat != ImagePlugin::PlPixelFormat::NV21) {
+        return false;
+    }
+    uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+    uint8_t* dstRow = static_cast<uint8_t*>(buffer->GetVirAddr());
+    size_t dstSize = buffer->GetSize();
+    if (buffer->GetStride() < 0) {
+        return false;
+    }
+    PlYuvDataInfo yuvDataInfo = context.yuvInfo;
+    IMAGE_LOGD("[ImageSource] CopyYUVToSurfaceBuffer y_height = %{public}d, uv_height = %{public}d,"
+        "y_stride = %{public}d, uv_stride = %{public}d, dstSize = %{public}zu, dstStride = %{public}d",
+        yuvDataInfo.y_height, yuvDataInfo.uv_height, yuvDataInfo.y_stride, yuvDataInfo.uv_stride,
+        dstSize, buffer->GetStride());
+    for (uint32_t i = 0; i < yuvDataInfo.y_height; ++i) {
+        if (memcpy_s(dstRow, dstSize, srcRow, yuvDataInfo.y_stride) != EOK) {
+            return false;
+        }
+        dstRow += buffer->GetStride();
+        dstSize -= buffer->GetStride();
+        srcRow += yuvDataInfo.y_stride;
+    }
+    for (uint32_t i = 0; i < yuvDataInfo.uv_height; ++i) {
+        if (memcpy_s(dstRow, dstSize, srcRow, yuvDataInfo.uv_stride) != EOK) {
+            return false;
+        }
+        dstRow += buffer->GetStride();
+        dstSize -= buffer->GetStride();
+        srcRow += yuvDataInfo.uv_stride;
+    }
+    return true;
+}
+
+static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &context, DecodeContext &dstCtx,
+    ImagePlugin::PlImageInfo& plInfo)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("UnSupport dma mem alloc");
@@ -3361,12 +3431,20 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
     IMAGE_LOGD("[ImageSource]CopyContextIntoSurfaceBuffer requestConfig, sizeInfo.width:%{public}u,height:%{public}u.",
         context.info.size.width, context.info.size.height);
-
+    GraphicPixelFormat format = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV21) {
+        format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12) {
+        format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
+        IMAGE_LOGI("CopyContextIntoSurfaceBuffer pixelformat %{public}d is unsupport", context.pixelFormat);
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
     BufferRequestConfig requestConfig = {
         .width = context.info.size.width,
         .height = context.info.size.height,
         .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
-        .format = GRAPHIC_PIXEL_FMT_RGBA_8888, // PixelFormat
+        .format = format, // PixelFormat
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA,
         .timeout = 0,
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
@@ -3383,16 +3461,14 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
-    if (!CopyData(static_cast<uint8_t*>(context.pixelsBuffer.buffer), static_cast<uint8_t*>(sb->GetVirAddr()),
-        context.info, context.info.size.width * NUM_4, sb->GetStride())) {
-        return ERR_DMA_DATA_ABNORMAL;
+    if ((!CopyRGBAToSurfaceBuffer(context, sb, plInfo)) && (!CopyYUVToSurfaceBuffer(context, sb, plInfo))) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
     }
     SetContext(dstCtx, sb, nativeBuffer);
     return SUCCESS;
 #endif
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx,
                                CM_ColorSpaceType cmColorSpaceType)
 {
@@ -3429,7 +3505,7 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 
 static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
 {
-    uint32_t res = AllocSurfaceBuffer(aisrCtx, GRAPHIC_PIXEL_FMT_RGBA_8888);
+    uint32_t res = AllocSurfaceBuffer(aisrCtx, input->GetFormat());
     if (res != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);
         return res;
@@ -3499,6 +3575,7 @@ static void CopySrcInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.info.pixelFormat = srcCtx.info.pixelFormat;
     dstCtx.info.alphaType = srcCtx.info.alphaType;
     dstCtx.isAisr = srcCtx.isAisr;
+    dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
 }
 
 static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dstCtx)
@@ -3515,6 +3592,7 @@ static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.info.pixelFormat = srcCtx.info.pixelFormat;
     dstCtx.info.alphaType = srcCtx.info.alphaType;
     dstCtx.isAisr = srcCtx.isAisr;
+    dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
 }
 
 static uint32_t AiHdrProcess(const DecodeContext &aisrCtx, DecodeContext &hdrCtx, CM_ColorSpaceType cmColorSpaceType)
@@ -3570,23 +3648,6 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
 }
 #endif
 
-static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &plInfo)
-{
-    if (context.hdrType > Media::ImageHdrType::SDR) {
-        plInfo.colorSpace = context.colorSpace;
-        plInfo.pixelFormat = context.pixelFormat;
-    }
-
-    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
-        plInfo.size = context.outInfo.size;
-    }
-    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
-        context.yuvInfo.imageSize.width != 0) {
-        plInfo.yuvDataInfo = context.yuvInfo;
-        plInfo.size = context.yuvInfo.imageSize;
-    }
-}
-
 uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, bool isHdr, DecodeContext &context,
     ImagePlugin::PlImageInfo &plInfo)
 {
@@ -3607,7 +3668,7 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
     if (context.allocatorType == AllocatorType::DMA_ALLOC) {
         input = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
     } else {
-        auto res = CopyContextIntoSurfaceBuffer(imageSize, context, srcCtx);
+        auto res = CopyContextIntoSurfaceBuffer(imageSize, context, srcCtx, plInfo);
         if (res != SUCCESS) {
             IMAGE_LOGE("[ImageSource] ImageAiProcess HDR SurfaceBuffer Alloc failed, %{public}d", res);
             return res;
@@ -3628,7 +3689,6 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         FreeContextBuffer(srcCtx.freeFunc, srcCtx.allocatorType, srcCtx.pixelsBuffer);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         CopyOutInfoOfContext(dstCtx, context);
-        UpdatePlImageInfo(dstCtx, plInfo);
     }
     return res;
 #endif
