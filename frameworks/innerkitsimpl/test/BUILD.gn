@@ -155,6 +155,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
@@ -193,6 +194,7 @@ ohos_unittest("imagesourcetest") {
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
+    "$image_subsystem/plugins/common/libs/image/libextplugin:heifparser",
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
     "//third_party/zlib:libz",
