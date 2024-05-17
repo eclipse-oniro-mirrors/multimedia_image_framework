@@ -3188,6 +3188,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     return result;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
@@ -3234,6 +3235,16 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     return SUCCESS;
 #endif
 }
+
+static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
+{
+    context.allocatorType = AllocatorType::DMA_ALLOC;
+    context.freeFunc = nullptr;
+    context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
+    context.pixelsBuffer.bufferSize = sb->GetSize();
+    context.pixelsBuffer.context = fd;
+}
+#endif
 
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
                                   DecodeContext& hdrCtx, HdrMetadata metadata)
@@ -3304,15 +3315,6 @@ uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> me
 
     metadataAccessor->Set(exifMetadata_);
     return metadataAccessor->Write();
-}
-
-static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
-{
-    context.allocatorType = AllocatorType::DMA_ALLOC;
-    context.freeFunc = nullptr;
-    context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
-    context.pixelsBuffer.bufferSize = sb->GetSize();
-    context.pixelsBuffer.context = fd;
 }
 
 static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
