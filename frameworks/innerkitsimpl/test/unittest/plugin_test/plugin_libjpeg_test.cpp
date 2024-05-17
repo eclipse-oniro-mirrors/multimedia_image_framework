@@ -2144,7 +2144,7 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest002 start";
     auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Meida::PixelMap pixelmap;
+    Media::PixelMap pixelmap;
     Jpegencoder->pixelMaps_.push_back(&pixelmap);
     uint32_t ret = Jpegencoder->AddImage(pixelmap);
     ASSERT_EQ(ret, ERR_IMAGE_ADD_PIXEL_MAP_FAILED);
@@ -2160,7 +2160,7 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest003 start";
     auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Meida::PixelMap pixelmap;
+    Media::PixelMap pixelmap;
     pixelmap.imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
     pixelmap.data = nullptr;
     Jpegencoder->pixelMaps_.push_back(&pixelmap);
@@ -2178,7 +2178,7 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest004 start";
     auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Meida::PixelMap pixelmap;
+    Media::PixelMap pixelmap;
     Jpegencoder->pixelMaps_.clear();
     uint32_t ret = Jpegencoder->SetCommonConfig();
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
@@ -2210,7 +2210,7 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 start";
     auto Jpegencoder = std::make_shared<JpegEncoder>();
-    Meida::PixelMap pixelmap;
+    Media::PixelMap pixelmap;
     Jpegencoder->pixelMaps_.push_back(&pixelmap);
     uint8_t *uvPlane = nullptr;
     uint8_t *uPlane = nullptr;
