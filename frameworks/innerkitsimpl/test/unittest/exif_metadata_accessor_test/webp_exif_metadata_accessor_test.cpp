@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
 #define private public
+#include <gtest/gtest.h>
 #include <memory>
 #include <map>
 
@@ -1700,7 +1700,7 @@ HWTEST_F(WebpExifMetadataAccessorTest, UpdateExifMetadata001, TestSize.Level3)
     BufferMetadataStream bufStream;
     uint8_t dataBlob = 'a';
     uint32_t size = 0;
-    bool ret = imageAccessor.UpdateExifMetadata(bufStream, &dataBlob,size);
+    bool ret = imageAccessor.UpdateExifMetadata(bufStream, &dataBlob, size);
     ASSERT_EQ(ret, true);
 }
 
