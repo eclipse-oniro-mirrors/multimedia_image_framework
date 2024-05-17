@@ -1002,7 +1002,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
         }
     }
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    context.allocatorType = opts_.allocatorType;
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
 #endif
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
