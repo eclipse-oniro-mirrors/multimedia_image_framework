@@ -2162,7 +2162,7 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest003, TestSize.Level3)
     auto Jpegencoder = std::make_shared<JpegEncoder>();
     Media::PixelMap pixelmap;
     pixelmap.imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
-    pixelmap.data = nullptr;
+    pixelmap.data_ = nullptr;
     Jpegencoder->pixelMaps_.push_back(&pixelmap);
     uint32_t ret = Jpegencoder->FinalizeEncode();
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
