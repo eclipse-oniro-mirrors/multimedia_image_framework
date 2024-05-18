@@ -358,6 +358,7 @@ ohos_static_library("image_static") {
     ]
     deps = [
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
+      "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
       "//foundation/arkui/napi:ace_napi",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -373,6 +374,7 @@ ohos_static_library("image_static") {
     ]
     deps = [
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter_static",
+      "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
       "//commonlibrary/c_utils/base:utils",
       "//foundation/arkui/napi:ace_napi",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
