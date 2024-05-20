@@ -159,11 +159,13 @@ ohos_static_library("pixelconvertadapter_static") {
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/src/pixel_convert_adapter.cpp" ]
   public_configs = [ ":pixelconvertadapter_public_config" ]
 
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    cfi_vcall_icall_only = true
-    debug = false
+  if (!is_arkui_x) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
   }
 
   if (use_mingw_win) {
