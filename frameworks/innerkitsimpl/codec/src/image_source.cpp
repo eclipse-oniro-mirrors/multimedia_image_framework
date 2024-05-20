@@ -3361,7 +3361,8 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
 {
-    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
+    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888 &&
+        context.info.pixelFormat != ImagePlugin::PlPixelFormat::BGRA_8888) {
         return false;
     }
     uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3438,6 +3439,8 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
     } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12) {
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::BGRA_8888) {
+        format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888;
     } else if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
         IMAGE_LOGI("CopyContextIntoSurfaceBuffer pixelformat %{public}d is unsupport", context.pixelFormat);
         return ERR_IMAGE_DATA_UNSUPPORT;
@@ -3522,6 +3525,8 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
         aisrCtx.pixelsBuffer.bufferSize = output->GetSize();
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         aisrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
+        aisrCtx.yuvInfo.imageSize.width = aisrCtx.outInfo.size.width;
+        aisrCtx.yuvInfo.imageSize.height = aisrCtx.outInfo.size.height;
         aisrCtx.hdrType = Media::ImageHdrType::SDR;
         IMAGE_LOGD("[ImageSource]AiSrProcess DetailEnhancerImage %{public}d %{public}d %{public}d",
             aisrCtx.outInfo.size.width, aisrCtx.outInfo.size.height, aisrCtx.pixelsBuffer.bufferSize);
@@ -3595,6 +3600,8 @@ static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.info.alphaType = srcCtx.info.alphaType;
     dstCtx.isAisr = srcCtx.isAisr;
     dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
+    dstCtx.yuvInfo.imageSize.width = srcCtx.outInfo.size.width;
+    dstCtx.yuvInfo.imageSize.height = srcCtx.outInfo.size.height;
 }
 
 static uint32_t AiHdrProcess(const DecodeContext &aisrCtx, DecodeContext &hdrCtx, CM_ColorSpaceType cmColorSpaceType)
@@ -3622,7 +3629,9 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
             dstCtx.isAisr = true;
         }
     }
-    if (needHdr) {
+    if (needHdr && (dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12 ||
+        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV21 ||
+        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::RGBA_8888)) {
         sptr<SurfaceBuffer> inputHdr = input;
         DecodeContext hdrCtx;
         if (dstCtx.isAisr) {
