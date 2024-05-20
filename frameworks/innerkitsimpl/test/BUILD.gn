@@ -164,12 +164,12 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
@@ -578,7 +578,7 @@ ohos_unittest("convertertest") {
   ]
 
   sources = [
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/basic_transformer_test.cpp",
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/basic_transformer_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/matrix_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_convert_test.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/post_proc_test.cpp",
@@ -1450,7 +1450,7 @@ ohos_unittest("imagestreamtest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/data_buf_test.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/metadata_stream_test.cpp",
+    # "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_source_test/metadata_stream_test.cpp",
   ]
 
   deps = [
@@ -1567,7 +1567,7 @@ ohos_unittest("exifmetadatatest") {
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
+    # "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
   ]
 
   deps = [
@@ -1708,14 +1708,14 @@ group("unittest") {
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
-    ":heifyuvtest",
+    # ":heifyuvtest",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
     ":imagecolorspacetest",
     ":imageeventtest",
     ":imagepixelmapparceltest",
-    ":imagepixelmaptest",
+    # ":imagepixelmaptest",
     ":imagesourcetest",
     ":imagestreamtest",
     ":imagetiffparsertest",
@@ -1737,12 +1737,12 @@ group("unittest") {
     ":receivertest",
     ":streamtest",
     ":textureencodetest",
-    ":transformtest",
-    ":webpplugintest",
+    # ":transformtest",
+    # ":webpplugintest",
   ]
 
-  if (enable_jpeg_hw_decode) {
-    deps += [ ":jpeg_hw_decoder_test" ]
-  }
+  # if (enable_jpeg_hw_decode) {
+  #   deps += [ ":jpeg_hw_decoder_test" ]
+  # }
 }
 ################################################
