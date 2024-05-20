@@ -423,6 +423,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_GETTER("isEditable", GetIsEditable),
         DECLARE_NAPI_GETTER("isStrideAlignment", GetIsStrideAlignment),
+        DECLARE_NAPI_GETTER("ToSdr", ToSdr),
     };
 
     napi_property_descriptor static_prop[] = {
@@ -3028,6 +3029,108 @@ napi_value PixelMapNapi::CropSync(napi_env env, napi_callback_info info)
     }
     pixelMapNapi.release();
     return result;
+}
+
+STATIC_COMPLETE_FUNC(ToSdr)
+{
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("ToSdrComplete context is nullptr");
+        return;
+    }
+    napi_value result[NUM_2] = {0};
+    napi_value retVal;
+    napi_value callback = nullptr;
+    napi_get_undefined(env, &result[NUM_0]);
+    napi_get_undefined(env, &result[NUM_1]);
+
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(env, &scope);
+    if (scope == nullptr) {
+        IMAGE_LOGE("ToSdrComplete scope is nullptr");
+        return;
+    }
+    if (context->status == SUCCESS) {
+        napi_value value = nullptr;
+        napi_get_undefined(env, &value);
+        result[NUM_1] = value;
+    } else if (context->status == ERR_MEDIA_INVALID_OPERATION) {
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, "The pixelmap is not hdr.");
+    } else if (context->status == IMAGE_RESULT_GET_SURFAC_FAILED) {
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], ERR_MEDIA_INVALID_OPERATION, "Alloc new memory failed.");
+    } else if (context->status == ERR_RESOURCE_UNAVAILABLE) {
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], ERR_MEDIA_INVALID_OPERATION, "Pixelmap is not editable");
+    } else {
+        ImageNapiUtils::CreateErrorObj(env, result[NUM_0], ERR_MEDIA_INVALID_OPERATION, "Internal error.");
+    }
+    if (context->deferred) {
+        if (context->status == SUCCESS) {
+            napi_resolve_deferred(env, context->deferred, result[NUM_1]);
+        } else {
+            napi_reject_deferred(env, context->deferred, result[NUM_0]);
+        }
+    } else {
+        napi_get_reference_value(env, context->callbackRef, &callback);
+        napi_call_function(env, nullptr, callback, NUM_2, result, &retVal);
+        napi_delete_reference(env, context->callbackRef);
+    }
+    napi_delete_async_work(env, context->work);
+    napi_close_handle_scope(env, scope);
+    delete context;
+    context = nullptr;
+}
+
+static void ToSdrExec(napi_env env, PixelMapAsyncContext* context)
+{
+    if (context == nullptr) {
+        IMAGE_LOGE("ToSdrExec null context");
+        context->status = ERR_IMAGE_INIT_ABNORMAL;
+        return;
+    }
+    if (!context->nConstructor->GetPixelNapiEditable()) {
+        IMAGE_LOGE("ToSdrExec pixelmap is not editable");
+        context->status = ERR_RESOURCE_UNAVAILABLE;
+        return;
+    }
+    if (context->status == SUCCESS) {
+        if (context->rPixelMap != nullptr) {
+            context->status = context->rPixelMap->ToSdr();
+        } else {
+            IMAGE_LOGE("ToSdrExec null native ref");
+            context->status = ERR_IMAGE_INIT_ABNORMAL;
+        }
+    } else {
+        IMAGE_LOGI("ToSdrExec has failed. Do nothing");
+    }
+}
+
+napi_value PixelMapNapi::ToSdr(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    nVal.argc = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    nVal.argv = argValue;
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        IMAGE_LOGI("ToSdr prepare napi env failed");
+        return nVal.result;
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
+    napi_value _resource = nullptr;
+    napi_create_string_utf8(env, "ToSdrExec", NAPI_AUTO_LENGTH, &_resource);
+    nVal.status = napi_create_async_work(env, nullptr, _resource,
+        [](napi_env env, void* data) {
+            auto context = static_cast<PixelMapAsyncContext*>(data);
+            ToSdrExec(env, context);
+        }, ToSdrComplete, static_cast<void*>(nVal.context.get()), &(nVal.context->work));
+
+    if (nVal.status == napi_ok) {
+        nVal.status = napi_queue_async_work(env, nVal.context->work);
+        if (nVal.status == napi_ok) {
+            nVal.context.release();
+        }
+    }
+    return nVal.result;
 }
 
 napi_value PixelMapNapi::GetColorSpace(napi_env env, napi_callback_info info)

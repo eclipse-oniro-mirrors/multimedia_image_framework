@@ -123,6 +123,7 @@ private:
     static napi_value FlipSync(napi_env env, napi_callback_info info);
     static napi_value Crop(napi_env env, napi_callback_info info);
     static napi_value CropSync(napi_env env, napi_callback_info info);
+    static napi_value ToSdr(napi_env env, napi_callback_info info);
 
     static napi_value GetColorSpace(napi_env env, napi_callback_info info);
     static napi_value SetColorSpace(napi_env env, napi_callback_info info);

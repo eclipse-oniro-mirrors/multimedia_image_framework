@@ -402,6 +402,18 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ToSdr(OH_PixelmapNative *pixelmap)
+{
+    if (pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (pixelmap->GetInnerPixelmap()->ToSdr() != IMAGE_SUCCESS) {
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_Pixelmap_ImageInfo *imageInfo)
 {
     if (pixelmap == nullptr || imageInfo == nullptr) {

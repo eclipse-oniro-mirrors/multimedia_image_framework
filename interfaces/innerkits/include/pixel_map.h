@@ -290,6 +290,7 @@ public:
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
 
     NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT uint32_t ToSdr();
 
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
