@@ -37,6 +37,10 @@ if (use_clang_ios) {
 
     defines = image_decode_ios_defines
     sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+    ]
     include_dirs += [ "$image_subsystem/mock/native/include/log" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -98,6 +102,10 @@ if (use_clang_ios) {
     } else if (use_clang_android) {
       defines = image_decode_android_defines
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+      sources += [
+        "src/image_data_statistics.cpp",
+        "src/image_dfx.cpp",
+      ]
       include_dirs += [ "$image_subsystem/mock/native/include/log" ]
       deps = [
         "//commonlibrary/c_utils/base:utils",
@@ -138,11 +146,13 @@ if (use_clang_ios) {
 }
 
 ohos_static_library("image_utils_static") {
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    cfi_vcall_icall_only = true
-    debug = false
+  if (!is_arkui_x) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
   }
 
   include_dirs = [
@@ -150,6 +160,10 @@ ohos_static_library("image_utils_static") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
+
+  if (is_arkui_x) {
+    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+  }
 
   sources = [
     "src/color_utils.cpp",
@@ -189,6 +203,10 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+    ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
@@ -200,6 +218,10 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+    ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [ "src/image_dfx.cpp" ]
