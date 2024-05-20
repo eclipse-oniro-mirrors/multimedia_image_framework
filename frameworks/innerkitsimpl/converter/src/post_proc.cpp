@@ -197,7 +197,6 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     int32_t left = max(0, srcWidth - targetWidth) / HALF;
     int32_t top = max(0, srcHeight - targetHeight) / HALF;
     int32_t pixelBytes = pixelMap.GetPixelBytes();
-    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + (top * srcWidth + left) * pixelBytes;
     uint8_t *dstStartPixel = nullptr;
     uint8_t *srcStartPixel = nullptr;
     uint32_t targetRowBytes = targetWidth * pixelBytes;
@@ -208,6 +207,7 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     if (srcRowStride <= 0) {
         srcRowStride = srcRowBytes;
     }
+    uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + top * srcRowStride + left * pixelBytes;
     uint32_t copyRowBytes = std::min(srcWidth, targetWidth) * pixelBytes;
     for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
         dstStartPixel = dstPixels + scanLine * targetRowStride;
