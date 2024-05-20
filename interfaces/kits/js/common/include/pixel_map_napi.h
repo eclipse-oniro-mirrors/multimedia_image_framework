@@ -21,6 +21,7 @@
 #include "image_source.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include <shared_mutex>
 
 namespace OHOS {
 namespace Media {
@@ -150,17 +151,19 @@ public:
 
     std::shared_ptr<PixelMap>& operator[](const uint32_t &key)
     {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         return map_[key];
     }
 
     bool IsEmpty()
     {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         return map_.empty();
     }
 
     bool Insert(const uint32_t &key, const std::shared_ptr<PixelMap> &value)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         if (!IsEmpty() && (map_.find(key) != map_.end())) map_.erase(key);
         auto ret = map_.insert(std::pair<uint32_t, std::shared_ptr<PixelMap>>(key, value));
         return ret.second;
@@ -168,14 +171,14 @@ public:
 
     bool Find(const uint32_t &key)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::shared_lock<std::shared_mutex> lock(mutex_);
         auto it = map_.find(key);
         return it != map_.end() ? true : false;
     }
 
     void Erase(const uint32_t &key)
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         if (map_.find(key) != map_.end()) {
             map_.erase(key);
         }
@@ -184,7 +187,7 @@ public:
 
     void Clear()
     {
-        std::lock_guard<std::mutex> lock(mutex_);
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         map_.clear();
         return;
     }
@@ -194,7 +197,7 @@ private:
     PixelMapContainer(const PixelMapContainer&) = delete;
     PixelMapContainer(const PixelMapContainer&&) = delete;
     PixelMapContainer &operator=(const PixelMapContainer&) = delete;
-    std::mutex mutex_;
+    std::shared_mutex mutex_;
     std::map<uint32_t, std::shared_ptr<PixelMap>> map_;
 };
 } // namespace Media
