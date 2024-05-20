@@ -1348,8 +1348,9 @@ ohos_unittest("eglimagetest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
     "graphic_2d:color_manager",
-    "graphic_2d:libgl",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]

@@ -37,7 +37,8 @@ ohos_shared_library("egl_image") {
 
   external_deps = [
     "c_utils:utils",
-    "graphic_2d:libgl",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
