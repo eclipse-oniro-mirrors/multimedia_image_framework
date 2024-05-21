@@ -281,7 +281,7 @@ static std::unique_ptr<SendableImageAsyncContext> UnwrapContext(napi_env env, na
 
     std::unique_ptr<SendableImageAsyncContext> ctx = std::make_unique<SendableImageAsyncContext>();
     if (napi_unwrap_sendable(env, thisVar, reinterpret_cast<void**>(&ctx->napi)) != napi_ok || ctx->napi == nullptr) {
-        IMAGE_ERR("fail to unwrap constructor_");
+        IMAGE_ERR("fail to unwrap ets image object, image maybe released");
         return nullptr;
     }
     ctx->image = ctx->napi->GetNative();
@@ -511,7 +511,7 @@ napi_value SendableImageNapi::JsRelease(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &result);
     auto context = UnwrapContext(env, info, &argc, argv);
     if (context == nullptr) {
-        IMAGE_ERR("fail to unwrap constructor_");
+        IMAGE_ERR("fail to unwrap ets image object, image maybe released");
         return result;
     }
     if (argc == NUM1) {
@@ -713,7 +713,7 @@ napi_value SendableImageNapi::JsGetComponent(napi_env env, napi_callback_info in
     auto context = UnwrapContext(env, info, &argc, argv);
     if (context == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, static_cast<int32_t>(napi_invalid_arg),
-            "fail to unwrap constructor_ ");
+            "fail to unwrap ets image object, image maybe released");
     }
     context->isTestContext = context->napi->isTestImage_;
     if (!JsGetComponentArgs(env, argc, argv, context.get())) {
