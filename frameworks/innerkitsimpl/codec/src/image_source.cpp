@@ -3123,16 +3123,45 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
 }
 #endif
 
+bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
+{
+    if (streamBuffer == nullptr) {
+        IMAGE_LOGE("GetStreamData streamBuffer is nullptr");
+        return false;
+    }
+    uint32_t readSize = 0;
+    uint32_t savedPosition = sourceStream->Tell();
+    sourceStream->Seek(0);
+    bool result = sourceStream->Read(streamSize, streamBuffer, streamSize, readSize);
+    sourceStream->Seek(savedPosition);
+    if (!result || (readSize != streamSize)) {
+        IMAGE_LOGE("sourceStream read data failed");
+        return false;
+    }
+    return true;
+}
+
 bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
 {
     ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%{public}d, scale:%{public}d", hdrType, scale);
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
-    if (gainMapOffset == 0 || gainMapOffset > sourceStreamPtr_->GetStreamSize()) {
+    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0) {
         return false;
     }
-    uint8_t* gainMapData = sourceStreamPtr_->GetDataPtr() + gainMapOffset;
-    uint32_t dataSize = sourceStreamPtr_->GetStreamSize() - gainMapOffset;
-    std::unique_ptr<InputDataStream> gainMapStream = BufferSourceStream::CreateSourceStream(gainMapData, dataSize);
+    uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
+    if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
+        streamBuffer = new (std::nothrow) uint8_t[streamSize];
+        if (!GetStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
+            delete[] streamBuffer;
+            return false;
+        }
+    }
+    std::unique_ptr<InputDataStream> gainMapStream =
+        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
+    if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
+        delete[] streamBuffer;
+    }
     if (gainMapStream == nullptr) {
         IMAGE_LOGE("[ImageSource] create gainmap stream fail, gainmap offset is %{public}d", gainMapOffset);
         return false;
