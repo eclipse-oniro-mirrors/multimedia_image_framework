@@ -800,6 +800,8 @@ static void SetPixelMapColorSpace(ImagePlugin::DecodeContext context, unique_ptr
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context.hdrType > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
+        IMAGE_LOGD("hdr set pixelmap colorspace is %{public}d-%{public}d",
+            context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
         return ;
     }
     bool isSupportICCProfile = decoder->IsSupportICCProfile();
@@ -3213,7 +3215,9 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
         IMAGE_LOGI("[ImageSource] jpeg get gainmap failed");
         return false;
     }
-
+    IMAGE_LOGD("get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
+        "dynamic metadata size is %{public}zu",
+        metadata.extendMetaFlag, metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
     bool result = ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
     FreeContextBuffer(gainMapCtx.freeFunc, gainMapCtx.allocatorType, gainMapCtx.pixelsBuffer);
     return result;
@@ -3296,6 +3300,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
     CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
     CM_ColorSpaceType gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
+    IMAGE_LOGD("ComposeHdrImage color flag = %{public}d, gainmapChannelNum = %{public}d",
+        metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
     // hdr image
