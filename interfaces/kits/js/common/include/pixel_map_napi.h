@@ -157,7 +157,6 @@ public:
 
     bool IsEmpty()
     {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
         return map_.empty();
     }
 
