@@ -140,6 +140,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/include",
     "$image_subsystem/frameworks/innerkitsimpl/converter/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
@@ -173,8 +174,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
-
-    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
 
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
@@ -190,8 +190,7 @@ ohos_unittest("imagesourcetest") {
     sources += [
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
-
-      # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
+      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
   }
 

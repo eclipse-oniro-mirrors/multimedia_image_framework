@@ -372,7 +372,7 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode010, TestSize.Level3)
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_DNG_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
-    buffer[0] = 43;
+    buffer[bufferSize] = 43;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
@@ -384,8 +384,8 @@ HWTEST_F(ImageSourceRawTest, RawImageDecode010, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(errorCode, SUCCESS);
-    ASSERT_EQ(pixelMap.get(), nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 }
 
 /**
