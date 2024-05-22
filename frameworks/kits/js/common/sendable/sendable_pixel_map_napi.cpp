@@ -816,7 +816,7 @@ napi_value SendablePixelMapNapi::ConvertFromPixelMap(napi_env env, napi_callback
         return ImageNapiUtils::ThrowExceptionError(env,
             COMMON_ERR_INVALID_PARAMETER, "ConvertFromPixelMap Invalid parameter");
     }
-    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    PixelMapNapi* pixelMapNapi = nullptr;
     NapiUnwrap(env, argValue[0], reinterpret_cast<void**>(&pixelMapNapi), false);
     if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->GetPixelNapiInner()))) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -825,7 +825,6 @@ napi_value SendablePixelMapNapi::ConvertFromPixelMap(napi_env env, napi_callback
 
     std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->GetPixelNapiInner();
     pixelMapNapi->ReleasePixelNapiInner();
-    pixelMapNapi.release();
     result = CreateSendablePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -854,7 +853,7 @@ napi_value SendablePixelMapNapi::ConvertToPixelMap(napi_env env, napi_callback_i
         return ImageNapiUtils::ThrowExceptionError(env,
             COMMON_ERR_INVALID_PARAMETER, "ConvertToPixelMap Invalid parameter");
     }
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     NapiUnwrap(env, argValue[0], reinterpret_cast<void**>(&pixelMapNapi));
     if (!(IMG_NOT_NULL(pixelMapNapi) && IMG_NOT_NULL(pixelMapNapi->nativePixelMap_))) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -863,7 +862,6 @@ napi_value SendablePixelMapNapi::ConvertToPixelMap(napi_env env, napi_callback_i
 
     std::shared_ptr<PixelMap> nativePixelMap = pixelMapNapi->nativePixelMap_;
     pixelMapNapi->ReleasePixelNapiInner();
-    pixelMapNapi.release();
     result = PixelMapNapi::CreatePixelMap(env, nativePixelMap);
     if (!IMG_NOT_NULL(result)) {
         return ImageNapiUtils::ThrowExceptionError(env,
@@ -1225,7 +1223,7 @@ napi_value SendablePixelMapNapi::GetIsEditable(napi_env env, napi_callback_info 
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("GetIsEditable fail to unwrap context"));
@@ -1236,7 +1234,6 @@ napi_value SendablePixelMapNapi::GetIsEditable(napi_env env, napi_callback_info 
     bool isEditable = pixelMapNapi->nativePixelMap_->IsEditable();
 
     napi_get_boolean(env, isEditable, &result);
-    pixelMapNapi.release();
 
     return result;
 }
@@ -1256,7 +1253,7 @@ napi_value SendablePixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callbac
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi),
         result, IMAGE_LOGE("GetIsStrideAlignment fail to unwrap context"));
@@ -1266,7 +1263,6 @@ napi_value SendablePixelMapNapi::GetIsStrideAlignment(napi_env env, napi_callbac
         IMAGE_LOGE("SendablePixelMapNapi->nativePixelMap_ is nullptr"));
     bool isDMA = pixelMapNapi->nativePixelMap_->IsStrideAlignment();
     napi_get_boolean(env, isDMA, &result);
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1355,7 +1351,7 @@ napi_value SendablePixelMapNapi::ReadPixelsToBufferSync(napi_env env, napi_callb
         &colorsBuffer, &colorsBufferSize);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("ReadPixelsToBufferSync fail to unwrap context"));
@@ -1373,7 +1369,6 @@ napi_value SendablePixelMapNapi::ReadPixelsToBufferSync(napi_env env, napi_callb
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1457,7 +1452,7 @@ napi_value SendablePixelMapNapi::ReadPixelsSync(napi_env env, napi_callback_info
     IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &area),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("ReadPixelsSync fail to unwrap context"));
@@ -1471,7 +1466,6 @@ napi_value SendablePixelMapNapi::ReadPixelsSync(napi_env env, napi_callback_info
 
     auto nativeStatus = pixelMapNapi->nativePixelMap_->ReadPixels(
         area.size, area.offset, area.stride, area.region, static_cast<uint8_t*>(area.pixels));
-    pixelMapNapi.release();
 
     IMG_NAPI_CHECK_RET_D(nativeStatus == SUCCESS,
         nullptr, IMAGE_LOGE("fail to read pixels"));
@@ -1555,7 +1549,7 @@ napi_value SendablePixelMapNapi::WritePixelsSync(napi_env env, napi_callback_inf
     IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &area),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("WritePixelsSync fail to unwrap context"));
@@ -1572,7 +1566,6 @@ napi_value SendablePixelMapNapi::WritePixelsSync(napi_env env, napi_callback_inf
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1661,7 +1654,7 @@ napi_value SendablePixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_call
         &colorsBuffer, &colorsBufferSize);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("WriteBufferToPixelsSync fail to unwrap context"));
@@ -1679,7 +1672,6 @@ napi_value SendablePixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_call
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1797,7 +1789,7 @@ napi_value SendablePixelMapNapi::GetImageInfoSync(napi_env env, napi_callback_in
     IMG_JS_ARGS(env, info, napiStatus, argCount, nullptr, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("GetImageInfoSync fail to unwrap context"));
@@ -1813,7 +1805,6 @@ napi_value SendablePixelMapNapi::GetImageInfoSync(napi_env env, napi_callback_in
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1833,7 +1824,7 @@ napi_value SendablePixelMapNapi::GetBytesNumberPerRow(napi_env env, napi_callbac
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("fail to unwrap context"));
@@ -1851,7 +1842,6 @@ napi_value SendablePixelMapNapi::GetBytesNumberPerRow(napi_env env, napi_callbac
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1871,7 +1861,7 @@ napi_value SendablePixelMapNapi::GetPixelBytesNumber(napi_env env, napi_callback
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("GetPixelBytesNumber fail to unwrap context"));
@@ -1889,7 +1879,6 @@ napi_value SendablePixelMapNapi::GetPixelBytesNumber(napi_env env, napi_callback
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1908,7 +1897,7 @@ napi_value SendablePixelMapNapi::IsSupportAlpha(napi_env env, napi_callback_info
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("IsSupportAlpha fail to unwrap context"));
@@ -1927,7 +1916,6 @@ napi_value SendablePixelMapNapi::IsSupportAlpha(napi_env env, napi_callback_info
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -1951,7 +1939,7 @@ napi_value SendablePixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info i
     NAPI_ASSERT(env, ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_boolean, "Invalid input type");
     NAPI_ASSERT(env, napi_get_value_bool(env, argValue[NUM_0], &isAlphaAble) == napi_ok, "Parse input error");
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("SetAlphaAble fail to unwrap context"));
@@ -1969,7 +1957,6 @@ napi_value SendablePixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info i
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2052,7 +2039,7 @@ napi_value SendablePixelMapNapi::CreateAlphaPixelmapSync(napi_env env, napi_call
         "CreateAlphaPixelmapSync failed"),
         IMAGE_LOGE("CreateAlphaPixelmapSync failed, invalid parameter"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("CreateAlphaPixelmapSync fail to unwrap context"));
@@ -2069,7 +2056,6 @@ napi_value SendablePixelMapNapi::CreateAlphaPixelmapSync(napi_env env, napi_call
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2088,7 +2074,7 @@ napi_value SendablePixelMapNapi::GetDensity(napi_env env, napi_callback_info inf
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to napi_get_cb_info"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("GetDensity fail to unwrap context"));
@@ -2106,7 +2092,6 @@ napi_value SendablePixelMapNapi::GetDensity(napi_env env, napi_callback_info inf
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2131,7 +2116,7 @@ napi_value SendablePixelMapNapi::SetDensity(napi_env env, napi_callback_info inf
         "Density input mismatch");
     NAPI_ASSERT(env, napi_get_value_uint32(env, argValue[NUM_0], &density) == napi_ok, "Could not parse density");
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("SetDensity fail to unwrap context"));
@@ -2147,7 +2132,6 @@ napi_value SendablePixelMapNapi::SetDensity(napi_env env, napi_callback_info inf
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2325,7 +2309,7 @@ napi_value SendablePixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info i
 
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("SetAlphaSync fail to unwrap context"));
@@ -2343,7 +2327,6 @@ napi_value SendablePixelMapNapi::SetAlphaSync(napi_env env, napi_callback_info i
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2445,7 +2428,7 @@ napi_value SendablePixelMapNapi::ScaleSync(napi_env env, napi_callback_info info
         result, IMAGE_LOGE("Arg 0 type mismatch"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &yArg)),
         result, IMAGE_LOGE("Arg 1 type mismatch"));
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("ScaleSync fail to unwrap context"));
@@ -2459,7 +2442,6 @@ napi_value SendablePixelMapNapi::ScaleSync(napi_env env, napi_callback_info info
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2563,7 +2545,7 @@ napi_value SendablePixelMapNapi::TranslateSync(napi_env env, napi_callback_info 
         return result;
     }
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("TranslateSync fail to unwrap context"));
@@ -2577,7 +2559,6 @@ napi_value SendablePixelMapNapi::TranslateSync(napi_env env, napi_callback_info 
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2672,7 +2653,7 @@ napi_value SendablePixelMapNapi::RotateSync(napi_env env, napi_callback_info inf
     napiStatus = napi_get_value_double(env, argValue[NUM_0], &angle);
     IMG_NAPI_CHECK_RET_D(napiStatus == napi_ok, result, IMAGE_LOGE("get arraybuffer info failed"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result,
         IMAGE_LOGE("RotateSync fail to unwrap context"));
@@ -2686,7 +2667,6 @@ napi_value SendablePixelMapNapi::RotateSync(napi_env env, napi_callback_info inf
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 static void FlipExec(napi_env env, PixelMapAsyncContext* context)
@@ -2795,7 +2775,7 @@ napi_value SendablePixelMapNapi::FlipSync(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(status == SUCCESS, result, IMAGE_LOGE("FlipSync failed, invalid parameter"));
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("FlipSync fail to unwrap context"));
@@ -2809,7 +2789,6 @@ napi_value SendablePixelMapNapi::FlipSync(napi_env env, napi_callback_info info)
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
@@ -2906,7 +2885,7 @@ napi_value SendablePixelMapNapi::CropSync(napi_env env, napi_callback_info info)
         return result;
     }
 
-    std::unique_ptr<SendablePixelMapNapi> pixelMapNapi = nullptr;
+    SendablePixelMapNapi* pixelMapNapi = nullptr;
     status = NapiUnwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pixelMapNapi), result,
         IMAGE_LOGE("CropSync fail to unwrap context"));
@@ -2923,7 +2902,6 @@ napi_value SendablePixelMapNapi::CropSync(napi_env env, napi_callback_info info)
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
