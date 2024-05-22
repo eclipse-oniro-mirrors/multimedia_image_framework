@@ -2656,37 +2656,26 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     std::unique_ptr<SourceStream> &sourceStreamPtr)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
-    int fd = AshmemCreate("CreatePixelMapForASTC Data", astcSize);
-    if (fd < 0) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemCreate fd < 0.");
+    IMAGE_LOGE("yzp ReadFileAndResoveAstc CreateMemory newnewnew");
+    Size desiredSize = {pixelAstc->GetWidth(), pixelAstc->GetHeight()};
+    MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
+    AllocatorType allocatorType = pixelAstc->GetWidth() >= 512 && pixelAstc->GetHeight() >= 512 ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("ReadFileAndResoveAstc CreateMemory failed");
         return false;
     }
-    int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    if (result < 0) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC AshmemSetPort error.");
-        ::close(fd);
-        return false;
-    }
-    void *ptr = ::mmap(nullptr, astcSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    if (ptr == MAP_FAILED || ptr == nullptr) {
-        IMAGE_LOGE("[ImageSource]CreatePixelMapForASTC data is nullptr.");
-        ::close(fd);
-        return false;
-    }
-    auto data = static_cast<uint8_t *>(ptr);
-    void *fdPtr = new int32_t();
-    *static_cast<int32_t *>(fdPtr) = fd;
-    pixelAstc->SetPixelsAddr(data, fdPtr, astcSize, Media::AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     bool successMemCpyOrDec = true;
 #ifdef SUT_DECODE_ENABLE
     if (fileSize < astcSize) {
-        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize, data, astcSize) != true) {
+        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize, static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
             successMemCpyOrDec = false;
         }
     } else {
 #endif
-        if (memcpy_s(data, fileSize, sourceStreamPtr->GetDataPtr(), fileSize) != 0) {
+        if (memcpy_s(dstMemory->data.data, fileSize, sourceStreamPtr->GetDataPtr(), fileSize) != 0) {
             IMAGE_LOGE("[ImageSource] astc memcpy_s failed!");
             successMemCpyOrDec = false;
         }
@@ -2694,10 +2683,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     }
 #endif
     if (!successMemCpyOrDec) {
-        int32_t *fdPtrInt = static_cast<int32_t *>(fdPtr);
-        delete[] fdPtrInt;
-        munmap(ptr, astcSize);
-        ::close(fd);
+        dstMemory->Release();
         return false;
     }
 #endif

@@ -145,6 +145,20 @@ uint32_t SharedMemory::Release()
 #endif
 }
 
+GraphicPixelFormat GetRequestBufferFormatWithPixelFormat(const PixelFormat format)
+{
+    switch (format) {
+        case PixelFormat::RGBA_1010102:
+            return GRAPHIC_PIXEL_FMT_RGBA_1010102;
+        case PixelFormat::ASTC_4x4:
+        case PixelFormat::ASTC_6x6:
+        case PixelFormat::ASTC_8x8:
+            return GRAPHIC_PIXEL_FMT_BLOB;
+        default:
+            return GRAPHIC_PIXEL_FMT_RGBA_8888;
+    }
+}
+
 uint32_t DmaMemory::Create()
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -152,8 +166,7 @@ uint32_t DmaMemory::Create()
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-    GraphicPixelFormat format = data.format == PixelFormat::RGBA_1010102 ?
-            GRAPHIC_PIXEL_FMT_RGBA_1010102 : GRAPHIC_PIXEL_FMT_RGBA_8888;
+    GraphicPixelFormat format = GetRequestBufferFormatWithPixelFormat(data.format);
     BufferRequestConfig requestConfig = {
         .width = data.desiredSize.width,
         .height = data.desiredSize.height,
@@ -161,8 +174,6 @@ uint32_t DmaMemory::Create()
         .format = format, // PixelFormat
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
-        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
-        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
