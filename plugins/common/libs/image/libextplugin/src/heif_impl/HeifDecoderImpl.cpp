@@ -78,8 +78,8 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
         }
         const OH_NativeBuffer_Plane &planeY = param.planesInfo->planes[0];
         const OH_NativeBuffer_Plane &planeUV = param.planesInfo->planes[param.format == AV_PIX_FMT_NV21 ? 2 : 1];
-        IMAGE_LOGI("planeY offset: %{public}ld, columnStride: %{public}d, rowStride: %{public}d,"
-                   " planeUV offset: %{public}ld, columnStride: %{public}d, rowStride: %{public}d",
+        IMAGE_LOGI("planeY offset: %{public}llu, columnStride: %{public}u, rowStride: %{public}u,"
+                   " planeUV offset: %{public}llu, columnStride: %{public}u, rowStride: %{public}u",
                    planeY.offset, planeY.columnStride, planeY.rowStride,
                    planeUV.offset, planeUV.columnStride, planeUV.rowStride);
         frame->data[0] = param.data + planeY.offset;
