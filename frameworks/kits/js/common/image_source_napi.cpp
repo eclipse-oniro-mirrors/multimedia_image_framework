@@ -778,9 +778,11 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
         &encodedFormatValue);
     napi_set_named_property(env, result, "mimeType", encodedFormatValue);
 
-    napi_value isHdrValue = nullptr;
-    napi_get_boolean(env, rImageSource->IsHdrImage(), &isHdrValue);
-    napi_set_named_property(env, result, "isHdr", isHdrValue);
+    if (rImageSource != nullptr) {
+        napi_value isHdrValue = nullptr;
+        napi_get_boolean(env, rImageSource->IsHdrImage(), &isHdrValue);
+        napi_set_named_property(env, result, "isHdr", isHdrValue);
+    }
     return result;
 }
 
@@ -1345,7 +1347,7 @@ napi_value ImageSourceNapi::GetImageInfoSync(napi_env env, napi_callback_info in
         ImageInfo imageinfo;
         ret = imageSourceNapi->nativeImgSrc->GetImageInfo(index, imageinfo);
         if (ret == SUCCESS) {
-            result = GetImageInfoNapiValue(env, &imageinfo, nullptr);
+            result = GetImageInfoNapiValue(env, &imageinfo, imageSourceNapi->nativeImgSrc.get());
         }
     } else {
         IMAGE_LOGE("native imageSourceNapi is nullptr!");
