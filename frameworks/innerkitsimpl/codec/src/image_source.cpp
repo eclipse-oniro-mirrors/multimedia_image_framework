@@ -40,6 +40,7 @@
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
 #include "media_errors.h"
+#include "memory_manager.h"
 #include "metadata_accessor.h"
 #include "metadata_accessor_factory.h"
 #include "pixel_astc.h"
