@@ -21,6 +21,7 @@ import("$image_subsystem/plugins/cross/image_native_ios.gni")
 config("image_external_config") {
   include_dirs = [
     "include",
+    "include/mdkKits",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
