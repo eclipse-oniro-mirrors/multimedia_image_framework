@@ -616,9 +616,9 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
         return value;
     }
     auto pixelNapi = reinterpret_cast<PixelMapNapi*>(value);
+    pixelNapi->setPixelNapiEditable(false);
     AgainstTransferGC *data = new AgainstTransferGC();
     data->pixelMap = pixelNapi->GetPixelNapiInner();
-    pixelNapi->ReleasePixelNapiInner();
     return reinterpret_cast<void*>(data);
 }
 
