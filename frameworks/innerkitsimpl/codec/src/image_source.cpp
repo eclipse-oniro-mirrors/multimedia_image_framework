@@ -2659,17 +2659,20 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     IMAGE_LOGE("yzp ReadFileAndResoveAstc CreateMemory newnewnew");
     Size desiredSize = {pixelAstc->GetWidth(), pixelAstc->GetHeight()};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
-    AllocatorType allocatorType = pixelAstc->GetWidth() >= 512 && pixelAstc->GetHeight() >= 512 ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    AllocatorType allocatorType = pixelAstc->GetWidth() >= 512 && pixelAstc->GetHeight() >= 512 ?
+        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("ReadFileAndResoveAstc CreateMemory failed");
         return false;
     }
-    pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
+    pixelAstc->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
     bool successMemCpyOrDec = true;
 #ifdef SUT_DECODE_ENABLE
     if (fileSize < astcSize) {
-        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize, static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
+        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize,
+            static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
             successMemCpyOrDec = false;
         }
