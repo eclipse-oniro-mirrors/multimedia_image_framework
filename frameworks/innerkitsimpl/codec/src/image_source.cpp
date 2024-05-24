@@ -2653,7 +2653,6 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     std::unique_ptr<SourceStream> &sourceStreamPtr)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
-    IMAGE_LOGE("yzp ReadFileAndResoveAstc CreateMemory newnewnew");
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
     ImageInfo pixelAstcInfo;
@@ -2689,7 +2688,6 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
         return false;
     }
 #endif
-    IMAGE_LOGE("yzp ReadFileAndResoveAstc CreateMemory success");
     return true;
 }
 
