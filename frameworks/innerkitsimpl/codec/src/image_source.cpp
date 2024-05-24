@@ -152,12 +152,12 @@ static const uint8_t NUM_16 = 16;
 static const uint8_t NUM_24 = 24;
 static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
+static const size_t ASTC_SIZE = 512 * 512;
 static const size_t ASTC_HEADER_SIZE = 16;
 static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
-static const size_t ASTC_SIZE = 512 * 512;
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
