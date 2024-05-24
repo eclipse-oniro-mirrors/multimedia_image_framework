@@ -150,13 +150,14 @@ static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
 static const uint8_t NUM_24 = 24;
-static const int DMA_SIZE = 512;
+static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const size_t ASTC_HEADER_SIZE = 16;
 static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
+static const size_t ASTC_SIZE = 512 * 512;
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
@@ -619,7 +620,16 @@ bool IsSupportFormat(const PixelFormat &format)
 
 bool IsSupportSize(const Size &size)
 {
-    return size.width >= DMA_SIZE && size.height >= DMA_SIZE;
+    // Check for overflow risk
+    if (size.width > 0 && size.height > INT_MAX / size.width) {
+        return false;
+    }
+    return size.width * size.height >= DMA_SIZE;
+}
+
+bool IsSupportAstcSize(const Size &size)
+{
+    return size.width * size.height >= ASTC_SIZE;
 }
 
 bool IsWidthAligned(const int32_t &width)
@@ -2657,7 +2667,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
-    AllocatorType allocatorType = IsSupportSize(pixelAstcInfo.size) ?
+    AllocatorType allocatorType = IsSupportAstcSize(pixelAstcInfo.size) ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
