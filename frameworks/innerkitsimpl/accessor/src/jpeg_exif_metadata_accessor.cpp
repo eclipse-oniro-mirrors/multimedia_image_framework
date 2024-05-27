@@ -284,7 +284,7 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
     ssize_t writeHeaderLength = MARKER_LENGTH_SIZE;
     ssize_t exifHeaderLength = EXIF_ID_LENGTH;
 
-    if (memcmp(static_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
+    if (memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;
         std::copy_n(EXIF_ID, EXIF_ID_SIZE, tmpBuf.data() + MARKER_LENGTH_SIZE);
