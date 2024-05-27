@@ -101,7 +101,7 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
 
             size_t oldSize = dest->size();
             dest->resize(static_cast<size_t>(oldSize + extent.length));
-            stream->Read((char *) dest->data() + oldSize, static_cast<size_t>(extent.length));
+            stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
             if (!idat) {
                 return heif_error_no_idat;
@@ -381,7 +381,7 @@ heif_error HeifIdatBox::ReadData(const std::shared_ptr<HeifInputStream> &stream,
         outData.resize(static_cast<size_t>(currSize + length));
         uint8_t *data = &outData[currSize];
 
-        stream->Read((char *) data, static_cast<size_t>(length));
+        stream->Read(reinterpret_cast<char*>(data), static_cast<size_t>(length));
     }
 
     return heif_error_ok;
