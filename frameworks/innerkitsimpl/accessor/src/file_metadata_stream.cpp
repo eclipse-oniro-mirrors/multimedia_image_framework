@@ -242,9 +242,7 @@ void FileMetadataStream::Close()
 
     // Close the file
     int tmpFD = dupFD_;
-    if (dupFD_ != -1) {
-        dupFD_ = -1;
-    }
+    dupFD_ = -1;
 
     // Reset all member variables
     if (initPath_ == INIT_FROM_FD) {
@@ -342,7 +340,7 @@ byte *FileMetadataStream::GetAddr(bool isWriteable)
     // Create a memory map
     mappedMemory_ =
         ::mmap(nullptr, GetSize(), isWriteable ? (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, fileDescriptor, 0);
-    if (mappedMemory_ == (void *)MAP_FAILED) {
+    if (mappedMemory_ == static_cast<void *>(MAP_FAILED)) {
         HandleFileError("Create memory mapping", filePath_, fileDescriptor, -1, -1);
         mappedMemory_ = nullptr;
     }
