@@ -549,7 +549,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
         return false;
     }
 
-    auto *entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei*>(md), hwTag);
+    auto *entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei *>(md), hwTag);
     if (!entry) {
         entry = CreateHwEntry(key);
         if (!entry) {
@@ -563,7 +563,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
         }
 
         mnote_huawei_entry_free_contour(entry);
-        entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei*>(md), hwTag);
+        entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei *>(md), hwTag);
     }
 
     const char *data = value.c_str();
