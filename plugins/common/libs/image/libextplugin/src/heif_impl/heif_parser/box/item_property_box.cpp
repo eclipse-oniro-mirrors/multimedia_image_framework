@@ -114,7 +114,7 @@ heif_error HeifIpmaBox::ParseContent(HeifStreamReader &reader)
 
 const std::vector<PropertyAssociation> *HeifIpmaBox::GetProperties(uint32_t itemId) const
 {
-    auto iter = std::find_if(entries_.begin(), entries_.end(), [&itemId](const auto& entry){
+    auto iter = std::find_if(entries_.begin(), entries_.end(), [&itemId](const auto& entry) {
         return entry.itemId == itemId;
     });
     return iter == entries_.end() ? nullptr : &(iter->associations);

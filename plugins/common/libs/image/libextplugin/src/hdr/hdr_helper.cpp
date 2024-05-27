@@ -367,7 +367,8 @@ static bool GetCuvaGainMapMetadata(jpeg_marker_struct* markerList, std::vector<u
     if (!handle) {
         return false;
     }
-    GetCuvaGainMapMetadataT getMetadata = reinterpret_cast<GetCuvaGainMapMetadataT>(dlsym(handle, "GetCuvaGainMapMetadata"));
+    GetCuvaGainMapMetadataT getMetadata = reinterpret_cast<GetCuvaGainMapMetadataT>(
+        dlsym(handle, "GetCuvaGainMapMetadata"));
     if (!getMetadata) {
         dlclose(handle);
         return false;

@@ -254,7 +254,9 @@ void SendableImageReceiverNapi::Destructor(napi_env env, void *nativeObject, voi
 
 static bool checkFormat(int32_t format)
 {
-    return std::any_of(sImageFormatVec.begin(), sImageFormatVec.end(), [format](const auto& imageEnum){return imageEnum.numVal == format;});
+    return std::any_of(sImageFormatVec.begin(), sImageFormatVec.end(), [format](const auto& imageEnum) {
+        return imageEnum.numVal == format;
+    });
 }
 
 napi_value SendableImageReceiverNapi::CreateImageReceiverJsObject(napi_env env, struct SendableImageReceiverCreateArgs args)

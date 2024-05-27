@@ -107,7 +107,7 @@ heif_error HeifIrefBox::Write(HeifStreamWriter &writer) const
 
 bool HeifIrefBox::HasReferences(heif_item_id itemId) const
 {
-    return std::any_of(references_.begin(), references_.end(), [&itemId](const auto& ref){
+    return std::any_of(references_.begin(), references_.end(), [&itemId](const auto& ref) {
         return ref.fromItemId == itemId;
     });
 }
@@ -128,7 +128,7 @@ std::vector<HeifIrefBox::Reference> HeifIrefBox::GetReferencesFrom(heif_item_id 
 std::vector<uint32_t> HeifIrefBox::GetReferences(heif_item_id itemId, uint32_t ref_type) const
 {
     std::vector<uint32_t> res{};
-    auto iter = std::find_if(references_.begin(), references_.end(), [&itemId, &ref_type](const auto& ref){
+    auto iter = std::find_if(references_.begin(), references_.end(), [&itemId, &ref_type](const auto& ref) {
         return ref.fromItemId == itemId && ref.box.GetBoxType() == ref_type;
     });
     return iter == references_.end() ? res : iter->toItemIds;
