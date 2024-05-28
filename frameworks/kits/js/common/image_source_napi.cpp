@@ -60,6 +60,7 @@ napi_ref ImageSourceNapi::alphaTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
+napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -334,6 +335,11 @@ static std::vector<struct ImageEnum> sDecodingDynamicRangeMap = {
     {"AUTO", 0, ""},
     {"SDR", 1, ""},
     {"HDR", 2, ""},
+};
+static std::vector<struct ImageEnum> sDecodingResolutionQualityMap = {
+    {"LOW", 1, ""},
+    {"MEDIUM", 2, ""},
+    {"HIGH", 3, ""},
 };
 
 static std::string GetStringArgument(napi_env env, napi_value value)
@@ -769,6 +775,8 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
             CreateEnumTypeObject(env, napi_number, &componentTypeRef_, sComponentTypeMap)),
         DECLARE_NAPI_PROPERTY("DecodingDynamicRange",
             CreateEnumTypeObject(env, napi_number, &decodingDynamicRangeRef_, sDecodingDynamicRangeMap)),
+        DECLARE_NAPI_PROPERTY("ResolutionQuality",
+            CreateEnumTypeObject(env, napi_number, &decodingResolutionQualityRef_, sDecodingResolutionQualityMap)),
     };
 
     struct ImageConstructorInfo info = {
@@ -999,12 +1007,13 @@ static ResolutionQuality ParseResolutionQuality(napi_env env, napi_value root)
     uint32_t resolutionQuality = NUM_0;
     if (!GET_UINT32_BY_NAME(root, "resolutionQuality", resolutionQuality)) {
         IMAGE_LOGD("no resolutionQuality");
-        return ResolutionQuality::LOW;
+        return ResolutionQuality::UNKNOWN;
     }
-    if (resolutionQuality <= static_cast<uint32_t>(ResolutionQuality::HIGH)) {
+    if (resolutionQuality <= static_cast<uint32_t>(ResolutionQuality::HIGH) && (resolutionQuality >=
+        static_cast<uint32_t>(ResolutionQuality::UNKNOWN))) {
         return ResolutionQuality(resolutionQuality);
     }
-    return ResolutionQuality::LOW;
+    return ResolutionQuality::UNKNOWN;
 }
 
 static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)

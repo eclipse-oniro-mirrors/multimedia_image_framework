@@ -152,6 +152,7 @@ enum class FinalOutputStep : int32_t {
 };
 
 enum class ResolutionQuality : int32_t {
+    UNKNOWN = 0,
     LOW = 1,
     MEDIUM,
     HIGH
