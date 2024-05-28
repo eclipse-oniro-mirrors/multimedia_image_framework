@@ -99,7 +99,7 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
     byte buff[IMAGE_HEADER_SIZE] = {0};
     auto byteSize = static_cast<uint32_t>(sizeof(byte));
     stream->Seek(0, SeekPos::BEGIN);
-    stream->Read(buff, IMAGE_HEADER_SIZE * sizeof(byte));
+    stream->Read(buff, IMAGE_HEADER_SIZE * byteSize);
     stream->Seek(0, SeekPos::BEGIN);
 
     if (memcmp(buff, jpegHeader, sizeof(jpegHeader) * byteSize) == 0) {
