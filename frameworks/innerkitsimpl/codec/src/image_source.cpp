@@ -2980,13 +2980,43 @@ static float GetScaleSize(ImageInfo info, DecodeOptions opts)
     return scale;
 }
 
+static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBufferSize)
+{
+    uint32_t byteCount = surfaceBufferSize;
+    ImageInfo info;
+    switch (context.info.pixelFormat) {
+        case PlPixelFormat::RGBA_8888:
+            info.pixelFormat = PixelFormat::RGBA_8888;
+            break;
+        case PlPixelFormat::BGRA_8888:
+            info.pixelFormat = PixelFormat::BGRA_8888;
+            break;
+        case PlPixelFormat::NV12:
+            info.pixelFormat = PixelFormat::NV12;
+            break;
+        case PlPixelFormat::NV21:
+            info.pixelFormat = PixelFormat::NV21;
+            break;
+        case PlPixelFormat::RGBA_1010102:
+            info.pixelFormat = PixelFormat::RGBA_1010102;
+            break;
+        default:
+            IMAGE_LOGE("[ImageSource] GetByteCount pixelFormat %{public}u error", context.info.pixelFormat);
+            return byteCount;
+    }
+    info.size.width = context.info.size.width;
+    info.size.height = context.info.size.height;
+    byteCount = PixelMap::GetAllocatedByteCount(info);
+    return byteCount;
+}
+
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
 {
     context.allocatorType = AllocatorType::DMA_ALLOC;
     context.freeFunc = nullptr;
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
-    context.pixelsBuffer.bufferSize = sb->GetSize();
+    context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
     context.pixelsBuffer.context = fd;
     context.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
     context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
@@ -3271,7 +3301,7 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
     context.allocatorType = AllocatorType::DMA_ALLOC;
     context.freeFunc = nullptr;
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
-    context.pixelsBuffer.bufferSize = sb->GetSize();
+    context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
     context.pixelsBuffer.context = fd;
 }
 #endif
@@ -3379,13 +3409,13 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
         IMAGE_LOGE("NativeBufferReference failed");
         return ERR_DMA_DATA_ABNORMAL;
     }
-    SetContext(context, sb, nativeBuffer);
     if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
         context.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
         context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
         context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
         context.grColorSpaceName = ColorManager::BT2020_HLG;
     }
+    SetContext(context, sb, nativeBuffer);
     return SUCCESS;
 #endif
 }
@@ -3530,7 +3560,6 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
         hdrCtx.hdrType = ImageHdrType::HDR_VIVID_SINGLE;
-        hdrCtx.pixelsBuffer.bufferSize = output->GetSize();
         hdrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         hdrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
         hdrCtx.pixelFormat = PlPixelFormat::RGBA_1010102;
@@ -3554,7 +3583,6 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
         IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
-        aisrCtx.pixelsBuffer.bufferSize = output->GetSize();
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         aisrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
         aisrCtx.yuvInfo.imageSize.width = aisrCtx.outInfo.size.width;
@@ -3585,7 +3613,7 @@ static bool IsNecessaryAiProcess(const Size &imageSize, const DecodeOptions &opt
     }
     if ((IsSizeVailed(opts.desiredSize) && (imageSize.height != opts.desiredSize.height
             || imageSize.width != opts.desiredSize.width)) || opts.resolutionQuality == ResolutionQuality::HIGH) {
-        IMAGE_LOGE("[ImageSource] IsNecessaryAiProcess imageSize ne opts_.desiredSize");
+        IMAGE_LOGD("[ImageSource] IsNecessaryAiProcess imageSize ne opts_.desiredSize");
         needAisr = true;
     }
 
@@ -3729,10 +3757,10 @@ uint32_t ImageSource::ImageAiProcess(Size imageSize, const DecodeOptions &opts, 
         ConvertColorSpaceType(mainDecoder_->getGrColorSpace().GetColorSpaceName(), true);
     auto res = DoImageAiProcess(input, dstCtx, cmColorSpaceType, needAisr, needHdr);
     if (res == SUCCESS || res == ERR_IMAGE_AI_ONLY_SR_SUCCESS) {
-        FreeContextBuffer(srcCtx.freeFunc, srcCtx.allocatorType, srcCtx.pixelsBuffer);
         FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         CopyOutInfoOfContext(dstCtx, context);
     }
+    FreeContextBuffer(srcCtx.freeFunc, srcCtx.allocatorType, srcCtx.pixelsBuffer);
     return res;
 #endif
 }
