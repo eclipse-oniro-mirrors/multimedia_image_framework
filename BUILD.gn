@@ -43,6 +43,7 @@ group("image_framework") {
       "interfaces/innerkits:image_native",
       "interfaces/kits/js/common:image",
       "interfaces/kits/js/common:image_napi",
+      "interfaces/kits/js/common:sendableimage",
     ]
   }
 }

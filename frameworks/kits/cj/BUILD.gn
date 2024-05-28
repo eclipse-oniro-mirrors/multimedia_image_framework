@@ -45,7 +45,9 @@ ohos_shared_library("cj_image_ffi") {
     defines = []
   }
 
-  if (product_name != "ohos-sdk") {
+  if (!ohos_indep_compiler_enable && !build_ohos_sdk &&
+      product_name != "qemu-arm-linux-min" &&
+      product_name != "rk3568_mini_system") {
     deps = [
       "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
       "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
@@ -64,22 +66,23 @@ ohos_shared_library("cj_image_ffi") {
     sources = [
       "src/image_creator_impl.cpp",
       "src/image_ffi.cpp",
-      "src/image_image_impl.cpp",
-      "src/image_image_receiver_impl.cpp",
+      "src/image_impl.cpp",
       "src/image_packer_impl.cpp",
+      "src/image_receiver_impl.cpp",
       "src/image_source_impl.cpp",
       "src/pixel_map_impl.cpp",
     ]
   } else {
     defines += [ "PREVIEWER" ]
     sources = [ "src/cj_image_mock.cpp" ]
+    external_deps = [ "napi:cj_bind_ffi" ]
   }
 
-  if (current_os == "ohos") {
+  if (is_ohos) {
     defines += [ "OHOS_PLATFORM" ]
   }
 
-  if (current_os == "mingw") {
+  if (is_mingw) {
     defines += [ "WINDOWS_PLATFORM" ]
   }
 

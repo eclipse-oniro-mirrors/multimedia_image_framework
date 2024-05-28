@@ -108,6 +108,15 @@ bool ImageSystemProperties::GetHardWareDecodeEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetHardWareEncodeEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.hardwareencode.enabled", true);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)

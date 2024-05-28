@@ -20,6 +20,7 @@
 #include <libexif/exif-tag.h>
 #include <libexif/huawei/exif-mnote-data-huawei.h>
 
+#include "image_type.h"
 #include "metadata.h"
 
 namespace OHOS {
@@ -34,7 +35,7 @@ public:
     virtual bool RemoveEntry(const std::string &key) override;
     ExifData* GetExifData();
     bool CreateExifdata();
-    std::shared_ptr<ExifMetadata> Clone();
+    NATIVEEXPORT std::shared_ptr<ExifMetadata> Clone();
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);

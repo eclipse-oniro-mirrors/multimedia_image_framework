@@ -63,7 +63,7 @@ heif_error HeifBox::ParseHeader(HeifStreamReader &reader)
         }
 
         boxUuidType_.resize(UUID_TYPE_BYTE_NUM);
-        reader.GetStream()->Read((char *) boxUuidType_.data(), UUID_TYPE_BYTE_NUM);
+        reader.GetStream()->Read(reinterpret_cast<char*>(boxUuidType_.data()), UUID_TYPE_BYTE_NUM);
         headerSize_ += UUID_TYPE_BYTE_NUM;
     }
 

@@ -237,7 +237,7 @@ bool WebpExifMetadataAccessor::GetExifBlob(const DataBuf &blob, uint8_t **dataBl
         return false;
     }
 
-    *dataBlob = (byte *)blob.CData();
+    *dataBlob = const_cast<byte *>(blob.CData());
     size = blob.Size();
 
     return true;
@@ -478,7 +478,7 @@ bool WebpExifMetadataAccessor::WriteHeader(BufferMetadataStream &bufStream, uint
         return false;
     }
 
-    fileSize -= exifData.Size() % WEBP_BUF_SIZE ? (exifData.Size() + 1) : exifData.Size();
+    fileSize -= (exifData.Size() % WEBP_BUF_SIZE) ? (exifData.Size() + 1) : exifData.Size();
     UL2Data(headInfo.Data(WEBP_FILE_SIZE_BUFF_SIZE), fileSize, littleEndian);
     IMAGE_LOGD("Write webp file size: %{public}u, old exif size: %{public}u, new exif size: %{public}lu",
         fileSize, size, static_cast<unsigned long>(exifData.Size()));

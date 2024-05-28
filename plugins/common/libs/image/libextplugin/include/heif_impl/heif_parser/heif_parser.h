@@ -65,6 +65,8 @@ public:
 
     void GetTileImages(heif_item_id gridItemId, std::vector<std::shared_ptr<HeifImage>> &out);
 
+    void GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out);
+
     void GetAllItemId(std::vector<heif_item_id> &itemIdList) const;
 
     heif_error SetExifMetadata(const std::shared_ptr<HeifImage> &master_image, const uint8_t *data, uint32_t size);
@@ -133,7 +135,7 @@ private:
 
     void ExtractImageProperties(std::shared_ptr<HeifImage> &image);
 
-    void ExtractGridImageProperties();
+    void ExtractDerivedImageProperties();
 
     void ExtractThumbnailImage(std::shared_ptr<HeifImage> &thumbnailImage, const HeifIrefBox::Reference &ref);
 

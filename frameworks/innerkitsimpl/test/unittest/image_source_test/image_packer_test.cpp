@@ -654,5 +654,153 @@ HWTEST_F(ImagePackerTest, StartPacking020, TestSize.Level3)
 
     GTEST_LOG_(INFO) << "ImagePackerTest: StartPacking020 end";
 }
+
+/**
+ * @tc.name: PackYuv2Jpeg001
+ * @tc.desc: test PackYuv2Jpeg
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, PackYuv2Jpeg001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg001 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string srcJpeg = "/data/local/tmp/image/test.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    std::string outJpeg = "/data/local/tmp/image/pack1.jpg";
+    ImagePacker pack;
+    const int fd = open(outJpeg.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+    PackOption option;
+    option.format = "image/jpeg";
+    errorCode = pack.StartPacking(fd, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(imageSource.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    pack.FinalizePacking();
+
+    close(fd);
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg001 end";
+}
+
+/**
+ * @tc.name: PackYuv2Jpeg002
+ * @tc.desc: test PackYuv2Jpeg
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, PackYuv2Jpeg002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg002 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string srcJpeg = "/data/local/tmp/image/test_hw.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    std::string outJpeg = "/data/local/tmp/image/pack2.jpg";
+    ImagePacker pack;
+    const int fd = open(outJpeg.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+    PackOption option;
+    option.format = "image/jpeg";
+    errorCode = pack.StartPacking(fd, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(imageSource.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    pack.FinalizePacking();
+
+    close(fd);
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg002 end";
+}
+
+/**
+ * @tc.name: PackYuv2Jpeg003
+ * @tc.desc: test PackYuv2Jpeg
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, PackYuv2Jpeg003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg003 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string srcJpeg = "/data/local/tmp/image/test_exif.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV12;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    std::string outJpeg = "/data/local/tmp/image/pack3.jpg";
+    ImagePacker pack;
+    const int fd = open(outJpeg.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+    PackOption option;
+    option.format = "image/jpeg";
+    errorCode = pack.StartPacking(fd, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(imageSource.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    pack.FinalizePacking();
+
+    close(fd);
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg003 end";
+}
+
+/**
+ * @tc.name: PackYuv2Jpeg004
+ * @tc.desc: test PackYuv2Jpeg
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, PackYuv2Jpeg004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg004 start";
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string srcJpeg = "/data/local/tmp/image/test_packing_exif.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcJpeg.c_str(), opts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(imageSource, nullptr);
+    DecodeOptions dstOpts;
+    dstOpts.desiredPixelFormat = PixelFormat::NV21;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMapEx(0, dstOpts, errorCode);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    ASSERT_NE(pixelMap, nullptr);
+
+    std::string outJpeg = "/data/local/tmp/image/pack4.jpg";
+    ImagePacker pack;
+    const int fd = open(outJpeg.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+    PackOption option;
+    option.format = "image/jpeg";
+    errorCode = pack.StartPacking(fd, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(imageSource.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    pack.FinalizePacking();
+
+    close(fd);
+    GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg004 end";
+}
 } // namespace Multimedia
 } // namespace OHOS

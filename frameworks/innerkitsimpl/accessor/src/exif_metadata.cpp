@@ -15,6 +15,7 @@
 
 #include <iostream>
 #include <map>
+#include <numeric>
 #include <ostream>
 #include <set>
 #include <sstream>
@@ -138,7 +139,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     MnoteHuaweiEntryCount *ec = nullptr;
-    mnote_huawei_get_entry_count((ExifMnoteDataHuawei *)md, &ec);
+    mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
     if (ec == nullptr) {
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
@@ -496,12 +497,12 @@ bool ExifMetadata::SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &order,
 
 bool ExifMetadata::SetByte(ExifEntry *ptrEntry, const std::string &value)
 {
-    std::string result;
-    for (char c : value) {
-        if (c != ' ') {
-            result += c;
+    std::string result = std::accumulate(value.begin(), value.end(), std::string(), [](std::string res, char a) {
+        if (a != ' ') {
+            return res += a;
         }
-    }
+        return res;
+    });
     const char *p = result.c_str();
     int valueLen = static_cast<int>(result.length());
     for (int i = 0; i < valueLen && i < static_cast<int>(ptrEntry->size); i++) {
@@ -558,7 +559,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
         return false;
     }
 
-    auto *entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, hwTag);
+    auto *entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei *>(md), hwTag);
     if (!entry) {
         entry = CreateHwEntry(key);
         if (!entry) {
@@ -572,7 +573,7 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
         }
 
         mnote_huawei_entry_free_contour(entry);
-        entry = exif_mnote_data_huawei_get_entry_by_tag((ExifMnoteDataHuawei*) md, hwTag);
+        entry = exif_mnote_data_huawei_get_entry_by_tag(reinterpret_cast<ExifMnoteDataHuawei *>(md), hwTag);
     }
 
     const char *data = value.c_str();

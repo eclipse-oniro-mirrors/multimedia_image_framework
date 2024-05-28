@@ -331,13 +331,13 @@ HWTEST_F(HeifParserTest, GetTileImagesTest001, TestSize.Level3)
 }
 
 /**
- * @tc.name: ExtractGridImagePropertiesTest001
+ * @tc.name: ExtractDerivedImagePropertiesTest001
  * @tc.desc: HeifParser
  * @tc.type: FUNC
  */
-HWTEST_F(HeifParserTest, ExtractGridImagePropertiesTest001, TestSize.Level3)
+HWTEST_F(HeifParserTest, ExtractDerivedImagePropertiesTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGridImagePropertiesTest001 start";
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest001 start";
     HeifParser heifParser;
     auto heifImage = std::make_shared<HeifImage>(0);
     heifParser.images_.insert(std::make_pair(0, heifImage));
@@ -347,8 +347,8 @@ HWTEST_F(HeifParserTest, ExtractGridImagePropertiesTest001, TestSize.Level3)
     heifParser.irefBox_ = std::make_shared<HeifIrefBox>();
     struct HeifIrefBox::Reference ref {.fromItemId = 1};
     heifParser.irefBox_->references_.push_back(ref);
-    heifParser.ExtractGridImageProperties();
-    GTEST_LOG_(INFO) << "HeifParserTest: ExtractGridImagePropertiesTest001 end";
+    heifParser.ExtractDerivedImageProperties();
+    GTEST_LOG_(INFO) << "HeifParserTest: ExtractDerivedImagePropertiesTest001 end";
 }
 
 /**
@@ -446,12 +446,10 @@ HWTEST_F(HeifParserTest, HeifParserTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 start";
     HeifParser heifParser;
     heif_item_id itemId = 0;
-    std::vector<uint8_t> data;
     ImagePlugin::HvccConfig config;
     heifParser.ipcoBox_ = std::make_shared<HeifIpcoBox>();
     heifParser.ipmaBox_ = std::make_shared<HeifIpmaBox>();
     ASSERT_EQ(heifParser.GetImage(itemId), nullptr);
-    heifParser.AppendHvccNalData(itemId, data);
     heifParser.SetHvccConfig(itemId, config);
     GTEST_LOG_(INFO) << "HeifParserTest: HeifParserTest002 end";
 }

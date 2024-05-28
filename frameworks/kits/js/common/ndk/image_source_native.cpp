@@ -52,7 +52,7 @@ struct OH_DecodingOptions {
     uint32_t rotate;
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
-    int32_t desiredDynamicRange;
+    int32_t desiredDynamicRange = IMAGE_DYNAMIC_RANGE_SDR;
 };
 
 struct OH_ImageSource_Info {
@@ -320,7 +320,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OH_DecodingOptions *o
     }
 }
 
-static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, ImageInfo &info)
+static void ParseImageSourceInfo(struct OH_ImageSource_Info *source, const ImageInfo &info)
 {
     source->width = info.size.width;
     source->height = info.size.height;
@@ -382,7 +382,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromData(uint8_t *data, size_t dataSi
         *res = nullptr;
         return IMAGE_BAD_PARAMETER;
     }
-    imageSource->fileBuffer_ = (void*)data;
+    imageSource->fileBuffer_ = reinterpret_cast<void*>(data);
     imageSource->fileBufferSize_ = dataSize;
     *res = imageSource;
     return IMAGE_SUCCESS;
@@ -416,10 +416,9 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
     }
 
     DecodeOptions decOps;
-    uint32_t index = DEFAULT_INDEX;
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
     ParseDecodingOps(decOps, ops);
-    index = ops->index;
+    uint32_t index = ops->index;
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_UNSUPPORTED_OPERATION;
@@ -434,14 +433,13 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative *resVecPixMap[], size_t outSize)
 {
-    if (source == nullptr || ops == nullptr || resVecPixMap == nullptr || outSize <= SIZE_ZERO) {
+    if (source == nullptr || ops == nullptr || resVecPixMap == nullptr || outSize == SIZE_ZERO) {
         return IMAGE_BAD_PARAMETER;
     }
     DecodeOptions decOps;
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
-    if (ops != nullptr) {
-        ParseDecodingOps(decOps, ops);
-    }
+    ParseDecodingOps(decOps, ops);
+
     auto pixelmapList = source->GetInnerImageSource()->CreatePixelMapList(decOps, errorCode);
     if (pixelmapList == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_BAD_PARAMETER;

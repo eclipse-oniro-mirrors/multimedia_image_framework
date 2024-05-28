@@ -57,7 +57,7 @@ ohos_unittest("pixelmaptest") {
     "ipc:ipc_core",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
@@ -140,6 +140,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/include",
     "$image_subsystem/frameworks/innerkitsimpl/converter/include",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
@@ -155,6 +156,7 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/data_buf.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/dng_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
@@ -169,28 +171,31 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
-
-    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
 
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "$image_subsystem/plugins/common/libs/image/libextplugin/src/hdr/jpeg_mpf_parser.cpp",
   ]
+
+  if (enable_heif_hw_decode) {
+    source += [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_heif_test.cpp" ]
+  }
+
   if (DUAL_ADAPTER) {
     sources += [
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_bmp_test.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_raw_test.cpp",
-
-      # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
+      "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_wbmp_test.cpp",
     ]
   }
 
   deps = [
+    "$image_subsystem/plugins/common/libs/image/libextplugin:heifparser",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//third_party/googletest:gmock_main",
@@ -208,7 +213,7 @@ ohos_unittest("imagesourcetest") {
     "hilog:libhilog",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
@@ -1267,7 +1272,7 @@ ohos_unittest("pixelastctest") {
     "ipc:ipc_core",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
@@ -1342,8 +1347,9 @@ ohos_unittest("eglimagetest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_2d:EGL",
+    "graphic_2d:GLESv3",
     "graphic_2d:color_manager",
-    "graphic_2d:libgl",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
@@ -1567,6 +1573,7 @@ ohos_unittest("exifmetadatatest") {
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
   ]
 
@@ -1708,7 +1715,6 @@ group("unittest") {
     ":formatagentplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
-    ":heifyuvtest",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
@@ -1743,6 +1749,10 @@ group("unittest") {
 
   if (enable_jpeg_hw_decode) {
     deps += [ ":jpeg_hw_decoder_test" ]
+  }
+
+  if (enable_heif_hw_decode) {
+    deps += [ ":heifyuvtest" ]
   }
 }
 ################################################

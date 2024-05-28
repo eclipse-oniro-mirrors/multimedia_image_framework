@@ -40,6 +40,12 @@ static const std::string TEST_FILE_MULTI_FRAME_GIF = "moving_test.gif";
 static const size_t TEST_FILE_MULTI_FRAME_GIF_FRAME_COUNT = 3;
 static const std::string TEST_FILE_JPG = "test.jpg";
 static const size_t TEST_FILE_JPG_FRAME_COUNT = 1;
+static const std::string TEST_FILE_MULTI_FRAME_LOOP0_GIF = "moving_test_loop0.gif";
+static const std::string TEST_FILE_MULTI_FRAME_LOOP1_GIF = "moving_test_loop1.gif";
+static const std::string TEST_FILE_MULTI_FRAME_LOOP5_GIF = "moving_test_loop5.gif";
+static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_1 = 1;
+static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_5 = 5;
+static const int32_t TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_INF = 0;
 }
 
 class ImageSourceGifExTest : public testing::Test {
@@ -419,6 +425,122 @@ HWTEST_F(ImageSourceGifExTest, GetEncodedFormat001, TestSize.Level3)
     ASSERT_EQ(imageInfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: imageInfo2 encodedFormat " << imageInfo2.encodedFormat;
     GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetEncodedFormat001 end";
+}
+
+/**
+ * @tc.name: GetLoopCount001
+ * @tc.desc: test GetLoopCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetLoopCount001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount001 start";
+
+    const std::string testName = TEST_FILE_MULTI_FRAME_LOOP5_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    auto loopCount = imageSource->GetLoopCount(errorCode);
+    ASSERT_EQ(loopCount, TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_5);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount001 end";
+}
+
+/**
+ * @tc.name: GetLoopCount002
+ * @tc.desc: test GetLoopCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetLoopCount002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount002 start";
+
+    const std::string testName = TEST_FILE_MULTI_FRAME_LOOP1_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    auto loopCount = imageSource->GetLoopCount(errorCode);
+    ASSERT_EQ(loopCount, TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_1);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount002 end";
+}
+
+/**
+ * @tc.name: GetLoopCount003
+ * @tc.desc: test GetLoopCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetLoopCount003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount003 start";
+
+    const std::string testName = TEST_FILE_MULTI_FRAME_LOOP0_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    auto loopCount = imageSource->GetLoopCount(errorCode);
+    ASSERT_EQ(loopCount, TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_INF);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount003 end";
+}
+
+/**
+ * @tc.name: GetLoopCount004
+ * @tc.desc: test GetLoopCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetLoopCount004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount004 start";
+
+    const std::string testName = TEST_FILE_MULTI_FRAME_GIF;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    auto loopCount = imageSource->GetLoopCount(errorCode);
+    ASSERT_EQ(loopCount, TEST_FILE_MULTI_FRAME_GIF_LOOP_COUNT_INF);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount004 end";
+}
+
+/**
+ * @tc.name: GetLoopCount005
+ * @tc.desc: test GetLoopCount
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceGifExTest, GetLoopCount005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount005 start";
+
+    const std::string testName = TEST_FILE_JPG;
+
+    uint32_t errorCode = 0;
+    const SourceOptions opts;
+    const std::string inputName = INPUT_PATH + testName;
+    auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
+
+    imageSource->GetLoopCount(errorCode);
+
+    ASSERT_EQ(errorCode, ERR_MEDIA_INVALID_PARAM);
+
+    GTEST_LOG_(INFO) << "ImageSourceGifExTest: GetLoopCount005 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

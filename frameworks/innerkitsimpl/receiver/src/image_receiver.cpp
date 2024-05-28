@@ -33,7 +33,11 @@ namespace Media {
 ImageReceiver::~ImageReceiver()
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
     if (receiverConsumerSurface_ != nullptr) {
+        if (utils != nullptr) {
+            utils->Remove(receiverConsumerSurface_->GetUniqueId());
+        }
         receiverConsumerSurface_->UnregisterConsumerListener();
     }
     receiverConsumerSurface_ = nullptr;
@@ -193,6 +197,10 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
         return iva;
     }
 
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
+    if (utils != nullptr) {
+        utils->Add(iva->receiverConsumerSurface_->GetUniqueId(), iva->receiverConsumerSurface_);
+    }
     iva->receiverConsumerSurface_->SetDefaultWidthAndHeight(width, height);
     iva->receiverConsumerSurface_->SetQueueSize(capicity);
     iva->receiverConsumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);

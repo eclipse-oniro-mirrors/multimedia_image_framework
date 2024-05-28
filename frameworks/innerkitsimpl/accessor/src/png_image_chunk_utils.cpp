@@ -172,7 +172,7 @@ DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, si
     const size_t translatedKeyTextLen = translatedKeyText.size();
 
     const size_t textLen = chunkData.Size() - (keySize + 3 + languageTextLen + 1 + translatedKeyTextLen + 1);
-    if (textLen <= 0) {
+    if (textLen == 0) {
         return {};
     }
 
