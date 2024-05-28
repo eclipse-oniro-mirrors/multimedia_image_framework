@@ -97,29 +97,30 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_pt
 EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStream> &stream)
 {
     byte buff[IMAGE_HEADER_SIZE] = {0};
+    auto byteSize = static_cast<uint32_t>(sizeof(byte));
     stream->Seek(0, SeekPos::BEGIN);
     stream->Read(buff, IMAGE_HEADER_SIZE * sizeof(byte));
     stream->Seek(0, SeekPos::BEGIN);
 
-    if (memcmp(buff, jpegHeader, sizeof(jpegHeader) * DATA_BUF_BYTE_SIZE) == 0) {
+    if (memcmp(buff, jpegHeader, sizeof(jpegHeader) * byteSize) == 0) {
         return EncodedFormat::JPEG;
     }
 
-    if (memcmp(buff, pngHeader, sizeof(pngHeader) * DATA_BUF_BYTE_SIZE) == 0) {
+    if (memcmp(buff, pngHeader, sizeof(pngHeader) * byteSize) == 0) {
         return EncodedFormat::PNG;
     }
 
-    if (memcmp(buff, riffHeader, sizeof(riffHeader) * DATA_BUF_BYTE_SIZE) == 0 &&
-        memcmp(buff + WEBP_HEADER_OFFSET, webpHeader, sizeof(webpHeader) * DATA_BUF_BYTE_SIZE) == 0) {
+    if (memcmp(buff, riffHeader, sizeof(riffHeader) * byteSize) == 0 &&
+        memcmp(buff + WEBP_HEADER_OFFSET, webpHeader, sizeof(webpHeader) * byteSize) == 0) {
         return EncodedFormat::WEBP;
     }
 
-    if (memcmp(buff + IMAGE_HEIF_HEADER_OFFSET, heifHeader, sizeof(heifHeader) * DATA_BUF_BYTE_SIZE) == 0) {
+    if (memcmp(buff + IMAGE_HEIF_HEADER_OFFSET, heifHeader, sizeof(heifHeader) * byteSize) == 0) {
         return EncodedFormat::HEIF;
     }
 
-    if ((memcmp(buff, DNG_LITTLE_ENDIAN_HEADER, sizeof(DNG_LITTLE_ENDIAN_HEADER) * DATA_BUF_BYTE_SIZE) == 0) ||
-        (memcmp(buff, DNG_BIG_ENDIAN_HEADER, sizeof(DNG_BIG_ENDIAN_HEADER) * DATA_BUF_BYTE_SIZE) == 0)) {
+    if ((memcmp(buff, DNG_LITTLE_ENDIAN_HEADER, sizeof(DNG_LITTLE_ENDIAN_HEADER) * byteSize) == 0) ||
+        (memcmp(buff, DNG_BIG_ENDIAN_HEADER, sizeof(DNG_BIG_ENDIAN_HEADER) * byteSize) == 0)) {
         return EncodedFormat::DNG;
     }
 
