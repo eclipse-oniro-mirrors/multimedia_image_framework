@@ -227,7 +227,7 @@ bool JpegExifMetadataAccessor::GetExifBlob(const DataBuf &blob, uint8_t **dataBl
         return false;
     }
 
-    *dataBlob = (byte *)blob.CData();
+    *dataBlob = const_cast<byte *>(blob.CData());
     size = blob.Size();
 
     return true;
@@ -284,7 +284,7 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
     ssize_t writeHeaderLength = MARKER_LENGTH_SIZE;
     ssize_t exifHeaderLength = EXIF_ID_LENGTH;
 
-    if (memcmp((char *)dataBlob, EXIF_ID, EXIF_ID_SIZE) != 0) {
+    if (memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;
         std::copy_n(EXIF_ID, EXIF_ID_SIZE, tmpBuf.data() + MARKER_LENGTH_SIZE);
@@ -313,7 +313,7 @@ bool JpegExifMetadataAccessor::WriteSegment(BufferMetadataStream &bufStream, uin
         IMAGE_LOGE("Failed to write marker and segment. Marker: %{public}u", marker);
         return false;
     }
-    if (bufStream.Write((byte *)buf.CData(), buf.Size()) != static_cast<int>(buf.Size())) {
+    if (bufStream.Write(const_cast<byte *>(buf.CData()), buf.Size()) != static_cast<int>(buf.Size())) {
         IMAGE_LOGE("Failed to write buffer. Buffer size: %{public}zu", buf.Size());
         return false;
     }
@@ -340,7 +340,7 @@ bool JpegExifMetadataAccessor::CopyRestData(BufferMetadataStream &bufStream)
     DataBuf buf(READ_WRITE_BLOCK_SIZE * READ_WRITE_BLOCK_SIZE_NUM);
     ssize_t readSize = imageStream_->Read(buf.Data(), buf.Size());
     while (readSize > 0) {
-        if (bufStream.Write((byte *)buf.CData(), readSize) != readSize) {
+        if (bufStream.Write(const_cast<byte *>(buf.CData()), readSize) != readSize) {
             IMAGE_LOGE("Failed to write block data to temporary stream. Expected size: %{public}zd", readSize);
             return false;
         }
