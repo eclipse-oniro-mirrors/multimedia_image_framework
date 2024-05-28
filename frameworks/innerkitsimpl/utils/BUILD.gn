@@ -202,7 +202,11 @@ ohos_static_library("image_utils_static") {
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
-    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
+      "src/image_func_timer.cpp",
+      "src/image_fwk_ext_manager.cpp",
+    ]
     sources += [ "src/image_dfx.cpp" ]
     sources += [ "src/image_data_statistics.cpp" ]
   } else if (use_clang_android) {
