@@ -1904,6 +1904,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
             IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
+            ::close(*fd);
             return false;
         }
     } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {
@@ -2122,6 +2123,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
+            ::close(fd);
             return false;
         }
         void* ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -2152,7 +2154,6 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
-            IMAGE_LOGE("get pixel memory size:[%{public}d] error.", pixelMemInfo.bufferSize);
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return false;
         }
