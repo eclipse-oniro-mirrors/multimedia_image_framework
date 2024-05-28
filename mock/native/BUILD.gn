@@ -22,11 +22,13 @@ config("log_mock_config") {
 }
 
 ohos_static_library("log_mock_static") {
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    cfi_vcall_icall_only = true
-    debug = false
+  if (!is_arkui_x) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
   }
   configs = [ ":log_mock_config" ]
   sources = [

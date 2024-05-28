@@ -146,11 +146,13 @@ if (use_clang_ios) {
 }
 
 ohos_static_library("image_utils_static") {
-  sanitize = {
-    cfi = true
-    cfi_cross_dso = true
-    cfi_vcall_icall_only = true
-    debug = false
+  if (!is_arkui_x) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
   }
 
   include_dirs = [
@@ -158,6 +160,10 @@ ohos_static_library("image_utils_static") {
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
+
+  if (is_arkui_x) {
+    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+  }
 
   sources = [
     "src/color_utils.cpp",
@@ -209,7 +215,11 @@ ohos_static_library("image_utils_static") {
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
-    sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
+    sources += [
+      "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
+      "src/image_func_timer.cpp",
+      "src/image_fwk_ext_manager.cpp",
+    ]
     sources += [ "src/image_dfx.cpp" ]
     sources += [ "src/image_data_statistics.cpp" ]
   } else {

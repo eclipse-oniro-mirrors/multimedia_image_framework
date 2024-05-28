@@ -48,6 +48,9 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser",
   ]
+  if (is_arkui_x) {
+    include_dirs += [ "//foundation/graphic/graphic_2d/utils/color_manager/export" ]
+  }
 
   if (use_mingw_win) {
     include_dirs +=
@@ -411,7 +414,11 @@ ohos_static_library("image_static") {
       external_deps += [ "libexif:libexif" ]
     }
   }
-  external_deps += [ "zlib:libz" ]
+  if (is_arkui_x) {
+    deps += [ "//third_party/zlib:libz" ]
+  } else {
+    external_deps += [ "zlib:libz" ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "image_framework"
