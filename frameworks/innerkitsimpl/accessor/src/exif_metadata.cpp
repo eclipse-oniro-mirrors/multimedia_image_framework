@@ -175,7 +175,7 @@ int ExifMetadata::HandleHwMnote(const std::string &key, std::string &value) cons
         return SUCCESS;
     }
     MnoteHuaweiEntryCount *ec = nullptr;
-    mnote_huawei_get_entry_count((ExifMnoteDataHuawei *)md, &ec);
+    mnote_huawei_get_entry_count(reinterpret_cast<ExifMnoteDataHuawei *>(md), &ec);
     if (ec == nullptr) {
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
