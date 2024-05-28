@@ -277,7 +277,8 @@ static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
 
 int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
-    if (info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::NV21) {
+    if (info.pixelFormat <= PixelFormat::UNKNOWN || (info.pixelFormat >= PixelFormat::NV21 &&
+        info.pixelFormat != PixelFormat::RGBA_1010102)) {
         IMAGE_LOGE("[ImageUtil]unsupport pixel format");
         return -1;
     }

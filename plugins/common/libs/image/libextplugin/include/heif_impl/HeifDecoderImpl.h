@@ -72,6 +72,8 @@ private:
 
     bool DecodeGrids(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
 
+    bool DecodeIdenImage(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
+
     bool DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
 
     bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);

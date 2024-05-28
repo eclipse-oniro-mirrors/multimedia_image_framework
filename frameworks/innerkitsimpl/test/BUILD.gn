@@ -57,7 +57,7 @@ ohos_unittest("pixelmaptest") {
     "ipc:ipc_core",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
@@ -213,7 +213,7 @@ ohos_unittest("imagesourcetest") {
     "hilog:libhilog",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
@@ -1272,7 +1272,7 @@ ohos_unittest("pixelastctest") {
     "ipc:ipc_core",
   ]
 
-  if (purgeable_ashmem_enable && defined(global_parts_info) &&
+  if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
     defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]

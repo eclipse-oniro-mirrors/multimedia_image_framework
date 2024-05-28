@@ -1276,17 +1276,17 @@ OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
             GetColorSpaceName(profile, name);
         }
         if (profile != nullptr && profile->has_CICP) {
-            ColorManager::ColorSpaceName name = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
+            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
-            if (name != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, name);
+            if (cName != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, cName);
             }
         }
         if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
-            ColorManager::ColorSpaceName name = GetHeifNclxColor(codec_.get());
-            if (name != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, name);
+            ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
+            if (cName != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, cName);
             }
         }
     }

@@ -14,6 +14,8 @@
  */
 
 #include "sendable_image_receiver_napi.h"
+
+#include <algorithm>
 #include <uv.h>
 #include "media_errors.h"
 #include "image_log.h"
@@ -59,7 +61,7 @@ struct ImageEnum {
     std::string strVal;
 };
 
-static std::vector<struct ImageEnum> sImageFormatMap = {
+static std::vector<struct ImageEnum> sImageFormatVec = {
     {"CAMERA_APP_INNER", 4, ""},
     {"JPEG", 2000, ""},
 };
@@ -252,12 +254,9 @@ void SendableImageReceiverNapi::Destructor(napi_env env, void *nativeObject, voi
 
 static bool checkFormat(int32_t format)
 {
-    for (auto imgEnum : sImageFormatMap) {
-        if (imgEnum.numVal == format) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(sImageFormatVec.begin(), sImageFormatVec.end(), [format](const auto& imageEnum) {
+        return imageEnum.numVal == format;
+    });
 }
 
 napi_value SendableImageReceiverNapi::CreateImageReceiverJsObject(napi_env env, struct SendableImageReceiverCreateArgs args)
