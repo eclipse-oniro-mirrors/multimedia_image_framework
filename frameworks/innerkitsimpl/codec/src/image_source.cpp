@@ -2834,7 +2834,6 @@ unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
         errorCode = SUCCESS;
         return delayTimes;
     }
-    const string IMAGE_DELAY_TIME = "DelayTime";
     for (uint32_t index = 0; index < frameCount; index++) {
         string delayTimeStr;
         errorCode = mainDecoder_->GetImagePropertyString(index, IMAGE_DELAY_TIME, delayTimeStr);
@@ -2874,7 +2873,6 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
     }
 
     auto disposalTypes = std::make_unique<vector<int32_t>>();
-    const string IMAGE_DISPOSAL_TYPE = "DisposalType";
     for (uint32_t index = 0; index < frameCount; index++) {
         int disposalType = 0;
         errorCode = mainDecoder_->GetImagePropertyInt(index, IMAGE_DISPOSAL_TYPE, disposalType);

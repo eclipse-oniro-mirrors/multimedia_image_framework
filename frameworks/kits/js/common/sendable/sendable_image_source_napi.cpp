@@ -258,13 +258,13 @@ static void PrepareNapiEnv(napi_env env)
     napi_call_function(env, globalValue, func, 1, funcArgv, &returnValue);
 }
 
-static bool hasNamedProperty(napi_env env, napi_value object, std::string name)
+static bool hasNamedProperty(napi_env env, napi_value object, const std::string& name)
 {
     bool res = false;
     return (napi_has_named_property(env, object, name.c_str(), &res) == napi_ok) && res;
 }
 
-static bool parseRawFileItem(napi_env env, napi_value argValue, std::string item, int32_t* value)
+static bool parseRawFileItem(napi_env env, napi_value argValue, const std::string& item, int32_t* value)
 {
     napi_value nItem;
     if (napi_get_named_property(env, argValue, item.c_str(), &nItem) != napi_ok) {
@@ -532,6 +532,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
     if (thisPtr == nullptr || imageSource == nullptr) {
         IMAGE_LOGE("Invailed args");
         status = ERROR;
+        return nullptr;
     }
 
     std::shared_ptr<PixelMap> pixelMap;
@@ -541,8 +542,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
         pixelMap = incPixelMap;
     } else {
         decodeOpts.invokeType = JS_INTERFACE;
-        pixelMap = imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
-            decodeOpts, status);
+        pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
     }
 
     if (status != SUCCESS || !IMG_NOT_NULL(pixelMap)) {
@@ -913,9 +913,7 @@ napi_value SendableImageSourceNapi::Release(napi_env env, napi_callback_info inf
 void SendableImageSourceNapi::release()
 {
     if (!isRelease) {
-        if (nativeImgSrc != nullptr) {
-            nativeImgSrc = nullptr;
-        }
+        nativeImgSrc = nullptr;
         isRelease = true;
     }
 }

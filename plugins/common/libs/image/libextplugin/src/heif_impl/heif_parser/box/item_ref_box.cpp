@@ -15,6 +15,8 @@
 
 #include "box/item_ref_box.h"
 
+#include <algorithm>
+
 namespace OHOS {
 namespace ImagePlugin {
 void HeifIrefBox::ParseItemRef(HeifStreamReader &reader, Reference& ref)
@@ -105,12 +107,9 @@ heif_error HeifIrefBox::Write(HeifStreamWriter &writer) const
 
 bool HeifIrefBox::HasReferences(heif_item_id itemId) const
 {
-    for (const Reference &ref: references_) {
-        if (ref.fromItemId == itemId) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(references_.begin(), references_.end(), [&itemId](const auto& ref) {
+        return ref.fromItemId == itemId;
+    });
 }
 
 
@@ -128,13 +127,11 @@ std::vector<HeifIrefBox::Reference> HeifIrefBox::GetReferencesFrom(heif_item_id 
 
 std::vector<uint32_t> HeifIrefBox::GetReferences(heif_item_id itemId, uint32_t ref_type) const
 {
-    for (const Reference &ref: references_) {
-        if (ref.fromItemId == itemId &&
-            ref.box.GetBoxType() == ref_type) {
-            return ref.toItemIds;
-        }
-    }
-    return {};
+    std::vector<uint32_t> res{};
+    auto iter = std::find_if(references_.begin(), references_.end(), [&itemId, &ref_type](const auto& ref) {
+        return ref.fromItemId == itemId && ref.box.GetBoxType() == ref_type;
+    });
+    return iter == references_.end() ? res : iter->toItemIds;
 }
 
 

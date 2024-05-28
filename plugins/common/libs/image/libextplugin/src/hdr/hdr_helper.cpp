@@ -133,7 +133,7 @@ struct ExtendInfoExtention {
     TransformInfo combineMapping;
 };
 
-static bool GetVividJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList, vector<uint32_t> preOffsets,
+static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerList, vector<uint32_t> preOffsets,
     uint32_t& offset)
 {
     if (markerList.size() == EMPTY_SIZE) {
@@ -189,7 +189,7 @@ static bool GetCuvaJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList, ui
         dlclose(handle);
         return false;
     }
-    GetCuvaGainMapOffsetT check = (GetCuvaGainMapOffsetT)dlsym(handle, "GetCuvaGainMapOffset");
+    GetCuvaGainMapOffsetT check = reinterpret_cast<GetCuvaGainMapOffsetT>(dlsym(handle, "GetCuvaGainMapOffset"));
     if (!check) {
         dlclose(handle);
         return false;
@@ -367,7 +367,8 @@ static bool GetCuvaGainMapMetadata(jpeg_marker_struct* markerList, std::vector<u
     if (!handle) {
         return false;
     }
-    GetCuvaGainMapMetadataT getMetadata = (GetCuvaGainMapMetadataT)dlsym(handle, "GetCuvaGainMapMetadata");
+    GetCuvaGainMapMetadataT getMetadata = reinterpret_cast<GetCuvaGainMapMetadataT>(
+        dlsym(handle, "GetCuvaGainMapMetadata"));
     if (!getMetadata) {
         dlclose(handle);
         return false;
@@ -459,7 +460,7 @@ static ExtendInfoMain ParseExtendInfoMain(uint8_t* data, uint32_t& offset, bool 
     return infoMain;
 }
 
-static bool ParseColorInfo(uint8_t* data, uint32_t& offset, uint32_t length, ColorInfo& colorInfo)
+static bool ParseColorInfo(const uint8_t* data, uint32_t& offset, uint32_t length, ColorInfo& colorInfo)
 {
     uint8_t size = data[offset++];
     if (size == EMPTY_SIZE) {
@@ -932,7 +933,7 @@ static void PackVividPreInfo(vector<uint8_t>& bytes, uint32_t& offset, bool base
     bytes[offset++] = 0x02; // extendFrameNumber
     bytes[offset++] = base ? INDEX_ONE : INDEX_TWO; // fileType
     bytes[offset++] = base ? INDEX_ZERO : INDEX_ONE; // metaType
-    bytes[offset++] = ((!base) & enhanceType) ? INDEX_ONE : INDEX_ZERO; // enhanceType
+    bytes[offset++] = ((!base) && enhanceType) ? INDEX_ONE : INDEX_ZERO; // enhanceType
     bytes[offset++] = INDEX_ZERO;
 }
 
@@ -1038,7 +1039,7 @@ static void PackTransformInfo(vector<uint8_t>& bytes, uint32_t& offset, uint8_t 
     offset += flag;
 }
 
-static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, HDRVividExtendMetadata& metadata)
+static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, const HDRVividExtendMetadata& metadata)
 {
     bytes[offset++] = COLOR_INFO_BYTES;
     bytes[offset++] = metadata.baseColorMeta.baseColorPrimary;
@@ -1061,7 +1062,7 @@ static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, HD
         metadata.gainmapColorMeta.combineMapping);
 }
 
-static uint16_t GetExtendMetadataSize(bool vividExtendFlag, HDRVividExtendMetadata& metadata)
+static uint16_t GetExtendMetadataSize(bool vividExtendFlag, const HDRVividExtendMetadata& metadata)
 {
     if (!vividExtendFlag) {
         return EMPTY_SIZE;
