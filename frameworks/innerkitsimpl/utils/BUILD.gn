@@ -199,8 +199,12 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
-    sources += [ "src/image_dfx.cpp" ]
-    sources += [ "src/image_data_statistics.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+      "src/image_func_timer.cpp",
+      "src/image_fwk_ext_manager.cpp",
+    ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
@@ -212,8 +216,12 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
-    sources += [ "src/image_dfx.cpp" ]
-    sources += [ "src/image_data_statistics.cpp" ]
+    sources += [
+      "src/image_data_statistics.cpp",
+      "src/image_dfx.cpp",
+      "src/image_func_timer.cpp",
+      "src/image_fwk_ext_manager.cpp",
+    ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [
