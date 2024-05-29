@@ -269,7 +269,7 @@ NativeImage* ImageNapi::GetNative()
 }
 
 static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callback_info info,
-    size_t* argc = nullptr, napi_value* argv = nullptr, bool needCreateRef=false)
+    size_t* argc = nullptr, napi_value* argv = nullptr, bool needCreateRef = false)
 {
     napi_value thisVar = nullptr;
     size_t tmp = NUM0;

@@ -58,10 +58,12 @@ public:
         return buffer_;
     }
     void release();
-    void SetId(std::string id) {
+    void SetId(std::string id)
+    {
         id_ = id;
     }
-    std::string GetId() {
+    std::string GetId()
+    {
         return id_;
     }
 private:
