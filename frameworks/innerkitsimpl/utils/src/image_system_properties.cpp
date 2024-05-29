@@ -84,8 +84,7 @@ bool ImageSystemProperties::GetDmaEnabled()
 bool ImageSystemProperties::GetAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    static bool isPhone = system::GetParameter("const.product.devicetype", "pc") == "phone";
-    return system::GetBoolParameter("persist.multimedia.image.AstcZeroCopy.enabled", true) && isPhone;
+    return system::GetBoolParameter("persist.multimedia.image.AstcZeroCopy.enabled", true);
 #else
     return false;
 #endif
