@@ -423,7 +423,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_GETTER("isEditable", GetIsEditable),
         DECLARE_NAPI_GETTER("isStrideAlignment", GetIsStrideAlignment),
-        DECLARE_NAPI_GETTER("ToSdr", ToSdr),
+        DECLARE_NAPI_FUNCTION("toSdr", ToSdr),
     };
 
     napi_property_descriptor static_prop[] = {
