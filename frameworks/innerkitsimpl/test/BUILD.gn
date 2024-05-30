@@ -34,6 +34,7 @@ ohos_unittest("pixelmaptest") {
     "//third_party/googletest/googletest/include",
     "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
+    "//third_party/ffmpeg",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
@@ -655,6 +656,7 @@ ohos_unittest("pixelconvertadaptertest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "hilog:libhilog",
   ]
 }
@@ -1306,6 +1308,7 @@ ohos_unittest("pixelastctest") {
     "${image_subsystem}/interfaces/innerkits/include",
     "$graphic_subsystem/utils/color_manager/export",
     "${image_subsystem}/../../../foundation/multimedia/utils/include",
+    "${image_subsystem}/../../../third_party/ffmpeg",
     "${image_subsystem}/../../../third_party/googletest/googletest/include",
     "${image_subsystem}/../../../commonlibrary/c_utils/base/include",
     "${image_subsystem}/plugins/manager/include",
@@ -1433,8 +1436,12 @@ ohos_unittest("jpgyuvtest") {
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
     "${image_subsystem}/plugins/manager:pluginmanager",
   ]
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "graphic_2d:color_manager",
+  ]
 }
 
 ohos_unittest("heifyuvtest") {
@@ -1752,6 +1759,44 @@ ohos_unittest("imageeventtest") {
   ]
 }
 
+ohos_unittest("imageformatconverttest") {
+  module_out_path = module_output_path
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/common/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${graphic_subsystem}/utils/color_manager/export",
+    "//third_party/googletest/googletest/include",
+    "${image_subsystem}/plugins/manager/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/common/include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${resource_management_subsystem}/interfaces/native/resource/include",
+  ]
+  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_test.cpp" ]
+  deps = [
+    "${graphic_subsystem}/utils/color_manager:color_manager",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
+    "${image_subsystem}/plugins/manager:pluginmanager",
+    "//third_party/ffmpeg:libohosffmpeg",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+  resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
+}
+
 ################################################
 group("unittest") {
   testonly = true
@@ -1774,6 +1819,7 @@ group("unittest") {
     ":imageaccessortest",
     ":imagecolorspacetest",
     ":imageeventtest",
+    ":imageformatconverttest",
     ":imagepixelmapparceltest",
     ":imagepixelmaptest",
     ":imagesourcetest",

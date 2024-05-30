@@ -349,4 +349,10 @@
             <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image/" src="res"/>
         </preparer>
     </target>
+    <target name="imageformatconverttest">
+        <preparer>
+            <option name="push" value="images/800-500.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/951-595.jpg -> /data/local/tmp/image" src="res"/>
+        </preparer>
+    </target>
 </configuration>

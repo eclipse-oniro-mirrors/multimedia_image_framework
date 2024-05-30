@@ -14,7 +14,7 @@
  */
 
 #include "pixel_convert_adapter.h"
-
+#include "pixel_yuv_utils.h"
 #include <map>
 
 #include "image_log.h"
@@ -25,6 +25,7 @@
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkPixmap.h"
+#include "media_errors.h"
 #ifdef _WIN32
 #include <iomanip>
 #endif
@@ -254,5 +255,15 @@ bool PixelConvertAdapter::EraseBitmap(const void *srcPixels, uint32_t srcRowByte
     canvas.drawPaint(paint);
     return true;
 }
+
+bool PixelConvertAdapter::YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
+{
+    if (PixelYuvUtils::YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS) {
+        IMAGE_LOGE("YUV420ToRGB888 failed");
+        return false;
+    }
+    return true;
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -17,9 +17,11 @@
 #define FRAMEWORKS_INNERKITSIMPL_PIXELCONVERTER_INCLUDE_PIXEL_CONVERT_ADAPTER_H
 
 #include "image_type.h"
-
 namespace OHOS {
 namespace Media {
+
+struct YuvImageInfo;
+
 class PixelConvertAdapter {
 public:
     static bool WritePixelsConvert(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo,
@@ -29,6 +31,7 @@ public:
                                   const ImageInfo &srcInfo, void *dstPixels, uint32_t dstRowBytes,
                                   const ImageInfo &dstInfo);
     static bool EraseBitmap(const void *srcPixels, uint32_t srcRowBytes, const ImageInfo &srcInfo, uint32_t color);
+    static bool YUV420ToRGB888(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo);
 };
 } // namespace Media
 } // namespace OHOS

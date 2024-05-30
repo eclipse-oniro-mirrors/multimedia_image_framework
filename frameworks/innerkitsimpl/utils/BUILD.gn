@@ -24,6 +24,7 @@ if (use_clang_ios) {
       "//commonlibrary/c_utils/base/include",
       "//foundation/multimedia/media_utils_lite/interfaces/kits",
       "//foundation/communication/ipc/utils/include",
+      "${image_subsystem}/frameworks/innerkitsimpl/common/include",
     ]
 
     sources = [
@@ -32,6 +33,7 @@ if (use_clang_ios) {
       "src/color_utils.cpp",
       "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
+      "src/pixel_yuv_utils.cpp",
       "src/vpe_utils.cpp",
     ]
 
@@ -40,10 +42,17 @@ if (use_clang_ios) {
     sources += [ "src/image_dfx.cpp" ]
     sources += [ "src/image_data_statistics.cpp" ]
     include_dirs += [ "$image_subsystem/mock/native/include/log" ]
+    include_dirs += [ "//third_party/ffmpeg" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.open_source_libyuv)) {
+      defines += [ "EXT_PIXEL" ]
+      sources += [ "src/pixel_yuv_ext_utils.cpp" ]
+    }
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
@@ -60,6 +69,7 @@ if (use_clang_ios) {
       }
     }
     include_dirs = [
+      "${image_subsystem}/frameworks/innerkitsimpl/common/include",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
       "//foundation/multimedia/image_framework/plugins/manager/include",
       "//foundation/multimedia/image_framework/interfaces/innerkits/include",
@@ -69,8 +79,10 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_utils.cpp",
       "src/color_utils.cpp",
+      "src/image_convert_tools.cpp",
       "src/image_system_properties.cpp",
       "src/image_type_converter.cpp",
+      "src/pixel_yuv_utils.cpp",
       "src/vpe_utils.cpp",
     ]
 
@@ -78,6 +90,7 @@ if (use_clang_ios) {
         [ "drivers_interface_display:display_commontype_idl_headers" ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
+      include_dirs += [ "//third_party/ffmpeg" ]
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
       include_dirs +=
           [ "//foundation/multimedia/image_framework/mock/native/include" ]
@@ -85,8 +98,10 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       ]
+      deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     } else if (use_clang_mac) {
       defines = image_decode_mac_defines
+      include_dirs += [ "//third_party/ffmpeg" ]
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
       include_dirs += [
         "//foundation/multimedia/image_framework/mock/native/include",
@@ -97,8 +112,10 @@ if (use_clang_ios) {
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
         "//third_party/bounds_checking_function:libsec_static",
       ]
+      deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     } else if (use_clang_android) {
       defines = image_decode_android_defines
+      include_dirs += [ "//third_party/ffmpeg" ]
       sources -= [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
       include_dirs += [ "$image_subsystem/mock/native/include/log" ]
       deps = [
@@ -109,6 +126,7 @@ if (use_clang_ios) {
       ]
       sources += [ "src/image_dfx.cpp" ]
       sources += [ "src/image_data_statistics.cpp" ]
+      deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     } else {
       defines = [ "DUAL_ADAPTER" ]
 
@@ -124,6 +142,7 @@ if (use_clang_ios) {
       ]
       external_deps += [
         "c_utils:utils",
+        "ffmpeg:libohosffmpeg",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
         "hilog:libhilog",
@@ -136,6 +155,12 @@ if (use_clang_ios) {
       } else {
         external_deps += [ "startup:syspara" ]
       }
+    }
+
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.open_source_libyuv)) {
+      defines += [ "EXT_PIXEL" ]
+      sources += [ "src/pixel_yuv_ext_utils.cpp" ]
     }
 
     #relative_install_dir = "module/multimedia"
@@ -156,6 +181,7 @@ ohos_static_library("image_utils_static") {
   }
 
   include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
@@ -163,22 +189,27 @@ ohos_static_library("image_utils_static") {
 
   sources = [
     "src/color_utils.cpp",
+    "src/image_convert_tools.cpp",
     "src/image_system_properties.cpp",
     "src/image_type_converter.cpp",
     "src/image_utils.cpp",
+    "src/pixel_yuv_utils.cpp",
     "src/vpe_utils.cpp",
   ]
 
   if (use_mingw_win) {
     defines = image_decode_windows_defines
+    include_dirs += [ "//third_party/ffmpeg" ]
     include_dirs +=
         [ "//foundation/multimedia/image_framework/mock/native/include" ]
     deps = [
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   } else if (use_clang_mac) {
     defines = image_decode_mac_defines
+    include_dirs += [ "//third_party/ffmpeg" ]
     include_dirs += [
       "//foundation/multimedia/image_framework/mock/native/include",
       "//third_party/bounds_checking_function/include",
@@ -188,12 +219,15 @@ ohos_static_library("image_utils_static") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
     ]
+    include_dirs += [ "//third_party/ffmpeg" ]
+    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -211,6 +245,8 @@ ohos_static_library("image_utils_static") {
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
     ]
+    include_dirs += [ "//third_party/ffmpeg" ]
+    include_dirs += [ "$image_subsystem/mock/native/include/log" ]
     deps = [
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
@@ -222,6 +258,7 @@ ohos_static_library("image_utils_static") {
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [
@@ -237,6 +274,7 @@ ohos_static_library("image_utils_static") {
     external_deps = [
       "c_utils:utils",
       "drivers_interface_display:display_commontype_idl_headers",
+      "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
@@ -250,7 +288,11 @@ ohos_static_library("image_utils_static") {
       external_deps += [ "startup:syspara" ]
     }
   }
-
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines = [ "EXT_PIXEL" ]
+    sources += [ "src/pixel_yuv_ext_utils.cpp" ]
+  }
   subsystem_name = "multimedia"
   part_name = "image_framework"
 }

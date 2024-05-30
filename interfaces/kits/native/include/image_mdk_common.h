@@ -155,6 +155,8 @@ typedef enum {
     IMAGE_RESULT_ALLOCATER_TYPE_ERROR = IMAGE_RESULT_BASE + 174,              // hard decode failed
     IMAGE_RESULT_ALPHA_TYPE_ERROR = IMAGE_RESULT_BASE + 175,                  // hard decode failed
     IMAGE_RESULT_INDEX_INVALID = IMAGE_RESULT_BASE + 176,                     // invalid index
+    IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED = IMAGE_RESULT_BASE + 177,
+    IMAGE_RESULT_FORMAT_CONVERT_FAILED = IMAGE_RESULT_BASE + 178,
 
     IMAGE_RESULT_MEDIA_UNKNOWN = IMAGE_RESULT_BASE + 200,                     // media unknown error
 } IRNdkErrCode;

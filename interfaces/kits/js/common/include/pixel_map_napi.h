@@ -132,6 +132,8 @@ private:
     static napi_value Marshalling(napi_env env, napi_callback_info info);
     static napi_value ApplyColorSpace(napi_env env, napi_callback_info info);
     static ImageType ParserImageType(napi_env env, napi_value argv);
+    static napi_value ConvertPixelMapFormat(napi_env env, napi_callback_info info);
+    static std::vector<napi_property_descriptor> RegisterNapi();
 
     void release();
     static thread_local napi_ref sConstructor_;

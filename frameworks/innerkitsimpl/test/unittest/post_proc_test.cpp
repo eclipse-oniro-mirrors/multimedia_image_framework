@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include <fstream>
 #include "post_proc.h"

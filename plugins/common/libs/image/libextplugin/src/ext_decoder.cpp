@@ -27,6 +27,7 @@
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "native_buffer.h"
 #include "securec.h"
 #include "string_ex.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -118,6 +119,9 @@ const static std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
 const static std::string DEFAULT_PACKAGE_NAME = "entry";
 const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
+#ifdef JPEG_HW_DECODE_ENABLE
+const static uint32_t PLANE_COUNT_TWO = 2;
+#endif
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -953,6 +957,21 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         ReleaseOutputBuffer(context, tmpAllocatorType);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
+
+    SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (sbuffer) {
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sbuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("jpeg hardware decode, Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= PLANE_COUNT_TWO) {
+            context.yuvInfo.yStride = planes->planes[0].columnStride;
+            context.yuvInfo.uvStride = planes->planes[1].columnStride;
+            context.yuvInfo.yOffset = planes->planes[0].offset;
+            context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+        }
+    }
+
     context.outInfo.size.width = hwDstInfo_.width();
     context.outInfo.size.height = hwDstInfo_.height();
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {

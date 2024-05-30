@@ -244,7 +244,7 @@ public:
     {
         return grColorSpace_;
     }
-    NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
+    NATIVEEXPORT virtual uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 
@@ -297,7 +297,7 @@ public:
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
 
-private:
+protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
     static constexpr uint8_t TLV_VARINT_MORE = 0x80;

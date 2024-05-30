@@ -52,6 +52,7 @@ std::string ImageSourceNapi::filePath_ = "";
 int ImageSourceNapi::fileDescriptor_ = -1;
 void* ImageSourceNapi::fileBuffer_ = nullptr;
 size_t ImageSourceNapi::fileBufferSize_ = 0;
+std::shared_ptr<PixelMap> ImageSourceNapi::srcPixelMap_ = nullptr;
 
 napi_ref ImageSourceNapi::pixelMapFormatRef_ = nullptr;
 napi_ref ImageSourceNapi::propertyKeyRef_ = nullptr;
@@ -1532,6 +1533,7 @@ static void CreatePixelMapExecute(napi_env env, void *data)
 
     context->rPixelMap = CreatePixelMapInner(context->constructor_, context->rImageSource,
         context->index, context->decodeOpts, context->status);
+        ImageSourceNapi::srcPixelMap_ = context->rPixelMap;
 
     if (context->status != SUCCESS) {
         context->errMsg = "Create PixelMap error";

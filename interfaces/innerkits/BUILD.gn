@@ -141,6 +141,9 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/memory_manager.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/native_image.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -205,7 +208,6 @@ if (use_clang_android) {
     } else {
       defines = [ "DUAL_ADAPTER" ]
       DUAL_ADAPTER = true
-
       deps = [
         "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
@@ -257,6 +259,15 @@ if (use_clang_android) {
       defines += [ "SUT_DECODE_ENABLE" ]
     }
 
+    if (defined(global_parts_info) &&
+        defined(global_parts_info.open_source_libyuv)) {
+      defines += [ "EXT_PIXEL" ]
+      sources += [
+        "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv_ext.cpp",
+        "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_ext_utils.cpp",
+      ]
+    }
+
     #  relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
     innerapi_tags = [ "platformsdk" ]
@@ -292,6 +303,9 @@ ohos_static_library("image_static") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/webp_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_astc.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -350,6 +364,7 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
       "//third_party/bounds_checking_function:libsec_static",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     external_deps = [ "graphic_surface:surface" ]
   } else if (use_clang_ios) {
     defines = image_decode_ios_defines
@@ -415,6 +430,15 @@ ohos_static_library("image_static") {
     }
   }
   external_deps += [ "zlib:libz" ]
+
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines += [ "EXT_PIXEL" ]
+    sources += [
+      "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv_ext.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_ext_utils.cpp",
+    ]
+  }
 
   subsystem_name = "multimedia"
   part_name = "image_framework"
