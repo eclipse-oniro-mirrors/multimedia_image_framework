@@ -38,6 +38,8 @@
 #include "file_source_stream.h"
 #include "memory_manager.h"
 #include "mock_data_stream.h"
+#include "mock_abs_image_decoder.h"
+#include "exif_metadata.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -2275,6 +2277,132 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString003, TestSize.Level3)
     uint32_t ret = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString003 end";
+}
+
+/**
+ * @tc.name: Reset001
+ * @tc.desc: test ImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, Reset001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: Reset001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    uint32_t index = 0;
+    const std::set<std::string> keys;
+    uint8_t *data = nullptr;
+    uint32_t size = 0;
+    imageSource->mainDecoder_ = std::make_unique<ImagePlugin::MockAbsImageDecoder>();
+    imageSource->Reset();
+    ASSERT_EQ(imageSource->mainDecoder_, nullptr);
+    uint32_t ret = imageSource->RemoveImageProperties(index, keys, data, size);
+    ASSERT_EQ(ret, ERR_MEDIA_WRITE_PARCEL_FAIL);
+    GTEST_LOG_(INFO) << "ImageSourceTest: Reset001 end";
+}
+
+/**
+ * @tc.name: TransformSizeWithDensity001
+ * @tc.desc: test ImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, TransformSizeWithDensity001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: TransformSizeWithDensity001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    Size srcSize;
+    int32_t srcDensity = 2;
+    Size wantSize;
+    wantSize.width = 1;
+    wantSize.height = 1;
+    int32_t wantDensity = 1;
+    Size dstSize;
+    imageSource->opts_.resolutionQuality = ResolutionQuality::LOW;
+    imageSource->TransformSizeWithDensity(srcSize, srcDensity, wantSize, wantDensity, dstSize);
+    ASSERT_EQ(dstSize.width, 1);
+    GTEST_LOG_(INFO) << "ImageSourceTest: TransformSizeWithDensity001 end";
+}
+
+/**
+ * @tc.name: GetExifMetadata001
+ * @tc.desc: test ImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, GetExifMetadata001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetExifMetadata001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    imageSource->exifMetadata_ = std::make_shared<ExifMetadata>();
+    auto ret = imageSource->GetExifMetadata();
+    ASSERT_EQ(ret, imageSource->exifMetadata_);
+    imageSource->exifMetadata_ = nullptr;
+    imageSource->sourceStreamPtr_ = nullptr;
+    ret = imageSource->GetExifMetadata();
+    ASSERT_EQ(ret, nullptr);
+    std::shared_ptr<ExifMetadata> ptr = nullptr;
+    imageSource->SetExifMetadata(ptr);
+    ASSERT_EQ(imageSource->exifMetadata_, ptr);
+    GTEST_LOG_(INFO) << "ImageSourceTest: GetExifMetadata001 end";
+}
+
+/**
+ * @tc.name: OnSourceRecognized001
+ * @tc.desc: test ImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, OnSourceRecognized001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceRecognized001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    imageSource->mainDecoder_ = nullptr;
+    uint32_t ret = imageSource->OnSourceRecognized(false);
+    ASSERT_NE(ret, SUCCESS);
+    std::unique_ptr<ImagePlugin::AbsImageDecoder> decoder = std::make_unique<ImagePlugin::MockAbsImageDecoder>();
+    ImagePlugin::PlImageInfo plInfo;
+    float scale = 0;
+    ret = imageSource->SetGainMapDecodeOption(decoder, plInfo, scale);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    imageSource->mainDecoder_ = std::make_unique<ImagePlugin::MockAbsImageDecoder>();
+    imageSource->sourceStreamPtr_ = std::make_unique<ImagePlugin::MockInputDataStream>();
+    ImageHdrType hdrType = ImageHdrType::UNKNOWN;
+    struct ImagePlugin::DecodeContext gainMapCtx;
+    struct Media::HdrMetadata metadata;
+    bool result = imageSource->DecodeJpegGainMap(hdrType, scale, gainMapCtx, metadata);
+    ASSERT_EQ(result, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceRecognized001 end";
+}
+
+/**
+ * @tc.name: ApplyGainMap001
+ * @tc.desc: test ImageSource
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceTest, ApplyGainMap001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceTest: ApplyGainMap001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
+    ImageHdrType hdrType = ImageHdrType::UNKNOWN;
+    ImagePlugin::DecodeContext baseCtx;
+    ImagePlugin::DecodeContext gainMapCtx;
+    ImagePlugin::DecodeContext hdrCtx;
+    HdrMetadata metadata;
+    float scale = 0;
+    imageSource->mainDecoder_ = std::make_unique<ImagePlugin::MockAbsImageDecoder>();
+    bool ret = imageSource->ApplyGainMap(hdrType, baseCtx, hdrCtx, scale);
+    ASSERT_EQ(ret, false);
+    baseCtx.allocatorType = AllocatorType::DEFAULT;
+    ret = imageSource->ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImageSourceTest: ApplyGainMap001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
