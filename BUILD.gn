@@ -56,6 +56,9 @@ group("plugins") {
     if (enable_jpeg_hw_decode) {
       deps += [ "frameworks/innerkitsimpl/test/unittest/jpeg_hw_decode/demo:jpeg_hw_decoder_demo" ]
     }
+    if (enable_heif_hw_decode) {
+      deps += [ "frameworks/innerkitsimpl/test/unittest/heif_hw_decode/demo:heif_hw_decoder_demo" ]
+    }
   }
 }
 
