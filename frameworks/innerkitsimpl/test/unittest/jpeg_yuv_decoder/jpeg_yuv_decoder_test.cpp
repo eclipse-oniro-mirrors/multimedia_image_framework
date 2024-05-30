@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
-#include <gtest/gtest.h>
-#include <fstream>
 #include <fcntl.h>
+#include <fstream>
+#include <gtest/gtest.h>
 #include <string>
+
+#include "abs_image_decoder.h"
 #include "jpeg_decoder_yuv.h"
 #include "media_errors.h"
-#include "abs_image_decoder.h"
 
 using namespace testing::ext;
 using namespace OHOS::ImagePlugin;
@@ -104,17 +105,17 @@ void JpgYuvDecoderTest::DecodeToYUV(std::string srcjpg, int width, int height, J
     ASSERT_EQ(ret, SUCCESS);
     ASSERT_NE(context.yuvInfo.imageSize.width, 0);
     ASSERT_NE(context.yuvInfo.imageSize.height, 0);
-    ASSERT_NE(context.yuvInfo.y_width, 0);
-    ASSERT_NE(context.yuvInfo.y_height, 0);
-    ASSERT_NE(context.yuvInfo.uv_width, 0);
-    ASSERT_NE(context.yuvInfo.uv_height, 0);
+    ASSERT_NE(context.yuvInfo.yWidth, 0);
+    ASSERT_NE(context.yuvInfo.yHeight, 0);
+    ASSERT_NE(context.yuvInfo.uvWidth, 0);
+    ASSERT_NE(context.yuvInfo.uvHeight, 0);
     if (outfmt == JpegYuvFmt::OutFmt_YU12 || outfmt == JpegYuvFmt::OutFmt_YV12) {
-        ASSERT_NE(context.yuvInfo.y_stride, 0);
-        ASSERT_NE(context.yuvInfo.u_stride, 0);
-        ASSERT_NE(context.yuvInfo.v_stride, 0);
+        ASSERT_NE(context.yuvInfo.yStride, 0);
+        ASSERT_NE(context.yuvInfo.uStride, 0);
+        ASSERT_NE(context.yuvInfo.vStride, 0);
     } else {
-        ASSERT_NE(context.yuvInfo.y_stride, 0);
-        ASSERT_NE(context.yuvInfo.uv_stride, 0);
+        ASSERT_NE(context.yuvInfo.yStride, 0);
+        ASSERT_NE(context.yuvInfo.uvStride, 0);
     }
     delete[] yuvBuffer;
     delete[] jpegBuffer;

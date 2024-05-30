@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define private public
+#define protected public
 #include <algorithm>
 #include <fcntl.h>
 #include <filesystem>

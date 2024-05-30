@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 #define IMAGE_COLORSPACE_FLAG
 #define private public
+#define protected public
 #include <fcntl.h>
 #include "buffer_source_stream.h"
 #include "exif_info.h"

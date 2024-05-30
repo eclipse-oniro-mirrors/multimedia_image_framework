@@ -203,6 +203,7 @@ if (use_clang_ios) {
     sources = [
       "$image_subsystem/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
       "$image_subsystem/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+      "$image_subsystem/frameworks/kits/js/common/image_format_convert_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_packer_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
@@ -249,6 +250,7 @@ if (use_clang_ios) {
     } else {
       defines = []
       deps = [
+        "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image",
         "$image_subsystem/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
         "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
         "$image_subsystem/interfaces/innerkits:image_native",

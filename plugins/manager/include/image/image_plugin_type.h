@@ -147,14 +147,18 @@ struct PlSVGResize {
 
 struct PlYuvDataInfo {
     PlSize imageSize = {0, 0};
-    uint32_t y_width = 0;
-    uint32_t y_height = 0;
-    uint32_t uv_width = 0;
-    uint32_t uv_height = 0;
-    uint32_t y_stride = 0;
-    uint32_t u_stride = 0;
-    uint32_t v_stride = 0;
-    uint32_t uv_stride = 0;
+    uint32_t yWidth = 0;
+    uint32_t yHeight = 0;
+    uint32_t uvWidth = 0;
+    uint32_t uvHeight = 0;
+    uint32_t yStride = 0;
+    uint32_t uStride = 0;
+    uint32_t vStride = 0;
+    uint32_t uvStride = 0;
+    uint32_t yOffset = 0;
+    uint32_t uOffset = 0;
+    uint32_t vOffset = 0;
+    uint32_t uvOffset = 0;
 };
 
 struct PlImageInfo {

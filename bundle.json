@@ -105,7 +105,8 @@
                 "incremental_pixel_map.h",
                 "pixel_map_manager.h",
                 "decode_listener.h",
-                "pixel_map_parcel.h"
+                "pixel_map_parcel.h",
+                "image_format_convert.h"
               ],
               "header_base": "//foundation/multimedia/image_framework/interfaces/innerkits/include"
             },

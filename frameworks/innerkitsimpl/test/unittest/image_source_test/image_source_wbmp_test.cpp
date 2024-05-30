@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#define private public
+#define protected public
 #include <fstream>
 #include <gtest/gtest.h>
 #include "directory_ex.h"
