@@ -270,10 +270,10 @@ ohos_shared_library("extplugin") {
       external_deps += [
         "drivers_interface_codec:image_idl_headers",
         "drivers_interface_codec:libimage_proxy_1.0",
-        "drivers_interface_display:libdisplay_buffer_proxy_1.0",
-        "drivers_interface_display:libdisplay_composer_proxy_1.0",
         "drivers_interface_display:libdisplay_buffer_hdi_impl",
+        "drivers_interface_display:libdisplay_buffer_proxy_1.0",
         "drivers_interface_display:libdisplay_composer_hdi_impl",
+        "drivers_interface_display:libdisplay_composer_proxy_1.0",
         "hdf_core:libhdf_utils",
         "hdf_core:libhdi",
         "ipc:ipc_single",
