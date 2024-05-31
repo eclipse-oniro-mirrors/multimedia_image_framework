@@ -3208,7 +3208,7 @@ bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamB
 
 bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
 {
-    ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%{public}d, scale:%{public}d", hdrType, scale);
+    ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%d, scale:%d", hdrType, scale);
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
     if (gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0) {
@@ -3268,7 +3268,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     DecodeContext gainMapCtx;
     HdrMetadata metadata;
     if (format == IMAGE_HEIF_FORMAT) {
-        ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%{public}d, scale:%{public}d", hdrType, scale);
+        ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
         if (!mainDecoder_->DecodeHeifGainMap(gainMapCtx, scale)) {
             IMAGE_LOGI("[ImageSource] heif get gainmap failed");
             return false;
@@ -3351,7 +3351,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     IMAGE_LOGE("unsupport hdr");
     return false;
 #else
-    ImageTrace imageTrace("ImageSource::ComposeHdrImage hdr type is %{public}d", hdrType);
+    ImageTrace imageTrace("ImageSource::ComposeHdrImage hdr type is %d", hdrType);
     if (baseCtx.allocatorType != AllocatorType::DMA_ALLOC || gainMapCtx.allocatorType != AllocatorType::DMA_ALLOC) {
         return false;
     }
