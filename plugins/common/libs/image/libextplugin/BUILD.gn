@@ -268,7 +268,6 @@ ohos_shared_library("extplugin") {
 
     if (enable_jpeg_hw_decode) {
       external_deps += [
-        "drivers_interface_codec:image_idl_headers",
         "drivers_interface_codec:libimage_proxy_1.0",
         "drivers_interface_display:display_buffer_idl_headers",
         "drivers_interface_display:display_composer_idl_headers",
@@ -285,7 +284,7 @@ ohos_shared_library("extplugin") {
       defines += [ "HEIF_HW_DECODE_ENABLE" ]
       include_dirs += [ "include/heif_impl/heif_parser" ]
       external_deps += [
-        "drivers_interface_codec:codec_idl_headers",
+        "drivers_interface_codec:libcodec_proxy_3.0",
         "drivers_peripheral_codec:libcodec_hdi_omx_client",
         "openmax:libopenmax_static",
       ]
@@ -471,7 +470,6 @@ ohos_shared_library("heifimpl") {
   if (enable_heif_hw_decode) {
     external_deps += [
       "c_utils:utils",
-      "drivers_interface_codec:codec_idl_headers",
       "drivers_interface_codec:libcodec_proxy_3.0",
       "drivers_peripheral_codec:libcodec_hdi_omx_client",
       "ffmpeg:libohosffmpeg",
