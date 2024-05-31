@@ -82,6 +82,7 @@
             <option name="push" value="images/moving_test_loop0.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/moving_test_loop1.gif -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/moving_test_loop5.gif -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/hdr.jpg -> /data/local/tmp/image/" src="res"/>
         </preparer>
     </target>
     <target name="imagecolorspacetest">

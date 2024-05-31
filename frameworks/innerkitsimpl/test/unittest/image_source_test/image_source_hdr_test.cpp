@@ -191,5 +191,55 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapDynamicRangeSdr002, TestSize.Level3)
     bool isHdr = pixelMap->IsHdr();
     ASSERT_EQ(isHdr, false);
 }
+
+/**
+ * @tc.name: ToSdr001
+ * @tc.desc: ToSdr test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ToSdr001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceHdrTest: ToSdr001 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string path = "/data/local/tmp/image/hdr.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeOptions decopts;
+    decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    uint32_t ret = SUCCESS;
+    auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t errCode = pixelMap->ToSdr();
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_EQ(errCode, SUCCESS);
+#else
+    ASSERT_NE(errCode, SUCCESS);
+#endif
+}
+
+/**
+ * @tc.name: ToSdr002
+ * @tc.desc: ToSdr test
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceHdrTest: ToSdr002 start";
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::string path = "/data/local/tmp/image/test.jpg";
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    DecodeOptions decopts;
+    decopts.desiredDynamicRange = DecodeDynamicRange::AUTO;
+    uint32_t ret = SUCCESS;
+    auto pixelMap = imageSource->CreatePixelMap(decopts, ret);
+    ASSERT_EQ(ret, SUCCESS);
+    uint32_t errCode = pixelMap->ToSdr();
+    ASSERT_NE(errCode, SUCCESS);
+}
 }
 }
