@@ -149,6 +149,74 @@ Image_ErrorCode OH_PackingOptions_GetDesiredDynamicRange(OH_PackingOptions *opti
 Image_ErrorCode OH_PackingOptions_SetDesiredDynamicRange(OH_PackingOptions *options, int32_t desiredDynamicRange);
 
 /**
+ * @brief Set Loop number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param loop The number of image loop.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_SetLoop(OH_PackingOptions *options, uint16_t loop);
+
+/**
+ * @brief Get Loop number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param loop The number of image loop.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_GetLoop(OH_PackingOptions *options, uint16_t *loop);
+
+/**
+ * @brief Set DelayTimes number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param delayTimes The number of image delayTimes.
+ * @param delayTimesSize The number of image delayTimesSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_SetDelayTimes(OH_PackingOptions *options, uint16_t* delayTimes,
+    uint32_t delayTimesSize);
+
+/**
+ * @brief Get DelayTimes number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param delayTimes The number of image delayTimes.
+ * @param delayTimesSize The number of image delayTimesSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_GetDelayTimes(OH_PackingOptions *options, uint16_t* delayTimes,
+    uint32_t *delayTimesSize);
+
+/**
+ * @brief Set DisposalTypes number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param disposalTypes The number of image disposalTypes.
+ * @param disposalTypesSize The number of image disposalTypesSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_SetDisposalTypes(OH_PackingOptions *options, uint16_t* disposalTypes,
+    uint32_t disposalTypesSize);
+
+/**
+ * @brief Get DisposalTypes number for PackingOptions struct.
+ *
+ * @param options The PackingOptions pointer will be operated.
+ * @param disposalTypes The number of image disposalTypes.
+ * @param disposalTypesSize The number of image disposalTypesSize.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PackingOptions_GetDisposalTypes(OH_PackingOptions *options, uint16_t* disposalTypes,
+    uint32_t* disposalTypesSize);
+
+/**
  * @brief delete DecodingOptions pointer.
  *
  * @param options The DecodingOptions pointer will be operated.
@@ -195,6 +263,21 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
     OH_PackingOptions *options, OH_PixelmapNative *pixelmap, uint8_t *outData, size_t *size);
 
 /**
+ * @brief Encoding a <b>PixelMap</b> list into the a file with fd with required format
+ *
+ * @param imagePacker The imagePacker to use for packing.
+ * @param options Indicates the encoding {@link OH_PackingOptions}.
+ * @param pixelmaps The pixelmap array to be packed.
+ * @param mapSize The pixelmap array size to be packed.
+ * @param outData The output data buffer to store the packed image.
+ * @param outDataSize A pointer to the size of the output data buffer.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_ImagePacker_PackToDataMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
+    OH_PixelmapNative **pixelmaps, int32_t mapSize, uint8_t* outData, size_t* outDataSize);
+
+/**
  * @brief Encoding an <b>ImageSource</b> into the a file with fd with required format.
  *
  * @param imagePacker The image packer to use for packing.
@@ -219,6 +302,21 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNat
  */
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PixelmapNative *pixelmap, int32_t fd);
+
+/**
+ * @brief Encoding a <b>PixelMap</b> list into the a file with fd with required format
+ *
+ 
+  * @param imagePacker The image packer to use for packing.
+  * @param options Indicates the encoding {@link OH_PackingOptions}.
+  * @param pixelmaps The pixelmap array to be packed.
+  * @param mapSize The pixelmap array size to be packed.
+  * @param fd Indicates a writable file descriptor.
+  * @return Returns {@link Image_ErrorCode}
+  * @since 12
+ */
+Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
+    OH_PixelmapNative **pixelmaps, int32_t mapSize, int32_t fd);
 
 /**
   * @brief Releases an imagePacker object.

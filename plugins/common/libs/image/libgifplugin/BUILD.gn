@@ -24,7 +24,7 @@ ohos_shared_library("gifplugin") {
     }
   }
   sources = [
-    "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/plugin_export.cpp",
   ]
 
@@ -72,6 +72,7 @@ ohos_shared_library("gifplugin") {
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   part_name = "image_framework"
   subsystem_name = "multimedia"
+  innerapi_tags = [ "platformsdk" ]
 }
 
 ohos_prebuilt_etc("gifpluginmetadata") {

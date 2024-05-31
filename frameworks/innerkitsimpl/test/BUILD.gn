@@ -1033,13 +1033,12 @@ ohos_unittest("gifplugintest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/utils/include",
     "//third_party/googletest/googletest/include",
-    "//third_party/giflib",
     "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
     "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
-  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/gif_decoder_test.cpp" ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/gif_encoder_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter:pixelconvertadapter",
@@ -1820,6 +1819,7 @@ group("unittest") {
     ":exifmetadatatest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
+    ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
     ":image_native_test",
