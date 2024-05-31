@@ -575,27 +575,16 @@ napi_value SetRecordParametersInfo(napi_env env, std::vector<std::pair<std::stri
 {
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-    napi_status status = napi_create_array_with_length(env, recordParameters.size(), &result);
+    napi_status status = napi_create_object(env, &result);
     if (status != napi_ok) {
-        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
+        IMAGE_LOGE("Create record failed %{public}d", status);
         return result;
     }
 
     for (size_t index = 0; index < recordParameters.size(); ++index) {
-        napi_value object = nullptr;
-        status = napi_create_object(env, &object);
-        if (status != napi_ok) {
-            IMAGE_LOGE("Create object failed %{public}d", status);
-            continue;
-        }
-        status = SetValueString(env, recordParameters[index].first, recordParameters[index].second, object);
+        status = SetValueString(env, recordParameters[index].first, recordParameters[index].second, result);
         if (status != napi_ok) {
             IMAGE_LOGE("Set current record parameter failed %{public}d", status);
-            continue;
-        }
-        status = napi_set_element(env, result, index, object);
-        if (status != napi_ok) {
-            IMAGE_LOGE("Add current record parameter failed %{public}d", status);
             continue;
         }
     }
