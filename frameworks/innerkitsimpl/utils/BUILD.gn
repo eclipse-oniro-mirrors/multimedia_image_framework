@@ -87,7 +87,7 @@ if (use_clang_ios) {
     ]
 
     external_deps =
-        [ "drivers_interface_display:display_commontype_idl_headers" ]
+        [ "drivers_interface_display:libdisplay_commontype_proxy_1.0" ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       include_dirs += [ "//third_party/ffmpeg" ]
@@ -273,7 +273,7 @@ ohos_static_library("image_utils_static") {
 
     external_deps = [
       "c_utils:utils",
-      "drivers_interface_display:display_commontype_idl_headers",
+      "drivers_interface_display:libdisplay_commontype_proxy_1.0",
       "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
