@@ -81,6 +81,15 @@ bool ImageSystemProperties::GetDmaEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetAstcEnabled()
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.AstcZeroCopy.enabled", true);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetAntiAliasingEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
