@@ -25,22 +25,21 @@
 namespace OHOS {
 void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/tmp/test.jpg";
-    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    std::string pathName = "/data/local/tmp/test1.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (write(fd, data, size) != (ssize_t)size) {
         close(fd);
         return;
     }
-    std::filebuf fb;
-    fb.open(pathName, std::ios_base::in);
-    std::unique_ptr<std::istream> is = std::make_unique<std::istream>(&fb);
+    std::unique_ptr<std::istream> is = std::make_unique<std::ifstream>(pathName.c_str());
     Media::SourceOptions opts;
     uint32_t errorCode;
     Media ::DecodeOptions dopts;
     auto imagesource = Media::ImageSource::CreateImageSource(std::move(is), opts, errorCode);
-    imagesource->CreatePixelMap(dopts, errorCode);
+    if (imagesource != nullptr) {
+        imagesource->CreatePixelMap(dopts, errorCode);
+    }
     close(fd);
-    fb.close();
 }
 } // namespace OHOS
 

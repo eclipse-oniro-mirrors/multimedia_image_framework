@@ -29,8 +29,8 @@ void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
     uint32_t errorCode;
     uint32_t offset = 0;
     uint32_t length = 1;
-    std::string pathName = "/tmp/test.jpg";
-    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    std::string pathName = "/data/local/tmp/test2.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (write(fd, data, size) != static_cast<ssize_t>(size)) {
         close(fd);
         return;
