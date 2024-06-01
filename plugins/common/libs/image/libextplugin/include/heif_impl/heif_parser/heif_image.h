@@ -84,6 +84,8 @@ public:
 
     std::vector<std::shared_ptr<HeifImage>> GetAuxImages() const;
 
+    std::shared_ptr<HeifImage> GetAlphaImage() const;
+
     void SetAuxImage(heif_item_id id, const std::string &aux_type);
 
     void AddAuxImage(std::shared_ptr<HeifImage> img);
