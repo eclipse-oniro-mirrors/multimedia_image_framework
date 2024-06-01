@@ -67,7 +67,7 @@ extern "C" {
     FFI_EXPORT int64_t FfiOHOSCreateImageSourceByFdWithOption(int fd, CSourceOptions opts, uint32_t* errCode);
     FFI_EXPORT int64_t FfiOHOSCreateImageSourceByBuffer(uint8_t *data, uint32_t size, uint32_t* errCode);
     FFI_EXPORT int64_t FfiOHOSCreateImageSourceByRawFile(int fd, int32_t offset,
-        int32_t length, CSourceOptions &opts, uint32_t* errCode);
+        int32_t length, CSourceOptions opts, uint32_t* errCode);
     FFI_EXPORT int64_t FfiOHOSCreateImageSourceByBufferWithOption(uint8_t *data, uint32_t size, CSourceOptions opts,
         uint32_t* errCode);
     FFI_EXPORT int64_t FfiOHOSCreateIncrementalSource(const uint8_t *data, uint32_t size,
