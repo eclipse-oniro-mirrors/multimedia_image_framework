@@ -1176,7 +1176,6 @@ ohos_unittest("jpeg_hw_decoder_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:image_idl_headers",
     "drivers_interface_codec:libimage_proxy_1.0",
     "drivers_interface_display:display_buffer_idl_headers",
     "drivers_interface_display:display_composer_idl_headers",
@@ -1238,7 +1237,6 @@ ohos_unittest("heif_hw_decoder_test") {
   ]
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:codec_idl_headers",
     "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_surface:surface",
     "hdf_core:libhdi",
@@ -1286,7 +1284,6 @@ ohos_unittest("heif_parser_test") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:codec_idl_headers",
     "drivers_interface_codec:libcodec_proxy_3.0",
     "graphic_surface:surface",
     "hdf_core:libhdi",
