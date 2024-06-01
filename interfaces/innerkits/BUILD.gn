@@ -417,7 +417,7 @@ ohos_static_library("image_static") {
     }
     external_deps = [
       "c_utils:utils",
-      "drivers_interface_display:libdisplay_composer_proxy_1.0",
+      "drivers_interface_display:libdisplay_commontype_proxy_1.0",
       "drivers_peripheral_display:hdi_gralloc_client",
       "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
