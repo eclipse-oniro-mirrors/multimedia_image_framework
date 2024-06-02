@@ -244,6 +244,7 @@ ohos_shared_library("extplugin") {
       "drivers_interface_display:display_commontype_idl_headers",
       "drivers_peripheral_display:hdi_gralloc_client",
       "ffmpeg:libohosffmpeg",
+      "ffrt:libffrt",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",

@@ -22,6 +22,7 @@
 #include "ext_pixel_convert.h"
 #include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "ffrt.h"
 #include "hisysevent.h"
 #endif
 #include "image_system_properties.h"
@@ -720,8 +721,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
     }
+    ffrt::submit([skEncodeFormat] {
+        ReportImageType(skEncodeFormat);
+    }, {}, {});
 #endif
-    ReportImageType(skEncodeFormat);
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
         return GifDecode(index, context, rowStride);
@@ -1374,6 +1377,10 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
     SkEncodedImageFormat format = codec_->getEncodedFormat();
     if (format != SkEncodedImageFormat::kJPEG) {
         res = Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return true;
+    }
+    if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
+        res = Media::ERR_MEDIA_VALUE_INVALID;
         return true;
     }
     auto result = ParseExifData(stream_, exifInfo_);
