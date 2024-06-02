@@ -54,49 +54,49 @@ const int DEFAULT_DISPOSAL_TYPE = 1;
 const int DISPOSAL_METHOD_SHIFT_BIT = 2;
 
 const uint8_t GIF89_STAMP[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61};
-const uint8_t applicationIdentifier[] = {0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45};
-const uint8_t applicationAuthenticationCode[] = {0x32, 0x2E, 0x30};
+const uint8_t APPLICATION_IDENTIFIER[] = {0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45};
+const uint8_t APPLICATION_AUTENTICATION_CODE[] = {0x32, 0x2E, 0x30};
 
 static int g_sortRGBAxis = 0;
 
 #pragma pack(1)
 typedef struct LogicalScreenDescriptor {
-    uint16_t LogicalScreenWidth;
-    uint16_t LogicalScreenHeight;
-    uint8_t PackedFields;
-    uint8_t BackgroundColorIndex;
-    uint8_t PixelAspectRatio;
+    uint16_t logicalScreenWidth;
+    uint16_t logicalScreenHeight;
+    uint8_t packedFields;
+    uint8_t backgroundColorIndex;
+    uint8_t pixelAspectRatio;
 } LogicalScreenDescriptor;
 
 typedef struct ApplicationExtension {
-    uint8_t ExtensionIntroducer;
-    uint8_t ExtensionLabel;
-    uint8_t BlockSize;
-    uint8_t ApplicationIdentifier[8];
-    uint8_t ApplicationAuthenticationCode[3];
-    uint8_t ApplicationDataSize;
-    uint8_t ApplicationDataIndex;
-    uint16_t LoopTime;
-    uint8_t BlockTerminator;
+    uint8_t extensionIntroducer;
+    uint8_t extensionLabel;
+    uint8_t blockSize;
+    uint8_t applicationIdentifier[8];
+    uint8_t applicationAuthenticationCode[3];
+    uint8_t applicationDataSize;
+    uint8_t applicationDataIndex;
+    uint16_t loopTime;
+    uint8_t blockTerminator;
 } ApplicationExtension;
 
 typedef struct GraphicControlExtension {
-    uint8_t ExtensionIntroducer;
-    uint8_t GraphicControlLabel;
-    uint8_t BlockSize;
-    uint8_t PackedFields;
-    uint16_t DelayTime;
-    uint8_t TransparentColorIndex;
-    uint8_t BlockTerminator;
+    uint8_t extensionIntroducer;
+    uint8_t graphicControlLabel;
+    uint8_t blockSize;
+    uint8_t packedFields;
+    uint16_t delayTime;
+    uint8_t transparentColorIndex;
+    uint8_t blockTerminator;
 } GraphicControlExtension;
 
 typedef struct ImageDescriptor {
-    uint8_t ImageSeparator;
-    uint16_t ImageLeftPosition;
-    uint16_t ImageTopPosition;
-    uint16_t ImageWidth;
-    uint16_t ImageHeight;
-    uint8_t PackedFields;
+    uint8_t imageSeparator;
+    uint16_t imageLeftPosition;
+    uint16_t imageTopPosition;
+    uint16_t imageWidth;
+    uint16_t imageHeight;
+    uint8_t packedFields;
 } ImageDescriptor;
 
 typedef struct ColorInput {
@@ -195,11 +195,11 @@ uint32_t GifEncoder::WriteFileInfo()
     LogicalScreenDescriptor lsd;
     memset_s(&lsd, sizeof(LogicalScreenDescriptor), 0, sizeof(LogicalScreenDescriptor));
     for (auto pixelMap : pixelMaps_) {
-        if (lsd.LogicalScreenWidth < static_cast<uint16_t>(pixelMap->GetWidth())) {
-            lsd.LogicalScreenWidth = static_cast<uint16_t>(pixelMap->GetWidth());
+        if (lsd.logicalScreenWidth < static_cast<uint16_t>(pixelMap->GetWidth())) {
+            lsd.logicalScreenWidth = static_cast<uint16_t>(pixelMap->GetWidth());
         }
-        if (lsd.LogicalScreenHeight < static_cast<uint16_t>(pixelMap->GetHeight())) {
-            lsd.LogicalScreenHeight = static_cast<uint16_t>(pixelMap->GetHeight());
+        if (lsd.logicalScreenHeight < static_cast<uint16_t>(pixelMap->GetHeight())) {
+            lsd.logicalScreenHeight = static_cast<uint16_t>(pixelMap->GetHeight());
         }
     }
     if (!Write((const uint8_t*)&lsd, sizeof(LogicalScreenDescriptor))) {
@@ -209,17 +209,17 @@ uint32_t GifEncoder::WriteFileInfo()
 
     ApplicationExtension ae;
     memset_s(&ae, sizeof(ApplicationExtension), 0, sizeof(ApplicationExtension));
-    ae.ExtensionIntroducer = EXTENSION_INTRODUCER;
-    ae.ExtensionLabel = APPLICATION_EXTENSION_LABEL;
-    ae.BlockSize = 0x0B;
-    memcpy_s(&ae.ApplicationIdentifier, sizeof(ae.ApplicationIdentifier),
-             &applicationIdentifier, sizeof(ae.ApplicationIdentifier));
-    memcpy_s(&ae.ApplicationAuthenticationCode, sizeof(ae.ApplicationIdentifier),
-             &applicationAuthenticationCode, sizeof(ae.ApplicationAuthenticationCode));
-    ae.ApplicationDataSize = 0x03;
-    ae.ApplicationDataIndex = 0x01;
-    ae.LoopTime = encodeOpts_.loop;
-    ae.BlockTerminator = 0x00;
+    ae.extensionIntroducer = EXTENSION_INTRODUCER;
+    ae.extensionLabel = APPLICATION_EXTENSION_LABEL;
+    ae.blockSize = 0x0B;
+    memcpy_s(&ae.applicationIdentifier, sizeof(ae.applicationIdentifier),
+             &APPLICATION_IDENTIFIER, sizeof(ae.applicationIdentifier));
+    memcpy_s(&ae.applicationAuthenticationCode, sizeof(ae.applicationIdentifier),
+             &APPLICATION_AUTENTICATION_CODE, sizeof(ae.applicationAuthenticationCode));
+    ae.applicationDataSize = 0x03;
+    ae.applicationDataIndex = 0x01;
+    ae.loopTime = encodeOpts_.loop;
+    ae.blockTerminator = 0x00;
     if (!Write((const uint8_t*)&ae, sizeof(ApplicationExtension))) {
         IMAGE_LOGE("Write to buffer error.");
         return ERR_IMAGE_ENCODE_FAILED;
@@ -232,15 +232,15 @@ uint32_t GifEncoder::WriteFrameInfo(int index)
 {
     GraphicControlExtension gce;
     memset_s(&gce, sizeof(GraphicControlExtension), 0, sizeof(GraphicControlExtension));
-    gce.ExtensionIntroducer = EXTENSION_INTRODUCER;
-    gce.GraphicControlLabel = GRAPHIC_CONTROL_LABEL;
-    gce.BlockSize = 0x04;
-    gce.PackedFields = 0x00;
-    gce.PackedFields |= (((index < encodeOpts_.disposalTypes.size() ?
+    gce.extensionIntroducer = EXTENSION_INTRODUCER;
+    gce.graphicControlLabel = GRAPHIC_CONTROL_LABEL;
+    gce.blockSize = 0x04;
+    gce.packedFields = 0x00;
+    gce.packedFields |= (((index < encodeOpts_.disposalTypes.size() ?
         encodeOpts_.disposalTypes[index] : DEFAULT_DISPOSAL_TYPE) & 0x07) << DISPOSAL_METHOD_SHIFT_BIT);
-    gce.DelayTime = index < encodeOpts_.delayTimes.size() ? encodeOpts_.delayTimes[index] : DEFAULT_DELAY_TIME;
-    gce.TransparentColorIndex = 0x00;
-    gce.BlockTerminator = 0x00;
+    gce.delayTime = index < encodeOpts_.delayTimes.size() ? encodeOpts_.delayTimes[index] : DEFAULT_DELAY_TIME;
+    gce.transparentColorIndex = 0x00;
+    gce.blockTerminator = 0x00;
     if (!Write((const uint8_t*)&gce, sizeof(GraphicControlExtension))) {
         IMAGE_LOGE("Write to buffer error.");
         return ERR_IMAGE_ENCODE_FAILED;
@@ -248,12 +248,12 @@ uint32_t GifEncoder::WriteFrameInfo(int index)
 
     ImageDescriptor id;
     memset_s(&id, sizeof(ImageDescriptor), 0, sizeof(ImageDescriptor));
-    id.ImageSeparator = IMAGE_SEPARATOR;
-    id.ImageLeftPosition = 0x0000;
-    id.ImageTopPosition = 0x0000;
-    id.ImageWidth = static_cast<uint16_t>(pixelMaps_[index]->GetWidth());
-    id.ImageHeight = static_cast<uint16_t>(pixelMaps_[index]->GetHeight());
-    id.PackedFields = 0x87;
+    id.imageSeparator = IMAGE_SEPARATOR;
+    id.imageLeftPosition = 0x0000;
+    id.imageTopPosition = 0x0000;
+    id.imageWidth = static_cast<uint16_t>(pixelMaps_[index]->GetWidth());
+    id.imageHeight = static_cast<uint16_t>(pixelMaps_[index]->GetHeight());
+    id.packedFields = 0x87;
     if (!Write((const uint8_t*)&id, sizeof(ImageDescriptor))) {
         IMAGE_LOGE("Write to buffer error.");
         return ERR_IMAGE_ENCODE_FAILED;
@@ -369,7 +369,7 @@ void InitColorCube(ColorCoordinate *colorCoordinate, uint16_t width, uint16_t he
         colorCoordinate[i].pixelNum = 0;
     }
 
-    for (int i = 0; i < (int)(width * height); i++) {
+    for (int i = 0; i < static_cast<int>(width * height); i++) {
         uint16_t index = ((colorInput->redInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << RED_COORDINATE) +
                  ((colorInput->greenInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << GREEN_COORDINATE) +
                  ((colorInput->blueInput[i] >> (BITS_IN_BYTE - BITS_PER_PRIM_COLOR)) << BLUE_COORDINATE);
@@ -468,10 +468,10 @@ uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
     return SUCCESS;
 }
 
-int32_t SortCmpRtn(const void *Entry1, const void *Entry2)
+int32_t SortCmpRtn(const void *inEntry1, const void *inEntry2)
 {
-    ColorCoordinate *entry1 = (*((ColorCoordinate **)Entry1));
-    ColorCoordinate *entry2 = (*((ColorCoordinate **)Entry2));
+    ColorCoordinate *entry1 = (*((ColorCoordinate **)inEntry1));
+    ColorCoordinate *entry2 = (*((ColorCoordinate **)inEntry2));
 
     int32_t hash1 = entry1->rgb[(g_sortRGBAxis + R_IN_RGB)] * COLOR_OF_GIF * COLOR_OF_GIF +
                 entry1->rgb[(g_sortRGBAxis + G_IN_RGB) % NUM_OF_RGB] * COLOR_OF_GIF +
@@ -490,7 +490,7 @@ uint32_t PrepareSort(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize
     int index = -1;
     for (int i = 0; i < colorSubdivMapSize; i++) {
         for (int j = 0; j < NUM_OF_RGB; j++) {
-            if (((int)colorSubdivMap[i].rgbWidth[j] > maxSize) && (colorSubdivMap[i].colorNum > 1)) {
+            if ((static_cast<int>(colorSubdivMap[i].rgbWidth[j]) > maxSize) && (colorSubdivMap[i].colorNum > 1)) {
                 maxSize = colorSubdivMap[i].rgbWidth[j];
                 index = i;
                 g_sortRGBAxis = j;
@@ -525,8 +525,8 @@ void SubdivColorByPartition(ColorCoordinate *colorCoordinate, ColorSubdivMap *co
         colorNum++;
         pixelNum += colorCoordinate->pixelNum;
     }
-    uint32_t MaxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
-    uint32_t MinColor = colorCoordinate->next->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
+    uint32_t maxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
+    uint32_t minColor = colorCoordinate->next->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
     colorSubdivMap[colorSubdivMapSize].coordinate = colorCoordinate->next;
     colorCoordinate->next = NULL;
     colorSubdivMap[colorSubdivMapSize].pixelNum = colorSubdivMap[index].pixelNum - pixelNum;
@@ -539,9 +539,9 @@ void SubdivColorByPartition(ColorCoordinate *colorCoordinate, ColorSubdivMap *co
     }
     colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] =
         colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] +
-        colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] - MinColor;
-    colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] = MinColor;
-    colorSubdivMap[index].rgbWidth[g_sortRGBAxis] = MaxColor - colorSubdivMap[index].rgbMin[g_sortRGBAxis];
+        colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] - minColor;
+    colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] = minColor;
+    colorSubdivMap[index].rgbWidth[g_sortRGBAxis] = maxColor - colorSubdivMap[index].rgbMin[g_sortRGBAxis];
 }
 
 uint32_t GifEncoder::BuildColorSubdivMap(ColorSubdivMap *colorSubdivMap, uint32_t *colorSubdivMapSize)
