@@ -556,6 +556,24 @@ bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifHardwareDecoder> &hw
     return true;
 }
 
+static bool IsEmptyBuffer(uint8_t *buffer, uint32_t width, uint32_t height, uint32_t bpp, uint32_t rowStride)
+{
+    if (buffer == nullptr) {
+        return true;
+    }
+    uint8_t *bufferRowStart = buffer;
+    uint32_t rowBytes = width * bpp;
+    for (uint32_t row = 0; row < height; ++row) {
+        for (uint32_t col = 0; col < rowBytes; ++col) {
+            if (bufferRowStart[col] != 0) {
+                return false;
+            }
+        }
+        bufferRowStart += rowStride;
+    }
+    return true;
+}
+
 bool HeifDecoderImpl::ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride)
 {
     // check alpha image is available
@@ -594,6 +612,10 @@ bool HeifDecoderImpl::ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, u
     uint8_t *dstRowStart = dstMemory;
     uint32_t width = masterImage->GetOriginalWidth();
     uint32_t height = masterImage->GetOriginalHeight();
+    if (IsEmptyBuffer(reinterpret_cast<uint8_t*>(hwBuffer->GetVirAddr()), width, height, 1, hwBuffer->GetStride())) {
+        return false;
+    }
+
     for (uint32_t row = 0; row < height; ++row) {
         uint8_t *dstPixel = dstRowStart;
         for (uint32_t col = 0; col < width; ++col) {
