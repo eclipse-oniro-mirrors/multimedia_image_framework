@@ -17,13 +17,13 @@
 #define PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_IMPL_H
 
 #include "HeifDecoder.h"
+
+#ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_parser.h"
 #include "image_type.h"
 #include "surface_buffer.h"
 
-#ifdef HEIF_HW_DECODE_ENABLE
 #include "hardware/heif_hw_decoder.h"
-#endif
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -64,19 +64,34 @@ private:
 
     void InitFrameInfo(HeifFrameInfo *frameInfo, const std::shared_ptr<HeifImage> &image);
 
-    void GetTileSize(const std::shared_ptr<HeifImage> &image, uint32_t &tileWidth, uint32_t &tileHeight);
+    void InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
 
-    void SetRowColNum();
+    void GetTileSize(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo);
+
+    void GetRowColNum(GridInfo &gridInfo);
+
+    GraphicPixelFormat GetInPixelFormat(const std::shared_ptr<HeifImage> &image);
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
 
-    bool DecodeGrids(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
+    bool DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+                     std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+                     sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool DecodeIdenImage(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
+    bool DecodeGrids(std::shared_ptr<HeifHardwareDecoder> &hwDecoder, std::shared_ptr<HeifImage> &image,
+                     GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool DecodeSingleImage(std::shared_ptr<HeifImage> &image, sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
+    bool DecodeIdenImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+                         std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+                         sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, bool isGainmap = false);
+    bool DecodeSingleImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder, std::shared_ptr<HeifImage> &image,
+                           GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+
+    bool ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
+
+    bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
+                                    uint8_t *dstMemory, size_t dstRowStride);
 
     bool IsDirectYUVDecode();
 
@@ -86,14 +101,10 @@ private:
 
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
-    GraphicPixelFormat inPixelFormat_;
     Media::PixelFormat outPixelFormat_;
     HeifFrameInfo imageInfo_;
 
-    uint32_t tileWidth_;
-    uint32_t tileHeight_;
-    uint32_t colNum_;
-    uint32_t rowNum_;
+    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0};
     uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
@@ -107,14 +118,11 @@ private:
     HeifFrameInfo tmapInfo_;
     std::string errMsg_;
 
-#ifdef HEIF_HW_DECODE_ENABLE
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
-    std::shared_ptr<HeifHardwareDecoder> hwDecoder_;
-    std::shared_ptr<HeifHardwareDecoder> hwGainmapDecoder_;
-#endif
 };
 } // namespace ImagePlugin
 } // namespace OHOS
+#endif
 
 #ifdef __cplusplus
 extern "C" {
