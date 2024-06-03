@@ -155,9 +155,7 @@ sptr<ImageImpl> ImageReceiverImpl::ReadLatestImage()
 
 void ImageReceiverImpl::Release()
 {
-    if (imageReceiver_ != nullptr) {
-        imageReceiver_ = nullptr;
-    }
+    imageReceiver_ = nullptr;
 }
 }
 }

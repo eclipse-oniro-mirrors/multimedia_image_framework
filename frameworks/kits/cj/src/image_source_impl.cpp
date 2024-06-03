@@ -235,6 +235,7 @@ uint32_t ImageSourceImpl::GetFrameCount(uint32_t &errorCode)
 {
     if (nativeImgSrc == nullptr) {
         errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        return 0;
     }
     IMAGE_LOGI("[ImageSourceImpl] GetFrameCount start.");
     return nativeImgSrc->GetFrameCount(errorCode);
