@@ -429,7 +429,11 @@ ohos_static_library("image_static") {
       external_deps += [ "libexif:libexif" ]
     }
   }
-  external_deps += [ "zlib:libz" ]
+  if (is_arkui_x) {
+    deps += [ "//third_party_root/zlib:libz" ]
+  } else {
+    external_deps += [ "zlib:libz" ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.open_source_libyuv)) {
