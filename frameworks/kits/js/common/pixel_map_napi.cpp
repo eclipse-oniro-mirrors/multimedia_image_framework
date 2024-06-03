@@ -427,7 +427,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
 #endif
     };
@@ -1022,7 +1022,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
