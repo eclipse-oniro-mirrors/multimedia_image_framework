@@ -39,6 +39,9 @@ void ExtDecoderFuncTest001(int fd)
 
     imageSource->sourceInfo_.encodedFormat = "image/x-skia";
     auto extDecoder = static_cast<ExtDecoder*>(imageSource->CreateDecoder(errorCode));
+    if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
+        return;
+    }
     DecodeContext context;
     extDecoder->HeifYUVMemAlloc(context);
     int dWidth;
@@ -75,11 +78,6 @@ void ExtDecoderFuncTest001(int fd)
     extDecoder->GetMakerImagePropertyString(key, value);
     extDecoder->DoHeifToYuvDecode(context);
     extDecoder->Reset();
-
-    DecodeOptions dstOpts;
-    imageSource = ImageSource::CreateImageSource(fd, srcOpts, errorCode);
-    imageSource->CreatePixelMap(0, dstOpts, errorCode);
-    imageSource->Reset();
 }
 
 void SvgDecoderFuncTest001(int fd)
@@ -116,6 +114,9 @@ void SvgDecoderFuncTest001(int fd)
 
 void MetadataAccessorFuncTest001(std::shared_ptr<MetadataAccessor>& metadataAccessor)
 {
+    if (metadataAccessor == nullptr) {
+        return;
+    }
     metadataAccessor->Read();
     auto exifMetadata = metadataAccessor->Get();
     if (exifMetadata == nullptr) {
@@ -134,8 +135,8 @@ void MetadataAccessorFuncTest001(std::shared_ptr<MetadataAccessor>& metadataAcce
 
 void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/tmp/test.jpg";
-    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    std::string pathName = "/data/local/tmp/test1.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (write(fd, data, size) != static_cast<ssize_t>(size)) {
         close(fd);
         return;

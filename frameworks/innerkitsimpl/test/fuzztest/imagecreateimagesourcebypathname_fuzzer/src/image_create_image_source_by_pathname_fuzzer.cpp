@@ -24,8 +24,8 @@
 namespace OHOS {
 void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/tmp/test.jpg";
-    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    std::string pathName = "/data/local/tmp/test4.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (write(fd, data, size) != static_cast<ssize_t>(size)) {
         close(fd);
         return;
@@ -34,7 +34,9 @@ void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
     uint32_t errorCode;
     Media ::DecodeOptions dopts;
     auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
-    imagesource->CreatePixelMap(dopts, errorCode);
+    if (imagesource != nullptr) {
+        imagesource->CreatePixelMap(dopts, errorCode);
+    }
     close(fd);
 }
 } // namespace OHOS
