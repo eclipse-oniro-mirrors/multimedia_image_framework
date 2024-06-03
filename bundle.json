@@ -54,6 +54,7 @@
           "skia",
           "resource_management",
           "json",
+          "ffrt",
           "openmax",
           "qos_manager"
         ],

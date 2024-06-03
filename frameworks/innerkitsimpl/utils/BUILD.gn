@@ -143,6 +143,7 @@ if (use_clang_ios) {
       external_deps += [
         "c_utils:utils",
         "ffmpeg:libohosffmpeg",
+        "ffrt:libffrt",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
         "hilog:libhilog",
@@ -275,6 +276,7 @@ ohos_static_library("image_utils_static") {
       "c_utils:utils",
       "drivers_interface_display:libdisplay_commontype_proxy_1.0",
       "ffmpeg:libohosffmpeg",
+      "ffrt:libffrt",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
