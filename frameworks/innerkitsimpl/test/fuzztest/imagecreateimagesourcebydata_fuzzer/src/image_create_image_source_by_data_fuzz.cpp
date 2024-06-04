@@ -62,13 +62,16 @@ void ImageSourceFuncTest001(std::unique_ptr<ImageSource>& imageSource)
     imageSource->ImageSizeChange(1, 1, 1, 1);
     Rect cropRect;
     ImageInfo imageInfo;
+    uint8_t *data = new(uint8_t);
     imageSource->ImageConverChange(cropRect, imageInfo, imageInfo);
     imageSource->CreatePixelMapForYUV(errCode);
-    imageSource->GetImageInfoForASTC(imageInfo);
+    imageSource->GetImageInfoForASTC(imageInfo, data);
     imageSource->CreatePixelMapList(opts, errCode);
     imageSource->GetDelayTime(errCode);
     imageSource->GetDisposalType(errCode);
     imageSource->GetFrameCount(errCode);
+    delete data;
+    data = nullptr;
 }
 
 void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
