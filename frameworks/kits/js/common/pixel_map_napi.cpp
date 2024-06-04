@@ -23,6 +23,7 @@
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <regex>
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
 #include "pixel_map_from_surface.h"
@@ -1079,6 +1080,12 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
+
+    if (!std::regex_match(context->surfaceId, std::regex("\\d+"))) {
+        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        return;
+    }
 
     auto &rsClient = Rosen::RSInterfaces::GetInstance();
     OHOS::Rect r = {
