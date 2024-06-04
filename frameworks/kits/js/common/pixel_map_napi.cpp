@@ -23,10 +23,10 @@
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <regex>
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
 #include "pixel_map_from_surface.h"
-#include <regex>
 #include "transaction/rs_interfaces.h"
 #endif
 #include "hitrace_meter.h"
