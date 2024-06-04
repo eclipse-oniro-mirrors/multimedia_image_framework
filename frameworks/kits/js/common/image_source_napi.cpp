@@ -561,6 +561,12 @@ napi_status SetValueString(napi_env env, std::string keyStr, std::string valueSt
             IMAGE_LOGE("Set Value failed %{public}d", status);
             return napi_invalid_arg;
         }
+    } else {
+        status = napi_get_null(env, &value);
+        if (status != napi_ok) {
+            IMAGE_LOGE("Set null failed %{public}d", status);
+            return napi_invalid_arg;
+        }
     }
     status = napi_set_named_property(env, object, keyStr.c_str(), value);
     if (status != napi_ok) {
