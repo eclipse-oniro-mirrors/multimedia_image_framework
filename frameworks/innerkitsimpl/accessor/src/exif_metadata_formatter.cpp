@@ -48,7 +48,7 @@ const int CONSTANT_0 = 0;
 const int CONSTANT_1 = 1;
 const int CONSTANT_2 = 2;
 
-const std::set<std::string> READ_WRITE_KEYS = {
+const static std::set<std::string> READ_WRITE_KEYS = {
     "BitsPerSample",
     "Orientation",
     "ImageLength",
@@ -198,7 +198,7 @@ const std::set<std::string> READ_WRITE_KEYS = {
     "MicroVideoPresentationTimestampUS",
 };
 
-const std::set<std::string> READ_ONLY_KEYS = {
+const static std::set<std::string> READ_ONLY_KEYS = {
     "HwMnotePhysicalAperture",
     "HwMnoteRollAngle",        "HwMnotePitchAngle",
     "HwMnoteSceneFoodConf",    "HwMnoteSceneStageConf",
