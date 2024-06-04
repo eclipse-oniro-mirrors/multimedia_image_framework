@@ -1389,7 +1389,7 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write007, TestSize.Level3)
 HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write008, TestSize.Level3)
 {
     BufferMetadataStream stream;
-    byte *buf = new byte[14];
+    byte *buf = new byte[13];
     ASSERT_TRUE(stream.Open());
     stream.Write((uint8_t *)"Hello, world!", 13);
     stream.Seek(4, SeekPos::BEGIN);

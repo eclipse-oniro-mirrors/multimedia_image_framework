@@ -520,6 +520,10 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
         IMAGE_LOGE("Exif data is null. Cannot set value for key: %{public}s", key.c_str());
         return false;
     }
+    if (value.empty()) {
+        IMAGE_LOGE("Set empty value.");
+        return false;
+    }
     auto result = ExifMetadatFormatter::Format(key, value);
     if (result.first) {
         IMAGE_LOGE("Failed to validate and convert value for key: %{public}s", key.c_str());
