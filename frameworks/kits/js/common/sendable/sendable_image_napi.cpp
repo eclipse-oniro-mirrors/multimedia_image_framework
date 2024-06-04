@@ -151,7 +151,7 @@ napi_value SendableImageNapi::Constructor(napi_env env, napi_callback_info info)
         }
     }
     status = napi_wrap_sendable(env, thisVar,
-        reinterpret_cast<void *>(napi.get()), SendableImageNapi::Destructor, nullptr, nullptr);
+        reinterpret_cast<void *>(napi.get()), SendableImageNapi::Destructor, nullptr);
     if (status != napi_ok) {
         IMAGE_ERR("Failure wrapping js to native napi");
         return undefineVar;

@@ -546,7 +546,7 @@ napi_value SendablePixelMapNapi::Constructor(napi_env env, napi_callback_info in
     }
 
     status = napi_wrap_sendable(env, thisVar, reinterpret_cast<void*>(pPixelMapNapi.get()),
-        SendablePixelMapNapi::Destructor, nullptr, nullptr);
+        SendablePixelMapNapi::Destructor, nullptr);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), undefineVar, IMAGE_LOGE("Failure wrapping js to native napi"));
 
     pPixelMapNapi.release();
