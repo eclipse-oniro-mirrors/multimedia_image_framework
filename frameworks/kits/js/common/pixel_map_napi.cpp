@@ -1082,7 +1082,7 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
         context->area.region.height, context->area.region.width);
 
     if (!std::regex_match(context->surfaceId, std::regex("\\d+"))) {
-        IMAGE_LOGE("Empty or invalid surfaceId");
+        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
         context->status = ERR_IMAGE_INVALID_PARAMETER;
         return;
     }
