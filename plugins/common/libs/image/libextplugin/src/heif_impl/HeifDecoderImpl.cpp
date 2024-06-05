@@ -791,7 +791,7 @@ void HeifDecoderImpl::SetHardwareDecodeErrMsg(const uint32_t width, const uint32
 } // namespace OHOS
 #endif
 
-HeifDecoder* CreateHeifDecoderImpl()
+HeifDecoder* CreateHeifDecoderImpl(void)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     return new OHOS::ImagePlugin::HeifDecoderImpl();
