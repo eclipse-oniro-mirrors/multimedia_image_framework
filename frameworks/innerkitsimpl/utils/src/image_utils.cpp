@@ -633,5 +633,28 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
         bytes[offset++] = data[i] & 0xFF;
     }
 }
+
+void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (!pixelMap || pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->Map();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils Map failed, GSError=%{public}d", err);
+            return;
+        }
+        err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+#else
+    return;
+#endif
+}
 } // namespace Media
 } // namespace OHOS
