@@ -611,7 +611,7 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
         return nullptr;
     }
     exif_data_set_priv_md(exifData_, (ExifMnoteData *)md);
-    unsigned int hwsize = sizeof(INIT_HW_DATA) / sizeof(INIT_HW_DATA[0]);
+    unsigned long hwsize = sizeof(INIT_HW_DATA) / sizeof(INIT_HW_DATA[0]);
     md->methods.load(md, INIT_HW_DATA, hwsize);
     auto makernote = CreateEntry("MakerNote", EXIF_TAG_MAKER_NOTE, hwsize);
     if (makernote == nullptr) {
