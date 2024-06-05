@@ -2929,6 +2929,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     auto m = dstMemory.memory.get();
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+    ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
 

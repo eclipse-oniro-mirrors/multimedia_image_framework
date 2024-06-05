@@ -774,6 +774,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
     }
+    ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     return pixelMap;
 }
 
