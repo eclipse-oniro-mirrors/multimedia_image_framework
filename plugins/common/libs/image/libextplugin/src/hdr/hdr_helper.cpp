@@ -1244,7 +1244,6 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
         bytes[index] |= 0x80;
     }
     index++;
-    bytes[index++] = (extendMeta.metaISO.useBaseColorFlag << INDEX_ONE) | (extendMeta.metaISO.gainmapChannelNum & 0x01);
     uint32_t baseHeadroomNumerator = EMPTY_SIZE;
     if (extendMeta.metaISO.baseHeadroom > (float)EMPTY_SIZE) {
         baseHeadroomNumerator = (uint32_t)(extendMeta.metaISO.baseHeadroom * DENOMINATOR);
