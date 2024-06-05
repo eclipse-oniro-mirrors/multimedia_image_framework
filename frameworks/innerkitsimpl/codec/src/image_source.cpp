@@ -2621,16 +2621,14 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
 #endif
 }
 
-bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo)
+bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo, const uint8_t *sourceFilePtr)
 {
     ASTCInfo astcInfo;
     if (!sourceStreamPtr_) {
         IMAGE_LOGE("[ImageSource] get astc image info null.");
         return false;
     }
-    if (!GetASTCInfo(sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE ?
-        sourceStreamPtr_->GetDataPtr(true) : sourceStreamPtr_->GetDataPtr(),
-        sourceStreamPtr_->GetStreamSize(), astcInfo)) {
+    if (!GetASTCInfo(sourceFilePtr, sourceStreamPtr_->GetStreamSize(), astcInfo)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return false;
     }
@@ -2698,7 +2696,7 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
 #endif
 
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
-    std::unique_ptr<SourceStream> &sourceStreamPtr)
+    const uint8_t *sourceFilePtr)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
@@ -2717,14 +2715,14 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     bool successMemCpyOrDec = true;
 #ifdef SUT_DECODE_ENABLE
     if (fileSize < astcSize) {
-        if (TextureSuperCompressDecode(sourceStreamPtr->GetDataPtr(), fileSize,
+        if (TextureSuperCompressDecode(sourceFilePtr, fileSize,
             static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
             successMemCpyOrDec = false;
         }
     } else {
 #endif
-        if (memcpy_s(dstMemory->data.data, fileSize, sourceStreamPtr->GetDataPtr(), fileSize) != 0) {
+        if (memcpy_s(dstMemory->data.data, fileSize, sourceFilePtr, fileSize) != 0) {
             IMAGE_LOGE("[ImageSource] astc memcpy_s failed!");
             successMemCpyOrDec = false;
         }
@@ -2750,7 +2748,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
     ImageTrace imageTrace("CreatePixelMapForASTC");
     unique_ptr<PixelAstc> pixelAstc = make_unique<PixelAstc>();
     ImageInfo info;
-    if (!GetImageInfoForASTC(info)) {
+    uint8_t *sourceFilePtr = sourceStreamPtr_->GetDataPtr();
+    if (!GetImageInfoForASTC(info, sourceFilePtr)) {
         IMAGE_LOGE("[ImageSource] get astc image info failed.");
         return nullptr;
     }
@@ -2763,7 +2762,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
 #ifdef SUT_DECODE_ENABLE
-    size_t astcSize = GetAstcSizeBytes(sourceStreamPtr_->GetDataPtr(), fileSize);
+    size_t astcSize = GetAstcSizeBytes(sourceFilePtr, fileSize);
     if (astcSize == 0) {
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
@@ -2771,23 +2770,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
 #else
     size_t astcSize = fileSize;
 #endif
-    if (fastAstc && sourceStreamPtr_->GetStreamType() == ImagePlugin::FILE_STREAM_TYPE && fileSize == astcSize) {
-        void *fdBuffer = new int32_t();
-        *static_cast<int32_t *>(fdBuffer) = static_cast<FileSourceStream *>(sourceStreamPtr_.get())->GetMMapFd();
-        pixelAstc->SetPixelsAddr(sourceStreamPtr_->GetDataPtr(), fdBuffer, fileSize,
-            AllocatorType::SHARE_MEM_ALLOC, nullptr);
-    } else {
-        if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceStreamPtr_)) {
-            IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
-            return nullptr;
-        }
+    if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceFilePtr)) {
+        IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
+        return nullptr;
     }
     pixelAstc->SetAstc(true);
-
-    if (CreatExifMetadataByImageSource() == SUCCESS) {
-        auto metadataPtr = exifMetadata_->Clone();
-        pixelAstc->SetExifMetadata(metadataPtr);
-    }
 
     return pixelAstc;
 }
