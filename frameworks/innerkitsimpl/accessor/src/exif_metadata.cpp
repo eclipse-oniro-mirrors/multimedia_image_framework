@@ -49,6 +49,7 @@ const auto KEY_SIZE = 2;
 const auto TAG_VALUE_SIZE = 1024;
 const auto EXIF_HEAD_SIZE = 6;
 const static std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::set<std::string_view> HW_SPECIAL_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
@@ -550,7 +551,7 @@ bool ExifMetadata::SetValue(const std::string &key, const std::string &value)
 bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &value)
 {
     bool isNewMaker = false;
-    ExifMnoteData *md = GetHwMoteData(isNewMaker);
+    ExifMnoteData *md = GetHwMnoteData(isNewMaker);
     if (!is_huawei_md(md)) {
         IMAGE_LOGD("Makernote is not huawei makernote.");
         return false;
@@ -584,12 +585,12 @@ bool ExifMetadata::SetHwMoteValue(const std::string &key, const std::string &val
     int ret = mnote_huawei_entry_set_value(entry, data, dataLen);
     if (ret == 0 && isNewMaker && hwTag != MNOTE_HUAWEI_CAPTURE_MODE) {
         IMAGE_LOGD("Remve default initialized hw entry.");
-        RemoveEntry("HwMnoteCaptureMode");
+        RemoveEntry(HW_CAPTURE_MODE);
     }
     return ret == 0 ? true : false;
 }
 
-ExifMnoteData* ExifMetadata::GetHwMoteData(bool &isNewMaker)
+ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
 {
     if (exifData_ == nullptr) {
         return nullptr;
@@ -601,12 +602,12 @@ ExifMnoteData* ExifMetadata::GetHwMoteData(bool &isNewMaker)
     IMAGE_LOGD("Makenote not exist & ready to init makernote with hw entry.");
     ExifMem *mem = exif_data_get_priv_mem(exifData_);
     if (mem == nullptr) {
-        IMAGE_LOGE("GetHwMoteData exif data with no ExifMem.");
+        IMAGE_LOGE("GetHwMnoteData exif data with no ExifMem.");
         return nullptr;
     }
     md = exif_mnote_data_huawei_new(mem);
     if (md == nullptr || md->methods.load == nullptr) {
-        IMAGE_LOGE("GetHwMoteData new mnote hw data failed.");
+        IMAGE_LOGE("GetHwMnoteData new mnote hw data failed.");
         return nullptr;
     }
     exif_data_set_priv_md(exifData_, (ExifMnoteData *)md);
@@ -614,7 +615,7 @@ ExifMnoteData* ExifMetadata::GetHwMoteData(bool &isNewMaker)
     md->methods.load(md, INIT_HW_DATA, hwsize);
     auto makernote = CreateEntry("MakerNote", EXIF_TAG_MAKER_NOTE, hwsize);
     if (makernote == nullptr) {
-        IMAGE_LOGE("GetHwMoteData create maker note failed.");
+        IMAGE_LOGE("GetHwMnoteData create maker note failed.");
         return nullptr;
     }
     if (memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
