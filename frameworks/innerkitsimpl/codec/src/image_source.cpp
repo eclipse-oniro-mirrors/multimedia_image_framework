@@ -3032,7 +3032,7 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
     }
     info.size.width = context.info.size.width;
     info.size.height = context.info.size.height;
-    byteCount = PixelMap::GetAllocatedByteCount(info);
+    byteCount = static_cast<uint32_t>(PixelMap::GetAllocatedByteCount(info));
     return byteCount;
 }
 

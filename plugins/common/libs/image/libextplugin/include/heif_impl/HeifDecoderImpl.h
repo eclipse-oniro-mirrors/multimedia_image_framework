@@ -128,7 +128,7 @@ private:
 extern "C" {
 #endif
 
-HeifDecoder* CreateHeifDecoderImpl();
+HeifDecoder* CreateHeifDecoderImpl(void);
 
 #ifdef __cplusplus
 }
