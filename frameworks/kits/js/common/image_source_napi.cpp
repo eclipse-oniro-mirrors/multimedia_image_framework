@@ -45,7 +45,7 @@ namespace OHOS {
 namespace Media {
 thread_local napi_ref ImageSourceNapi::sConstructor_ = nullptr;
 thread_local std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
-std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
+thread_local std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSource";
 static const std::string FILE_URL_PREFIX = "file://";
 std::string ImageSourceNapi::filePath_ = "";

@@ -79,7 +79,7 @@ private:
     void release();
     static thread_local napi_ref sConstructor_;
     static thread_local std::shared_ptr<ImageSource> sImgSrc_;
-    static std::shared_ptr<IncrementalPixelMap> sIncPixelMap_;
+    static thread_local std::shared_ptr<IncrementalPixelMap> sIncPixelMap_;
     std::shared_ptr<IncrementalPixelMap> navIncPixelMap_ = nullptr;
     static napi_ref pixelMapFormatRef_;
     static napi_ref propertyKeyRef_;
