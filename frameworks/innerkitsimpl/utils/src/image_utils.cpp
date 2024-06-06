@@ -240,6 +240,7 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
         case PixelFormat::ARGB_8888:
+        case PixelFormat::RGBA_1010102:
         case PixelFormat::RGBA_F16: {
             break;
         }
