@@ -196,6 +196,13 @@ extern "C"
         return ret;
     }
 
+    void FreeArrayPtr(char** ptr, int count)
+    {
+        for (int i = 0; i < count; i++) {
+            free(ptr[i]);
+        }
+    }
+
     CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSGetSupportedFormats start");
@@ -228,6 +235,7 @@ extern "C"
                 auto temp = Utils::MallocCString(str);
                 if (!temp) {
                     IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats failed to copy string.");
+                    FreeArrayPtr(arr, i);
                     free(arr);
                     *errCode = ERR_IMAGE_MALLOC_ABNORMAL;
                     return ret;
@@ -1095,6 +1103,7 @@ extern "C"
         for (const auto& format : formats) {
             auto temp = ::Utils::MallocCString(format);
             if (!temp) {
+                FreeArrayPtr(arr, i);
                 free(arr);
                 ret.code = ERR_SHAMEM_NOT_EXIST;
                 return ret;
