@@ -620,7 +620,7 @@ ExifMnoteData* ExifMetadata::GetHwMnoteData(bool &isNewMaker)
     }
     if (memcpy_s(makernote->data, hwsize - EXIF_HEAD_SIZE, INIT_HW_DATA + EXIF_HEAD_SIZE,
         hwsize - EXIF_HEAD_SIZE) != 0) {
-        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", hwsize);
+        IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}lu", hwsize);
     }
     isNewMaker = true;
     return md;
