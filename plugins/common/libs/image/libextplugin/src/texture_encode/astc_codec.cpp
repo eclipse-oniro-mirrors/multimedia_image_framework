@@ -88,10 +88,10 @@ SutEncSoManager::~SutEncSoManager()
         return;
     }
     if (dlclose(textureEncSoHandle_) != 0) {
-        IMAGE_LOGE("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
+        IMAGE_LOGE("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
         return;
     } else {
-        IMAGE_LOGD("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
+        IMAGE_LOGD("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
         return;
     }
 }
@@ -427,7 +427,8 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
-    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
+    param.sutBytes = param.astcBytes;
+    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.sutBytes));
     if (sutBuffer == nullptr) {
         IMAGE_LOGE("astc sutBuffer malloc failed!");
         return false;
