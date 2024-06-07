@@ -212,10 +212,7 @@ SutDecSoManager::~SutDecSoManager()
         return;
     }
     if (dlclose(textureDecSoHandle_) != 0) {
-        IMAGE_LOGD("[ImageSource] astcenc dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
-        return;
-    } else {
-        IMAGE_LOGD("[ImageSource] astcenc dlclose success: %{public}s!", g_textureSuperDecSo.c_str());
+        IMAGE_LOGE("[ImageSource] astcenc dlclose failed: %{public}s!", g_textureSuperDecSo.c_str());
         return;
     }
 }
@@ -268,7 +265,6 @@ bool SutDecSoManager::LoadSutDecSo()
             textureDecSoHandle_ = nullptr;
             return false;
         }
-        IMAGE_LOGD("[ImageSource] astcenc dlopen success: %{public}s!", g_textureSuperDecSo.c_str());
         sutDecSoOpened_ = true;
     }
     return true;
