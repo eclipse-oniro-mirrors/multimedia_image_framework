@@ -721,6 +721,10 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst)
 {
+    if (source == nullptr || dst == nullptr) {
+        IMAGE_LOGI("Pixelmap CopySurfaceBufferInfo failed, source or dst is nullptr");
+        return;
+    }
     HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type type;
     HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color;
     vector<uint8_t> staticData;
@@ -2908,12 +2912,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     TransMemoryInfo dstMemory;
-    if (allocatorType_ == AllocatorType::CUSTOM_ALLOC) {
-        // We dont know how custom alloc memory
-        dstMemory.allocType = AllocatorType::DEFAULT;
-    } else {
-        dstMemory.allocType = allocatorType_;
-    }
+    // We dont know how custom alloc memory
+    dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
@@ -2944,11 +2944,13 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     }
     ToImageInfo(imageInfo, dst.info);
     auto m = dstMemory.memory.get();
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC && IsHdr()) {
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
         CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
+#endif
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
