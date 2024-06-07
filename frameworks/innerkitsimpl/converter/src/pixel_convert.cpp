@@ -17,27 +17,8 @@
 
 #include <map>
 #include <mutex>
-#ifndef _WIN32
-#include "securec.h"
-#else
-#include "memory.h"
-#endif
-#include "pixel_convert_adapter.h"
-#include "image_utils.h"
-#include "pixel_map.h"
 
 #include "image_log.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#include "libswscale/swscale.h"
-#include "libavutil/opt.h"
-#include "libavutil/imgutils.h"
-#include "libavcodec/avcodec.h"
-#ifdef __cplusplus
-}
-#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
