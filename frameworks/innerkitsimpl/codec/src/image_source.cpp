@@ -2772,7 +2772,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
         return nullptr;
     }
     pixelAstc->SetAstc(true);
-
+    ImageUtils::FlushSurfaceBuffer(pixelAstc.get());
     return pixelAstc;
 }
 #endif
