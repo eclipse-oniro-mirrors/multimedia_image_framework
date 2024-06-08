@@ -60,6 +60,7 @@ struct OH_PackingOptions {
     uint32_t delayTimesSize;
     uint16_t* disposalTypes;
     uint32_t disposalTypesSize;
+    bool needsPackProperties = false;
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
@@ -187,6 +188,26 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_
         return IMAGE_BAD_PARAMETER;
     }
     options->quality = static_cast<int>(quality);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_GetNeedsPackProperties(OH_PackingOptions *options, bool *needsPackProperties)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *needsPackProperties = options->needsPackProperties;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PackingOptions_SetNeedsPackProperties(OH_PackingOptions *options, bool needsPackProperties)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->needsPackProperties = needsPackProperties;
     return IMAGE_SUCCESS;
 }
 
@@ -321,6 +342,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNat
     }
     packOption.format = format;
     packOption.quality = options->quality;
+    packOption.needsPackProperties = options->needsPackProperties;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackingFromImageSource(&packOption, imageSource,
         outData, reinterpret_cast<int64_t*>(size)));
@@ -341,6 +363,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
     }
     packOption.format = format;
     packOption.quality = options->quality;
+    packOption.needsPackProperties = options->needsPackProperties;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackingFromPixelmap(&packOption, pixelmap, outData,
         reinterpret_cast<int64_t*>(size)));
@@ -389,6 +412,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNat
     }
     packOption.format = format;
     packOption.quality = options->quality;
+    packOption.needsPackProperties = options->needsPackProperties;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackToFileFromImageSource(&packOption, imageSource, fd));
 }
@@ -408,6 +432,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
     }
     packOption.format = format;
     packOption.quality = options->quality;
+    packOption.needsPackProperties = options->needsPackProperties;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
 }

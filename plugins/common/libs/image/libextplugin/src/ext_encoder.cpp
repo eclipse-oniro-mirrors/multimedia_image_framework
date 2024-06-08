@@ -259,7 +259,7 @@ uint32_t ExtEncoder::FinalizeEncode()
     encodeFormat_ = iter->first;
     ExtWStream wStream(output_);
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    return EncodeImageByPixelMap(pixelmap_, true, wStream);
+    return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, wStream);
 #else
     switch (opts_.desiredDynamicRange) {
         case PlEncodeDynamicRange::AUTO:
@@ -550,7 +550,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return error;
     }
-    sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, true);
+    sk_sp<SkData> baseImageData = GetImageEncodeData(baseSptr, baseInfo, opts_.needsPackProperties);
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
     FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
     if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
@@ -564,7 +564,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
 uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 {
     if (pixelmap_->GetPixelFormat() != PixelFormat::RGBA_1010102) {
-        return EncodeImageByPixelMap(pixelmap_, true, outputStream);
+        return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, outputStream);
     }
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
@@ -581,7 +581,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return error;
     }
-    error = EncodeImageBySurfaceBuffer(baseSptr, baseInfo, true, outputStream);
+    error = EncodeImageBySurfaceBuffer(baseSptr, baseInfo, opts_.needsPackProperties, outputStream);
     FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
     return error;
 }

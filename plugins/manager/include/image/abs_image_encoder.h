@@ -31,6 +31,7 @@ struct PlEncodeOptions {
     uint16_t loop = 0;
     std::vector<uint16_t> delayTimes;
     std::vector<uint8_t> disposalTypes;
+    bool needsPackProperties = false;
 };
 
 class AbsImageEncoder {
