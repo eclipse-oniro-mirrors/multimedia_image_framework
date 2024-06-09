@@ -1785,7 +1785,7 @@ napi_value PixelMapNapi::WritePixelsSync(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(parsePositionArea(env, argValue[NUM_0], &area),
         nullptr, IMAGE_LOGE("fail to parse position area"));
 
-    std::unique_ptr<PixelMapNapi> pixelMapNapi = nullptr;
+    PixelMapNapi* pixelMapNapi = nullptr;
     napiStatus = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
     IMG_NAPI_CHECK_RET_D(pixelMapNapi->GetPixelNapiEditable(),
@@ -1801,7 +1801,6 @@ napi_value PixelMapNapi::WritePixelsSync(napi_env env, napi_callback_info info)
     } else {
         IMAGE_LOGE("Null native ref");
     }
-    pixelMapNapi.release();
     return result;
 }
 
