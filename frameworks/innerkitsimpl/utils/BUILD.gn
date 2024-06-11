@@ -243,6 +243,7 @@ ohos_static_library("image_utils_static") {
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
