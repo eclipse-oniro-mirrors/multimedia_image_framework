@@ -69,8 +69,6 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/basic_transformer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
-  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/matrix.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_convert.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
