@@ -48,12 +48,13 @@ public:
     SendableImageReceiverNapi();
     ~SendableImageReceiverNapi();
     static napi_value Init(napi_env env, napi_value exports);
-    static void DoCallBack(std::shared_ptr<SendableImageReceiverAsyncContext> context,
+    static void DoCallBack(std::shared_ptr<SendableImageReceiverAsyncContext> &context,
                            std::string name,
                            CompleteCallback callBack);
     ImageReceiver* GetNative();
     static napi_value CreateImageReceiverJsObject(napi_env env, struct SendableImageReceiverCreateArgs args);
     void NativeRelease();
+    void UnRegisterReceiverListener();
 #ifdef IMAGE_DEBUG_FLAG
     bool isCallBackTest = false;
 #endif
@@ -126,13 +127,14 @@ struct SendableImageReceiverCommonArgs {
     bool asyncLater = false;
 };
 
-class ImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {
+class SendableImageReceiverAvaliableListener : public SurfaceBufferAvaliableListener {
 public:
-    ~ImageReceiverAvaliableListener() override
+    ~SendableImageReceiverAvaliableListener() override
     {
         if (context && context->env && context->callbackRef) {
             napi_delete_reference(context->env, context->callbackRef);
         }
+        context->callbackRef = nullptr;
         context = nullptr;
         callBack = nullptr;
     }
