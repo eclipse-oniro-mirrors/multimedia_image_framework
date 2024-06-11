@@ -1346,7 +1346,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
 
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1636,7 +1636,7 @@ NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &pt
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
 {
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -3018,6 +3018,7 @@ static float GetScaleSize(ImageInfo info, DecodeOptions opts)
     return scale;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBufferSize)
 {
     uint32_t byteCount = surfaceBufferSize;
@@ -3047,6 +3048,7 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
     byteCount = PixelMap::GetAllocatedByteCount(info);
     return byteCount;
 }
+#endif
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
