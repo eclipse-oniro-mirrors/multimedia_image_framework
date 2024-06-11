@@ -155,7 +155,7 @@ int32_t VpeUtils::ColorSpaceConverterComposeImage(VpeSurfaceBuffers& sb, bool le
     }
     
     int32_t res;
-    int32_t instanceId;
+    int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
@@ -187,7 +187,7 @@ int32_t VpeUtils::ColorSpaceConverterDecomposeImage(VpeSurfaceBuffers& sb)
     }
  
     int32_t res;
-    int32_t instanceId;
+    int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
@@ -371,13 +371,18 @@ void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, bool isGainmap,
         return;
     }
     std::vector<uint8_t> extendMetadataVec(sizeof(HDRVividExtendMetadata));
+    int memCpyRes = 0;
     if (metadata.extendMetaFlag) {
-        memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
+        memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
             &metadata.extendMeta, sizeof(HDRVividExtendMetadata));
     } else {
         HDRVividExtendMetadata defaultExtendMetadata = GetDefaultGainmapMetadata();
-        memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
+        memCpyRes = memcpy_s(extendMetadataVec.data(), extendMetadataVec.size(),
             &defaultExtendMetadata, sizeof(HDRVividExtendMetadata));
+    }
+    if (memCpyRes != EOK) {
+        IMAGE_LOGE("SetSurfaceBufferInfo failed, memcpy_s error:%{public}d", memCpyRes);
+        return;
     }
     VpeUtils::SetSbDynamicMetadata(buffer, extendMetadataVec);
 }
@@ -390,7 +395,7 @@ int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sp
     }
 
     int32_t res;
-    int32_t instanceId;
+    int32_t instanceId = VPE_ERROR_FAILED;
     res = ColorSpaceConverterCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;
@@ -420,7 +425,7 @@ int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<Su
     }
 
     int32_t res;
-    int32_t instanceId;
+    int32_t instanceId = VPE_ERROR_FAILED;
     res = DetailEnhancerCreate(dlHandler_, &instanceId);
     if (instanceId == VPE_ERROR_FAILED || res != VPE_ERROR_OK) {
         return VPE_ERROR_FAILED;

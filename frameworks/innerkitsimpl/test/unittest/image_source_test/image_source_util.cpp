@@ -93,6 +93,33 @@ int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
     return static_cast<int64_t>(packedSize);
 }
 
+int64_t PackImage(const std::string &filePath,
+                  std::unique_ptr<std::vector<std::unique_ptr<OHOS::Media::PixelMap>>> pixelMaps)
+{
+    ImagePacker imagePacker;
+    PackOption option;
+    option.format = "image/gif";
+    option.quality = NUM_100;
+    option.numberHint = NUM_1;
+    std::set<std::string> formats;
+    if (pixelMaps == nullptr) {
+        IMAGE_LOGE("pixelMap is nullptr");
+        return 0;
+    }
+    uint32_t ret = imagePacker.GetSupportedFormats(formats);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("image packer get supported format failed, ret=%{public}u.", ret);
+        return 0;
+    }
+    imagePacker.StartPacking(filePath, option);
+    for (auto &pixelMap : *pixelMaps.get()) {
+        imagePacker.AddImage(*(pixelMap.get()));
+    }
+    int64_t packedSize = 0;
+    imagePacker.FinalizePacking(packedSize);
+    return static_cast<int64_t>(packedSize);
+}
+
 bool ReadFileToBuffer(const std::string &filePath, uint8_t *buffer, size_t bufferSize)
 {
     std::string realPath;

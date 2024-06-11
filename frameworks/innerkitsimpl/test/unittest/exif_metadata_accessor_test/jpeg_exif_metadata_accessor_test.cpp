@@ -55,6 +55,7 @@ static const std::string IMAGE_OUTPUT_WRITE1_JPEG_PATH = "/data/local/tmp/image/
 static const std::string IMAGE_OUTPUT_WRITE2_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob002.jpg";
 static const std::string IMAGE_OUTPUT_WRITE4_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob004.jpg";
 static const std::string IMAGE_OUTPUT_WRITE6_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob006.jpg";
+static const std::string IMAGE_OUTPUT_WRITE7_JPEG_PATH = "/data/local/tmp/image/no_marknote.jpg";
 constexpr auto EXIF_ID = "Exif\0\0";
 constexpr auto EXIF_ID_SIZE = 6;
 }
@@ -1218,6 +1219,28 @@ HWTEST_F(JpegExifMetadataAccessorTest, Write016, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "StripOffsets"), "0");
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectArea"),
         "Within rectangle (width 183, height 259) around (x,y) = (11,21)");
+}
+
+/**
+ * @tc.name: Write017
+ * @tc.desc: test set hw property in no makernote jpeg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(JpegExifMetadataAccessorTest, Write017, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_OUTPUT_WRITE7_JPEG_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    JpegExifMetadataAccessor imageAccessor(readStream);
+    ASSERT_EQ(imageAccessor.Read(), 0);
+
+    auto exifMetadata = imageAccessor.Get();
+    ASSERT_NE(exifMetadata, nullptr);
+
+    ASSERT_TRUE(exifMetadata->SetValue("HwMnoteCaptureMode", "1"));
+    ASSERT_EQ(imageAccessor.Write(), 0);
+
+    ASSERT_EQ(imageAccessor.Read(), 0);
+    ASSERT_EQ(GetProperty(exifMetadata, "HwMnoteCaptureMode"), "1");
 }
 
 /**

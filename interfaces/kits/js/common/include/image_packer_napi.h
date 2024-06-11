@@ -47,8 +47,10 @@ private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
     static napi_value Packing(napi_env env, napi_callback_info info);
+    static napi_value PackingMultiFrames(napi_env env, napi_callback_info info);
     static napi_value PackingFromPixelMap(napi_env env, napi_callback_info info);
     static napi_value PackToFile(napi_env env, napi_callback_info info);
+    static napi_value PackToFileMultiFrames(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     static napi_value GetSupportedFormats(napi_env env, napi_callback_info info);
 

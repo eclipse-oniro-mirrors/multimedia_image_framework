@@ -58,6 +58,14 @@ public:
         return buffer_;
     }
     void release();
+    void SetId(std::string id)
+    {
+        id_ = id;
+    }
+    std::string GetId()
+    {
+        return id_;
+    }
 private:
     NativeComponent* CreateComponent(int32_t type, size_t size, int32_t row, int32_t pixel, uint8_t* vir);
     NativeComponent* CreateCombineComponent(int32_t type);
@@ -69,6 +77,7 @@ private:
     std::shared_ptr<IBufferProcessor> releaser_;
     std::map<int32_t, std::unique_ptr<NativeComponent>> components_;
     int64_t timestamp_;
+    std::string id_;
 };
 } // namespace Media
 } // namespace OHOS

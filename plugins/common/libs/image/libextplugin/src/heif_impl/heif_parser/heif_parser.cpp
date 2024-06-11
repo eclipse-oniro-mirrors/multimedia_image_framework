@@ -260,6 +260,22 @@ void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_
     }
 }
 
+void HeifParser::GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &out)
+{
+    auto infe = GetInfeBox(itemId);
+    if (!infe || infe->GetItemType() != "iden") {
+        return;
+    }
+    auto toItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
+    for (heif_item_id toItemId: toItemIds) {
+        auto idenImage = GetImage(toItemId);
+        if (idenImage) {
+            out = idenImage;
+            return;
+        }
+    }
+}
+
 std::shared_ptr<HeifInfeBox> HeifParser::GetInfeBox(heif_item_id itemId) const
 {
     auto iter = infeBoxes_.find(itemId);
@@ -284,7 +300,7 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap") {
+        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" && itemType != "iden") {
             continue;
         }
         auto image = std::make_shared<HeifImage>(itemId);
@@ -307,7 +323,7 @@ heif_error HeifParser::AssembleImages()
     }
 
     ExtractGainmap(allItemIds);
-    ExtractGridImageProperties();
+    ExtractDerivedImageProperties();
     ExtractNonMasterImages();
     ExtractMetadata(allItemIds);
     return heif_error_ok;
@@ -434,12 +450,12 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
     ExtractDisplayData(image, itemId);
 }
 
-void HeifParser::ExtractGridImageProperties()
+void HeifParser::ExtractDerivedImageProperties()
 {
     for (auto &pair: images_) {
         heif_item_id itemId = pair.first;
         auto infe = GetInfeBox(itemId);
-        if (!infe || infe->GetItemType() != "grid") {
+        if (!infe || (infe->GetItemType() != "grid" && infe->GetItemType() != "iden")) {
             continue;
         }
         auto &image = pair.second;
@@ -448,6 +464,9 @@ void HeifParser::ExtractGridImageProperties()
             continue;
         }
         auto tileImage = GetImage(tileItemIds[0]);
+        if (tileImage == nullptr) {
+            continue;
+        }
         if (image->GetLumaBitNum() < 0) {
             image->SetLumaBitNum(tileImage->GetLumaBitNum());
         }

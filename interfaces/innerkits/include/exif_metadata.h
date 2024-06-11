@@ -42,6 +42,7 @@ private:
     MnoteHuaweiEntry* CreateHwEntry(const std::string &key);
     ExifEntry* GetEntry(const std::string &key, const size_t len);
     ExifEntry* GetEntry(const std::string &key) const;
+    ExifMnoteData* GetHwMnoteData(bool &isNewMaker);
     int HandleMakerNote(std::string &value) const;
     void ReallocEntry(ExifEntry *ptrEntry, const size_t len);
     bool SetShort(ExifEntry *ptrEntry, const ExifByteOrder &o, const std::string &value);

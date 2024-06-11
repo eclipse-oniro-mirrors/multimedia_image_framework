@@ -15,6 +15,8 @@
 
 #include "box/item_property_box.h"
 
+#include <algorithm>
+
 namespace {
     const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
 }
@@ -112,12 +114,10 @@ heif_error HeifIpmaBox::ParseContent(HeifStreamReader &reader)
 
 const std::vector<PropertyAssociation> *HeifIpmaBox::GetProperties(uint32_t itemId) const
 {
-    for (const auto &entry: entries_) {
-        if (entry.itemId == itemId) {
-            return &entry.associations;
-        }
-    }
-    return nullptr;
+    auto iter = std::find_if(entries_.begin(), entries_.end(), [&itemId](const auto& entry) {
+        return entry.itemId == itemId;
+    });
+    return iter == entries_.end() ? nullptr : &(iter->associations);
 }
 
 void HeifIpmaBox::AddProperty(heif_item_id itemId, PropertyAssociation assoc)

@@ -22,11 +22,13 @@
 #include "ext_pixel_convert.h"
 #include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "ffrt.h"
 #include "hisysevent.h"
 #endif
 #include "image_system_properties.h"
 #include "image_utils.h"
 #include "media_errors.h"
+#include "native_buffer.h"
 #include "securec.h"
 #include "string_ex.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -118,6 +120,9 @@ const static std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
 const static std::string DEFAULT_PACKAGE_NAME = "entry";
 const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
+#ifdef JPEG_HW_DECODE_ENABLE
+const static uint32_t PLANE_COUNT_TWO = 2;
+#endif
 
 struct ColorTypeOutput {
     PlPixelFormat outFormat;
@@ -716,8 +721,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context.pixelsBuffer.context);
         rowStride = sbBuffer->GetStride();
     }
+    ffrt::submit([skEncodeFormat] {
+        ReportImageType(skEncodeFormat);
+    }, {}, {});
 #endif
-    ReportImageType(skEncodeFormat);
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
         return GifDecode(index, context, rowStride);
@@ -953,6 +960,21 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
         ReleaseOutputBuffer(context, tmpAllocatorType);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
+
+    SurfaceBuffer* sbuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (sbuffer) {
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sbuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("jpeg hardware decode, Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= PLANE_COUNT_TWO) {
+            context.yuvInfo.yStride = planes->planes[0].columnStride;
+            context.yuvInfo.uvStride = planes->planes[1].columnStride;
+            context.yuvInfo.yOffset = planes->planes[0].offset;
+            context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+        }
+    }
+
     context.outInfo.size.width = hwDstInfo_.width();
     context.outInfo.size.height = hwDstInfo_.height();
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
@@ -1276,17 +1298,17 @@ OHOS::ColorManager::ColorSpace ExtDecoder::getGrColorSpace()
             GetColorSpaceName(profile, name);
         }
         if (profile != nullptr && profile->has_CICP) {
-            ColorManager::ColorSpaceName name = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
+            ColorManager::ColorSpaceName cName = Media::ColorUtils::CicpToColorSpace(profile->cicp.colour_primaries,
                 profile->cicp.transfer_characteristics, profile->cicp.matrix_coefficients,
                 profile->cicp.full_range_flag);
-            if (name != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, name);
+            if (cName != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, cName);
             }
         }
         if (codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF) {
-            ColorManager::ColorSpaceName name = GetHeifNclxColor(codec_.get());
-            if (name != ColorManager::NONE) {
-                return ColorManager::ColorSpace(skColorSpace, name);
+            ColorManager::ColorSpaceName cName = GetHeifNclxColor(codec_.get());
+            if (cName != ColorManager::NONE) {
+                return ColorManager::ColorSpace(skColorSpace, cName);
             }
         }
     }
@@ -1355,6 +1377,10 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
     SkEncodedImageFormat format = codec_->getEncodedFormat();
     if (format != SkEncodedImageFormat::kJPEG) {
         res = Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return true;
+    }
+    if (ENCODED_FORMAT_KEY.compare(key) == ZERO) {
+        res = Media::ERR_MEDIA_VALUE_INVALID;
         return true;
     }
     auto result = ParseExifData(stream_, exifInfo_);

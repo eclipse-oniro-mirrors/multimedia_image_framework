@@ -277,7 +277,8 @@ static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
 
 int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
-    if (info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::NV21) {
+    if (info.pixelFormat <= PixelFormat::UNKNOWN || (info.pixelFormat >= PixelFormat::NV21 &&
+        info.pixelFormat != PixelFormat::RGBA_1010102)) {
         IMAGE_LOGE("[ImageUtil]unsupport pixel format");
         return -1;
     }
@@ -703,28 +704,50 @@ bool PixelMap::CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint
                                    source.GetPixels() + i * source.GetRowStride(), source.GetRowBytes());
             if (ret != 0) {
                 IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
-                ReleaseBuffer(AllocatorType::DMA_ALLOC, fd, bufferSize, &dstPixels);
                 return false;
             }
             // Move the destination buffer pointer to the next row
-            dstPixels = reinterpret_cast<uint8_t *>(dstPixels) + source.GetRowBytes();
+            dstPixels = reinterpret_cast<uint8_t *>(dstPixels) + source.GetRowStride();
         }
     } else {
         if (memcpy_s(dstPixels, bufferSize, source.GetPixels(), bufferSize) != 0) {
             IMAGE_LOGE("copy source memory size %{public}u fail", bufferSize);
-            ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC,
-                          fd, bufferSize, &dstPixels);
             return false;
         }
     }
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static void CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst)
+{
+    if (source == nullptr || dst == nullptr) {
+        IMAGE_LOGI("Pixelmap CopySurfaceBufferInfo failed, source or dst is nullptr");
+        return;
+    }
+    HDI::Display::Graphic::Common::V1_0::CM_HDR_Metadata_Type type;
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color;
+    vector<uint8_t> staticData;
+    vector<uint8_t> dynamicData;
+
+    VpeUtils::GetSbMetadataType(source, type);
+    VpeUtils::GetSbColorSpaceType(source, color);
+    VpeUtils::GetSbStaticMetadata(source, staticData);
+    VpeUtils::GetSbDynamicMetadata(source, dynamicData);
+
+    VpeUtils::SetSbMetadataType(dst, type);
+    VpeUtils::SetSbColorSpaceType(dst, color);
+    VpeUtils::SetSbStaticMetadata(dst, staticData);
+    VpeUtils::SetSbDynamicMetadata(dst, dynamicData);
+}
+#endif
+
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
 {
     int32_t error;
     return CopyPixelMap(source, dstPixelMap, error);
 }
+
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
 {
     uint32_t bufferSize = source.GetByteCount();
@@ -739,13 +762,15 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
-    int fd = -1;
-    void *dstPixels = nullptr;
-    if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
-    } else {
-        dstPixels = malloc(bufferSize);
+    ImageInfo dstImageInfo;
+    dstPixelMap.GetImageInfo(dstImageInfo);
+    MemoryData memoryData = {nullptr, bufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
+    auto memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
+    if (memory == nullptr) {
+        return false;
     }
+    int fd = -1;
+    void *dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
@@ -753,20 +778,22 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     void *tmpDstPixels = dstPixels;
     if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
+        memory->Release();
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    if (fd < 0) {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-        return true;
-    }
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
-#else
-    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, source.GetAllocatorType(), nullptr);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC && source.IsHdr()) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (source.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+        CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
 #endif
+#ifdef IMAGE_COLORSPACE_FLAG
+        OHOS::ColorManager::ColorSpace colorSpace = source.InnerGetGrColorSpace();
+        dstPixelMap.InnerSetColorSpace(colorSpace);
+#endif
+    }
     return true;
 }
 
@@ -1903,6 +1930,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
             IMAGE_LOGE("write pixel map fd:[%{public}d] to parcel failed.", *fd);
+            ::close(*fd);
             return false;
         }
     } else if (allocatorType_ == AllocatorType::DMA_ALLOC) {
@@ -2121,6 +2149,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_FD_BAD, "fd acquisition failed");
+            ::close(fd);
             return false;
         }
         void* ptr = ::mmap(nullptr, pixelMemInfo.bufferSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
@@ -2151,7 +2180,6 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
-            IMAGE_LOGE("get pixel memory size:[%{public}d] error.", pixelMemInfo.bufferSize);
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
             return false;
         }
@@ -2883,29 +2911,21 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 {
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-
     TransMemoryInfo dstMemory;
-    if (allocatorType_ == AllocatorType::CUSTOM_ALLOC) {
-        // We dont know how custom alloc memory
-        dstMemory.allocType = AllocatorType::DEFAULT;
-    } else {
-        dstMemory.allocType = allocatorType_;
-    }
-
+    // We dont know how custom alloc memory
+    dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
     SkTransInfo src;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
-
     SkTransInfo dst;
     if (!GendstTransInfo(src, dst, infos.matrix, dstMemory)) {
         IMAGE_LOGE("GendstTransInfo dstMemory falied");
         this->errorCode = IMAGE_RESULT_DECODE_FAILED;
         return false;
     }
-
     SkCanvas canvas(dst.bitmap);
     if (!infos.matrix.isTranslate()) {
         if (!EQUAL_TO_ZERO(dst.r.fLeft) || !EQUAL_TO_ZERO(dst.r.fTop)) {
@@ -2922,11 +2942,18 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     } else {
         canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
     }
-
     ToImageInfo(imageInfo, dst.info);
     auto m = dstMemory.memory.get();
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC && IsHdr()) {
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
+        CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+    }
+#endif
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+    ImageUtils::FlushSurfaceBuffer(this);
     return true;
 }
 

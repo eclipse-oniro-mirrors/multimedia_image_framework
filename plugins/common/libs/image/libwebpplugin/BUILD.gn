@@ -64,6 +64,7 @@ ohos_shared_library("webpplugin") {
 
     external_deps = [
       "c_utils:utils",
+      "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",

@@ -35,11 +35,17 @@ public:
     int32_t PackingFromPixelmap(OHOS::Media::PackOption *option, struct OH_PixelmapNative *pixelmap,
         uint8_t *outData, int64_t *size);
 
+    int32_t PackToDataMultiFrames(OHOS::Media::PackOption *option, std::vector<OH_PixelmapNative*> &pixelmap,
+        uint8_t *outData, int64_t *size);
+
     int32_t PackToFileFromImageSource(OHOS::Media::PackOption *option, struct OH_ImageSourceNative *imageSource,
         const int fd);
 
     int32_t PackToFileFromPixelmap(OHOS::Media::PackOption *option, struct OH_PixelmapNative *pixelmap,
         const int32_t fd);
+
+    int32_t PackToFileMultiFrames(OHOS::Media::PackOption *option, std::vector<OH_PixelmapNative*> &pixelmap,
+        int32_t fd);
 
     std::shared_ptr<OHOS::Media::ImagePacker> GetInnerImagePacker();
 

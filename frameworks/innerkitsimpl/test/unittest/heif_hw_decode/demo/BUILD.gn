@@ -1,0 +1,75 @@
+# Copyright (c) 2023 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_executable("heif_hw_decoder_demo") {
+  install_enable = false
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+
+  if (!use_clang_android && !use_clang_ios) {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      debug = false
+    }
+  }
+
+  if (build_variant == "root") {
+    defines = [ "BUILD_ENG_VERSION" ]
+  }
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_hw_decode/common/command_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_hw_decode/common/mock_heif_hw_decode_flow.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/heif_hw_decoder.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/codec_state.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/format.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_buffer.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_dfx.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_codec_list.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/image_decoder.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/msg_handle_loop.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/param_bundle.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/state_machine.cpp",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/imagecodec/type_converter.cpp",
+    "heif_hw_decoder_demo.cpp",
+  ]
+
+  include_dirs = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_hw_decode/common/",
+    "${image_subsystem}/interfaces/innerkits/include/",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
+  ]
+
+  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
+
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_codec:libcodec_proxy_3.0",
+    "drivers_peripheral_codec:libcodec_hdi_omx_client",
+    "graphic_surface:surface",
+    "hdf_core:libhdi",
+    "hilog:libhilog",
+    "init:libbegetutil",
+    "ipc:ipc_core",
+    "openmax:libopenmax_static",
+    "qos_manager:qos",
+  ]
+  if (build_variant == "root") {
+    external_deps += [ "hitrace:hitrace_meter" ]
+  }
+}

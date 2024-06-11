@@ -1517,9 +1517,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0040, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1532,6 +1534,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0040, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0040 start";
@@ -1557,9 +1560,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0041, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1572,6 +1577,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0041, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0041 start";
@@ -1597,9 +1603,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0042, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::BGRA_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1612,6 +1620,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0042, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0042 start";
@@ -1637,9 +1646,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0043, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = static_cast<PixelFormat>(ABGR_8888);
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1652,6 +1663,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0043, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0043 start";
@@ -1677,9 +1689,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0044, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::ARGB_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1692,6 +1706,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0044, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0044 start";
@@ -1717,9 +1732,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0045, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::RGBA_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1732,6 +1749,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0045, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0045 start";
@@ -1757,9 +1775,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0046, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::BGRA_8888;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1772,6 +1792,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0046, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0046 start";
@@ -1797,9 +1818,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0047, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = static_cast<PixelFormat>(ABGR_8888);
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1813,6 +1836,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0047, TestSize.Level3)
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
     colorConverterPointer->Convert(destination, source, 2);
+    // 2 is sourcePixelsNum
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0047 start";
 }
@@ -1837,9 +1861,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0048, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = PixelFormat::RGB_565;
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1852,6 +1878,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0048, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0048 start";
@@ -1940,9 +1967,11 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0052, TestSize.Level3)
     dstImageInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     dstImageInfo.pixelFormat = static_cast<PixelFormat>(ABGR_8888);
 
+    // 50, 8, 3 means array length
     uint8_t source[50] = { 0 };
     uint32_t destination[8] = { 0 };
     uint32_t result[3] = { 0 };
+    // 0x80020408, 0x40020408, 0x08040280 and 0x08040240 ared used to test
     if (IS_LITTLE_ENDIAN) {
         result[0] = 0x80020408;
         result[1] = 0x40020408;
@@ -1955,6 +1984,7 @@ HWTEST_F(PixelConvertTest, PixelConvertTest0052, TestSize.Level3)
      * @tc.expected: step2. The return value is the same as the result.
      */
     std::unique_ptr<PixelConvert> colorConverterPointer = PixelConvert::Create(srcImageInfo, dstImageInfo);
+    // 2 is sourcePixelsNum
     colorConverterPointer->Convert(destination, source, 2);
     ASSERT_NE(source[0], 0x80020408);
     GTEST_LOG_(INFO) << "PixelConvertTest: PixelConvertTest0052 start";

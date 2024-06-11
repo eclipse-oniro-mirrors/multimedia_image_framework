@@ -63,6 +63,7 @@ ImageNapi::~ImageNapi()
 void ImageNapi::NativeRelease()
 {
     if (native_ != nullptr) {
+        sNativeImageHolder_.release(native_->GetId());
         native_->release();
         native_ = nullptr;
     }
@@ -204,6 +205,7 @@ napi_value ImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> nativeIm
     }
     if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {
         auto id = sNativeImageHolder_.save(nativeImage);
+        nativeImage->SetId(id);
         if (napi_create_string_utf8(env, id.c_str(), NAPI_AUTO_LENGTH, &(argv[NUM0])) != napi_ok) {
             IMAGE_ERR("Create native image id Failed");
         }
@@ -267,7 +269,7 @@ NativeImage* ImageNapi::GetNative()
 }
 
 static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callback_info info,
-    size_t* argc = nullptr, napi_value* argv = nullptr)
+    size_t* argc = nullptr, napi_value* argv = nullptr, bool needCreateRef = false)
 {
     napi_value thisVar = nullptr;
     size_t tmp = NUM0;
@@ -285,17 +287,24 @@ static std::unique_ptr<ImageAsyncContext> UnwrapContext(napi_env env, napi_callb
         return nullptr;
     }
     ctx->image = ctx->napi->GetNative();
-    napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    if (needCreateRef) {
+        napi_create_reference(env, thisVar, NUM1, &(ctx->thisRef));
+    }
     return ctx;
 }
 
 static inline void ProcessPromise(napi_env env, napi_deferred deferred, napi_value* result, bool resolved)
 {
+    napi_status status;
     if (resolved) {
-        napi_resolve_deferred(env, deferred, result[NUM1]);
+        status = napi_resolve_deferred(env, deferred, result[NUM1]);
     } else {
-        napi_reject_deferred(env, deferred, result[NUM0]);
+        status = napi_reject_deferred(env, deferred, result[NUM0]);
     }
+    if (status != napi_ok) {
+        IMAGE_ERR("ProcessPromise failed");
+    }
+    deferred = nullptr;
 }
 static inline void ProcessCallback(napi_env env, napi_ref ref, napi_value* result)
 {
@@ -509,7 +518,7 @@ napi_value ImageNapi::JsRelease(napi_env env, napi_callback_info info)
     napi_value argv[NUM1] = {0};
 
     napi_get_undefined(env, &result);
-    auto context = UnwrapContext(env, info, &argc, argv);
+    auto context = UnwrapContext(env, info, &argc, argv, true);
     if (context == nullptr) {
         IMAGE_ERR("fail to unwrap constructor_");
         return result;

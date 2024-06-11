@@ -17,6 +17,7 @@
 
 const int ROTATE_90_DEGRESS = 90;
 const int ROTATE_270_DEGRESS = 270;
+static const std::string HEVC_ALPHA_AUX_TYPE = "urn:mpeg:hevc:2015:auxid:1";
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -170,6 +171,16 @@ const std::string &HeifImage::GetAuxImageType() const
 std::vector<std::shared_ptr<HeifImage>> HeifImage::GetAuxImages() const
 {
     return auxImages_;
+}
+
+std::shared_ptr<HeifImage> HeifImage::GetAlphaImage() const
+{
+    for (std::shared_ptr<HeifImage> auxImage: auxImages_) {
+        if (auxImage != nullptr && auxImage->IsAuxImage() && auxImage->GetAuxImageType() == HEVC_ALPHA_AUX_TYPE) {
+            return auxImage;
+        }
+    }
+    return nullptr;
 }
 
 void HeifImage::SetAuxImage(heif_item_id id, const std::string &aux_type)

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include "webp_encoder.h"
 #include "image_source.h"

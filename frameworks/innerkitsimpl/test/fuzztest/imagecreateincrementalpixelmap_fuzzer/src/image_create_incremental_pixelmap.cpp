@@ -24,8 +24,8 @@
 namespace OHOS {
 void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/tmp/test.jpg";
-    int fd = open(pathName.c_str(), O_RDWR, O_CREAT);
+    std::string pathName = "/data/local/tmp/test5.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     if (write(fd, data, size) != (ssize_t)size) {
         close(fd);
         return;
@@ -35,7 +35,9 @@ void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
     auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
     Media ::DecodeOptions dopts;
     uint32_t index = 1;
-    imagesource->CreateIncrementalPixelMap(index, dopts, errorCode);
+    if (imagesource != nullptr) {
+        imagesource->CreateIncrementalPixelMap(index, dopts, errorCode);
+    }
     close(fd);
 }
 } // namespace OHOS

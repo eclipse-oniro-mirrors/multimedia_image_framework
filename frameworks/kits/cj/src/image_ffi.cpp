@@ -46,8 +46,7 @@ extern "C"
     int64_t FfiOHOSCreateImageSourceByPath(char *uri, uint32_t* errCode)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPath start");
-        std::string path = uri;
-        path = FileUrlToRawPath(uri);
+        std::string path = FileUrlToRawPath(uri);
         std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSource(path, errCode);
         if (*errCode != SUCCESS_CODE) {
             IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
@@ -74,8 +73,7 @@ extern "C"
     int64_t FfiOHOSCreateImageSourceByPathWithOption(char* uri, CSourceOptions opts, uint32_t* errCode)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPathWithOption start");
-        std::string path = uri;
-        path = FileUrlToRawPath(uri);
+        std::string path = FileUrlToRawPath(uri);
         SourceOptions options = ParseCSourceOptions(opts);
         std::unique_ptr<ImageSource> ptr_ = ImageSourceImpl::CreateImageSourceWithOption(path, options, errCode);
         if (*errCode != SUCCESS_CODE) {
@@ -148,7 +146,7 @@ extern "C"
     }
 
     int64_t FfiOHOSCreateImageSourceByRawFile(int fd, int32_t offset,
-        int32_t length, CSourceOptions &opts, uint32_t* errCode)
+        int32_t length, CSourceOptions opts, uint32_t* errCode)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByRawFile start");
         SourceOptions options = ParseCSourceOptions(opts);
@@ -198,6 +196,13 @@ extern "C"
         return ret;
     }
 
+    void FreeArrayPtr(char** ptr, int count)
+    {
+        for (int i = 0; i < count; i++) {
+            free(ptr[i]);
+        }
+    }
+
     CArrString FfiOHOSGetSupportedFormats(int64_t id, uint32_t* errCode)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSGetSupportedFormats start");
@@ -212,8 +217,8 @@ extern "C"
         *errCode = instance->GetSupportedFormats(formats);
         if (*errCode == SUCCESS_CODE) {
             size_t size =  formats.size();
-            if (size <= 0) {
-                IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats size cannot be less than or equal to 0.");
+            if (size == 0) {
+                IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats size cannot be equal to 0.");
                 *errCode = ERR_IMAGE_MALLOC_ABNORMAL;
                 return ret;
             }
@@ -230,6 +235,7 @@ extern "C"
                 auto temp = Utils::MallocCString(str);
                 if (!temp) {
                     IMAGE_LOGE("[ImageSource] FfiOHOSGetSupportedFormats failed to copy string.");
+                    FreeArrayPtr(arr, i);
                     free(arr);
                     *errCode = ERR_IMAGE_MALLOC_ABNORMAL;
                     return ret;
@@ -379,7 +385,7 @@ extern "C"
         std::vector<int64_t> data = instance->CreatePixelMapList(index, decodeOpts, errorCode);
         if (*errorCode == SUCCESS_CODE) {
             auto size = data.size();
-            if (size <= 0) {
+            if (size == 0) {
                 *errorCode = ERR_IMAGE_MALLOC_ABNORMAL;
                 IMAGE_LOGE("[ImageSource] CreatePixelMapList size error.");
                 return ret;
@@ -462,7 +468,8 @@ extern "C"
         option.scaleMode = ScaleMode(opts.scaleMode);
         option.size.height = opts.height;
         option.size.width = opts.width;
-        std::unique_ptr<PixelMap> ptr_ = PixelMapImpl::CreatePixelMap((uint32_t*)colors, colorLength, option);
+        std::unique_ptr<PixelMap> ptr_ =
+            PixelMapImpl::CreatePixelMap(reinterpret_cast<uint32_t*>(colors), colorLength, option);
         if (!ptr_) {
             return INIT_FAILED;
         }
@@ -1080,8 +1087,8 @@ extern "C"
 
         CArrString arrInfo { .head = nullptr, .size = 0 };
         auto size = formats.size();
-        if (size <= 0) {
-            IMAGE_LOGE("[ImageSource] FfiOHOSImagePackerGetSupportedFormats size cannot be less than or equal to 0.");
+        if (size == 0) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSImagePackerGetSupportedFormats size cannot be equal to 0.");
             ret.code = ERR_SHAMEM_NOT_EXIST;
             return ret;
         }
@@ -1096,6 +1103,7 @@ extern "C"
         for (const auto& format : formats) {
             auto temp = ::Utils::MallocCString(format);
             if (!temp) {
+                FreeArrayPtr(arr, i);
                 free(arr);
                 ret.code = ERR_SHAMEM_NOT_EXIST;
                 return ret;

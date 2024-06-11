@@ -14,7 +14,7 @@
  */
 
 #include "plugin_export.h"
-#include "gif_decoder.h"
+#include "gif_encoder.h"
 #include "image_log.h"
 #include "iosfwd"
 #include "map"
@@ -36,7 +36,7 @@ namespace {
 
 // register implement classes of this plugin.
 PLUGIN_EXPORT_REGISTER_CLASS_BEGIN
-PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifDecoder)
+PLUGIN_EXPORT_REGISTER_CLASS(OHOS::ImagePlugin::GifEncoder)
 PLUGIN_EXPORT_REGISTER_CLASS_END
 
 using std::string;

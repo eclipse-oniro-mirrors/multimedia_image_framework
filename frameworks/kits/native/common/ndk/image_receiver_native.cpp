@@ -178,7 +178,7 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
     }
 
     std::string strKey = receiver->ptrImgRcv->iraContext_->GetReceiverKey();
-    if (strKey.empty() || nullptr == strKey.c_str()) {
+    if (strKey.empty()) {
         IMAGE_LOGE("Bad data: key string empty.");
         return IMAGE_UNKNOWN_ERROR;
     }

@@ -138,6 +138,25 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmap, TestS
 }
 
 /**
+ * @tc.name: OH_ImagePacker_PackToDataMultiFrames
+ * @tc.desc: test OH_ImagePacker_PackToDataMultiFrames
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePacker_PackToDataMultiFrames, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToDataMultiFrames start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    OH_PackingOptions* option = nullptr;
+    OH_PixelmapNative **pixelMaps = nullptr;
+    uint8_t* outData = nullptr;
+    size_t *outDataSize = 0;
+    Image_ErrorCode ret = OH_ImagePacker_PackToDataMultiFrames(imagePacker, option,
+        pixelMaps, 0, outData, outDataSize);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToDataMultiFrames end";
+}
+
+/**
  * @tc.name: OH_ImagePackerNative_PackToFileFromImageSource
  * @tc.desc: test OH_ImagePackerNative_PackToFileFromImageSource
  * @tc.type: FUNC
@@ -169,6 +188,23 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmap, TestS
     Image_ErrorCode ret = OH_ImagePackerNative_PackToFileFromPixelmap(imagePacker, option, pixelMap, fd);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmap end";
+}
+
+/**
+ * @tc.name: OH_ImagePacker_PackToFileMultiFrames
+ * @tc.desc: test OH_ImagePacker_PackToFileMultiFrames
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePacker_PackToFileMultiFrames, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToFileMultiFrames start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    OH_PackingOptions* option = nullptr;
+    OH_PixelmapNative **pixelMaps = nullptr;
+    int32_t fd = 0;
+    Image_ErrorCode ret = OH_ImagePacker_PackToFileMultiFrames(imagePacker, option, pixelMaps, 0, fd);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToFileMultiFrames end";
 }
 
 /**

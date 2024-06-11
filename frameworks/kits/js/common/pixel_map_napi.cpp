@@ -18,16 +18,21 @@
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_pixel_map_napi.h"
+#include "image_source_napi.h"
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <regex>
 #include "js_runtime_utils.h"
 #include "napi_message_sequence.h"
+#include "pixel_map_from_surface.h"
 #include "transaction/rs_interfaces.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
+#include "image_format_convert.h"
+#include <securec.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -42,6 +47,12 @@ namespace {
     constexpr uint32_t NUM_3 = 3;
     constexpr uint32_t NUM_4 = 4;
 }
+
+enum class FormatType:int8_t {
+    UNKNOWN,
+    YUV,
+    RGB
+};
 
 namespace OHOS {
 namespace Media {
@@ -92,7 +103,12 @@ struct PixelMapAsyncContext {
     bool yBarg = false;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace;
     std::string surfaceId;
+    PixelFormat destFormat = PixelFormat::UNKNOWN;
+    FormatType srcFormatType = FormatType::UNKNOWN;
+    FormatType dstFormatType = FormatType::UNKNOWN;
 };
+using PixelMapAsyncContextPtr = std::unique_ptr<PixelMapAsyncContext>;
+std::shared_ptr<PixelMap> srcPixelMap = nullptr;
 
 class AgainstTransferGC {
 public:
@@ -382,9 +398,9 @@ static napi_value DoInitAfter(napi_env env,
     return exports;
 }
 
-napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
+std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
 {
-    napi_property_descriptor props[] = {
+    std::vector<napi_property_descriptor> props = {
         DECLARE_NAPI_FUNCTION("readPixelsToBuffer", ReadPixelsToBuffer),
         DECLARE_NAPI_FUNCTION("readPixelsToBufferSync", ReadPixelsToBufferSync),
         DECLARE_NAPI_FUNCTION("readPixels", ReadPixels),
@@ -423,9 +439,15 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_GETTER("isEditable", GetIsEditable),
         DECLARE_NAPI_GETTER("isStrideAlignment", GetIsStrideAlignment),
-        DECLARE_NAPI_GETTER("ToSdr", ToSdr),
+        DECLARE_NAPI_FUNCTION("toSdr", ToSdr),
+        DECLARE_NAPI_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
     };
+    return props;
+}
 
+napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
+{
+    std::vector<napi_property_descriptor> props = PixelMapNapi::RegisterNapi();
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMap", CreatePixelMap),
         DECLARE_NAPI_STATIC_FUNCTION("createPremultipliedPixelMap", CreatePremultipliedPixelMap),
@@ -433,17 +455,17 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
-#endif
+        DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
+        DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
     };
 
     napi_value constructor = nullptr;
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(
         napi_define_class(env, CLASS_NAME.c_str(), NAPI_AUTO_LENGTH,
-                          Constructor, nullptr, IMG_ARRAY_SIZE(props),
-                          props, &constructor)),
+                          Constructor, nullptr, props.size(),
+                          props.data(), &constructor)),
         nullptr, IMAGE_LOGE("define class fail")
     );
 
@@ -480,6 +502,29 @@ std::shared_ptr<PixelMap> PixelMapNapi::GetPixelMap(napi_env env, napi_value pix
         return nullptr;
     }
     return pixelmapNapiPtr->nativePixelMap_;
+}
+
+std::shared_ptr<std::vector<std::shared_ptr<PixelMap>>> PixelMapNapi::GetPixelMaps(napi_env env, napi_value pixelmaps)
+{
+    auto PixelMaps = std::make_shared<std::vector<std::shared_ptr<PixelMap>>>();
+    uint32_t length = 0;
+    auto status = napi_get_array_length(env, pixelmaps, &length);
+    if (!IMG_IS_OK(status)) {
+        IMAGE_LOGE("GetPixelMaps napi get array length failed");
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < length; ++i) {
+        napi_value element;
+        status = napi_get_element(env, pixelmaps, i, &element);
+        if (!IMG_IS_OK(status)) {
+            IMAGE_LOGE("GetPixelMaps napi get element failed");
+            return nullptr;
+        }
+        std::shared_ptr<PixelMap> pixelMap;
+        pixelMap = GetPixelMap(env, element);
+        PixelMaps->push_back(pixelMap);
+    }
+    return PixelMaps;
 }
 
 std::shared_ptr<PixelMap>* PixelMapNapi::GetPixelMap()
@@ -616,9 +661,9 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
         return value;
     }
     auto pixelNapi = reinterpret_cast<PixelMapNapi*>(value);
+    pixelNapi->setPixelNapiEditable(false);
     AgainstTransferGC *data = new AgainstTransferGC();
     data->pixelMap = pixelNapi->GetPixelNapiInner();
-    pixelNapi->ReleasePixelNapiInner();
     return reinterpret_cast<void*>(data);
 }
 
@@ -1036,6 +1081,12 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
         context->area.region.height, context->area.region.width);
 
+    if (!std::regex_match(context->surfaceId, std::regex("\\d+"))) {
+        IMAGE_LOGE("CreatePixelMapFromSurface empty or invalid surfaceId");
+        context->status = ERR_IMAGE_INVALID_PARAMETER;
+        return;
+    }
+
     auto &rsClient = Rosen::RSInterfaces::GetInstance();
     OHOS::Rect r = {
         .x = context->area.region.left,
@@ -1104,9 +1155,14 @@ static std::string GetStringArgument(napi_env env, napi_value value)
     }
     return strValue;
 }
+#endif
 
 napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_info info)
 {
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    napi_value result = nullptr;
+    return result;
+#else
     napi_value globalValue;
     napi_get_global(env, &globalValue);
     napi_value func;
@@ -1150,8 +1206,57 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
-}
 #endif
+}
+
+napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callback_info info)
+{
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    napi_value result = nullptr;
+    return result;
+#else
+    if (PixelMapNapi::GetConstructor() == nullptr) {
+        napi_value exports = nullptr;
+        napi_create_object(env, &exports);
+        PixelMapNapi::Init(env, exports);
+    }
+
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_value constructor = nullptr;
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_2;
+    IMAGE_LOGD("CreatePixelMap IN");
+
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_GET_DATA_ABNORMAL,
+        "Failed to get data"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceSync fail to get data"));
+
+    std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
+    asyncContext->surfaceId = GetStringArgument(env, argValue[NUM_0]);
+    bool ret = parseRegion(env, argValue[NUM_1], &(asyncContext->area.region));
+    IMAGE_LOGD("CreatePixelMapFromSurface get data: %{public}d", ret);
+    IMG_NAPI_CHECK_RET_D(ret,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceSync invalid args count"));
+
+    CreatePixelMapFromSurfaceExec(env, static_cast<void*>((asyncContext).get()));
+    status = napi_get_reference_value(env, sConstructor_, &constructor);
+    if (IMG_IS_OK(status)) {
+            status = NewPixelNapiInstance(env, constructor, asyncContext->rPixelMap, result);
+    }
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
+        "Failed to create pixelmap"),
+        IMAGE_LOGE("CreatePixelMapFromSurfaceSync fail to create pixel map sync"));
+    return result;
+#endif
+}
 
 napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> pixelmap)
 {
@@ -3295,6 +3400,217 @@ napi_value PixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         }
+    }
+    return nVal.result;
+}
+
+static bool IsMatchFormatType(FormatType type, PixelFormat format)
+{
+    if (type == FormatType::YUV) {
+        switch (format) {
+            case PixelFormat::NV21:
+            case PixelFormat::NV12:{
+                return true;
+            }
+            default:{
+                return false;
+            }
+        }
+    } else if (type == FormatType::RGB) {
+        switch (format) {
+            case PixelFormat::ARGB_8888:
+            case PixelFormat::RGB_565:
+            case PixelFormat::RGBA_8888:
+            case PixelFormat::BGRA_8888:
+            case PixelFormat::RGB_888:
+            case PixelFormat::RGBA_F16:{
+                return true;
+            }
+            default:{
+                return false;
+            }
+        }
+    } else {
+        return false;
+    }
+}
+
+STATIC_EXEC_FUNC(GeneralError)
+{
+    auto context = static_cast<PixelMapAsyncContext*>(data);
+    context->status = IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED;
+}
+
+static FormatType TypeFormat(PixelFormat &pixelForamt)
+{
+    switch (pixelForamt) {
+        case PixelFormat::ARGB_8888:
+        case PixelFormat::RGB_565:
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGB_888:
+        case PixelFormat::RGBA_F16:{
+            return FormatType::RGB;
+        }
+        case PixelFormat::NV21:
+        case PixelFormat::NV12:{
+            return FormatType::YUV;
+        }
+        default:
+            return FormatType::UNKNOWN;
+    }
+}
+
+static uint32_t GetNativePixelMapInfo(napi_env &env, PixelMapAsyncContext* context)
+{
+    PixelFormat destPixelFormat = context->destFormat;
+    std::shared_ptr<PixelMap> pixelMap = nullptr;
+    IMG_NAPI_CHECK_BUILD_ERROR(IsMatchFormatType(context->dstFormatType, destPixelFormat),
+        BuildContextError(env, context->error, "dest format is wrong!", ERR_IMAGE_INVALID_PARAMETER),
+        context->status = ERR_IMAGE_INVALID_PARAMETER, ERR_IMAGE_INVALID_PARAMETER);
+    IMG_NAPI_CHECK_BUILD_ERROR(IsMatchFormatType(context->srcFormatType, context->rPixelMap->GetPixelFormat()),
+        BuildContextError(env, context->error, "source format is wrong!", ERR_IMAGE_INVALID_PARAMETER),
+        context->status = ERR_IMAGE_INVALID_PARAMETER, ERR_IMAGE_INVALID_PARAMETER);
+    return SUCCESS;
+}
+
+static uint32_t GetNativeConvertInfo(napi_env &env, napi_callback_info &info, PixelMapAsyncContext* context)
+{
+    napi_status status = napi_invalid_arg;
+    napi_value thisVar = nullptr;
+    size_t argc = NUM_1;
+    napi_value argv[NUM_1] = {nullptr};
+    IMG_JS_ARGS(env, info, status, argc, argv, thisVar);
+    IMG_NAPI_CHECK_BUILD_ERROR(IMG_IS_OK(status),
+        BuildContextError(env, context->error, "fail to napi_get_cb_info", ERROR), context->status = ERROR, ERROR);
+    IMG_NAPI_CHECK_BUILD_ERROR(argc == NUM_1,
+        BuildContextError(env, context->error, "incorrect number of parametersarguments!", ERR_IMAGE_INVALID_PARAMETER),
+        context->status = ERR_IMAGE_INVALID_PARAMETER, ERR_IMAGE_INVALID_PARAMETER);
+    napi_value constructor = nullptr;
+    napi_value global = nullptr;
+    napi_get_global(env, &global);
+    status = napi_get_named_property(env, global, "PixelFormat", &constructor);
+    IMG_NAPI_CHECK_BUILD_ERROR(IMG_IS_OK(status),
+        BuildContextError(env, context->error, "Get PixelMapNapi property failed!", ERR_IMAGE_PROPERTY_NOT_EXIST),
+        context->status = ERR_IMAGE_PROPERTY_NOT_EXIST, ERR_IMAGE_PROPERTY_NOT_EXIST);
+
+    bool isPixelFormat = false;
+    if (context->destFormat == PixelFormat::UNKNOWN) {
+        isPixelFormat = false;
+    } else {
+        isPixelFormat = true;
+    }
+
+    if (isPixelFormat) {
+        return GetNativePixelMapInfo(env, context);
+    }
+    IMG_NAPI_CHECK_BUILD_ERROR(false,
+        BuildContextError(env, context->error, "wrong arguments!", ERR_IMAGE_INVALID_PARAMETER),
+        context->status = ERR_IMAGE_INVALID_PARAMETER, ERR_IMAGE_INVALID_PARAMETER);
+}
+
+static napi_value Convert(napi_env &env, napi_callback_info &info, FormatType srcFormatType, std::string workName,
+    PixelMapAsyncContext* context)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status status;
+    if (context == nullptr) {
+        return nullptr;
+    }
+    context->status = SUCCESS;
+    context->srcFormatType = srcFormatType;
+    uint32_t ret = GetNativeConvertInfo(env, info, context);
+    napi_create_promise(env, &(context->deferred), &result);
+    PixelMapAsyncContextPtr asyncContext = std::make_unique<PixelMapAsyncContext>(*context);
+    IMG_NAPI_CHECK_BUILD_ERROR(asyncContext->error == nullptr,
+        asyncContext->status = IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED,
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, (workName + "GeneralError").c_str(),
+        GeneralErrorExec, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+
+    IMG_NAPI_CHECK_BUILD_ERROR(ret == SUCCESS,
+        BuildContextError(env, asyncContext->error, "get native convert info failed!", ret),
+        IMG_CREATE_CREATE_ASYNC_WORK(env, status, (workName + "GeneralError").c_str(),
+        GeneralErrorExec, GeneralErrorComplete, asyncContext, asyncContext->work),
+        result);
+
+    context->status = ImageFormatConvert::ConvertImageFormat(context->rPixelMap, context->destFormat);
+    if (context->status == SUCCESS) {
+        result = PixelMapNapi::CreatePixelMap(env, context->rPixelMap);
+        return result;
+    }
+    return result;
+}
+
+static napi_value YUVToRGB(napi_env env, napi_callback_info &info, PixelMapAsyncContext* context)
+{
+    return Convert(env, info, FormatType::YUV, "YUVToRGB", context);
+}
+
+static napi_value RGBToYUV(napi_env env, napi_callback_info &info,  PixelMapAsyncContext* context)
+{
+    return Convert(env, info, FormatType::RGB, "RGBToYUV", context);
+}
+
+static napi_value PixelFormatConvert(napi_env env, napi_callback_info &info, PixelMapAsyncContext* context)
+{
+    napi_value result = nullptr;
+    napi_create_promise(env, &(context->deferred), &result);
+    PixelFormat dstFormat = context->destFormat;
+
+    if (dstFormat != PixelFormat::UNKNOWN) {
+        context->dstFormatType = TypeFormat(dstFormat);
+        if (context->dstFormatType == FormatType::YUV &&
+            (context->srcFormatType == FormatType::UNKNOWN || context->srcFormatType == FormatType::RGB)) {
+            result = RGBToYUV(env, info, context);
+        } else if ((context->dstFormatType == FormatType::RGB) &&
+            (context->srcFormatType == FormatType::UNKNOWN || context->srcFormatType == FormatType::YUV)) {
+            result = YUVToRGB(env, info, context);
+        }
+    }
+    return result;
+}
+
+napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_value argValue[NUM_2];
+    size_t argc = NUM_2;
+    nVal.argc = argc;
+    nVal.argv = argValue;
+
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return nVal.result;
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
+        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+    }
+
+    if (!nVal.context) {
+        return nullptr;
+    }
+    napi_get_undefined(env, &nVal.result);
+    if (nVal.argc != NUM_1) {
+        IMAGE_LOGE("Invalid args count");
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    if (nVal.context->callbackRef == nullptr) {
+        napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
+    } else {
+        napi_get_undefined(env, &(nVal.result));
+    }
+
+    napi_value jsArg = nVal.argv[0];
+    int32_t pixelFormatInt;
+    napi_get_value_int32(env, jsArg, &pixelFormatInt);
+    nVal.context->destFormat = static_cast<PixelFormat>(pixelFormatInt);
+    nVal.result = PixelFormatConvert(env, info, nVal.context.get());
+    nVal.context->nConstructor->nativePixelMap_ = nVal.context->rPixelMap;
+    if (nVal.result == nullptr) {
+        return nVal.result;
     }
     return nVal.result;
 }

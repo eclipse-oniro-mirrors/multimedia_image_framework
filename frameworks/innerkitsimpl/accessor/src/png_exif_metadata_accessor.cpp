@@ -371,7 +371,7 @@ uint32_t PngExifMetadataAccessor::WriteBlob(DataBuf &blob)
         return ERR_MEDIA_VALUE_INVALID;
     }
 
-    dataBlob = (byte *)blob.CData();
+    dataBlob = const_cast<byte *>(blob.CData());
     size = blob.Size();
 
     return UpdateData(dataBlob, size);

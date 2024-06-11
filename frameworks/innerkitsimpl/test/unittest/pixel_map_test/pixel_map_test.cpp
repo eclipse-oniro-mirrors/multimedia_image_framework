@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#define private public
+#define protected public
 #include <gtest/gtest.h>
 #include "image_type.h"
 #include "image_utils.h"

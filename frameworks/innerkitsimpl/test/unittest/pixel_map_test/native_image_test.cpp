@@ -14,6 +14,7 @@
  */
 
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include "media_errors.h"
 #include "native_image.h"
