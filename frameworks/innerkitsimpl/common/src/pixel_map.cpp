@@ -53,6 +53,9 @@
 #include "buffer_handle_parcel.h"
 #include "ipc_file_descriptor.h"
 #include "surface_buffer.h"
+#include "vpe_utils.h"
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
 #endif
 
 #undef LOG_DOMAIN
@@ -246,6 +249,7 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
+    IMAGE_LOGE("[PixelMap]Create: make pixelmap failed!");
     int offset = info.offset_;
     int32_t stride = info.stride_;
     bool useCustomFormat = info.flag_;
@@ -276,17 +280,18 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
     int fd = 0;
     uint32_t bufferSize = dstPixelMap->GetByteCount();
+    
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
     if (dstPixels == nullptr) {
         IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
-    Position dstPosition;
-    if (!PixelConvertAdapter::WritePixelsConvert(reinterpret_cast<const void *>(colors + offset),
-        static_cast<uint32_t>(stride) << FOUR_BYTE_SHIFT, srcImageInfo,
-        dstPixels, dstPosition, dstPixelMap->GetRowBytes(), dstImageInfo)) {
-        IMAGE_LOGE("pixel convert in adapter failed.");
+
+    int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset),
+        colorLength, srcImageInfo, dstPixels, dstImageInfo);
+    if (dstLength < 0) {
+        IMAGE_LOGE("[PixelMap]Create: pixel convert failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
         dstPixels = nullptr;
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
@@ -1178,13 +1183,29 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-
-    // Copy the actual pixel data without padding bytes
-    for (int i = 0; i < imageInfo_.size.height; ++i) {
-        errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
-        if (ret != 0) {
-            IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-            return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+        uint64_t tmpSize = 0;
+        int readSize = MAX_READ_COUNT;
+        while (tmpSize < bufferSize) {
+            if (tmpSize + MAX_READ_COUNT > bufferSize) {
+                readSize = (int)(bufferSize - tmpSize);
+            }
+            errno_t ret = memcpy_s(dst + tmpSize, readSize, data_ + tmpSize, readSize);
+            if (ret != 0) {
+                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+                return ERR_IMAGE_READ_PIXELMAP_FAILED;
+            }
+            tmpSize += readSize;
+        }
+    } else {
+        // Copy the actual pixel data without padding bytes
+        for (int i = 0; i < imageInfo_.size.height; ++i) {
+            errno_t ret = memcpy_s(dst, rowDataSize_, data_ + i * rowStride_, rowDataSize_);
+            if (ret != 0) {
+                IMAGE_LOGE("read pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+                return ERR_IMAGE_READ_PIXELMAP_FAILED;
+            }
+            dst += rowDataSize_; // Move the destination buffer pointer to the next row
         }
         dst += rowDataSize_; // Move the destination buffer pointer to the next row
     }
@@ -1426,13 +1447,27 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixels by buffer current pixelmap data is nullptr.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-
-    for (int i = 0; i < imageInfo_.size.height; ++i) {
-        const uint8_t* sourceRow = source + i * rowDataSize_;
-        errno_t ret = memcpy_s(data_ + i * rowStride_, rowDataSize_, sourceRow, rowDataSize_);
-        if (ret != 0) {
-            IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
-            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+        uint64_t tmpSize = 0;
+        int readSize = MAX_READ_COUNT;
+        while (tmpSize < bufferSize) {
+            if (tmpSize + MAX_READ_COUNT > bufferSize) {
+                readSize = (int)(bufferSize - tmpSize);
+            }
+            errno_t ret = memcpy_s(data_ + tmpSize, readSize, source + tmpSize, readSize);
+            if (ret != 0) {
+                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+                return ERR_IMAGE_READ_PIXELMAP_FAILED;
+            }
+            tmpSize += readSize;
+        }
+    } else {
+        for (int i = 0; i < imageInfo_.size.height; ++i) {
+            const uint8_t* sourceRow = source + i * rowDataSize_;
+            if (ret != 0) {
+                IMAGE_LOGE("write pixels by buffer memcpy the pixelmap data to dst fail, error:%{public}d", ret);
+                return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+            }
         }
     }
     return SUCCESS;
@@ -1442,14 +1477,6 @@ bool PixelMap::WritePixels(const uint32_t &color)
 {
     if (!IsEditable()) {
         IMAGE_LOGE("erase pixels by color pixelmap data is not editable.");
-        return false;
-    }
-    if (!ImageUtils::IsValidImageInfo(imageInfo_)) {
-        IMAGE_LOGE("erase pixels by color current pixelmap image info is invalid.");
-        return false;
-    }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("erase pixels by color current pixel map data is null.");
         return false;
     }
     ImageInfo srcInfo =
@@ -2922,6 +2949,63 @@ uint32_t PixelMap::crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     return SUCCESS;
+}
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
+{
+    ImageTrace imageTrace("PixelMap decomposeImage");
+    VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
+    VpeUtils::SetSbStaticMetadata(hdr, std::vector<uint8_t>(0));
+    VpeUtils::SetSbDynamicMetadata(hdr, std::vector<uint8_t>(0));
+    VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->ColorSpaceConverterImageProcess(hdr, sdr);
+    if (res != VPE_ERROR_OK || sdr == nullptr) {
+        return false;
+    }
+    return true;
+}
+#endif
+
+uint32_t PixelMap::ToSdr()
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGI("tosdr is not supported");
+    return ERR_MEDIA_INVALID_OPERATION;
+#else
+    ImageTrace imageTrace("PixelMap ToSdr");
+    if (allocatorType_ != AllocatorType::DMA_ALLOC || !IsHdr()) {
+        IMAGE_LOGI("pixelmap is not support tosdr");
+        return ERR_MEDIA_INVALID_OPERATION;
+    }
+    AllocatorType dstType = AllocatorType::DMA_ALLOC;
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
+    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size,
+                          PixelFormat::RGBA_8888};
+    auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
+    if (sdrMemory == nullptr) {
+        IMAGE_LOGI("sdr memory alloc failed.");
+        return IMAGE_RESULT_GET_SURFAC_FAILED;
+    }
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
+    sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
+    if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer)) {
+        sdrMemory->Release();
+        IMAGE_LOGI("ToSdr decompose failed");
+        return IMAGE_RESULT_GET_SURFAC_FAILED;
+    }
+    SetPixelsAddr(sdrMemory->data.data, sdrMemory->extend.data, sdrMemory->data.size, dstType, nullptr);
+    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    SetImageInfo(imageInfo, true);
+#ifdef IMAGE_COLORSPACE_FLAG
+    InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::SRGB));
+#endif
+    return SUCCESS;
+#endif
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG

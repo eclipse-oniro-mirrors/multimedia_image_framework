@@ -1663,6 +1663,7 @@ HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
     if (type > Media::ImageHdrType::SDR && HdrHelper::GetMetadata(codec_.get(), type, metadata)) {
         return metadata;
     }
+    IMAGE_LOGD("get hdr metadata failed, type is %{public}d, flag is %{public}d", type, metadata.extendMetaFlag);
     return {};
 #endif
 }

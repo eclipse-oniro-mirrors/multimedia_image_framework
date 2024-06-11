@@ -747,8 +747,8 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
         return false;
     }
     uint8_t flag = data[dataOffset++];
-    metadata.extendMeta.metaISO.gainmapChannelNum = (flag & 0x01) * INDEX_TWO + INDEX_ONE;
-    metadata.extendMeta.metaISO.useBaseColorFlag = (flag >> INDEX_ONE) & 0x01;
+    metadata.extendMeta.metaISO.gainmapChannelNum = ((flag & 0x80) == 0x80) ? THREE_COMPONENTS : ONE_COMPONENT;
+    metadata.extendMeta.metaISO.useBaseColorFlag = ((flag & 0x40) == 0x40) ? 0x01 : 0x00;
 
     uint32_t baseHeadroomNumerator = ImageUtils::BytesToUint32(data, dataOffset);
     uint32_t baseHeadroomDenominator = ImageUtils::BytesToUint32(data, dataOffset);
@@ -873,10 +873,6 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
         }
         metadata.staticMetadata = ParseHeifStaticMetadata(displayInfo, lightInfo);
         bool res = ParseVividMetadata(uwaInfo.data(), uwaInfo.size(), metadata);
-        if (!res) {
-            IMAGE_LOGI("get heif vivid metadata failed");
-            return false;
-        }
         if (!metadata.extendMetaFlag) {
             vector<uint8_t> isoMetadata;
             heifDecoder->getISOMetadata(isoMetadata);
@@ -1239,6 +1235,14 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     }
     index += ISO_GAINMAP_TAG_SIZE;
     ImageUtils::Uint32ToBytes(extendMeta.metaISO.writeVersion, bytes, index);
+    bytes[index] = 0x00;
+    if (extendMeta.metaISO.useBaseColorFlag) {
+        bytes[index] |= 0x40;
+    }
+    if (extendMeta.metaISO.gainmapChannelNum) {
+        bytes[index] |= 0x80;
+    }
+    index++;
     bytes[index++] = (extendMeta.metaISO.useBaseColorFlag << INDEX_ONE) | (extendMeta.metaISO.gainmapChannelNum & 0x01);
     uint32_t baseHeadroomNumerator = EMPTY_SIZE;
     if (extendMeta.metaISO.baseHeadroom > (float)EMPTY_SIZE) {

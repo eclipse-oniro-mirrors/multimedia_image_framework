@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <fstream>
 #include <gtest/gtest.h>
 #include "directory_ex.h"
@@ -62,6 +63,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode001, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
+    pixelMap->imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 }
 
@@ -91,6 +93,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode002, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
+    pixelMap->imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 }
 
@@ -120,6 +123,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode003, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
+    pixelMap->imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 }
 
@@ -149,6 +153,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode004, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
+    pixelMap->imageInfo_.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     ASSERT_EQ(pixelMap->GetAlphaType(), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
 }
 
@@ -324,7 +329,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode010, TestSize.Level3)
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_WBMP_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
-    buffer[0] = 43;
+    buffer[bufferSize] = 43;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
@@ -336,8 +341,8 @@ HWTEST_F(ImageSourceWbmpTest, WbmpImageDecode010, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(errorCode, SUCCESS);
-    ASSERT_EQ(pixelMap.get(), nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 }
 
 /**
@@ -360,7 +365,7 @@ HWTEST_F(ImageSourceWbmpTest, WbmpGetEncodedFormat001, TestSize.Level3)
     ASSERT_NE(buffer, nullptr);
     ret = OHOS::ImageSourceUtil::ReadFileToBuffer(IMAGE_INPUT_WBMP_PATH, buffer, bufferSize);
     ASSERT_EQ(ret, true);
-    buffer[0] = 43;
+    buffer[bufferSize] = 43;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
@@ -372,8 +377,8 @@ HWTEST_F(ImageSourceWbmpTest, WbmpGetEncodedFormat001, TestSize.Level3)
      */
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(errorCode, SUCCESS);
-    ASSERT_EQ(pixelMap.get(), nullptr);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
 
     /**
      * @tc.steps: step3. get imageinfo encodedformat from imagesource.

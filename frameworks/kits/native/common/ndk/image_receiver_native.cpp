@@ -182,12 +182,9 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
         IMAGE_LOGE("Bad data: key string empty.");
         return IMAGE_UNKNOWN_ERROR;
     }
+    IMAGE_LOGI("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
 
     *surfaceId = std::stoull(strKey);
-    if (*surfaceId <= 0) {
-        IMAGE_LOGE("Bad data: key string empty.");
-        return IMAGE_UNKNOWN_ERROR;
-    }
     return IMAGE_SUCCESS;
 }
 

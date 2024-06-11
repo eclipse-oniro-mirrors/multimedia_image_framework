@@ -37,6 +37,7 @@ constexpr uint32_t COMPONENT_NUM_BGRA = 4;
 constexpr uint32_t COMPONENT_NUM_RGB = 3;
 constexpr uint32_t COMPONENT_NUM_GRAY = 1;
 constexpr uint8_t COMPONENT_NUM_YUV420SP = 3;
+constexpr uint8_t SAMPLE_FACTOR_TWO = 2;
 class PluginLibJpegTest : public testing::Test {
 public:
     PluginLibJpegTest() {}
@@ -2132,6 +2133,94 @@ HWTEST_F(PluginLibJpegTest, SetGpsDegreeRational001, TestSize.Level3)
     bool ret = exinfo.SetGpsDegreeRational(ptrExifData, &ptrEntry, order, tag, exifRationals);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "PluginLibJpegTest: SetGpsDegreeRational001 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest002
+ * @tc.desc: AddImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest002 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    Media::PixelMap pixelmap;
+    Jpegencoder->pixelMaps_.push_back(&pixelmap);
+    uint32_t ret = Jpegencoder->AddImage(pixelmap);
+    ASSERT_EQ(ret, ERR_IMAGE_ADD_PIXEL_MAP_FAILED);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest002 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest003
+ * @tc.desc: FinalizeEncode
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest003 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    Media::PixelMap pixelmap;
+    pixelmap.imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
+    pixelmap.data_ = nullptr;
+    Jpegencoder->pixelMaps_.push_back(&pixelmap);
+    uint32_t ret = Jpegencoder->FinalizeEncode();
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest003 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest004
+ * @tc.desc: SetCommonConfig
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest004 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    Media::PixelMap pixelmap;
+    Jpegencoder->pixelMaps_.clear();
+    uint32_t ret = Jpegencoder->SetCommonConfig();
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest004 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest005
+ * @tc.desc: SetYuv420spExtraConfig
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    Jpegencoder->encodeInfo_.comp_info = new jpeg_component_info;
+    Jpegencoder->SetYuv420spExtraConfig();
+    ASSERT_EQ(Jpegencoder->encodeInfo_.comp_info[0].h_samp_factor, SAMPLE_FACTOR_TWO);
+    delete Jpegencoder->encodeInfo_.comp_info;
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 end";
+}
+
+/**
+ * @tc.name: Jpeg_EncoderTest006
+ * @tc.desc: Deinterweave
+ * @tc.type: FUNC
+ */
+HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 start";
+    auto Jpegencoder = std::make_shared<JpegEncoder>();
+    Media::PixelMap pixelmap;
+    Jpegencoder->pixelMaps_.push_back(&pixelmap);
+    uint8_t *uvPlane = nullptr;
+    uint8_t *uPlane = nullptr;
+    uint8_t *vPlane = nullptr;
+    uint32_t curRow = 0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    Jpegencoder->Deinterweave(uvPlane, uPlane, vPlane, curRow, width, height);
+    ASSERT_EQ(pixelmap.imageInfo_.pixelFormat, PixelFormat::UNKNOWN);
+    GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest006 end";
 }
 } // namespace Multimedia
 } // namespace OHOS

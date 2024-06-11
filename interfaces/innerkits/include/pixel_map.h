@@ -290,6 +290,7 @@ public:
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
 
     NATIVEEXPORT bool IsHdr();
+    NATIVEEXPORT uint32_t ToSdr();
 
 private:
     static constexpr uint8_t TLV_VARINT_BITS = 7;

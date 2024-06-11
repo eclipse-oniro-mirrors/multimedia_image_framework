@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include <gtest/gtest.h>
 #include <memory>
 #include <map>
@@ -21,6 +22,7 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "webp_exif_metadata_accessor.h"
+#include "png_image_chunk_utils.h"
 
 using namespace OHOS::Media;
 using namespace testing::ext;
@@ -32,6 +34,8 @@ namespace {
 constexpr auto IMAGE_INPUT_READ1_WEBP_SIZE = 25294;
 constexpr auto IMAGE_INPUT_READ6_WEBP_SIZE = 570;
 constexpr auto IMAGE_INPUT_READ8_WEBP_SIZE = 4244;
+constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
+constexpr auto WEBP_CHUNK_HEADER_VP8L = "VP8L";
 static const std::string IMAGE_INPUT_READ1_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob001.webp";
 static const std::string IMAGE_INPUT_READ2_WEBP_PATH = "/data/local/tmp/image/test_webp_readexifblob002.webp";
 static const std::string IMAGE_INPUT_READ3_WEBP_PATH = "/data/local/tmp/image/test_webp_readmetadata001.webp";
@@ -1651,6 +1655,117 @@ HWTEST_F(WebpExifMetadataAccessorTest, Write020, TestSize.Level3)
     ASSERT_EQ(GetProperty(exifMetadata, "SubjectLocation"), "15, 12");
     ASSERT_EQ(GetProperty(exifMetadata, "ImageUniqueID"), "fxic012");
     ASSERT_EQ(GetProperty(exifMetadata, "YCbCrCoefficients"), "0.200, 0.255, 0.350");
+}
+
+/**
+ * @tc.name: Write021
+ * @tc.desc: Testing Write
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, Write021, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    uint32_t result = imageAccessor.Write();
+    ASSERT_EQ(result, ERR_MEDIA_VALUE_INVALID);
+}
+
+/**
+ * @tc.name: GetExifEncodeBlob001
+ * @tc.desc: Testing GetExifEncodeBlob
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetExifEncodeBlob001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    uint8_t *dataBlob = nullptr;
+    uint32_t size = 0;
+    bool ret = imageAccessor.GetExifEncodeBlob(&dataBlob, size);
+    ASSERT_EQ(ret, false);
+}
+
+/**
+ * @tc.name: UpdateExifMetadata001
+ * @tc.desc: Testing UpdateExifMetadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, UpdateExifMetadata001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    BufferMetadataStream bufStream;
+    uint8_t dataBlob = 'a';
+    uint32_t size = 0;
+    bool ret = imageAccessor.UpdateExifMetadata(bufStream, &dataBlob, size);
+    ASSERT_EQ(ret, true);
+}
+
+/**
+ * @tc.name: GetWidthAndHeightFormChunk001
+ * @tc.desc: Testing GetWidthAndHeightFormChunk
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetWidthAndHeightFormChunk001, TestSize.Level3)
+{
+    std::shared_ptr<MetadataStream> readStream = std::make_shared<FileMetadataStream>(IMAGE_INPUT_WRITE20_WEBP_PATH);
+    ASSERT_TRUE(readStream->Open(OpenMode::ReadWrite));
+    WebpExifMetadataAccessor imageAccessor(readStream);
+    std::string strChunkId = WEBP_CHUNK_HEADER_VP8L;
+    DataBuf chunkData;
+    auto ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
+    ASSERT_NE(std::get<0>(ret), 0);
+    strChunkId = WEBP_CHUNK_HEADER_ANMF;
+    ret = imageAccessor.GetWidthAndHeightFormChunk(strChunkId, chunkData);
+    ASSERT_NE(std::get<0>(ret), 0);
+}
+
+/**
+ * @tc.name: GetKeywordFromChunk001
+ * @tc.desc: Testing GetKeywordFromChunk
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, GetKeywordFromChunk001, TestSize.Level3)
+{
+    std::shared_ptr<PngImageChunkUtils> png = std::make_shared<PngImageChunkUtils>();
+    const DataBuf chunkData;
+    png->GetKeywordFromChunk(chunkData);
+    ASSERT_EQ(chunkData.Size(), 0);
+}
+
+/**
+ * @tc.name: DecompressText001
+ * @tc.desc: Testing DecompressText
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, DecompressText001, TestSize.Level3)
+{
+    std::shared_ptr<PngImageChunkUtils> png = std::make_shared<PngImageChunkUtils>();
+    
+    const byte sourceData = 'a';
+    unsigned int sourceDataLen = 65538;
+    DataBuf textOut;
+    int ret = png->DecompressText(&sourceData, sourceDataLen, textOut);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
+}
+
+/**
+ * @tc.name: ConvertAsciiToInt001
+ * @tc.desc: Testing ConvertAsciiToInt
+ * @tc.type: FUNC
+ */
+HWTEST_F(WebpExifMetadataAccessorTest, ConvertAsciiToInt, TestSize.Level3)
+{
+    std::shared_ptr<PngImageChunkUtils> png = std::make_shared<PngImageChunkUtils>();
+    
+    const char sourcePtr = '\0';
+    size_t exifInfoLength = 1;
+    unsigned char destPtr = 'a';
+    int ret = png->ConvertAsciiToInt(&sourcePtr, exifInfoLength, &destPtr);
+    ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
 }
 } // namespace Multimedia
 } // namespace OHOS

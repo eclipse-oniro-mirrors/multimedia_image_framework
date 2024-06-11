@@ -99,6 +99,7 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     InitializationOptions info;
     info.alphaType = ParseAlphaType(args->createOptions.alphaType);
     info.editable = args->createOptions.editable != NUM_0;
+    info.srcPixelFormat = ParsePixelForamt(args->createOptions.srcPixelFormat);
     info.pixelFormat = ParsePixelForamt(args->createOptions.pixelFormat);
     info.scaleMode = ParseScaleMode(args->createOptions.scaleMode);
     info.size.height = args->createOptions.height;

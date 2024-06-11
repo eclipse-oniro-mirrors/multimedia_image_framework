@@ -800,6 +800,8 @@ static void SetPixelMapColorSpace(ImagePlugin::DecodeContext context, unique_ptr
 #ifdef IMAGE_COLORSPACE_FLAG
     if (context.hdrType > ImageHdrType::SDR) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
+        IMAGE_LOGD("hdr set pixelmap colorspace is %{public}d-%{public}d",
+            context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
         return ;
     }
     bool isSupportICCProfile = decoder->IsSupportICCProfile();
@@ -1024,7 +1026,9 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
-
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    context.allocatorType = AllocatorType::HEAP_ALLOC;
+#endif
     errorCode = mainDecoder_->Decode(index, context);
     if (context.ifPartialOutput) {
         for (auto partialListener : decodeListeners_) {
@@ -3121,16 +3125,45 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
 }
 #endif
 
+bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
+{
+    if (streamBuffer == nullptr) {
+        IMAGE_LOGE("GetStreamData streamBuffer is nullptr");
+        return false;
+    }
+    uint32_t readSize = 0;
+    uint32_t savedPosition = sourceStream->Tell();
+    sourceStream->Seek(0);
+    bool result = sourceStream->Read(streamSize, streamBuffer, streamSize, readSize);
+    sourceStream->Seek(savedPosition);
+    if (!result || (readSize != streamSize)) {
+        IMAGE_LOGE("sourceStream read data failed");
+        return false;
+    }
+    return true;
+}
+
 bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeContext& gainMapCtx, HdrMetadata& metadata)
 {
     ImageTrace imageTrace("ImageSource::DecodeJpegGainMap hdrType:%{public}d, scale:%{public}d", hdrType, scale);
     uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
-    if (gainMapOffset == 0 || gainMapOffset > sourceStreamPtr_->GetStreamSize()) {
+    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (gainMapOffset == 0 || gainMapOffset > streamSize || streamSize == 0) {
         return false;
     }
-    uint8_t* gainMapData = sourceStreamPtr_->GetDataPtr() + gainMapOffset;
-    uint32_t dataSize = sourceStreamPtr_->GetStreamSize() - gainMapOffset;
-    std::unique_ptr<InputDataStream> gainMapStream = BufferSourceStream::CreateSourceStream(gainMapData, dataSize);
+    uint8_t* streamBuffer = sourceStreamPtr_->GetDataPtr();
+    if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
+        streamBuffer = new (std::nothrow) uint8_t[streamSize];
+        if (!GetStreamData(sourceStreamPtr_, streamBuffer, streamSize)) {
+            delete[] streamBuffer;
+            return false;
+        }
+    }
+    std::unique_ptr<InputDataStream> gainMapStream =
+        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
+    if (sourceStreamPtr_->GetStreamType() != ImagePlugin::BUFFER_SOURCE_TYPE) {
+        delete[] streamBuffer;
+    }
     if (gainMapStream == nullptr) {
         IMAGE_LOGE("[ImageSource] create gainmap stream fail, gainmap offset is %{public}d", gainMapOffset);
         return false;
@@ -3182,7 +3215,9 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
         IMAGE_LOGI("[ImageSource] jpeg get gainmap failed");
         return false;
     }
-
+    IMAGE_LOGD("get hdr metadata, extend flag is %{public}d, static size is %{public}zu,"
+        "dynamic metadata size is %{public}zu",
+        metadata.extendMetaFlag, metadata.staticMetadata.size(), metadata.dynamicMetadata.size());
     bool result = ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
     FreeContextBuffer(gainMapCtx.freeFunc, gainMapCtx.allocatorType, gainMapCtx.pixelsBuffer);
     return result;
@@ -3265,6 +3300,8 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainMapCtx.pixelsBuffer.context));
     CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
     CM_ColorSpaceType gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
+    IMAGE_LOGD("ComposeHdrImage color flag = %{public}d, gainmapChannelNum = %{public}d",
+        metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
     SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
     // hdr image
@@ -3361,7 +3398,8 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
 {
-    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
+    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888 &&
+        context.info.pixelFormat != ImagePlugin::PlPixelFormat::BGRA_8888) {
         return false;
     }
     uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3438,6 +3476,8 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
     } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12) {
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::BGRA_8888) {
+        format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888;
     } else if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
         IMAGE_LOGI("CopyContextIntoSurfaceBuffer pixelformat %{public}d is unsupport", context.pixelFormat);
         return ERR_IMAGE_DATA_UNSUPPORT;
@@ -3522,6 +3562,8 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
         aisrCtx.pixelsBuffer.bufferSize = output->GetSize();
         aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         aisrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
+        aisrCtx.yuvInfo.imageSize.width = aisrCtx.outInfo.size.width;
+        aisrCtx.yuvInfo.imageSize.height = aisrCtx.outInfo.size.height;
         aisrCtx.hdrType = Media::ImageHdrType::SDR;
         IMAGE_LOGD("[ImageSource]AiSrProcess DetailEnhancerImage %{public}d %{public}d %{public}d",
             aisrCtx.outInfo.size.width, aisrCtx.outInfo.size.height, aisrCtx.pixelsBuffer.bufferSize);
@@ -3595,6 +3637,8 @@ static void CopyOutInfoOfContext(const DecodeContext &srcCtx, DecodeContext &dst
     dstCtx.info.alphaType = srcCtx.info.alphaType;
     dstCtx.isAisr = srcCtx.isAisr;
     dstCtx.grColorSpaceName = srcCtx.grColorSpaceName;
+    dstCtx.yuvInfo.imageSize.width = srcCtx.outInfo.size.width;
+    dstCtx.yuvInfo.imageSize.height = srcCtx.outInfo.size.height;
 }
 
 static uint32_t AiHdrProcess(const DecodeContext &aisrCtx, DecodeContext &hdrCtx, CM_ColorSpaceType cmColorSpaceType)
@@ -3622,7 +3666,9 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
             dstCtx.isAisr = true;
         }
     }
-    if (needHdr) {
+    if (needHdr && (dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12 ||
+        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV21 ||
+        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::RGBA_8888)) {
         sptr<SurfaceBuffer> inputHdr = input;
         DecodeContext hdrCtx;
         if (dstCtx.isAisr) {

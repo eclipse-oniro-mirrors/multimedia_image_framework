@@ -37,10 +37,13 @@ public:
 
 private:
     static int32_t ValidateValueRange(const std::string &keyName, const std::string &value);
+    static void ConvertRangeValue(const std::string &keyName, std::string &value);
+    static void ExtractValue(const std::string &keyName, std::string &value);
     static int32_t ConvertValueFormat(const std::string &keyName, std::string &value);
     static int32_t ValidateValueFormat(const std::string &keyName, const std::string &value);
     static bool IsKeySupported(const std::string &keyName);
     static bool IsFormatValidationConfigExisting(const std::string &keyName);
+    static bool IsForbiddenValue(const std::string &value);
     static int Gcd(int a, int b)
     {
         if (b == 0) {
@@ -56,16 +59,21 @@ private:
     static bool ValidRegexWithColonRationalFormat(std::string &value, const std::string &regex);
     static bool ValidRegexWithDot(std::string &value, const std::string &regex);
     static bool ValidRegxWithCommaDecimalRationalFormat(std::string &value, const std::string &regex);
+    static bool ValidRegexWithVersionFormat(std::string &value, const std::string &regex);
+    static bool ValidRegxAndConvertRationalFormat(std::string &value, const std::string &regex);
     static bool ValidRegexWithDecimalRationalFormat(std::string &value, const std::string &regex);
     static bool ValidRegexWithGpsOneRationalFormat(std::string &value, const std::string &regex);
+    static bool ValidRegexWithChannelFormat(std::string &value, const std::string &regex);
     static void ReplaceAsSpace(std::string &value, const std::string &regex);
     static void ReplaceAsContent(std::string &value, const std::string &regex, const std::string &content);
     static void RationalFormat(std::string &value);
     static std::string GetFractionFromStr(const std::string &decimal);
     static void DecimalRationalFormat(std::string &value);
+    static void ConvertRationalFormat(std::string &value);
     static ValueFormatDelegate doubleIntToOneRationalWithComma;
     static ValueFormatDelegate doubleIntWithBlank;
     static ValueFormatDelegate doubleIntWithComma;
+    static ValueFormatDelegate doubleValueToRational;
     static ValueFormatDelegate tribleIntWithBlank;
     static ValueFormatDelegate tribleIntWithComma;
     static ValueFormatDelegate fourIntWithBlank;
@@ -91,8 +99,13 @@ private:
     static ValueFormatDelegate fourIntWithDot;
     static ValueFormatDelegate fourDecimalToRationalWithBlank;
     static ValueFormatDelegate sixDecimalToRationalWithBlank;
+    static ValueFormatDelegate sixDecimalToRationalWithComma;
+    static ValueFormatDelegate timeStamp;
+    static ValueFormatDelegate version;
+    static ValueFormatDelegate channel;
     static std::multimap<std::string, ValueFormatDelegate> valueFormatConvertConfig;
     static std::multimap<std::string, std::string> valueFormatValidateConfig;
+    static std::multimap<std::string, std::string> valueTemplateConfig;
     static std::map<std::string, std::tuple<const TagDetails*, const size_t>> valueRangeValidateConfig;
 };
 } // namespace Media
