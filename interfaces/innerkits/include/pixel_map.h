@@ -76,7 +76,7 @@ typedef struct PixelMapError {
 
 typedef struct BuildParam {
     int32_t offset_ = 0;
-    int32_t width_ = 0;
+    int32_t stride_ = 0;
     bool flag_ = true;
 } BUILD_PARAM;
 
@@ -292,12 +292,7 @@ public:
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
 
-    static int32_t GetRGBxRowDataSize(const ImageInfo& info);
-    static int32_t GetRGBxByteCount(const ImageInfo& info);
-    static int32_t GetYUVByteCount(const ImageInfo& info);
-    static int32_t GetAllocatedByteCount(const ImageInfo& info);
-
-protected:
+private:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
     static constexpr uint8_t TLV_VARINT_MORE = 0x80;
