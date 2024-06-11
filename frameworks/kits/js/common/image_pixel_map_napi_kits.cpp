@@ -101,8 +101,8 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     info.editable = args->createOptions.editable != NUM_0;
     info.pixelFormat = ParsePixelForamt(args->createOptions.pixelFormat);
     info.scaleMode = ParseScaleMode(args->createOptions.scaleMode);
-    info.size.height = args->createOptions.height;
-    info.size.width = args->createOptions.width;
+    info.size.height = static_cast<int32_t>(args->createOptions.height);
+    info.size.width = static_cast<int32_t>(args->createOptions.width);
 
     BUILD_PARAM pam;
     pam.offset_ = 0;
@@ -328,9 +328,9 @@ static int32_t PixelMapNapiGetImageInfo(PixelMapNapi* native, PixelMapNapiArgs* 
 
     ImageInfo srcInfo;
     pixelmap->GetImageInfo(srcInfo);
-    args->outInfo->width = srcInfo.size.width;
-    args->outInfo->height = srcInfo.size.height;
-    args->outInfo->rowSize = pixelmap->GetRowStride();
+    args->outInfo->width = static_cast<uint32_t>(srcInfo.size.width);
+    args->outInfo->height = static_cast<uint32_t>(srcInfo.size.height);
+    args->outInfo->rowSize = static_cast<uint32_t>(pixelmap->GetRowStride());
     args->outInfo->pixelFormat = static_cast<int32_t>(srcInfo.pixelFormat);
     return pixelmap->errorCode == 0 ? IMAGE_RESULT_SUCCESS : pixelmap->errorCode;
 }

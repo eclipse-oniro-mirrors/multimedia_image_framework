@@ -783,10 +783,10 @@ static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, 
     int32_t dstBottom = dst.top + dst.height;
     int32_t dstRight = dst.left + dst.width;
     if (dst.top >= 0 && dstBottom > 0 && static_cast<uint32_t>(dstBottom) > plInfo.size.height) {
-        dst.height = plInfo.size.height - dst.top;
+        dst.height = static_cast<int32_t>(plInfo.size.height) - dst.top;
     }
     if (dst.left >= 0 && dstRight > 0 && static_cast<uint32_t>(dstRight) > plInfo.size.width) {
-        dst.width = plInfo.size.width - dst.left;
+        dst.width = static_cast<int32_t>(plInfo.size.width) - dst.left;
     }
 }
 
@@ -2501,8 +2501,8 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSuppo
         return false;
     }
 
-    const size_t width = sourceOptions_.size.width;
-    const size_t height = sourceOptions_.size.height;
+    const size_t width = static_cast<size_t>(sourceOptions_.size.width);
+    const size_t height = static_cast<size_t>(sourceOptions_.size.height);
     const size_t uvwidth = (isSupportOdd && isAddUV) ? (width + (width & 1)) : width;
     const uint8_t *yuvPlane = sourceStreamPtr_->GetDataPtr();
     const size_t yuvSize = sourceStreamPtr_->GetStreamSize();
@@ -2788,12 +2788,14 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
         (static_cast<uint32_t>(fileData[NUM_2]) << NUM_16) +
         (static_cast<uint32_t>(fileData[NUM_3]) << NUM_24);
     if (magicVal == ASTC_MAGIC_ID) {
-        astcInfo.size.width = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
+        unsigned int astcWidth = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X]) +
             (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + 1]) << NUM_8) +
             (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_X + NUM_2]) << NUM_16);
-        astcInfo.size.height = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y]) +
+        unsigned int astcHeight = static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y]) +
             (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + 1]) << NUM_8) +
             (static_cast<unsigned int>(fileData[ASTC_HEADER_DIM_Y + NUM_2]) << NUM_16);
+        astcInfo.size.width = static_cast<int32_t>(astcWidth);
+        astcInfo.size.height = static_cast<int32_t>(astcHeight);
         astcInfo.blockFootprint.width = fileData[ASTC_HEADER_BLOCK_X];
         astcInfo.blockFootprint.height = fileData[ASTC_HEADER_BLOCK_Y];
         return true;

@@ -1691,8 +1691,8 @@ static CL_ASTC_STATUS ClKernelArgSetAndRun(ClAstcHandle *clAstcHandle, ClAstcObj
     }
     size_t local[] = {WORK_GROUP_SIZE, WORK_GROUP_SIZE};
     size_t global[GLOBAL_WH_NUM_CL];
-    global[0] = (width + DIM - 1) / DIM;
-    global[1] = (height + DIM - 1) / DIM;
+    global[0] = static_cast<size_t>((width + DIM - 1) / DIM);
+    global[1] = static_cast<size_t>((height + DIM - 1) / DIM);
     size_t localMax;
     cl_int clRet = clGetKernelWorkGroupInfo(clAstcHandle->kernel, clAstcHandle->deviceID, CL_KERNEL_WORK_GROUP_SIZE,
         sizeof(size_t), &localMax, nullptr);

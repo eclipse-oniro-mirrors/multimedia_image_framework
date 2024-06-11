@@ -94,7 +94,10 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
         // consider doing it manually where necessary.
         // If there is existing data, copy it to the new buffer
         if (buffer_ != nullptr) {
-            memcpy_s(newBuffer, newCapacity, buffer_, bufferSize_);
+            if (EOK != memcpy_s(newBuffer, newCapacity, buffer_, bufferSize_)) {
+                IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
+                return -1;
+            }
 
             // If the old buffer was not externally allocated, delete it
             if (originData_ != buffer_) {
@@ -114,7 +117,10 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
     }
 
     // Copy the new data into the buffer
-    memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size);
+    if (EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size)) {
+        IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
+        return -1;
+    }
 
     // Update the current offset and buffer size
     currentOffset_ += size;
