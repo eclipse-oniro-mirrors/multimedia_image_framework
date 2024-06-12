@@ -354,7 +354,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNat
 
     PackOption packOption;
     Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
-    if ( errorCode != IMAGE_SUCCESS) {
+    if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
     return ToNewErrorCode(imagePacker->PackingFromImageSource(&packOption, imageSource,
@@ -371,7 +371,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
 
     PackOption packOption;
     Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
-    if ( errorCode != IMAGE_SUCCESS) {
+    if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
     return ToNewErrorCode(imagePacker->PackingFromPixelmap(&packOption, pixelmap, outData,
@@ -416,7 +416,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNat
 
     PackOption packOption;
     Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
-    if ( errorCode != IMAGE_SUCCESS) {
+    if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
     return ToNewErrorCode(imagePacker->PackToFileFromImageSource(&packOption, imageSource, fd));
@@ -432,7 +432,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
 
     PackOption packOption;
     Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
-    if ( errorCode != IMAGE_SUCCESS) {
+    if (errorCode != IMAGE_SUCCESS) {
         return errorCode;
     }
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
