@@ -194,7 +194,7 @@ Image_ErrorCode OH_PackingOptions_SetQuality(OH_PackingOptions *options, uint32_
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_GetNeedsPackProperties(OH_PackingOptions *options, bool *needsPackProperties)
 {
-    if (options == nullptr) {
+    if (options == nullptr || needsPackProperties == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     *needsPackProperties = options->needsPackProperties;
