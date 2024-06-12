@@ -501,6 +501,15 @@ HWTEST_F(ExifMetadataTest, GetValue034, TestSize.Level3)
     ASSERT_EQ(value, "7");
 }
 
+HWTEST_F(ExifMetadataTest, GetValue035, TestSize.Level3)
+{
+    auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_HW_PATH.c_str());
+    ASSERT_NE(exifData, nullptr);
+    std::string value;
+    ExifMetadata metadata(exifData);
+    ASSERT_NE(metadata.GetValue("notexistkey", value), SUCCESS);
+}
+
 HWTEST_F(ExifMetadataTest, SetValueBatch001, TestSize.Level3)
 {
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());

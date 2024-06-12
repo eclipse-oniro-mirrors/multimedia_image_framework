@@ -34,6 +34,7 @@ public:
     static std::pair<int32_t, std::string> Format(const std::string &keyName, const std::string &value);
     static int32_t Validate(const std::string &keyName, const std::string &value);
     static bool IsModifyAllowed(const std::string &keyName);
+    static bool IsKeySupported(const std::string &keyName);
 
 private:
     static int32_t ValidateValueRange(const std::string &keyName, const std::string &value);
@@ -41,7 +42,6 @@ private:
     static void ExtractValue(const std::string &keyName, std::string &value);
     static int32_t ConvertValueFormat(const std::string &keyName, std::string &value);
     static int32_t ValidateValueFormat(const std::string &keyName, const std::string &value);
-    static bool IsKeySupported(const std::string &keyName);
     static bool IsFormatValidationConfigExisting(const std::string &keyName);
     static bool IsForbiddenValue(const std::string &value);
     static int Gcd(int a, int b)
