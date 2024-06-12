@@ -157,12 +157,7 @@ bool ImageCodec::BufferInfo::IsValidFrame() const
 
 void ImageCodec::BufferInfo::Dump(const string& prefix, bool dumpMode) const
 {
-    if (!dumpMode) {
-        return;
-    }
-    if (isInput) {
-        Dump(prefix + "_Input");
-    } else {
+    if (dumpMode && !isInput) {
         Dump(prefix + "_Output");
     }
 }

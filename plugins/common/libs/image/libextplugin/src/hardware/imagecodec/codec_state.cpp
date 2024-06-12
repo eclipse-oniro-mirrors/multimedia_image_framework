@@ -329,11 +329,11 @@ void ImageCodec::StartingState::OnStateEntered()
 
 int32_t ImageCodec::StartingState::AllocateBuffers()
 {
-    int32_t ret = codec_->AllocateBuffersOnPort(OMX_DirInput);
+    int32_t ret = codec_->AllocateBuffersOnPort(OMX_DirInput, false);
     if (ret != IC_ERR_OK) {
         return ret;
     }
-    ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);
+    ret = codec_->AllocateBuffersOnPort(OMX_DirOutput, false);
     if (ret != IC_ERR_OK) {
         return ret;
     }
@@ -592,7 +592,7 @@ void ImageCodec::OutputPortChangedState::HandleOutputPortDisabled()
         SLOGI("begin to ask omx to enable out port");
         int32_t err = codec_->compNode_->SendCommand(CODEC_COMMAND_PORT_ENABLE, OMX_DirOutput, {});
         if (err == HDF_SUCCESS) {
-            ret = codec_->AllocateBuffersOnPort(OMX_DirOutput);
+            ret = codec_->AllocateBuffersOnPort(OMX_DirOutput, true);
         } else {
             SLOGE("ask omx to enable out port failed, ret=%{public}d", ret);
             ret = IC_ERR_UNKNOWN;
