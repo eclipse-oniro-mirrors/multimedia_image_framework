@@ -79,7 +79,7 @@ struct PackOption {
     std::vector<uint8_t> disposalTypes;
 
     /**
-     * Hint to pack image with exif.
+     * Hint to pack image with properties.
     */
     bool needsPackProperties = false;
 };
