@@ -180,10 +180,7 @@ bool HeifHardwareDecoder::ConfigureDecoder(const GridInfo& gridInfo, sptr<Surfac
     static constexpr double OUTPUT_FRAME_RATE = 120.0;
     format.SetValue(ImageCodecDescriptionKey::FRAME_RATE, OUTPUT_FRAME_RATE);
     format.SetValue(ImageCodecDescriptionKey::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
-    int32_t pixelFmt = output->GetFormat();
-    pixelFmt = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : pixelFmt;
-    pixelFmt = (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) ? GRAPHIC_PIXEL_FMT_YCRCB_420_SP : pixelFmt;
-    format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, pixelFmt);
+    format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, output->GetFormat());
     format.SetValue(ImageCodecDescriptionKey::ENABLE_HEIF_GRID, gridInfo.enableGrid);
     if (!gridInfo.enableGrid) {
         static constexpr uint32_t INPUT_BUFFER_CNT_WHEN_NO_GRID = 3;
@@ -231,6 +228,49 @@ bool HeifHardwareDecoder::GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>&
     return true;
 }
 
+void HeifHardwareDecoder::DumpSingleInput(const std::string& type, const GridInfo& gridInfo,
+                                          const std::vector<std::vector<uint8_t>>& inputs)
+{
+    char inFilePath[MAX_PATH_LEN] = {0};
+    int ret = -1;
+    if (gridInfo.enableGrid) {
+        ret = sprintf_s(inFilePath, sizeof(inFilePath), "%s/in_%s_%ux%u_grid_%ux%u_%ux%u.bin",
+                        DUMP_PATH, type.c_str(), gridInfo.displayWidth, gridInfo.displayHeight,
+                        gridInfo.tileWidth, gridInfo.tileHeight, gridInfo.cols, gridInfo.rows);
+    } else {
+        ret = sprintf_s(inFilePath, sizeof(inFilePath), "%s/in_%s_%ux%u_nogrid.bin",
+                        DUMP_PATH, type.c_str(), gridInfo.displayWidth, gridInfo.displayHeight);
+    }
+    if (ret == -1) {
+        LOGE("failed to dump input %{public}s", type.c_str());
+        return;
+    }
+    std::ofstream dumpInFile;
+    dumpInFile.open(std::string(inFilePath), std::ios_base::binary | std::ios_base::trunc);
+    if (!dumpInFile.is_open()) {
+        LOGE("failed to open %{public}s", inFilePath);
+        return;
+    }
+    for (size_t i = 0; i < inputs.size(); ++i) {
+        if ((i == 0) && (type == "data")) {
+            continue;
+        }
+        const vector<uint8_t>& one = inputs[i];
+        dumpInFile.write(reinterpret_cast<char*>(const_cast<uint8_t*>(one.data())), one.size());
+        if ((i == 0) && (type == "xps")) {
+            break;
+        }
+    }
+    dumpInFile.close();
+}
+
+void HeifHardwareDecoder::DumpInput(const GridInfo& gridInfo, const std::vector<std::vector<uint8_t>>& inputs)
+{
+    DumpSingleInput("all", gridInfo, inputs);
+    DumpSingleInput("xps", gridInfo, inputs);
+    DumpSingleInput("data", gridInfo, inputs);
+}
+
 uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs,
                                        sptr<SurfaceBuffer>& output)
 {
@@ -245,6 +285,9 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
                                 "input size < %{public}zu", MIN_SIZE_OF_INPUT);
     IF_TRUE_RETURN_VAL_WITH_MSG(heifDecoderImpl_ == nullptr, Media::ERR_IMAGE_DECODE_FAILED,
                                 "failed to create heif decoder");
+    if (OHOS::system::GetBoolParameter("image.codec.dump", false)) {
+        DumpInput(gridInfo, inputs);
+    }
     IF_TRUE_RETURN_VAL(!IsHardwareDecodeSupported(gridInfo), Media::ERR_IMAGE_HW_DECODE_UNSUPPORT);
     IF_TRUE_RETURN_VAL(!SetCallbackForDecoder(), Media::ERR_IMAGE_DECODE_FAILED);
     IF_TRUE_RETURN_VAL(!ConfigureDecoder(gridInfo, output), Media::ERR_IMAGE_DECODE_FAILED);
@@ -319,9 +362,7 @@ string HeifHardwareDecoder::GetOutputPixelFmtDesc()
 
 void HeifHardwareDecoder::DumpOutput()
 {
-    static constexpr char DUMP_PATH[] = "/data/misc/imagecodecdump";
     string pixelFmtDesc = GetOutputPixelFmtDesc();
-    static constexpr int MAX_PATH_LEN = 256;
     char outputFilePath[MAX_PATH_LEN] = {0};
     int ret = 0;
     if (gridInfo_.enableGrid) {

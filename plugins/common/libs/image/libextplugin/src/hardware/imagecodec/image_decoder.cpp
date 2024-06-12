@@ -285,12 +285,12 @@ bool ImageDecoder::ReadyToStart()
     return true;
 }
 
-int32_t ImageDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
+int32_t ImageDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged)
 {
     if (portIndex == OMX_DirInput) {
         return AllocateHardwareBuffers(portIndex);
     }
-    int32_t ret = AllocateSurfaceBuffers(portIndex, outputBuffer_);
+    int32_t ret = AllocateSurfaceBuffers(portIndex, isOutputPortSettingChanged, outputBuffer_);
     if (ret == IC_ERR_OK) {
         UpdateFormatFromSurfaceBuffer();
     }

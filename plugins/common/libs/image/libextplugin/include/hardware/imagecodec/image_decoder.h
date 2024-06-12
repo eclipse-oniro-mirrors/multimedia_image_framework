@@ -36,7 +36,7 @@ private:
     int32_t OnSetOutputBuffer(sptr<SurfaceBuffer> output) override;
 
     // start
-    int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) override;
+    int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged) override;
     void UpdateFormatFromSurfaceBuffer() override;
     int32_t SubmitAllBuffersOwnedByUs() override;
     int32_t SubmitOutputBuffersToOmxNode() override;
