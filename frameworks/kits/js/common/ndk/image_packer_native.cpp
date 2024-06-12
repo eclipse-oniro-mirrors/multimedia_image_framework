@@ -109,6 +109,26 @@ static EncodeDynamicRange ParseDynamicRange(int32_t val)
     return EncodeDynamicRange::SDR;
 }
 
+static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, PackOption &packOption)
+{
+    if (options == nullptr || packOption == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    std::string format(options->mimeType.data, options->mimeType.size);
+    if (format.empty()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    packOption.format = format;
+    packOption.quality = options->quality;
+    packOption.needsPackProperties = options->needsPackProperties;
+    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
+    return IMAGE_SUCCESS;
+}
+
+return EncodeDynamicRange::SDR;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_PackingOptions_Create(OH_PackingOptions **options)
 {
@@ -336,14 +356,10 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromImageSource(OH_ImagePackerNat
     }
 
     PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    if (format.empty()) {
-        return IMAGE_BAD_PARAMETER;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if ( errorCode != IMAGE_SUCCESS) {
+        return errorCode;
     }
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.needsPackProperties = options->needsPackProperties;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackingFromImageSource(&packOption, imageSource,
         outData, reinterpret_cast<int64_t*>(size)));
 }
@@ -357,14 +373,10 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
     }
 
     PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    if (format.empty()) {
-        return IMAGE_BAD_PARAMETER;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if ( errorCode != IMAGE_SUCCESS) {
+        return errorCode;
     }
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.needsPackProperties = options->needsPackProperties;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackingFromPixelmap(&packOption, pixelmap, outData,
         reinterpret_cast<int64_t*>(size)));
 }
@@ -406,14 +418,10 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNat
     }
 
     PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    if (format.empty()) {
-        return IMAGE_BAD_PARAMETER;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if ( errorCode != IMAGE_SUCCESS) {
+        return errorCode;
     }
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.needsPackProperties = options->needsPackProperties;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackToFileFromImageSource(&packOption, imageSource, fd));
 }
 
@@ -426,14 +434,10 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
     }
 
     PackOption packOption;
-    std::string format(options->mimeType.data, options->mimeType.size);
-    if (format.empty()) {
-        return IMAGE_BAD_PARAMETER;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if ( errorCode != IMAGE_SUCCESS) {
+        return errorCode;
     }
-    packOption.format = format;
-    packOption.quality = options->quality;
-    packOption.needsPackProperties = options->needsPackProperties;
-    packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return ToNewErrorCode(imagePacker->PackToFileFromPixelmap(&packOption, pixelmap, fd));
 }
 
