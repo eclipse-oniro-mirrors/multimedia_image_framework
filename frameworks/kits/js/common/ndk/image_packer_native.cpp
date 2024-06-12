@@ -111,7 +111,7 @@ static EncodeDynamicRange ParseDynamicRange(int32_t val)
 
 static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, PackOption &packOption)
 {
-    if (options == nullptr || packOption == nullptr) {
+    if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -124,9 +124,6 @@ static Image_ErrorCode CopyPackingOptions(const OH_PackingOptions *options, Pack
     packOption.needsPackProperties = options->needsPackProperties;
     packOption.desiredDynamicRange = ParseDynamicRange(options->desiredDynamicRange);
     return IMAGE_SUCCESS;
-}
-
-return EncodeDynamicRange::SDR;
 }
 
 MIDK_EXPORT
