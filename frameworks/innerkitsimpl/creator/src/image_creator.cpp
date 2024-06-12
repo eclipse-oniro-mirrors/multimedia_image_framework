@@ -121,7 +121,7 @@ int64_t CreatorPackImage(uint8_t *tempBuffer, uint32_t bufferSize, std::unique_p
     PackOption option;
     option.format = ImageReceiver::OPTION_FORMAT;
     option.quality = ImageReceiver::OPTION_QUALITY;
-    option.numberHint = ImageReceiver::OPTION_NUMBERHINT;
+    option.numberHint = static_cast<uint32_t>(ImageReceiver::OPTION_NUMBERHINT);
     std::set<std::string> formats;
 
     uint32_t ret = imagePacker.GetSupportedFormats(formats);
@@ -227,12 +227,12 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
     if (buffer != nullptr) {
         uint32_t *addr = static_cast<uint32_t *>(buffer->GetVirAddr());
         uint8_t *addr2 = nullptr;
-        int32_t size = buffer->GetSize();
+        uint32_t size = buffer->GetSize();
         if (!AllocHeapBuffer(size, &addr2)) {
             IMAGE_LOGE("AllocHeapBuffer failed");
             return ERR_MEDIA_INVALID_VALUE;
         }
-        errorcode = SaveSTP(addr, addr2, static_cast<uint32_t>(size), initializationOpts);
+        errorcode = SaveSTP(addr, addr2, size, initializationOpts);
         (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
         IMAGE_LOGI("start release");
     } else {

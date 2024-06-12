@@ -215,6 +215,10 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
 
 uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
 {
+    if (metadataJson.empty() || !nlohmann::json::accept(metadataJson)) {
+        IMAGE_LOGE("metadataJson not match, %{public}s", metadataJson.c_str());
+        return ERR_INVALID_PARAMETER;
+    }
     string libraryPath;
     json root = nlohmann::json::parse(metadataJson);
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {

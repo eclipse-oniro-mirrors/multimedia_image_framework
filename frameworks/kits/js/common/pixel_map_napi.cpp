@@ -2305,7 +2305,7 @@ napi_value PixelMapNapi::GetDensity(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Pixelmap has crossed threads . GetDensity failed"));
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        uint32_t baseDensity = pixelMapNapi->nativePixelMap_->GetBaseDensity();
+        uint32_t baseDensity = static_cast<uint32_t>(pixelMapNapi->nativePixelMap_->GetBaseDensity());
         status = napi_create_int32(env, baseDensity, &result);
         if (!IMG_IS_OK(status)) {
             IMAGE_LOGE("napi_create_int32 failed!");
@@ -2347,7 +2347,7 @@ napi_value PixelMapNapi::SetDensity(napi_env env, napi_callback_info info)
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
         ImageInfo imageinfo;
         pixelMapNapi->nativePixelMap_->GetImageInfo(imageinfo);
-        imageinfo.baseDensity = density;
+        imageinfo.baseDensity = static_cast<int32_t>(density);
         pixelMapNapi->nativePixelMap_->SetImageInfo(imageinfo, true);
     } else {
         IMAGE_LOGE("native pixelmap is nullptr!");

@@ -252,8 +252,8 @@ protected:
     sptr<HdiCodecNamespace::ICodecComponentManager> compMgr_ = nullptr;
 
     std::shared_ptr<ImageCodecCallback> callback_;
-    PixelFmt configuredFmt_;
-    BufferRequestConfig requestCfg_;
+    PixelFmt configuredFmt_{};
+    BufferRequestConfig requestCfg_{};
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;

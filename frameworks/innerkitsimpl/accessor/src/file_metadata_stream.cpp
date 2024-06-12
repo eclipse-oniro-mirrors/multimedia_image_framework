@@ -419,8 +419,8 @@ bool FileMetadataStream::ReadFromSourceAndWriteToFile(MetadataStream &src, byte 
     while (!src.IsEof()) {
         ssize_t bytesRead = src.Read(tempBuffer, buffer_size);
         if (bytesRead > 0) {
-            size_t bytesWritten = Write(tempBuffer, bytesRead);
-            if (bytesWritten == static_cast<size_t>(-1)) {
+            ssize_t bytesWritten = Write(tempBuffer, bytesRead);
+            if (bytesWritten == -1) {
                 // Write failed
                 HandleFileError("Write file", filePath_, fileno(fp_), bytesWritten, bytesRead);
                 return false;

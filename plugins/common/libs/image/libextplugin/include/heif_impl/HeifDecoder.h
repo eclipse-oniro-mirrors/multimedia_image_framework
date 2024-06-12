@@ -41,18 +41,18 @@ struct HeifStream {
 };
 
 struct HeifNclxColor {
-    uint16_t colorPrimaries;
-    uint16_t transferCharacteristics;
-    uint16_t matrixCoefficients;
-    uint8_t fullRangeFlag;
+    uint16_t colorPrimaries = 0;
+    uint16_t transferCharacteristics = 0;;
+    uint16_t matrixCoefficients = 0;;
+    uint8_t fullRangeFlag = 0;;
 };
 
 struct HeifFrameInfo {
-    uint32_t mWidth;
-    uint32_t mHeight;
-    int32_t  mRotationAngle;           // Rotation angle, clockwise, should be multiple of 90
-    uint32_t mBytesPerPixel;           // Number of bytes for one pixel
-    int64_t mDurationUs;               // Duration of the frame in us
+    uint32_t mWidth = 0;
+    uint32_t mHeight = 0;
+    int32_t  mRotationAngle = 0;           // Rotation angle, clockwise, should be multiple of 90
+    uint32_t mBytesPerPixel = 0;           // Number of bytes for one pixel
+    int64_t mDurationUs = 0;               // Duration of the frame in us
     std::vector<uint8_t> mIccData;     // ICC data array
     bool hasNclxColor = false;
     HeifNclxColor nclxColor;

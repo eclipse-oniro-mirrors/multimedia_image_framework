@@ -906,12 +906,12 @@ static void Callback(uv_work_t *work, int status)
     if (context == nullptr) {
         IMAGE_ERR("context is empty");
     } else {
-        napi_value result[PARAM2] = {0};
-        napi_value retVal;
-        napi_value callback = nullptr;
         if (context->env != nullptr && context->callbackRef != nullptr) {
             napi_handle_scope scope = nullptr;
             napi_open_handle_scope(context->env, &scope);
+            napi_value result[PARAM2] = {0};
+            napi_value retVal;
+            napi_value callback = nullptr;
             if (scope == nullptr) {
                 delete work;
                 return;

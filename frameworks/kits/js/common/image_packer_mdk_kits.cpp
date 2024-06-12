@@ -176,7 +176,7 @@ static int32_t DoNativePacking(struct ImagePackerArgs* args)
         return res;
     }
     int64_t packedSize = SIZE_ZERO;
-    res = nativeImagePacker->FinalizePacking(packedSize);
+    res = static_cast<int32_t>(nativeImagePacker->FinalizePacking(packedSize));
     if (args->dataSize != nullptr) {
         *args->dataSize = packedSize;
     }
