@@ -35,6 +35,15 @@ namespace {
     constexpr uint32_t NUM_1 = 1;
     constexpr uint32_t NUM_2 = 2;
     constexpr int32_t INVALID_FD = -1;
+    constexpr int32_t SIZE_256 = 256;
+    constexpr int32_t SIZE_512 = 512;
+    constexpr int32_t SIZE_1024 = 1024;
+    constexpr int32_t SIZE_1440 = 1440;
+    constexpr int32_t SIZE_1920 = 1920;
+    constexpr int64_t FILE_SIZE_300K = 300 * 1024;
+    constexpr int64_t FILE_SIZE_1M = 1 * 1024 * 1024;
+    constexpr int64_t FILE_SIZE_4M = 4 * 1024 * 1024;
+    constexpr int64_t FILE_SIZE_10M = 10 * 1024 * 1024;
 }
 
 namespace OHOS {
@@ -207,13 +216,53 @@ static void BuildMsgOnError(ImagePackerAsyncContext* ctx, bool assertion,
     ctx->error.msg = msg;
 }
 
+static int64_t getDefaultBufferSize(int32_t width, int32_t height)
+{
+    if (width <= SIZE_256 && height <= SIZE_256) {
+        return FILE_SIZE_300K;
+    }
+    if (width <= SIZE_512 && height <= SIZE_512) {
+        return FILE_SIZE_1M;
+    }
+    if (width <= SIZE_1024 && height <= SIZE_1024) {
+        return FILE_SIZE_4M;
+    }
+    if (width <= SIZE_1440 && height <= SIZE_1920) {
+        return FILE_SIZE_10M;
+    }
+    return DEFAULT_BUFFER_SIZE;
+}
+
+static int64_t getDefaultBufferSize(ImagePackerAsyncContext *context)
+{
+    if (context == nullptr) {
+        return DEFAULT_BUFFER_SIZE;
+    }
+    ImageInfo imageInfo {};
+    if (context->packType == TYPE_IMAGE_SOURCE) {
+        if (context->rImageSource == nullptr) {
+            return DEFAULT_BUFFER_SIZE;
+        }
+        context->rImageSource->GetImageInfo(imageInfo);
+    } else if (context->packType == TYPE_PIXEL_MAP) {
+        if (context->rPixelMap == nullptr) {
+            return DEFAULT_BUFFER_SIZE;
+        }
+        context->rPixelMap->GetImageInfo(imageInfo);
+    }
+    if (imageInfo.size.width <= 0 || imageInfo.size.height <= 0) {
+        return DEFAULT_BUFFER_SIZE;
+    }
+    return getDefaultBufferSize(imageInfo.size.width, imageInfo.size.height);
+}
+
 STATIC_EXEC_FUNC(Packing)
 {
     int64_t packedSize = 0;
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
     context->resultBuffer = std::make_unique<uint8_t[]>(
-        (context->resultBufferSize <= 0)?DEFAULT_BUFFER_SIZE:context->resultBufferSize);
+        (context->resultBufferSize <= 0) ? getDefaultBufferSize(context) : context->resultBufferSize);
     if (context->resultBuffer == nullptr) {
         BuildMsgOnError(context, context->resultBuffer == nullptr, "ImagePacker buffer alloc error");
         return;
@@ -426,10 +475,11 @@ static EncodeDynamicRange parseDynamicRange(napi_env env, napi_value root)
     return EncodeDynamicRange::SDR;
 }
 
-static int64_t parseBufferSize(napi_env env, napi_value root)
+static int64_t parseBufferSize(napi_env env, napi_value root, ImagePackerAsyncContext *context = nullptr)
 {
     napi_value tempValue = nullptr;
-    int64_t tmpNumber = DEFAULT_BUFFER_SIZE;
+    int64_t defaultSize = getDefaultBufferSize(context);
+    int64_t tmpNumber = defaultSize;
     if (napi_get_named_property(env, root, "bufferSize", &tempValue) != napi_ok) {
         IMAGE_LOGI("No bufferSize, Using default");
         return tmpNumber;
@@ -437,7 +487,7 @@ static int64_t parseBufferSize(napi_env env, napi_value root)
     napi_get_value_int64(env, tempValue, &tmpNumber);
     IMAGE_LOGD("BufferSize is %{public}" PRId64, tmpNumber);
     if (tmpNumber < 0) {
-        return DEFAULT_BUFFER_SIZE;
+        return defaultSize;
     }
     return tmpNumber;
 }
@@ -648,7 +698,7 @@ static void ParserPackingArguments(napi_env env,
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
         BuildMsgOnError(context,
             parsePackOptions(env, argv[PARAM1], &(context->packOption)), "PackOptions mismatch");
-        context->resultBufferSize = parseBufferSize(env, argv[PARAM1]);
+        context->resultBufferSize = parseBufferSize(env, argv[PARAM1], context);
     }
     if (argc > PARAM2 && ImageNapiUtils::getType(env, argv[PARAM2]) == napi_function) {
         napi_create_reference(env, argv[PARAM2], refCount, &(context->callbackRef));
