@@ -42,6 +42,11 @@ public:
     {
         return nativePixelMap_;
     }
+    void ReleasePixelNapiInner()
+    {
+        setPixelNapiEditable(false);
+        nativePixelMap_ = nullptr;
+    }
     void setPixelNapiEditable(bool isEditable)
     {
         isPixelNapiEditable = isEditable;
