@@ -230,9 +230,17 @@ void ImageCodec::ReplyErrorCode(MsgId id, int32_t err)
 
 bool ImageCodec::GetPixelFmtFromUser(const Format &format)
 {
+    is10Bit_ = false;
     optional<PixelFmt> fmt;
     int32_t graphicFmt;
     if (format.GetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, graphicFmt)) {
+        if (graphicFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+            is10Bit_ = true;
+            graphicFmt = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+        } else if (graphicFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+            is10Bit_ = true;
+            graphicFmt = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        }
         fmt = TypeConverter::GraphicFmtToFmt(static_cast<GraphicPixelFormat>(graphicFmt));
     } else {
         HLOGE("pixel format unspecified");
@@ -416,7 +424,8 @@ int32_t ImageCodec::AllocateHardwareBuffers(OMX_DIRTYPE portIndex)
     return IC_ERR_OK;
 }
 
-int32_t ImageCodec::AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, sptr<SurfaceBuffer> output)
+int32_t ImageCodec::AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged,
+                                           sptr<SurfaceBuffer> output)
 {
     HeifPerfTracker tracker(__FUNCTION__);
     OMX_PARAM_PORTDEFINITIONTYPE def;
@@ -426,8 +435,9 @@ int32_t ImageCodec::AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, sptr<SurfaceBu
     }
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
+    bool canReuseOutputBuffer = (output != nullptr) && (!is10Bit_ || isOutputPortSettingChanged);
     for (uint32_t i = 0; i < def.nBufferCountActual; ++i) {
-        shared_ptr<ImageCodecBuffer> imgCodecBuffer = (output != nullptr) ?
+        shared_ptr<ImageCodecBuffer> imgCodecBuffer = canReuseOutputBuffer ?
             ImageCodecBuffer::CreateSurfaceBuffer(output) : ImageCodecBuffer::CreateSurfaceBuffer(requestCfg_);
         if (imgCodecBuffer == nullptr) {
             HLOGE("AllocateSurfaceBuffers failed");

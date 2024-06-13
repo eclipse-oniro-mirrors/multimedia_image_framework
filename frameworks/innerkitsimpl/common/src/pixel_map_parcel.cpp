@@ -75,7 +75,7 @@ uint8_t *PixelMapParcel::ReadAshmemDataFromParcel(OHOS::MessageParcel& data, int
         IMAGE_LOGE("mmap shared memory failed");
         return nullptr;
     }
-    context = new int32_t();
+    context = new(std::nothrow) int32_t();
     if (context == nullptr) {
         IMAGE_LOGE("alloc context failed.");
         ::munmap(ptr, bufferSize);

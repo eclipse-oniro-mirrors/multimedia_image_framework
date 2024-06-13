@@ -88,10 +88,10 @@ SutEncSoManager::~SutEncSoManager()
         return;
     }
     if (dlclose(textureEncSoHandle_) != 0) {
-        IMAGE_LOGE("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
+        IMAGE_LOGE("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
         return;
     } else {
-        IMAGE_LOGD("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
+        IMAGE_LOGD("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
         return;
     }
 }
@@ -246,13 +246,14 @@ bool CheckQuality(int32_t *mseIn[RGBA_COM], int blockNum, int blockXYZ)
             psnr[i] = MAX_PSNR;
             continue;
         }
-        double mseRgb = static_cast<double>(mseTotal[i] / (blockNum * blockXYZ));
+        double mseRgb = static_cast<double>(mseTotal[i] / static_cast<uint64_t>((blockNum * blockXYZ)));
         psnr[i] = LOG_BASE * log(static_cast<double>(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
     }
     if (mseTotal[RGBA_COM] == 0) {
         psnr[RGBA_COM] = MAX_PSNR;
     } else {
-        double mseRgb = static_cast<double>(mseTotal[RGBA_COM] / (blockNum * blockXYZ * (RGBA_COM - 1)));
+        double mseRgb = static_cast<double>(
+            mseTotal[RGBA_COM] / static_cast<uint64_t>((blockNum * blockXYZ * (RGBA_COM - 1))));
         psnr[RGBA_COM] = LOG_BASE * log(static_cast<double>(MAX_VALUE * MAX_VALUE) / mseRgb) / log(LOG_BASE);
     }
     IMAGE_LOGD("astc psnr r%{public}f g%{public}f b%{public}f a%{public}f rgb%{public}f",
@@ -296,11 +297,11 @@ static bool InitMem(AstcEncoder *work, TextureEncodeOptions param)
         return false;
     }
     work->swizzle_ = {ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A};
-    work->image_.dim_x = param.width_;
-    work->image_.dim_y = param.height_;
+    work->image_.dim_x = static_cast<unsigned int>(param.width_);
+    work->image_.dim_y = static_cast<unsigned int>(param.height_);
     work->image_.dim_z = 1;
     work->image_.data_type = ASTCENC_TYPE_U8;
-    work->image_.dim_stride = param.stride_;
+    work->image_.dim_stride = static_cast<unsigned int>(param.stride_);
     work->codec_context = nullptr;
     work->image_.data = nullptr;
     work->profile = ASTCENC_PRF_LDR_SRGB;
@@ -427,7 +428,8 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
-    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
+    param.sutBytes = param.astcBytes;
+    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.sutBytes));
     if (sutBuffer == nullptr) {
         IMAGE_LOGE("astc sutBuffer malloc failed!");
         return false;
@@ -482,8 +484,8 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
-    int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
+    uint32_t stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }

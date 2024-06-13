@@ -45,7 +45,7 @@ namespace OHOS {
 namespace Media {
 thread_local napi_ref ImageSourceNapi::sConstructor_ = nullptr;
 thread_local std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
-std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
+thread_local std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSource";
 static const std::string FILE_URL_PREFIX = "file://";
 std::string ImageSourceNapi::filePath_ = "";
@@ -1490,13 +1490,13 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(ImageSourceNapi *thisPtr,
     }
 
     std::shared_ptr<PixelMap> pixelMap;
-    auto incPixelMap = thisPtr->GetIncrementalPixelMap();
+    auto incPixelMap = (thisPtr == nullptr) ? nullptr : thisPtr->GetIncrementalPixelMap();
     if (incPixelMap != nullptr) {
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
     } else {
         decodeOpts.invokeType = JS_INTERFACE;
-        pixelMap = imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
+        pixelMap = (imageSource == nullptr) ? nullptr : imageSource->CreatePixelMapEx((index >= NUM_0) ? index : NUM_0,
             decodeOpts, status);
     }
 

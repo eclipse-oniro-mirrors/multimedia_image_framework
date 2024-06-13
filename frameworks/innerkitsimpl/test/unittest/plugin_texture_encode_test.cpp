@@ -837,7 +837,47 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_009, TestSize.Level3)
 
     uint8_t pixmapIn = 0;
     ASSERT_EQ(AstcCodec::AstcSoftwareEncodeCore(param, &pixmapIn, nullptr), false);
-} // namespace Multimedia
-
 }
+
+#ifdef ASTC_CUSTOMIZED_ENABLE
+/**
+ * @tc.name: AstcEncoderTime_010
+ * @tc.desc: Calculate the average time
+ *         : BasedOnCPU / different resolution / self-created images, extern-created images
+ * @tc.type: Performance
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_010, TestSize.Level3)
+{
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    AstcEncTestPara testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false); // 64x64 block 4x4 , frames 5000
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(128, 128, 4, 5000, false); // 128x128 block 4x4 , frames 5000
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(256, 256, 4, 5000, false); // 256x256 block 4x4 , frames 5000
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    // test condition: width 64, height 64, block 4x4 , frames 5000, isBasedOnGpu: false
+    testPara = CreateAstcEncTestPara(64, 64, 4, 5000, false); // 64x64 block 4x4 , frames 5000
+    testPara.isSelfCreatePixMap = false;
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(128, 128, 4, 5000, false); // 128x128 block 4x4 , frames 5000
+    testPara.isSelfCreatePixMap = false;
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+
+    testPara = CreateAstcEncTestPara(256, 256, 4, 5000, false); // 256x256 block 4x4 , frames 5000
+    testPara.isSelfCreatePixMap = false;
+    testPara.privateProfile = CUSTOMIZED_PROFILE;
+    ASSERT_EQ(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_OK);
+}
+#endif
+
+} // namespace Multimedia
 } // namespace OHOS

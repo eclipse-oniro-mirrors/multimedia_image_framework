@@ -122,6 +122,13 @@ void ImageReceiverNapi::NativeRelease()
     imageReceiver_ = nullptr;
 }
 
+void ImageReceiverNapi::UnRegisterReceiverListener()
+{
+    if (imageReceiver_ != nullptr) {
+        imageReceiver_->UnRegisterBufferAvaliableListener();
+    }
+}
+
 ImageReceiver* ImageReceiverNapi::GetNative()
 {
     if (imageReceiver_ != nullptr) {
@@ -899,12 +906,12 @@ static void Callback(uv_work_t *work, int status)
     if (context == nullptr) {
         IMAGE_ERR("context is empty");
     } else {
-        napi_value result[PARAM2] = {0};
-        napi_value retVal;
-        napi_value callback = nullptr;
         if (context->env != nullptr && context->callbackRef != nullptr) {
             napi_handle_scope scope = nullptr;
             napi_open_handle_scope(context->env, &scope);
+            napi_value result[PARAM2] = {0};
+            napi_value retVal;
+            napi_value callback = nullptr;
             if (scope == nullptr) {
                 delete work;
                 return;
@@ -926,16 +933,19 @@ static void Callback(uv_work_t *work, int status)
     IMAGE_LINE_OUT();
 }
 
-void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context,
+void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> &context,
                                    string name, CompleteCallback callBack)
 {
     IMAGE_FUNCTION_IN();
+    auto localContext = std::make_unique<shared_ptr<ImageReceiverAsyncContext>> (context);
     if (context == nullptr) {
         IMAGE_ERR("gContext is empty");
+        localContext.release();
         return;
     }
     if (context->env == nullptr) {
         IMAGE_ERR("env is empty");
+        localContext.release();
         return;
     }
 
@@ -943,12 +953,14 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
     napi_get_uv_event_loop(context->env, &loop);
     if (loop == nullptr) {
         IMAGE_ERR("napi_get_uv_event_loop failed");
+        localContext.release();
         return;
     }
 
     unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
     if (work == nullptr) {
         IMAGE_ERR("DoCallBack: No memory");
+        localContext.release();
         return;
     }
     work->data = reinterpret_cast<void *>(context.get());
@@ -960,6 +972,7 @@ void ImageReceiverNapi::DoCallBack(shared_ptr<ImageReceiverAsyncContext> context
     } else {
         work.release();
     }
+    localContext.release();
     IMAGE_FUNCTION_OUT();
 }
 
@@ -1015,6 +1028,7 @@ napi_value ImageReceiverNapi::JsRelease(napi_env env, napi_callback_info info)
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
 
+        context->constructor_->UnRegisterReceiverListener();
         context->constructor_->NativeRelease();
         context->status = SUCCESS;
 

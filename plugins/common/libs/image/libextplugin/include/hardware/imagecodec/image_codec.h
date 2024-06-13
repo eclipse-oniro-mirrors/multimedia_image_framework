@@ -35,6 +35,8 @@ inline constexpr int TIME_RATIO_S_TO_MS = 1000;
 inline constexpr double US_TO_MS = 1000.0;
 inline constexpr double US_TO_S = 1000000.0;
 inline constexpr uint32_t STRIDE_ALIGNMENT = 32;
+// for demo: "/data/misc/imagecodecdump"
+inline constexpr char DUMP_PATH[] = "/data/storage/el2/base/files";
 
 inline uint32_t GetYuv420Size(uint32_t w, uint32_t h)
 {
@@ -120,7 +122,6 @@ protected:
         void Dump(const std::string& prefix) const;
         void DumpSurfaceBuffer(const std::string& prefix) const;
         void DumpLinearBuffer(const std::string& prefix) const;
-        static constexpr char DUMP_PATH[] = "/data/misc/imagecodecdump";
     };
 protected:
     ImageCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder);
@@ -151,10 +152,11 @@ protected:
 
     // start
     virtual bool ReadyToStart() = 0;
-    virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex) = 0;
+    virtual int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged) = 0;
     virtual void UpdateFormatFromSurfaceBuffer() = 0;
     int32_t GetPortDefinition(OMX_DIRTYPE portIndex, OMX_PARAM_PORTDEFINITIONTYPE& def);
-    int32_t AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, sptr<SurfaceBuffer> output = nullptr);
+    int32_t AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged,
+                                   sptr<SurfaceBuffer> output = nullptr);
     int32_t AllocateHardwareBuffers(OMX_DIRTYPE portIndex);
     std::shared_ptr<HdiCodecNamespace::OmxCodecBuffer> SurfaceBufferToOmxBuffer(
         const sptr<SurfaceBuffer>& surfaceBuffer);
@@ -245,6 +247,7 @@ protected:
     uint32_t componentId_ = 0;
     std::string componentName_;
     std::string compUniqueStr_;
+    bool is10Bit_ = false;
     bool debugMode_ = false;
     bool dumpMode_ = false;
     sptr<HdiCodecNamespace::ICodecCallback> compCb_ = nullptr;
@@ -252,8 +255,8 @@ protected:
     sptr<HdiCodecNamespace::ICodecComponentManager> compMgr_ = nullptr;
 
     std::shared_ptr<ImageCodecCallback> callback_;
-    PixelFmt configuredFmt_;
-    BufferRequestConfig requestCfg_;
+    PixelFmt configuredFmt_{};
+    BufferRequestConfig requestCfg_{};
     std::shared_ptr<Format> configFormat_;
     std::shared_ptr<Format> inputFormat_;
     std::shared_ptr<Format> outputFormat_;

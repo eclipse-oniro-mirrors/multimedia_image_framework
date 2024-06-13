@@ -1109,8 +1109,8 @@ static bool GetFractionFromStr(const std::string &decimal, ExifRational &result)
 
     numerator += intPart * denominator;
 
-    result.numerator = numerator;
-    result.denominator = denominator;
+    result.numerator = static_cast<ExifLong>(numerator);
+    result.denominator = static_cast<ExifLong>(denominator);
     return true;
 }
 
@@ -1186,12 +1186,12 @@ static bool ConvertGpsDataToRationals(const std::vector<std::string> &dataVec,
     ConvertStringToDouble(dataVec[CONSTANT_2], secondDouble);
     int32_t second = static_cast<int32_t>(secondDouble * GPS_DIGIT_NUMBER);
 
-    exifRationals[CONSTANT_0].numerator = static_cast<ExifSLong>(degree);
-    exifRationals[CONSTANT_0].denominator = static_cast<ExifSLong>(1);
-    exifRationals[CONSTANT_1].numerator = static_cast<ExifSLong>(minute);
-    exifRationals[CONSTANT_1].denominator = static_cast<ExifSLong>(1);
-    exifRationals[CONSTANT_2].numerator = static_cast<ExifSLong>(second);
-    exifRationals[CONSTANT_2].denominator = static_cast<ExifSLong>(GPS_DIGIT_NUMBER);
+    exifRationals[CONSTANT_0].numerator = static_cast<ExifLong>(degree);
+    exifRationals[CONSTANT_0].denominator = static_cast<ExifLong>(1);
+    exifRationals[CONSTANT_1].numerator = static_cast<ExifLong>(minute);
+    exifRationals[CONSTANT_1].denominator = static_cast<ExifLong>(1);
+    exifRationals[CONSTANT_2].numerator = static_cast<ExifLong>(second);
+    exifRationals[CONSTANT_2].denominator = static_cast<ExifLong>(GPS_DIGIT_NUMBER);
     return true;
 }
 
@@ -1221,8 +1221,8 @@ bool EXIFInfo::SetGpsDegreeRational(ExifData *data, ExifEntry **ptrEntry, ExifBy
         return false;
     }
     ExifRational exifRational;
-    exifRational.numerator = static_cast<ExifSLong>(atoi(dataVec[CONSTANT_0].c_str()));
-    exifRational.denominator = static_cast<ExifSLong>(atoi(dataVec[CONSTANT_1].c_str()));
+    exifRational.numerator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_0].c_str()));
+    exifRational.denominator = static_cast<ExifLong>(atoi(dataVec[CONSTANT_1].c_str()));
     *ptrEntry = CreateExifTag(data, EXIF_IFD_GPS, tag, MOVE_OFFSET_8, EXIF_FORMAT_RATIONAL);
     if ((*ptrEntry) == nullptr) {
         IMAGE_LOGD("Get exif entry failed.");

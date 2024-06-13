@@ -785,9 +785,6 @@ static void DoCallBackAfterWork(uv_work_t *work, int status)
     if (context == nullptr) {
         IMAGE_ERR("context is empty");
     } else {
-        napi_value result[PARAM2] = {0};
-        napi_value retVal = nullptr;
-        napi_value callback = nullptr;
         if (context->env != nullptr && context->callbackRef != nullptr) {
             napi_handle_scope scope = nullptr;
             napi_open_handle_scope(context->env, &scope);
@@ -795,6 +792,9 @@ static void DoCallBackAfterWork(uv_work_t *work, int status)
                 delete work;
                 return;
             }
+            napi_value result[PARAM2] = {0};
+            napi_value retVal = nullptr;
+            napi_value callback = nullptr;
             napi_create_uint32(context->env, SUCCESS, &result[0]);
             napi_get_undefined(context->env, &result[1]);
             napi_get_reference_value(context->env, context->callbackRef, &callback);

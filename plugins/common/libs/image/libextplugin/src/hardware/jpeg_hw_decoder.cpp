@@ -128,19 +128,53 @@ bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFor
     return false;
 }
 
+static jpeg_decompress_struct* GetJpegCompressInfo(SkCodec *codec)
+{
+    if (codec == nullptr) {
+        JPEG_HW_LOGE("invalid input codec!");
+        return nullptr;
+    }
+    SkJpegCodec* jpegCodec = static_cast<SkJpegCodec*>(codec);
+    if (jpegCodec == nullptr) {
+        JPEG_HW_LOGE("invalid input jpeg codec!");
+        return nullptr;
+    }
+    if (jpegCodec->decoderMgr() == nullptr) {
+        JPEG_HW_LOGE("invalid input jpeg codec mgr!");
+        return nullptr;
+    }
+    return jpegCodec->decoderMgr()->dinfo();
+}
+
+bool JpegHardwareDecoder::CheckInputColorFmt(SkCodec *codec)
+{
+    jpeg_decompress_struct* jpegCompressInfo = GetJpegCompressInfo(codec);
+    if (jpegCompressInfo == nullptr) {
+        JPEG_HW_LOGE("failed to get jpeg info");
+        return false;
+    }
+    if (jpegCompressInfo->jpeg_color_space != JCS_YCbCr &&
+        jpegCompressInfo->jpeg_color_space != JCS_GRAYSCALE) {
+        JPEG_HW_LOGI("unsupported in color: %{public}d", jpegCompressInfo->jpeg_color_space);
+        return false;
+    }
+    return true;
+}
+
 uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream,
                                      PlSize srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
 {
     LifeSpanTimer decodeTimer("jpeg hardware decode");
-    JPEG_HW_LOGD("jpeg hardware decode start: img=[%{public}ux%{public}u], sampleSize=%{public}u",
+    JPEG_HW_LOGD("img=[%{public}ux%{public}u], sampleSize=%{public}u",
                  srcImgSize.width, srcImgSize.height, sampleSize);
     if (hwDecoder_ == nullptr || bufferMgr_ == nullptr) {
         JPEG_HW_LOGE("failed to get hardware decoder or failed to get buffer manager!");
         return Media::ERR_IMAGE_DECODE_ABNORMAL;
     }
-    if (!IsHardwareDecodeSupported(JPEG_FORMAT_DESC, srcImgSize)) {
+    if (!IsHardwareDecodeSupported(JPEG_FORMAT_DESC, srcImgSize) || !CheckInputColorFmt(codec)) {
         return Media::ERR_IMAGE_DATA_UNSUPPORT;
     }
+
     decodeInfo_.sampleSize = sampleSize;
     bool ret = InitDecoder();
     ret = ret && PrepareInputData(codec, srcStream);
@@ -236,24 +270,6 @@ void JpegHardwareDecoder::AssembleQuantizationTable(jpeg_decompress_struct* jpeg
             });
         }
     }
-}
-
-jpeg_decompress_struct* GetJpegCompressInfo(SkCodec *codec)
-{
-    if (codec == nullptr) {
-        JPEG_HW_LOGE("invalid input codec!");
-        return nullptr;
-    }
-    SkJpegCodec* jpegCodec = static_cast<SkJpegCodec*>(codec);
-    if (jpegCodec == nullptr) {
-        JPEG_HW_LOGE("invalid input jpeg codec!");
-        return nullptr;
-    }
-    if (jpegCodec->decoderMgr() == nullptr) {
-        JPEG_HW_LOGE("invalid input jpeg codec mgr!");
-        return nullptr;
-    }
-    return jpegCodec->decoderMgr()->dinfo();
 }
 
 bool JpegHardwareDecoder::AssembleJpegImgHeader(jpeg_decompress_struct* jpegCompressInfo)

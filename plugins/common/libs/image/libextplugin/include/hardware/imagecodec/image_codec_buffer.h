@@ -90,7 +90,7 @@ public:
     uint8_t* GetAddr() override;
     sptr<SurfaceBuffer> GetSurfaceBuffer() override;
 private:
-    BufferRequestConfig config_;
+    BufferRequestConfig config_{};
     sptr<SurfaceBuffer> surfaceBuffer_ = nullptr;
     uint8_t* addr_ = nullptr;
 };

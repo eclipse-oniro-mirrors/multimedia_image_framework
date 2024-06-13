@@ -432,7 +432,10 @@ static int32_t ImageSourceNapiGetSupportedFormats(struct ImageSourceArgs* args)
             IMAGE_LOGD("ImageSourceNapiGetSupportedFormats nullptr format out buffer");
             return IMAGE_RESULT_BAD_PARAMETER;
         }
-        memcpy_s(formatList[i]->format, formatList[i]->size, formatStr.c_str(), formatStr.size());
+        if (EOK != memcpy_s(formatList[i]->format, formatList[i]->size, formatStr.c_str(), formatStr.size())) {
+            IMAGE_LOGE("ImageSourceNapiGetSupportedFormats failed, memcpy error");
+            return IMAGE_RESULT_BAD_PARAMETER;
+        }
         if (formatList[i]->size > formatStr.size()) {
             formatList[i]->size = formatStr.size();
         }
@@ -623,7 +626,10 @@ static int32_t ImageSourceNapiGetImageProperty(
         propertyVal->size = val.size();
         return IMAGE_RESULT_SUCCESS;
     }
-    memcpy_s(propertyVal->value, propertyVal->size, val.c_str(), val.size());
+    if (EOK != memcpy_s(propertyVal->value, propertyVal->size, val.c_str(), val.size())) {
+        IMAGE_LOGE("ImageSourceNapiGetSupportedFormats failed, memcpy error");
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
     if (propertyVal->size > val.size()) {
         propertyVal->size = val.size();
     }
@@ -631,11 +637,11 @@ static int32_t ImageSourceNapiGetImageProperty(
     return IMAGE_RESULT_SUCCESS;
 }
 
-static uint32_t NativePropertyModify(ImageSource* native, ImageResource &imageResource,
+static int32_t NativePropertyModify(ImageSource* native, ImageResource &imageResource,
     std::string &key, std::string &val)
 {
     auto type = imageResource.type;
-    uint32_t errorCode = ERR_MEDIA_INVALID_VALUE;
+    uint32_t errorCode = SUCCESS;
     if (type == ImageResourceType::IMAGE_RESOURCE_INVAILD) {
         IMAGE_LOGE("NativePropertyModify resource is invaild");
         return IMAGE_RESULT_BAD_PARAMETER;

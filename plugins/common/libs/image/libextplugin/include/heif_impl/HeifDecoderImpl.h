@@ -102,7 +102,7 @@ private:
     std::shared_ptr<HeifParser> parser_;
     std::shared_ptr<HeifImage> primaryImage_;
     Media::PixelFormat outPixelFormat_;
-    HeifFrameInfo imageInfo_;
+    HeifFrameInfo imageInfo_{};
 
     GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0};
     uint8_t *srcMemory_ = nullptr;
@@ -111,11 +111,11 @@ private:
     SurfaceBuffer *dstHwBuffer_;
 
     std::shared_ptr<HeifImage> gainmapImage_ = nullptr;
-    HeifFrameInfo gainmapImageInfo_;
+    HeifFrameInfo gainmapImageInfo_{};
     uint8_t* gainmapDstMemory_;
     size_t gainmapDstRowStride_;
 
-    HeifFrameInfo tmapInfo_;
+    HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 
     GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
@@ -128,7 +128,7 @@ private:
 extern "C" {
 #endif
 
-HeifDecoder* CreateHeifDecoderImpl();
+HeifDecoder* CreateHeifDecoderImpl(void);
 
 #ifdef __cplusplus
 }

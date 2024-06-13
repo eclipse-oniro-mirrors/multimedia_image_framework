@@ -58,7 +58,8 @@ void ImageCodec::ChangeOwner(BufferInfo& info, BufferOwner newOwner)
 
     // calculate hold time
     auto now = chrono::steady_clock::now();
-    uint64_t holdUs = chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count();
+    uint64_t holdUs = static_cast<uint64_t>(
+        chrono::duration_cast<chrono::microseconds>(now - info.lastOwnerChangeTime).count());
     double holdMs = holdUs / US_TO_MS;
     TotalCntAndCost& holdRecord = info.isInput ? inputHoldTimeRecord_[oldOwner][newOwner] :
                                                 outputHoldTimeRecord_[oldOwner][newOwner];
@@ -156,12 +157,7 @@ bool ImageCodec::BufferInfo::IsValidFrame() const
 
 void ImageCodec::BufferInfo::Dump(const string& prefix, bool dumpMode) const
 {
-    if (!dumpMode) {
-        return;
-    }
-    if (isInput) {
-        Dump(prefix + "_Input");
-    } else {
+    if (dumpMode && !isInput) {
         Dump(prefix + "_Output");
     }
 }

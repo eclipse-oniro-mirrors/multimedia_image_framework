@@ -25,7 +25,7 @@ public:
     virtual int64_t BytesWritten() = 0;
     bool GetCurrentSize(size_t &size) override
     {
-        size = BytesWritten();
+        size = static_cast<size_t>(BytesWritten());
         return true;
     }
 };

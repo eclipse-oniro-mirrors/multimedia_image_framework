@@ -17,7 +17,7 @@
 
 const int ROTATE_90_DEGRESS = 90;
 const int ROTATE_270_DEGRESS = 270;
-const std::string HEVC_ALPHA_AUX_TYPE = "urn:mpeg:hevc:2015:auxid:1";
+static const std::string HEVC_ALPHA_AUX_TYPE = "urn:mpeg:hevc:2015:auxid:1";
 
 namespace OHOS {
 namespace ImagePlugin {
