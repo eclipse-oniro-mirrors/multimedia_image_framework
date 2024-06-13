@@ -1808,10 +1808,17 @@ void ExtDecoder::SetHeifParseError()
     }
 
     size_t fileLength = stream_->GetStreamSize();
-    uint8_t fileMem[fileLength];
+    if (fileLength <= 0) {
+        return;
+    }
+    uint8_t *fileMem = reinterpret_cast<uint8_t*>(malloc(fileLength));
+    if (fileMem == nullptr) {
+        return;
+    }
     readRet = stream_->Read(fileLength, fileMem, fileLength, readSize);
     if (!readRet || readSize != fileLength) {
         stream_->Seek(originOffset);
+        free(fileMem);
         return;
     }
 
@@ -1822,6 +1829,7 @@ void ExtDecoder::SetHeifParseError()
     }
 
     stream_->Seek(originOffset);
+    free(fileMem);
 }
 } // namespace ImagePlugin
 } // namespace OHOS
