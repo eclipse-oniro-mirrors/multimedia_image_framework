@@ -475,6 +475,15 @@ static EncodeDynamicRange parseDynamicRange(napi_env env, napi_value root)
     return EncodeDynamicRange::SDR;
 }
 
+static bool parseNeedsPackProperties(napi_env env, napi_value root)
+{
+    bool tmpNeedsPackProperties = false;
+    if (!GET_BOOL_BY_NAME(root, "needsPackProperties", tmpNeedsPackProperties)) {
+        IMAGE_LOGD("No needsPackProperties in pack option");
+    }
+    return tmpNeedsPackProperties;
+}
+
 static int64_t parseBufferSize(napi_env env, napi_value root, ImagePackerAsyncContext *context = nullptr)
 {
     napi_value tempValue = nullptr;
@@ -624,6 +633,7 @@ static bool parsePackOptions(napi_env env, napi_value root, PackOption* opts)
     }
     opts->desiredDynamicRange = parseDynamicRange(env, root);
     IMAGE_LOGD("parsePackOptions format:[%{public}s]", opts->format.c_str());
+    opts->needsPackProperties = parseNeedsPackProperties(env, root);
     return parsePackOptionOfQuality(env, root, opts);
 }
 

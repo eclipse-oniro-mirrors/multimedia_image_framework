@@ -53,7 +53,7 @@ struct PackOption {
      * Hint to how many images will be packed into the image file.
      */
     uint32_t numberHint = 1;
-    
+
     /**
      * desired image dynamic range.
     */
@@ -77,6 +77,11 @@ struct PackOption {
      * Only for gif.
      */
     std::vector<uint8_t> disposalTypes;
+
+    /**
+     * Hint to pack image with properties.
+    */
+    bool needsPackProperties = false;
 };
 
 class PackerStream;
