@@ -55,8 +55,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
 {
     string realPath;
     if (!PathToRealPath(pathName, realPath)) {
-        IMAGE_LOGE("[FileSourceStream]input the file path exception, pathName:%{public}s, errno:%{public}d.",
-            pathName.c_str(), errno);
+        IMAGE_LOGE("[FileSourceStream]input the file path exception, errno:%{public}d.", errno);
         return nullptr;
     }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
@@ -66,7 +65,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
     }
     size_t size = 0;
     if (!ImageUtils::GetFileSize(realPath, size)) {
-        IMAGE_LOGE("[FileSourceStream]get the file size fail. pathName=%{public}s", pathName.c_str());
+        IMAGE_LOGE("[FileSourceStream]get the file size fail");
         fclose(filePtr);
         return nullptr;
     }

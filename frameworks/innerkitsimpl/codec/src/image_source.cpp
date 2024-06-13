@@ -402,8 +402,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
                 streamPtr = FileSourceStream::CreateSourceStream(pathName);
             }
             if (streamPtr == nullptr) {
-                IMAGE_LOGE("[ImageSource]failed to create file path source stream. pathName=%{public}s",
-                    pathName.c_str());
+                IMAGE_LOGE("[ImageSource]failed to create file path source stream");
             }
             return streamPtr;
         },
