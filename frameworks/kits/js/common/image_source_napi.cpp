@@ -1228,7 +1228,6 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
         }
         context->pathName = FileUrlToRawPath(context->pathName);
         context->pathNameLength = context->pathName.size();
-        IMAGE_LOGD("pathName is [%{public}s]", context->pathName.c_str());
         imageSource = ImageSource::CreateImageSource(context->pathName, opts, errorCode);
     } else if (napi_number == inputType) { // Fd
         napi_get_value_int32(env, argValue, &context->fdIndex);
