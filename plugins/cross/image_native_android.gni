@@ -65,11 +65,14 @@ image_native_android_sources = [
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/native_image.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/basic_transformer.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/matrix.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/pixel_convert.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/post_proc.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/scan_line_filter.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
+  "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/src/image_creator_manager.cpp",
   "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/receiver/src/image_receiver.cpp",
@@ -106,7 +109,7 @@ image_native_android_sources = [
 
   # gif
   "${image_subsystem}/plugins/common/libs/image/libjpegplugin/src/exif_maker_note.cpp",
-  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_decoder.cpp",
+  "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/src/gif_encoder.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/exif_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/icc_profile_info.cpp",
   "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_decoder.cpp",
