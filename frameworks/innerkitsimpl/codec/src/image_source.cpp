@@ -2593,7 +2593,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     return pixelMap;
 }
 
-bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize)
+bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize) __attribute__((no_sanitize("cfi")))
 {
     if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
         IMAGE_LOGE("[ImageSource]IsASTC fileData incorrect.");
