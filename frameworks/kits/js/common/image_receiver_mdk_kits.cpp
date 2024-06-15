@@ -101,7 +101,7 @@ static int32_t ImageReceiverNapiReadNextImage(ImageReceiverNapi* native, struct 
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outValue) = ImageNapi::Create(args->inEnv, image);
-    return IMAGE_RESULT_DATA_ABNORMAL;
+    return IMAGE_RESULT_SUCCESS;
 }
 
 static int32_t ImageReceiverNapiOn(ImageReceiverNapi* native, struct ImageReceiverArgs* args)
