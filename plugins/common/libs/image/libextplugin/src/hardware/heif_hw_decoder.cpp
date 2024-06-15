@@ -21,6 +21,7 @@
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
 #include <fstream>
 #include <algorithm>
+#include <climits>
 
 namespace OHOS::ImagePlugin {
 using namespace std;
@@ -245,7 +246,8 @@ void HeifHardwareDecoder::DumpSingleInput(const std::string& type, const GridInf
         LOGE("failed to dump input %{public}s", type.c_str());
         return;
     }
-    char* realpathRes = realpath(inFilePath, nullptr);
+    char realpathRes[PATH_MAX] = {0};
+    realpath(inFilePath, realpathRes);
     if (realpathRes == nullptr || !verify_file(realpathRes)) {
         LOGE("%{public}s is invalid", realpathRes);
         return;
