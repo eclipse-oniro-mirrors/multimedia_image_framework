@@ -245,10 +245,15 @@ void HeifHardwareDecoder::DumpSingleInput(const std::string& type, const GridInf
         LOGE("failed to dump input %{public}s", type.c_str());
         return;
     }
+    char* realpathRes = realpath(inFilePath, nullptr);
+    if (realpathRes == nullptr || !verify_file(realpathRes)) {
+        LOGE("%{public}s is invalid", realpathRes);
+        return;
+    }
     std::ofstream dumpInFile;
-    dumpInFile.open(std::string(inFilePath), std::ios_base::binary | std::ios_base::trunc);
+    dumpInFile.open(std::string(realpathRes), std::ios_base::binary | std::ios_base::trunc);
     if (!dumpInFile.is_open()) {
-        LOGE("failed to open %{public}s", inFilePath);
+        LOGE("failed to open %{public}s", realpathRes);
         return;
     }
     for (size_t i = 0; i < inputs.size(); ++i) {
