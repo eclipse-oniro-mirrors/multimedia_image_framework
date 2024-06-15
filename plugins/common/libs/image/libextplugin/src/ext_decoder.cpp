@@ -500,7 +500,7 @@ uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    dstOptions_.fFrameIndex = index;
+    dstOptions_.fFrameIndex = static_cast<int>(index);
 #ifdef IMAGE_COLORSPACE_FLAG
     dstColorSpace_ = opts.plDesiredColorSpace;
 #endif
@@ -808,8 +808,8 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     }
     JpegYuvFmt decodeOutFormat = GetJpegYuvOutFmt(context.info.pixelFormat);
     PlSize jpgSize;
-    jpgSize.width = info_.width();
-    jpgSize.height = info_.height();
+    jpgSize.width = static_cast<uint32_t>(info_.width());
+    jpgSize.height = static_cast<uint32_t>(info_.height());
     PlSize desiredSize = desiredSizeYuv_;
     bool bRet = JpegDecoderYuv::GetScaledSize(jpgSize.width, jpgSize.height, desiredSize.width, desiredSize.height);
     if (!bRet || desiredSize.width == 0 || desiredSize.height == 0) {

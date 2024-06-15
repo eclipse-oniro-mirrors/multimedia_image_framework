@@ -167,7 +167,7 @@ bool PixelConvertAdapter::WritePixelsConvert(const void *srcPixels, uint32_t src
     SkImageInfo dstImageInfo = SkImageInfo::Make(dstInfo.size.width, dstInfo.size.height, dstColorType, dstAlphaType);
 
     int32_t dstRGBxSize = (dstInfo.pixelFormat == PixelFormat::RGB_888) ?
-        static_cast<uint32_t>(GetRGBxSize(dstInfo)) : NUM_1;
+        GetRGBxSize(dstInfo) : static_cast<int32_t>(NUM_1);
     auto dstRGBxPixels = std::make_unique<uint8_t[]>(dstRGBxSize);
     auto keepDstPixels = dstPixels;
     dstPixels = (dstInfo.pixelFormat == PixelFormat::RGB_888) ? &dstRGBxPixels[0] : dstPixels;

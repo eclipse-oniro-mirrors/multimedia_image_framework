@@ -58,7 +58,7 @@ bool HeifBufferInputStream::CheckSize(size_t target_size, int64_t end)
 
 bool HeifBufferInputStream::Read(void *data, size_t size)
 {
-    auto end_pos = static_cast<int64_t>(pos_) + size;
+    auto end_pos = static_cast<size_t>(pos_) + size;
     if (static_cast<size_t>(end_pos) > length_) {
         return false;
     }
@@ -281,7 +281,9 @@ void HeifStreamWriter::Write(const std::string &str)
 void HeifStreamWriter::Write(const std::vector<uint8_t> &data)
 {
     CheckSize(data.size());
-    memcpy_s(data_.data() + position_, data_.size() - position_, data.data(), data.size());
+    if (EOK != memcpy_s(data_.data() + position_, data_.size() - position_, data.data(), data.size())) {
+        return;
+    }
     position_ += data.size();
 }
 
@@ -300,7 +302,9 @@ void HeifStreamWriter::Insert(size_t insertSize)
     void *pCurrent = data_.data() + position_;
     void *pAfterMove = reinterpret_cast<uint8_t*>(pCurrent) + insertSize;
     data_.resize(data_.size() + insertSize);
-    memmove_s(pAfterMove, sizeToMove, pCurrent, sizeToMove);
+    if (EOK != memmove_s(pAfterMove, sizeToMove, pCurrent, sizeToMove)) {
+        return;
+    }
 }
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -199,7 +199,7 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
     int32_t pixelBytes = pixelMap.GetPixelBytes();
     uint8_t *dstStartPixel = nullptr;
     uint8_t *srcStartPixel = nullptr;
-    uint32_t targetRowBytes = targetWidth * pixelBytes;
+    int32_t targetRowBytes = targetWidth * pixelBytes;
     if (targetRowStride <= 0) {
         targetRowStride = targetRowBytes;
     }
@@ -208,11 +208,11 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
         srcRowStride = srcRowBytes;
     }
     uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + top * srcRowStride + left * pixelBytes;
-    uint32_t copyRowBytes = std::min(srcWidth, targetWidth) * pixelBytes;
+    uint32_t copyRowBytes = static_cast<uint32_t>(std::min(srcWidth, targetWidth) * pixelBytes);
     for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
         dstStartPixel = dstPixels + scanLine * targetRowStride;
         srcStartPixel = srcPixels + scanLine * srcRowStride;
-        errno_t errRet = memcpy_s(dstStartPixel, targetRowBytes, srcStartPixel, copyRowBytes);
+        errno_t errRet = memcpy_s(dstStartPixel, static_cast<size_t>(targetRowBytes), srcStartPixel, copyRowBytes);
         if (errRet != EOK) {
             IMAGE_LOGE("[PostProc]memcpy scanline %{public}d fail, errorCode = %{public}d", scanLine, errRet);
             return false;

@@ -70,7 +70,9 @@ static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct 
     if (sId.empty() || sId.c_str() == nullptr || args->inLen < sId.size()) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    memcpy_s(args->id, args->inLen, sId.c_str(), sId.size());
+    if (EOK != memcpy_s(args->id, args->inLen, sId.c_str(), sId.size())) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
     return IMAGE_RESULT_SUCCESS;
 }
 
@@ -99,7 +101,7 @@ static int32_t ImageReceiverNapiReadNextImage(ImageReceiverNapi* native, struct 
         return IMAGE_RESULT_BAD_PARAMETER;
     }
     *(args->outValue) = ImageNapi::Create(args->inEnv, image);
-    return IMAGE_RESULT_SUCCESS;
+    return IMAGE_RESULT_DATA_ABNORMAL;
 }
 
 static int32_t ImageReceiverNapiOn(ImageReceiverNapi* native, struct ImageReceiverArgs* args)

@@ -338,11 +338,16 @@ byte *FileMetadataStream::GetAddr(bool isWriteable)
     int fileDescriptor = fileno(fp_);
 
     // Create a memory map
-    mappedMemory_ =
-        ::mmap(nullptr, GetSize(), isWriteable ? (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, fileDescriptor, 0);
-    if (mappedMemory_ == static_cast<void *>(MAP_FAILED)) {
-        HandleFileError("Create memory mapping", filePath_, fileDescriptor, -1, -1);
+    ssize_t fileSize = GetSize();
+    if (fileSize <= 0) {
         mappedMemory_ = nullptr;
+    } else {
+        mappedMemory_ = ::mmap(nullptr, static_cast<size_t>(fileSize), isWriteable ?
+            (PROT_READ | PROT_WRITE) : PROT_READ, MAP_SHARED, fileDescriptor, 0);
+        if (mappedMemory_ == static_cast<void *>(MAP_FAILED)) {
+            HandleFileError("Create memory mapping", filePath_, fileDescriptor, -1, -1);
+            mappedMemory_ = nullptr;
+        }
     }
     IMAGE_LOGD("mmap: Memory mapping created: %{public}s, size: %{public}zu", filePath_.c_str(), GetSize());
     return (byte *)mappedMemory_;
@@ -354,8 +359,13 @@ bool FileMetadataStream::ReleaseAddr()
         return true;
     }
 
+    ssize_t fileSize = GetSize();
+    if (fileSize <= 0) {
+        mappedMemory_ = nullptr;
+        return true;
+    }
     // Delete the memory map
-    if (munmap(mappedMemory_, GetSize()) == -1) {
+    if (munmap(mappedMemory_, static_cast<size_t>(fileSize)) == -1) {
         // Memory mapping failed
         HandleFileError("Remove memory mapping", filePath_, -1, -1, -1);
         return false;

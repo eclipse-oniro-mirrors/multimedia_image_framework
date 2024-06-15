@@ -2494,7 +2494,7 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSuppo
     IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA IN srcPixelFormat:%{public}d, srcSize:(%{public}d,"
         "%{public}d)",
         sourceOptions_.pixelFormat, sourceOptions_.size.width, sourceOptions_.size.height);
-    if ((!isSupportOdd) && (sourceOptions_.size.width & 1) == 1) {
+    if ((!isSupportOdd) && (static_cast<uint32_t>(sourceOptions_.size.width) & 1) == 1) {
         IMAGE_LOGE("[ImageSource]ConvertYUV420ToRGBA odd width, %{public}d", sourceOptions_.size.width);
         errorCode = ERR_IMAGE_DATA_UNSUPPORT;
         return false;

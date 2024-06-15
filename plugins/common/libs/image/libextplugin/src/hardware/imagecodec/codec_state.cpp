@@ -75,7 +75,7 @@ void ImageCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 
 void ImageCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 {
-    CodecEventType event;
+    CodecEventType event{};
     uint32_t data1;
     uint32_t data2;
     (void)info.param->GetValue("event", event);
