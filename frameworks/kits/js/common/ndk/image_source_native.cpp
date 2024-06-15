@@ -526,7 +526,9 @@ Image_ErrorCode OH_ImageSourceNative_GetImageProperty(OH_ImageSourceNative *sour
     if (value->data == nullptr) {
         return IMAGE_ALLOC_FAILED;
     }
-    memcpy_s(value->data, value->size, val.c_str(), val.size());
+    if (EOK != memcpy_s(value->data, value->size, val.c_str(), val.size())) {
+        return IMAGE_COPY_FAILED;
+    }
     return IMAGE_SUCCESS;
 }
 

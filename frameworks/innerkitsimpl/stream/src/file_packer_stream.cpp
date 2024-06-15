@@ -32,7 +32,7 @@ namespace Media {
 
 FilePackerStream::FilePackerStream(const std::string &filePath)
 {
-    int lastSlash = filePath.rfind("/");
+    int lastSlash = static_cast<int>(filePath.rfind("/"));
     std::string dirPath;
     std::string fileName;
     if (lastSlash >= 0) {

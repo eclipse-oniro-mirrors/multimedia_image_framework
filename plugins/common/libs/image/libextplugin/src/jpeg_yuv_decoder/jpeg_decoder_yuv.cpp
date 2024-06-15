@@ -119,8 +119,8 @@ tjscalingfactor JpegDecoderYuv::GetScaledFactor(uint32_t jpgwidth, uint32_t jpgh
         return factor;
     }
     for (int i = 0; i < NUMSF; i++) {
-        uint32_t scaledw = static_cast<uint32_t>(TJSCALED(jpgwidth, sf[i]));
-        uint32_t scaledh = static_cast<uint32_t>(TJSCALED(jpgheight, sf[i]));
+        uint32_t scaledw = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgwidth), sf[i]));
+        uint32_t scaledh = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgheight), sf[i]));
         if ((scaledw <= width && scaledh <= height) || i == NUMSF - 1) {
             factor.num = sf[i].num;
             factor.denom = sf[i].denom;
@@ -143,8 +143,8 @@ bool JpegDecoderYuv::GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, uint32
         return true;
     }
     tjscalingfactor factor = JpegDecoderYuv::GetScaledFactor(jpgwidth, jpgheight, width, height);
-    width = static_cast<uint32_t>(TJSCALED(jpgwidth, factor));
-    height = static_cast<uint32_t>(TJSCALED(jpgheight, factor));
+    width = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgwidth), factor));
+    height = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgheight), factor));
     return true;
 }
 
@@ -217,7 +217,7 @@ uint32_t JpegDecoderYuv::GetJpegDecompressedYuvSize(uint32_t width, uint32_t hei
     if (width == 0 || height == 0) {
         return 0;
     }
-    int totalSizeForDecodeData = 0;
+    uint32_t totalSizeForDecodeData = 0;
     for (int i = 0; i < YUVCOMPONENT_MAX - 1; i++) {
         if (subsample == TJSAMP_GRAY && i != YCOM) {
             break;
@@ -441,7 +441,7 @@ int JpegDecoderYuv::DoDecodeToYuvPlane(DecodeContext &context, tjhandle dehandle
     }
     uint32_t width = outw;
     uint32_t height = outh;
-    int totalSizeForDecodeData = GetJpegDecompressedYuvSize(width, height, jpegSubsamp);
+    uint32_t totalSizeForDecodeData = GetJpegDecompressedYuvSize(width, height, jpegSubsamp);
     if (CanFastDecodeFrom420to420(width, height, totalSizeForDecodeData, jpegSubsamp)) {
         return DecodeFrom420To420(context, dehandle, width, height);
     }

@@ -70,7 +70,9 @@ static int32_t ImageReceiverNapiGetReceiverId(ImageReceiverNapi* native, struct 
     if (sId.empty() || sId.c_str() == nullptr || args->inLen < sId.size()) {
         return IMAGE_RESULT_BAD_PARAMETER;
     }
-    memcpy_s(args->id, args->inLen, sId.c_str(), sId.size());
+    if (EOK != memcpy_s(args->id, args->inLen, sId.c_str(), sId.size())) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
     return IMAGE_RESULT_SUCCESS;
 }
 

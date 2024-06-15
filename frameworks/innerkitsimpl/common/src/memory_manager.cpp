@@ -218,7 +218,7 @@ uint32_t DmaMemory::Release()
 
 std::unique_ptr<AbsMemory> MemoryManager::CreateMemory(AllocatorType type, MemoryData &data)
 {
-    MemoryData extend;
+    MemoryData extend{};
     return CreateMemory(type, data, extend);
 }
 

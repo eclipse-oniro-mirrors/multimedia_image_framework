@@ -18,6 +18,7 @@
 
 #include <surface.h>
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <list>
 #include <securec.h>
@@ -78,6 +79,7 @@ public:
     void ReleaseCreator();
     static GSError OnBufferRelease(sptr<SurfaceBuffer> &buffer);
     static std::map<uint8_t*, ImageCreator*> bufferCreatorMap_;
+    static std::mutex creatorMutex_;
 
     std::shared_ptr<IBufferProcessor> GetBufferProcessor();
     std::shared_ptr<NativeImage> DequeueNativeImage();

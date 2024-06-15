@@ -1317,8 +1317,8 @@ bool EXIFInfo::CreateExifEntryOfRationalExif(const ExifTag &tag, ExifData *data,
         return false;
     }
     ExifRational longRational;
-    longRational.numerator = static_cast<ExifSLong>(atoi(longVec[0].c_str()));
-    longRational.denominator = static_cast<ExifSLong>(atoi(longVec[1].c_str()));
+    longRational.numerator = static_cast<ExifLong>(atoi(longVec[0].c_str()));
+    longRational.denominator = static_cast<ExifLong>(atoi(longVec[1].c_str()));
     *ptrEntry = CreateExifTag(data, GetExifIfdByExifTag(tag), tag, sizeof(longRational), GetExifFormatByExifTag(tag));
     if ((*ptrEntry) == nullptr) {
         IMAGE_LOGD("Get %{public}s exif entry failed.", GetExifNameByExifTag(tag).c_str());

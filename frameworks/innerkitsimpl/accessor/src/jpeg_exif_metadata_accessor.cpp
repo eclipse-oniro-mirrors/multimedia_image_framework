@@ -263,7 +263,7 @@ std::tuple<size_t, size_t> JpegExifMetadataAccessor::GetInsertPosAndMarkerAPP1()
             skipExifSeqNum = markerCount;
         }
 
-        marker = FindNextMarker();
+        marker = static_cast<byte>(FindNextMarker());
         ++markerCount;
     }
 
@@ -379,7 +379,7 @@ bool JpegExifMetadataAccessor::UpdateExifMetadata(BufferMetadataStream &bufStrea
             IMAGE_LOGD("Skipping existing exifApp segment number.");
         }
 
-        marker = FindNextMarker();
+        marker = static_cast<byte>(FindNextMarker());
         ++markerCount;
     }
 
