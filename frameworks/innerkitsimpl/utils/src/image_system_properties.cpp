@@ -74,7 +74,7 @@ bool ImageSystemProperties::GetSurfaceBufferEnabled()
 bool ImageSystemProperties::GetDmaEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
-    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", true);
+    return system::GetBoolParameter("persist.multimedia.image.dma.enabled", false);
 #else
     return false;
 #endif
