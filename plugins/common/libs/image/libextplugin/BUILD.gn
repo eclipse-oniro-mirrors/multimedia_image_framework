@@ -451,7 +451,6 @@ ohos_shared_library("heifimpl") {
       "src/hardware/imagecodec/image_codec_list.cpp",
       "src/hardware/imagecodec/image_decoder.cpp",
       "src/hardware/imagecodec/msg_handle_loop.cpp",
-      "src/hardware/imagecodec/param_bundle.cpp",
       "src/hardware/imagecodec/state_machine.cpp",
       "src/hardware/imagecodec/type_converter.cpp",
     ]
