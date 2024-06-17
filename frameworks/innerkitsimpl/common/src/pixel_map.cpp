@@ -2315,28 +2315,29 @@ uint8_t PixelMap::GetVarintLen(int32_t value) const
 
 void PixelMap::WriteVarint(std::vector<uint8_t> &buff, int32_t value) const
 {
-    while (value > TLV_VARINT_MASK) {
-        buff.push_back(TLV_VARINT_MORE | uint8_t(value & TLV_VARINT_MASK));
-        value >>= TLV_VARINT_BITS;
+    uint32_t uValue = uint32_t(value);
+    while (uValue > TLV_VARINT_MASK) {
+        buff.push_back(TLV_VARINT_MORE | uint8_t(uValue & TLV_VARINT_MASK));
+        uValue >>= TLV_VARINT_BITS;
     }
-    buff.push_back(uint8_t(value));
+    buff.push_back(uint8_t(uValue));
 }
 
 int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
 {
-    int32_t value = 0;
+    uint32_t value = 0;
     uint8_t shift = 0;
-    int32_t item = 0;
+    uint32_t item = 0;
     do {
         if (static_cast<size_t>(cursor + 1) > buff.size()) {
             IMAGE_LOGE("ReadVarint out of range");
             return static_cast<int32_t>(TLV_END);
         }
-        item = int32_t(buff[cursor++]);
+        item = uint32_t(buff[cursor++]);
         value |= (item & TLV_VARINT_MASK) << shift;
         shift += TLV_VARINT_BITS;
     } while ((item & TLV_VARINT_MORE) != 0);
-    return value;
+    return int32_t(value);
 }
 
 void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
