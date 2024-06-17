@@ -24,8 +24,11 @@
 #include "hitrace_meter.h"
 #endif
 
-inline constexpr OHOS::HiviewDFX::HiLogLabel IMAGE_CODEC_LABEL = {
-    LOG_CORE, LOG_TAG_DOMAIN_ID_PLUGIN, "HEIF_HW_DECODER"};
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "HEIF_HW_DECODER"
 
 #ifdef __FILE_NAME__
 #define FILENAME __FILE_NAME__
@@ -35,41 +38,41 @@ inline constexpr OHOS::HiviewDFX::HiLogLabel IMAGE_CODEC_LABEL = {
 
 #define LOG_FMT "[%{public}s][%{public}s %{public}d] "
 #define LOGE(x, ...) \
-    OHOS::HiviewDFX::HiLog::Error(IMAGE_CODEC_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    HILOG_ERROR(LOG_CORE, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define LOGW(x, ...) \
-    OHOS::HiviewDFX::HiLog::Warn(IMAGE_CODEC_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    HILOG_WARN(LOG_CORE, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define LOGI(x, ...) \
-    OHOS::HiviewDFX::HiLog::Info(IMAGE_CODEC_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    HILOG_INFO(LOG_CORE, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define LOGD(x, ...) \
-    OHOS::HiviewDFX::HiLog::Debug(IMAGE_CODEC_LABEL, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
+    HILOG_DEBUG(LOG_CORE, LOG_FMT x, FILENAME, __FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 // for ImageCodecBuffer
 #define HLOG_FMT "%{public}s[%{public}s][%{public}s %{public}d] "
-#define HLOGE(x, ...) OHOS::HiviewDFX::HiLog::Error(IMAGE_CODEC_LABEL, HLOG_FMT x, compUniqueStr_.c_str(), \
+#define HLOGE(x, ...) HILOG_ERROR(LOG_CORE, HLOG_FMT x, compUniqueStr_.c_str(), \
     currState_->GetName().c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define HLOGW(x, ...) OHOS::HiviewDFX::HiLog::Warn(IMAGE_CODEC_LABEL, HLOG_FMT x, compUniqueStr_.c_str(), \
+#define HLOGW(x, ...) HILOG_WARN(LOG_CORE, HLOG_FMT x, compUniqueStr_.c_str(), \
     currState_->GetName().c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define HLOGI(x, ...) OHOS::HiviewDFX::HiLog::Info(IMAGE_CODEC_LABEL, HLOG_FMT x, compUniqueStr_.c_str(), \
+#define HLOGI(x, ...) HILOG_INFO(LOG_CORE, HLOG_FMT x, compUniqueStr_.c_str(), \
     currState_->GetName().c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define HLOGD(x, ...) \
     do {    \
         if (debugMode_) {   \
-            OHOS::HiviewDFX::HiLog::Debug(IMAGE_CODEC_LABEL, HLOG_FMT x, compUniqueStr_.c_str(), \
+            HILOG_DEBUG(LOG_CORE, HLOG_FMT x, compUniqueStr_.c_str(), \
             currState_->GetName().c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__); \
         }   \
     } while (0)
 
 // for ImageCodecBuffer inner state
-#define SLOGE(x, ...) OHOS::HiviewDFX::HiLog::Error(IMAGE_CODEC_LABEL, HLOG_FMT x, \
+#define SLOGE(x, ...) HILOG_ERROR(LOG_CORE, HLOG_FMT x, \
     codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define SLOGW(x, ...) OHOS::HiviewDFX::HiLog::Warn(IMAGE_CODEC_LABEL, HLOG_FMT x, \
+#define SLOGW(x, ...) HILOG_WARN(LOG_CORE, HLOG_FMT x, \
     codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
-#define SLOGI(x, ...) OHOS::HiviewDFX::HiLog::Info(IMAGE_CODEC_LABEL, HLOG_FMT x, \
+#define SLOGI(x, ...) HILOG_INFO(LOG_CORE, HLOG_FMT x, \
     codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__)
 #define SLOGD(x, ...) \
     do {    \
         if (codec_->debugMode_) {   \
-            OHOS::HiviewDFX::HiLog::Debug(IMAGE_CODEC_LABEL, HLOG_FMT x, \
+            HILOG_DEBUG(LOG_CORE, HLOG_FMT x, \
             codec_->compUniqueStr_.c_str(), stateName_.c_str(), __FUNCTION__, __LINE__, ##__VA_ARGS__); \
         }   \
     } while (0)
