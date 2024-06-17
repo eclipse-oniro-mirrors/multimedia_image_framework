@@ -2110,7 +2110,8 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
     plOptions.desiredPixelFormat = plDesiredFormat;
-    if (IsHdrImage() && opts.desiredDynamicRange != DecodeDynamicRange::SDR) {
+    if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && IsHdrImage()) ||
+         opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PlPixelFormat::RGBA_8888;
     }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
