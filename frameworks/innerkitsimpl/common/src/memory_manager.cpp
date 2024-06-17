@@ -145,6 +145,7 @@ uint32_t SharedMemory::Release()
 #endif
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 GraphicPixelFormat GetRequestBufferFormatWithPixelFormat(const PixelFormat format)
 {
     switch (format) {
@@ -158,6 +159,7 @@ GraphicPixelFormat GetRequestBufferFormatWithPixelFormat(const PixelFormat forma
             return GRAPHIC_PIXEL_FMT_RGBA_8888;
     }
 }
+#endif
 
 uint32_t DmaMemory::Create()
 {
