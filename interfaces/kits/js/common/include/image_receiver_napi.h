@@ -134,7 +134,9 @@ public:
         if (context && context->env && context->callbackRef) {
             napi_delete_reference(context->env, context->callbackRef);
         }
-        context->callbackRef = nullptr;
+        if (context) {
+            context->callbackRef = nullptr;
+        }
         context = nullptr;
         callBack = nullptr;
     }

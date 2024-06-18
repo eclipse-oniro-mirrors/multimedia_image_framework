@@ -447,12 +447,12 @@ bool HeifDecoderImpl::DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecode
     sptr<SurfaceBuffer> hwBuffer =
             isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
             hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
-    if (IsDirectYUVDecode()) {
-        inPixelFormat = static_cast<GraphicPixelFormat>(hwBuffer->GetFormat());
-    }
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
         return false;
+    }
+    if (IsDirectYUVDecode()) {
+        inPixelFormat = static_cast<GraphicPixelFormat>(hwBuffer->GetFormat());
     }
 
     bool res = false;

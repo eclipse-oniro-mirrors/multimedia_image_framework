@@ -699,8 +699,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     uint64_t byteCount = static_cast<uint64_t>(dstInfo_.computeMinByteSize());
     uint8_t *dstBuffer = nullptr;
+    std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
-        auto tmpBuffer = make_unique<uint8_t[]>(byteCount);
+        tmpBuffer = make_unique<uint8_t[]>(byteCount);
         dstBuffer = tmpBuffer.get();
         byteCount = byteCount / NUM_4 * NUM_3;
     }
