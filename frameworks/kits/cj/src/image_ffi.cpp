@@ -28,10 +28,19 @@ using namespace OHOS::FFI;
  
 namespace OHOS {
 namespace Media {
-const int64_t INIT_FAILED = -1;
-
 extern "C"
 {
+    static Rect ParseCRegion(CRegion region)
+    {
+        Rect rt = {
+            .left = region.x,
+            .top = region.y,
+            .width = region.size.width,
+            .height = region.size.height,
+        };
+        return rt;
+    }
+
     //--------------------- ImageSource ------------------------------------------------------------------------
     static const std::string FILE_URL_PREFIX = "file://";
     static std::string FileUrlToRawPath(const std::string &path)
@@ -695,16 +704,6 @@ extern "C"
         return SUCCESS_CODE;
     }
 
-    static Rect ParseCRegion(CRegion region)
-    {
-        Rect rt;
-        rt.left = region.x;
-        rt.top = region.y;
-        rt.height = region.size.height;
-        rt.width = region.size.width;
-        return rt;
-    }
-
     uint32_t FfiOHOSReadPixels(int64_t id, CPositionArea area)
     {
         IMAGE_LOGD("[PixelMap] FfiOHOSReadPixels start");
@@ -828,38 +827,38 @@ extern "C"
 
     //--------------------- ImageReceiver ------------------------------------------------------------------------
 
-    int64_t FfiOHOSReceiverGetSize(int64_t id, CSize *retVal)
+    uint32_t FfiOHOSReceiverGetSize(int64_t id, CSize *retVal)
     {
         IMAGE_LOGD("FfiOHOSReceiverGetSize start");
         auto instance = FFIData::GetData<ImageReceiverImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t retCode = instance->GetSize(retVal);
+        uint32_t retCode = instance->GetSize(retVal);
         IMAGE_LOGD("FfiOHOSReceiverGetSize success");
         return retCode;
     }
 
-    int64_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t *retVal)
+    uint32_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t *retVal)
     {
         IMAGE_LOGD("FfiOHOSReceiverGetCapacity start");
         auto instance = FFIData::GetData<ImageReceiverImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t retCode = instance->GetCapacity(retVal);
+        uint32_t retCode = instance->GetCapacity(retVal);
         IMAGE_LOGD("FfiOHOSReceiverGetCapacity success");
         return retCode;
     }
 
-    int64_t FfiOHOSReceiverGetFormat(int64_t id, int32_t *retVal)
+    uint32_t FfiOHOSReceiverGetFormat(int64_t id, int32_t *retVal)
     {
         IMAGE_LOGD("FfiOHOSReceiverGetFormat start");
         auto instance = FFIData::GetData<ImageReceiverImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t retCode = instance->GetFormat(retVal);
+        uint32_t retCode = instance->GetFormat(retVal);
         IMAGE_LOGD("FfiOHOSReceiverGetFormat success");
         return retCode;
     }
@@ -868,9 +867,6 @@ extern "C"
     {
         IMAGE_LOGD("FfiOHOSCreateImageReceiver start");
         auto id = ImageReceiverImpl::CreateImageReceiver(width, height, format, capacity);
-        if (id == IMAGE_FAILED) {
-            return IMAGE_FAILED;
-        }
         IMAGE_LOGD("FfiOHOSCreateImageReceiver success");
         return id;
     }
@@ -894,9 +890,13 @@ extern "C"
         auto instance = FFIData::GetData<ImageReceiverImpl>(id);
         if (!instance) {
             IMAGE_LOGE("ImageReceiver instance not exist %{public}" PRId64, id);
-            return 0;
+            return INIT_FAILED;
         }
         auto image = instance->ReadNextImage();
+        if (!image) {
+            IMAGE_LOGE("ImageImpl Create is nullptr.");
+            return INIT_FAILED;
+        }
         IMAGE_LOGD("FfiOHOSReadNextImage success");
         return image->GetID();
     }
@@ -907,12 +907,12 @@ extern "C"
         auto instance = FFIData::GetData<ImageReceiverImpl>(id);
         if (!instance) {
             IMAGE_LOGE("ImageReceiver instance not exist %{public}" PRId64, id);
-            return 0;
+            return INIT_FAILED;
         }
         auto image = instance->ReadLatestImage();
         if (!image) {
             IMAGE_LOGE("ImageImpl Create is nullptr.");
-            return 0;
+            return INIT_FAILED;
         }
         
         IMAGE_LOGD("FfiOHOSReadLatestImage success.");
@@ -931,53 +931,53 @@ extern "C"
         IMAGE_LOGD("FfiOHOSReceiverRelease success");
     }
 
-    int64_t FfiOHOSImageGetClipRect(int64_t id, CRegion *retVal)
+    uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion *retVal)
     {
         IMAGE_LOGD("FfiOHOSImageGetClipRect start");
         auto instance = FFIData::GetData<ImageImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
         int64_t retCode = instance->GetClipRect(retVal);
         IMAGE_LOGD("FfiOHOSImageGetClipRect success");
         return retCode;
     }
 
-    int64_t FfiOHOSImageGetSize(int64_t id, CSize *retVal)
+    uint32_t FfiOHOSImageGetSize(int64_t id, CSize *retVal)
     {
         IMAGE_LOGD("FfiOHOSImageGetSize start");
         auto instance = FFIData::GetData<ImageImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t retCode = instance->GetSize(retVal);
+        uint32_t retCode = instance->GetSize(retVal);
         IMAGE_LOGD("FfiOHOSImageGetSize success");
         return retCode;
     }
 
-    int64_t FfiOHOSImageGetFormat(int64_t id, int32_t *retVal)
+    uint32_t FfiOHOSImageGetFormat(int64_t id, int32_t *retVal)
     {
         IMAGE_LOGD("FfiOHOSImageGetFormat start");
         auto instance = FFIData::GetData<ImageImpl>(id);
         if (!instance) {
-            return INIT_FAILED;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t retCode = instance->GetFormat(retVal);
+        uint32_t retCode = instance->GetFormat(retVal);
         IMAGE_LOGD("FfiOHOSImageGetFormat success");
         return retCode;
     }
 
-    int64_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent *ptr)
+    uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent *ptr)
     {
         IMAGE_LOGD("FfiOHOSGetComponent start");
         auto instance = FFIData::GetData<ImageImpl>(id);
         if (!instance) {
             IMAGE_LOGE("ImageImpl instance not exist %{public}" PRId64, id);
-            return 0;
+            return ERR_IMAGE_INIT_ABNORMAL;
         }
-        int64_t len = instance->GetComponent(componentType, ptr);
+        uint32_t errCode = instance->GetComponent(componentType, ptr);
         IMAGE_LOGD("FfiOHOSGetComponent success");
-        return len;
+        return errCode;
     }
 
     void FfiOHOSImageRelease(int64_t id)
@@ -999,10 +999,10 @@ extern "C"
         return ret->GetID();
     }
 
-    RetDataCArrUnit FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption* option)
+    RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption option)
     {
-        CArrUnit data = { .head = nullptr, .size = 0 };
-        RetDataCArrUnit ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+        CArrUI8 data = { .head = nullptr, .size = 0 };
+        RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
         auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
         if (!imagePackerImpl) {
             IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
@@ -1015,8 +1015,8 @@ extern "C"
             if (!pixelMap) {
                 return ret;
             }
-            PackOption packOption = { .format = option->format, .quality = option->quality};
-            auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option->bufferSize);
+            PackOption packOption = { .format = option.format, .quality = option.quality};
+            auto [code, head, size] = imagePackerImpl->Packing(*pixelMap, packOption, option.bufferSize);
             if (code != SUCCESS_CODE) {
                 IMAGE_LOGE("Packing failed, error code is %{public}d", code);
             }
@@ -1031,10 +1031,10 @@ extern "C"
         return ret;
     }
 
-    RetDataCArrUnit FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption* option)
+    RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source, CPackingOption option)
     {
-        CArrUnit data = { .head = nullptr, .size = 0 };
-        RetDataCArrUnit ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
+        CArrUI8 data = { .head = nullptr, .size = 0 };
+        RetDataCArrUI8 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = data };
         auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
         if (!imagePackerImpl) {
             IMAGE_LOGE("Packing failed, invalid id of ImagePackerImpl");
@@ -1043,12 +1043,12 @@ extern "C"
 
         auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
         if (imageSourceImpl != nullptr) {
-            PackOption packOption = { .format = option->format, .quality = option->quality};
+            PackOption packOption = { .format = option.format, .quality = option.quality};
             auto imageSource = imageSourceImpl->nativeImgSrc;
             if (!imageSource) {
                 return ret;
             }
-            auto [code, head, size] = imagePackerImpl->Packing(*imageSource, packOption, option->bufferSize);
+            auto [code, head, size] = imagePackerImpl->Packing(*imageSource, packOption, option.bufferSize);
             if (code != SUCCESS_CODE) {
                 IMAGE_LOGE("Packing failed, error code is %{public}d", code);
             }
@@ -1119,7 +1119,7 @@ extern "C"
         return ret;
     }
 
-    uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption* option)
+    uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd, CPackingOption option)
     {
         auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
         if (!imagePackerImpl) {
@@ -1134,14 +1134,14 @@ extern "C"
                 return ERR_IMAGE_INIT_ABNORMAL;
             }
             
-            PackOption packOption = { .format = option->format, .quality = option->quality};
+            PackOption packOption = { .format = option.format, .quality = option.quality};
             uint32_t ret = imagePackerImpl->PackToFile(*pixelMap, fd, packOption);
             return ret;
         }
         return ERR_IMAGE_INIT_ABNORMAL;
     }
 
-    uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption* option)
+    uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd, CPackingOption option)
     {
         auto imagePackerImpl = FFIData::GetData<ImagePackerImpl>(id);
         if (!imagePackerImpl) {
@@ -1151,7 +1151,7 @@ extern "C"
 
         auto imageSourceImpl = FFIData::GetData<ImageSourceImpl>(source);
         if (imageSourceImpl != nullptr) {
-            PackOption packOption = { .format = option->format, .quality = option->quality};
+            PackOption packOption = { .format = option.format, .quality = option.quality};
             auto imageSource = imageSourceImpl->nativeImgSrc;
             if (!imageSource) {
                 return ERR_IMAGE_INIT_ABNORMAL;

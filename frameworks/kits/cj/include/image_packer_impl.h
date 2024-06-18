@@ -21,14 +21,16 @@
 #include "image_log.h"
 #include "pixel_map_impl.h"
 #include "image_packer.h"
+#include "inttypes.h"
 
 namespace OHOS {
 namespace Media {
 class ImagePackerImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(ImagePackerImpl, OHOS::FFI::FFIData)
 public:
     ImagePackerImpl();
-    std::tuple<int32_t, void*, int64_t> Packing(PixelMap& source, const PackOption& option, uint64_t bufferSize);
-    std::tuple<int32_t, void*, int64_t> Packing(ImageSource& source, const PackOption& option, uint64_t bufferSize);
+    std::tuple<int32_t, uint8_t*, int64_t> Packing(PixelMap& source, const PackOption& option, uint64_t bufferSize);
+    std::tuple<int32_t, uint8_t*, int64_t> Packing(ImageSource& source, const PackOption& option, uint64_t bufferSize);
     uint32_t PackToFile(PixelMap& source, int fd, const PackOption& option);
     uint32_t PackToFile(ImageSource& source, int fd, const PackOption& option);
     std::shared_ptr<ImagePacker> GetImagePacker();
@@ -39,7 +41,7 @@ public:
     }
 
     template<typename T>
-    std::tuple<int32_t, void*, int64_t> CommonPacking(T& source, const PackOption& option, uint64_t bufferSize)
+    std::tuple<int32_t, uint8_t*, int64_t> CommonPacking(T& source, const PackOption& option, uint64_t bufferSize)
     {
         if (real_ == nullptr) {
             IMAGE_LOGE("Packing failed, real_ is nullptr");
@@ -51,13 +53,13 @@ public:
             return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
         }
         
-        void* resultBuffer = malloc(bufferSize);
+        uint8_t* resultBuffer = static_cast<uint8_t*>(malloc(sizeof(uint8_t) * bufferSize));
         if (resultBuffer == nullptr) {
             IMAGE_LOGE("Packing failed, malloc buffer failed");
             return std::make_tuple(ERR_IMAGE_INIT_ABNORMAL, nullptr, 0);
         }
 
-        uint32_t packingRet = real_->StartPacking(static_cast<uint8_t*>(resultBuffer), bufferSize, option);
+        uint32_t packingRet = real_->StartPacking(resultBuffer, bufferSize, option);
         if (packingRet != SUCCESS) {
             IMAGE_LOGE("Packing failed, StartPacking failed, ret=%{public}u.", packingRet);
             free(resultBuffer);
@@ -78,7 +80,7 @@ public:
             free(resultBuffer);
             return std::make_tuple(finalPackRet, nullptr, 0);
         }
-        IMAGE_LOGI("packedSize=%{public}lld.", static_cast<long long>(packedSize));
+        IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
 
         return std::make_tuple(SUCCESS_CODE, resultBuffer, packedSize);
     }
@@ -109,20 +111,11 @@ public:
             IMAGE_LOGE("Packing failed, FinalizePacking failed, ret=%{public}u.", finalPackRet);
             return finalPackRet;
         }
-        IMAGE_LOGI("packedSize=%{public}lld.", static_cast<long long>(packedSize));
+        IMAGE_LOGD("packedSize=%{public}"  PRId64, packedSize);
         return SUCCESS;
     }
-    OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImagePackerImpl");
-        return &runtimeType;
-    }
     std::shared_ptr<ImagePacker> real_ = nullptr;
 };
 } // namespace Media

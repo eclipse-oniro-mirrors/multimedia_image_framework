@@ -24,6 +24,7 @@
 namespace OHOS {
 namespace Media {
 class ImageSourceImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(ImageSourceImpl, OHOS::FFI::FFIData)
 public:
     explicit ImageSourceImpl(std::unique_ptr<ImageSource> ptr_);
     ~ImageSourceImpl() override
@@ -65,17 +66,8 @@ public:
     static std::tuple<std::unique_ptr<ImageSource>,
         std::unique_ptr<IncrementalPixelMap>> CreateIncrementalSource(const uint8_t *data, uint32_t size,
                                                                       SourceOptions &opts, uint32_t &errorCode);
-    OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageSourceImpl");
-        return &runtimeType;
-    }
     std::shared_ptr<IncrementalPixelMap> navIncPixelMap_ = nullptr;
     uint32_t index_ = 0;
     std::string pathName_ = "";
