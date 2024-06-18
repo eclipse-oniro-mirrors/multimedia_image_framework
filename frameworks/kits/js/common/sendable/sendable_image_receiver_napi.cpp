@@ -996,7 +996,8 @@ napi_value SendableImageReceiverNapi::JsOn(napi_env env, napi_callback_info info
             ic.context->status = ERR_IMAGE_INIT_ABNORMAL;
             return false;
         }
-        shared_ptr<SendableImageReceiverAvaliableListener> listener = make_shared<SendableImageReceiverAvaliableListener>();
+        shared_ptr<SendableImageReceiverAvaliableListener> listener =
+            make_shared<SendableImageReceiverAvaliableListener>();
         listener->context = std::move(ic.context);
         listener->context->env = args.env;
         listener->name = args.name;
