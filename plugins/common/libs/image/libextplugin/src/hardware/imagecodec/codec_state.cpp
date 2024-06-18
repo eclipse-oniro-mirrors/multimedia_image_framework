@@ -68,7 +68,7 @@ void ImageCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
     if (id == ASYNC_MSG_ID) {
         return;
     }
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue("err", err);
     codec_->PostReply(id, reply);
 }
@@ -104,7 +104,7 @@ void ImageCodec::BaseState::OnGetFormat(const MsgInfo &info)
 {
     shared_ptr<Format> fmt = (info.type == MsgWhat::GET_INPUT_FORMAT) ?
         codec_->inputFormat_ : codec_->outputFormat_;
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     if (fmt) {
         reply->SetValue<int32_t>("err", IC_ERR_OK);
         reply->SetValue("format", *fmt);
@@ -270,7 +270,7 @@ void ImageCodec::InitializedState::OnConfigure(const MsgInfo &info)
 
 void ImageCodec::InitializedState::OnGetOutputBufferUsage(const MsgInfo &info)
 {
-    ParamSP reply = ParamBundle::Create();
+    ParamSP reply = make_shared<ParamBundle>();
     reply->SetValue<int32_t>("err", IC_ERR_OK);
     reply->SetValue("usage", codec_->OnGetOutputBufferUsage());
     codec_->PostReply(info.id, reply);
@@ -314,7 +314,7 @@ void ImageCodec::StartingState::OnStateEntered()
 {
     hasError_ = false;
 
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 
@@ -504,7 +504,7 @@ void ImageCodec::RunningState::OnShutDown(const MsgInfo &info)
 /**************************** OutputPortChangedState Start ********************************/
 void ImageCodec::OutputPortChangedState::OnStateEntered()
 {
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }
@@ -543,7 +543,7 @@ void ImageCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
 void ImageCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 {
     if (codec_->hasFatalError_) {
-        ParamSP stopMsg = ParamBundle::Create();
+        ParamSP stopMsg = make_shared<ParamBundle>();
         stopMsg->SetValue("generation", codec_->stateGeneration_);
         codec_->SendAsyncMsg(MsgWhat::FORCE_SHUTDOWN, stopMsg, THREE_SECONDS_IN_US);
     }
@@ -622,7 +622,7 @@ void ImageCodec::StoppingState::OnStateEntered()
     codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_USER);
     SLOGI("all buffer owned by user are now owned by us");
 
-    ParamSP msg = ParamBundle::Create();
+    ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("generation", codec_->stateGeneration_);
     codec_->SendAsyncMsg(MsgWhat::CHECK_IF_STUCK, msg, THREE_SECONDS_IN_US);
 }

@@ -28,7 +28,8 @@ using ParamSP = std::shared_ptr<ParamBundle>;
 
 class ParamBundle {
 public:
-    static ParamSP Create();
+    ParamBundle() = default;
+    ~ParamBundle() = default;
 
     template<typename T>
     void SetValue(const std::string &key, const T &value)
@@ -55,9 +56,6 @@ public:
     ParamBundle &operator=(ParamBundle &&) = delete;
 
 private:
-    ParamBundle() = default;
-    ~ParamBundle() = default;
-
     mutable std::mutex m_mtx;
     std::unordered_map<std::string, std::any> m_items;
 };
