@@ -79,13 +79,13 @@ ohos_shared_library("bmpplugin") {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
-    deps += skia_platform
 
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
+      "skia:skia_canvaskit",
     ]
   }
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]

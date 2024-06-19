@@ -92,7 +92,6 @@ ohos_shared_library("jpegplugin") {
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
     deps += skia_skcms
-    deps += skia_platform
 
     if (DUAL_ADAPTER) {
     } else {
@@ -111,6 +110,7 @@ ohos_shared_library("jpegplugin") {
       "hitrace:hitrace_meter",
       "libexif:libexif",
       "skia:libjpeg",
+      "skia:skia_canvaskit",
     ]
   }
 

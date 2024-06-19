@@ -18,9 +18,8 @@
 #include <map>
 
 #include "include/core/SkImageEncoder.h"
+#include "include/core/SkBitmap.h"
 #include "pixel_yuv_utils.h"
-#include "SkBitmap.h"
-#include "SkImageEncoder.h"
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
