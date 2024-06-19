@@ -1262,6 +1262,16 @@ int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLeng
 
     if ((srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) &&
         (dstInfo.pixelFormat == PixelFormat::NV12 || dstInfo.pixelFormat == PixelFormat::NV21)) {
+        if (srcInfo.pixelFormat == dstInfo.pixelFormat &&
+        srcInfo.size.width == dstInfo.size.width && srcInfo.size.height == dstInfo.size.height) {
+            IMAGE_LOGE("src pixel format is equal dst pixel format. no need to convert.");
+            auto result = memcpy_s(dstPixels, srcLength, srcPixels, srcLength);
+            if (result == 0) {
+                return srcLength;
+            } else {
+                return 0;
+            }
+        }
         FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
             srcInfo.size.width, srcInfo.size.height, 1};
         FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
