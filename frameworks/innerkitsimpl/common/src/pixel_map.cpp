@@ -748,9 +748,10 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     return CopyPixelMap(source, dstPixelMap, error);
 }
 
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, AbsMemory* memory)
+static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, uint32_t dstPixelsSize,
+    unique_ptr<AbsMemory>& memory)
 {
-    uint32_t bufferSize = source.GetByteCount();
+    // "memory" is used for SHARE_MEM_ALLOC and DMA_ALLOC type, dstPixels is used for others.
     AllocatorType sourceType = source.GetAllocatorType();
     if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
         dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
@@ -762,7 +763,7 @@ static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* ds
 #endif
         }
     } else {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, dstPixelsSize, AllocatorType::HEAP_ALLOC, nullptr);
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
@@ -786,13 +787,13 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     int fd = -1;
     void *dstPixels = nullptr;
-    AbsMemory* memory = nullptr;
+    unique_ptr<AbsMemory> memory;
     AllocatorType sourceType = source.GetAllocatorType();
     if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
         ImageInfo dstImageInfo;
         dstPixelMap.GetImageInfo(dstImageInfo);
         MemoryData memoryData = {nullptr, bufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
-        memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData).get();
+        memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
         if (memory == nullptr) {
             return false;
         }
@@ -815,7 +816,7 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, bufferSize, memory);
     return true;
 }
 
