@@ -214,7 +214,6 @@ if (use_clang_android) {
         "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
         "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
       ]
-      deps += skia_platform
 
       if (DUAL_ADAPTER) {
       } else {
@@ -229,6 +228,7 @@ if (use_clang_android) {
         "ipc:ipc_core",
         "napi:ace_napi",
         "skia:libjpeg",
+        "skia:skia_canvaskit",
         "zlib:libz",
       ]
       public_external_deps = [

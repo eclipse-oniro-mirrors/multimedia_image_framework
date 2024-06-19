@@ -42,13 +42,13 @@ ohos_shared_library("svgplugin") {
     "$image_subsystem/plugins/manager:pluginmanager",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
-  deps += skia_platform
 
   external_deps = [
     "c_utils:utils",
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "skia:skia_canvaskit",
   ]
 
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
