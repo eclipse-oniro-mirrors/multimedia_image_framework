@@ -748,28 +748,6 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap)
     return CopyPixelMap(source, dstPixelMap, error);
 }
 
-static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* dstPixels, AbsMemory* memory)
-{
-    uint32_t bufferSize = source.GetByteCount();
-    AllocatorType sourceType = source.GetAllocatorType();
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, sourceType, nullptr);
-        if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC && source.IsHdr()) {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-            sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (source.GetFd()));
-            sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
-            CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-#endif
-        }
-    } else {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-    }
-#ifdef IMAGE_COLORSPACE_FLAG
-    OHOS::ColorManager::ColorSpace colorspace = source.InnerGetGrColorSpace();
-    dstPixelMap.InnerSetColorSpace(colorspace);
-#endif
-}
-
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
 {
     uint32_t bufferSize = source.GetByteCount();
@@ -784,22 +762,15 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
-    int fd = -1;
-    void *dstPixels = nullptr;
-    AbsMemory* memory = nullptr;
-    AllocatorType sourceType = source.GetAllocatorType();
-    if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-        ImageInfo dstImageInfo;
-        dstPixelMap.GetImageInfo(dstImageInfo);
-        MemoryData memoryData = {nullptr, bufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
-        memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData).get();
-        if (memory == nullptr) {
-            return false;
-        }
-        dstPixels = memory->data.data;
-    } else {
-        dstPixels = malloc(bufferSize);
+    ImageInfo dstImageInfo;
+    dstPixelMap.GetImageInfo(dstImageInfo);
+    MemoryData memoryData = {nullptr, bufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
+    auto memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
+    if (memory == nullptr) {
+        return false;
     }
+    int fd = -1;
+    void *dstPixels = memory->data.data;
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         error = IMAGE_RESULT_MALLOC_ABNORMAL;
@@ -807,15 +778,22 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     }
     void *tmpDstPixels = dstPixels;
     if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
-        if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
-            memory->Release();
-        } else {
-            ReleaseBuffer(AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
-        }
+        memory->Release();
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, memory);
+    dstPixelMap.SetPixelsAddr(dstPixels, memory->extend.data, memory->data.size, source.GetAllocatorType(), nullptr);
+    if (source.GetAllocatorType() == AllocatorType::DMA_ALLOC && source.IsHdr()) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (source.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (dstPixelMap.GetFd()));
+        CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+#endif
+#ifdef IMAGE_COLORSPACE_FLAG
+        OHOS::ColorManager::ColorSpace colorSpace = source.InnerGetGrColorSpace();
+        dstPixelMap.InnerSetColorSpace(colorSpace);
+#endif
+    }
     return true;
 }
 
