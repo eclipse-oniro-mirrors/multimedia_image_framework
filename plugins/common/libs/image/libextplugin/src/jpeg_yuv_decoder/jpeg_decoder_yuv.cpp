@@ -51,7 +51,9 @@ static const std::map<int, ConverterPair> CONVERTER_MAP = {
 JpegDecoderYuv::JpegDecoderYuv()
 {
     static std::once_flag flag;
-    std::function<void()> func = std::bind(&JpegDecoderYuv::LoadLibYuv);
+    std::function<void()> func = []() {
+        JpegDecoderYuv::LoadLibYuv();
+    };
     std::call_once(flag, func);
 }
 

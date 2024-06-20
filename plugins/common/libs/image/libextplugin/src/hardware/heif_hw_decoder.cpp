@@ -317,7 +317,9 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
     if (outputThread.joinable()) {
         outputThread.join();
     }
-    releaseThread_ = thread(&HeifHardwareDecoder::ReleaseDecoder, this);
+    releaseThread_ = thread([this] {
+        this->ReleaseDecoder();
+    });
     IF_TRUE_RETURN_VAL_WITH_MSG(hasErr_, Media::ERR_IMAGE_DECODE_FAILED, "err occured during decode");
     FlushOutput();
     if (OHOS::system::GetBoolParameter("image.codec.dump", false)) {

@@ -70,7 +70,9 @@ using SrProcessImageT =
 VpeUtils::VpeUtils()
 {
     static std::once_flag flag;
-    std::function<void()> func = std::bind(&VpeUtils::LoadLibVpe);
+    std::function<void()> func = []() {
+        VpeUtils::LoadLibVpe();
+    };
     std::call_once(flag, func);
 }
 
