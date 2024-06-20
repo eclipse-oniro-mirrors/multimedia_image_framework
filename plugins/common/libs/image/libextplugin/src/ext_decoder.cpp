@@ -19,6 +19,8 @@
 #include <map>
 #include <sstream>
 
+#include "src/codec/SkJpegCodec.h"
+#include "src/codec/SkJpegDecoderMgr.h"
 #include "ext_pixel_convert.h"
 #include "image_log.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -623,6 +625,20 @@ uint32_t ExtDecoder::PreDecodeCheck(uint32_t index)
         return SUCCESS;
 }
 
+static bool IsColorSpaceSupport(SkJpegCodec* codec)
+{
+    if (codec == nullptr || codec->decoderMgr() == nullptr || codec->decoderMgr()->dinfo() == nullptr) {
+        IMAGE_LOGE("SkJpegCodec is null");
+        return false;
+    }
+    struct jpeg_decompress_struct* pCinfo = codec->decoderMgr()->dinfo();
+    if (pCinfo->jpeg_color_space == JCS_YCbCr || pCinfo->jpeg_color_space == JCS_GRAYSCALE) {
+        return true;
+    }
+    IMAGE_LOGE("unsupported in color: %{public}d", pCinfo->jpeg_color_space);
+    return false;
+}
+
 uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PlPixelFormat desiredFormat)
 {
     uint32_t ret = PreDecodeCheck(index);
@@ -645,6 +661,9 @@ uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PlPixelFormat desiredForm
     uint32_t jpegBufferSize = stream_->GetStreamSize();
     if (jpegBufferSize == 0) {
         IMAGE_LOGE("PreDecodeCheckYuv jpegBufferSize 0");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    if (!IsColorSpaceSupport(static_cast<SkJpegCodec*>(codec_.get()))) {
         return ERR_IMAGE_SOURCE_DATA;
     }
     return SUCCESS;
@@ -808,9 +827,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
         }
     }
     JpegYuvFmt decodeOutFormat = GetJpegYuvOutFmt(context.info.pixelFormat);
-    PlSize jpgSize;
-    jpgSize.width = static_cast<uint32_t>(info_.width());
-    jpgSize.height = static_cast<uint32_t>(info_.height());
+    PlSize jpgSize = {static_cast<uint32_t>(info_.width()), static_cast<uint32_t>(info_.height())};
     PlSize desiredSize = desiredSizeYuv_;
     bool bRet = JpegDecoderYuv::GetScaledSize(jpgSize.width, jpgSize.height, desiredSize.width, desiredSize.height);
     if (!bRet || desiredSize.width == 0 || desiredSize.height == 0) {
@@ -830,6 +847,9 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     int retDecode = jpegYuvDecoder_->DoDecode(context, para);
     if (retDecode != JpegYuvDecodeError_Success) {
         IMAGE_LOGE("DecodeToYuv420 DoDecode return %{public}d", retDecode);
+    } else {
+        // update yuv outInfo if decode success, same as jpeg hardware decode
+        context.outInfo.size = desiredSize;
     }
     return retDecode == JpegYuvDecodeError_Success ? SUCCESS : ERR_IMAGE_DECODE_FAILED;
 }
