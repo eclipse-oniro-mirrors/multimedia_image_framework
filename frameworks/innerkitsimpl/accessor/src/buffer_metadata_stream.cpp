@@ -131,7 +131,11 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 
 ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 {
-    if (currentOffset_ >= bufferSize_) {
+    if (currentOffset_ == bufferSize_) {
+        return -1;
+    }
+
+    if (currentOffset_ > bufferSize_) {
         IMAGE_LOGE("BufferMetadataStream::Read failed, current offset exceeds buffer size, "
             "currentOffset:%{public}ld, bufferSize:%{public}ld",
             currentOffset_, bufferSize_);
