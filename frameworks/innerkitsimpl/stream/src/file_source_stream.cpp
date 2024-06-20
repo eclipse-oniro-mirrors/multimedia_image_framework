@@ -321,7 +321,8 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     if (!DupFd(filePtr_, mmapFd_)) {
         return nullptr;
     }
-    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, 0);
+    auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
+        populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;
