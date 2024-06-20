@@ -64,10 +64,15 @@ FilePackerStream::FilePackerStream(const std::string &filePath)
 }
 FilePackerStream::FilePackerStream(const int fd)
 {
-    file_ = fdopen(fd, "wb");
-    if (file_ == nullptr) {
-        IMAGE_LOGE("fopen file failed, error:%{public}d", errno);
+    int dupFd = dup(fd);
+    if (dupFd < 0) {
+        IMAGE_LOGE("[FilePackerStream]Fail to dup fd.");
         return;
+    }
+
+    file_ = fdopen(dupFd, "wb");
+    if (file_ == nullptr) {
+        IMAGE_LOGE("[FilePackerStream]open file fail. error:%{public}d", errno);
     }
 }
 FilePackerStream::~FilePackerStream()
