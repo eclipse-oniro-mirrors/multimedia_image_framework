@@ -62,10 +62,10 @@ const unsigned char INIT_HW_DATA[] = {
     0x00
 };
 
-template <typename T> std::istream &OutputRational(std::istream &is, T &r)
+template <typename T, typename U> std::istream &OutputRational(std::istream &is, T &r)
 {
-    int32_t nominator = 0;
-    int32_t denominator = 0;
+    U nominator = 0;
+    U denominator = 0;
     char c('\0');
     is >> nominator >> c >> denominator;
     if (c != '/') {
@@ -79,12 +79,12 @@ template <typename T> std::istream &OutputRational(std::istream &is, T &r)
 
 std::istream &operator >> (std::istream &is, ExifRational &r)
 {
-    return OutputRational(is, r);
+    return OutputRational<ExifRational, uint32_t>(is, r);
 }
 
 std::istream &operator >> (std::istream &is, ExifSRational &r)
 {
-    return OutputRational(is, r);
+    return OutputRational<ExifSRational, int32_t>(is, r);
 }
 
 std::set<ExifTag> UndefinedByte = { EXIF_TAG_SCENE_TYPE, EXIF_TAG_COMPONENTS_CONFIGURATION, EXIF_TAG_FILE_SOURCE };

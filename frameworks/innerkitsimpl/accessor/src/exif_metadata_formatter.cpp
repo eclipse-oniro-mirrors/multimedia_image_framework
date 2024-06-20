@@ -1355,6 +1355,7 @@ bool ExifMetadatFormatter::IsForbiddenValue(const std::string &value)
 
 std::multimap<std::string, std::string> ExifMetadatFormatter::valueTemplateConfig = {
     {"ExposureTime", "(\\d+/\\d+) sec\\."},
+    {"ExposureTime", "(\\d+\\.\\d+|\\d+) sec\\."},
     {"FNumber", "f/(\\d+\\.\\d+)"},
     {"ApertureValue", "(\\d+\\.\\d+) EV \\(f/\\d+\\.\\d+\\)"},
     {"ExposureBiasValue", "(\\d+\\.\\d+) EV"},
