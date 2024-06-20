@@ -47,7 +47,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
-    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {
       defines += [ "EXT_PIXEL" ]
@@ -188,6 +188,10 @@ ohos_static_library("image_utils_static") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
 
+  if (is_arkui_x) {
+    include_dirs += [ "//commonlibrary/c_utils/base/include" ]
+  }
+
   sources = [
     "src/color_utils.cpp",
     "src/image_convert_tools.cpp",
@@ -240,6 +244,7 @@ ohos_static_library("image_utils_static") {
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
     ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     include_dirs += [
@@ -259,7 +264,7 @@ ohos_static_library("image_utils_static") {
       "src/image_func_timer.cpp",
       "src/image_fwk_ext_manager.cpp",
     ]
-    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
   } else {
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [
