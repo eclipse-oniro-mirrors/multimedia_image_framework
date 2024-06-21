@@ -88,10 +88,7 @@ napi_value ImageNapi::Init(napi_env env, napi_value exports)
         return exports;
     }
 
-    if (sConstructor_ != nullptr) {
-        napi_delete_reference(env, sConstructor_);
-        sConstructor_ = nullptr;
-    }
+    sConstructor_ = nullptr;
 
     if (napi_create_reference(env, thisVar, NUM1, &sConstructor_) != napi_ok) {
         IMAGE_ERR("Create reference failed");
