@@ -57,6 +57,7 @@ ImageNapi::ImageNapi()
 
 ImageNapi::~ImageNapi()
 {
+    sConstructor_ = nullptr;
     NativeRelease();
 }
 
