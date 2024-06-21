@@ -236,10 +236,10 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     srcPiexlMap->GetImageInfo(srcInfo);
     if (srcFormat == PixelFormat::NV21 && yDInfo.yWidth == 0) {
         IMAGE_LOGE("info is invalid");
-        yDInfo.yWidth = srcInfo.size.width;
-        yDInfo.yHeight = srcInfo.size.height;
-        yDInfo.uvWidth = (srcInfo.size.width + 1) / NUM_2;
-        yDInfo.uvHeight = (srcInfo.size.height + 1) / NUM_2;
+        yDInfo.yWidth = static_cast<uint32_t>(srcInfo.size.width);
+        yDInfo.yHeight = static_cast<uint32_t>(srcInfo.size.height);
+        yDInfo.uvWidth = static_cast<uint32_t>((srcInfo.size.width + 1) / NUM_2);
+        yDInfo.uvHeight = static_cast<uint32_t>((srcInfo.size.height + 1) / NUM_2);
     }
     uint8_buffer_type destBuffer = nullptr;
     size_t destBufferSize = 0;
