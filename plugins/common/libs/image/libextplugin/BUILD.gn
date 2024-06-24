@@ -353,7 +353,7 @@ if (is_arkui_x) {
     external_deps = [ "c_utils:utils" ]
 
     subsystem_name = "multimedia"
-    deps = [ "${third_party_root}/bounds_checking_function:libsec_static" ]
+    deps = [ "//third_party/bounds_checking_function:libsec_static" ]
     part_name = "image_framework"
   }
 } else {
