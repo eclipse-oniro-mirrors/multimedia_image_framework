@@ -65,59 +65,56 @@ class SutEncSoManager {
 public:
     SutEncSoManager();
     ~SutEncSoManager();
-    bool LoadSutEncSo();
     SuperCompressTexture sutEncSoEncFunc_;
 private:
-    bool sutEncSoOpened_;
     void *textureEncSoHandle_;
+    bool LoadSutEncSo();
 };
 
 static SutEncSoManager g_sutEncSoManager;
 
 SutEncSoManager::SutEncSoManager()
 {
-    sutEncSoOpened_ = false;
     textureEncSoHandle_ = nullptr;
     sutEncSoEncFunc_ = nullptr;
+    if (LoadSutEncSo()) {
+        IMAGE_LOGD("astcenc sut enc so is success to be opened!");
+    } else {
+        IMAGE_LOGD("astcenc sut enc so is failed to be opened!");
+    }
 }
 
 SutEncSoManager::~SutEncSoManager()
 {
-    if (!sutEncSoOpened_ || textureEncSoHandle_ == nullptr) {
+    if (textureEncSoHandle_ == nullptr) {
         IMAGE_LOGD("astcenc sut enc so is not be opened when dlclose!");
         return;
     }
     if (dlclose(textureEncSoHandle_) != 0) {
-        IMAGE_LOGE("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
-        return;
+        IMAGE_LOGE("astcenc sut enc so dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
     } else {
-        IMAGE_LOGD("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
-        return;
+        IMAGE_LOGD("astcenc sut enc so dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
     }
 }
 
 bool SutEncSoManager::LoadSutEncSo()
 {
-    if (!sutEncSoOpened_) {
-        if (!CheckClBinIsExist(g_textureSuperEncSo)) {
-            IMAGE_LOGE("sut %{public}s! is not found", g_textureSuperEncSo.c_str());
-            return false;
-        }
-        textureEncSoHandle_ = dlopen(g_textureSuperEncSo.c_str(), 1);
-        if (textureEncSoHandle_ == nullptr) {
-            IMAGE_LOGE("sut libtextureSuperCompress dlopen failed!");
-            return false;
-        }
-        sutEncSoEncFunc_ =
-            reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTexture"));
-        if (sutEncSoEncFunc_ == nullptr) {
-            IMAGE_LOGE("sut libtextureSuperCompress dlsym failed!");
-            dlclose(textureEncSoHandle_);
-            textureEncSoHandle_ = nullptr;
-            return false;
-        }
-        IMAGE_LOGD("astcenc dlopen success: %{public}s!", g_textureSuperEncSo.c_str());
-        sutEncSoOpened_ = true;
+    if (!CheckClBinIsExist(g_textureSuperEncSo)) {
+        IMAGE_LOGE("sut %{public}s! is not found", g_textureSuperEncSo.c_str());
+        return false;
+    }
+    textureEncSoHandle_ = dlopen(g_textureSuperEncSo.c_str(), 1);
+    if (textureEncSoHandle_ == nullptr) {
+        IMAGE_LOGE("sut libtextureSuperCompress dlopen failed!");
+        return false;
+    }
+    sutEncSoEncFunc_ =
+        reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTexture"));
+    if (sutEncSoEncFunc_ == nullptr) {
+        IMAGE_LOGE("sut libtextureSuperCompress dlsym failed!");
+        dlclose(textureEncSoHandle_);
+        textureEncSoHandle_ = nullptr;
+        return false;
     }
     return true;
 }
@@ -428,15 +425,15 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
+    if (g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
+        IMAGE_LOGD("astcenc sut enc sutEncSoEncFunc_ is nullptr!");
+        param.sutProfile = SutProfile::SKIP_SUT;
+        return true;
+    }
     param.sutBytes = param.astcBytes;
     uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.sutBytes));
     if (sutBuffer == nullptr) {
         IMAGE_LOGE("astc sutBuffer malloc failed!");
-        return false;
-    }
-    if (!g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
-        IMAGE_LOGE("sut enc so dlopen failed or sutEncSoEncFunc_ is nullptr!");
-        free(sutBuffer);
         return false;
     }
     if (!g_sutEncSoManager.sutEncSoEncFunc_(astcBuffer,
