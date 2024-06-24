@@ -283,10 +283,8 @@ HWTEST_F(JpgYuvDecoderTest, JpgYuvDecoderTest014, TestSize.Level3)
     for (float scaleFactor = maxScale; scaleFactor > minScale; scaleFactor -= step) {
         uint32_t width = jpegwidth * scaleFactor;
         uint32_t height = jpegheight * scaleFactor;
-        GTEST_LOG_(INFO) << "JpgYuvDecoderTest:JpgYuvDecoderTest014 request size(" << width << ", " << height << ")";
         bool ret = JpegDecoderYuv::GetScaledSize(jpegwidth, jpegheight, width, height);
         ASSERT_EQ(ret, true);
-        GTEST_LOG_(INFO) << "JpgYuvDecoderTest:JpgYuvDecoderTest014 ret size(" << width << ", " << height << ")";
         DecodeToYUV("test-tree-444.jpg", width, height, JpegYuvFmt::OutFmt_NV21);
     }
 }

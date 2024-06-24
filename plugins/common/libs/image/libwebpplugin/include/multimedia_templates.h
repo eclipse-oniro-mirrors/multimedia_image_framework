@@ -30,7 +30,8 @@ using remove_pointer_t = typename std::remove_pointer<T>::type;
 template<typename T, T *P>
 struct FunctionWrapper {
     template<typename... Args>
-    auto operator()(Args &&... args) const -> decltype(P(std::forward<Args>(args)...))
+    __attribute__((no_sanitize("cfi"))) auto operator()(Args &&... args)
+        const -> decltype(P(std::forward<Args>(args)...))
     {
         return P(std::forward<Args>(args)...);
     }

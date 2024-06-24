@@ -330,7 +330,6 @@ HWTEST_F(ImageSourceJpegTest, TC038, TestSize.Level3)
  */
 HWTEST_F(ImageSourceJpegTest, TC055, TestSize.Level3)
 {
-GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC055 start";
 /**
      * @tc.steps: step1. create image source by buffer source stream and default format hit
      * @tc.expected: step1. create image source success.
@@ -374,8 +373,6 @@ GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC055 start";
     int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_JPEG_BUFFER_PATH, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
     free(buffer);
-
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC055 end";
 }
 
 /**
@@ -385,7 +382,6 @@ GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC055 start";
  */
 HWTEST_F(ImageSourceJpegTest, TC056, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC056 start";
 /**
      * @tc.steps: step1. create image source by correct jpeg file path and jpeg format hit.
      * @tc.expected: step1. create image source success.
@@ -426,7 +422,6 @@ HWTEST_F(ImageSourceJpegTest, TC056, TestSize.Level3)
      */
     int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_JPEG_FILE_PATH, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC056 end";
 }
 
 /**
@@ -436,7 +431,6 @@ HWTEST_F(ImageSourceJpegTest, TC056, TestSize.Level3)
  */
 HWTEST_F(ImageSourceJpegTest, TC057, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC057 start";
    /**
      * @tc.steps: step1. create image source by istream source stream and default format hit
      * @tc.expected: step1. create image source success.
@@ -465,8 +459,6 @@ HWTEST_F(ImageSourceJpegTest, TC057, TestSize.Level3)
      */
     int64_t packSize = OHOS::ImageSourceUtil::PackImage(IMAGE_OUTPUT_JPEG_ISTREAM_PATH, std::move(pixelMap));
     ASSERT_NE(packSize, 0);
-
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC057 end";
 }
 
 /**
@@ -476,7 +468,6 @@ HWTEST_F(ImageSourceJpegTest, TC057, TestSize.Level3)
  */
 HWTEST_F(ImageSourceJpegTest, TC059, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC059 start";
     /**
      * @tc.steps: step1. create iamgesource
      * @tc.expected: step1. create iamgesource success
@@ -495,7 +486,6 @@ HWTEST_F(ImageSourceJpegTest, TC059, TestSize.Level3)
     ImagePacker imagePacker;
     imagePacker.AddImage(*imageSource);
     ASSERT_NE(pixelMap.get(), nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC059 end";
 }
 
 /**
@@ -505,7 +495,6 @@ HWTEST_F(ImageSourceJpegTest, TC059, TestSize.Level3)
  */
 HWTEST_F(ImageSourceJpegTest, TC061, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC061 start";
     /**
      * @tc.steps: step1.GetSupportedFormats(formats)
      * @tc.expected: step1. GetSupportedFormats(formats) success
@@ -519,7 +508,6 @@ HWTEST_F(ImageSourceJpegTest, TC061, TestSize.Level3)
     std::set<std::string> formats;
     uint32_t ret = imageSource->GetSupportedFormats(formats);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: TC061 end";
 }
 
 /**
@@ -1107,7 +1095,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyIntTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyIntTest001 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1116,7 +1103,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyIntTest001, TestSize.Level3)
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->GetImagePropertyInt(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyIntTest001 end";
 }
 
 /**
@@ -1130,7 +1116,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyIntTest002, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyIntTest002 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1139,7 +1124,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyIntTest002, TestSize.Level3)
     std::string key = "Orientation";
     uint32_t res = imageSource->GetImagePropertyInt(index, key, value);
     ASSERT_EQ(res, ERR_IMAGE_SOURCE_DATA);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyIntTest002 end";
 }
 
 /**
@@ -1153,7 +1137,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest001 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1162,7 +1145,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest001, TestSize.Level3)
     std::string key = "Aaaab";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest001 end";
 }
 
 /**
@@ -1176,7 +1158,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest002, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest002 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1185,7 +1166,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest002, TestSize.Level3)
     std::string key = "ImageLength";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest002 end";
 }
 
 /**
@@ -1199,7 +1179,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest003, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest003 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1208,7 +1187,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest003, TestSize.Level3)
     std::string key = "ISOSpeedRatings";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest003 end";
 }
 
 /**
@@ -1222,7 +1200,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest004, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest004 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1231,7 +1208,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest004, TestSize.Level3)
     std::string key = "Orientation";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest004 end";
 }
 
 /**
@@ -1245,7 +1221,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest005, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest005 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1254,7 +1229,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest005, TestSize.Level3)
     std::string key = "GPSLatitude";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest005 end";
 }
 
 /**
@@ -1268,7 +1242,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest006, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest006 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1277,7 +1250,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest006, TestSize.Level3)
     std::string key = "GPSLatitudeRef";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest006 end";
 }
 
 /**
@@ -1291,7 +1263,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest007, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest007 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1300,7 +1271,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest007, TestSize.Level3)
     std::string key = "GPSLongitudeRef";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest007 end";
 }
 
 /**
@@ -1314,7 +1284,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest008, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest008 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1323,7 +1292,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest008, TestSize.Level3)
     std::string key = "DateTimeOriginal";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest008 end";
 }
 
 /**
@@ -1337,7 +1305,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest009, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest009 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1346,7 +1313,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest009, TestSize.Level3)
     std::string key = "ExposureTime";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest009 end";
 }
 
 
@@ -1361,7 +1327,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest010, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest010 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1370,7 +1335,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest010, TestSize.Level3)
     std::string key = "SceneType";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest010 end";
 }
 
 /**
@@ -1384,7 +1348,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest011, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest011 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1393,7 +1356,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest011, TestSize.Level3)
     std::string key = "ISOSpeedRatings";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest011 end";
 }
 
 /**
@@ -1407,7 +1369,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest012, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest012 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1416,7 +1377,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest012, TestSize.Level3)
     std::string key = "FNumber";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest012 end";
 }
 
 /**
@@ -1430,7 +1390,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0013, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0013 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1439,7 +1398,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0013, TestSize.Level3)
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0013 end";
 }
 
 /**
@@ -1453,7 +1411,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0014, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0014 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1462,7 +1419,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0014, TestSize.Level3)
     std::string key = "ImageWidth";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0013 end";
 }
 
 /**
@@ -1476,7 +1432,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0015, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0015 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1485,7 +1440,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0015, TestSize.Level3)
     std::string key = "GPSLongitude";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0015 end";
 }
 
 /**
@@ -1499,7 +1453,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0016, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0016 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1508,7 +1461,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0016, TestSize.Level3)
     std::string key = "DateTime";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0016 end";
 }
 
 /**
@@ -1522,7 +1474,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0017, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0017 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1533,7 +1484,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0017, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0017 end";
 }
 
 /**
@@ -1547,7 +1497,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0018, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0018 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1558,7 +1507,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0018, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0018 end";
 }
 
 /**
@@ -1572,7 +1520,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0019, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0019 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1583,7 +1530,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0019, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0019 end";
 }
 
 /**
@@ -1597,7 +1543,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0020, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0020 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1606,7 +1551,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0020, TestSize.Level3)
     std::string key = "Make";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0020 end";
 }
 
 /**
@@ -1620,7 +1564,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0021, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0021 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1629,7 +1572,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0021, TestSize.Level3)
     std::string key = "Model";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0021 end";
 }
 
 /**
@@ -1643,7 +1585,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0022, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0022 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1654,7 +1595,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0022, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0022 end";
 }
 
 /**
@@ -1668,7 +1608,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0023, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0023 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1679,7 +1618,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0023, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0023 end";
 }
 
 /**
@@ -1693,7 +1631,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0024, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0024 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1704,7 +1641,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0024, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0024 end";
 }
 
 /**
@@ -1718,7 +1654,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0025, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0025 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1729,7 +1664,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0025, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0025 end";
 }
 
 /**
@@ -1743,7 +1677,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0026, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0026 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1752,7 +1685,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0026, TestSize.Level3)
     std::string key = "ApertureValue";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0026 end";
 }
 
 /**
@@ -1766,7 +1698,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0027, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0027 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1775,7 +1706,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0027, TestSize.Level3)
     std::string key = "ExposureBiasValue";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0027 end";
 }
 
 /**
@@ -1789,7 +1719,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0028, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0028 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1798,7 +1727,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0028, TestSize.Level3)
     std::string key = "MeteringMode";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0028 end";
 }
 
 /**
@@ -1812,7 +1740,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0029, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0029 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1821,7 +1748,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0029, TestSize.Level3)
     std::string key = "LightSource";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0029 end";
 }
 
 /**
@@ -1835,7 +1761,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0030, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0030 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1844,7 +1769,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0030, TestSize.Level3)
     std::string key = "Flash";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0030 end";
 }
 
 /**
@@ -1858,7 +1782,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0031, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0031 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1867,7 +1790,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0031, TestSize.Level3)
     std::string key = "FocalLength";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0031 end";
 }
 
 /**
@@ -1881,7 +1803,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0032, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0032 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1892,7 +1813,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0032, TestSize.Level3)
     ASSERT_EQ(res, SUCCESS);
     res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0032 end";
 }
 
 /**
@@ -1906,7 +1826,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0033, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0033 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1915,7 +1834,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0033, TestSize.Level3)
     std::string key = "PixelXDimension";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0033 end";
 }
 
 /**
@@ -1929,7 +1847,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0034, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0034 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1938,7 +1855,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0034, TestSize.Level3)
     std::string key = "PixelYDimension";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0034 end";
 }
 
 /**
@@ -1952,7 +1868,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0035, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0035 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1961,7 +1876,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0035, TestSize.Level3)
     std::string key = "WhiteBalance";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0035 end";
 }
 
 /**
@@ -1975,7 +1889,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0036, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0036 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -1984,7 +1897,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0036, TestSize.Level3)
     std::string key = "FocalLengthIn35mmFilm";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0036 end";
 }
 
 /**
@@ -1998,7 +1910,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0037, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0037 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2007,7 +1918,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0037, TestSize.Level3)
     std::string key = "HwMnoteCaptureMode";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0037 end";
 }
 
 /**
@@ -2021,7 +1931,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0038, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0038 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2030,7 +1939,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0038, TestSize.Level3)
     std::string key = "HwMnotePhysicalAperture";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0038 end";
 }
 
 /**
@@ -2044,7 +1952,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0039, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0039 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2053,7 +1960,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0039, TestSize.Level3)
     std::string key = "HwMnoteRollAngle";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0039 end";
 }
 
 /**
@@ -2067,7 +1973,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0040, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0040 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2076,7 +1981,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0040, TestSize.Level3)
     std::string key = "HwMnotePitchAngle";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0040 end";
 }
 
 /**
@@ -2090,7 +1994,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0041, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0041 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2099,7 +2002,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0041, TestSize.Level3)
     std::string key = "HwMnoteSceneFoodConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0041 end";
 }
 
 /**
@@ -2113,7 +2015,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0042, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0042 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2122,7 +2023,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0042, TestSize.Level3)
     std::string key = "HwMnoteSceneStageConf";
     auto res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0042 end";
 }
 
 /**
@@ -2136,7 +2036,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0043, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0043 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2145,7 +2044,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0043, TestSize.Level3)
     std::string key = "HwMnoteSceneBlueSkyConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0043 end";
 }
 
 /**
@@ -2159,7 +2057,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0044, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0044 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2168,7 +2065,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0044, TestSize.Level3)
     std::string key = "HwMnoteSceneGreenPlantConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0044 end";
 }
 
 /**
@@ -2182,7 +2078,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0045, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0045 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2191,7 +2086,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0045, TestSize.Level3)
     std::string key = "HwMnoteSceneBeachConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0045 end";
 }
 
 /**
@@ -2205,7 +2099,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0046, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0046 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2214,7 +2107,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0046, TestSize.Level3)
     std::string key = "HwMnoteSceneSnowConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0046 end";
 }
 
 /**
@@ -2228,7 +2120,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0047, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0047 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2237,7 +2128,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0047, TestSize.Level3)
     std::string key = "HwMnoteSceneSunsetConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0047 end";
 }
 
 /**
@@ -2251,7 +2141,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0048, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0048 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2260,7 +2149,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0048, TestSize.Level3)
     std::string key = "HwMnoteSceneFlowersConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0048 end";
 }
 
 /**
@@ -2274,7 +2162,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0049, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0049 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2283,7 +2170,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0049, TestSize.Level3)
     std::string key = "HwMnoteSceneNightConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0049 end";
 }
 
 /**
@@ -2297,7 +2183,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0050, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0050 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2306,7 +2191,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0050, TestSize.Level3)
     std::string key = "HwMnoteSceneTextConf";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0050 end";
 }
 
 /**
@@ -2320,7 +2204,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0051, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0051 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2329,7 +2212,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0051, TestSize.Level3)
     std::string key = "HwMnoteFaceCount";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0051 end";
 }
 
 /**
@@ -2343,7 +2225,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0052, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0052 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromHWPath(imageSource);
 
@@ -2352,7 +2233,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0052, TestSize.Level3)
     std::string key = "HwMnoteFocusMode";
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0052 end";
 }
 
 /**
@@ -2362,7 +2242,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0052, TestSize.Level3)
  */
 HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0053, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0053 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_NO_EXIF_PATH, opts, errorCode);
@@ -2374,7 +2253,6 @@ HWTEST_F(ImageSourceJpegTest, GetImagePropertyStringTest0053, TestSize.Level3)
     uint32_t res = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(res, SUCCESS);
     ASSERT_EQ(value, "default_exif_value");
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetImagePropertyStringTest0053 end";
 }
 
 /**
@@ -2388,7 +2266,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest001 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2398,7 +2275,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest001, TestSize.Level3)
     std::string path = "";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, path);
     ASSERT_EQ(res, ERR_IMAGE_SOURCE_DATA);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest001 end";
 }
 
 /**
@@ -2412,7 +2288,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest002, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest002 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2421,7 +2296,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest002, TestSize.Level3)
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest002 end";
 }
 
 /**
@@ -2435,7 +2309,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest003, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest003 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2444,7 +2317,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest003, TestSize.Level3)
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest003 end";
 }
 
 /**
@@ -2458,7 +2330,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest004, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest004 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2467,7 +2338,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest004, TestSize.Level3)
     std::string key = "BitsPerSample";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest004 end";
 }
 
 /**
@@ -2481,7 +2351,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest006, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest006 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2490,7 +2359,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest006, TestSize.Level3)
     std::string key = "111";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest006 end";
 }
 
 /**
@@ -2504,7 +2372,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest007, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest007 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2513,7 +2380,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest007, TestSize.Level3)
     std::string key = "Orientation";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest007 end";
 }
 
 /**
@@ -2527,7 +2393,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest008, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest008 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2536,7 +2401,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest008, TestSize.Level3)
     std::string key = "ImageLength";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest008 end";
 }
 
 /**
@@ -2550,7 +2414,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest009, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest009 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2559,7 +2422,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest009, TestSize.Level3)
     std::string key = "DateTimeOriginal";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest009 end";
 }
 
 /**
@@ -2573,7 +2435,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0010, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0010 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2582,7 +2443,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0010, TestSize.Level3)
     std::string key = "DateTimeOriginal";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0010 end";
 }
 
 /**
@@ -2596,7 +2456,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0011, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0011 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2605,7 +2464,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0011, TestSize.Level3)
     std::string key = "SceneType";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0011 end";
 }
 
 /**
@@ -2619,7 +2477,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0012, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0012 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2628,7 +2485,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0012, TestSize.Level3)
     std::string key = "ISOSpeedRatings";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0012 end";
 }
 
 /**
@@ -2642,7 +2498,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0013, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0013 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2651,7 +2506,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0013, TestSize.Level3)
     std::string key = "FNumber";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0013 end";
 }
 
 /**
@@ -2665,7 +2519,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0014, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0014 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2674,7 +2527,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0014, TestSize.Level3)
     std::string key = "DateTime";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0014 end";
 }
 
 /**
@@ -2688,7 +2540,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0015, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0015 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2698,7 +2549,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0015, TestSize.Level3)
     std::string key = "GPSTimeStamp";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0015 end";
 }
 
 /**
@@ -2712,7 +2562,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0016, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0016 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2721,7 +2570,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0016, TestSize.Level3)
     std::string key = "GPSDateStamp";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0016 end";
 }
 
 /**
@@ -2735,7 +2583,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0017, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0017 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2744,7 +2591,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0017, TestSize.Level3)
     std::string key = "ImageDescription";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0017 end";
 }
 
 /**
@@ -2758,7 +2604,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0018, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0018 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2767,7 +2612,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0018, TestSize.Level3)
     std::string key = "ImageDescription";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0018 end";
 }
 
 /**
@@ -2781,7 +2625,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0019, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0019 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2790,7 +2633,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0019, TestSize.Level3)
     std::string key = "Make";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0019 end";
 }
 
 /**
@@ -2804,7 +2646,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0020, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0020 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2813,7 +2654,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0020, TestSize.Level3)
     std::string key = "Model";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0020 end";
 }
 
 /**
@@ -2827,7 +2667,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0021, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0021 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2836,7 +2675,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0021, TestSize.Level3)
     std::string key = "Model";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0021 end";
 }
 
 /**
@@ -2850,7 +2688,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0022, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0022 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2859,7 +2696,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0022, TestSize.Level3)
     std::string key = "SensitivityType";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0022 end";
 }
 
 /**
@@ -2873,7 +2709,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0023, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2882,7 +2717,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0023, TestSize.Level3)
     std::string key = "StandardOutputSensitivity";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0023 end";
 }
 
 /**
@@ -2896,7 +2730,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0024, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0024 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2905,7 +2738,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0024, TestSize.Level3)
     std::string key = "ISOSpeedRatings";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0024 end";
 }
 
 /**
@@ -2919,7 +2751,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0025, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0025 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2928,7 +2759,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0025, TestSize.Level3)
     std::string key = "ApertureValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0025 end";
 }
 
 /**
@@ -2942,7 +2772,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0026, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0026 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2951,7 +2780,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0026, TestSize.Level3)
     std::string key = "ApertureValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0026 end";
 }
 
 /**
@@ -2965,7 +2793,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0027, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0027 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2974,7 +2801,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0027, TestSize.Level3)
     std::string key = "ExposureBiasValue";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0027 end";
 }
 
 /**
@@ -2988,7 +2814,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0028, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0028 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -2997,7 +2822,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0028, TestSize.Level3)
     std::string key = "MeteringMode";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0028 end";
 }
 
 /**
@@ -3011,7 +2835,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0029, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0029 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3020,7 +2843,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0029, TestSize.Level3)
     std::string key = "LightSource";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0029 end";
 }
 
 /**
@@ -3034,7 +2856,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0030, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0030 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3043,7 +2864,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0030, TestSize.Level3)
     std::string key = "Flash";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0030 end";
 }
 
 /**
@@ -3057,7 +2877,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0031, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0031 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -3070,7 +2889,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0031, TestSize.Level3)
     std::string key = "FocalLength";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0031 end";
 }
 
 /**
@@ -3084,7 +2902,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0032, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0032 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3093,7 +2910,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0032, TestSize.Level3)
     std::string key = "UserComment";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0032 end";
 }
 
 /**
@@ -3107,7 +2923,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0033, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0033 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3116,7 +2931,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0033, TestSize.Level3)
     std::string key = "PixelXDimension";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0033 end";
 }
 
 /**
@@ -3130,7 +2944,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0034, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0034 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3139,7 +2952,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0034, TestSize.Level3)
     std::string key = "PixelYDimension";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0034 end";
 }
 
 /**
@@ -3153,7 +2965,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0035, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0035 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3162,7 +2973,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0035, TestSize.Level3)
     std::string key = "WhiteBalance";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0035 end";
 }
 
 /**
@@ -3176,7 +2986,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0036, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0036 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3185,7 +2994,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0036, TestSize.Level3)
     std::string key = "FocalLengthIn35mmFilm";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0036 end";
 }
 
 /**
@@ -3199,7 +3007,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0037, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0037 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3208,7 +3015,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyPathTest0037, TestSize.Level3)
     std::string key = "RecommendedExposureIndex";
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyPathTest0037 end";
 }
 
 /**
@@ -3222,7 +3028,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest001 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3233,7 +3038,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest001, TestSize.Level3)
     int fd = open("/data/local/tmp/image/test_1111.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, ERR_IMAGE_SOURCE_DATA);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest001 end";
 }
 
 /**
@@ -3247,7 +3051,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest002, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest002 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3257,7 +3060,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest002, TestSize.Level3)
     int fd = open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest002 end";
 }
 
 /**
@@ -3271,7 +3073,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest003, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest003 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3281,7 +3082,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest003, TestSize.Level3)
     int fd = open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest003 end";
 }
 
 /**
@@ -3295,7 +3095,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest004, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest004 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3305,7 +3104,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest004, TestSize.Level3)
     int fd = open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest004 end";
 }
 
 /**
@@ -3319,7 +3117,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest006, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest006 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3329,7 +3126,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyFdTest006, TestSize.Level3)
     int fd = open("/data/local/tmp/image/test.jpg", std::fstream::binary | std::fstream::in);
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_EQ(res, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyFdTest006 end";
 }
 
 /**
@@ -3343,7 +3139,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest001 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3354,7 +3149,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest001, TestSize.Level3)
     uint32_t size = 0;
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest001 end";
 }
 
 /**
@@ -3368,7 +3162,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest002, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest002 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3383,7 +3176,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest002, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest002 end";
 }
 
 /**
@@ -3397,7 +3189,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest003, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest003 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3412,7 +3203,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest003, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest003 end";
 }
 
 /**
@@ -3426,7 +3216,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest004, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest004 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3441,7 +3230,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest004, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest004 end";
 }
 
 /**
@@ -3455,7 +3243,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest005, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest005 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3471,7 +3258,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest005, TestSize.Level3)
     uint32_t size1 = 0;
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size1);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest005 end";
 }
 
 /**
@@ -3485,7 +3271,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest006, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest006 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3500,7 +3285,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest006, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest006 end";
 }
 
 /**
@@ -3514,7 +3298,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest007, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest007 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -3533,7 +3316,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest007, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest007 end";
 }
 
 /**
@@ -3547,7 +3329,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest008, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest008 start";
     std::unique_ptr<ImageSource> imageSource = std::unique_ptr<ImageSource>();
     CreateImageSourceFromFilePath(imageSource);
 
@@ -3563,7 +3344,6 @@ HWTEST_F(ImageSourceJpegTest, ModifyImagePropertyBufferTest008, TestSize.Level3)
 
     uint32_t res = imageSource->ModifyImageProperty(index, key, value, data, bufferSize);
     ASSERT_EQ(res, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: ModifyImagePropertyBufferTest008 end";
 }
 
 /**
@@ -3577,7 +3357,6 @@ HWTEST_F(ImageSourceJpegTest, GetAstcInfoTest001, TestSize.Level3)
      * @tc.steps: step1. create image source by correct jpeg data and jpeg format hit.
      * @tc.expected: step1. create image source success.
      */
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetAstcInfoTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -3590,7 +3369,6 @@ HWTEST_F(ImageSourceJpegTest, GetAstcInfoTest001, TestSize.Level3)
     ASTCInfo astcinfo;
     bool ret = imageSource->GetASTCInfo(fileSourceStream->GetDataPtr(), fileSourceStream->GetStreamSize(), astcinfo);
     ASSERT_NE(ret, true);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetAstcInfoTest001 end";
 }
 
 /**
@@ -3626,7 +3404,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat001, TestSize.Level3)
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
     ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat001 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step4. get imageInfo encodedformat from pixelMap.
      * @tc.expected: step4. imageInfo encodedformat is the same as image.
@@ -3635,7 +3412,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat001, TestSize.Level3)
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat001 imageinfo2: " << imageinfo2.encodedFormat;
 }
 
 /**
@@ -3673,7 +3449,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat002, TestSize.Level3)
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
     ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat002 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step4. get imageInfo encodedformat from pixelMap.
      * @tc.expected: step4. imageInfo encodedformat is the same as image.
@@ -3682,7 +3457,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat002, TestSize.Level3)
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat002 imageinfo2: " << imageinfo2.encodedFormat;
 }
 
 /**
@@ -3711,7 +3485,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat003, TestSize.Level3)
     uint32_t ret1 = imageSource->GetImageInfo(imageinfo1);
     ASSERT_EQ(ret1, SUCCESS);
     ASSERT_EQ(imageinfo1.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat003 imageinfo1: " << imageinfo1.encodedFormat;
     /**
      * @tc.steps: step3. decode image source to pixel map by default decode options.
      * @tc.expected: step3. decode image source to pixel map success.
@@ -3728,7 +3501,6 @@ HWTEST_F(ImageSourceJpegTest, GetEncodedFormat003, TestSize.Level3)
     pixelMap->GetImageInfo(imageinfo2);
     EXPECT_EQ(imageinfo2.encodedFormat.empty(), false);
     ASSERT_EQ(imageinfo2.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceJpegTest: GetEncodedFormat003 imageinfo2: " << imageinfo2.encodedFormat;
 }
 } // namespace Multimedia
 } // namespace OHOS
