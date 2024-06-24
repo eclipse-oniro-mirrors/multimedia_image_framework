@@ -73,6 +73,10 @@
 #ifdef IMAGE_QOS_ENABLE
 #include "qos.h"
 #endif
+#ifdef HEIF_HW_DECODE_ENABLE
+#include "v3_0/codec_types.h"
+#include "v3_0/icodec_component_manager.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -287,6 +291,45 @@ const static int32_t ZERO = 0;
 PluginServer &ImageSource::pluginServer_ = ImageUtils::GetPluginServer();
 ImageSource::FormatAgentMap ImageSource::formatAgentMap_ = InitClass();
 
+#ifdef HEIF_HW_DECODE_ENABLE
+static bool IsSecureMode(const std::string &name)
+{
+    std::string prefix = ".secure";
+    if (name.length() <= prefix.length()) {
+        return false;
+    }
+    return name.rfind(prefix) == (name.length() - prefix.length());
+}
+#endif
+
+static bool IsSupportHeif()
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    sptr<HDI::Codec::V3_0::ICodecComponentManager> manager =
+            HDI::Codec::V3_0::ICodecComponentManager::Get(false);
+    if (manager == nullptr) {
+        return false;
+    }
+    int32_t compCnt = 0;
+    int32_t ret = manager->GetComponentNum(compCnt);
+    if (ret != HDF_SUCCESS || compCnt <= 0) {
+        return false;
+    }
+    std::vector<HDI::Codec::V3_0::CodecCompCapability> capList(compCnt);
+    ret = manager->GetComponentCapabilityList(capList, compCnt);
+    if (ret != HDF_SUCCESS || capList.empty()) {
+        return false;
+    }
+    for (const auto& cap : capList) {
+        if (cap.role == HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_HEVC &&
+            cap.type == HDI::Codec::V3_0::VIDEO_DECODER && !IsSecureMode(cap.compName)) {
+            return true;
+        }
+    }
+#endif
+    return false;
+}
+
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     IMAGE_LOGD("[ImageSource]get supported image type.");
@@ -318,6 +361,11 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
         } else {
             formats.insert(*format);
         }
+    }
+
+    static bool isSupportHeif = IsSupportHeif();
+    if (isSupportHeif) {
+        formats.insert(IMAGE_HEIF_FORMAT);
     }
     return SUCCESS;
 }

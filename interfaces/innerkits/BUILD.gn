@@ -245,6 +245,10 @@ if (use_clang_android) {
         defines += [ "IMAGE_QOS_ENABLE" ]
         external_deps += [ "qos_manager:qos" ]
       }
+      if (enable_heif_hw_decode) {
+        defines += [ "HEIF_HW_DECODE_ENABLE" ]
+        external_deps += [ "drivers_interface_codec:libcodec_proxy_3.0" ]
+      }
     }
 
     if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
