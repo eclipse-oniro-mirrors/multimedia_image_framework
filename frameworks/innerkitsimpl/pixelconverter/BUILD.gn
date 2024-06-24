@@ -20,16 +20,6 @@ config("pixelconvertadapter_public_config") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-    "$skia_root/skia/include/core",
-    "$skia_root/skia/include/encode",
-    "$skia_root/skia",
-    "$skia_root/skia/src/ports/skia_ohos",
-    "$skia_root/skia/src/ports",
-    "$skia_root/skia/src/images",
-    "$skia_root/skia/src/ports/skia_ohos",
-    "$skia_root/skia/third_party/externals/freetype/include/freetype",
-    "$skia_root/skia/include/private",
-    "//third_party/bounds_checking_function/include",
   ]
 
   if (use_mingw_win) {
@@ -155,12 +145,12 @@ if (use_clang_ios) {
         "../utils:image_utils",
         "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       ]
-      deps += skia_platform
       external_deps = [
         "c_utils:utils",
         "ffmpeg:libohosffmpeg",
         "graphic_2d:color_manager",
         "hilog:libhilog",
+        "skia:skia_canvaskit",
       ]
     }
 
@@ -224,12 +214,12 @@ ohos_static_library("pixelconvertadapter_static") {
       "../utils:image_utils",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
-    deps += skia_platform
 
     external_deps = [
       "c_utils:utils",
       "graphic_2d:color_manager",
       "hilog:libhilog",
+      "skia:skia_canvaskit",
     ]
   }
   subsystem_name = "multimedia"

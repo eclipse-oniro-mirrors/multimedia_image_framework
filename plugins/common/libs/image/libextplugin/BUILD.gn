@@ -185,21 +185,7 @@ ohos_shared_library("extplugin") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin/include",
-    "${graphic_subsystem}/interfaces/inner_api/surface",
     "${image_subsystem}/frameworks/innerkitsimpl/pixelconverter/include",
-    "${image_subsystem}/../../../drivers/peripheral/base/",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
-    "${image_subsystem}/../../../third_party/skia/",
-    "${image_subsystem}/../../../third_party/skia/include/codec/",
-    "${image_subsystem}/../../../third_party/skia/include/core/",
-    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
-    "//third_party/astc-encoder/Source",
-    "//third_party/skia",
-    "//third_party/skia/include/codec",
-    "//third_party/skia/include/core",
-    "//third_party/libjpeg-turbo",
-    "${image_subsystem}/../../../drivers/peripheral/base",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include",
   ]
   if (use_mingw_win) {
     configs += [ ":win_config" ]
@@ -236,7 +222,6 @@ ohos_shared_library("extplugin") {
       "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
       "${image_subsystem}/plugins/manager:pluginmanager",
     ]
-    deps += skia_platform
 
     external_deps = [
       "astc-encoder:astc_encoder_shared",
@@ -252,6 +237,7 @@ ohos_shared_library("extplugin") {
       "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
       "skia:libjpeg",
+      "skia:skia_canvaskit",
       "zlib:libz",
     ]
 

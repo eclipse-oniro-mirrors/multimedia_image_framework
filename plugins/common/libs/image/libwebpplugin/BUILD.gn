@@ -57,7 +57,6 @@ ohos_shared_library("webpplugin") {
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
-    deps += skia_platform
 
     if (DUAL_ADAPTER) {
     }
@@ -69,6 +68,7 @@ ohos_shared_library("webpplugin") {
       "graphic_surface:surface",
       "hilog:libhilog",
       "skia:libwebp",
+      "skia:skia_canvaskit",
     ]
   }
 

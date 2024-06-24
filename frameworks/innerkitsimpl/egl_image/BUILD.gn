@@ -33,7 +33,6 @@ ohos_shared_library("egl_image") {
   ]
 
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
-  deps += skia_platform
 
   external_deps = [
     "c_utils:utils",
@@ -43,6 +42,7 @@ ohos_shared_library("egl_image") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "skia:skia_canvaskit",
   ]
 
   innerapi_tags = [ "platformsdk" ]
