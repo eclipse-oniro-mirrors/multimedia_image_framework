@@ -47,7 +47,7 @@ public:
     uint32_t DoHardWareDecode(DecodeContext &context);
     #endif
     uint32_t GifDecode(uint32_t index, DecodeContext &context, const uint64_t rowStride);
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, OHOS::Media::Size &size) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
@@ -84,19 +84,19 @@ private:
     bool IsSupportCropOnDecode();
     bool IsSupportCropOnDecode(SkIRect &target);
     bool IsSupportHardwareDecode();
-    bool IsYuv420Format(PlPixelFormat format) const;
+    bool IsYuv420Format(OHOS::Media::PixelFormat format) const;
     bool IsHeifToYuvDecode(const DecodeContext &context) const;
     uint32_t DoHeifToYuvDecode(DecodeContext &context);
-    bool ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &outputType);
-    bool ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat);
+    bool ConvertInfoToAlphaType(SkAlphaType &alphaType, OHOS::Media::AlphaType &outputType);
+    bool ConvertInfoToColorType(SkColorType &format, OHOS::Media::PixelFormat &outputFormat);
     bool GetPropertyCheck(uint32_t index, const std::string &key, uint32_t &res);
-    SkAlphaType ConvertToAlphaType(PlAlphaType desiredType, PlAlphaType &outputType);
+    SkAlphaType ConvertToAlphaType(OHOS::Media::AlphaType desiredType, OHOS::Media::AlphaType &outputType);
     uint32_t PreDecodeCheck(uint32_t index);
-    uint32_t PreDecodeCheckYuv(uint32_t index, PlPixelFormat desiredFormat);
+    uint32_t PreDecodeCheckYuv(uint32_t index, OHOS::Media::PixelFormat desiredFormat);
     uint32_t ReadJpegData(uint8_t* jpegBuffer, uint32_t jpegBufferSize);
-    JpegYuvFmt GetJpegYuvOutFmt(PlPixelFormat desiredFormat);
+    JpegYuvFmt GetJpegYuvOutFmt(OHOS::Media::PixelFormat desiredFormat);
     bool ResetCodec();
-    SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
+    SkColorType ConvertToColorType(OHOS::Media::PixelFormat format, OHOS::Media::PixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context);
     uint32_t GetMakerImagePropertyString(const std::string &key, std::string &value);
     uint32_t CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts);
@@ -126,8 +126,8 @@ private:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     // hardware
     SkImageInfo hwDstInfo_;
-    PlSize orgImgSize_;
-    PlSize outputBufferSize_;
+    OHOS::Media::Size orgImgSize_;
+    OHOS::Media::Size outputBufferSize_;
     PixelFormat outputColorFmt_ = PIXEL_FMT_RGBA_8888;
     uint32_t sampleSize_ = 1;
     static constexpr uint32_t ALIGN_8 = 8;
@@ -135,7 +135,7 @@ private:
 #endif
 
     //Yuv
-    PlSize desiredSizeYuv_;
+    OHOS::Media::Size desiredSizeYuv_;
 
     // hdr
     Media::ImageHdrType hdrType_ = Media::ImageHdrType::UNKNOWN;

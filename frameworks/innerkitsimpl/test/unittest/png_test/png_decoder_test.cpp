@@ -46,7 +46,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->SetSource(*streamPtr.release());
     pngDecoder->GetImageSize(2, plSize);
     bool result = (pngDecoder != nullptr);
@@ -63,7 +63,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
@@ -85,7 +85,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     pngDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -104,7 +104,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     pngDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -124,7 +124,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     pngDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -144,7 +144,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     pngDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -166,7 +166,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest007, TestSize.Level3)
     pngDecoder->SetSource(*mock.get());
     DecodeContext context;
     pngDecoder->Decode(2, context);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->GetImageSize(0, plSize);
     bool result = (pngDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -229,7 +229,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     pngDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     pngDecoder->SetDecodeOptions(0, opts, info);
     bool result = (pngDecoder != nullptr);
@@ -291,7 +291,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     pngDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_888;
+    opts.desiredPixelFormat = PixelFormat::RGB_888;
     PlImageInfo info;
     pngDecoder->SetDecodeOptions(0, opts, info);
     bool result = (pngDecoder != nullptr);
@@ -313,7 +313,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest007, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     pngDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGBA_F16;
+    opts.desiredPixelFormat = PixelFormat::RGBA_F16;
     PlImageInfo info;
     pngDecoder->SetDecodeOptions(0, opts, info);
     bool result = (pngDecoder != nullptr);
@@ -335,7 +335,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest008, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     pngDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::BGRA_8888;
+    opts.desiredPixelFormat = PixelFormat::BGRA_8888;
     PlImageInfo info;
     pngDecoder->SetDecodeOptions(0, opts, info);
     bool result = (pngDecoder != nullptr);
@@ -357,7 +357,7 @@ HWTEST_F(PngDecoderTest, SetDecodeOptionsTest009, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     pngDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::ARGB_8888;
+    opts.desiredPixelFormat = PixelFormat::ARGB_8888;
     PlImageInfo info;
     pngDecoder->SetDecodeOptions(0, opts, info);
     bool result = (pngDecoder != nullptr);
@@ -639,18 +639,18 @@ HWTEST_F(PngDecoderTest, ChooseFormat, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    PlPixelFormat outputFormat;
+    PixelFormat outputFormat;
     png_byte destType = PNG_COLOR_TYPE_RGBA;
-    pngDecoder->ChooseFormat(PlPixelFormat::BGRA_8888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::ARGB_8888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGB_888, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_F16, outputFormat, destType);
-    pngDecoder->ChooseFormat(PlPixelFormat::UNKNOWN, outputFormat, destType);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::RGBA_8888, outputFormat, destType);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    pngDecoder->ChooseFormat(PlPixelFormat::ASTC_8X8, outputFormat, destType);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    pngDecoder->ChooseFormat(PixelFormat::BGRA_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PixelFormat::ARGB_8888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PixelFormat::RGB_888, outputFormat, destType);
+    pngDecoder->ChooseFormat(PixelFormat::RGBA_F16, outputFormat, destType);
+    pngDecoder->ChooseFormat(PixelFormat::UNKNOWN, outputFormat, destType);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
+    pngDecoder->ChooseFormat(PixelFormat::RGBA_8888, outputFormat, destType);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
+    pngDecoder->ChooseFormat(PixelFormat::ASTC_8x8, outputFormat, destType);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "PngDecoderTest: ChooseFormatTest end";
 }
 
@@ -862,9 +862,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    PlPixelFormat format = PlPixelFormat::RGB_888;
-    PlPixelFormat outputFormat;
-    PlAlphaType alphaType;
+    PixelFormat format = PixelFormat::RGB_888;
+    PixelFormat outputFormat;
+    AlphaType alphaType;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat001 end";
@@ -880,9 +880,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat002, TestSize.Level3)
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat002 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
     PngImageInfo info;
-    PlPixelFormat format = PlPixelFormat::RGBA_F16;
-    PlPixelFormat outputFormat;
-    PlAlphaType alphaType;
+    PixelFormat format = PixelFormat::RGBA_F16;
+    PixelFormat outputFormat;
+    AlphaType alphaType;
     info.bitDepth = 16;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
@@ -1146,7 +1146,7 @@ HWTEST_F(PngDecoderTest, ConfigInfo001, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     NinePatchListener nine;
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat =  PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat =  PixelFormat::RGB_565;
     nine.patch_ = new PngNinePatchRes;
     pngDecoder->idatLength_ = 1;
     uint32_t ret = pngDecoder->ConfigInfo(opts);
@@ -1579,9 +1579,9 @@ HWTEST_F(PngDecoderTest, GetDecodeFormat003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PngDecoderTest: GetDecodeFormat003 start";
     auto pngDecoder = std::make_shared<PngDecoder>();
-    PlPixelFormat format = PlPixelFormat::ALPHA_8;
-    PlPixelFormat outputFormat;
-    PlAlphaType alphaType;
+    PixelFormat format = PixelFormat::ALPHA_8;
+    PixelFormat outputFormat;
+    AlphaType alphaType;
     pngDecoder->pngImageInfo_.bitDepth = 16;
     uint32_t ret = pngDecoder->GetDecodeFormat(format, outputFormat, alphaType);
     ASSERT_EQ(ret, SUCCESS);
@@ -1599,7 +1599,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest008, TestSize.Level3)
     auto pngDecoder = std::make_shared<PngDecoder>();
     pngDecoder->pngStructPtr_ = nullptr;
     pngDecoder->pngInfoPtr_ = nullptr;
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result =pngDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_INIT_ABNORMAL);
     GTEST_LOG_(INFO) << "PngDecoderTest: GetImageSizeTest008 end";
@@ -1617,7 +1617,7 @@ HWTEST_F(PngDecoderTest, GetImageSizeTest009, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     pngDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     pngDecoder->state_ = PngDecodingState::BASE_INFO_PARSED;
     uint32_t result = pngDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, 0);

@@ -196,7 +196,7 @@ HWTEST_F(ExtDecoderTest, GetImageSizeTest001, TestSize.Level3)
     EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     uint32_t ret = extDecoder->GetImageSize(index, size);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     extDecoder->frameCount_ = 2;
@@ -382,7 +382,7 @@ HWTEST_F(ExtDecoderTest, ConvertInfoToAlphaTypeTest001, TestSize.Level3)
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     EXIFInfo exifInfo_;
     SkAlphaType alphaType;
-    PlAlphaType outputType;
+    AlphaType outputType;
     bool ret = extDecoder->ConvertInfoToAlphaType(alphaType, outputType);
     ASSERT_EQ(extDecoder->info_.isEmpty(), true);
     ASSERT_EQ(ret, false);
@@ -407,7 +407,7 @@ HWTEST_F(ExtDecoderTest, ConvertInfoToColorTypeTest001, TestSize.Level3)
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     EXIFInfo exifInfo_;
     SkColorType format;
-    PlPixelFormat outputFormat;
+    PixelFormat outputFormat;
     bool ret = extDecoder->ConvertInfoToColorType(format, outputFormat);
     ASSERT_EQ(extDecoder->info_.isEmpty(), true);
     ASSERT_EQ(ret, false);
@@ -431,16 +431,16 @@ HWTEST_F(ExtDecoderTest, ConvertToAlphaTypeTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertToAlphaTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     EXIFInfo exifInfo_;
-    PlAlphaType desiredType;
-    PlAlphaType outputType;
-    desiredType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    AlphaType desiredType;
+    AlphaType outputType;
+    desiredType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     auto ret = extDecoder->ConvertToAlphaType(desiredType, outputType);
-    ASSERT_EQ(outputType, PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(outputType, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
     ASSERT_EQ(ret, SkAlphaType::kOpaque_SkAlphaType);
 
-    desiredType = PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    desiredType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ret = extDecoder->ConvertToAlphaType(desiredType, outputType);
-    ASSERT_EQ(outputType, PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_EQ(outputType, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     ASSERT_EQ(ret, SkAlphaType::kPremul_SkAlphaType);
 
     extDecoder->info_.fDimensions = {2, 2};
@@ -460,16 +460,16 @@ HWTEST_F(ExtDecoderTest, ConvertToColorTypeTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: ConvertToColorTypeTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     EXIFInfo exifInfo_;
-    PlPixelFormat format;
-    PlPixelFormat outputFormat;
-    format = PlPixelFormat::RGBA_8888;
+    PixelFormat format;
+    PixelFormat outputFormat;
+    format = PixelFormat::RGBA_8888;
     auto ret = extDecoder->ConvertToColorType(format, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
     ASSERT_EQ(ret, kRGBA_8888_SkColorType);
 
-    format = PlPixelFormat::UNKNOWN;
+    format = PixelFormat::UNKNOWN;
     ret = extDecoder->ConvertToColorType(format, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
     ASSERT_EQ(ret, kRGBA_8888_SkColorType);
 
     extDecoder->info_.fDimensions = {2, 2};
@@ -916,7 +916,7 @@ HWTEST_F(ExtDecoderTest, PreDecodeCheckYuvTest001, TestSize.Level3)
     EXIFInfo exifInfo_;
     extDecoder->codec_ = nullptr;
     uint32_t index = 0;
-    PlPixelFormat desiredFormat = PlPixelFormat::UNKNOWN;
+    PixelFormat desiredFormat = PixelFormat::UNKNOWN;
     uint32_t ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
@@ -939,7 +939,7 @@ HWTEST_F(ExtDecoderTest, PreDecodeCheckYuvTest001, TestSize.Level3)
     ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
-    desiredFormat = PlPixelFormat::NV21;
+    desiredFormat = PixelFormat::NV21;
     ret = extDecoder->PreDecodeCheckYuv(index, desiredFormat);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
     GTEST_LOG_(INFO) << "ExtDecoderTest: PreDecodeCheckYuvTest001 end";
@@ -990,10 +990,10 @@ HWTEST_F(ExtDecoderTest, GetJpegYuvOutFmtTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 start";
     std::shared_ptr<ExtDecoder> extDecoder = std::make_shared<ExtDecoder>();
     EXIFInfo exifInfo_;
-    PlPixelFormat desiredFormat = PlPixelFormat::UNKNOWN;
+    PixelFormat desiredFormat = PixelFormat::UNKNOWN;
     auto ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
     ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);
-    desiredFormat = PlPixelFormat::NV12;
+    desiredFormat = PixelFormat::NV12;
     ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
     ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 end";

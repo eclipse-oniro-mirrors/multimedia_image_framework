@@ -57,7 +57,7 @@ void WebpDecoder::SetSource(InputDataStream &sourceStream)
     state_ = WebpDecodingState::SOURCE_INITED;
 }
 
-uint32_t WebpDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t WebpDecoder::GetImageSize(uint32_t index, Size &size)
 {
     if (index >= WEBP_IMAGE_NUM) {
         IMAGE_LOGE("image size:invalid index, index:%{public}u, range:%{public}u.", index, WEBP_IMAGE_NUM);
@@ -106,14 +106,14 @@ uint32_t WebpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
     }
 
     bool hasAlpha = true;
-    if (opts.desiredPixelFormat == PlPixelFormat::RGB_565) {
+    if (opts.desiredPixelFormat == PixelFormat::RGB_565) {
         hasAlpha = false;
-        info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+        info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     } else {
         info.alphaType = opts.desireAlphaType;
     }
     webpMode_ = GetWebpDecodeMode(opts.desiredPixelFormat,
-                                  hasAlpha && (opts.desireAlphaType == PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL));
+                                  hasAlpha && (opts.desireAlphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL));
     info.size = webpSize_;
     info.pixelFormat = outputFormat_;
     opts_ = opts;
@@ -145,12 +145,12 @@ uint32_t WebpDecoder::Decode(uint32_t index, DecodeContext &context)
             return ret;
         }
         bool hasAlpha = true;
-        if (opts_.desiredPixelFormat == PlPixelFormat::RGB_565) {
+        if (opts_.desiredPixelFormat == PixelFormat::RGB_565) {
             hasAlpha = false;
         }
         webpMode_ =
             GetWebpDecodeMode(opts_.desiredPixelFormat,
-                              hasAlpha && opts_.desireAlphaType == PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+                              hasAlpha && opts_.desireAlphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
         state_ = WebpDecodingState::IMAGE_DECODING;
     }
 
@@ -243,24 +243,24 @@ bool WebpDecoder::IsDataEnough()
     return true;
 }
 
-WEBP_CSP_MODE WebpDecoder::GetWebpDecodeMode(const PlPixelFormat &pixelFormat, bool premul)
+WEBP_CSP_MODE WebpDecoder::GetWebpDecodeMode(const PixelFormat &pixelFormat, bool premul)
 {
     WEBP_CSP_MODE webpMode = MODE_RGBA;
     outputFormat_ = pixelFormat;
     switch (pixelFormat) {
-        case PlPixelFormat::BGRA_8888:
+        case PixelFormat::BGRA_8888:
             webpMode = premul ? MODE_bgrA : MODE_BGRA;
             break;
-        case PlPixelFormat::RGBA_8888:
+        case PixelFormat::RGBA_8888:
             webpMode = premul ? MODE_rgbA : MODE_RGBA;
             break;
-        case PlPixelFormat::RGB_565:
+        case PixelFormat::RGB_565:
             bytesPerPixel_ = 2;  // RGB_565 2 bytes each pixel
             webpMode = MODE_RGB_565;
             break;
-        case PlPixelFormat::UNKNOWN:
+        case PixelFormat::UNKNOWN:
         default:
-            outputFormat_ = PlPixelFormat::RGBA_8888;
+            outputFormat_ = PixelFormat::RGBA_8888;
             webpMode = premul ? MODE_rgbA : MODE_RGBA;
             break;
     }
@@ -465,7 +465,7 @@ static bool HeapMemoryCreate(DecodeContext &context, const uint32_t &byteCount)
     return true;
 }
 
-static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, const PlSize &webpSize)
+static bool DmaMemoryCreate(DecodeContext &context, const uint32_t &byteCount, const Size &webpSize)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     IMAGE_LOGE("Unsupport dma mem alloc");

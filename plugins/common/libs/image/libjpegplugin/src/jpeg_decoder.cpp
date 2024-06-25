@@ -182,7 +182,7 @@ void JpegDecoder::SetSource(InputDataStream &sourceStream)
     state_ = JpegDecodingState::SOURCE_INITED;
 }
 
-uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t JpegDecoder::GetImageSize(uint32_t index, Size &size)
 {
     if (index >= JPEG_IMAGE_NUM) {
         IMAGE_LOGE("decode image index:[%{public}u] out of range:[%{public}u].", index, JPEG_IMAGE_NUM);
@@ -210,43 +210,43 @@ uint32_t JpegDecoder::GetImageSize(uint32_t index, PlSize &size)
     return Media::SUCCESS;
 }
 
-J_COLOR_SPACE JpegDecoder::GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat)
+J_COLOR_SPACE JpegDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat)
 {
     outputFormat = format;
     J_COLOR_SPACE colorSpace = JCS_UNKNOWN;
     switch (format) {
-        case PlPixelFormat::UNKNOWN:
-        case PlPixelFormat::RGBA_8888: {
+        case PixelFormat::UNKNOWN:
+        case PixelFormat::RGBA_8888: {
             colorSpace = JCS_EXT_RGBA;
-            outputFormat = PlPixelFormat::RGBA_8888;
+            outputFormat = PixelFormat::RGBA_8888;
             break;
         }
-        case PlPixelFormat::BGRA_8888: {
+        case PixelFormat::BGRA_8888: {
             colorSpace = JCS_EXT_BGRA;
-            outputFormat = PlPixelFormat::BGRA_8888;
+            outputFormat = PixelFormat::BGRA_8888;
             break;
         }
-        case PlPixelFormat::ARGB_8888: {
+        case PixelFormat::ARGB_8888: {
             colorSpace = JCS_EXT_ARGB;
             break;
         }
-        case PlPixelFormat::ALPHA_8: {
+        case PixelFormat::ALPHA_8: {
             colorSpace = JCS_GRAYSCALE;
             break;
         }
-        case PlPixelFormat::RGB_565: {
+        case PixelFormat::RGB_565: {
             colorSpace = JCS_RGB;
-            outputFormat = PlPixelFormat::RGB_888;
+            outputFormat = PixelFormat::RGB_888;
             break;
         }
-        case PlPixelFormat::RGB_888: {
+        case PixelFormat::RGB_888: {
             // NOTICE: libjpeg make BE as default when we are LE
             colorSpace = JCS_EXT_BGR;
             break;
         }
         default: {
             colorSpace = JCS_EXT_RGBA;
-            outputFormat = PlPixelFormat::RGBA_8888;
+            outputFormat = PixelFormat::RGBA_8888;
             break;
         }
     }
@@ -338,7 +338,7 @@ uint32_t JpegDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
     info.pixelFormat = outputFormat_;
     info.size.width = decodeInfo_.output_width;
     info.size.height = decodeInfo_.output_height;
-    info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     opts_ = opts;
     state_ = JpegDecodingState::IMAGE_DECODING;
     return Media::SUCCESS;
@@ -716,13 +716,13 @@ uint32_t JpegDecoder::StartDecompress(const PixelDecodeOptions &opts)
     // set decode options
     if (decodeInfo_.jpeg_color_space == JCS_CMYK || decodeInfo_.jpeg_color_space == JCS_YCCK) {
         // can't support CMYK to alpha8 convert
-        if (opts.desiredPixelFormat == PlPixelFormat::ALPHA_8) {
+        if (opts.desiredPixelFormat == PixelFormat::ALPHA_8) {
             IMAGE_LOGE("can't support colorspace CMYK to alpha convert.");
             return ERR_IMAGE_UNKNOWN_FORMAT;
         }
         IMAGE_LOGD("jpeg colorspace is CMYK.");
         decodeInfo_.out_color_space = JCS_CMYK;
-        outputFormat_ = PlPixelFormat::CMYK;
+        outputFormat_ = PixelFormat::CMYK;
     } else {
         decodeInfo_.out_color_space = GetDecodeFormat(opts.desiredPixelFormat, outputFormat_);
         if (decodeInfo_.out_color_space == JCS_UNKNOWN) {

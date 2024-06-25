@@ -24,6 +24,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 enum class PngDecodingState : int32_t {
     UNDECIDED = 0,
     SOURCE_INITED = 1,
@@ -54,7 +56,7 @@ public:
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
     bool HasProperty(std::string key) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
@@ -64,8 +66,8 @@ public:
 #endif
 
 private:
-    uint32_t GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat, PlAlphaType &alphaType);
-    void ChooseFormat(PlPixelFormat format, PlPixelFormat &outputFormat, png_byte destType);
+    uint32_t GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat, AlphaType &alphaType);
+    void ChooseFormat(PixelFormat format, PixelFormat &outputFormat, png_byte destType);
     static void PngErrorExit(png_structp pngPtr, png_const_charp message);
     static void PngWarning(png_structp pngPtr, png_const_charp message);
     static void PngWarningMessage(png_structp pngPtr, png_const_charp message);
@@ -107,8 +109,8 @@ private:
     uint32_t outputRowsNum_ = 0;
     PngDecodingState state_ = PngDecodingState::UNDECIDED;
     uint32_t streamPosition_ = 0;  // may be changed by other decoders, record it and restore if needed.
-    PlPixelFormat outputFormat_ = PlPixelFormat::UNKNOWN;
-    PlAlphaType alphaType_ = PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    PixelFormat outputFormat_ = PixelFormat::UNKNOWN;
+    AlphaType alphaType_ = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     PixelDecodeOptions opts_;
     bool decodeHeadFlag_ = false;
     uint32_t firstRow_ = 0;

@@ -44,7 +44,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
     uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value) override;
     uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value) override;
 #ifdef IMAGE_COLORSPACE_FLAG

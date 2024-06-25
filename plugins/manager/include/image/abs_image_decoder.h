@@ -59,9 +59,9 @@ struct DecodeContext {
     // but should decode as much as possible based on the existing data.
     bool ifSourceCompleted = true;
     // Out: output the PixelFormat.
-    PlPixelFormat pixelFormat = PlPixelFormat::RGBA_8888;
+    OHOS::Media::PixelFormat pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
     // Out: output the ColorSpace.
-    PlColorSpace colorSpace = PlColorSpace::UNKNOWN;
+    OHOS::Media::ColorSpace colorSpace = OHOS::Media::ColorSpace::UNKNOWN;
     // Out: output if a partial image output.
     bool ifPartialOutput = false;
     // Out: output allocator type.
@@ -71,7 +71,7 @@ struct DecodeContext {
     // Out: png nine patch context;
     NinePatchContext ninePatchContext;
     // Out: output YUV data info
-    PlYuvDataInfo yuvInfo;
+    OHOS::Media::YUVDataInfo yuvInfo;
     // Out: output the final pixelMap Info, only size is used now.
     PlImageInfo outInfo;
     // Out: Whether to perform hard decoding 0 is no 1 is yes
@@ -103,19 +103,19 @@ struct ProgDecodeContext {
 };
 
 struct PixelDecodeOptions {
-    PlRect CropRect;
-    PlSize desiredSize;
+    OHOS::Media::Rect CropRect;
+    OHOS::Media::Size desiredSize;
     float rotateDegrees = 0;
     static constexpr uint32_t DEFAULT_SAMPLE_SIZE = 1;
     uint32_t sampleSize = DEFAULT_SAMPLE_SIZE;
-    PlPixelFormat desiredPixelFormat = PlPixelFormat::RGBA_8888;
-    PlColorSpace desiredColorSpace = PlColorSpace::UNKNOWN;
-    PlAlphaType desireAlphaType = PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    OHOS::Media::PixelFormat desiredPixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    OHOS::Media::ColorSpace desiredColorSpace = OHOS::Media::ColorSpace::UNKNOWN;
+    OHOS::Media::AlphaType desireAlphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     bool allowPartialImage = true;
     bool editable = false;
-    PlFillColor plFillColor;
-    PlFillColor plStrokeColor;
-    PlSVGResize plSVGResize;
+    OHOS::Media::FillColor plFillColor;
+    OHOS::Media::FillColor plStrokeColor;
+    OHOS::Media::SVGResize plSVGResize;
     std::shared_ptr<OHOS::ColorManager::ColorSpace> plDesiredColorSpace = nullptr;
 };
 
@@ -159,7 +159,7 @@ public:
     }
 
     // get image size without decoding image data.
-    virtual uint32_t GetImageSize(uint32_t index, PlSize &size) = 0;
+    virtual uint32_t GetImageSize(uint32_t index, OHOS::Media::Size &size) = 0;
 
     // get image property.
     virtual uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)

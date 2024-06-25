@@ -56,19 +56,19 @@ uint32_t HeifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions 
 
     if (heifDecoderInterface_->ConversionSupported(opts.desiredPixelFormat, bytesPerPixel_)) {
         info.pixelFormat = opts.desiredPixelFormat;
-        if (info.pixelFormat == PlPixelFormat::UNKNOWN) {
-            info.pixelFormat = PlPixelFormat::BGRA_8888;
+        if (info.pixelFormat == PixelFormat::UNKNOWN) {
+            info.pixelFormat = PixelFormat::BGRA_8888;
         }
     } else {
         return ERR_IMAGE_COLOR_CONVERT;
     }
     heifDecoderInterface_->SetAllowPartial(opts.allowPartialImage);
-    bool hasAlpha = (info.pixelFormat == PlPixelFormat::RGB_565 || info.pixelFormat == PlPixelFormat::RGB_888 ||
-                     info.pixelFormat == PlPixelFormat::ALPHA_8);
+    bool hasAlpha = (info.pixelFormat == PixelFormat::RGB_565 || info.pixelFormat == PixelFormat::RGB_888 ||
+                     info.pixelFormat == PixelFormat::ALPHA_8);
     if (hasAlpha) {
-        info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+        info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     } else {
-        info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+        info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     }
     return SUCCESS;
 }
@@ -92,7 +92,7 @@ uint32_t HeifDecoder::Decode(uint32_t index, DecodeContext &context)
     return heifDecoderInterface_->OnGetPixels(heifSize_, heifSize_.width * bytesPerPixel_, context);
 }
 
-uint32_t HeifDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t HeifDecoder::GetImageSize(uint32_t index, Size &size)
 {
     if (index >= HEIF_IMAGE_NUM) {
         IMAGE_LOGE("decode image out of range, index:%{public}u, range:%{public}d.", index, HEIF_IMAGE_NUM);
@@ -193,7 +193,7 @@ bool HeifDecoder::AllocShareMem(DecodeContext &context, uint64_t byteCount)
     return true;
 }
 
-bool HeifDecoder::IsHeifImageParaValid(PlSize heifSize, uint32_t bytesPerPixel)
+bool HeifDecoder::IsHeifImageParaValid(Size heifSize, uint32_t bytesPerPixel)
 {
     if (heifSize.width == 0 || heifSize.height == 0 || bytesPerPixel == 0) {
         IMAGE_LOGE("heif image para is 0");

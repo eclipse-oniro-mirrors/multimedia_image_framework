@@ -148,7 +148,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest005, TestSize.Level3)
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     jpegDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest005 end";
@@ -165,7 +165,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest006, TestSize.Level3)
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     jpegDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest006 end";
@@ -183,7 +183,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest007, TestSize.Level3)
     int size = STREAM_SIZE;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     jpegDecoder->SetSource(*streamPtr.release());
     uint32_t result = jpegDecoder->GetImageSize(2, plSize);
     ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
@@ -202,7 +202,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest008, TestSize.Level3)
     int size = STREAM_SIZE;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     jpegDecoder->SetSource(*streamPtr.release());
     // check input parameter, index = JPEG_IMAGE_NUM
     uint32_t result = jpegDecoder->GetImageSize(JPEG_IMAGE_NUM, plSize);
@@ -222,7 +222,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest009, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     jpegDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     jpegDecoder->state_ = JpegDecodingState::UNDECIDED;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
@@ -242,7 +242,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0010, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(false);
     jpegDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0010 end";
@@ -1126,20 +1126,20 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0053, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0053 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    PlPixelFormat outputFormat;
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::UNKNOWN, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGBA_8888, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::BGRA_8888, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::BGRA_8888);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::ARGB_8888, outputFormat);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::ALPHA_8, outputFormat);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGB_565, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGB_888);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::RGB_888, outputFormat);
-    jpegDecoder->GetDecodeFormat(PlPixelFormat::ASTC_8X8, outputFormat);
-    ASSERT_EQ(outputFormat, PlPixelFormat::RGBA_8888);
+    PixelFormat outputFormat;
+    jpegDecoder->GetDecodeFormat(PixelFormat::UNKNOWN, outputFormat);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
+    jpegDecoder->GetDecodeFormat(PixelFormat::RGBA_8888, outputFormat);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
+    jpegDecoder->GetDecodeFormat(PixelFormat::BGRA_8888, outputFormat);
+    ASSERT_EQ(outputFormat, PixelFormat::BGRA_8888);
+    jpegDecoder->GetDecodeFormat(PixelFormat::ARGB_8888, outputFormat);
+    jpegDecoder->GetDecodeFormat(PixelFormat::ALPHA_8, outputFormat);
+    jpegDecoder->GetDecodeFormat(PixelFormat::RGB_565, outputFormat);
+    ASSERT_EQ(outputFormat, PixelFormat::RGB_888);
+    jpegDecoder->GetDecodeFormat(PixelFormat::RGB_888, outputFormat);
+    jpegDecoder->GetDecodeFormat(PixelFormat::ASTC_8x8, outputFormat);
+    ASSERT_EQ(outputFormat, PixelFormat::RGBA_8888);
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0053 end";
 }
 
@@ -1153,7 +1153,7 @@ HWTEST_F(JpegDecoderTest, JpegDecoderTest0054, TestSize.Level3)
     GTEST_LOG_(INFO) << "JpegDecoderTest: JpegDecoderTest0054 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     jpegDecoder->state_ = JpegDecodingState::IMAGE_DECODED;
     uint32_t ret = jpegDecoder->GetImageSize(index, size);
     ASSERT_EQ(ret, Media::SUCCESS);

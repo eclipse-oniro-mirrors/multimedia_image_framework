@@ -711,7 +711,7 @@ HWTEST_F(JpegDecoderTest, GetImageSizeTest001, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     jpegDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     // goto DecodeHeader return ERR_IMAGE_SOURCE_DATA_INCOMPLETE
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -730,7 +730,7 @@ HWTEST_F(JpegDecoderTest, GetImageSizeTest002, TestSize.Level3)
     int size = STREAM_SIZE;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t result = jpegDecoder->GetImageSize(0, plSize);
     // goto DecodeHeader return ERR_IMAGE_DECODE_ABNORMAL
     ASSERT_EQ(result, ERR_MEDIA_INVALID_OPERATION);
@@ -749,7 +749,7 @@ HWTEST_F(JpegDecoderTest, GetImageSizeTest004, TestSize.Level3)
     int size = STREAM_SIZE;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     jpegDecoder->SetSource(*streamPtr.release());
     // check input parameter, index = JPEG_IMAGE_NUM
     uint32_t result = jpegDecoder->GetImageSize(JPEG_IMAGE_NUM, plSize);
@@ -1286,7 +1286,7 @@ HWTEST_F(JpegDecoderTest, GetImageSizeTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "JpegDecoderTest: GetImageSizeTest003 start";
     auto jpegDecoder = std::make_shared<JpegDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     ErrCodeOffset(2, 0);
     jpegDecoder->GetImageSize(1, plSize);
     jpegDecoder->GetImageSize(0, plSize);

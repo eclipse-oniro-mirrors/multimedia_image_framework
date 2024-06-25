@@ -76,7 +76,7 @@ void PngDecoder::SetSource(InputDataStream &sourceStream)
     state_ = PngDecodingState::SOURCE_INITED;
 }
 
-uint32_t PngDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t PngDecoder::GetImageSize(uint32_t index, Size &size)
 {
     // PNG format only supports one picture decoding, index in order to Compatible animation scene.
     if (index >= PNG_IMAGE_NUM) {
@@ -485,23 +485,23 @@ bool PngDecoder::ConvertOriginalFormat(png_byte source, png_byte &destination)
     return true;
 }
 
-uint32_t PngDecoder::GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat, PlAlphaType &alphaType)
+uint32_t PngDecoder::GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat, AlphaType &alphaType)
 {
     png_byte sourceType = png_get_color_type(pngStructPtr_, pngInfoPtr_);
     if ((sourceType & PNG_COLOR_MASK_ALPHA) || png_get_valid(pngStructPtr_, pngInfoPtr_, PNG_INFO_tRNS)) {
-        alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+        alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
     } else {
-        alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+        alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     }
     png_byte destType = 0;
     if (!ConvertOriginalFormat(sourceType, destType)) {
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    if (format != PlPixelFormat::RGB_888 && destType == PNG_COLOR_TYPE_RGB) {
+    if (format != PixelFormat::RGB_888 && destType == PNG_COLOR_TYPE_RGB) {
         png_set_add_alpha(pngStructPtr_, 0xff, PNG_FILLER_AFTER);  // 0xffff add the A after RGB.
     }
     // only support 8 bit depth for each pixel except for RGBA_F16
-    if (format != PlPixelFormat::RGBA_F16 && pngImageInfo_.bitDepth == 16) {  // 16bit depth
+    if (format != PixelFormat::RGBA_F16 && pngImageInfo_.bitDepth == 16) {  // 16bit depth
         pngImageInfo_.bitDepth = 8;  // 8bit depth
         png_set_strip_16(pngStructPtr_);
     }
@@ -509,38 +509,38 @@ uint32_t PngDecoder::GetDecodeFormat(PlPixelFormat format, PlPixelFormat &output
     return SUCCESS;
 }
 
-void PngDecoder::ChooseFormat(PlPixelFormat format, PlPixelFormat &outputFormat,
+void PngDecoder::ChooseFormat(PixelFormat format, PixelFormat &outputFormat,
                               png_byte destType)
 {
     outputFormat = format;
     switch (format) {
-        case PlPixelFormat::BGRA_8888: {
+        case PixelFormat::BGRA_8888: {
             pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is BGRA size
             png_set_bgr(pngStructPtr_);
             break;
         }
-        case PlPixelFormat::ARGB_8888: {
+        case PixelFormat::ARGB_8888: {
             png_set_swap_alpha(pngStructPtr_);
             pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is ARGB size
             break;
         }
-        case PlPixelFormat::RGB_888: {
+        case PixelFormat::RGB_888: {
             if (destType == PNG_COLOR_TYPE_RGBA) {
                 png_set_strip_alpha(pngStructPtr_);
             }
             pngImageInfo_.rowDataSize = pngImageInfo_.width * 3;  // 3 is RGB size
             break;
         }
-        case PlPixelFormat::RGBA_F16: {
+        case PixelFormat::RGBA_F16: {
             png_set_scale_16(pngStructPtr_);
             pngImageInfo_.rowDataSize = pngImageInfo_.width * 7;  // 7 is RRGGBBA size
             break;
         }
-        case PlPixelFormat::UNKNOWN:
-        case PlPixelFormat::RGBA_8888:
+        case PixelFormat::UNKNOWN:
+        case PixelFormat::RGBA_8888:
         default: {
             pngImageInfo_.rowDataSize = pngImageInfo_.width * 4;  // 4 is RGBA size
-            outputFormat = PlPixelFormat::RGBA_8888;
+            outputFormat = PixelFormat::RGBA_8888;
             break;
         }
     }
@@ -1023,8 +1023,8 @@ uint32_t PngDecoder::ConfigInfo(const PixelDecodeOptions &opts)
     bool isComeNinePatchRGB565 = false;
     if (ninePatch_.patch_ != nullptr) {
         // Do not allow ninepatch decodes to 565,use RGBA_8888;
-        if (opts.desiredPixelFormat == PlPixelFormat::RGB_565) {
-            ret = GetDecodeFormat(PlPixelFormat::RGBA_8888, outputFormat_, alphaType_);
+        if (opts.desiredPixelFormat == PixelFormat::RGB_565) {
+            ret = GetDecodeFormat(PixelFormat::RGBA_8888, outputFormat_, alphaType_);
             isComeNinePatchRGB565 = true;
         }
     }

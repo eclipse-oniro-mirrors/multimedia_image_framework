@@ -34,15 +34,15 @@ public:
     virtual uint32_t Decode(uint32_t index, DecodeContext &context) override;
     virtual uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     virtual uint32_t GetTopLevelImageNum(uint32_t &num) override;
-    virtual uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    virtual uint32_t GetImageSize(uint32_t index, Size &size) override;
 
 private:
     DISALLOW_COPY_AND_MOVE(HeifDecoder);
     bool AllocHeapBuffer(DecodeContext &context);
     bool AllocShareMem(DecodeContext &context, uint64_t byteCount);
-    bool IsHeifImageParaValid(PlSize heifSize, uint32_t bytesPerPixel);
+    bool IsHeifImageParaValid(Size heifSize, uint32_t bytesPerPixel);
     std::unique_ptr<HeifDecoderInterface> heifDecoderInterface_ = nullptr;
-    PlSize heifSize_;
+    Size heifSize_;
     int32_t bytesPerPixel_ = 0;
 };
 } // namespace ImagePlugin

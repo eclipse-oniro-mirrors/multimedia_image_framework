@@ -107,7 +107,7 @@ uint32_t GifDecoder::GetTopLevelImageNum(uint32_t &num)
 }
 
 // return background size but not specific frame size, cause of frame drawing on background.
-uint32_t GifDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t GifDecoder::GetImageSize(uint32_t index, Size &size)
 {
     uint32_t errorCode = CheckIndex(index);
     if (errorCode != SUCCESS) {
@@ -132,9 +132,9 @@ uint32_t GifDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         IMAGE_LOGE("[SetDecodeOptions]get image size failed %{public}u", errorCode);
         return errorCode;
     }
-    info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     // only support RGBA pixel format for performance.
-    info.pixelFormat = PlPixelFormat::RGBA_8888;
+    info.pixelFormat = PixelFormat::RGBA_8888;
     return SUCCESS;
 }
 
@@ -144,7 +144,7 @@ uint32_t GifDecoder::Decode(uint32_t index, DecodeContext &context)
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = Media::AllocatorType::HEAP_ALLOC;
 #endif
-    PlSize imageSize;
+    Size imageSize;
     uint32_t errorCode = GetImageSize(index, imageSize);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("[Decode]index %{public}u is invalid %{public}u", index, errorCode);

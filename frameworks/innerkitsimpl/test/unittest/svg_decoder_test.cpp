@@ -41,7 +41,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     auto data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->SetSource(*streamPtr.release());
     svgDecoder->GetImageSize(2, plSize);
     bool result = (svgDecoder != nullptr);
@@ -58,7 +58,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "SvgDecoderTest: GetImageSizeTest002 start";
     auto svgDecoder = std::make_shared<SvgDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->GetImageSize(0, plSize);
     int size = 1000;
     auto data = std::make_unique<uint8_t[]>(size);
@@ -80,7 +80,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto svgDecoder = std::make_shared<SvgDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     svgDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->GetImageSize(0, plSize);
     bool result = (svgDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -99,7 +99,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     svgDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->GetImageSize(0, plSize);
     bool result = (svgDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -119,7 +119,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     svgDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->GetImageSize(0, plSize);
     bool result = (svgDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -139,7 +139,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     svgDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     svgDecoder->GetImageSize(0, plSize);
     bool result = (svgDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -202,7 +202,7 @@ HWTEST_F(SvgDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     svgDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     svgDecoder->SetDecodeOptions(0, opts, info);
     bool result = (svgDecoder != nullptr);
@@ -362,7 +362,7 @@ HWTEST_F(SvgDecoderTest, GetImageSizeTest007, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     svgDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     uint32_t index = 0;
     svgDecoder->state_ = SvgDecoder::SvgDecodingState::IMAGE_ERROR;
     uint32_t ret = svgDecoder->GetImageSize(index, plSize);
@@ -460,7 +460,7 @@ HWTEST_F(SvgDecoderTest, DoGetImageSize001, TestSize.Level3)
     svgDecoder->SetSource(*mock.get());
     svgDecoder->svgDom_ = nullptr;
     uint32_t index = 1;
-    PlSize size;
+    Size size;
     uint32_t ret = svgDecoder->DoGetImageSize(index, size);
     ASSERT_EQ(ret, Media::ERROR);
     GTEST_LOG_(INFO) << "SvgDecoderTest: DoGetImageSize001 end";

@@ -53,7 +53,7 @@ void ExtDecoderFuncTest001(int fd)
     PixelDecodeOptions plOpts;
     PlImageInfo plInfo;
     extDecoder->SetDecodeOptions(0, plOpts, plInfo);
-    PlPixelFormat dstFormat = PlPixelFormat::UNKNOWN;
+    PixelFormat dstFormat = PixelFormat::UNKNOWN;
     extDecoder->PreDecodeCheckYuv(0, dstFormat);
     extDecoder->DoHardWareDecode(context);
     extDecoder->GetJpegYuvOutFmt(dstFormat);
@@ -65,10 +65,10 @@ void ExtDecoderFuncTest001(int fd)
     extDecoder->ReleaseOutputBuffer(context, allocatorType);
     extDecoder->HardWareDecode(context);
     SkAlphaType alphaType;
-    PlAlphaType outputType;
+    AlphaType outputType;
     extDecoder->ConvertInfoToAlphaType(alphaType, outputType);
     SkColorType format;
-    PlPixelFormat outputFormat;
+    PixelFormat outputFormat;
     extDecoder->ConvertInfoToColorType(format, outputFormat);
     std::string key = "ImageWidth";
     std::string value = "500";
@@ -102,7 +102,7 @@ void SvgDecoderFuncTest001(int fd)
     context.allocatorType = AllocatorType::HEAP_ALLOC;
     svgDecoder->AllocBuffer(context);
     svgDecoder->DoSetDecodeOptions(0, plOpts, plInfo);
-    PlSize plSize;
+    Size plSize;
     svgDecoder->DoGetImageSize(0, plSize);
     svgDecoder->DoDecode(0, context);
 

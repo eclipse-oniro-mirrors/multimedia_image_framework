@@ -23,11 +23,13 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 struct PlEncodeOptions {
     std::string format;
     uint8_t quality = 100;
     uint32_t numberHint = 1;
-    PlEncodeDynamicRange desiredDynamicRange = PlEncodeDynamicRange::AUTO;
+    EncodeDynamicRange desiredDynamicRange = EncodeDynamicRange::AUTO;
     uint16_t loop = 0;
     std::vector<uint16_t> delayTimes;
     std::vector<uint8_t> disposalTypes;

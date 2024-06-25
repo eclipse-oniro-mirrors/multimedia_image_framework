@@ -24,6 +24,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 enum class WebpDecodingState : int32_t {
     UNDECIDED = 0,
     SOURCE_INITED = 1,
@@ -44,7 +46,7 @@ public:
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {
@@ -55,7 +57,7 @@ public:
 private:
     // private function
     DISALLOW_COPY_AND_MOVE(WebpDecoder);
-    WEBP_CSP_MODE GetWebpDecodeMode(const PlPixelFormat &pixelFormat, bool premul);
+    WEBP_CSP_MODE GetWebpDecodeMode(const PixelFormat &pixelFormat, bool premul);
     uint32_t ReadIncrementalHead();
     uint32_t DecodeHeader();
     bool AllocOutputBuffer(DecodeContext &context, bool isIncremental);
@@ -68,14 +70,14 @@ private:
     // private members
     InputDataStream *stream_ = nullptr;
     DataStreamBuffer dataBuffer_;
-    PlSize webpSize_;
+    Size webpSize_;
     size_t incrementSize_ = 0;   // current incremental data size
     size_t lastDecodeSize_ = 0;  // last decoded data size
     int32_t bytesPerPixel_ = 4;  // default four bytes for each pixel
     WEBP_CSP_MODE webpMode_ = MODE_RGBA;
     WebpDecodingState state_ = WebpDecodingState::UNDECIDED;
     PixelDecodeOptions opts_;
-    PlPixelFormat outputFormat_ = PlPixelFormat::UNKNOWN;
+    PixelFormat outputFormat_ = PixelFormat::UNKNOWN;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

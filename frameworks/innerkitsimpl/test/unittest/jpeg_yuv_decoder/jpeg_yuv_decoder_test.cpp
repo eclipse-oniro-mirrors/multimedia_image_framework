@@ -123,10 +123,10 @@ void JpgYuvDecoderTest::DecodeToYUV(std::string srcjpg, int width, int height, J
 
 HWTEST_F(JpgYuvDecoderTest, JpgYuvDecoderTest001, TestSize.Level3)
 {
-    uint32_t jpegwidth = 480;
-    uint32_t jpegheight = 360;
-    uint32_t width = jpegwidth;
-    uint32_t height = jpegheight;
+    int32_t jpegwidth = 480;
+    int32_t jpegheight = 360;
+    int32_t width = jpegwidth;
+    int32_t height = jpegheight;
     bool ret = JpegDecoderYuv::GetScaledSize(jpegwidth, jpegheight, width, height);
     ASSERT_EQ(ret, true);
 
@@ -275,14 +275,14 @@ HWTEST_F(JpgYuvDecoderTest, JpgYuvDecoderTest013, TestSize.Level3)
 
 HWTEST_F(JpgYuvDecoderTest, JpgYuvDecoderTest014, TestSize.Level3)
 {
-    uint32_t jpegwidth = 480;
-    uint32_t jpegheight = 360;
+    int32_t jpegwidth = 480;
+    int32_t jpegheight = 360;
     float maxScale = 2.5;
     float minScale = 0.05;
     float step = 0.01;
     for (float scaleFactor = maxScale; scaleFactor > minScale; scaleFactor -= step) {
-        uint32_t width = jpegwidth * scaleFactor;
-        uint32_t height = jpegheight * scaleFactor;
+        int32_t width = jpegwidth * scaleFactor;
+        int32_t height = jpegheight * scaleFactor;
         bool ret = JpegDecoderYuv::GetScaledSize(jpegwidth, jpegheight, width, height);
         ASSERT_EQ(ret, true);
         DecodeToYUV("test-tree-444.jpg", width, height, JpegYuvFmt::OutFmt_NV21);
