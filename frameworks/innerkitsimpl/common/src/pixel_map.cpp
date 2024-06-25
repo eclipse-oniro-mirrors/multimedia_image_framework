@@ -2897,6 +2897,10 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
+    if (memset_s(memoryInfo.memory->data.data, memoryInfo.memory->data.size,
+        0, memoryInfo.memory->data.size) != 0) {
+        return false;
+    }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint64_t rowStride = dstInfo.info.minRowBytes();
     if (memoryInfo.allocType == AllocatorType::DMA_ALLOC) {
