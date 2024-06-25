@@ -97,6 +97,24 @@ public:
         pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return pixelMap;
     }
+
+    std::unique_ptr<PixelMap> ConstructPixelMap(uint32_t** dataIn)
+    {
+        const uint32_t dataLength = PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_TEST_HEIGHT;
+        uint32_t* data = new uint32_t[dataLength];
+        for (uint32_t i = 0; i < dataLength; i++) {
+            data[i] = 0xFFFF0000;
+        }
+        InitializationOptions opts;
+        opts.pixelFormat = OHOS::Media::PixelFormat::ARGB_8888;
+        opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+        opts.size.width = PIXEL_MAP_TEST_WIDTH;
+        opts.size.height = PIXEL_MAP_TEST_HEIGHT;
+        std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+        *dataIn = data;
+        return pixelMap;
+    }
+
 /**
  * @tc.name: ImagePixelMap001
  * @tc.desc: ALPHA_8 pixel format pixel map operation
@@ -654,22 +672,21 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap016, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap017, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap017 scale start";
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = PIXEL_MAP_TEST_WIDTH;
-    info.size.height = PIXEL_MAP_TEST_HEIGHT;
-    info.pixelFormat = PixelFormat::ALPHA_8;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
     float xAxis = 2.0;
     float yAxis = 1.0;
-    pixelMap.scale(xAxis, yAxis);
+    pixelMap->scale(xAxis, yAxis);
     ImageInfo outInfo;
-    pixelMap.GetImageInfo(outInfo);
+    pixelMap->GetImageInfo(outInfo);
     int32_t width = PIXEL_MAP_TEST_WIDTH * 2;
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
+    if (data == nullptr) {
+        delete[] data;
+    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap017 scale end";
 }
 
@@ -682,18 +699,17 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap017, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap018, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap018 translate start";
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = PIXEL_MAP_TEST_WIDTH;
-    info.size.height = PIXEL_MAP_TEST_HEIGHT;
-    info.pixelFormat = PixelFormat::ALPHA_8;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
     float xAxis = 2.0;
     float yAxis = 1.0;
-    pixelMap.translate(xAxis, yAxis);
+    pixelMap->translate(xAxis, yAxis);
     ImageInfo outInfo;
-    pixelMap.GetImageInfo(outInfo);
+    pixelMap->GetImageInfo(outInfo);
+    if (data == nullptr) {
+        delete[] data;
+    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap018 translate end";
 }
 
@@ -706,21 +722,20 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap018, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap019, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap019 rotate start";
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = PIXEL_MAP_TEST_WIDTH;
-    info.size.height = PIXEL_MAP_TEST_HEIGHT;
-    info.pixelFormat = PixelFormat::ALPHA_8;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
     float degrees = 90.0;
-    pixelMap.rotate(degrees);
+    pixelMap->rotate(degrees);
     ImageInfo outInfo;
-    pixelMap.GetImageInfo(outInfo);
+    pixelMap->GetImageInfo(outInfo);
     int32_t width = PIXEL_MAP_TEST_HEIGHT;
     int32_t height = PIXEL_MAP_TEST_WIDTH;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
+    if (data == nullptr) {
+        delete[] data;
+    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap019 rotate end";
 }
 
@@ -733,20 +748,19 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap019, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap020, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap020 flip start";
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = PIXEL_MAP_TEST_WIDTH;
-    info.size.height = PIXEL_MAP_TEST_HEIGHT;
-    info.pixelFormat = PixelFormat::ALPHA_8;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
-    pixelMap.flip(false, true);
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    pixelMap->flip(false, true);
     ImageInfo outInfo;
-    pixelMap.GetImageInfo(outInfo);
+    pixelMap->GetImageInfo(outInfo);
     int32_t width = PIXEL_MAP_TEST_WIDTH;
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
+    if (data == nullptr) {
+        delete[] data;
+    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap020 flip end";
 }
 
@@ -759,25 +773,24 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap020, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMap021, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap021 crop start";
-    PixelMap pixelMap;
-    ImageInfo info;
-    info.size.width = PIXEL_MAP_TEST_WIDTH;
-    info.size.height = PIXEL_MAP_TEST_HEIGHT;
-    info.pixelFormat = PixelFormat::ALPHA_8;
-    info.colorSpace = ColorSpace::SRGB;
-    pixelMap.SetImageInfo(info);
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
     Rect rect;
     rect.left = 0;
     rect.top = 0;
     rect.height = 1;
     rect.width = 1;
-    pixelMap.crop(rect);
+    pixelMap->crop(rect);
     ImageInfo outInfo;
-    pixelMap.GetImageInfo(outInfo);
-    int32_t width = 3;
-    int32_t height = 3;
+    pixelMap->GetImageInfo(outInfo);
+    int32_t width = 1;
+    int32_t height = 1;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
+    if (data == nullptr) {
+        delete[] data;
+    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap021 crop end";
 }
 
