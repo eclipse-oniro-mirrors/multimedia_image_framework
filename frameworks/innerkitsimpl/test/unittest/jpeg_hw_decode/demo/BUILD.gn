@@ -40,10 +40,7 @@ ohos_executable("jpeg_hw_decoder_demo") {
     "${image_subsystem}/frameworks/innerkitsimpl/stream/include/",
     "${image_subsystem}/interfaces/innerkits/include/",
   ]
-  deps = [
-    "${image_subsystem}/interfaces/innerkits:image_native",
-    "//third_party/skia:skia_ohos",
-  ]
+  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libimage_proxy_1.0",
@@ -57,5 +54,6 @@ ohos_executable("jpeg_hw_decoder_demo") {
     "hilog:libhilog",
     "ipc:ipc_single",
     "skia:libjpeg",
+    "skia:skia_canvaskit",
   ]
 }
