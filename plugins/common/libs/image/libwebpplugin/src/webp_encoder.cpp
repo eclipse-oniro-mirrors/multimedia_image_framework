@@ -278,6 +278,7 @@ uint32_t WebpEncoder::SetEncodeConfig(Media::PixelMap &pixelMap, WebPConfig &web
 }
 
 uint32_t WebpEncoder::DoEncode(Media::PixelMap &pixelMap, WebPConfig &webpConfig, WebPPicture &webpPicture)
+    __attribute__((no_sanitize("cfi")))
 {
     IMAGE_LOGD("DoEncode IN");
 
