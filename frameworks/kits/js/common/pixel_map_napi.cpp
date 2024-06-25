@@ -3311,6 +3311,10 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
     auto messageParcel = napiSequence->GetMessageParcel();
+    if (messageParcel == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IPC, "marshalling pixel map to parcel failed.");
+    }
     bool st = nVal.context->rPixelMap->Marshalling(*messageParcel);
     if (!st) {
         return ImageNapiUtils::ThrowExceptionError(
