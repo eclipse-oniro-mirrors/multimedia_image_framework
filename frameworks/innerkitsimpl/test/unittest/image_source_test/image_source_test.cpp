@@ -99,7 +99,6 @@ private:
  */
 HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -107,7 +106,6 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
     std::set<std::string> formats;
     uint32_t ret = imageSource->GetSupportedFormats(formats);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats001 end";
 }
 
 /**
@@ -117,14 +115,12 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetSupportedFormats002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::set<std::string> formats;
     imageSource->GetSupportedFormats(formats);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats002 end";
 }
 
 /**
@@ -134,7 +130,6 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats003 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/test.nrw";
@@ -143,7 +138,6 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
     if (imageSource != nullptr) {
         imageSource->GetSupportedFormats(formats);
     }
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSupportedFormats003 end";
 }
 
 /**
@@ -153,14 +147,12 @@ HWTEST_F(ImageSourceTest, GetSupportedFormats003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource003 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const uint8_t *data = nullptr;
     uint32_t size = 1;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
     ASSERT_EQ(imageSource, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource003 end";
 }
 
 /**
@@ -170,7 +162,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource004 start";
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
@@ -183,7 +174,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource004, TestSize.Level3)
     const SourceOptions opts;
     std::unique_ptr<ImageSource> creimagesource = ImageSource::CreateImageSource(buffer, size, opts, errorCode);
     ASSERT_EQ(creimagesource, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource004 end";
 }
 
 /**
@@ -193,13 +183,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource004, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource005, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource005 start";
-
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const std::string pathName = IMAGE_INPUT_JPEG_PATH;
     ImageSource::CreateImageSource(pathName, opts, errorCode);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource005 end";
 }
 
 /**
@@ -209,14 +196,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource005, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource006 start";
-
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const std::string pathName = "a";
     ImageSource::CreateImageSource(pathName, opts, errorCode);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource006 end";
 }
 
 /**
@@ -226,12 +209,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource006, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource007, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource007 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ImageSource::CreateImageSource(fd, opts, errorCode);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource007 end";
 }
 
 /**
@@ -241,14 +222,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource007, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource008 start";
-
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = 0;
     ImageSource::CreateImageSource(fd, opts, errorCode);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource008 end";
 }
 
 /**
@@ -258,12 +235,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource008, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateIncrementalImageSource001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 start";
     uint32_t errorCode = 0;
     const IncrementalSourceOptions opts;
     std::unique_ptr<ImageSource> img = ImageSource::CreateIncrementalImageSource(opts, errorCode);
     ASSERT_NE(img, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalImageSource001 end";
 }
 
 /**
@@ -273,7 +248,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalImageSource001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx001 start";
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
@@ -281,7 +255,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
     const DecodeOptions opts;
     std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, opts, errorCode);
     ASSERT_EQ(crepixelmapex, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx001 end";
 }
 
 /**
@@ -291,7 +264,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -299,7 +271,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
     uint32_t index = 1;
     const DecodeOptions opt;
     imageSource->CreatePixelMapEx(index, opt, errorCode);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx002 end";
 }
 
 /**
@@ -309,7 +280,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMapEx003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx003 start";
     uint32_t res = 0;
     SourceOptions sourceOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
@@ -318,7 +288,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx003, TestSize.Level3)
     const DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> crepixelmapex = imageSource->CreatePixelMapEx(index, decodeOpts, res);
     ASSERT_NE(imageSource, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapEx003 end";
 }
 
 /**
@@ -328,7 +297,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMapEx003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMap001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap001 start";
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
@@ -336,7 +304,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMap001, TestSize.Level3)
     const DecodeOptions opts;
     std::unique_ptr<PixelMap> crepixelmap = imageSource->CreatePixelMap(index, opts, errorCode);
     ASSERT_EQ(crepixelmap, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap001 end";
 }
 
 /**
@@ -346,8 +313,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMap001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMap002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap002 start";
-
     uint32_t errorCode = 0;
     IncrementalSourceOptions incOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateIncrementalImageSource(incOpts, errorCode);
@@ -355,8 +320,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMap002, TestSize.Level3)
     const DecodeOptions opts;
     std::unique_ptr<PixelMap> crepixelmap = imageSource->CreatePixelMap(index, opts, errorCode);
     ASSERT_EQ(crepixelmap, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMap002 end";
 }
 
 /**
@@ -366,8 +329,6 @@ HWTEST_F(ImageSourceTest, CreatePixelMap002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap001 start";
-
     size_t bufferSize = 0;
     bool fileRet = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(fileRet, true);
@@ -385,8 +346,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap001, TestSize.Level3)
     std::unique_ptr<IncrementalPixelMap> incPixelMap = imageSource->CreateIncrementalPixelMap(0, decodeOpts,
         errorCode);
     ASSERT_NE(incPixelMap, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap001 end";
 }
 
 /**
@@ -396,8 +355,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap002 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -410,8 +367,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap002, TestSize.Level3)
     info = -1;
     op.sampleSize = 0;
     imageSource->CreatePixelMap(info, op, errorCode);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateIncrementalPixelMap002 end";
 }
 
 /**
@@ -421,7 +376,6 @@ HWTEST_F(ImageSourceTest, CreateIncrementalPixelMap002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, UpdateData001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: UpdateData001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -447,7 +401,6 @@ HWTEST_F(ImageSourceTest, UpdateData001, TestSize.Level3)
         incPixelMap->PromoteDecoding(decodeProgress);
         updateSize += updateOnceSize;
     }
-    GTEST_LOG_(INFO) << "ImageSourceTest: UpdateData001 end";
 }
 
  /**
@@ -457,8 +410,6 @@ HWTEST_F(ImageSourceTest, UpdateData001, TestSize.Level3)
   */
 HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo001 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -467,7 +418,6 @@ HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
     uint32_t index = 1;
     uint32_t ret = imageSource->GetImageInfo(index, imageInfo);
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo001 end";
 }
 
  /**
@@ -477,8 +427,6 @@ HWTEST_F(ImageSourceTest, GetImageInfo001, TestSize.Level3)
   */
 HWTEST_F(ImageSourceTest, GetImageInfo002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo002 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -487,7 +435,6 @@ HWTEST_F(ImageSourceTest, GetImageInfo002, TestSize.Level3)
     ImageInfo imageInfo;
     uint32_t index = 1;
     imageSource->GetImageInfo(index, imageInfo);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo002 end";
 }
 
  /**
@@ -497,8 +444,6 @@ HWTEST_F(ImageSourceTest, GetImageInfo002, TestSize.Level3)
   */
 HWTEST_F(ImageSourceTest, GetImageInfo003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo003 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::string IMAGE_ENCODEDFORMAT = "image/jpeg";
@@ -509,8 +454,6 @@ HWTEST_F(ImageSourceTest, GetImageInfo003, TestSize.Level3)
     uint32_t index = 1;
     imageSource->GetImageInfo(index, imageInfo);
     ASSERT_NE(imageInfo.encodedFormat, IMAGE_ENCODEDFORMAT);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo003 encodeformat " << imageInfo.encodedFormat;
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfo003 end";
 }
 
 /**
@@ -520,16 +463,12 @@ HWTEST_F(ImageSourceTest, GetImageInfo003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetSourceInfo001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceInfo001 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
 
     SourceInfo sourceInfo = imageSource->GetSourceInfo(errorCode);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceInfo001 end";
 }
 
 /**
@@ -539,15 +478,11 @@ HWTEST_F(ImageSourceTest, GetSourceInfo001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, RegisterListener001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: RegisterListener001 start";
-
     PeerListener *listener = nullptr;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->RegisterListener(listener);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: RegisterListener001 end";
 }
 
 /**
@@ -557,15 +492,11 @@ HWTEST_F(ImageSourceTest, RegisterListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: UnRegisterListener001 start";
-
     PeerListener *listener = nullptr;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->UnRegisterListener(listener);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: UnRegisterListener001 end";
 }
 
 /**
@@ -575,8 +506,6 @@ HWTEST_F(ImageSourceTest, UnRegisterListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent001 start";
-
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
@@ -590,8 +519,6 @@ HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
     imageSource->GetDecodeEvent();
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDecodeEvent001 end";
 }
 
 /**
@@ -601,15 +528,11 @@ HWTEST_F(ImageSourceTest, GetDecodeEvent001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, AddDecodeListener001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListener001 start";
-
     DecodeListener *listener = nullptr;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->AddDecodeListener(listener);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListener001 end";
 }
 
 /**
@@ -619,15 +542,11 @@ HWTEST_F(ImageSourceTest, AddDecodeListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, RemoveDecodeListener001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListener001 start";
-
     DecodeListener *listener = nullptr;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->RemoveDecodeListener(listener);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListener001 end";
 }
 
 /**
@@ -637,15 +556,11 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListener001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, IsIncrementalSource001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsIncrementalSource001 start";
-
     bool isIncrementalSource = false;
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     isIncrementalSource = imageSource->IsIncrementalSource();
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsIncrementalSource001 end";
 }
 
 /**
@@ -655,8 +570,6 @@ HWTEST_F(ImageSourceTest, IsIncrementalSource001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyInt001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt001 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -667,7 +580,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt001, TestSize.Level3)
     imageSource->GetImagePropertyInt(index, key, value);
 
     ASSERT_EQ(value, 3456);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt001 end";
 }
 
 /**
@@ -677,7 +589,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyInt002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -685,7 +596,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt002, TestSize.Level3)
     int32_t value = 0;
     std::string key;
     imageSource->GetImagePropertyInt(index, key, value);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt002 end";
 }
 
 /**
@@ -695,8 +605,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyString001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString001 start";
-    
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -706,7 +614,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString001, TestSize.Level3)
     std::string value;
     imageSource->GetImagePropertyString(index, key, value);
     ASSERT_EQ(value, "3456");
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString001 end";
 }
 
 /**
@@ -716,8 +623,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyString002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString002 start";
-
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -726,8 +631,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString002, TestSize.Level3)
     std::string key = "";
     std::string value;
     imageSource->GetImagePropertyString(index, key, value);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString002 end";
 }
 
 /**
@@ -737,7 +640,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -747,7 +649,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
     std::string key = "GPSLatitude";
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, IMAGE_INPUT_JPEG_PATH);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty001 end";
 }
 
 /**
@@ -757,9 +658,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty002 start";
-
-    
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -770,8 +668,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
     int fd = open("/data/receiver/Receiver_buffer7.jpg", std::fstream::binary | std::fstream::in);
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_NE(ret, SUCCESS);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty002 end";
 }
 
 /**
@@ -781,7 +677,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty003 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -794,8 +689,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
     std::string key;
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, data, size);
     ASSERT_NE(ret, SUCCESS);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty003 end";
 }
 
 /**
@@ -805,8 +698,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 start";
-
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
@@ -817,8 +708,6 @@ HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
 
     const NinePatchInfo &ninePatch = imageSource->GetNinePatchInfo();
     ASSERT_EQ(ninePatch.ninePatch, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetNinePatchInfo001 end";
 }
 
 /**
@@ -828,8 +717,6 @@ HWTEST_F(ImageSourceTest, GetNinePatchInfo001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 start";
-
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
@@ -839,8 +726,6 @@ HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     MemoryUsagePreference preference = MemoryUsagePreference::LOW_RAM;
     imageSource->SetMemoryUsagePreference(preference);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: SetMemoryUsagePreference001 end";
 }
 
 /**
@@ -850,8 +735,6 @@ HWTEST_F(ImageSourceTest, SetMemoryUsagePreference001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetMemoryUsagePreference001 start";
-
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
@@ -860,8 +743,6 @@ HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     imageSource->GetMemoryUsagePreference();
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetMemoryUsagePreference001 end";
 }
 
 /**
@@ -871,8 +752,6 @@ HWTEST_F(ImageSourceTest, GetMemoryUsagePreference001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterArea001 start";
-
     int filterType = 0;
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
@@ -884,8 +763,6 @@ HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
     uint32_t ret = imageSource->GetFilterArea(filterType, ranges);
     ASSERT_NE(ret, SUCCESS);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterArea001 end";
 }
 
 /**
@@ -895,15 +772,11 @@ HWTEST_F(ImageSourceTest, GetFilterArea001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource001 start";
-
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_NE(imageSource, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource001 end";
 }
 
 /**
@@ -913,8 +786,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource002 start";
-
     std::unique_ptr<std::fstream> fs = std::make_unique<std::fstream>();
     fs->open("/data/local/tmp/image/test_exif.jpg", std::fstream::binary | std::fstream::in);
     bool isOpen = fs->is_open();
@@ -925,8 +796,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource002, TestSize.Level3)
     opts.size.height = -1;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(std::move(fs), opts, errorCode);
     ASSERT_NE(imageSource, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource002 end";
 }
 
 /**
@@ -936,7 +805,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource009, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource009 start";
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
@@ -947,7 +815,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource009, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, bufferSize, opts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(imageSource.get(), nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource009 end";
 }
 
 /**
@@ -957,7 +824,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource009, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0010, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0010 start";
     size_t bufferSize = 0;
     bool ret = ImageUtils::GetFileSize(IMAGE_INPUT_JPEG_PATH, bufferSize);
     ASSERT_EQ(ret, true);
@@ -970,7 +836,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0010, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, size, opts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(imageSource.get(), nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0010 end";
 }
 
 /**
@@ -980,7 +845,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0010, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0011 start";
     uint8_t *buffer = nullptr;
 
     uint32_t size = 0;
@@ -989,7 +853,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(buffer, size, opts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
     ASSERT_EQ(imageSource.get(), nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0011 end";
 }
 
 /**
@@ -999,7 +862,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0011, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0012 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -1008,7 +870,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
     auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
     ASSERT_NE(filePtr, nullptr);
     close(fd);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0012 end";
 }
 
 /**
@@ -1018,14 +879,12 @@ HWTEST_F(ImageSourceTest, CreateImageSource0012, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0013 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     auto filePtr = ImageSource::CreateImageSource(fd, 0, 0, opts, errorCode);
     ASSERT_NE(filePtr, nullptr);
     close(fd);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0013 end";
 }
 
 /**
@@ -1035,7 +894,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0013, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0014 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -1045,7 +903,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
     auto filePtr = ImageSource::CreateImageSource(fd, offset, fSize, opts, errorCode);
     ASSERT_EQ(filePtr, nullptr);
     close(fd);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0014 end";
 }
 
 /**
@@ -1055,7 +912,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0014, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0015 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = open("/data/local/tmp/image/test_exif.jpg", O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -1063,7 +919,6 @@ HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
     auto filePtr = ImageSource::CreateImageSource(fd, 0, fSize, opts, errorCode);
     ASSERT_NE(filePtr, nullptr);
     close(fd);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0015 end";
 }
 
 /**
@@ -1073,13 +928,11 @@ HWTEST_F(ImageSourceTest, CreateImageSource0015, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0016 start";
     uint32_t errorCode = 0;
     const SourceOptions opts;
     const int fd = -1;
     auto filePtr = ImageSource::CreateImageSource(fd, 0, 100, opts, errorCode);
     ASSERT_EQ(filePtr, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource0016 end";
 }
 
 /**
@@ -1089,14 +942,10 @@ HWTEST_F(ImageSourceTest, CreateImageSource0016, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSource017, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource017 start";
-
     uint32_t res = 0;
     const SourceOptions sourceOpts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_ICO_PATH, sourceOpts, res);
     ASSERT_NE(imageSource, nullptr);
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSource017 end";
 }
 
 #ifdef IMAGE_PURGEABLE_PIXELMAP
@@ -1107,14 +956,12 @@ HWTEST_F(ImageSourceTest, CreateImageSource017, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
 
     size_t ret = imageSource->GetSourceSize();
     ASSERT_NE(ret, 0);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceSize001 end";
 }
 #endif
 /**
@@ -1124,7 +971,6 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC start";
     ImageInfo imageInfo;
     ASTCInfo astcInfo;
     astcInfo.blockFootprint.width=4;
@@ -1145,7 +991,6 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
     ASSERT_EQ(ret, true);
     delete data;
     data = nullptr;
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImageInfoForASTC end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1154,7 +999,6 @@ HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1171,7 +1015,6 @@ HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
     imageSource->decodeState_ = SourceDecodingState::FILE_INFO_ERROR;
     ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetSourceDecodingState end";
 }
 
 /**
@@ -1181,7 +1024,6 @@ HWTEST_F(ImageSourceTest, GetSourceDecodingState, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1190,7 +1032,6 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
     imageSource->sourceStreamPtr_ = nullptr;
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetData001 end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1199,7 +1040,6 @@ HWTEST_F(ImageSourceTest, GetData001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1207,7 +1047,6 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
     size_t size = 0;
     auto ret = imageSource->GetData(outData, size);
     ASSERT_EQ(ret, ERR_IMAGE_SOURCE_DATA);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetData002 end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1216,14 +1055,12 @@ HWTEST_F(ImageSourceTest, GetData002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     string format = "";
     auto ret = imageSource->GetFormatExtended(format);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtended001 end";
 }
 
 /**
@@ -1233,7 +1070,6 @@ HWTEST_F(ImageSourceTest, GetFormatExtended, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfo001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1241,7 +1077,6 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
     imageSource->decodeState_ = SourceDecodingState::FILE_INFO_DECODED;
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo001 end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1250,7 +1085,6 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfo002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1260,7 +1094,6 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
     sourceInfo.encodedFormat = "image/astc";
     auto ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeImageInfo002 end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1269,13 +1102,11 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfo002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->InitMainDecoder();
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: InitMainDecoder end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1284,7 +1115,6 @@ HWTEST_F(ImageSourceTest, InitMainDecoder, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddIncrementalContext start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1292,7 +1122,6 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
     ImageSource::IncrementalRecordMap::iterator iterator;
     auto ret = imageSource->AddIncrementalContext(pixelMap, iterator);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddIncrementalContext end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1301,7 +1130,6 @@ HWTEST_F(ImageSourceTest, AddIncrementalContext, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageSizeChange start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1311,7 +1139,6 @@ HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
     int32_t desiredHeight = 0;
     bool ret = imageSource->ImageSizeChange(width, height, desiredHeight, desiredWidth);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageSizeChange end";
 }
 /**
  * @tc.name: CreateImageSource0015
@@ -1320,7 +1147,6 @@ HWTEST_F(ImageSourceTest, ImageSizeChange, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsASTC start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1328,7 +1154,6 @@ HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
     size_t fileSize = 10;
     bool ret = imageSource->IsASTC(fileData, fileSize);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsASTC end";
 }
 
 /**
@@ -1338,13 +1163,11 @@ HWTEST_F(ImageSourceTest, IsASTC, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSourceTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     const std::string pathName;
     std::unique_ptr<ImageSource> ret = ImageSource::CreateImageSource(pathName, opts, errorCode);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest001 end";
 }
 
 /**
@@ -1354,13 +1177,11 @@ HWTEST_F(ImageSourceTest, CreateImageSourceTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreateImageSourceTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest002 start";
     const int fd = -1;
     const SourceOptions opts;
     uint32_t errorCode = 0;
     std::unique_ptr<ImageSource> ret = ImageSource::CreateImageSource(fd, opts, errorCode);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreateImageSourceTest002 end";
 }
 
 /**
@@ -1370,7 +1191,6 @@ HWTEST_F(ImageSourceTest, CreateImageSourceTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetValidImageStatusTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetValidImageStatusTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1381,7 +1201,6 @@ HWTEST_F(ImageSourceTest, GetValidImageStatusTest001, TestSize.Level3)
     imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
     ImageSource::ImageStatusMap::iterator ret = imageSource->GetValidImageStatus(index, errorCode);
     ASSERT_EQ(ret, imageSource->imageStatusMap_.end());
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetValidImageStatusTest001 end";
 }
 
 /**
@@ -1391,7 +1210,6 @@ HWTEST_F(ImageSourceTest, GetValidImageStatusTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFilterAreaTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterAreaTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1403,7 +1221,6 @@ HWTEST_F(ImageSourceTest, GetFilterAreaTest002, TestSize.Level3)
     imageSource->imageStatusMap_.insert(std::make_pair(1, imageDecodingStatus2));
     uint32_t ret = imageSource->GetFilterArea(privacyType, ranges);
     ASSERT_EQ(ret, ERR_IMAGE_DECODE_FAILED);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFilterAreaTest002 end";
 }
 
 /**
@@ -1413,7 +1230,6 @@ HWTEST_F(ImageSourceTest, GetFilterAreaTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFinalOutputStepTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1427,7 +1243,6 @@ HWTEST_F(ImageSourceTest, GetFinalOutputStepTest001, TestSize.Level3)
     opt.rotateDegrees = 0;
     ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
     ASSERT_EQ(ret, FinalOutputStep::CONVERT_CHANGE);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest001 end";
 }
 
 /**
@@ -1437,7 +1252,6 @@ HWTEST_F(ImageSourceTest, GetFinalOutputStepTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFinalOutputStepTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1461,7 +1275,6 @@ HWTEST_F(ImageSourceTest, GetFinalOutputStepTest002, TestSize.Level3)
     opt.fitDensity = 2;
     ret = imageSource->GetFinalOutputStep(opt, pixelMap, hasNinePatch);
     ASSERT_EQ(ret, FinalOutputStep::DENSITY_CHANGE);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFinalOutputStepTest002 end";
 }
 
 /**
@@ -1471,7 +1284,6 @@ HWTEST_F(ImageSourceTest, GetFinalOutputStepTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ImageConverChangeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1481,7 +1293,6 @@ HWTEST_F(ImageSourceTest, ImageConverChangeTest001, TestSize.Level3)
     desImageInfo.pixelFormat = PixelFormat::ARGB_8888;
     bool ret = imageSource->ImageConverChange(cropRect, desImageInfo, srcImageInfo);
     ASSERT_EQ(ret, true);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest001 end";
 }
 
 /**
@@ -1491,7 +1302,6 @@ HWTEST_F(ImageSourceTest, ImageConverChangeTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ImageConverChangeTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1503,7 +1313,6 @@ HWTEST_F(ImageSourceTest, ImageConverChangeTest002, TestSize.Level3)
     cropRect.top = 3;
     ret = imageSource->ImageConverChange(cropRect, desImageInfo, srcImageInfo);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ImageConverChangeTest002 end";
 }
 
 /**
@@ -1513,7 +1322,6 @@ HWTEST_F(ImageSourceTest, ImageConverChangeTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, DecodeBase64Test001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBase64Test001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1529,7 +1337,6 @@ HWTEST_F(ImageSourceTest, DecodeBase64Test001, TestSize.Level3)
     data = reinterpret_cast<const uint8_t *>(value);
     ret = imageSource->DecodeBase64(data, size);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeBase64Test001 end";
 }
 
 /**
@@ -1539,7 +1346,6 @@ HWTEST_F(ImageSourceTest, DecodeBase64Test001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ConvertYUV420ToRGBATest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertYUV420ToRGBATest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1560,7 +1366,6 @@ HWTEST_F(ImageSourceTest, ConvertYUV420ToRGBATest001, TestSize.Level3)
     ret = imageSource->ConvertYUV420ToRGBA(data, size, isSupportOdd, isAddUV, error);
     ASSERT_EQ(ret, true);
     delete data;
-    GTEST_LOG_(INFO) << "ImageSourceTest: ConvertYUV420ToRGBATest001 end";
 }
 
 /**
@@ -1570,13 +1375,11 @@ HWTEST_F(ImageSourceTest, ConvertYUV420ToRGBATest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CreatePixelMapForYUVTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     std::unique_ptr<PixelMap> ret = imageSource->CreatePixelMapForYUV(errorCode);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: CreatePixelMapForYUVTest001 end";
 }
 
 /**
@@ -1586,13 +1389,11 @@ HWTEST_F(ImageSourceTest, CreatePixelMapForYUVTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, IsSupportGenAstcTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportGenAstcTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     bool ret = imageSource->IsSupportGenAstc();
     ASSERT_EQ(ret, true);
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsSupportGenAstcTest001 end";
 }
 
 /**
@@ -1602,13 +1403,11 @@ HWTEST_F(ImageSourceTest, IsSupportGenAstcTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetDelayTimeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDelayTimeTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->GetDelayTime(errorCode);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDelayTimeTest001 end";
 }
 
 /**
@@ -1618,13 +1417,11 @@ HWTEST_F(ImageSourceTest, GetDelayTimeTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetDisposalTypeTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDisposalTypeTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     auto ret = imageSource->GetDisposalType(errorCode);
     ASSERT_EQ(ret, nullptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetDisposalTypeTest001 end";
 }
 
 /**
@@ -1634,7 +1431,6 @@ HWTEST_F(ImageSourceTest, GetDisposalTypeTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, DecodeSourceInfoTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfoTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1643,7 +1439,6 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfoTest001, TestSize.Level3)
     imageSource->sourceInfo_.encodedFormat = "image/astc";
     uint32_t ret = imageSource->DecodeSourceInfo(isAcquiredImageNum);
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: DecodeSourceInfoTest001 end";
 }
 
 /**
@@ -1653,14 +1448,12 @@ HWTEST_F(ImageSourceTest, DecodeSourceInfoTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, OnSourceUnresolvedTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceUnresolvedTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->isAstc_ = true;
     uint32_t ret = imageSource->OnSourceUnresolved();
     ASSERT_EQ(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceUnresolvedTest001 end";
 }
 
 /**
@@ -1670,7 +1463,6 @@ HWTEST_F(ImageSourceTest, OnSourceUnresolvedTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetFormatExtendedTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtendedTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1683,7 +1475,6 @@ HWTEST_F(ImageSourceTest, GetFormatExtendedTest001, TestSize.Level3)
     imageSource->sourceStreamPtr_ = nullptr;
     ret = imageSource->GetFormatExtended(format);
     ASSERT_EQ(ret, ERR_MEDIA_NULL_POINTER);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetFormatExtendedTest001 end";
 }
 
 /**
@@ -1693,7 +1484,6 @@ HWTEST_F(ImageSourceTest, GetFormatExtendedTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1712,7 +1502,6 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     delete mockAbsImageFormatAgent1;
     delete mockAbsImageFormatAgent2;
-    GTEST_LOG_(INFO) << "ImageSourceTest: CheckFormatHintTest001 end";
 }
 
 /**
@@ -1722,14 +1511,12 @@ HWTEST_F(ImageSourceTest, CheckFormatHintTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, IsStreamCompletedTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsStreamCompletedTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
     imageSource->sourceStreamPtr_ = std::make_unique<ImagePlugin::MockInputDataStream>();
     bool ret = imageSource->IsStreamCompleted();
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: IsStreamCompletedTest001 end";
 }
 
 /**
@@ -1739,7 +1526,6 @@ HWTEST_F(ImageSourceTest, IsStreamCompletedTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1749,7 +1535,6 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
     imageSource->decodeListeners_.insert(mockDecodeListener.get());
     imageSource->RemoveDecodeListener(mockDecodeListener.get());
     ASSERT_EQ(imageSource->decodeListeners_.empty(), true);
-    GTEST_LOG_(INFO) << "ImageSourceTest: RemoveDecodeListenerTest002 end";
 }
 
 /**
@@ -1759,7 +1544,6 @@ HWTEST_F(ImageSourceTest, RemoveDecodeListenerTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -1768,7 +1552,6 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
     std::shared_ptr<MockDecodeListener> mockDecodeListener = std::make_shared<MockDecodeListener>();
     imageSource->AddDecodeListener(mockDecodeListener.get());
     ASSERT_EQ(imageSource->decodeListeners_.empty(), false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: AddDecodeListenerTest002 end";
 }
 
 /**
@@ -1778,7 +1561,6 @@ HWTEST_F(ImageSourceTest, AddDecodeListenerTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1806,8 +1588,6 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest001 end";
 }
 
 /**
@@ -1817,7 +1597,6 @@ HWTEST_F(ImageSourceTest, End2EndTest001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1845,8 +1624,6 @@ HWTEST_F(ImageSourceTest, End2EndTest002, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest002 end";
 }
 
 /**
@@ -1856,7 +1633,6 @@ HWTEST_F(ImageSourceTest, End2EndTest002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest003 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1884,8 +1660,6 @@ HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest003 end";
 }
 
 /**
@@ -1895,7 +1669,6 @@ HWTEST_F(ImageSourceTest, End2EndTest003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest004 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1923,8 +1696,6 @@ HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest004 end";
 }
 
 /**
@@ -1934,7 +1705,6 @@ HWTEST_F(ImageSourceTest, End2EndTest004, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest005 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1952,8 +1722,6 @@ HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest005 end";
 }
 
 /**
@@ -1963,7 +1731,6 @@ HWTEST_F(ImageSourceTest, End2EndTest005, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest006 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -1991,8 +1758,6 @@ HWTEST_F(ImageSourceTest, End2EndTest006, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest006 end";
 }
 
 /**
@@ -2002,7 +1767,6 @@ HWTEST_F(ImageSourceTest, End2EndTest006, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest007 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -2030,8 +1794,6 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest007 end";
 }
 
 /**
@@ -2041,7 +1803,6 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest008 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource =
@@ -2069,8 +1830,6 @@ HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
     ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
-
-    GTEST_LOG_(INFO) << "ImageSourceTest: End2EndTest008 end";
 }
 
 /**
@@ -2080,7 +1839,6 @@ HWTEST_F(ImageSourceTest, End2EndTest008, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, UpdateData002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: UpdateData002 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2092,7 +1850,6 @@ HWTEST_F(ImageSourceTest, UpdateData002, TestSize.Level3)
     ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     delete data;
     data = nullptr;
-    GTEST_LOG_(INFO) << "ImageSourceTest: UpdateData002 end";
 }
 
 /**
@@ -2102,7 +1859,6 @@ HWTEST_F(ImageSourceTest, UpdateData002, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty004 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2116,7 +1872,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty004, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     delete data;
     data = nullptr;
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty004 end";
 }
 
 /**
@@ -2126,7 +1881,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty004, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty005, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty005 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2137,7 +1891,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty005, TestSize.Level3)
     int fd = 0;
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, fd);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty005 end";
 }
 
 /**
@@ -2147,7 +1900,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty005, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty006 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2158,7 +1910,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty006, TestSize.Level3)
     std::string path = "test";
     uint32_t ret = imageSource->ModifyImageProperty(index, key, value, path);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty006 end";
 }
 
 /**
@@ -2168,7 +1919,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty006, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty007, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty007 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -2199,7 +1949,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty007, TestSize.Level3)
     ASSERT_EQ(value, "E");
     retModify = imageSource->ModifyImageProperty(index, key, "W", fd);
     ASSERT_EQ(retModify, OHOS::Media::SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty007 end";
 }
 
 /**
@@ -2209,7 +1958,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty007, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ModifyImageProperty008, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty008 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -2239,7 +1987,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty008, TestSize.Level3)
 
     retModify = imageSource->ModifyImageProperty(index, key, "W", IMAGE_INPUT_EXIF_JPEG_PATH);
     ASSERT_EQ(retModify, OHOS::Media::SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ModifyImageProperty008 end";
 }
 
 /**
@@ -2249,7 +1996,6 @@ HWTEST_F(ImageSourceTest, ModifyImageProperty008, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyInt003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt003 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2259,7 +2005,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt003, TestSize.Level3)
     int32_t value = 1;
     uint32_t ret = imageSource->GetImagePropertyInt(index, key, value);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyInt003 end";
 }
 
 /**
@@ -2269,7 +2014,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyInt003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetImagePropertyString003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString003 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2279,7 +2023,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString003, TestSize.Level3)
     std::string value = "test";
     uint32_t ret = imageSource->GetImagePropertyString(index, key, value);
     ASSERT_NE(ret, SUCCESS);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetImagePropertyString003 end";
 }
 
 /**
@@ -2289,7 +2032,6 @@ HWTEST_F(ImageSourceTest, GetImagePropertyString003, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, Reset001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: Reset001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2302,7 +2044,6 @@ HWTEST_F(ImageSourceTest, Reset001, TestSize.Level3)
     ASSERT_EQ(imageSource->mainDecoder_, nullptr);
     uint32_t ret = imageSource->RemoveImageProperties(index, keys, data, size);
     ASSERT_EQ(ret, ERR_MEDIA_WRITE_PARCEL_FAIL);
-    GTEST_LOG_(INFO) << "ImageSourceTest: Reset001 end";
 }
 
 /**
@@ -2312,7 +2053,6 @@ HWTEST_F(ImageSourceTest, Reset001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, TransformSizeWithDensity001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: TransformSizeWithDensity001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2326,7 +2066,6 @@ HWTEST_F(ImageSourceTest, TransformSizeWithDensity001, TestSize.Level3)
     imageSource->opts_.resolutionQuality = ResolutionQuality::LOW;
     imageSource->TransformSizeWithDensity(srcSize, srcDensity, wantSize, wantDensity, dstSize);
     ASSERT_EQ(dstSize.width, 1);
-    GTEST_LOG_(INFO) << "ImageSourceTest: TransformSizeWithDensity001 end";
 }
 
 /**
@@ -2336,7 +2075,6 @@ HWTEST_F(ImageSourceTest, TransformSizeWithDensity001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, GetExifMetadata001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetExifMetadata001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2350,7 +2088,6 @@ HWTEST_F(ImageSourceTest, GetExifMetadata001, TestSize.Level3)
     std::shared_ptr<ExifMetadata> ptr = nullptr;
     imageSource->SetExifMetadata(ptr);
     ASSERT_EQ(imageSource->exifMetadata_, ptr);
-    GTEST_LOG_(INFO) << "ImageSourceTest: GetExifMetadata001 end";
 }
 
 /**
@@ -2360,7 +2097,6 @@ HWTEST_F(ImageSourceTest, GetExifMetadata001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, OnSourceRecognized001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceRecognized001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2379,7 +2115,6 @@ HWTEST_F(ImageSourceTest, OnSourceRecognized001, TestSize.Level3)
     struct Media::HdrMetadata metadata;
     bool result = imageSource->DecodeJpegGainMap(hdrType, scale, gainMapCtx, metadata);
     ASSERT_EQ(result, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: OnSourceRecognized001 end";
 }
 
 /**
@@ -2389,7 +2124,6 @@ HWTEST_F(ImageSourceTest, OnSourceRecognized001, TestSize.Level3)
  */
 HWTEST_F(ImageSourceTest, ApplyGainMap001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImageSourceTest: ApplyGainMap001 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
@@ -2405,7 +2139,6 @@ HWTEST_F(ImageSourceTest, ApplyGainMap001, TestSize.Level3)
     baseCtx.allocatorType = AllocatorType::DEFAULT;
     ret = imageSource->ComposeHdrImage(hdrType, baseCtx, gainMapCtx, hdrCtx, metadata);
     ASSERT_EQ(ret, false);
-    GTEST_LOG_(INFO) << "ImageSourceTest: ApplyGainMap001 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
