@@ -111,8 +111,6 @@ uint32_t PluginMgr::TraverseFiles(const string &canonicalPath)
 
 bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &libraryPath)
 {
-    const string meatedataFileSuffix = "pluginmeta";
-
 #ifdef _WIN32
     const string libraryFileSuffix = "dll";
 #elif defined _APPLE
@@ -120,7 +118,12 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
 #else
     const string libraryFileSuffix = "so";
 #endif
+    return CheckPluginMetaFile(candidateFile, libraryPath, libraryFileSuffix);
+}
 
+bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &libraryPath, const string &libraryFileSuffix)
+{
+    const string meatedataFileSuffix = "pluginmeta";
     string fileExt = ExtractFileExt(candidateFile);
     if (fileExt != meatedataFileSuffix) {
         // not a plugin metadata file, quietly skip this item.
@@ -132,6 +135,13 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
         IMAGE_LOGE("failed to open metadata file.");
         return false;
     }
+    std::streampos position = metadata.tellg();
+    if (!json::accept(metadata)) {
+        IMAGE_LOGE("metadata json parsing failed.");
+        metadata.close();
+        return false;
+    }
+    metadata.seekg(position, std::ios::beg);
 
     json root;
     metadata >> root;
@@ -188,6 +198,7 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
     auto plugin = std::make_shared<Plugin>();
     if (plugin == nullptr) {
         IMAGE_LOGE("failed to create Plugin.");
+        metadata.close();
         return ERR_INTERNAL;
     }
 
@@ -195,8 +206,10 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
     auto regRet = plugin->Register(metadata, std::move(libraryPath), weakPtr);
     if (regRet != SUCCESS) {
         IMAGE_LOGE("failed to register plugin,ERRNO: %{public}u.", regRet);
+        metadata.close();
         return regRet;
     }
+    metadata.close();
 
     const std::string &key = plugin->GetLibraryPath();
     if (key.empty()) {

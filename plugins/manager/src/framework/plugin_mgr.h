@@ -36,6 +36,8 @@ public:
 private:
     uint32_t TraverseFiles(const std::string &canonicalPath);
     bool CheckPluginMetaFile(const std::string &candidateFile, std::string &libraryPath);
+    bool CheckPluginMetaFile(const std::string &candidateFile, std::string &libraryPath,
+        const std::string &libraryFileSuffix);
     uint32_t RegisterPlugin(const std::string &metadataPath, std::string &&libraryPath);
     uint32_t RegisterPlugin(const std::string &metadataJson);
 
