@@ -1250,6 +1250,7 @@ const uint8_t *PixelMap::GetPixels()
 bool PixelMap::IsHdr()
 {
     if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102) {
+        IMAGE_LOGD("PixelMap not hdr, pixelformat:%{public}d", imageInfo_.pixelFormat);
         return false;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -1258,6 +1259,7 @@ bool PixelMap::IsHdr()
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
+        IMAGE_LOGD("PixelMap not hdr, colorspace:%{public}d", colorSpace.GetColorSpaceName());
         return false;
     }
 #endif

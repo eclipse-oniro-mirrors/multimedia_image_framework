@@ -1711,7 +1711,7 @@ HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 #endif
 }
 
-bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
+bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
@@ -1727,13 +1727,11 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context, float scale)
     decoder->getGainmapInfo(&gainmapInfo);
     uint32_t width = gainmapInfo.mWidth;
     uint32_t height = gainmapInfo.mHeight;
-    if (scale > 0.0 && scale < 1.0) {
-        width = gainmapInfo.mWidth * scale;
-        height = gainmapInfo.mHeight * scale;
-    }
     if (width > INT_MAX || height > INT_MAX) {
+        IMAGE_LOGI("DecodeHeifGainmap size exceeds the maximum value");
         return false;
     }
+    IMAGE_LOGD("DecodeHeifGainmap size:%{public}d-%{public}d", width, height);
     SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height),
         dstInfo_.colorType(), dstInfo_.alphaType(), dstInfo_.refColorSpace());
     uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
