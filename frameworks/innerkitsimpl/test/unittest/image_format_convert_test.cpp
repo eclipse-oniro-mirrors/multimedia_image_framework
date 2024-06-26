@@ -869,7 +869,7 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMap_Test_001, TestSize.Level1)
 HWTEST_F(ImageFormatConvertTest, YUVConvertImageFormatOption_Test_001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_Test_001 start";
-    std::shared_ptr<PixelMap> srcPiexlMap = std::make_shared();
+    std::shared_ptr<PixelMap> srcPiexlMap = std::make_shared<PixelMap>();
     PixelFormat srcFormat = PixelFormat::UNKNOWN;
     PixelFormat destFormat = PixelFormat::ARGB_8888;
     EXPECT_EQ(ImageFormatConvert::YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat),
@@ -884,7 +884,7 @@ HWTEST_F(ImageFormatConvertTest, YUVConvertImageFormatOption_Test_001, TestSize.
 HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_004, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_004 start";
-    std::shared_ptr<PixelMap> srcPixelMap = std::make_shared();;
+    std::shared_ptr<PixelMap> srcPixelMap = std::make_shared<PixelMap>();
     PixelFormat destFormat = PixelFormat::RGB_888;
     srcPixelMap->imageInfo_.pixelFormat = PixelFormat::NV21;
     uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
