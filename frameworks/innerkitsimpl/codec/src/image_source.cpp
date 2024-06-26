@@ -3111,6 +3111,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
             context.allocatorType = AllocatorType::DMA_ALLOC;
         }
     }
+    IMAGE_LOGD("[ImageSource] sourceHdrType_:%{public}d, deocdeHdrType:%{public}d", sourceHdrType_, decodedHdrType);
     errorCode = mainDecoder_->Decode(index, context);
     context.grColorSpaceName = mainDecoder_->getGrColorSpace().GetColorSpaceName();
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
@@ -3302,7 +3303,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     HdrMetadata metadata;
     if (format == IMAGE_HEIF_FORMAT) {
         ImageTrace imageTrace("ImageSource decode heif gainmap hdrType:%d, scale:%d", hdrType, scale);
-        if (!mainDecoder_->DecodeHeifGainMap(gainMapCtx, scale)) {
+        if (!mainDecoder_->DecodeHeifGainMap(gainMapCtx)) {
             IMAGE_LOGI("[ImageSource] heif get gainmap failed");
             return false;
         }
@@ -3416,6 +3417,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
     bool legacy = hdrType == ImageHdrType::HDR_CUVA;
     int32_t res = utils->ColorSpaceConverterComposeImage(buffers, legacy);
     if (res != VPE_ERROR_OK) {
+        IMAGE_LOGI("[ImageSource] composeImage failed");
         FreeContextBuffer(hdrCtx.freeFunc, hdrCtx.allocatorType, hdrCtx.pixelsBuffer);
         return false;
     }

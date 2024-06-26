@@ -227,7 +227,7 @@ public:
         return {};
     }
 
-    virtual bool DecodeHeifGainMap(DecodeContext& context, float scale)
+    virtual bool DecodeHeifGainMap(DecodeContext& context)
     {
         return false;
     }
