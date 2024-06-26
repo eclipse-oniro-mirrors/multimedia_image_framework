@@ -16,6 +16,7 @@
 #include "HeifDecoderImpl.h"
 
 #ifdef HEIF_HW_DECODE_ENABLE
+#include "ffrt.h"
 #include "image_trace.h"
 #include "image_utils.h"
 #include "image_log.h"
@@ -382,13 +383,7 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     ImageTrace trace("HeifDecoderImpl::decode");
 
     sptr<SurfaceBuffer> hwBuffer;
-    std::shared_ptr<HeifHardwareDecoder> hwDecoder = std::make_shared<HeifHardwareDecoder>();
-    if (hwDecoder == nullptr) {
-        IMAGE_LOGE("decode make HeifHardwareDecoder failed");
-        return false;
-    }
-
-    bool decodeRes = DecodeImage(hwDecoder, primaryImage_, gridInfo_, &hwBuffer, true);
+    bool decodeRes = DecodeImage(nullptr, primaryImage_, gridInfo_, &hwBuffer, true);
     if (!decodeRes) {
         return false;
     }
@@ -406,13 +401,7 @@ bool HeifDecoderImpl::decodeGainmap()
 {
     ImageTrace trace("HeifDecoderImpl::decodeGainmap");
     sptr<SurfaceBuffer> hwBuffer;
-    std::shared_ptr<HeifHardwareDecoder> hwDecoder = std::make_shared<HeifHardwareDecoder>();
-    if (hwDecoder == nullptr) {
-        IMAGE_LOGE("decodeGainmap make HeifHardwareDecoder failed");
-        return false;
-    }
-
-    bool decodeRes = DecodeImage(hwDecoder, gainmapImage_, gainmapGridInfo_, &hwBuffer, false);
+    bool decodeRes = DecodeImage(nullptr, gainmapImage_, gainmapGridInfo_, &hwBuffer, false);
     if (!decodeRes) {
         return false;
     }
@@ -425,7 +414,18 @@ bool HeifDecoderImpl::decodeGainmap()
     return true;
 }
 
-bool HeifDecoderImpl::DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+void HeifDecoderImpl::ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse)
+{
+    if (isReuse || hwDecoder == nullptr) {
+        return;
+    }
+    ffrt::submit([hwDecoder] {
+        ImageTrace trace("delete hwDecoder");
+        delete hwDecoder;
+        }, {}, {});
+}
+
+bool HeifDecoderImpl::DecodeImage(HeifHardwareDecoder *hwDecoder,
                                   std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                                   sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
 {
@@ -434,13 +434,24 @@ bool HeifDecoderImpl::DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecode
         return false;
     }
 
-    if (hwDecoder == nullptr || image == nullptr || outBuffer == nullptr) {
+    if (image == nullptr || outBuffer == nullptr) {
         return false;
+    }
+
+    bool isReuseHwDecoder = hwDecoder != nullptr;
+    if (!isReuseHwDecoder) {
+        hwDecoder = new (std::nothrow) HeifHardwareDecoder();
+        if (hwDecoder == nullptr) {
+            IMAGE_LOGE("make HeifHardwareDecoder failed");
+            return false;
+        }
     }
 
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
-        return DecodeIdenImage(hwDecoder, image, gridInfo, outBuffer, isPrimary);
+        bool res = DecodeIdenImage(hwDecoder, image, gridInfo, outBuffer, isPrimary);
+        ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
+        return res;
     }
 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
@@ -449,6 +460,7 @@ bool HeifDecoderImpl::DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecode
             hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
+        ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
         return false;
     }
     if (IsDirectYUVDecode()) {
@@ -467,15 +479,21 @@ bool HeifDecoderImpl::DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecode
         res = DecodeSingleImage(hwDecoder, image, gridInfo, hwBuffer);
     }
     if (!res) {
+        ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
         return false;
     }
     *outBuffer = hwBuffer;
+    ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
     return true;
 }
 
-bool HeifDecoderImpl::DecodeGrids(std::shared_ptr<HeifHardwareDecoder> &hwDecoder, std::shared_ptr<HeifImage> &image,
+bool HeifDecoderImpl::DecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                                   GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
+    if (hwDecoder == nullptr || image == nullptr) {
+        IMAGE_LOGE("HeifDecoderImpl::DecodeGrids hwDecoder or image is nullptr");
+        return false;
+    }
     std::vector<std::shared_ptr<HeifImage>> tileImages;
     parser_->GetTileImages(image->GetItemId(), tileImages);
     if (tileImages.empty()) {
@@ -510,7 +528,7 @@ bool HeifDecoderImpl::DecodeGrids(std::shared_ptr<HeifHardwareDecoder> &hwDecode
     return true;
 }
 
-bool HeifDecoderImpl::DecodeIdenImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+bool HeifDecoderImpl::DecodeIdenImage(HeifHardwareDecoder *hwDecoder,
                                       std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                                       sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
 {
@@ -526,12 +544,12 @@ bool HeifDecoderImpl::DecodeIdenImage(std::shared_ptr<HeifHardwareDecoder> &hwDe
     return DecodeImage(hwDecoder, idenImage, gridInfo, outBuffer, isPrimary);
 }
 
-bool HeifDecoderImpl::DecodeSingleImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+bool HeifDecoderImpl::DecodeSingleImage(HeifHardwareDecoder *hwDecoder,
                                         std::shared_ptr<HeifImage> &image,
                                         GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
-    if (image == nullptr) {
-        IMAGE_LOGI("HeifDecoderImpl::DecodeSingleImage image is nullptr");
+    if (hwDecoder == nullptr || image == nullptr) {
+        IMAGE_LOGE("HeifDecoderImpl::DecodeSingleImage hwDecoder or image is nullptr");
         return false;
     }
     std::vector<std::vector<uint8_t>> inputs(GRID_NUM_2);
@@ -596,12 +614,7 @@ bool HeifDecoderImpl::ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, u
     GridInfo alphaGridInfo;
     sptr<SurfaceBuffer> hwBuffer;
     InitGridInfo(alphaImage, alphaGridInfo);
-    std::shared_ptr<HeifHardwareDecoder> hwDecoder = std::make_shared<HeifHardwareDecoder>();
-    if (hwDecoder == nullptr) {
-        IMAGE_LOGE("ApplyAlphaImage make HeifHardwareDecoder failed");
-        return false;
-    }
-    bool decodeRes = DecodeImage(hwDecoder, alphaImage, alphaGridInfo, &hwBuffer, false);
+    bool decodeRes = DecodeImage(nullptr, alphaImage, alphaGridInfo, &hwBuffer, false);
     if (!decodeRes) {
         IMAGE_LOGE("decode alpha image failed");
         return false;

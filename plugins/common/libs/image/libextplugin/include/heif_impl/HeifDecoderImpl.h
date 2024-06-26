@@ -74,18 +74,20 @@ private:
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
 
-    bool DecodeImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+    void ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse);
+
+    bool DecodeImage(HeifHardwareDecoder *hwDecoder,
                      std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                      sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool DecodeGrids(std::shared_ptr<HeifHardwareDecoder> &hwDecoder, std::shared_ptr<HeifImage> &image,
+    bool DecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                      GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool DecodeIdenImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder,
+    bool DecodeIdenImage(HeifHardwareDecoder *hwDecoder,
                          std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                          sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool DecodeSingleImage(std::shared_ptr<HeifHardwareDecoder> &hwDecoder, std::shared_ptr<HeifImage> &image,
+    bool DecodeSingleImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                            GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
     bool ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
