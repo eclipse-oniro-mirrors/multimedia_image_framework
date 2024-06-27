@@ -750,6 +750,11 @@ int GetInterpolation(const AntiAliasingOption &option)
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
+    IMAGE_LOGI("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
+        "allocatorType = %{public}d; desiredSize: width = %{public}d, height = %{public}d",
+        pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(),
+        pixelMap.GetAllocatorType(), desiredSize.width, desiredSize.height);
+
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     int32_t srcWidth = pixelMap.GetWidth();
@@ -763,8 +768,13 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         IMAGE_LOGE("pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);
         return false;
     }
-    uint32_t dstBufferSize = static_cast<uint32_t>(
-        desiredSize.height * desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
+    uint64_t dstBufferSizeOverflow =
+        static_cast<uint64_t>(desiredSize.width) * desiredSize.height * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    if (dstBufferSizeOverflow > UINT_MAX) {
+        IMAGE_LOGE("ScalePixelMapEx target size too large");
+        return false;
+    }
+    uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
     
     auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
