@@ -20,7 +20,6 @@
 #include <chrono>
 #include "buffer_packer_stream.h"
 #include "color_space.h"
-#include "image_log.h"
 #include "image_type.h"
 #include "image_utils.h"
 #include "image_source.h"
