@@ -136,32 +136,22 @@ void JpgYuvTest::DecodeToFormat(std::string srcjpg, PixelFormat outfmt, int widt
 
 void JpgYuvTest::DoTimeTest(std::string jpgname)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest:DoTimeTest for: " << jpgname.c_str();
     const int testCount = 100;
-    uint64_t startTick = GetNowTimeMicroSeconds();
     for (uint32_t k = 0; k < testCount; k++) {
         std::string jpgpath = IMAGE_INPUT_JPG_PATH;
         jpgpath.append(jpgname);
         DecodeToFormat(jpgpath, PixelFormat::RGBA_8888, 0, 0);
     }
-    uint64_t endTick = GetNowTimeMicroSeconds();
-    uint64_t argbCost = endTick - startTick;
-    GTEST_LOG_(INFO) << "JpgYuvTest:DoTimeTest time argbCost: " << argbCost;
 
-    startTick = GetNowTimeMicroSeconds();
     for (uint32_t k = 0; k < testCount; k++) {
         std::string jpgpath = IMAGE_INPUT_JPG_PATH;
         jpgpath.append(jpgname);
         DecodeToFormat(jpgpath, PixelFormat::NV12, 0, 0);
     }
-    endTick = GetNowTimeMicroSeconds();
-    uint64_t nv12Cost = endTick - startTick;
-    GTEST_LOG_(INFO) << "JpgYuvTest:DoTimeTest time nv12Cost: " << nv12Cost;
 }
 
 void JpgYuvTest::DecodeToYuv(std::string srcjpg, PixelFormat outfmt, std::string outname, int& width, int& height)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << width << ", " << height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
@@ -186,7 +176,6 @@ void JpgYuvTest::DecodeToYuv(std::string srcjpg, PixelFormat outfmt, std::string
     ASSERT_EQ(ret, false);
     width = pixelMap->GetWidth();
     height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << width << ", " << height << ")";
     std::string outpath = "/tmp/";
     outpath.append(std::to_string(width));
     outpath.append("-");
@@ -226,11 +215,9 @@ void JpgYuvTest::YuvWriteToFile(std::string outpath, ImageSize &imageSize, std::
 void JpgYuvTest::YuvRotate(std::string srcjpg, PixelFormat outfmt, std::string outname,
     ImageSize &imageSize, float degrees)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -255,18 +242,15 @@ void JpgYuvTest::YuvRotate(std::string srcjpg, PixelFormat outfmt, std::string o
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "YuvRotate/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 void JpgYuvTest::YuvCrop(std::string srcjpg, PixelFormat outfmt, std::string outname, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -293,18 +277,15 @@ void JpgYuvTest::YuvCrop(std::string srcjpg, PixelFormat outfmt, std::string out
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "YuvCrop/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 void JpgYuvTest::YuvWriteConvert(std::string srcjpg, PixelFormat outfmt, std::string outname, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -341,7 +322,6 @@ void JpgYuvTest::YuvWriteConvert(std::string srcjpg, PixelFormat outfmt, std::st
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "WriteConvert/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
@@ -349,11 +329,9 @@ void JpgYuvTest::YuvWriteConvert(std::string srcjpg, PixelFormat outfmt, std::st
 void JpgYuvTest::ScaleYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     ImageSize &imageSize, AntiAliasingOption option)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -377,18 +355,15 @@ void JpgYuvTest::ScaleYuv420(std::string &srcjpg, PixelFormat outfmt, std::strin
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "scale/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 void JpgYuvTest::ResizeYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -412,7 +387,6 @@ void JpgYuvTest::ResizeYuv420(std::string &srcjpg, PixelFormat outfmt, std::stri
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "resize/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
@@ -434,11 +408,9 @@ void JpgYuvTest::GetFlipAxis(size_t i, bool &xAxis, bool &yAxis)
 void JpgYuvTest::FlipYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     ImageSize &imageSize, size_t i)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -465,7 +437,6 @@ void JpgYuvTest::FlipYuv420(std::string &srcjpg, PixelFormat outfmt, std::string
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "flip/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
@@ -473,11 +444,9 @@ void JpgYuvTest::FlipYuv420(std::string &srcjpg, PixelFormat outfmt, std::string
 void JpgYuvTest::TranslateYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     ImageSize &imageSize, Coordinate &coordinate)
 {
-    GTEST_LOG_(INFO) << "jpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "jpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -501,7 +470,6 @@ void JpgYuvTest::TranslateYuv420(std::string &srcjpg, PixelFormat outfmt, std::s
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "jpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "translate/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
@@ -509,11 +477,9 @@ void JpgYuvTest::TranslateYuv420(std::string &srcjpg, PixelFormat outfmt, std::s
 void JpgYuvTest::ReadYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     Position &pos, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "jpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "jpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -525,8 +491,7 @@ void JpgYuvTest::ReadYuv420(std::string &srcjpg, PixelFormat outfmt, std::string
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 
-    uint32_t res = pixelMap->ReadPixel(pos, imageSize.dst);
-    GTEST_LOG_(INFO) << "jpgYuvTest: res = " << res << "dst = " << imageSize.dst;
+    pixelMap->ReadPixel(pos, imageSize.dst);
 
     uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
     const uint8_t *buffer = nullptr;
@@ -538,7 +503,6 @@ void JpgYuvTest::ReadYuv420(std::string &srcjpg, PixelFormat outfmt, std::string
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "jpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "read/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
@@ -546,11 +510,9 @@ void JpgYuvTest::ReadYuv420(std::string &srcjpg, PixelFormat outfmt, std::string
 void JpgYuvTest::WriteYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     Position &pos, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "jpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "jpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -562,11 +524,9 @@ void JpgYuvTest::WriteYuv420(std::string &srcjpg, PixelFormat outfmt, std::strin
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(pixelMap.get(), nullptr);
 
-    uint32_t res = pixelMap->WritePixel(pos, imageSize.color);
-    GTEST_LOG_(INFO) << "jpgYuvTest: res = " << res;
+    pixelMap->WritePixel(pos, imageSize.color);
 
-    res = pixelMap->ReadPixel(pos, imageSize.dst);
-    GTEST_LOG_(INFO) << "jpgYuvTest: res = " << res << "dst = " << imageSize.dst;
+    pixelMap->ReadPixel(pos, imageSize.dst);
 
     uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
     const uint8_t *buffer = nullptr;
@@ -578,18 +538,15 @@ void JpgYuvTest::WriteYuv420(std::string &srcjpg, PixelFormat outfmt, std::strin
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "jpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "write/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 void JpgYuvTest::WritesYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname, ImageSize &imageSize)
 {
-    GTEST_LOG_(INFO) << "jpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "jpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -602,7 +559,6 @@ void JpgYuvTest::WritesYuv420(std::string &srcjpg, PixelFormat outfmt, std::stri
     ASSERT_NE(pixelMap.get(), nullptr);
 
     uint32_t res = pixelMap->WritePixels(imageSize.color);
-    GTEST_LOG_(INFO) << "jpgYuvTest: res = " << res;
     ASSERT_EQ(res, 1);
 
     uint8_t *data = const_cast<uint8_t *>(pixelMap->GetPixels());
@@ -615,57 +571,45 @@ void JpgYuvTest::WritesYuv420(std::string &srcjpg, PixelFormat outfmt, std::stri
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "Writes";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest001 start";
     TestDecodeToSize(TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest001 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest002, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest002 start";
     int testWidth = 510;
     int testHeight = 460;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest002 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest003, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest003 start";
     int testWidth = 380;
     int testHeight = 211;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest003 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest004, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest004 start";
     int testWidth = 100;
     int testHeight = 100;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest004 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest005, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest005 start";
     int testWidth = 2000;
     int testHeight = 2000;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest005 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest006, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest006 start";
     PixelFormat outfmt[] = { PixelFormat::NV12, PixelFormat::NV21};
     const char* outNamePart2[] = { "-nv12.yuv", "-nv21.yuv"};
     for (uint32_t j = 0; j < sizeof(outfmt) / sizeof(PixelFormat); j++) {
@@ -678,12 +622,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest006, TestSize.Level3)
         int outHeight = 0;
         DecodeToYuv(jpgpath, outfmt[j], outname, outWidth, outHeight);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest006 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest007, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest007 start";
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
     jpgpath.append("test-tree-311.jpg");
 
@@ -699,12 +641,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest007, TestSize.Level3)
     decodeOpts.desiredSize.height = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest007 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest008, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest008 start";
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
     jpgpath.append("test-bad.jpg");
 
@@ -720,12 +660,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest008, TestSize.Level3)
     decodeOpts.desiredSize.height = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest008 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest009, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest009 start";
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
     jpgpath.append("test_null.jpg");
 
@@ -741,12 +679,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest009, TestSize.Level3)
     decodeOpts.desiredSize.height = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_NE(errorCode, SUCCESS);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest009 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest010, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest010 start";
     const char* srcjpg[] = { "test-treeodd-444.jpg", "test-treeodd-422.jpg", "test-treeodd-420.jpg",
         "test-treeodd-400.jpg", "test-treeodd-440.jpg", "test-treeodd-411.jpg"};
     const char* outNamePart1[] = { "treeodd-444", "treeodd-422", "treeodd-420",
@@ -765,40 +701,32 @@ HWTEST_F(JpgYuvTest, JpgYuvTest010, TestSize.Level3)
             DecodeToYuv(jpgpath, outfmt[j], outname, outWidth, outHeight);
         }
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest010 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest011, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest011 start";
     int testWidth = 1;
     int testHeight = 1;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest011 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest012, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest012 start";
     int testWidth = 1;
     int testHeight = 100;
     TestDecodeToSize(testWidth, testHeight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest012 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest013, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest013 start";
     float scale = 0.875;
     int outwidth = TREE_ORIGINAL_WIDTH * scale;
     int outheight = TREE_ORIGINAL_HEIGHT * scale;
     TestDecodeToSize(outwidth, outheight);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest013 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest014, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest014 start";
     float scalFactor = 2.5;
     float minscale = 0.05;
     float step = 0.01;
@@ -819,7 +747,6 @@ HWTEST_F(JpgYuvTest, JpgYuvTest014, TestSize.Level3)
         std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
         ASSERT_EQ(errorCode, SUCCESS);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest014 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest015, TestSize.Level3)
@@ -850,7 +777,6 @@ HWTEST_F(JpgYuvTest, JpgYuvTest019, TestSize.Level3)
 
 HWTEST_F(JpgYuvTest, JpgYuvTest020, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest020 start";
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::string hw_jpg_path = "/data/local/tmp/image/test_hw.jpg";
@@ -861,12 +787,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest020, TestSize.Level3)
     decodeOpts.desiredPixelFormat = PixelFormat::NV21;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest020 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest021, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest021 start";
     const char *srcjpg[] = {"test-treeodd-444.jpg"};
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
@@ -879,18 +803,14 @@ HWTEST_F(JpgYuvTest, JpgYuvTest021, TestSize.Level3)
         for (int j = 0; j < sizeof(degrees) / sizeof(float); ++j) {
             std::string outname;
             outname.append(outFileName[k++]);
-            GTEST_LOG_(INFO) << "start outname" << outname;
             ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
             YuvRotate(jpgpath, outfmt[i], outname, imageSize, degrees[j]);
-            GTEST_LOG_(INFO) << "end outname" << outname;
         }
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest021 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest022, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest022 start";
     const char *srcjpg[] = {"test-treeodd-444.jpg"};
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
@@ -899,17 +819,13 @@ HWTEST_F(JpgYuvTest, JpgYuvTest022, TestSize.Level3)
     for (int i = 0; i < sizeof(outfmt) / sizeof(outfmt[0]); ++i) {
         std::string outname;
         outname.append(outFileName[i]);
-        GTEST_LOG_(INFO) << "start outname" << outname;
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
         YuvCrop(jpgpath, outfmt[i], outname, imageSize);
-        GTEST_LOG_(INFO) << "end outname" << outname;
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest022 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest023, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest023 start";
     const char *srcjpg[] = {"test-treeodd-444.jpg"};
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
@@ -919,17 +835,13 @@ HWTEST_F(JpgYuvTest, JpgYuvTest023, TestSize.Level3)
     {
         std::string outname;
         outname.append(outFileName[i]);
-        GTEST_LOG_(INFO) << "start outname" << outname;
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
         YuvWriteConvert(jpgpath, outfmt[i], outname, imageSize);
-        GTEST_LOG_(INFO) << "end outname" << outname;
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest023 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest024, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest024 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char *outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     AntiAliasingOption options[] = {AntiAliasingOption::NONE, AntiAliasingOption::LOW,
@@ -965,12 +877,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest024, TestSize.Level3)
             ScaleYuv420(jpgpath, outfmt[j], outname, imageSize, options[i]);
         }
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest024 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest025, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest025 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char *outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     std::filesystem::path dir("resize");
@@ -986,12 +896,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest025, TestSize.Level3)
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, NUM_2, NUM_2, 0, 0};
         ResizeYuv420(jpgpath, outfmt[j], outname, imageSize);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest025 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest026, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest026 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char *outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     bool flips[4][2] = {{true, true}, {true, false}, {false, true}, {false, false}};
@@ -1026,7 +934,6 @@ HWTEST_F(JpgYuvTest, JpgYuvTest026, TestSize.Level3)
             FlipYuv420(jpgpath, outfmt[j], outname, imageSize, i);
         }
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest026 end";
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
@@ -1034,11 +941,9 @@ HWTEST_F(JpgYuvTest, JpgYuvTest026, TestSize.Level3)
 void JpgYuvTest::ApplyColorSpaceYuv420(std::string &srcjpg, PixelFormat outfmt, std::string &outname,
     ImageSize &imageSize, const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: request size(" << imageSize.width << ", " << imageSize.height << ")";
     uint32_t errorCode = 0;
     SourceOptions opts;
     opts.formatHint = "image/jpeg";
-    GTEST_LOG_(INFO) << "JpgYuvTest: srcjpg" << srcjpg;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(srcjpg, opts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(imageSource.get(), nullptr);
@@ -1062,14 +967,12 @@ void JpgYuvTest::ApplyColorSpaceYuv420(std::string &srcjpg, PixelFormat outfmt, 
     ASSERT_EQ(ret, false);
     imageSize.width = pixelMap->GetWidth();
     imageSize.height = pixelMap->GetHeight();
-    GTEST_LOG_(INFO) << "JpgYuvTest: ret size(" << imageSize.width << ", " << imageSize.height << ")";
     std::string outpath = IMAGE_OUTPUT_JPG_PATH + "applyCorlorSpace/";
     YuvWriteToFile(outpath, imageSize, outname, data, size);
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest027, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest027 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char *outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     OHOS::ColorManager::ColorSpace colorSpaces[] = {
@@ -1108,13 +1011,11 @@ HWTEST_F(JpgYuvTest, JpgYuvTest027, TestSize.Level3)
             ApplyColorSpaceYuv420(jpgpath, outfmt[j], outname, imageSize, colorSpaces[i]);
         }
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest027 end";
 }
 #endif
 
 HWTEST_F(JpgYuvTest, JpgYuvTest028, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest028 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char* outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     std::filesystem::path dir("translate");
@@ -1131,12 +1032,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest028, TestSize.Level3)
         Coordinate coordinate = {1, 1};
         TranslateYuv420(jpgpath, outfmt[j], outname, imageSize, coordinate);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest028 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest029, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest029 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char* outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     std::filesystem::path dir("read");
@@ -1155,12 +1054,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest029, TestSize.Level3)
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
         ReadYuv420(jpgpath, outfmt[j], outname, pos, imageSize);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest029 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest030, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: jpgYuvTest030 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char* outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     std::filesystem::path dir("write");
@@ -1179,12 +1076,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest030, TestSize.Level3)
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
         WriteYuv420(jpgpath, outfmt[j], outname, pos, imageSize);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: jpgYuvTest030 end";
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest031, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest031 start";
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     const char* outNamePart2[] = {"-nv12.yuv", "-nv21.yuv"};
     std::filesystem::path dir("writePixels");
@@ -1200,7 +1095,6 @@ HWTEST_F(JpgYuvTest, JpgYuvTest031, TestSize.Level3)
         ImageSize imageSize = {ODDTREE_ORIGINAL_WIDTH, ODDTREE_ORIGINAL_HEIGHT, 0, 0, 0, 0};
         WritesYuv420(jpgpath, outfmt[j], outname, imageSize);
     }
-    GTEST_LOG_(INFO) << "JpgYuvTest: JpgYuvTest031 end";
 }
 }
 }
