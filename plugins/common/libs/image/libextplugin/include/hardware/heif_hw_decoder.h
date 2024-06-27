@@ -21,22 +21,11 @@
 #include <condition_variable>
 #include <vector>
 #include <list>
- #include "imagecodec/image_codec.h"
+#include "imagecodec/grid_info.h"
+#include "imagecodec/image_codec.h"
 
 namespace OHOS {
 namespace ImagePlugin {
-struct GridInfo {
-    uint32_t displayWidth = 0;
-    uint32_t displayHeight = 0;
-    bool enableGrid = false;
-    uint32_t cols = 0;
-    uint32_t rows = 0;
-    uint32_t tileWidth = 0;
-    uint32_t tileHeight = 0;
-
-    bool IsValid() const;
-};
-
 class HeifHardwareDecoder {
 public:
     HeifHardwareDecoder();
