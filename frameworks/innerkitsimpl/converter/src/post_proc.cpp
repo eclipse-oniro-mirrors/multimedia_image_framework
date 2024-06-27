@@ -15,7 +15,6 @@
 
 #include "post_proc.h"
 
-#include <limits>
 #include <unistd.h>
 
 #include "basic_transformer.h"
@@ -777,7 +776,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     }
     uint64_t dstBufferSizeOverflow =
         static_cast<uint64_t>(desiredSize.width) * desiredSize.height * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    if (dstBufferSizeOverflow > std::numeric_limits<uint32_t>::max()) {
+    if (dstBufferSizeOverflow > UINT_MAX) {
         IMAGE_LOGE("ScalePixelMapEx target size too large");
         return false;
     }
