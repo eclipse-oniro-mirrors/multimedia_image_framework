@@ -448,6 +448,7 @@ ohos_shared_library("heifimpl") {
   ]
 
   external_deps = [
+    "ffrt:libffrt",
     "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
