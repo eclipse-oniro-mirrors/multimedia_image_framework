@@ -15,6 +15,7 @@
 
 #include "post_proc.h"
 
+#include <limits>
 #include <unistd.h>
 
 #include "basic_transformer.h"
@@ -750,6 +751,17 @@ int GetInterpolation(const AntiAliasingOption &option)
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
+    IMAGE_LOGI("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, "
+        "PixelBytes = %{public}d, RowBytes = %{public}d, ByteCount = %{public}d, RowStride = %{public}d, "
+        "Capacity = %{public}d, PixelFormat = %{public}d, ColorSpace = %{public}d, AlphaType = %{public}d, "
+        "AllocatorType = %{public}d",
+        pixelMap.GetWidth(), pixelMap.GetHeight(),
+        pixelMap.GetPixelBytes(), pixelMap.GetRowBytes(), pixelMap.GetByteCount(), pixelMap.GetRowStride(),
+        pixelMap.GetCapacity(), pixelMap.GetPixelFormat(), pixelMap.GetColorSpace(), pixelMap.GetAlphaType(),
+        pixelMap.GetAllocatorType());
+    IMAGE_LOGI("ScalePixelMapEx desiredSize: width = %{public}d, height = %{public}d",
+        desiredSize.width, desiredSize.height);
+
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
     int32_t srcWidth = pixelMap.GetWidth();
@@ -763,8 +775,13 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         IMAGE_LOGE("pixelMap format is invalid, format: %{public}d", imgInfo.pixelFormat);
         return false;
     }
-    uint32_t dstBufferSize = static_cast<uint32_t>(
-        desiredSize.height * desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
+    uint64_t dstBufferSizeOverflow =
+        static_cast<uint64_t>(desiredSize.width) * desiredSize.height * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+    if (dstBufferSizeOverflow > std::numeric_limits<uint32_t>::max()) {
+        IMAGE_LOGE("ScalePixelMapEx target size too large");
+        return false;
+    }
+    uint32_t dstBufferSize = 
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
     
     auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
