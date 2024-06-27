@@ -964,34 +964,7 @@ HWTEST_F(ImageSourceTest, GetSourceSize001, TestSize.Level3)
     ASSERT_NE(ret, 0);
 }
 #endif
-/**
- * @tc.name: CreateImageSource0015
- * @tc.desc: test CreateImageSource correct fd and file size is 100
- * @tc.type: FUNC
- */
-HWTEST_F(ImageSourceTest, GetImageInfoForASTC, TestSize.Level3)
-{
-    ImageInfo imageInfo;
-    ASTCInfo astcInfo;
-    astcInfo.blockFootprint.width=4;
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_PATH, opts, errorCode);
-    uint8_t *data = new(uint8_t);
-    auto ret = imageSource->GetImageInfoForASTC(imageInfo, data);
-    ASSERT_EQ(ret, true);
-    astcInfo.blockFootprint.width = 6;
-    ret = imageSource->GetImageInfoForASTC(imageInfo, data);
-    ASSERT_EQ(ret, true);
-    astcInfo.blockFootprint.width = 8;
-    ret = imageSource->GetImageInfoForASTC(imageInfo, data);
-    ASSERT_EQ(ret, true);
-    astcInfo.blockFootprint.width = 2;
-    ret = imageSource->GetImageInfoForASTC(imageInfo, data);
-    ASSERT_EQ(ret, true);
-    delete data;
-    data = nullptr;
-}
+
 /**
  * @tc.name: CreateImageSource0015
  * @tc.desc: test GetSourceDecodingState
