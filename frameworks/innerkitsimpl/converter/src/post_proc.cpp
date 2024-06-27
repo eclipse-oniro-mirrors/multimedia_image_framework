@@ -781,7 +781,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         IMAGE_LOGE("ScalePixelMapEx target size too large");
         return false;
     }
-    uint32_t dstBufferSize = 
+    uint32_t dstBufferSize = static_cast<uint32_t>(dstBufferSizeOverflow);
     MemoryData memoryData = {nullptr, dstBufferSize, "ScalePixelMapEx ImageData", desiredSize};
     
     auto mem = MemoryManager::CreateMemory(pixelMap.GetAllocatorType() == AllocatorType::CUSTOM_ALLOC ?
