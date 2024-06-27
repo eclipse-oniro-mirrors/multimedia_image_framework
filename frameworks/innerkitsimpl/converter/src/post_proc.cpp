@@ -750,16 +750,10 @@ int GetInterpolation(const AntiAliasingOption &option)
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
-    IMAGE_LOGI("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, "
-        "PixelBytes = %{public}d, RowBytes = %{public}d, ByteCount = %{public}d, RowStride = %{public}d, "
-        "Capacity = %{public}d, PixelFormat = %{public}d, ColorSpace = %{public}d, AlphaType = %{public}d, "
-        "AllocatorType = %{public}d",
-        pixelMap.GetWidth(), pixelMap.GetHeight(),
-        pixelMap.GetPixelBytes(), pixelMap.GetRowBytes(), pixelMap.GetByteCount(), pixelMap.GetRowStride(),
-        pixelMap.GetCapacity(), pixelMap.GetPixelFormat(), pixelMap.GetColorSpace(), pixelMap.GetAlphaType(),
-        pixelMap.GetAllocatorType());
-    IMAGE_LOGI("ScalePixelMapEx desiredSize: width = %{public}d, height = %{public}d",
-        desiredSize.width, desiredSize.height);
+    IMAGE_LOGI("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
+        "allocatorType = %{public}d; desiredSize: width = %{public}d, height = %{public}d",
+        pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(),
+        pixelMap.GetAllocatorType(), desiredSize.width, desiredSize.height);
 
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
