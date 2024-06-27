@@ -276,6 +276,12 @@ void Plugin::FreeLibrary()
 
 uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
 {
+    std::streampos position = metadata.tellg();
+    if (!json::accept(metadata)) {
+        IMAGE_LOGE("RegisterMetadata json parsing failed.");
+        return ERR_INVALID_PARAMETER;
+    }
+    metadata.seekg(position, std::ios::beg);
     json root;
     metadata >> root;
     if (JsonHelper::GetStringValue(root, "packageName", packageName_) != SUCCESS) {
