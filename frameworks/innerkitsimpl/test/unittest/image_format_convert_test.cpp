@@ -862,7 +862,8 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMap_Test_001, TestSize.Level1)
     ImageInfo info;
     AllocatorType allcatorType = AllocatorType::DEFAULT;
     info.size = {0, 0};
-    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, destBuffer, destBufferSize, info, allcatorType), false);
+    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, destBuffer, destBufferSize, info, allcatorType),
+      false);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 end";
 }
 
