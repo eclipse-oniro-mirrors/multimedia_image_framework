@@ -38,9 +38,9 @@ private:
 private:
     static constexpr uint32_t ALIGN_8 = 8;
     static constexpr uint32_t ALIGN_16 = 16;
-    PlSize orgImgSize_;
-    PlSize scaledImgSize_;
-    PlSize outputBufferSize_;
+    OHOS::Media::Size orgImgSize_;
+    OHOS::Media::Size scaledImgSize_;
+    OHOS::Media::Size outputBufferSize_;
     uint32_t sampleSize_;
     PixelFormat outputColorFmt_;
     std::string inputFile_;

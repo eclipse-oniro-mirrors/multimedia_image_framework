@@ -32,6 +32,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 enum class JpegDecodingState : int32_t {
     UNDECIDED = 0,
     SOURCE_INITED = 1,
@@ -51,7 +53,7 @@ public:
     void Reset() override;
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value) override;
     uint32_t GetImagePropertyString(uint32_t index, const std::string &key, std::string &value) override;
@@ -71,7 +73,7 @@ public:
 private:
     DISALLOW_COPY_AND_MOVE(JpegDecoder);
     bool ParseExifData();
-    J_COLOR_SPACE GetDecodeFormat(PlPixelFormat format, PlPixelFormat &outputFormat);
+    J_COLOR_SPACE GetDecodeFormat(PixelFormat format, PixelFormat &outputFormat);
     void CreateHwDecompressor();
     uint32_t DoSwDecode(DecodeContext &context);
     void FinishOldDecompress();
@@ -94,7 +96,7 @@ private:
     AbsImageDecompressComponent *hwJpegDecompress_ = nullptr;
     JpegDecodingState state_ = JpegDecodingState::UNDECIDED;
     uint32_t streamPosition_ = 0;  // may be changed by other decoders, record it and restore if needed.
-    PlPixelFormat outputFormat_ = PlPixelFormat::UNKNOWN;
+    PixelFormat outputFormat_ = PixelFormat::UNKNOWN;
     PixelDecodeOptions opts_;
     EXIFInfo exifInfo_;
     ICCProfileInfo iccProfileInfo_;

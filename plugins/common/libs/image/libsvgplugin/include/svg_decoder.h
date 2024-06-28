@@ -31,6 +31,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 class SvgDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase {
 public:
     SvgDecoder();
@@ -41,7 +43,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
 
 private:
     DISALLOW_COPY_AND_MOVE(SvgDecoder);
@@ -50,7 +52,7 @@ private:
     bool BuildDom();
     uint32_t DoDecodeHeader();
     uint32_t DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
-    uint32_t DoGetImageSize(uint32_t index, PlSize &size);
+    uint32_t DoGetImageSize(uint32_t index, Size &size);
     uint32_t DoDecode(uint32_t index, DecodeContext &context);
 
 private:

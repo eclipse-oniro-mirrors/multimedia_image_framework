@@ -42,7 +42,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->SetSource(*streamPtr.release());
     webpDecoder->GetImageSize(2, plSize);
     bool result = (webpDecoder != nullptr);
@@ -59,7 +59,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "WebpDecoderTest: GetImageSizeTest002 start";
     auto webpDecoder = std::make_shared<WebpDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
@@ -81,7 +81,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto webpDecoder = std::make_shared<WebpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     webpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     bool result = (webpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -100,7 +100,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     webpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     bool result = (webpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -120,7 +120,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     webpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     bool result = (webpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -140,7 +140,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     webpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     bool result = (webpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -160,7 +160,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest007, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     webpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->GetImageSize(0, plSize);
     webpDecoder->GetImageSize(0, plSize);
     bool result = (webpDecoder != nullptr);
@@ -224,7 +224,7 @@ HWTEST_F(WebpDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     webpDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     webpDecoder->SetDecodeOptions(0, opts, info);
     bool result = (webpDecoder != nullptr);
@@ -386,7 +386,7 @@ HWTEST_F(WebpDecoderTest, GetImageSizeTest008, TestSize.Level3)
     mock->SetReturn(true);
     webpDecoder->SetSource(*mock.get());
     uint32_t index = 0;
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     webpDecoder->state_ = WebpDecodingState::BASE_INFO_PARSED;
     uint32_t result = webpDecoder->GetImageSize(index, plSize);
     ASSERT_EQ(result, SUCCESS);
@@ -408,7 +408,7 @@ HWTEST_F(WebpDecoderTest, SetDecodeOptionsTest005, TestSize.Level3)
     uint32_t index = 0;
     PixelDecodeOptions opts;
     PlImageInfo info;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     webpDecoder->state_ = WebpDecodingState::BASE_INFO_PARSED;
     uint32_t result = webpDecoder->SetDecodeOptions(index, opts, info);
     ASSERT_EQ(result, SUCCESS);
@@ -503,11 +503,11 @@ HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest001, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     webpDecoder->SetSource(*mock.get());
-    PlPixelFormat pixelFormat = PlPixelFormat::RGB_565;
+    PixelFormat pixelFormat = PixelFormat::RGB_565;
     bool premul = false;
     uint32_t result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_RGB_565);
-    pixelFormat = PlPixelFormat::NV21;
+    pixelFormat = PixelFormat::NV21;
     result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_RGBA);
     GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest001 end";
@@ -632,7 +632,7 @@ HWTEST_F(WebpDecoderTest, SetDecodeOptionsTest006, TestSize.Level3)
     uint32_t index = 0;
     PixelDecodeOptions opts;
     PlImageInfo info;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     webpDecoder->state_ = WebpDecodingState::IMAGE_DECODING;
     uint32_t result = webpDecoder->SetDecodeOptions(index, opts, info);
     ASSERT_EQ(result, ERR_IMAGE_SOURCE_DATA_INCOMPLETE);
@@ -669,11 +669,11 @@ HWTEST_F(WebpDecoderTest, GetWebpDecodeModeTest002, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     webpDecoder->SetSource(*mock.get());
-    PlPixelFormat pixelFormat = PlPixelFormat::BGRA_8888;
+    PixelFormat pixelFormat = PixelFormat::BGRA_8888;
     bool premul = false;
     uint32_t result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_BGRA);
-    pixelFormat = PlPixelFormat::RGBA_8888;
+    pixelFormat = PixelFormat::RGBA_8888;
     result = webpDecoder->GetWebpDecodeMode(pixelFormat, premul);
     ASSERT_EQ(result, MODE_RGBA);
     GTEST_LOG_(INFO) << "WebpDecoderTest: GetWebpDecodeModeTest002 end";

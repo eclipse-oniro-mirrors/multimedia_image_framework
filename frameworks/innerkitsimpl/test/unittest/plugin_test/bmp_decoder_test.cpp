@@ -43,7 +43,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->SetSource(*streamPtr.release());
     bmpDecoder->GetImageSize(2, plSize);
     bool result = (bmpDecoder != nullptr);
@@ -60,7 +60,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest002 start";
     auto bmpDecoder = std::make_shared<BmpDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
@@ -82,7 +82,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto bmpDecoder = std::make_shared<BmpDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     bmpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -101,7 +101,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     bmpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -121,7 +121,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     bmpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -141,7 +141,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     bmpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -160,7 +160,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest007, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(false);
     bmpDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->GetImageSize(0, plSize);
     bool result = (bmpDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -223,7 +223,7 @@ HWTEST_F(BmpDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     bmpDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     bmpDecoder->SetDecodeOptions(0, opts, info);
     bool result = (bmpDecoder != nullptr);
@@ -445,10 +445,10 @@ HWTEST_F(BmpDecoderTest, ConvertToAlphaTypeTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToAlphaType start";
     auto bmpDecoder = std::make_shared<BmpDecoder>();
-    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kOpaque_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
-    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kPremul_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL);
-    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnpremul_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnknown_SkAlphaType), PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kOpaque_SkAlphaType), AlphaType::IMAGE_ALPHA_TYPE_OPAQUE);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kPremul_SkAlphaType), AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnpremul_SkAlphaType), AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    ASSERT_EQ(bmpDecoder->ConvertToAlphaType(kUnknown_SkAlphaType), AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
     GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToAlphaType end";
 }
 
@@ -461,13 +461,13 @@ HWTEST_F(BmpDecoderTest, ConvertToColorTypeTest, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToColorTypeTest start";
     auto bmpDecoder = std::make_shared<BmpDecoder>();
-    PlPixelFormat outputFormat;
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::UNKNOWN, outputFormat), kRGBA_8888_SkColorType);
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGBA_8888, outputFormat), kRGBA_8888_SkColorType);
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::BGRA_8888, outputFormat), kBGRA_8888_SkColorType);
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::ALPHA_8, outputFormat), kRGBA_8888_SkColorType);
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGB_565, outputFormat), kRGB_565_SkColorType);
-    ASSERT_EQ(bmpDecoder->ConvertToColorType(PlPixelFormat::RGB_888, outputFormat), kRGBA_8888_SkColorType);
+    PixelFormat outputFormat;
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::UNKNOWN, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::RGBA_8888, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::BGRA_8888, outputFormat), kBGRA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::ALPHA_8, outputFormat), kRGBA_8888_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::RGB_565, outputFormat), kRGB_565_SkColorType);
+    ASSERT_EQ(bmpDecoder->ConvertToColorType(PixelFormat::RGB_888, outputFormat), kRGBA_8888_SkColorType);
     GTEST_LOG_(INFO) << "BmpDecoderTest: ConvertToColorTypeTest end";
 }
 
@@ -481,7 +481,7 @@ HWTEST_F(BmpDecoderTest, GetImageSizeTest008, TestSize.Level3)
     GTEST_LOG_(INFO) << "BmpDecoderTest: GetImageSizeTest008 start";
     auto bmpDecoder = std::make_shared<BmpDecoder>();
     uint32_t index = 0;
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     bmpDecoder->state_ = BmpDecodingState::IMAGE_DECODING;
     uint32_t result = bmpDecoder->GetImageSize(index, plSize);
     ASSERT_EQ(result, SUCCESS);

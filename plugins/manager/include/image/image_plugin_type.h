@@ -17,156 +17,17 @@
 #define IMAGE_PLUGIN_TYPE_H
 
 #include <cstdint>
+#include "image_type.h"
 
 namespace OHOS {
 namespace ImagePlugin {
-enum class PlColorSpace {
-    // unknown color space.
-    UNKNOWN = 0,
-
-    // based on SMPTE RP 431-2-2007 & IEC 61966-2.1:1999.
-    DISPLAY_P3 = 1,
-
-    // standard Red Green Blue based on IEC 61966-2.1:1999.
-    SRGB = 2,
-
-    // SRGB with a linear transfer function based on IEC 61966-2.1:1999.
-    LINEAR_SRGB = 3,
-
-    // based on IEC 61966-2-2:2003.
-    EXTENDED_SRGB = 4,
-
-    // based on IEC 61966-2-2:2003.
-    LINEAR_EXTENDED_SRGB = 5,
-
-    // based on standard illuminant D50 as the white point.
-    GENERIC_XYZ = 6,
-
-    // based on CIE XYZ D50 as the profile conversion space.
-    GENERIC_LAB = 7,
-
-    // based on SMPTE ST 2065-1:2012.
-    ACES = 8,
-
-    // based on Academy S-2014-004.
-    ACES_CG = 9,
-
-    // based on Adobe RGB (1998).
-    ADOBE_RGB_1998 = 10,
-
-    // based on SMPTE RP 431-2-2007.
-    DCI_P3 = 11,
-
-    // based on Rec. ITU-R BT.709-5.
-    ITU_709 = 12,
-
-    // based on Rec. ITU-R BT.2020-1.
-    ITU_2020 = 13,
-
-    // based on ROMM RGB ISO 22028-2:2013.
-    ROMM_RGB = 14,
-
-    // based on 1953 standard.
-    NTSC_1953 = 15,
-
-    // based on SMPTE C.
-    SMPTE_C = 16
-};
-
-enum class PlEncodedFormat {
-    UNKNOWN = 0,
-    JPEG = 1,
-    PNG = 2,
-    GIF = 3,
-    HEIF = 4
-};
-
-enum class PlPixelFormat {
-    UNKNOWN = 0,
-    ARGB_8888 = 1,
-    RGB_565 = 2,
-    RGBA_8888 = 3,
-    BGRA_8888 = 4,
-    RGB_888 = 5,
-    ALPHA_8 = 6,
-    RGBA_F16 = 7,
-    NV21 = 8,
-    NV12 = 9,
-    CMYK = 10,
-    ASTC_4X4 = 11,
-    ASTC_6X6 = 12,
-    ASTC_8X8 = 13,
-    RGBA_1010102 = 14,
-};
-
-enum class PlDynamicRange : int32_t {
-    DEFAULT = 0,
-    SDR = 1,
-};
-
-enum class PlEncodeDynamicRange : int32_t {
-    AUTO = 0,
-    SDR,
-    HDR_VIVID_DUAL,
-    HDR_VIVID_SINGLE,
-};
-
-enum class PlAlphaType : int32_t {
-    IMAGE_ALPHA_TYPE_UNKNOWN = 0,
-    IMAGE_ALPHA_TYPE_OPAQUE = 1,
-    IMAGE_ALPHA_TYPE_PREMUL = 2,
-    IMAGE_ALPHA_TYPE_UNPREMUL = 3,
-};
-
-struct PlPosition {
-    uint32_t x = 0;
-    uint32_t y = 0;
-};
-
-struct PlRect {
-    uint32_t left = 0;
-    uint32_t top = 0;
-    uint32_t width = 0;
-    uint32_t height = 0;
-};
-
-struct PlSize {
-    uint32_t width = 0;
-    uint32_t height = 0;
-};
-
-struct PlFillColor {
-    bool isValidColor = false;
-    uint32_t color = 0;
-};
-
-struct PlSVGResize {
-    bool isValidPercentage = false;
-    uint32_t resizePercentage = 100;
-};
-
-struct PlYuvDataInfo {
-    PlSize imageSize = {0, 0};
-    uint32_t yWidth = 0;
-    uint32_t yHeight = 0;
-    uint32_t uvWidth = 0;
-    uint32_t uvHeight = 0;
-    uint32_t yStride = 0;
-    uint32_t uStride = 0;
-    uint32_t vStride = 0;
-    uint32_t uvStride = 0;
-    uint32_t yOffset = 0;
-    uint32_t uOffset = 0;
-    uint32_t vOffset = 0;
-    uint32_t uvOffset = 0;
-};
 
 struct PlImageInfo {
-    PlSize size;
-    PlPixelFormat pixelFormat = PlPixelFormat::UNKNOWN;
-    PlColorSpace colorSpace = PlColorSpace::UNKNOWN;
-    PlAlphaType alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
-    PlYuvDataInfo yuvDataInfo;
+    OHOS::Media::Size size;
+    OHOS::Media::PixelFormat pixelFormat = OHOS::Media::PixelFormat::UNKNOWN;
+    OHOS::Media::ColorSpace colorSpace = OHOS::Media::ColorSpace::UNKNOWN;
+    OHOS::Media::AlphaType alphaType = OHOS::Media::AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    OHOS::Media::YUVDataInfo yuvDataInfo;
 };
 
 struct PlImageBuffer {

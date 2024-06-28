@@ -33,7 +33,7 @@ public:
 HWTEST_F(JpegHwDecoderTest, unsupported_img_empty_format, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
+    Size srcImgSize = {
         .width = 8192,
         .height = 8192
     };
@@ -44,7 +44,7 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_empty_format, TestSize.Level1)
 HWTEST_F(JpegHwDecoderTest, unsupported_img_unknown_format, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
+    Size srcImgSize = {
         .width = 512,
         .height = 512
     };
@@ -55,7 +55,7 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_unknown_format, TestSize.Level1)
 HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_small, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
+    Size srcImgSize = {
         .width = 140,
         .height = 512
     };
@@ -66,7 +66,7 @@ HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_small, TestSize.Level1)
 HWTEST_F(JpegHwDecoderTest, unsupported_img_size_too_big, TestSize.Level1)
 {
     JpegHardwareDecoder testObj;
-    PlSize srcImgSize = {
+    Size srcImgSize = {
         .width = 8192,
         .height = 8193
     };

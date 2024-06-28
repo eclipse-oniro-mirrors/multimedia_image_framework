@@ -44,7 +44,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->SetSource(*streamPtr.release());
     rawDecoder->GetImageSize(2, plSize);
     bool result = (rawDecoder != nullptr);
@@ -61,7 +61,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "RawDecoderTest: GetImageSizeTest002 start";
     auto rawDecoder = std::make_shared<RawDecoder>();
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->GetImageSize(0, plSize);
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
@@ -83,7 +83,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto rawDecoder = std::make_shared<RawDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     rawDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->GetImageSize(0, plSize);
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -102,7 +102,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     rawDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->GetImageSize(0, plSize);
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -122,7 +122,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     rawDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->GetImageSize(0, plSize);
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -142,7 +142,7 @@ HWTEST_F(RawDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     rawDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     rawDecoder->GetImageSize(0, plSize);
     bool result = (rawDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -239,7 +239,7 @@ HWTEST_F(RawDecoderTest, RawDecoderTest006, TestSize.Level3)
     GTEST_LOG_(INFO) << "RawDecoderTest: RawDecoderTest006 start";
     auto rawDecoder = std::make_shared<RawDecoder>();
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     size.width = 3;
     size.height = 4;
     uint32_t res = rawDecoder->GetImageSize(index, size);
@@ -335,7 +335,7 @@ HWTEST_F(RawDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     rawDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     rawDecoder->SetDecodeOptions(0, opts, info);
     bool result = (rawDecoder != nullptr);
@@ -571,7 +571,7 @@ HWTEST_F(RawDecoderTest, DoGetImageSize, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize start";
     uint32_t index = 1;
-    PlSize size;
+    Size size;
     std::unique_ptr<AbsImageDecoder> jpegDecoder_;
     auto rawDecoder = std::make_shared<RawDecoder>();
     rawDecoder->DoGetImageSize(index, size);
@@ -643,7 +643,7 @@ HWTEST_F(RawDecoderTest, GetImageSize007, TestSize.Level3)
     GTEST_LOG_(INFO) << "RawDecoderTest: SetDecodeOptions007 start";
     auto rawDecoder = std::make_shared<RawDecoder>();
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     rawDecoder->state_ = ImagePlugin::RawDecoder::RawDecodingState::BASE_INFO_PARSED;
     rawDecoder->jpegDecoder_ = nullptr;
     uint32_t result = rawDecoder->GetImageSize(index, size);
@@ -679,7 +679,7 @@ HWTEST_F(RawDecoderTest, DoGetImageSize001, TestSize.Level3)
     GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSize001 start";
     auto rawDecoder = std::make_shared<RawDecoder>();
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     rawDecoder->jpegDecoder_ = nullptr;
     uint32_t result = rawDecoder->DoGetImageSize(index, size);
     ASSERT_EQ(result, ERR_IMAGE_DATA_UNSUPPORT);
@@ -730,7 +730,7 @@ HWTEST_F(RawDecoderTest, DoGetImageSizeTest002, TestSize.Level3)
     GTEST_LOG_(INFO) << "RawDecoderTest: DoGetImageSizeTest002 start";
     auto rawDecoder = std::make_shared<RawDecoder>();
     uint32_t index = 0;
-    PlSize size;
+    Size size;
     rawDecoder->jpegDecoder_ = std::make_unique<MockAbsImageDecoder>();
     ASSERT_NE(rawDecoder->jpegDecoder_, nullptr);
     uint32_t result = rawDecoder->DoGetImageSize(index, size);

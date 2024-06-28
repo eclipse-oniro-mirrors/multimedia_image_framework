@@ -154,7 +154,7 @@ uint32_t RawDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     return Media::SUCCESS;
 }
 
-uint32_t RawDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t RawDecoder::GetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("GetImageSize IN index=%{public}u", index);
 
@@ -324,7 +324,7 @@ uint32_t RawDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
     return ret;
 }
 
-uint32_t RawDecoder::DoGetImageSize(uint32_t index, PlSize &size)
+uint32_t RawDecoder::DoGetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("DoGetImageSize IN index=%{public}u", index);
     uint32_t ret;

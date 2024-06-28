@@ -41,7 +41,7 @@ HWTEST_F(GifDecoderTest, GetImageSizeTest001, TestSize.Level3)
     int size = 1000;
     std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(size);
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     gifDecoder->SetSource(*streamPtr.release());
     gifDecoder->GetImageSize(2, plSize);
     bool result = (gifDecoder != nullptr);
@@ -60,7 +60,7 @@ HWTEST_F(GifDecoderTest, GetImageSizeTest003, TestSize.Level3)
     auto gifDecoder = std::make_shared<GifDecoder>();
     auto mock = std::make_shared<MockInputDataStream>();
     gifDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     gifDecoder->GetImageSize(0, plSize);
     bool result = (gifDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -79,7 +79,7 @@ HWTEST_F(GifDecoderTest, GetImageSizeTest004, TestSize.Level3)
     auto mock = std::make_shared<MockInputDataStream>();
     mock->SetReturn(true);
     gifDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     gifDecoder->GetImageSize(0, plSize);
     bool result = (gifDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -99,7 +99,7 @@ HWTEST_F(GifDecoderTest, GetImageSizeTest005, TestSize.Level3)
     mock->SetStreamSize(1);
     mock->SetReturn(true);
     gifDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     gifDecoder->GetImageSize(0, plSize);
     bool result = (gifDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -119,7 +119,7 @@ HWTEST_F(GifDecoderTest, GetImageSizeTest006, TestSize.Level3)
     mock->SetStreamSize(2);
     mock->SetReturn(true);
     gifDecoder->SetSource(*mock.get());
-    ImagePlugin::PlSize plSize;
+    ImagePlugin::Size plSize;
     gifDecoder->GetImageSize(0, plSize);
     bool result = (gifDecoder != nullptr);
     ASSERT_EQ(result, true);
@@ -161,7 +161,7 @@ HWTEST_F(GifDecoderTest, SetDecodeOptionsTest003, TestSize.Level3)
     auto streamPtr = BufferSourceStream::CreateSourceStream(data.get(), size);
     gifDecoder->SetSource(*streamPtr.release());
     PixelDecodeOptions opts;
-    opts.desiredPixelFormat = PlPixelFormat::RGB_565;
+    opts.desiredPixelFormat = PixelFormat::RGB_565;
     PlImageInfo info;
     gifDecoder->SetDecodeOptions(0, opts, info);
     bool result = (gifDecoder != nullptr);

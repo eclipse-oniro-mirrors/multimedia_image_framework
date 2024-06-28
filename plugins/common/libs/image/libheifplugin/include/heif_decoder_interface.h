@@ -26,10 +26,10 @@ class HeifDecoderInterface {
 public:
     HeifDecoderInterface() = default;
     virtual ~HeifDecoderInterface() = default;
-    virtual void GetHeifSize(PlSize &size) = 0;
+    virtual void GetHeifSize(Size &size) = 0;
     virtual void SetAllowPartial(const bool isAllowPartialImage) = 0;
-    virtual bool ConversionSupported(const PlPixelFormat &plPixelFormat, int32_t &bytesPerPixel) = 0;
-    virtual uint32_t OnGetPixels(const PlSize &dstSize, const uint32_t dstRowBytes, DecodeContext &context) = 0;
+    virtual bool ConversionSupported(const PixelFormat &plPixelFormat, int32_t &bytesPerPixel) = 0;
+    virtual uint32_t OnGetPixels(const Size &dstSize, const uint32_t dstRowBytes, DecodeContext &context) = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -191,6 +191,7 @@ struct ImageInfo {
 };
 
 struct YUVDataInfo {
+    Size imageSize = {0, 0};
     uint32_t yWidth = 0;
     uint32_t yHeight = 0;
     uint32_t uvWidth = 0;

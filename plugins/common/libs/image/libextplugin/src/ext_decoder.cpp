@@ -127,23 +127,23 @@ const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
 
 struct ColorTypeOutput {
-    PlPixelFormat outFormat;
+    PixelFormat outFormat;
     SkColorType skFormat;
 };
 
-static const map<PlPixelFormat, ColorTypeOutput> COLOR_TYPE_MAP = {
-    { PlPixelFormat::UNKNOWN, { PlPixelFormat::RGBA_8888, kRGBA_8888_SkColorType } },
-    { PlPixelFormat::RGBA_8888, { PlPixelFormat::RGBA_8888, kRGBA_8888_SkColorType } },
-    { PlPixelFormat::BGRA_8888, { PlPixelFormat::BGRA_8888, kBGRA_8888_SkColorType } },
-    { PlPixelFormat::ALPHA_8, { PlPixelFormat::ALPHA_8, kAlpha_8_SkColorType } },
-    { PlPixelFormat::RGB_565, { PlPixelFormat::RGB_565, kRGB_565_SkColorType } },
-    { PlPixelFormat::RGB_888, { PlPixelFormat::RGB_888, kRGB_888x_SkColorType } },
+static const map<PixelFormat, ColorTypeOutput> COLOR_TYPE_MAP = {
+    { PixelFormat::UNKNOWN, { PixelFormat::RGBA_8888, kRGBA_8888_SkColorType } },
+    { PixelFormat::RGBA_8888, { PixelFormat::RGBA_8888, kRGBA_8888_SkColorType } },
+    { PixelFormat::BGRA_8888, { PixelFormat::BGRA_8888, kBGRA_8888_SkColorType } },
+    { PixelFormat::ALPHA_8, { PixelFormat::ALPHA_8, kAlpha_8_SkColorType } },
+    { PixelFormat::RGB_565, { PixelFormat::RGB_565, kRGB_565_SkColorType } },
+    { PixelFormat::RGB_888, { PixelFormat::RGB_888, kRGB_888x_SkColorType } },
 };
 
-static const map<PlAlphaType, SkAlphaType> ALPHA_TYPE_MAP = {
-    { PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE, kOpaque_SkAlphaType },
-    { PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL, kPremul_SkAlphaType },
-    { PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL, kUnpremul_SkAlphaType },
+static const map<AlphaType, SkAlphaType> ALPHA_TYPE_MAP = {
+    { AlphaType::IMAGE_ALPHA_TYPE_OPAQUE, kOpaque_SkAlphaType },
+    { AlphaType::IMAGE_ALPHA_TYPE_PREMUL, kPremul_SkAlphaType },
+    { AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL, kUnpremul_SkAlphaType },
 };
 
 static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
@@ -161,8 +161,8 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
-static const map<PlPixelFormat, JpegYuvFmt> PLPIXEL_FORMAT_YUV_JPG_MAP = {
-    { PlPixelFormat::NV21, JpegYuvFmt::OutFmt_NV21 }, { PlPixelFormat::NV12, JpegYuvFmt::OutFmt_NV12 }
+static const map<PixelFormat, JpegYuvFmt> PLPIXEL_FORMAT_YUV_JPG_MAP = {
+    { PixelFormat::NV21, JpegYuvFmt::OutFmt_NV21 }, { PixelFormat::NV12, JpegYuvFmt::OutFmt_NV12 }
 };
 
 static void SetDecodeContextBuffer(DecodeContext &context,
@@ -272,7 +272,7 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
 #ifdef HEIF_HW_DECODE_ENABLE
     HeifHardwareDecoder decoder;
     GraphicPixelFormat graphicPixelFormat = context.info.pixelFormat
-            == PlPixelFormat::NV12 ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+            == PixelFormat::NV12 ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
     sptr<SurfaceBuffer> hwBuffer
             = decoder.AllocateOutputBuffer(info_.width(), info_.height(), graphicPixelFormat);
     if (hwBuffer == nullptr) {
@@ -442,7 +442,7 @@ bool ExtDecoder::HasProperty(string key)
     return false;
 }
 
-uint32_t ExtDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t ExtDecoder::GetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("GetImageSize index:%{public}u", index);
     if (!CheckIndexValied(index)) {
@@ -460,13 +460,13 @@ uint32_t ExtDecoder::GetImageSize(uint32_t index, PlSize &size)
     return SUCCESS;
 }
 
-static inline bool IsLowDownScale(const PlSize &size, SkImageInfo &info)
+static inline bool IsLowDownScale(const Size &size, SkImageInfo &info)
 {
-    return size.width < static_cast<uint32_t>(info.width()) &&
-        size.height < static_cast<uint32_t>(info.height());
+    return size.width < info.width() &&
+        size.height < info.height();
 }
 
-static inline bool IsValidCrop(const PlRect &crop, SkImageInfo &info, SkIRect &out)
+static inline bool IsValidCrop(const OHOS::Media::Rect &crop, SkImageInfo &info, SkIRect &out)
 {
     out = SkIRect::MakeXYWH(crop.left, crop.top, crop.width, crop.height);
     if (out.fLeft < ZERO || out.fTop < ZERO) {
@@ -521,7 +521,7 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
-    outputColorFmt_ = (opts.desiredPixelFormat == PlPixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
+    outputColorFmt_ = (opts.desiredPixelFormat == PixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
 
     if (codec_) {
         SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
@@ -639,7 +639,7 @@ static bool IsColorSpaceSupport(SkJpegCodec* codec)
     return false;
 }
 
-uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PlPixelFormat desiredFormat)
+uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PixelFormat desiredFormat)
 {
     uint32_t ret = PreDecodeCheck(index);
     if (ret != SUCCESS) {
@@ -792,7 +792,7 @@ uint32_t ExtDecoder::ReadJpegData(uint8_t* jpegBuffer, uint32_t jpegBufferSize)
     return SUCCESS;
 }
 
-JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PlPixelFormat desiredFormat)
+JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PixelFormat desiredFormat)
 {
     auto iter = PLPIXEL_FORMAT_YUV_JPG_MAP.find(desiredFormat);
     if (iter == PLPIXEL_FORMAT_YUV_JPG_MAP.end()) {
@@ -827,8 +827,8 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
         }
     }
     JpegYuvFmt decodeOutFormat = GetJpegYuvOutFmt(context.info.pixelFormat);
-    PlSize jpgSize = {static_cast<uint32_t>(info_.width()), static_cast<uint32_t>(info_.height())};
-    PlSize desiredSize = desiredSizeYuv_;
+    Size jpgSize = {static_cast<uint32_t>(info_.width()), static_cast<uint32_t>(info_.height())};
+    Size desiredSize = desiredSizeYuv_;
     bool bRet = JpegDecoderYuv::GetScaledSize(jpgSize.width, jpgSize.height, desiredSize.width, desiredSize.height);
     if (!bRet || desiredSize.width == 0 || desiredSize.height == 0) {
         IMAGE_LOGE("DecodeToYuv420 GetScaledSize failed");
@@ -1130,14 +1130,14 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
-bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &outputType)
+bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, AlphaType &outputType)
 {
     if (info_.isEmpty()) {
         return false;
     }
     alphaType = info_.alphaType();
     auto findItem = std::find_if(ALPHA_TYPE_MAP.begin(), ALPHA_TYPE_MAP.end(),
-        [alphaType](const map<PlAlphaType, SkAlphaType>::value_type item) {
+        [alphaType](const map<AlphaType, SkAlphaType>::value_type item) {
         return item.second == alphaType;
     });
     if (findItem == ALPHA_TYPE_MAP.end()) {
@@ -1148,14 +1148,14 @@ bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, PlAlphaType &out
     return true;
 }
 
-bool ExtDecoder::ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outputFormat)
+bool ExtDecoder::ConvertInfoToColorType(SkColorType &format, PixelFormat &outputFormat)
 {
     if (info_.isEmpty()) {
         return false;
     }
     auto colorType = info_.colorType();
     auto findItem = std::find_if(COLOR_TYPE_MAP.begin(), COLOR_TYPE_MAP.end(),
-        [colorType](const map<PlPixelFormat, ColorTypeOutput>::value_type item) {
+        [colorType](const map<PixelFormat, ColorTypeOutput>::value_type item) {
         return item.second.skFormat == colorType;
     });
     if (findItem == COLOR_TYPE_MAP.end()) {
@@ -1166,9 +1166,9 @@ bool ExtDecoder::ConvertInfoToColorType(SkColorType &format, PlPixelFormat &outp
     return true;
 }
 
-SkAlphaType ExtDecoder::ConvertToAlphaType(PlAlphaType desiredType, PlAlphaType &outputType)
+SkAlphaType ExtDecoder::ConvertToAlphaType(AlphaType desiredType, AlphaType &outputType)
 {
-    if (desiredType != PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
+    if (desiredType != AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) {
         auto alphaType = ALPHA_TYPE_MAP.find(desiredType);
         if (alphaType != ALPHA_TYPE_MAP.end()) {
             outputType = alphaType->first;
@@ -1181,14 +1181,14 @@ SkAlphaType ExtDecoder::ConvertToAlphaType(PlAlphaType desiredType, PlAlphaType 
         IMAGE_LOGD("Using alpha type:%{public}d", outputType);
         return res;
     }
-    IMAGE_LOGD("Using default alpha type:%{public}d", PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL);
-    outputType = PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    IMAGE_LOGD("Using default alpha type:%{public}d", AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
+    outputType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     return SkAlphaType::kPremul_SkAlphaType;
 }
 
-SkColorType ExtDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat)
+SkColorType ExtDecoder::ConvertToColorType(PixelFormat format, PixelFormat &outputFormat)
 {
-    if (format != PlPixelFormat::UNKNOWN) {
+    if (format != PixelFormat::UNKNOWN) {
         auto colorType = COLOR_TYPE_MAP.find(format);
         if (colorType != COLOR_TYPE_MAP.end()) {
             outputFormat = colorType->second.outFormat;
@@ -1201,8 +1201,8 @@ SkColorType ExtDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &
         IMAGE_LOGD("Using pixel format:%{public}d", outputFormat);
         return res;
     }
-    IMAGE_LOGD("Using default pixel format:%{public}d", PlPixelFormat::RGBA_8888);
-    outputFormat = PlPixelFormat::RGBA_8888;
+    IMAGE_LOGD("Using default pixel format:%{public}d", PixelFormat::RGBA_8888);
+    outputFormat = PixelFormat::RGBA_8888;
     return kRGBA_8888_SkColorType;
 }
 
@@ -1623,9 +1623,9 @@ bool ExtDecoder::IsSupportHardwareDecode() {
         && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM;
 }
 
-bool ExtDecoder::IsYuv420Format(PlPixelFormat format) const
+bool ExtDecoder::IsYuv420Format(PixelFormat format) const
 {
-    if (format == PlPixelFormat::NV12 || format == PlPixelFormat::NV21) {
+    if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
         return true;
     }
     return false;
@@ -1650,7 +1650,7 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
     }
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     decoder->setOutputColor(context.info.pixelFormat
-        == PlPixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
+        == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
                           dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->decode(nullptr);

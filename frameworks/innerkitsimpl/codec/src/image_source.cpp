@@ -93,36 +93,6 @@ using namespace MultimediaPlugin;
 using namespace HDI::Display::Graphic::Common::V1_0;
 #endif
 
-static const map<PixelFormat, PlPixelFormat> PIXEL_FORMAT_MAP = {
-    { PixelFormat::UNKNOWN, PlPixelFormat::UNKNOWN },     { PixelFormat::ARGB_8888, PlPixelFormat::ARGB_8888 },
-    { PixelFormat::ALPHA_8, PlPixelFormat::ALPHA_8 },     { PixelFormat::RGB_565, PlPixelFormat::RGB_565 },
-    { PixelFormat::RGBA_F16, PlPixelFormat::RGBA_F16 },   { PixelFormat::RGBA_8888, PlPixelFormat::RGBA_8888 },
-    { PixelFormat::BGRA_8888, PlPixelFormat::BGRA_8888 }, { PixelFormat::RGB_888, PlPixelFormat::RGB_888 },
-    { PixelFormat::NV21, PlPixelFormat::NV21 },           { PixelFormat::NV12, PlPixelFormat::NV12 },
-    { PixelFormat::CMYK, PlPixelFormat::CMYK },           { PixelFormat::ASTC_4x4, PlPixelFormat::ASTC_4X4 },
-    { PixelFormat::ASTC_6x6, PlPixelFormat::ASTC_6X6 },   { PixelFormat::ASTC_8x8, PlPixelFormat::ASTC_8X8 }
-};
-
-static const map<ColorSpace, PlColorSpace> COLOR_SPACE_MAP = {
-    { ColorSpace::UNKNOWN, PlColorSpace::UNKNOWN },
-    { ColorSpace::DISPLAY_P3, PlColorSpace::DISPLAY_P3 },
-    { ColorSpace::SRGB, PlColorSpace::SRGB },
-    { ColorSpace::LINEAR_SRGB, PlColorSpace::LINEAR_SRGB },
-    { ColorSpace::EXTENDED_SRGB, PlColorSpace::EXTENDED_SRGB },
-    { ColorSpace::LINEAR_EXTENDED_SRGB, PlColorSpace::LINEAR_EXTENDED_SRGB },
-    { ColorSpace::GENERIC_XYZ, PlColorSpace::GENERIC_XYZ },
-    { ColorSpace::GENERIC_LAB, PlColorSpace::GENERIC_LAB },
-    { ColorSpace::ACES, PlColorSpace::ACES },
-    { ColorSpace::ACES_CG, PlColorSpace::ACES_CG },
-    { ColorSpace::ADOBE_RGB_1998, PlColorSpace::ADOBE_RGB_1998 },
-    { ColorSpace::DCI_P3, PlColorSpace::DCI_P3 },
-    { ColorSpace::ITU_709, PlColorSpace::ITU_709 },
-    { ColorSpace::ITU_2020, PlColorSpace::ITU_2020 },
-    { ColorSpace::ROMM_RGB, PlColorSpace::ROMM_RGB },
-    { ColorSpace::NTSC_1953, PlColorSpace::NTSC_1953 },
-    { ColorSpace::SMPTE_C, PlColorSpace::SMPTE_C }
-};
-
 namespace InnerFormat {
 const string RAW_FORMAT = "image/x-raw";
 const string ASTC_FORMAT = "image/astc";
@@ -745,7 +715,7 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
         plInfo.size = context.outInfo.size;
     }
-    if ((plInfo.pixelFormat == PlPixelFormat::NV12 || plInfo.pixelFormat == PlPixelFormat::NV21) &&
+    if ((plInfo.pixelFormat == PixelFormat::NV12 || plInfo.pixelFormat == PixelFormat::NV21) &&
         context.yuvInfo.imageSize.width != 0) {
         plInfo.yuvDataInfo = context.yuvInfo;
         plInfo.size = context.yuvInfo.imageSize;
@@ -828,11 +798,11 @@ static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, 
     dst.height = src.height;
     int32_t dstBottom = dst.top + dst.height;
     int32_t dstRight = dst.left + dst.width;
-    if (dst.top >= 0 && dstBottom > 0 && static_cast<uint32_t>(dstBottom) > plInfo.size.height) {
-        dst.height = static_cast<int32_t>(plInfo.size.height) - dst.top;
+    if (dst.top >= 0 && dstBottom > 0 && dstBottom > plInfo.size.height) {
+        dst.height = plInfo.size.height - dst.top;
     }
-    if (dst.left >= 0 && dstRight > 0 && static_cast<uint32_t>(dstRight) > plInfo.size.width) {
-        dst.width = static_cast<int32_t>(plInfo.size.width) - dst.left;
+    if (dst.left >= 0 && dstRight > 0 && dstRight > plInfo.size.width) {
+        dst.width = plInfo.size.width - dst.left;
     }
 }
 
@@ -849,9 +819,9 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
     }
 }
 
-static bool IsYuvFormat(PlPixelFormat format)
+static bool IsYuvFormat(PixelFormat format)
 {
-    return format == PlPixelFormat::NV21 || format == PlPixelFormat::NV12;
+    return format == PixelFormat::NV21 || format == PixelFormat::NV12;
 }
 
 static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
@@ -2091,7 +2061,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
         IMAGE_LOGE("[ImageSource]get image size, image decode plugin is null.");
         return ERR_IMAGE_PLUGIN_CREATE_FAILED;
     }
-    ImagePlugin::PlSize size;
+    Size size;
     ret = mainDecoder_->GetImageSize(index, size);
     if (ret == SUCCESS) {
         ImageDecodingStatus imageStatus;
@@ -2137,29 +2107,20 @@ AbsImageDecoder *ImageSource::CreateDecoder(uint32_t &errorCode)
     return DoCreateDecoder(encodedFormat, pluginServer_, *sourceStreamPtr_, errorCode);
 }
 
-static void GetDefaultPixelFormat(const PixelFormat desired, PlPixelFormat &out, MemoryUsagePreference preference)
-{
-    if (desired != PixelFormat::UNKNOWN) {
-        auto formatPair = PIXEL_FORMAT_MAP.find(desired);
-        if (formatPair != PIXEL_FORMAT_MAP.end() && formatPair->second != PlPixelFormat::UNKNOWN) {
-            out = formatPair->second;
-            return;
-        }
-    }
-    out = (preference == MemoryUsagePreference::LOW_RAM) ? PlPixelFormat::RGB_565 : PlPixelFormat::RGBA_8888;
-}
-
 uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder, uint32_t index,
     const DecodeOptions &opts, ImagePlugin::PlImageInfo &plInfo)
 {
-    PlPixelFormat plDesiredFormat;
-    GetDefaultPixelFormat(opts.desiredPixelFormat, plDesiredFormat, preference_);
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
-    plOptions.desiredPixelFormat = plDesiredFormat;
+    if (opts.desiredPixelFormat == PixelFormat::UNKNOWN) {
+        plOptions.desiredPixelFormat = ((preference_ == MemoryUsagePreference::LOW_RAM) ? PixelFormat::RGB_565 : PixelFormat::RGBA_8888);
+    } else {
+        plOptions.desiredPixelFormat = opts.desiredPixelFormat;
+    }
+
     if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && IsHdrImage()) ||
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
-        plOptions.desiredPixelFormat = PlPixelFormat::RGBA_8888;
+        plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
     uint32_t ret = decoder->SetDecodeOptions(index, plOptions, plInfo);
     if (ret != SUCCESS) {
@@ -2173,12 +2134,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         ImageInfo &info = (iter->second).imageInfo;
         IMAGE_LOGD("[ImageSource]SetDecodeOptions plInfo.pixelFormat %{public}d", plInfo.pixelFormat);
 
-        PlPixelFormat format = plInfo.pixelFormat;
-        auto find_item = std::find_if(PIXEL_FORMAT_MAP.begin(), PIXEL_FORMAT_MAP.end(),
-            [format](const std::map<PixelFormat, PlPixelFormat>::value_type item) { return item.second == format; });
-        if (find_item != PIXEL_FORMAT_MAP.end()) {
-            info.pixelFormat = (*find_item).first;
-        }
+        info.pixelFormat = plInfo.pixelFormat;
         IMAGE_LOGD("[ImageSource]SetDecodeOptions info.pixelFormat %{public}d", info.pixelFormat);
     }
     return SUCCESS;
@@ -2224,11 +2180,8 @@ void ImageSource::CopyOptionsToPlugin(const DecodeOptions &opts, PixelDecodeOpti
     plOpts.desiredSize.height = opts.desiredSize.height;
     plOpts.rotateDegrees = opts.rotateDegrees;
     plOpts.sampleSize = opts.sampleSize;
-    auto formatSearch = PIXEL_FORMAT_MAP.find(opts.desiredPixelFormat);
-    plOpts.desiredPixelFormat =
-        (formatSearch != PIXEL_FORMAT_MAP.end()) ? formatSearch->second : PlPixelFormat::RGBA_8888;
-    auto colorSearch = COLOR_SPACE_MAP.find(opts.desiredColorSpace);
-    plOpts.desiredColorSpace = (colorSearch != COLOR_SPACE_MAP.end()) ? colorSearch->second : PlColorSpace::UNKNOWN;
+    plOpts.desiredPixelFormat = opts.desiredPixelFormat;
+    plOpts.desiredColorSpace = opts.desiredColorSpace;
     plOpts.allowPartialImage = opts.allowPartialImage;
     plOpts.editable = opts.editable;
     if (opts.SVGOpts.fillColor.isValidColor) {
@@ -3054,20 +3007,12 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
     uint32_t byteCount = surfaceBufferSize;
     ImageInfo info;
     switch (context.info.pixelFormat) {
-        case PlPixelFormat::RGBA_8888:
-            info.pixelFormat = PixelFormat::RGBA_8888;
-            break;
-        case PlPixelFormat::BGRA_8888:
-            info.pixelFormat = PixelFormat::BGRA_8888;
-            break;
-        case PlPixelFormat::NV12:
-            info.pixelFormat = PixelFormat::NV12;
-            break;
-        case PlPixelFormat::NV21:
-            info.pixelFormat = PixelFormat::NV21;
-            break;
-        case PlPixelFormat::RGBA_1010102:
-            info.pixelFormat = PixelFormat::RGBA_1010102;
+        case PixelFormat::RGBA_8888:
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::NV12:
+        case PixelFormat::NV21:
+        case PixelFormat::RGBA_1010102:
+            info.pixelFormat = context.info.pixelFormat;
             break;
         default:
             IMAGE_LOGE("[ImageSource] GetByteCount pixelFormat %{public}u error", context.info.pixelFormat);
@@ -3087,9 +3032,9 @@ static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void*
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
     context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
     context.pixelsBuffer.context = fd;
-    context.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
-    context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
-    context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    context.pixelFormat = PixelFormat::RGBA_1010102;
+    context.info.pixelFormat = PixelFormat::RGBA_1010102;
+    context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
 }
 #endif
 
@@ -3145,11 +3090,11 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
                                              float scale)
 {
     ImageInfo info;
-    ImagePlugin::PlSize size;
+    Size size;
     uint32_t errorCode = decoder->GetImageSize(FIRST_FRAME, size);
     info.size.width = size.width;
     info.size.height = size.height;
-    if (errorCode != SUCCESS || !IsSizeVailed({static_cast<int32_t>(size.width), static_cast<int32_t>(size.height)})) {
+    if (errorCode != SUCCESS || !IsSizeVailed({size.width, size.height})) {
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return errorCode;
     }
@@ -3162,7 +3107,7 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     TransformSizeWithDensity(info.size, sourceInfo_.baseDensity, wantSize, opts_.fitDensity, opts.desiredSize);
     PixelDecodeOptions plOptions;
     CopyOptionsToPlugin(opts, plOptions);
-    plOptions.desiredPixelFormat = ImagePlugin::PlPixelFormat::RGBA_8888;
+    plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
@@ -3481,9 +3426,9 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
         return ERR_DMA_DATA_ABNORMAL;
     }
     if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
-        context.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
-        context.info.pixelFormat = ImagePlugin::PlPixelFormat::RGBA_1010102;
-        context.info.alphaType = ImagePlugin::PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+        context.pixelFormat = PixelFormat::RGBA_1010102;
+        context.info.pixelFormat = PixelFormat::RGBA_1010102;
+        context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
         context.grColorSpaceName = ColorManager::BT2020_HLG;
     }
     SetContext(context, sb, nativeBuffer);
@@ -3494,8 +3439,8 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
 {
-    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888 &&
-        context.info.pixelFormat != ImagePlugin::PlPixelFormat::BGRA_8888) {
+    if (context.info.pixelFormat != PixelFormat::RGBA_8888 &&
+        context.info.pixelFormat != PixelFormat::BGRA_8888) {
         return false;
     }
     uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3523,8 +3468,8 @@ static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBu
 
 static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& buffer, PlImageInfo plInfo)
 {
-    if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::NV12 &&
-        context.info.pixelFormat != ImagePlugin::PlPixelFormat::NV21) {
+    if (context.info.pixelFormat != PixelFormat::NV12 &&
+        context.info.pixelFormat != PixelFormat::NV21) {
         return false;
     }
     uint8_t* srcRow = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
@@ -3533,7 +3478,7 @@ static bool CopyYUVToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuf
     if (buffer->GetStride() < 0) {
         return false;
     }
-    PlYuvDataInfo yuvDataInfo = context.yuvInfo;
+    YUVDataInfo yuvDataInfo = context.yuvInfo;
     IMAGE_LOGD("[ImageSource] CopyYUVToSurfaceBuffer yHeight = %{public}d, uvHeight = %{public}d,"
         "yStride = %{public}d, uvStride = %{public}d, dstSize = %{public}zu, dstStride = %{public}d",
         yuvDataInfo.yHeight, yuvDataInfo.uvHeight, yuvDataInfo.yStride, yuvDataInfo.uvStride,
@@ -3568,13 +3513,13 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
     IMAGE_LOGD("[ImageSource]CopyContextIntoSurfaceBuffer requestConfig, sizeInfo.width:%{public}u,height:%{public}u.",
         context.info.size.width, context.info.size.height);
     GraphicPixelFormat format = GRAPHIC_PIXEL_FMT_RGBA_8888;
-    if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV21) {
+    if (context.info.pixelFormat == PixelFormat::NV21) {
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-    } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12) {
+    } else if (context.info.pixelFormat == PixelFormat::NV12) {
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-    } else if (context.info.pixelFormat == ImagePlugin::PlPixelFormat::BGRA_8888) {
+    } else if (context.info.pixelFormat == PixelFormat::BGRA_8888) {
         format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888;
-    } else if (context.info.pixelFormat != ImagePlugin::PlPixelFormat::RGBA_8888) {
+    } else if (context.info.pixelFormat != PixelFormat::RGBA_8888) {
         IMAGE_LOGI("CopyContextIntoSurfaceBuffer pixelformat %{public}d is unsupport", context.pixelFormat);
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
@@ -3633,8 +3578,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
         hdrCtx.hdrType = ImageHdrType::HDR_VIVID_SINGLE;
         hdrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
         hdrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
-        hdrCtx.pixelFormat = PlPixelFormat::RGBA_1010102;
-        hdrCtx.info.pixelFormat = PlPixelFormat::RGBA_1010102;
+        hdrCtx.pixelFormat = PixelFormat::RGBA_1010102;
+        hdrCtx.info.pixelFormat = PixelFormat::RGBA_1010102;
         hdrCtx.allocatorType = AllocatorType::DMA_ALLOC;
     }
     return res;
@@ -3761,9 +3706,9 @@ static uint32_t DoImageAiProcess(sptr<SurfaceBuffer> &input, DecodeContext &dstC
             dstCtx.isAisr = true;
         }
     }
-    if (needHdr && (dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV12 ||
-        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::NV21 ||
-        dstCtx.info.pixelFormat == ImagePlugin::PlPixelFormat::RGBA_8888)) {
+    if (needHdr && (dstCtx.info.pixelFormat == PixelFormat::NV12 ||
+        dstCtx.info.pixelFormat == PixelFormat::NV21 ||
+        dstCtx.info.pixelFormat == PixelFormat::RGBA_8888)) {
         sptr<SurfaceBuffer> inputHdr = input;
         DecodeContext hdrCtx;
         if (dstCtx.isAisr) {

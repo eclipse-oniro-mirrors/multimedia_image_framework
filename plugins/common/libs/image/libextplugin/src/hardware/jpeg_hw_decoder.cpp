@@ -95,7 +95,7 @@ JpegHardwareDecoder::~JpegHardwareDecoder()
     bufferMgr_ = nullptr;
 }
 
-bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFormat, PlSize srcImgSize)
+bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFormat, OHOS::Media::Size srcImgSize)
 {
     if (hwDecoder_ == nullptr) {
         JPEG_HW_LOGE("failed to get hardware decoder!");
@@ -118,8 +118,8 @@ bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFor
                      cap.isSoftwareCodec, cap.role, cap.type, cap.maxWidth, cap.maxHeight,
                      cap.minWidth, cap.minHeight);
         if (!cap.isSoftwareCodec && cap.role == CODEC_IMAGE_JPEG && cap.type == CODEC_IMAGE_TYPE_DECODER &&
-            srcImgSize.width >= cap.minWidth && srcImgSize.width <= cap.maxWidth &&
-            srcImgSize.height >= cap.minHeight && srcImgSize.height <= cap.maxHeight) {
+            srcImgSize.width >= static_cast<int32_t>(cap.minWidth) && srcImgSize.width <= static_cast<int32_t>(cap.maxWidth)
+            && srcImgSize.height >= static_cast<int32_t>(cap.minHeight) && srcImgSize.height <= static_cast<int32_t>(cap.maxHeight)) {
             JPEG_HW_LOGD("decoder(%{public}s) selected", cap.name.c_str());
             return true;
         }
@@ -162,7 +162,7 @@ bool JpegHardwareDecoder::CheckInputColorFmt(SkCodec *codec)
 }
 
 uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream,
-                                     PlSize srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
+                                     OHOS::Media::Size srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
 {
     LifeSpanTimer decodeTimer("jpeg hardware decode");
     JPEG_HW_LOGD("img=[%{public}ux%{public}u], sampleSize=%{public}u",

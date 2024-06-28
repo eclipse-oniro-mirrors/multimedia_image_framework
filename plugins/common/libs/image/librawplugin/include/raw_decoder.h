@@ -18,6 +18,8 @@
 #include "abs_image_decoder.h"
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 class RawStream;
 class RawDecoder : public AbsImageDecoder, public OHOS::MultimediaPlugin::PluginClassBase {
 public:
@@ -32,7 +34,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &progContext) override;
     uint32_t GetTopLevelImageNum(uint32_t &num) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
     {
@@ -45,7 +47,7 @@ private:
     uint32_t DoDecodeHeaderByPiex();
 
     uint32_t DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info);
-    uint32_t DoGetImageSize(uint32_t index, PlSize &size);
+    uint32_t DoGetImageSize(uint32_t index, Size &size);
 
     uint32_t DoDecode(uint32_t index, DecodeContext &context);
 

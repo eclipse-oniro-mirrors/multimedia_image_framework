@@ -42,12 +42,6 @@ using namespace MultimediaPlugin;
 static constexpr uint8_t QUALITY_MAX = 100;
 const static std::string EXTENDED_ENCODER = "image/extended";
 static constexpr size_t SIZE_ZERO = 0;
-static const std::map<EncodeDynamicRange, PlEncodeDynamicRange> DYNAMIC_RANGE_MAP = {
-    { EncodeDynamicRange::AUTO, PlEncodeDynamicRange::AUTO },
-    { EncodeDynamicRange::SDR, PlEncodeDynamicRange::SDR },
-    { EncodeDynamicRange::HDR_VIVID_DUAL, PlEncodeDynamicRange::HDR_VIVID_DUAL },
-    { EncodeDynamicRange::HDR_VIVID_SINGLE, PlEncodeDynamicRange::HDR_VIVID_SINGLE },
-};
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
 
@@ -300,8 +294,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.format = opts.format;
     plOpts.disposalTypes = opts.disposalTypes;
     plOpts.needsPackProperties = opts.needsPackProperties;
-    auto search = DYNAMIC_RANGE_MAP.find(opts.desiredDynamicRange);
-    plOpts.desiredDynamicRange = (search != DYNAMIC_RANGE_MAP.end()) ? search->second : PlEncodeDynamicRange::SDR;
+    plOpts.desiredDynamicRange = opts.desiredDynamicRange;
 }
 
 void ImagePacker::FreeOldPackerStream()

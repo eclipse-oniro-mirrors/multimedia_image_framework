@@ -25,6 +25,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 enum class BmpDecodingState : int32_t {
     UNDECIDED = 0,
     SOURCE_INITED = 1,
@@ -42,7 +44,7 @@ public:
     void Reset() override;
     uint32_t SetDecodeOptions(uint32_t index, const PixelDecodeOptions &opts, PlImageInfo &info) override;
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
-    uint32_t GetImageSize(uint32_t index, PlSize &size) override;
+    uint32_t GetImageSize(uint32_t index, Size &size) override;
     uint32_t PromoteIncrementalDecode(uint32_t index, ProgDecodeContext &context) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool IsSupportICCProfile() override
@@ -54,8 +56,8 @@ public:
 private:
     DISALLOW_COPY_AND_MOVE(BmpDecoder);
     bool DecodeHeader();
-    PlAlphaType ConvertToAlphaType(SkAlphaType alphaType);
-    SkColorType ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat);
+    AlphaType ConvertToAlphaType(SkAlphaType alphaType);
+    SkColorType ConvertToColorType(PixelFormat format, PixelFormat &outputFormat);
     uint32_t SetContextPixelsBuffer(uint64_t byteCount, DecodeContext &context, SkImageInfo &dstInfo);
     uint32_t SetShareMemBuffer(uint64_t byteCount, DecodeContext &context);
     InputDataStream *stream_ = nullptr;

@@ -54,7 +54,7 @@ void BmpDecoder::Reset()
     desireColor_ = kUnknown_SkColorType;
 }
 
-uint32_t BmpDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t BmpDecoder::GetImageSize(uint32_t index, Size &size)
 {
     if (index >= BMP_IMAGE_NUM) {
         IMAGE_LOGE("GetImageSize failed, invalid index:%{public}u, range:%{public}u", index, BMP_IMAGE_NUM);
@@ -101,7 +101,7 @@ uint32_t BmpDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         }
         state_ = BmpDecodingState::BASE_INFO_PARSED;
     }
-    PlPixelFormat desiredFormat = opts.desiredPixelFormat;
+    PixelFormat desiredFormat = opts.desiredPixelFormat;
     desireColor_ = ConvertToColorType(desiredFormat, info.pixelFormat);
     info.size.width = info_.width();
     info.size.height = info_.height();
@@ -342,45 +342,45 @@ bool BmpDecoder::DecodeHeader()
     return true;
 }
 
-PlAlphaType BmpDecoder::ConvertToAlphaType(SkAlphaType alphaType)
+AlphaType BmpDecoder::ConvertToAlphaType(SkAlphaType alphaType)
 {
     switch (alphaType) {
         case kOpaque_SkAlphaType:
-            return PlAlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+            return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
         case kPremul_SkAlphaType:
-            return PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+            return AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
         case kUnpremul_SkAlphaType:
-            return PlAlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+            return AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
         default:
             IMAGE_LOGE("unknown alpha type:%{public}d", alphaType);
             break;
     }
-    return PlAlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    return AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
 }
 
-SkColorType BmpDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &outputFormat)
+SkColorType BmpDecoder::ConvertToColorType(PixelFormat format, PixelFormat &outputFormat)
 {
     switch (format) {
-        case PlPixelFormat::UNKNOWN:
-        case PlPixelFormat::RGBA_8888: {
-            outputFormat = PlPixelFormat::RGBA_8888;
+        case PixelFormat::UNKNOWN:
+        case PixelFormat::RGBA_8888: {
+            outputFormat = PixelFormat::RGBA_8888;
             return kRGBA_8888_SkColorType;
         }
-        case PlPixelFormat::BGRA_8888: {
-            outputFormat = PlPixelFormat::BGRA_8888;
+        case PixelFormat::BGRA_8888: {
+            outputFormat = PixelFormat::BGRA_8888;
             return kBGRA_8888_SkColorType;
         }
-        case PlPixelFormat::ALPHA_8: {
+        case PixelFormat::ALPHA_8: {
             SkColorType colorType = info_.colorType();
             if (colorType == kAlpha_8_SkColorType || (colorType == kGray_8_SkColorType && info_.isOpaque())) {
-                outputFormat = PlPixelFormat::ALPHA_8;
+                outputFormat = PixelFormat::ALPHA_8;
                 return kAlpha_8_SkColorType;
             }
             break;
         }
-        case PlPixelFormat::RGB_565: {
+        case PixelFormat::RGB_565: {
             if (info_.isOpaque()) {
-                outputFormat = PlPixelFormat::RGB_565;
+                outputFormat = PixelFormat::RGB_565;
                 return kRGB_565_SkColorType;
             }
             break;
@@ -390,7 +390,7 @@ SkColorType BmpDecoder::ConvertToColorType(PlPixelFormat format, PlPixelFormat &
         }
     }
     IMAGE_LOGD("unsupported convert to format:%{public}d, set default RGBA", format);
-    outputFormat = PlPixelFormat::RGBA_8888;
+    outputFormat = PixelFormat::RGBA_8888;
     return kRGBA_8888_SkColorType;
 }
 } // namespace ImagePlugin

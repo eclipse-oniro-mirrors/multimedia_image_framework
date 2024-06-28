@@ -132,7 +132,7 @@ tjscalingfactor JpegDecoderYuv::GetScaledFactor(uint32_t jpgwidth, uint32_t jpgh
     return factor;
 }
 
-bool JpegDecoderYuv::GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, uint32_t &width, uint32_t &height)
+bool JpegDecoderYuv::GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, int32_t &width, int32_t &height)
 {
     if (jpgwidth == 0 || jpgheight == 0) {
         return false;
@@ -145,8 +145,8 @@ bool JpegDecoderYuv::GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, uint32
         return true;
     }
     tjscalingfactor factor = JpegDecoderYuv::GetScaledFactor(jpgwidth, jpgheight, width, height);
-    width = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgwidth), factor));
-    height = static_cast<uint32_t>(TJSCALED(static_cast<int>(jpgheight), factor));
+    width = TJSCALED(static_cast<int>(jpgwidth), factor);
+    height = TJSCALED(static_cast<int>(jpgheight), factor);
     return true;
 }
 
@@ -232,7 +232,7 @@ uint32_t JpegDecoderYuv::GetJpegDecompressedYuvSize(uint32_t width, uint32_t hei
     return totalSizeForDecodeData;
 }
 
-void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, PlYuvDataInfo &info, JpegYuvFmt fmt)
+void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, YUVDataInfo &info, JpegYuvFmt fmt)
 {
     if (width == 0 || height == 0) {
         return;
@@ -256,7 +256,7 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, Pl
     }
 }
 
-void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, PlYuvDataInfo &info)
+void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, YUVDataInfo &info)
 {
     if (width == 0 || height == 0) {
         return;
@@ -273,7 +273,7 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     info.uvOffset = info.yHeight * info.yStride;
 }
 
-void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, PlYuvDataInfo &info)
+void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, YUVDataInfo &info)
 {
     memset_s(&info, sizeof(info), 0, sizeof(info));
     info.imageSize.width = width;

@@ -343,7 +343,7 @@ uint32_t SvgDecoder::GetTopLevelImageNum(uint32_t &num)
 }
 
 // return background size but not specific frame size, cause of frame drawing on background.
-uint32_t SvgDecoder::GetImageSize(uint32_t index, PlSize &size)
+uint32_t SvgDecoder::GetImageSize(uint32_t index, Size &size)
 {
     if (index >= SVG_IMAGE_NUM) {
         IMAGE_LOGE("[GetImageSize] decode image index[%{public}u], out of range[%{public}u].",
@@ -546,9 +546,9 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
-    info.pixelFormat = PlPixelFormat::RGBA_8888;
-    info.colorSpace = PlColorSpace::UNKNOWN;
-    info.alphaType = PlAlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.colorSpace = ColorSpace::UNKNOWN;
+    info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
 
     IMAGE_LOGD("[DoSetDecodeOptions] OUT pixelFormat=%{public}d, alphaType=%{public}d, "
         "colorSpace=%{public}d, size=(%{public}u, %{public}u)",
@@ -557,7 +557,7 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
     return Media::SUCCESS;
 }
 
-uint32_t SvgDecoder::DoGetImageSize(uint32_t index, PlSize &size)
+uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
 {
     IMAGE_LOGD("[DoGetImageSize] IN index=%{public}u", index);
 

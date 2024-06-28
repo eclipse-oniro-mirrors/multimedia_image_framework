@@ -20,6 +20,8 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+using namespace Media;
+
 class MockAbsImageDecoder : public AbsImageDecoder {
 public:
     MockAbsImageDecoder() = default;
@@ -44,7 +46,7 @@ public:
         return returnValue_;
     }
 
-    uint32_t GetImageSize(uint32_t index, PlSize &size)
+    uint32_t GetImageSize(uint32_t index, Size &size)
     {
         return Media::SUCCESS;
     }

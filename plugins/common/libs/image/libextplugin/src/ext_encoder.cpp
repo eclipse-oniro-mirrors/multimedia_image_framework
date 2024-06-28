@@ -261,17 +261,17 @@ uint32_t ExtEncoder::FinalizeEncode()
     return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, wStream);
 #else
     switch (opts_.desiredDynamicRange) {
-        case PlEncodeDynamicRange::AUTO:
+        case EncodeDynamicRange::AUTO:
             if (pixelmap_->IsHdr() &&
                 (encodeFormat_ == SkEncodedImageFormat::kJPEG || encodeFormat_ == SkEncodedImageFormat::kHEIF)) {
                 return EncodeDualVivid(wStream);
             }
             return EncodeSdrImage(wStream);
-        case PlEncodeDynamicRange::SDR:
+        case EncodeDynamicRange::SDR:
             return EncodeSdrImage(wStream);
-        case PlEncodeDynamicRange::HDR_VIVID_DUAL:
+        case EncodeDynamicRange::HDR_VIVID_DUAL:
             return EncodeDualVivid(wStream);
-        case PlEncodeDynamicRange::HDR_VIVID_SINGLE:
+        case EncodeDynamicRange::HDR_VIVID_SINGLE:
             return EncodeSingleVivid(wStream);
     }
     return ERR_IMAGE_ENCODE_FAILED;

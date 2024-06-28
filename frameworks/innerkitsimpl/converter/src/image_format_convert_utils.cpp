@@ -17,7 +17,6 @@
 
 #include <cmath>
 #include <cstring>
-#include <iostream>
 #include <map>
 #include "hilog/log.h"
 #include "image_log.h"
@@ -671,7 +670,7 @@ bool ImageFormatConvertUtils::BGRAToNV12(const uint8_t *srcBuffer, const Size &i
     }
     *destBuffer = new(std::nothrow) uint8_t[destBufferSize]();
     if (*destBuffer == nullptr) {
-        std::cerr << "apply space for dest buffer failed!" << std::endl;
+        IMAGE_LOGE("apply space for dest buffer failed!");
         return false;
     }
     bool bRet = BGRAToNV12SoftDecode(srcBuffer, imageSize, destBuffer);
