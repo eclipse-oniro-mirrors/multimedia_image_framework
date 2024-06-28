@@ -587,9 +587,7 @@ static inline int32_t GetScalePropByDensity(int32_t prop, int32_t srcDensity, in
 void ImageSource::TransformSizeWithDensity(const Size &srcSize, int32_t srcDensity, const Size &wantSize,
     int32_t wantDensity, Size &dstSize)
 {
-    if (IsSizeVailed(wantSize) && ((opts_.resolutionQuality == ResolutionQuality::UNKNOWN) ||
-                                    (opts_.resolutionQuality == ResolutionQuality::LOW) ||
-                                    (opts_.resolutionQuality == ResolutionQuality::MEDIUM))) {
+    if (IsSizeVailed(wantSize)) {
         CopySize(wantSize, dstSize);
     } else {
         CopySize(srcSize, dstSize);
@@ -3846,7 +3844,11 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
     hasDesiredSizeOptions = IsSizeVailed(opts_.desiredSize);
     TransformSizeWithDensity(info.size, sourceInfo_.baseDensity, opts_.desiredSize, opts_.fitDensity,
         opts_.desiredSize);
-    errorCode = SetDecodeOptions(mainDecoder_, index, opts_, plInfo);
+    DecodeOptions tmpOpts = opts_;
+    if (opts_.resolutionQuality == ResolutionQuality::HIGH) {
+        tmpOpts.desiredSize = info.size;
+    }
+    errorCode = SetDecodeOptions(mainDecoder_, index, tmpOpts, plInfo);
     if (errorCode != SUCCESS) {
         imageEvent.SetDecodeErrorMsg("set decode options error.ret:" + std::to_string(errorCode));
         IMAGE_LOGE("[ImageSource]set decode options error (index:%{public}u), ret:%{public}u.", index, errorCode);
