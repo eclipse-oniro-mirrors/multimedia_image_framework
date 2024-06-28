@@ -30,7 +30,7 @@ public:
     static ConverterHandle& GetInstance();
     void InitConverter();
     void DeInitConverter();
-    const OHOS::OpenSourceLibyuv::ImageConverter &GetHandle();
+    const OHOS::OpenSourceLibyuv::ImageYuvConverter &GetHandle();
     using DlHandle = void *;
 
 private:
@@ -42,7 +42,7 @@ private:
     virtual ~ConverterHandle() = default;
     std::atomic<bool> isInited_ = false;
     DlHandle dlHandler_ = nullptr;
-    OHOS::OpenSourceLibyuv::ImageConverter converter_ = {0};
+    OHOS::OpenSourceLibyuv::ImageYuvConverter converter_ = {0};
 };
 #endif
 } // namespace Media
