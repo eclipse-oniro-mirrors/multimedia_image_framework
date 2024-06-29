@@ -61,8 +61,7 @@
         "third_party": [
           "flutter",
           "bounds_checking_function",
-          "expat",
-          "skia"
+          "expat"
         ]
       },
       "build": {
