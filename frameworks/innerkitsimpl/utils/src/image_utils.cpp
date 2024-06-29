@@ -367,6 +367,28 @@ int32_t ImageUtils::SurfaceBuffer_Unreference(void* buffer)
     return SUCCESS;
 }
 
+void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, uint64_t imageId)
+{
+    IMAGE_LOGI("ImageUtils::DumpPixelMap start");
+    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + customFileName + std::to_string(imageId) +
+        GetPixelMapName(pixelMap) + ".dat";
+    int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
+    if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+            totalSize = static_cast<int32_t>(sbBuffer->GetSize());
+        } else {
+            totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
+        }
+        IMAGE_LOGI("ImageUtils::DumpPixelMap YUV420 totalSize is %{public}d", totalSize);
+    }
+    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
+        IMAGE_LOGI("ImageUtils::DumpPixelMap failed");
+        return;
+    }
+    IMAGE_LOGI("ImageUtils::DumpPixelMap success, path = %{public}s", fileName.c_str());
+}
+
 void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId)
 {
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
@@ -376,25 +398,7 @@ void ImageUtils::DumpPixelMapIfDumpEnabled(std::unique_ptr<PixelMap>& pixelMap, 
         IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled pixelMap is null");
         return;
     }
-
-    IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled start");
-    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_imageId" + std::to_string(imageId) +
-        GetPixelMapName(pixelMap.get()) + ".dat";
-    int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
-    if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
-        if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-            auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
-            totalSize = static_cast<int32_t>(sbBuffer->GetSize());
-        } else {
-            totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
-        }
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 totalSize is %{public}d", totalSize);
-    }
-    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled failed");
-        return;
-    }
-    IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled success, path = %{public}s", fileName.c_str());
+    DumpPixelMap(pixelMap.get(), "_imageId", imageId);
 }
 
 void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
@@ -402,15 +406,7 @@ void ImageUtils::DumpPixelMapBeforeEncode(PixelMap& pixelMap)
     if (!ImageSystemProperties::GetDumpImageEnabled()) {
         return;
     }
-    IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode start");
-    std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + "_beforeEncode" + GetPixelMapName(&pixelMap) +
-        ".dat";
-    int32_t totalSize = pixelMap.GetRowStride() * pixelMap.GetHeight();
-    if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap.GetPixels()), totalSize)) {
-        IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode failed");
-        return;
-    }
-    IMAGE_LOGI("ImageUtils::DumpPixelMapBeforeEncode success, path = %{public}s", fileName.c_str());
+    DumpPixelMap(&pixelMap, "_beforeEncode");
 }
 
 void ImageUtils::DumpDataIfDumpEnabled(const char* data, const size_t& totalSize,
@@ -500,6 +496,19 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_tid" + std::to_string(syscall(SYS_thread_selfid)) +
         "_uniqueId" + std::to_string(pixelMap->GetUniqueId());
 #else
+    std::string yuvInfoStr = "";
+    if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+        YUVDataInfo yuvInfo;
+        pixelMap->GetImageYUVInfo(yuvInfo);
+        yuvInfoStr += "_yWidth" + std::to_string(yuvInfo.yWidth) +
+            "_yHeight" + std::to_string(yuvInfo.yHeight) +
+            "_yStride" + std::to_string(yuvInfo.yStride) +
+            "_yOffset" + std::to_string(yuvInfo.yOffset) +
+            "_uvWidth" + std::to_string(yuvInfo.uvWidth) +
+            "_uvHeight" + std::to_string(yuvInfo.uvHeight) +
+            "_uvStride" + std::to_string(yuvInfo.uvStride) +
+            "_uvOffset" + std::to_string(yuvInfo.uvOffset);
+    }
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
