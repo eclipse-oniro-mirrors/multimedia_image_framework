@@ -2966,6 +2966,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
         }
     }
     canvas.concat(infos.matrix);
+    src.bitmap.setImmutable();
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
     if (infos.matrix.rectStaysRect()) {
         SkRect skrect = SkRect::MakeXYWH(0, 0, skimage->width(), skimage->height());
