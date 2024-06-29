@@ -195,7 +195,7 @@ static void WriteMpIndexIFD(vector<uint8_t>& bytes, uint32_t& offset, uint8_t im
     ImageUtils::Uint32ToBytes(imageNum, bytes, offset);
 
     // tag MP_ENTRY_TAG
-    const uint32_t mpEntryCount = MP_ENTRY_BYTE_SIZE * imageNum;
+    const uint32_t mpEntryCount = static_cast<uint32_t>(MP_ENTRY_BYTE_SIZE) * static_cast<uint32_t>(imageNum);
     ImageUtils::Uint16ToBytes(MP_ENTRY_TAG, bytes, offset);
     ImageUtils::Uint16ToBytes(TAG_TYPE_UNDEFINED, bytes, offset);
     ImageUtils::Uint32ToBytes(mpEntryCount, bytes, offset);
