@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <array>
 #include "jpeg_exif_metadata_accessor.h"
 
 #include <libexif/exif-data.h>

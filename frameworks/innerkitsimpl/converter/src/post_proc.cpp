@@ -59,7 +59,7 @@ constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
 constexpr int FFMPEG_NUM = 8;
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
     { PixelFormat::ALPHA_8, AVPixelFormat::AV_PIX_FMT_GRAY8 },
     { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565BE },
@@ -706,7 +706,7 @@ void PostProc::SetScanlineCropAndConvert(const Rect &cropRect, ImageInfo &dstIma
     scanlineFilter.SetSrcRegion(srcRect);
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool GetScaleFormat(const PixelFormat &format, AVPixelFormat &pixelFormat)
 {
     if (format != PixelFormat::UNKNOWN) {
