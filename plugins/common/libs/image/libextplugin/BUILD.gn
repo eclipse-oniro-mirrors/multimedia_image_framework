@@ -239,6 +239,7 @@ ohos_shared_library("extplugin") {
       "skia:libjpeg",
       "skia:skia_canvaskit",
       "zlib:libz",
+      "hitrace:hitrace_meter",
     ]
 
     if (defined(global_parts_info) &&

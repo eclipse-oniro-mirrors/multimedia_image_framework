@@ -40,7 +40,10 @@ ohos_executable("jpeg_hw_decoder_demo") {
     "${image_subsystem}/frameworks/innerkitsimpl/stream/include/",
     "${image_subsystem}/interfaces/innerkits/include/",
   ]
-  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
+  deps = [
+    "${image_subsystem}/interfaces/innerkits:image_native",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+  ]
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libimage_proxy_1.0",

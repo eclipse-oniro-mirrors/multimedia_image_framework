@@ -44,6 +44,8 @@
 #include "color_utils.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
+#include "hitrace_meter.h"
+#include "image_trace.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -912,6 +914,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer)
 {
+    ImageTrace imageTrace("Ext AllocOutputBuffer");
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
