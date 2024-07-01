@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define private public
+#define protected public
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -796,6 +798,130 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_003, TestSize.Level1)
     uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_003 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, CheckConvertDataInfo_Test_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: CheckConvertDataInfo_Test_001 start";
+    ConvertDataInfo convertDataInfo;
+    convertDataInfo.buffer = nullptr;
+    bool cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
+    EXPECT_EQ(cvtFunc, false);
+    uint8_t data = 0;
+    convertDataInfo.buffer = &data;
+    EXPECT_NE(convertDataInfo.buffer, nullptr);
+    convertDataInfo.pixelFormat = PixelFormat::UNKNOWN;
+    cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
+    EXPECT_EQ(cvtFunc, false);
+    convertDataInfo.pixelFormat = PixelFormat::ARGB_8888;
+    convertDataInfo.imageSize = {0, 0};
+    cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
+    EXPECT_EQ(cvtFunc, false);
+    convertDataInfo.imageSize = {1, 1};
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(convertDataInfo.pixelFormat, convertDataInfo.imageSize), 4);
+    convertDataInfo.bufferSize = 1;
+    cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
+    EXPECT_EQ(cvtFunc, false);
+    convertDataInfo.bufferSize = 4;
+    cvtFunc = ImageFormatConvert::CheckConvertDataInfo(convertDataInfo);
+    EXPECT_EQ(cvtFunc, true);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: CheckConvertDataInfo_Test_001 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, GetBufferSizeByFormat_Test_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetBufferSizeByFormat_Test_001 start";
+    Size size = {1, 1};
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGB_565, size), 2);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGB_888, size), 3);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::ARGB_8888, size), 4);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_8888, size), 4);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::BGRA_8888, size), 4);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_F16, size), 8);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV21, size), 3);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV12, size), 3);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::UNKNOWN, size), 0);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetBufferSizeByFormat_Test_001 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, YUVGetConvertFuncByFormat_Test_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVGetConvertFuncByFormat_Test_001 start";
+    PixelFormat srcFormat = PixelFormat::UNKNOWN;
+    PixelFormat destFormat = PixelFormat::ARGB_8888;
+    EXPECT_EQ(ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat), nullptr);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVGetConvertFuncByFormat_Test_001 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, MakeDestPixelMap_Test_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 start";
+    std::shared_ptr<PixelMap> destPixelMap = nullptr;
+    uint8_buffer_type destBuffer = nullptr;
+    const size_t destBufferSize = 0;
+    ImageInfo info;
+    AllocatorType allcatorType = AllocatorType::DEFAULT;
+    info.size = {0, 0};
+    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, destBuffer, destBufferSize, info, allcatorType),
+      false);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, YUVConvertImageFormatOption_Test_001, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_Test_001 start";
+    std::shared_ptr<PixelMap> srcPiexlMap = std::make_shared<PixelMap>();
+    PixelFormat srcFormat = PixelFormat::UNKNOWN;
+    PixelFormat destFormat = PixelFormat::ARGB_8888;
+    EXPECT_EQ(ImageFormatConvert::YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat),
+    ERR_IMAGE_INVALID_PARAMETER);
+    srcFormat = PixelFormat::NV21;
+    destFormat = PixelFormat::RGB_888;
+    EXPECT_EQ(ImageFormatConvert::YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat),
+    ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_Test_001 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_004, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_004 start";
+    std::shared_ptr<PixelMap> srcPixelMap = std::make_shared<PixelMap>();
+    PixelFormat destFormat = PixelFormat::RGB_888;
+    srcPixelMap->imageInfo_.pixelFormat = PixelFormat::NV21;
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    srcPixelMap->imageInfo_.pixelFormat = PixelFormat::RGB_565;
+    destFormat = PixelFormat::NV21;
+    ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_004 end";
+}
+
+HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_005, TestSize.Level1)
+{
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 start";
+    ConvertDataInfo srcDataInfo;
+    ConvertDataInfo destDataInfo;
+    srcDataInfo.buffer = nullptr;
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    uint8_t data = 0;
+    srcDataInfo.buffer = &data;
+    srcDataInfo.pixelFormat = PixelFormat::ARGB_8888;
+    srcDataInfo.imageSize = {1, 1};
+    srcDataInfo.bufferSize = 4;
+    destDataInfo.pixelFormat = PixelFormat::UNKNOWN;
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    srcDataInfo.pixelFormat = PixelFormat::UNKNOWN;
+    destDataInfo.pixelFormat = PixelFormat::ARGB_8888;
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    srcDataInfo.pixelFormat = PixelFormat::RGB_565;
+    destDataInfo.pixelFormat = PixelFormat::NV21;
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    EXPECT_EQ(ret, SUCCESS);
+    GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 end";
 }
 } // namespace Media
 } // namespace OHOS
