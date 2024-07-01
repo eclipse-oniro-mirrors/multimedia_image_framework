@@ -417,7 +417,7 @@ int JpegDecoderYuv::DecodeHeader(tjhandle dehandle, int& retSubsamp)
     decodeParameter_.jpgheight_ = static_cast<uint32_t>(height);
     if (ret != 0) {
         IMAGE_LOGE("JpegDecoderYuv tjDecompressHeader3, failed");
-        return JpegYuvDecodeError_DecodeFailed;
+        return JpegYuvDecodeError_SubSampleNotSupport;
     }
     if (width == 0 || height == 0) {
         IMAGE_LOGE("JpegDecoderYuv tjDecompressHeader3, image size zero");

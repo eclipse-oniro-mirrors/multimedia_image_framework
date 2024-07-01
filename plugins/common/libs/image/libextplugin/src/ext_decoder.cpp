@@ -23,6 +23,7 @@
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "ext_pixel_convert.h"
 #include "image_log.h"
+#include "image_format_convert.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ffrt.h"
 #include "hisysevent.h"
@@ -53,6 +54,7 @@
 
 namespace {
     constexpr static int32_t ZERO = 0;
+    constexpr static int32_t NUM_2 = 2;
     constexpr static int32_t NUM_3 = 3;
     constexpr static int32_t NUM_4 = 4;
     constexpr static int32_t OFFSET = 1;
@@ -596,6 +598,55 @@ static void DebugInfo(SkImageInfo &info, SkImageInfo &dstInfo, SkCodec::Options 
     }
 }
 
+static uint64_t GetByteSize(int32_t width, int32_t height)
+{
+    return static_cast<uint64_t>(width * height + ((width + 1) / NUM_2) * ((height + 1) / NUM_2) * NUM_2);
+}
+
+static void UpdateContextYuvInfo(DecodeContext &context, ConvertDataInfo &dstDataInfo)
+{
+    context.yuvInfo.yWidth = static_cast<uint32_t>(dstDataInfo.imageSize.width);
+    context.yuvInfo.yHeight = static_cast<uint32_t>(dstDataInfo.imageSize.height);
+    context.yuvInfo.yStride = static_cast<uint32_t>(dstDataInfo.imageSize.width);
+    context.yuvInfo.uvWidth = static_cast<uint32_t>((dstDataInfo.imageSize.width + 1) / NUM_2);
+    context.yuvInfo.uvHeight = static_cast<uint32_t>((dstDataInfo.imageSize.height + 1) / NUM_2);
+    context.yuvInfo.uvStride = static_cast<uint32_t>((dstDataInfo.imageSize.width + 1) / NUM_2 * NUM_2);
+    context.yuvInfo.yOffset = 0;
+    context.yuvInfo.uvOffset = static_cast<uint32_t>(context.yuvInfo.yHeight * context.yuvInfo.yStride);
+}
+
+uint32_t ExtDecoder::ConvertFormatToYUV(DecodeContext &context, SkImageInfo &dstInfo,
+    uint64_t byteCount, PixelFormat format)
+{
+    ConvertDataInfo srcDataInfo;
+    DecodeContext dstContext;
+    dstContext.allocatorType = context.allocatorType;
+    uint64_t dstCount = GetByteSize(dstInfo.width(), dstInfo.height());
+    uint32_t ret = SetContextPixelsBuffer(dstCount, dstContext);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("ConvertFormatToYUV SetContextPixelsBuffer failed");
+        return ret;
+    }
+    ConvertDataInfo dstDataInfo;
+    srcDataInfo.buffer = static_cast<uint8_buffer_type>(context.pixelsBuffer.buffer);
+    srcDataInfo.bufferSize = byteCount;
+    srcDataInfo.imageSize = {dstInfo.width(), dstInfo.height()};
+    srcDataInfo.pixelFormat = context.pixelFormat;
+    srcDataInfo.colorSpace = static_cast<ColorSpace>(context.colorSpace);
+    dstDataInfo.buffer = static_cast<uint8_buffer_type>(dstContext.pixelsBuffer.buffer);
+    dstDataInfo.pixelFormat = format;
+    ret = Media::ImageFormatConvert::ConvertImageFormat(srcDataInfo, dstDataInfo);
+    if (ret != SUCCESS) {
+        IMAGE_LOGE("Decode convert failed , ret=%{public}d", ret);
+        return ret;
+    }
+    SetDecodeContextBuffer(context, dstContext.allocatorType, static_cast<uint8_t *>(dstDataInfo.buffer),
+        dstCount, context.pixelsBuffer.context);
+    context.info.pixelFormat = format;
+    UpdateContextYuvInfo(context, dstDataInfo);
+    return SUCCESS;
+}
+
 static uint32_t RGBxToRGB(uint8_t* srcBuffer, size_t srsSize,
     uint8_t* dstBuffer, size_t dstSize, size_t pixelCount)
 {
@@ -705,12 +756,19 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return res;
     }
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
+    PixelFormat format = context.info.pixelFormat;
     bool isOutputYuv420Format = IsYuv420Format(context.info.pixelFormat);
+    uint32_t result = 0;
     if (isOutputYuv420Format && skEncodeFormat == SkEncodedImageFormat::kJPEG) {
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
-    return 0;
+        return 0;
 #else
-    return DecodeToYuv420(index, context);
+        result = DecodeToYuv420(index, context);
+        if (result != JpegYuvDecodeError_SubSampleNotSupport) {
+            return result;
+        }
+        IMAGE_LOGI("Decode sample not support, apply rgb decode");
+        context.pixelsBuffer.buffer = nullptr;
 #endif
     }
     if (skEncodeFormat == SkEncodedImageFormat::kHEIF) {
@@ -759,8 +817,19 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
-        return RGBxToRGB(dstBuffer, dstInfo_.computeMinByteSize(), static_cast<uint8_t*>(context.pixelsBuffer.buffer),
+        res = RGBxToRGB(dstBuffer, dstInfo_.computeMinByteSize(), static_cast<uint8_t*>(context.pixelsBuffer.buffer),
             byteCount, dstInfo_.width() * dstInfo_.height());
+        if (res != SUCCESS) {
+            IMAGE_LOGE("Decode failed, RGBxToRGB failed, res=%{public}d", res);
+            return res;
+        }
+    }
+    if (result == JpegYuvDecodeError_SubSampleNotSupport) {
+        res = ConvertFormatToYUV(context, dstInfo_, byteCount, format);
+        if (res != SUCCESS) {
+            IMAGE_LOGE("Decode failed, ConvertFormatToYUV failed, res=%{public}d", res);
+            return res;
+        }
     }
     return SUCCESS;
 }
@@ -851,7 +920,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
         // update yuv outInfo if decode success, same as jpeg hardware decode
         context.outInfo.size = desiredSize;
     }
-    return retDecode == JpegYuvDecodeError_Success ? SUCCESS : ERR_IMAGE_DECODE_FAILED;
+    return retDecode;
 }
 
 static std::string GetFormatStr(SkEncodedImageFormat format)
