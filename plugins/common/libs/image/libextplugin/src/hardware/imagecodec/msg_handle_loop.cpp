@@ -24,7 +24,9 @@ using namespace std;
 
 MsgHandleLoop::MsgHandleLoop()
 {
-    m_thread = thread(&MsgHandleLoop::MainLoop, this);
+    m_thread = thread([this] {
+        this->MainLoop();
+    });
 }
 
 MsgHandleLoop::~MsgHandleLoop()
