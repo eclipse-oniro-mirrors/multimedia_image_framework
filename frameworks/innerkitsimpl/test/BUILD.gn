@@ -371,7 +371,10 @@ ohos_unittest("imageutilstest") {
     "//foundation/multimedia/media_utils_lite/interfaces/kits",
     "//foundation/communication/ipc/utils/include",
   ]
-  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/color_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp",
+  ]
 
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",

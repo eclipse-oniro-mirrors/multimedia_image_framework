@@ -14,6 +14,7 @@
  */
 
 #define private public
+#define protected public
 #include <gtest/gtest.h>
 #include "ext_pixel_convert.h"
 #include "ext_wstream.h"
@@ -22,6 +23,7 @@
 #include "ext_encoder.h"
 #include "ext_stream.h"
 #include "mock_data_stream.h"
+#include "mock_skw_stream.h"
 #include "file_source_stream.h"
 
 using namespace testing::ext;
@@ -997,6 +999,125 @@ HWTEST_F(ExtDecoderTest, GetJpegYuvOutFmtTest001, TestSize.Level3)
     ret = extDecoder->GetJpegYuvOutFmt(desiredFormat);
     ASSERT_EQ(ret, JpegYuvFmt::OutFmt_NV12);
     GTEST_LOG_(INFO) << "ExtDecoderTest: GetJpegYuvOutFmtTest001 end";
+}
+
+/**
+@tc.name: IsHardwareEncodeSupportedTest001
+@tc.desc: Test of IsHardwareEncodeSupported
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, IsHardwareEncodeSupportedTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsHardwareEncodeSupportedTest001 start";
+    ExtEncoder extEncoder;
+    const PlEncodeOptions opts;
+    Media::PixelMap* pixelMap = nullptr;
+    bool ret = extEncoder.IsHardwareEncodeSupported(opts, pixelMap);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: IsHardwareEncodeSupportedTest001 end";
+}
+
+/**
+@tc.name: DoHardWareEncodeTest001
+@tc.desc: Test of DoHardWareEncode
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, DoHardWareEncodeTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DoHardWareEncodeTest001 start";
+    ExtEncoder extEncoder;
+    MockSkWStream* skStream = nullptr;
+    Media::PixelMap pixelMap;
+    extEncoder.pixelmap_ = &pixelMap;
+    uint32_t ret = extEncoder.DoHardWareEncode(skStream);
+    ASSERT_EQ(ret, ERR_IMAGE_ENCODE_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: DoHardWareEncodeTest001 end";
+}
+
+/**
+@tc.name: EncodeImageBySurfaceBufferTest001
+@tc.desc: Test of EncodeImageBySurfaceBuffer
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, EncodeImageBySurfaceBufferTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeImageBySurfaceBufferTest001 start";
+    ExtEncoder extEncoder;
+    sptr<SurfaceBuffer> surfaceBuffer = nullptr;
+    SkImageInfo info;
+    bool needExif = false;
+    MockSkWStream mockSkWStream;
+    uint32_t ret = extEncoder.EncodeImageBySurfaceBuffer(surfaceBuffer, info, needExif, mockSkWStream);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    surfaceBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(surfaceBuffer, nullptr);
+    ret = extEncoder.EncodeImageBySurfaceBuffer(surfaceBuffer, info, needExif, mockSkWStream);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    auto result = extEncoder.GetImageEncodeData(surfaceBuffer, info, needExif);
+    ASSERT_EQ(result, nullptr);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeImageBySurfaceBufferTest001 end";
+}
+
+/**
+@tc.name: EncodeSingleVividTest001
+@tc.desc: Test of EncodeSingleVivid
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, EncodeSingleVividTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSingleVividTest001 start";
+    ExtEncoder extEncoder;
+    ExtWStream outputStream;
+    uint32_t ret = extEncoder.EncodeSingleVivid(outputStream);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSingleVividTest001 end";
+}
+
+/**
+@tc.name: EncodeDualVividTest001
+@tc.desc: Test of EncodeDualVivid
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, EncodeDualVividTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeDualVividTest001 start";
+    ExtEncoder extEncoder;
+    ExtWStream outputStream;
+    Media::PixelMap pixelMap;
+    extEncoder.pixelmap_ = &pixelMap;
+    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::UNKNOWN;
+    uint32_t ret = extEncoder.EncodeDualVivid(outputStream);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::RGBA_1010102;
+    extEncoder.encodeFormat_ = SkEncodedImageFormat::kJPEG;
+    extEncoder.pixelmap_->allocatorType_ = AllocatorType::DEFAULT;
+    ret = extEncoder.EncodeDualVivid(outputStream);
+    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    extEncoder.pixelmap_->allocatorType_ = AllocatorType::DMA_ALLOC;
+    extEncoder.encodeFormat_ = SkEncodedImageFormat::kHEIF;
+    ret = extEncoder.EncodeDualVivid(outputStream);
+    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeDualVividTest001 end";
+}
+
+/**
+@tc.name: EncodeSdrImageTest001
+@tc.desc: Test of EncodeSdrImage
+@tc.type: FUNC
+*/
+HWTEST_F(ExtDecoderTest, EncodeSdrImageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSdrImageTest001 start";
+    ExtEncoder extEncoder;
+    ExtWStream outputStream;
+    Media::PixelMap pixelMap;
+    extEncoder.pixelmap_ = &pixelMap;
+    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::UNKNOWN;
+    uint32_t ret = extEncoder.EncodeSdrImage(outputStream);
+    extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::RGBA_1010102;
+    ret = extEncoder.EncodeSdrImage(outputStream);
+    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSdrImageTest001 end";
 }
 }
 }
