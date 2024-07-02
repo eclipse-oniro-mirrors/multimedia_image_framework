@@ -108,7 +108,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis)
     } else {
         operation = option;
     }
-    scale(xAxis, yAxis, AntiAliasingOption::NONE);
+    scale(xAxis, yAxis, operation);
 }
 
 void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &option)

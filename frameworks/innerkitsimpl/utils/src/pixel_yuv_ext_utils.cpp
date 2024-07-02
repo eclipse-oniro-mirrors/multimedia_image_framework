@@ -303,10 +303,11 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
                          tempVData, dstUWidth, dstUWidth, dstUHeight, filterMode);
     // Merge  the UV
     uint8_t *dstUV = dst + GetYSize(dstYStride, dstYHeight);
+    int32_t dstUVStride = static_cast<int32_t>(dstUWidth * NUM_2);
     if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        converter.MergeUVPlane(tempUData, dstUWidth, tempVData, dstUWidth, dstUV, dstYStride, dstUWidth, dstUHeight);
+        converter.MergeUVPlane(tempUData, dstUWidth, tempVData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);
     } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        converter.MergeUVPlane(tempVData, dstUWidth, tempUData, dstUWidth, dstUV, dstYStride, dstUWidth, dstUHeight);
+        converter.MergeUVPlane(tempVData, dstUWidth, tempUData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);
     }
 
     uData = vData = nullptr;
