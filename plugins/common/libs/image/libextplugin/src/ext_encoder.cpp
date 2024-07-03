@@ -480,8 +480,6 @@ static uint32_t DecomposeImage(PixelMap* pixelMap, sptr<SurfaceBuffer>& base, sp
     }
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd()));
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
-    VpeUtils::SetSbDynamicMetadata(hdrSurfaceBuffer, std::vector<uint8_t>(0));
-    VpeUtils::SetSbStaticMetadata(hdrSurfaceBuffer, std::vector<uint8_t>(0));
     VpeSurfaceBuffers buffers = {
         .sdr = base,
         .gainmap = gainmap,
