@@ -16,12 +16,11 @@
 #ifndef OHOS_IMAGE_UTILS_H
 #define OHOS_IMAGE_UTILS_H
 
-const int64_t IMAGE_SUCCESS = 0;
-const int64_t IMAGE_FAILED = 1;
-
 #include <cstdint>
 #include <memory>
 #include <string>
+
+const int64_t INIT_FAILED = -1;
 
 extern "C" {
     typedef struct {
@@ -40,6 +39,7 @@ extern "C" {
         int32_t rowStride;
         int32_t pixelStride;
         uint8_t *byteBuffer;
+        int64_t bufSize;
     } CRetComponent;
 
     typedef struct {

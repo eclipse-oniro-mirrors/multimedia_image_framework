@@ -23,6 +23,7 @@
 namespace OHOS {
 namespace Media {
 class FFI_EXPORT PixelMapImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(PixelMapImpl, OHOS::FFI::FFIData)
 public:
     explicit PixelMapImpl(std::shared_ptr<PixelMap> ptr_);
     std::shared_ptr<PixelMap> GetRealPixelMap();
@@ -54,17 +55,7 @@ public:
     static std::unique_ptr<PixelMap> CreatePixelMap(uint32_t *colors, uint32_t colorLength,
         InitializationOptions &opts);
     static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap &source, InitializationOptions &opts);
-OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
-
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("PixelMapImpl");
-        return &runtimeType;
-    }
     std::shared_ptr<PixelMap> real_;
 };
 }

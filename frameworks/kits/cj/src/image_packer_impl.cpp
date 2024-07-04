@@ -31,13 +31,13 @@ std::shared_ptr<ImagePacker> ImagePackerImpl::GetImagePacker()
     return res;
 }
 
-std::tuple<int32_t, void*, int64_t> ImagePackerImpl::Packing(PixelMap& source, const PackOption& option,
+std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::Packing(PixelMap& source, const PackOption& option,
     uint64_t bufferSize)
 {
     return CommonPacking<PixelMap>(source, option, bufferSize);
 }
 
-std::tuple<int32_t, void*, int64_t> ImagePackerImpl::Packing(ImageSource& source, const PackOption& option,
+std::tuple<int32_t, uint8_t*, int64_t> ImagePackerImpl::Packing(ImageSource& source, const PackOption& option,
     uint64_t bufferSize)
 {
     return CommonPacking<ImageSource>(source, option, bufferSize);
