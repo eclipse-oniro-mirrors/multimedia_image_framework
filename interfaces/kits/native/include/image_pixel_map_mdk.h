@@ -118,6 +118,31 @@ enum {
 };
 
 /**
+ * @brief Enumerates the anti-aliasing options.
+ *
+ * @since 12
+ * @version 1.0
+ */
+typedef enum {
+    /**
+     * Nearest-neighbor interpolation.
+     */
+    OHOS_ANTI_ALIASING_NONE = 0,
+    /**
+     * Bilinear interpolation, without mipmap linear filtering.
+     */
+    OHOS_ANTI_ALIASING_LOW = 1,
+    /**
+     * Bilinear interpolation, with mipmap linear filtering.
+     */
+    OHOS_ANTI_ALIASING_MEDIUM = 2,
+    /**
+     * Cubic interpolation.
+     */
+    OHOS_ANTI_ALIASING_HIGH = 3,
+} OHOS_ANTI_ALIASING_OPTION;
+
+/**
  * @brief Defines the options used for creating a pixel map.
  *
  * @since 10
@@ -386,6 +411,39 @@ int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity);
  * @version 1.0
  */
 int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
+
+/**
+ * @brief Scales a <b>PixelMap</b> object with anti-aliasing.
+ *
+ * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
+ * @param x Indicates the scaling ratio of the width.
+ * @param y Indicates the scaling ratio of the height.
+ * @param antiAliasing Indicates the anti-aliasing method used for the scaling.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST - if sharememory error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_CROP - if crop error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
+ * @see SmoothScale
+ * @since 12
+ * @version 1.0
+ */
+int32_t OH_PixelMap_SmoothScale(const NativePixelMap* native, float x, float y, OHOS_ANTI_ALIASING_OPTION antiAliasing);
 
 /**
  * @brief Translates a <b>PixelMap</b> object.

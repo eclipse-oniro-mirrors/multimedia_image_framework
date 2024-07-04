@@ -84,6 +84,15 @@ static ScaleMode ParseScaleMode(int32_t val)
     return ScaleMode::FIT_TARGET_SIZE;
 }
 
+static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
+{
+    if (val <= static_cast<int32_t>(AntiAliasingOption::SPLINE)) {
+        return AntiAliasingOption(val);
+    }
+
+    return AntiAliasingOption::NONE;
+}
+
 static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
 {
     if (args == nullptr || args->outValue == nullptr) {
@@ -262,7 +271,11 @@ static int32_t PixelMapNapiScale(PixelMapNapi* native, PixelMapNapiArgs* args)
         return error != 0 ? error : IMAGE_RESULT_INVALID_PARAMETER;
     }
 
-    pixelmap->scale(args->inFloat0, args->inFloat1);
+    if (args->inNum0 == AntiAliasingOption::NONE) {
+        pixelmap->scale(args->inFloat0, args->inFloat1);
+    } else {
+        pixelmap->scale(args->inFloat0, args->inFloat1, ParseAntiAliasingOption(args->inNum0));
+    }
     return pixelmap->errorCode == 0 ? IMAGE_RESULT_SUCCESS : pixelmap->errorCode;
 }
 

@@ -152,6 +152,20 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
+    args.inNum0 = OHOS_ANTI_ALIASING_OPTION::OHOS_ANTI_ALIASING_NONE;
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
+}
+
+MIDK_EXPORT
+int32_t OH_PixelMap_SmoothScale(const NativePixelMap* native, float x, float y, OHOS_ANTI_ALIASING_OPTION antiAliasing)
+{
+    if (native == nullptr || native->napi == nullptr) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    PixelMapNapiArgs args;
+    args.inFloat0 = x;
+    args.inFloat1 = y;
+    args.inNum0 = antiAliasing;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
 }
 
