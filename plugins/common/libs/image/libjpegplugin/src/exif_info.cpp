@@ -1481,13 +1481,13 @@ bool EXIFInfo::WriteExifDataToFile(ExifData *data, unsigned int orginExifDataLen
 
 void EXIFInfo::ReleaseSource(unsigned char **ptrBuf, FILE **ptrFile)
 {
-    if (*ptrBuf) {
+    if (ptrBuf != nullptr && *ptrBuf != nullptr) {
         free(*ptrBuf);
         *ptrBuf = nullptr;
         ptrBuf = nullptr;
     }
 
-    if (*ptrFile != nullptr) {
+    if (ptrFile != nullptr && *ptrFile != nullptr) {
         fclose(*ptrFile);
         *ptrFile = nullptr;
         ptrFile = nullptr;
