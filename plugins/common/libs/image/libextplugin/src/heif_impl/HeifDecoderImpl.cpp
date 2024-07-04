@@ -468,9 +468,8 @@ bool HeifDecoderImpl::DecodeImage(HeifHardwareDecoder *hwDecoder,
     }
 
     bool res = false;
-    IMAGE_LOGI("HeifDecoderImpl::DecodeImage width: %{public}d, height: %{public}d,"
-               " imageType: %{public}s, inPixelFormat: %{public}d",
-               gridInfo.displayWidth, gridInfo.displayHeight, imageType.c_str(), inPixelFormat);
+    IMAGE_LOGI("HeifDecoderImpl::DecodeImage width: %{public}d, height: %{public}d, imageType: %{public}s,"
+        "inPixelFormat: %{public}d", gridInfo.displayWidth, gridInfo.displayHeight, imageType.c_str(), inPixelFormat);
     if (imageType == "grid") {
         gridInfo.enableGrid = true;
         res = DecodeGrids(hwDecoder, image, gridInfo, hwBuffer);
@@ -478,13 +477,11 @@ bool HeifDecoderImpl::DecodeImage(HeifHardwareDecoder *hwDecoder,
         gridInfo.enableGrid = false;
         res = DecodeSingleImage(hwDecoder, image, gridInfo, hwBuffer);
     }
-    if (!res) {
-        ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
-        return false;
+    if (res) {
+        *outBuffer = hwBuffer;
     }
-    *outBuffer = hwBuffer;
     ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
-    return true;
+    return res;
 }
 
 bool HeifDecoderImpl::DecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
