@@ -271,7 +271,7 @@ static int32_t PixelMapNapiScale(PixelMapNapi* native, PixelMapNapiArgs* args)
         return error != 0 ? error : IMAGE_RESULT_INVALID_PARAMETER;
     }
 
-    if (args->inNum0 == AntiAliasingOption::NONE) {
+    if (args->inNum0 == static_cast<int32_t>(AntiAliasingOption::NONE)) {
         pixelmap->scale(args->inFloat0, args->inFloat1);
     } else {
         pixelmap->scale(args->inFloat0, args->inFloat1, ParseAntiAliasingOption(args->inNum0));
