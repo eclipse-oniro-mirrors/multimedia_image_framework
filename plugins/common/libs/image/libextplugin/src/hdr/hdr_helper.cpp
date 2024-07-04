@@ -168,12 +168,11 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
         if (fileType != VIVID_FILE_TYPE_BASE) {
             continue;
         }
-        uint32_t appCurOffset = preOffsets[i] + dataOffset + JPEG_MARKER_TAG_SIZE + JPEG_MARKER_LENGTH_SIZE;
         uint32_t originOffset = ImageUtils::BytesToUint32(data, dataOffset);
-        offset = originOffset + appCurOffset;
+        offset = originOffset + preOffsets[i];
         uint32_t relativeOffset = ImageUtils::BytesToUint32(data, dataOffset); // offset minus all app size
-        IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d",
-            originOffset, relativeOffset);
+        IMAGE_LOGD("vivid base info originOffset=%{public}d, relativeOffset=%{public}d, offset=%{public}d",
+            originOffset, relativeOffset, offset);
         return true;
     }
     return false;
@@ -298,6 +297,12 @@ static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec, uint32_t& of
         }
     }
     if (GetVividJpegGainMapOffset(vividMarkerList, vividPreMarkerOffset, offset)) {
+        uint32_t tmpOffset = 0;
+        GetISOJpegGainMapOffset(isoMarkerList, isoPreMarkerOffset, offset);
+        if (tmpOffset > 0 && tmpOffset != offset) {
+            IMAGE_LOGD("vivid gainmap offset from mpf, offset:%{public}d-%{public}d", tmpOffset, offset);
+            offset = tmpOffset;
+        }
         return ImageHdrType::HDR_VIVID_DUAL;
     }
     if (GetCuvaJpegGainMapOffset(cuvaMarkerList, allAppSize, offset)) {
@@ -358,33 +363,6 @@ ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset)
             break;
     }
     return type;
-}
-
-// parse metadata
-static bool GetCuvaGainMapMetadata(jpeg_marker_struct* markerList, std::vector<uint8_t>& metadata)
-{
-    auto handle = dlopen("libimage_cuva_parser.z.so", RTLD_LAZY);
-    if (!handle) {
-        return false;
-    }
-    GetCuvaGainMapMetadataT getMetadata = reinterpret_cast<GetCuvaGainMapMetadataT>(
-        dlsym(handle, "GetCuvaGainMapMetadata"));
-    if (!getMetadata) {
-        dlclose(handle);
-        return false;
-    }
-    const uint32_t CUVA_METADATA_MARKER_LENGTH = 50;
-    for (jpeg_marker_struct* marker = markerList; marker; marker = marker->next) {
-        if (JPEG_MARKER_APP5 != marker->marker || marker->data_length < CUVA_METADATA_MARKER_LENGTH) {
-            continue;
-        }
-        if (getMetadata(marker, metadata)) {
-            dlclose(handle);
-            return true;
-        }
-    }
-    dlclose(handle);
-    return false;
 }
 
 static bool ParseVividJpegStaticMetadata(uint8_t* data, uint32_t& offset, uint32_t size, vector<uint8_t>& staticMetaVec)
@@ -808,7 +786,7 @@ static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMet
             return res;
         }
         case ImageHdrType::HDR_CUVA:
-            return GetCuvaGainMapMetadata(markerList, metadata.dynamicMetadata);
+            return true;
         case ImageHdrType::HDR_ISO_DUAL:
             return GetISOGainmapMetadata(markerList, metadata);
         default:
@@ -964,9 +942,8 @@ vector<uint8_t> HdrJpegPackerHelper::PackBaseVividMarker(uint32_t gainmapOffset,
     ImageUtils::Uint16ToBytes(markerDataLength, bytes, index);
     ImageUtils::ArrayToBytes(ITUT35_TAG, ITUT35_TAG_SIZE, bytes, index);
     PackVividPreInfo(bytes, index, true, false);
-    uint32_t curOffset = index + preOffset;
     // set gainmap offset1 (gainmapOffset - current position offset)
-    ImageUtils::Uint32ToBytes(gainmapOffset - curOffset, bytes, index);
+    ImageUtils::Uint32ToBytes(gainmapOffset - preOffset, bytes, index);
     // set gainmap offset2 (gainmap size - app size)
     ImageUtils::Uint32ToBytes(gainmapOffset - appSize, bytes, index);
     return bytes;
@@ -1312,8 +1289,7 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     uint32_t baseMpfApp2Size = GetMpfMarkerSize();
     uint32_t baseSize = baseImage->size() + baseISOInfo.size() + baseVividApp8Size + baseMpfApp2Size;
     uint32_t allAppSize = offset + baseISOInfo.size() + baseVividApp8Size + baseMpfApp2Size;
-    uint32_t appWithoutJfif = allAppSize - jfifSize - JPEG_MARKER_TAG_SIZE;
-    std::vector<uint8_t> baseVividInfo = PackBaseVividMarker(baseSize, offset, appWithoutJfif);
+    std::vector<uint8_t> baseVividInfo = PackBaseVividMarker(baseSize, offset, allAppSize);
     std::vector<uint8_t> mpfInfo = PackBaseMpfMarker(baseSize, gainmapSize, offset + baseVividApp8Size);
     output.write(baseVividInfo.data(), baseVividInfo.size());
     output.write(mpfInfo.data(), mpfInfo.size());
