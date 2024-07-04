@@ -1220,19 +1220,19 @@ extern "C"
         RetDataI32 ret = {.code = ERR_IMAGE_INIT_ABNORMAL, .data = 0};
         auto instance = FFIData::GetData<ImageCreatorImpl>(id);
         if (!instance) {
-            IMAGE_LOGE("FFiOHOSImageCreatorGetCapacity instance not exist %{public}" PRId64, id);
+            IMAGE_LOGE("FFiOHOSImageCreatorGetformat instance not exist %{public}" PRId64, id);
             return ret;
         }
         
         std::shared_ptr<ImageCreator> imageCreator = instance->GetImageCreator();
         if (!imageCreator) {
-            IMAGE_LOGE("FFiOHOSImageCreatorGetCapacity imageCreator is nullptr.");
+            IMAGE_LOGE("FFiOHOSImageCreatorGetformat imageCreator is nullptr.");
             return ret;
         }
 
         std::shared_ptr<ImageCreatorContext> context = imageCreator->iraContext_;
         if (!context) {
-            IMAGE_LOGE("FFiOHOSImageCreatorGetCapacity context is nullptr.");
+            IMAGE_LOGE("FFiOHOSImageCreatorGetformat context is nullptr.");
             return ret;
         }
 
