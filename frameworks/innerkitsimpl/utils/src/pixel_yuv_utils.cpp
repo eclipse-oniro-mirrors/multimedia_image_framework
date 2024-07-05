@@ -165,8 +165,8 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
     if (info.format == AVPixelFormat::AV_PIX_FMT_NV21 || info.format == AVPixelFormat::AV_PIX_FMT_NV12) {
         frame->data[0] = pixels + info.yuvDataInfo.yOffset;
         frame->data[1] = pixels + info.yuvDataInfo.uvOffset;
-        frame->linesize[0] = info.yuvDataInfo.yStride;
-        frame->linesize[1] = info.yuvDataInfo.uvStride;
+        frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride);
+        frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride);
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.width, info.height, 1);
@@ -210,7 +210,7 @@ AVPixelFormat PixelYuvUtils::ConvertFormat(const PixelFormat &pixelFormat)
 
 static void SetAVFrameInfo(AVFrame* frame, YuvImageInfo &info)
 {
-    frame->width = info.yuvDataInfo.yStride;
+    frame->width = static_cast<int32_t>(info.yuvDataInfo.yStride);
     frame->height = info.height;
     frame->format = info.format;
 }
@@ -700,7 +700,7 @@ uint8_t PixelYuvUtils::GetYuv420Y(uint32_t x, uint32_t y, YUVDataInfo &info, con
 uint8_t PixelYuvUtils::GetYuv420U(uint32_t x, uint32_t y, YUVDataInfo &info, PixelFormat format,
     const uint8_t *in)
 {
-    int32_t width = info.yStride;
+    uint32_t width = info.yStride;
     switch (format) {
         case PixelFormat::NV21:
             if (width & 1) {
@@ -721,7 +721,7 @@ uint8_t PixelYuvUtils::GetYuv420U(uint32_t x, uint32_t y, YUVDataInfo &info, Pix
 uint8_t PixelYuvUtils::GetYuv420V(uint32_t x, uint32_t y, YUVDataInfo &info, PixelFormat format,
     const uint8_t *in)
 {
-    int32_t width = info.yStride;
+    uint32_t width = info.yStride;
     switch (format) {
         case PixelFormat::NV21:
             if (width & 1) {
@@ -741,7 +741,7 @@ uint8_t PixelYuvUtils::GetYuv420V(uint32_t x, uint32_t y, YUVDataInfo &info, Pix
 
 bool PixelYuvUtils::BGRAToYuv420(const uint8_t *src, YuvImageInfo &srcInfo, uint8_t *dst, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo, SWS_BICUBIC) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
         IMAGE_LOGE("BGRAToYuv420 failed");
         return false;
     }
@@ -750,7 +750,7 @@ bool PixelYuvUtils::BGRAToYuv420(const uint8_t *src, YuvImageInfo &srcInfo, uint
 
 bool PixelYuvUtils::Yuv420ToBGRA(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
         IMAGE_LOGE("Yuv420ToBGRA failed");
         return false;
     }
@@ -759,7 +759,7 @@ bool PixelYuvUtils::Yuv420ToBGRA(const uint8_t *in, YuvImageInfo &srcInfo, uint8
 
 bool PixelYuvUtils::Yuv420ToARGB(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, SWS_BICUBIC) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
         IMAGE_LOGE("Yuv420ToBGRA failed");
         return false;
     }
@@ -858,7 +858,7 @@ static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * info.size.width + newX) = *(srcY + y * yuvInfo.yStride + x);
+                *(dstY + newY * info.size.width + newX) = *(srcY + static_cast<uint32_t>(y) * yuvInfo.yStride + x);
             }
         }
     }
@@ -868,8 +868,10 @@ static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(info.size.height)) {
-                *(dstUV + newY * GetUVStride(info.size.width) + newX) = *(srcUV + y * yuvInfo.uvStride + x);
-                *(dstUV + newY * GetUVStride(info.size.width) + newX + 1) = *(srcUV + y * yuvInfo.uvStride + x + 1);
+                *(dstUV + newY * GetUVStride(info.size.width) + newX) =
+                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x);
+                *(dstUV + newY * GetUVStride(info.size.width) + newX + 1) =
+                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x + 1);
             }
         }
     }

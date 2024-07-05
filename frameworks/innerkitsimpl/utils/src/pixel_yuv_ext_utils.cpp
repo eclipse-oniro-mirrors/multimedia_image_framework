@@ -104,7 +104,7 @@ bool PixelYuvExtUtils::Yuv420ToBGRA(const uint8_t *sample, uint8_t *dstArgb,
     info.uvStride = (info.uvStride +1) & ~1;
     const uint8_t *srcY = sample + info.yOffset;
     const uint8_t *srcUV = sample + info.uvOffset;
-    const uint32_t dstStrideARGB = size.width * NUM_4;
+    const uint32_t dstStrideARGB = static_cast<uint32_t>(size.width * NUM_4);
     auto converter = ConverterHandle::GetInstance().GetHandle();
     if (pixelFormat == PixelFormat::NV12) {
         converter.NV12ToARGB(srcY, info.yStride, srcUV, info.uvStride,
@@ -257,10 +257,10 @@ void PixelYuvExtUtils::ConvertYuvMode(OpenSourceLibyuv::FilterMode &filterMode, 
 static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::FilterMode filterMode,
     YuvImageInfo &yuvInfo, uint32_t dstYStride, uint32_t dstYHeight)
 {
-    uint32_t srcUWidth = GetUStride(yuvInfo.width);
-    uint32_t srcUHeight = GetUVHeight(yuvInfo.height);
-    uint32_t dstUWidth = GetUStride(dstYStride);
-    uint32_t dstUHeight = GetUVHeight(dstYHeight);
+    uint32_t srcUWidth = static_cast<uint32_t>(GetUStride(yuvInfo.width));
+    uint32_t srcUHeight = static_cast<uint32_t>(GetUVHeight(yuvInfo.height));
+    uint32_t dstUWidth = static_cast<uint32_t>(GetUStride(dstYStride));
+    uint32_t dstUHeight = static_cast<uint32_t>(GetUVHeight(dstYHeight));
     // Split VUplane
     std::unique_ptr<uint8_t[]> uvData = std::make_unique<uint8_t[]>(NUM_2 * srcUWidth * srcUHeight);
     uint8_t *uData = nullptr;
@@ -323,8 +323,8 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     // setupY stride width height infomation
     uint8_t *srcY = src + yuvInfo.yuvDataInfo.yOffset;
     uint32_t srcYStride = yuvInfo.yuvDataInfo.yStride;
-    uint32_t srcYWidth = yuvInfo.width;
-    uint32_t srcYHeight = yuvInfo.height;
+    uint32_t srcYWidth = static_cast<uint32_t>(yuvInfo.width);
+    uint32_t srcYHeight = static_cast<uint32_t>(yuvInfo.height);
 
     int32_t dstYStride = srcYWidth * xAxis;
     int32_t dstYWidth = dstYStride;
@@ -426,12 +426,12 @@ static bool FlipYaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format
 static void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height, YUVDataInfo &info)
 {
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        info.yWidth = width;
-        info.yHeight = height;
-        info.yStride = width;
-        info.uvWidth = GetUStride(width);
-        info.uvHeight = GetUVHeight(height);
-        info.uvStride = GetUVStride(width);
+        info.yWidth = static_cast<uint32_t>(width);
+        info.yHeight = static_cast<uint32_t>(height);
+        info.yStride = static_cast<uint32_t>(width);
+        info.uvWidth = static_cast<uint32_t>(GetUStride(width));
+        info.uvHeight = static_cast<uint32_t>(GetUVHeight(height));
+        info.uvStride = static_cast<uint32_t>(GetUVStride(width));
         info.yOffset = 0;
         info.uvOffset =  info.yHeight * info.yStride;
     }
@@ -439,7 +439,7 @@ static void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t heigh
 
 bool PixelYuvExtUtils::ReversalYuv(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info)
 {
-    int32_t cout = GetImageSize(size.width, size.height);
+    uint32_t cout = GetImageSize(size.width, size.height);
     std::unique_ptr<uint8_t[]> tmpData = std::make_unique<uint8_t[]>(cout);
     if (!FlipXaxis(src, tmpData.get(), size, format, info)) {
         IMAGE_LOGE("FlipXaxis failed");
