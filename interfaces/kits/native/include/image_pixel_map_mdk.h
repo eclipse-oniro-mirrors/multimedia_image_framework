@@ -118,6 +118,31 @@ enum {
 };
 
 /**
+ * @brief Enumerates the anti-aliasing options.
+ *
+ * @since 12
+ * @version 1.0
+ */
+typedef enum {
+    /**
+     * Nearest-neighbor interpolation algorithm
+     */
+    OH_PixelMap_AntiAliasingOption_NONE = 0,
+    /**
+     * Bilinear interpolation algorithm
+     */
+    OH_PixelMap_AntiAliasingOption_LOW = 1,
+    /**
+     * Bilinear interpolation algorithm with mipmap linear filtering
+     */
+    OH_PixelMap_AntiAliasingOption_MEDIUM = 2,
+    /**
+     * Cubic interpolation algorithm
+     */
+    OH_PixelMap_AntiAliasingOption_HIGH = 3,
+} OH_PixelMap_AntiAliasingOption;
+
+/**
  * @brief Defines the options used for creating a pixel map.
  *
  * @since 10
@@ -419,7 +444,7 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
  * @version 1.0
  */
 int32_t OH_PixelMap_Scale_AntiAliasing(const NativePixelMap* native, float x, float y,
-    OH_PixelmapNative_AntiAliasingOption opts);
+    OH_PixelMap_AntiAliasingOption* opts);
 
 /**
  * @brief Translates a <b>PixelMap</b> object.
