@@ -125,22 +125,22 @@ enum {
  */
 typedef enum {
     /**
-     * Nearest-neighbor interpolation.
+     * Nearest-neighbor interpolation algorithm
      */
-    OHOS_ANTI_ALIASING_NONE = 0,
+    OH_PixelmapNative_AntiAliasingOption_NONE = 0,
     /**
-     * Bilinear interpolation, without mipmap linear filtering.
+     * Bilinear interpolation algorithm
      */
-    OHOS_ANTI_ALIASING_LOW = 1,
+    OH_PixelmapNative_AntiAliasingOption_LOW = 1,
     /**
-     * Bilinear interpolation, with mipmap linear filtering.
+     * Bilinear interpolation algorithm with mipmap linear filtering
      */
-    OHOS_ANTI_ALIASING_MEDIUM = 2,
+    OH_PixelmapNative_AntiAliasingOption_MEDIUM = 2,
     /**
-     * Cubic interpolation.
+     * Cubic interpolation algorithm
      */
-    OHOS_ANTI_ALIASING_HIGH = 3,
-} OHOS_ANTI_ALIASING_OPTION;
+    OH_PixelmapNative_AntiAliasingOption_HIGH = 3,
+} OH_PixelmapNative_AntiAliasingOption;
 
 /**
  * @brief Defines the options used for creating a pixel map.
@@ -418,7 +418,7 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
  * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
  * @param x Indicates the scaling ratio of the width.
  * @param y Indicates the scaling ratio of the height.
- * @param antiAliasing Indicates the anti-aliasing method used for the scaling.
+ * @param opts Indicates the anti-aliasing algorithm to be used.
  * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
@@ -439,11 +439,12 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
  * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
- * @see SmoothScale
+ * @see Scale
  * @since 12
  * @version 1.0
  */
-int32_t OH_PixelMap_SmoothScale(const NativePixelMap* native, float x, float y, OHOS_ANTI_ALIASING_OPTION antiAliasing);
+int32_t OH_PixelMap_Scale_AntiAliasing(const NativePixelMap* native, float x, float y,
+    OH_PixelmapNative_AntiAliasingOption opts);
 
 /**
  * @brief Translates a <b>PixelMap</b> object.
