@@ -119,6 +119,30 @@ typedef enum {
 } IMAGE_FORMAT;
 
 /**
+ * @brief Defines the anti-aliasing options.
+ *
+ * @since 12
+ */
+typedef enum {
+    /**
+     * Nearest-neighbor interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasingOption_NONE = 0,
+    /**
+     * Bilinear interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasingOption_LOW = 1,
+    /**
+     * Bilinear interpolation algorithm with mipmap linear filtering
+     */
+    OH_PixelmapNative_AntiAliasingOption_MEDIUM = 2,
+    /**
+     * Cubic interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasingOption_HIGH = 3,
+} OH_PixelmapNative_AntiAliasingOption;
+
+/**
  * @brief Defines the options used for creating a pixel map.
  *
  * @since 12
@@ -422,6 +446,20 @@ Image_ErrorCode OH_PixelmapNative_Opacity(OH_PixelmapNative *pixelmap, float rat
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scaleX, float scaleY);
+
+/**
+ * @brief Scales this image based on the input width and height with anti-aliasing.
+ *
+ * @param pixelmap The Pixelmap pointer will be operated.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @param opts The anti-aliasing algorithm to be used.
+ * @return Returns {@link Image_ErrorCode}
+ * @see OH_PixelmapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_Scale_AntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+    OH_PixelmapNative_AntiAliasingOption *opts);
 
 /**
  * @brief Translates this image based on the input coordinates.
