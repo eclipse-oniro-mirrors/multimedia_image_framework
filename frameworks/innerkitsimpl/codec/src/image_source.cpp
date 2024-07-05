@@ -3046,11 +3046,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
     ImageHdrType decodedHdrType = ImageHdrType::UNKNOWN;
     if (opts_.desiredDynamicRange != DecodeDynamicRange::SDR) {
         decodedHdrType = IsHdrImage() ? sourceHdrType_ : ImageHdrType::SDR;
-        if (!ImageSystemProperties::GetDmaEnabled()) {
-            decodedHdrType = ImageHdrType::SDR;
-            IMAGE_LOGI("[ImageSource]DecodeImageDataToContext imageId_: %{public}lu don't support dma.",
-                static_cast<unsigned long>(imageId_));
-        } else if (decodedHdrType > ImageHdrType::SDR) {
+        if (decodedHdrType > ImageHdrType::SDR) {
             context.allocatorType = AllocatorType::DMA_ALLOC;
         }
     }
