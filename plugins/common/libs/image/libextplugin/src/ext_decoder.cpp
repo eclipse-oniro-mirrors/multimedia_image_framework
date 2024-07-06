@@ -163,6 +163,14 @@ static const map<SkEncodedImageFormat, string> FORMAT_NAME = {
     { SkEncodedImageFormat::kHEIF, "image/heif" },
 };
 
+#ifdef HEIF_HW_DECODE_ENABLE
+static const map<PixelFormat, SkHeifColorFormat> HEIF_FORMAT_MAP = {
+    { PixelFormat::RGBA_1010102, kHeifColorFormat_RGBA_1010102 },
+    { PixelFormat::YCBCR_P010, kHeifColorFormat_P010_NV12 },
+    { PixelFormat::YCRCB_P010, kHeifColorFormat_P010_NV21 },
+};
+#endif
+
 static const map<PixelFormat, JpegYuvFmt> PLPIXEL_FORMAT_YUV_JPG_MAP = {
     { PixelFormat::NV21, JpegYuvFmt::OutFmt_NV21 }, { PixelFormat::NV12, JpegYuvFmt::OutFmt_NV12 }
 };
@@ -228,6 +236,13 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
+    }
+    if (context.info.pixelFormat == PixelFormat::RGBA_1010102) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
+    } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+    } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
@@ -750,6 +765,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (IsHeifToYuvDecode(context)) {
         context.isHardDecode = true;
         return DoHeifToYuvDecode(context);
+    }
+    if (IsHeifToSingleHdrDecode(context)) {
+        context.isHardDecode = true;
+        return DoHeifToSingleHdrDecode(context);
     }
     uint32_t res = PreDecodeCheck(index);
     if (res != SUCCESS) {
@@ -1722,6 +1741,44 @@ uint32_t ExtDecoder::DoHeifToYuvDecode(OHOS::ImagePlugin::DecodeContext &context
         == PixelFormat::NV12 ? kHeifColorFormat_NV12 : kHeifColorFormat_NV21);
     decoder->setDstBuffer(reinterpret_cast<uint8_t *>(context.pixelsBuffer.buffer),
                           dstBuffer->GetStride(), context.pixelsBuffer.context);
+    bool decodeRet = decoder->decode(nullptr);
+    if (!decodeRet) {
+        decoder->getErrMsg(context.hardDecodeError);
+    }
+    return decodeRet ? SUCCESS : ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#endif
+}
+
+bool ExtDecoder::IsHeifToSingleHdrDecode(const DecodeContext& context) const
+{
+    return codec_->getEncodedFormat() == SkEncodedImageFormat::kHEIF &&
+        (context.info.pixelFormat == PixelFormat::RGBA_1010102 ||
+         context.info.pixelFormat == PixelFormat::YCBCR_P010 ||
+         context.info.pixelFormat == PixelFormat::YCRCB_P010);
+}
+
+uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    auto decoder = reinterpret_cast<HeifDecoder*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("SingleHdrDecode, HeifDecoder is nullptr");
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+
+    uint64_t byteCount = static_cast<uint64_t>(info_.computeMinByteSize());
+    if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
+        return ERR_IMAGE_DATA_UNSUPPORT;
+    }
+    auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    SkHeifColorFormat heifFormat = kHeifColorFormat_RGBA_1010102;
+    auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);
+    heifFormat = (formatSearch != HEIF_FORMAT_MAP.end()) ? formatSearch->second : kHeifColorFormat_RGBA_1010102;
+    decoder->setOutputColor(heifFormat);
+    decoder->setDstBuffer(reinterpret_cast<uint8_t*>(context.pixelsBuffer.buffer),
+        dstBuffer->GetStride(), context.pixelsBuffer.context);
     bool decodeRet = decoder->decode(nullptr);
     if (!decodeRet) {
         decoder->getErrMsg(context.hardDecodeError);

@@ -108,6 +108,8 @@ private:
     void SetHeifParseError();
     uint32_t ConvertFormatToYUV(DecodeContext &context, SkImageInfo &dstInfo,
         uint64_t byteCount, OHOS::Media::PixelFormat format);
+    bool IsHeifToSingleHdrDecode(const DecodeContext &context) const;
+    uint32_t DoHeifToSingleHdrDecode(OHOS::ImagePlugin::DecodeContext &context);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
