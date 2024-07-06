@@ -332,7 +332,7 @@ static ImageHdrType CheckHeifHdrType(HeifDecoder* decoder)
 }
 #endif
 
-ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset)
+ImageHdrType HdrHelper::CheckHdrType(SkCodec* codec, uint32_t& offset) __attribute__((no_sanitize("cfi")))
 {
     offset = 0;
     ImageHdrType type = ImageHdrType::SDR;
