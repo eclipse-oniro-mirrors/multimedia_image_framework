@@ -2944,6 +2944,8 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 {
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
+        "%{public}d", imageInfo.size.width, imageinfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
@@ -2968,6 +2970,11 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     canvas.concat(infos.matrix);
     src.bitmap.setImmutable();
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
+    if (skimage == nullptr) {
+        IMAGE_LOGE("MakeFromBitmap failed");
+        this->errorCode = IMAGE_RESULT_DECODE_FAILED;
+        return false;
+    }
     if (infos.matrix.rectStaysRect()) {
         SkRect skrect = SkRect::MakeXYWH(0, 0, skimage->width(), skimage->height());
         SkPaint paint;
