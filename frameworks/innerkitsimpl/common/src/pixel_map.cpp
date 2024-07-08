@@ -2972,7 +2972,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
     if (skimage == nullptr) {
         IMAGE_LOGE("MakeFromBitmap failed");
-        this->errorCode = IMAGE_RESULT_DECODE_FAILED;
+        this->errorCode = IMAGE_RESULT_INIT_ABNORMAL;
         return false;
     }
     if (infos.matrix.rectStaysRect()) {
