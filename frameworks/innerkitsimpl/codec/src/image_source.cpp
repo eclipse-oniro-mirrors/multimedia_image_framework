@@ -514,6 +514,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
 #endif
 
     if (IsSpecialYUV()) {
+        opts_ = opts;
         return CreatePixelMapForYUV(errorCode);
     }
 
@@ -2589,6 +2590,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
+    }
+
+    if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
+        pixelMap->rotate(opts_.rotateDegrees);
+    } else if (opts_.rotateNewDegrees != INT_ZERO) {
+        pixelMap->rotate(opts_.rotateNewDegrees);
     }
 
     return pixelMap;
