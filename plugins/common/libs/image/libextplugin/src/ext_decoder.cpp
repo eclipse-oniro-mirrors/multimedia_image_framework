@@ -1258,7 +1258,7 @@ static bool MatchColorSpaceName(const uint8_t* buf, uint32_t size, OHOS::ColorMa
         name = nameEnum.name;
         return true;
     }
-    IMAGE_LOGE("Failed to match desc [%{public}s]", descText.c_str());
+    IMAGE_LOGE("Failed to match desc");
     return false;
 }
 

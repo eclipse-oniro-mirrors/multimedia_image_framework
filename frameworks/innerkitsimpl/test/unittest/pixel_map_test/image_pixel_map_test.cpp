@@ -684,7 +684,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap017, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data == nullptr) {
+    if (data != nullptr) {
         delete[] data;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap017 scale end";
@@ -707,7 +707,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap018, TestSize.Level3)
     pixelMap->translate(xAxis, yAxis);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
-    if (data == nullptr) {
+    if (data != nullptr) {
         delete[] data;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap018 translate end";
@@ -733,7 +733,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap019, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_WIDTH;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data == nullptr) {
+    if (data != nullptr) {
         delete[] data;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap019 rotate end";
@@ -758,7 +758,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap020, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data == nullptr) {
+    if (data != nullptr) {
         delete[] data;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap020 flip end";
@@ -788,7 +788,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMap021, TestSize.Level3)
     int32_t height = 1;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data == nullptr) {
+    if (data != nullptr) {
         delete[] data;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMap021 crop end";

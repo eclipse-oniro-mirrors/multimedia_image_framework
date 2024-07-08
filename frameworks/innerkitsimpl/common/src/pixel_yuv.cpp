@@ -380,7 +380,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect current pixel map data is null.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    uint32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
     if (bytesPerPixel == 0) {
         IMAGE_LOGE("write pixel by rect get bytes by per pixel fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
@@ -434,7 +434,7 @@ void PixelYuv::translate(float xAxis, float yAxis)
     int32_t width = imageInfo_.size.width;
     int32_t height = imageInfo_.size.height;
 
-    int32_t dstSize = GetImageSize(width, height);
+    uint32_t dstSize = GetImageSize(width, height);
     MemoryData memoryData = {nullptr, dstSize, "translate ImageData", {width, height}};
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (dstMemory == nullptr) {
@@ -594,12 +594,12 @@ uint32_t PixelYuv::GetImageSize(int32_t width, int32_t height)
 void PixelYuv::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
 {
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
-        yuvDataInfo_.yWidth = width;
-        yuvDataInfo_.yHeight = height;
-        yuvDataInfo_.yStride = width;
-        yuvDataInfo_.uvWidth = GetUStride(width);
-        yuvDataInfo_.uvHeight = GetUVHeight(height);
-        yuvDataInfo_.uvStride = GetUVStride(width);
+        yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
+        yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
+        yuvDataInfo_.yStride = static_cast<uint32_t>(width);
+        yuvDataInfo_.uvWidth = static_cast<uint32_t>(GetUStride(width));
+        yuvDataInfo_.uvHeight = static_cast<uint32_t>(GetUVHeight(height));
+        yuvDataInfo_.uvStride = static_cast<uint32_t>(GetUVStride(width));
         yuvDataInfo_.yOffset = 0;
         yuvDataInfo_.uvOffset =  yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
     }
@@ -614,8 +614,8 @@ bool PixelYuv::IsYuvFormat(PixelFormat format)
 uint32_t PixelYuv::SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
     PixelFormat &format, uint64_t rowStride)
 {
-    int32_t width = yuvDataInfo_.yStride;
-    int32_t height = yuvDataInfo_.yHeight;
+    int32_t width = static_cast<int32_t>(yuvDataInfo_.yStride);
+    int32_t height = static_cast<int32_t>(yuvDataInfo_.yHeight);
     // Build sk target infomation
     SkTransYuvInfo dst;
     dst.info = ToSkImageInfo(imageInfo_, grColorSpace.ToSkColorSpace());
@@ -717,8 +717,8 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
 
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
-    int32_t width = yuvDataInfo.yStride;
-    int32_t height = yuvDataInfo.yHeight;
+    int32_t width = static_cast<int32_t>(yuvDataInfo.yStride);
+    int32_t height = static_cast<int32_t>(yuvDataInfo.yHeight);
 
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(format),
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo};

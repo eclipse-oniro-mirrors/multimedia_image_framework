@@ -14,6 +14,8 @@
  */
 #include "image_impl.h"
 #include "image_log.h"
+#include "media_errors.h"
+
 namespace OHOS {
 namespace Media {
 
@@ -25,10 +27,7 @@ ImageHolderManager<NativeImage> ImageImpl::sNativeImageHolder_;
 
 ImageImpl::ImageImpl(std::shared_ptr<NativeImage> nativeImage)
 {
-    int64_t ret = ImageImpl::Create(this, nativeImage);
-    if (ret != IMAGE_SUCCESS) {
-        IMAGE_LOGE("[ImageImpl] Construct failed");
-    }
+    ImageImpl::Create(this, nativeImage);
 }
 
 std::shared_ptr<NativeImage> ImageImpl::GetNativeImage()
@@ -43,78 +42,78 @@ int64_t ImageImpl::Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeI
     image->isTestImage_ = false;
     if (image->native_ == nullptr) {
         IMAGE_LOGE("[ImageImpl] Create : Failed to get native image");
-        return IMAGE_FAILED;
+        return INIT_FAILED;
     }
-    return IMAGE_SUCCESS;
+    return SUCCESS;
 }
 
-int64_t ImageImpl::GetClipRect(CRegion *ret)
+uint32_t ImageImpl::GetClipRect(CRegion *ret)
 {
     if (isTestImage_ == true) {
         ret->size.width = DEFAULT_WIDTH;
         ret->size.height = DEFAULT_HEIGHT;
         ret->x = 0;
         ret->y = 0;
-        return IMAGE_SUCCESS;
+        return SUCCESS;
     }
     if (native_ == nullptr) {
         IMAGE_LOGE("Image buffer cannot be nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
-    int64_t retCode = native_->GetSize(ret->size.width, ret->size.height);
+    uint32_t retCode = native_->GetSize(ret->size.width, ret->size.height);
     ret->x = 0;
     ret->y = 0;
-    if (retCode != IMAGE_SUCCESS) {
+    if (retCode != SUCCESS) {
         IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
     }
     return retCode;
 }
 
-int64_t ImageImpl::GetSize(CSize *ret)
+uint32_t ImageImpl::GetSize(CSize *ret)
 {
     if (isTestImage_ == true) {
         ret->width = DEFAULT_WIDTH;
         ret->height = DEFAULT_HEIGHT;
-        return IMAGE_SUCCESS;
+        return SUCCESS;
     }
     if (native_ == nullptr) {
         IMAGE_LOGE("Image buffer cannot be nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
-    int64_t retCode = native_->GetSize(ret->width, ret->height);
-    if (retCode != IMAGE_SUCCESS) {
+    uint32_t retCode = native_->GetSize(ret->width, ret->height);
+    if (retCode != SUCCESS) {
         IMAGE_LOGE("[ImageImpl] GetSize : Image native get size failed.");
     }
     return retCode;
 }
 
-int64_t ImageImpl::GetFormat(int32_t *ret)
+uint32_t ImageImpl::GetFormat(int32_t *ret)
 {
     if (isTestImage_ == true) {
         *ret = DEFAULT_FORMAT;
-        return IMAGE_SUCCESS;
+        return SUCCESS;
     }
     if (native_ == nullptr) {
         IMAGE_LOGE("Image buffer cannot be nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
-    int64_t retCode = native_->GetFormat(*ret);
-    if (retCode != IMAGE_SUCCESS) {
+    uint32_t retCode = native_->GetFormat(*ret);
+    if (retCode != SUCCESS) {
         IMAGE_LOGE("[ImageImpl] GetFormat : Image native get format failed.");
     }
     return retCode;
 }
 
-int64_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
+uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
 {
     if (native_ == nullptr) {
         IMAGE_LOGE("Image buffer cannot be nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
     auto nativePtr = native_->GetComponent(componentType);
     if (nativePtr == nullptr) {
         IMAGE_LOGE("Image component is nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
     ret->componentType = componentType;
     ret->rowStride = nativePtr->rowStride;
@@ -123,13 +122,14 @@ int64_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
     ret->byteBuffer = static_cast<uint8_t*>(malloc(len + 1));
     if (ret->byteBuffer == nullptr) {
         IMAGE_LOGE("[ImageImpl] GetComponent failed to malloc.");
-        return 0;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
     for (int i = 0; i < len; i++) {
         ret->byteBuffer[i] = nativePtr->raw[i];
     }
     ret->byteBuffer[len] = '\0';
-    return len + 1;
+    ret->bufSize = len + 1;
+    return SUCCESS;
 }
 
 void ImageImpl::Release() {}

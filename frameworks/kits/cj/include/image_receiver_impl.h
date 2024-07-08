@@ -24,27 +24,19 @@
 namespace OHOS {
 namespace Media {
 class ImageReceiverImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(ImageReceiverImpl, OHOS::FFI::FFIData)
 public:
     explicit ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceiver);
     static int64_t CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity);
-    int64_t GetSize(CSize *ret);
-    int64_t GetCapacity(int32_t *ret);
-    int64_t GetFormat(int32_t *ret);
+    uint32_t GetSize(CSize *ret);
+    uint32_t GetCapacity(int32_t *ret);
+    uint32_t GetFormat(int32_t *ret);
     char *GetReceivingSurfaceId();
     sptr<ImageImpl> ReadNextImage();
     sptr<ImageImpl> ReadLatestImage();
     void Release();
-    OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageReceiverImpl");
-        return &runtimeType;
-    }
     std::shared_ptr<ImageReceiver> imageReceiver_;
 };
 

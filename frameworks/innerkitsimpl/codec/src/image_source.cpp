@@ -514,6 +514,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
 #endif
 
     if (IsSpecialYUV()) {
+        opts_ = opts;
         return CreatePixelMapForYUV(errorCode);
     }
 
@@ -2591,6 +2592,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         pixelMap->SetExifMetadata(metadataPtr);
     }
 
+    if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
+        pixelMap->rotate(opts_.rotateDegrees);
+    } else if (opts_.rotateNewDegrees != INT_ZERO) {
+        pixelMap->rotate(opts_.rotateNewDegrees);
+    }
+
     return pixelMap;
 }
 
@@ -3046,11 +3053,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
     ImageHdrType decodedHdrType = ImageHdrType::UNKNOWN;
     if (opts_.desiredDynamicRange != DecodeDynamicRange::SDR) {
         decodedHdrType = IsHdrImage() ? sourceHdrType_ : ImageHdrType::SDR;
-        if (!ImageSystemProperties::GetDmaEnabled()) {
-            decodedHdrType = ImageHdrType::SDR;
-            IMAGE_LOGI("[ImageSource]DecodeImageDataToContext imageId_: %{public}lu don't support dma.",
-                static_cast<unsigned long>(imageId_));
-        } else if (decodedHdrType > ImageHdrType::SDR) {
+        if (decodedHdrType > ImageHdrType::SDR) {
             context.allocatorType = AllocatorType::DMA_ALLOC;
         }
     }

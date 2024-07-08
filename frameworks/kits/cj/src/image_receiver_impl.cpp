@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 #include "image_receiver_impl.h"
-
 #include "image_log.h"
 #include "securec.h"
+#include "cj_color_mgr_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -46,15 +46,15 @@ static bool CheckFormat(int32_t format)
 
 int64_t ImageReceiverImpl::CreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity)
 {
-    IMAGE_LOGI("[ImageReceiver] Create.");
+    IMAGE_LOGD("[ImageReceiver] Create.");
     if (!CheckFormat(format)) {
         IMAGE_LOGE("[ImageReceiverImpl] Invailed param.");
-        return IMAGE_FAILED;
+        return INIT_FAILED;
     }
     std::shared_ptr imageReceiver = ImageReceiver::CreateImageReceiver(width, height, format, capacity);
     if (imageReceiver == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] Failed to create native ImageReceiver.");
-        return IMAGE_FAILED;
+        return INIT_FAILED;
     }
     auto receiverImpl = FFIData::Create<ImageReceiverImpl>(imageReceiver);
     return receiverImpl->GetID();
@@ -62,43 +62,41 @@ int64_t ImageReceiverImpl::CreateImageReceiver(int32_t width, int32_t height, in
 
 ImageReceiverImpl::ImageReceiverImpl(std::shared_ptr<ImageReceiver> imageReceiver)
 {
-    IMAGE_LOGI("[ImageReceiverImpl] constructor.");
     imageReceiver_ = imageReceiver;
-    IMAGE_LOGI("[ImageReceiverImpl] success");
 }
 
-int64_t ImageReceiverImpl::GetSize(CSize *ret)
+uint32_t ImageReceiverImpl::GetSize(CSize *ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetSize : Image receiver context is nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
 
     ret->width = imageReceiver_->iraContext_->GetWidth();
     ret->height = imageReceiver_->iraContext_->GetHeight();
-    return IMAGE_SUCCESS;
+    return SUCCESS;
 }
 
-int64_t ImageReceiverImpl::GetCapacity(int32_t *ret)
+uint32_t ImageReceiverImpl::GetCapacity(int32_t *ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetCapacity : Image receiver context is nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
 
     *ret = imageReceiver_->iraContext_->GetCapicity();
-    return IMAGE_SUCCESS;
+    return SUCCESS;
 }
 
-int64_t ImageReceiverImpl::GetFormat(int32_t *ret)
+uint32_t ImageReceiverImpl::GetFormat(int32_t *ret)
 {
     if (imageReceiver_ == nullptr || imageReceiver_->iraContext_ == nullptr) {
         IMAGE_LOGE("[ImageReceiverImpl] GetFormat : Image receiver context is nullptr");
-        return IMAGE_FAILED;
+        return ERR_IMAGE_INIT_ABNORMAL;
     }
 
     *ret = imageReceiver_->iraContext_->GetFormat();
-    return IMAGE_SUCCESS;
+    return SUCCESS;
 }
 
 char *ImageReceiverImpl::GetReceivingSurfaceId()
@@ -111,14 +109,8 @@ char *ImageReceiverImpl::GetReceivingSurfaceId()
         return nullptr;
     }
     
-    auto strPtr = iraContext->GetReceiverKey().c_str();
-    int len = strlen(strPtr);
-    char *newStr = new char[len + 1];
-    int ret = memcpy_s(newStr, len + 1, strPtr, len + 1);
-    if (ret != 0) {
-        IMAGE_LOGE("[ImageReceiverImpl] Failed to get receiver key");
-    }
-    strPtr = nullptr;
+    auto str = iraContext->GetReceiverKey().c_str();
+    char *newStr = Utils::MallocCString(str);
     return newStr;
 }
 
