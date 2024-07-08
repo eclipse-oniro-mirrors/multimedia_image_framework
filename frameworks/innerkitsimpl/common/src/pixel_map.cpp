@@ -2945,7 +2945,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
-        "%{public}d", imageInfo.size.width, imageinfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
+        "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
