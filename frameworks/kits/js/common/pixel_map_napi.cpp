@@ -3611,6 +3611,15 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     int32_t pixelFormatInt;
     napi_get_value_int32(env, jsArg, &pixelFormatInt);
     nVal.context->destFormat = static_cast<PixelFormat>(pixelFormatInt);
+
+    if (TypeFormat(nVal.context->destFormat) == FormatType::UNKNOWN) {
+        napi_value errCode = nullptr;
+        napi_create_int32(env, ERR_IMAGE_INVALID_PARAMETER, &errCode);
+        napi_reject_deferred(env, nVal.context->deferred, errCode);
+        IMAGE_LOGE("dstFormat is not support or invalid");
+        return nVal.result;
+    }
+
     nVal.result = PixelFormatConvert(env, info, nVal.context.get());
     nVal.context->nConstructor->nativePixelMap_ = nVal.context->rPixelMap;
     if (nVal.result == nullptr) {
