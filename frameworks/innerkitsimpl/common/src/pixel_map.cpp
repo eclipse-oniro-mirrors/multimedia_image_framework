@@ -2940,10 +2940,24 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
     }
 }
 
+void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
+{
+    if (rectStaysRect) {
+        SkRect skrect = SkRect::MakeXYWH(0, 0, skImage->width(), skImage->height());
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        canvas.drawImageRect(skImage, skrect, ToSkSamplingOption(option), &paint);
+    } else {
+        canvas.drawImage(skImage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
+    }
+}
+
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
+        "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
@@ -2968,14 +2982,12 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     canvas.concat(infos.matrix);
     src.bitmap.setImmutable();
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
-    if (infos.matrix.rectStaysRect()) {
-        SkRect skrect = SkRect::MakeXYWH(0, 0, skimage->width(), skimage->height());
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        canvas.drawImageRect(skimage, skrect, ToSkSamplingOption(option), &paint);
-    } else {
-        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
+    if (skimage == nullptr) {
+        IMAGE_LOGE("MakeFromBitmap failed with nullptr");
+        this->errorCode = IMAGE_RESULT_TRANSFORM;
+        return false;
     }
+    DrawImage(infos.matrix.rectStaysRect(), option, canvas, skimage);
     ToImageInfo(imageInfo, dst.info);
     auto m = dstMemory.memory.get();
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
