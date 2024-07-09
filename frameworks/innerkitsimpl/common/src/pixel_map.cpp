@@ -2940,9 +2940,9 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
     }
 }
 
-void DrawImage(TransInfos &infos, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
+void DrawImage(bool rectStaysRect, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
 {
-    if (infos.matrix.rectStaysRect()) {
+    if (rectStaysRect) {
         SkRect skrect = SkRect::MakeXYWH(0, 0, skImage->width(), skImage->height());
         SkPaint paint;
         paint.setAntiAlias(true);
@@ -2987,7 +2987,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
         this->errorCode = IMAGE_RESULT_TRANSFORM;
         return false;
     }
-    DrawImage(infos, option, canvas, skimage);
+    DrawImage(infos.matrix.rectStaysRect(), option, canvas, skimage);
     ToImageInfo(imageInfo, dst.info);
     auto m = dstMemory.memory.get();
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
