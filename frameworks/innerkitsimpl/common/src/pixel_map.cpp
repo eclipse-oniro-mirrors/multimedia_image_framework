@@ -2940,6 +2940,18 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
     }
 }
 
+void DrawImage(TransInfos &infos, const AntiAliasingOption &option, SkCanvas &canvas, sk_sp<SkImage> &skImage)
+{
+    if (infos.matrix.rectStaysRect()) {
+        SkRect skrect = SkRect::MakeXYWH(0, 0, skImage->width(), skImage->height());
+        SkPaint paint;
+        paint.setAntiAlias(true);
+        canvas.drawImageRect(skImage, skrect, ToSkSamplingOption(option), &paint);
+    } else {
+        canvas.drawImage(skImage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
+    }
+}
+
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
     ImageInfo imageInfo;
@@ -2971,18 +2983,11 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     src.bitmap.setImmutable();
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
     if (skimage == nullptr) {
-        IMAGE_LOGE("MakeFromBitmap failed");
+        IMAGE_LOGE("MakeFromBitmap failed with nullptr");
         this->errorCode = IMAGE_RESULT_TRANSFORM;
         return false;
     }
-    if (infos.matrix.rectStaysRect()) {
-        SkRect skrect = SkRect::MakeXYWH(0, 0, skimage->width(), skimage->height());
-        SkPaint paint;
-        paint.setAntiAlias(true);
-        canvas.drawImageRect(skimage, skrect, ToSkSamplingOption(option), &paint);
-    } else {
-        canvas.drawImage(skimage, FLOAT_ZERO, FLOAT_ZERO, ToSkSamplingOption(option));
-    }
+    DrawImage(infos, option, canvas, skimage);
     ToImageInfo(imageInfo, dst.info);
     auto m = dstMemory.memory.get();
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
