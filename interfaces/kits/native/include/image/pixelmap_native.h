@@ -110,6 +110,18 @@ typedef enum {
     * NV12 format
     */
     PIXEL_FORMAT_NV12 = 9,
+    /*
+    * RGBA_1010102 format
+    */
+    PIXEL_FORMAT_RGBA_1010102 = 10,
+    /*
+    * YCBCR_P010 format
+    */
+    PIXEL_FORMAT_YCBCR_P010 = 11,
+    /*
+    * YCRCB_P010 format
+    */
+    PIXEL_FORMAT_YCRCB_P010 = 12,
 } PIXEL_FORMAT;
 
 typedef enum {

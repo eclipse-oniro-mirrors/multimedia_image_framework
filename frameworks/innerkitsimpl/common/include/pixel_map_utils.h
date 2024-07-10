@@ -33,6 +33,7 @@ constexpr int8_t RGB_888_BYTES = 3;
 constexpr int8_t ARGB_8888_BYTES = 4;
 constexpr int8_t BGRA_F16_BYTES = 8;
 constexpr int8_t YUV420_BYTES = 2;  // in fact NV21 one pixel used 1.5 bytes.
+constexpr int8_t YUV420_P010_BYTES = 3;
 constexpr int8_t ASTC_4x4_BYTES = 1;
 
 // Define shift bits of bytes per pixel

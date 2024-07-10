@@ -135,6 +135,9 @@ static std::vector<struct ImageEnum> sPixelMapFormatMap = {
     {"RGBA_F16", 7, ""},
     {"NV21", 8, ""},
     {"NV12", 9, ""},
+    {"RGBA_1010102", 10, ""},
+    {"YCBCR_P010", 11, ""},
+    {"YCRCB_P010", 12, ""},
 };
 static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"BITS_PER_SAMPLE", 0, "BitsPerSample"},
@@ -981,7 +984,7 @@ static bool ParseRegion(napi_env env, napi_value root, Rect* region)
 static bool IsSupportPixelFormat(int32_t val)
 {
     if (val >= static_cast<int32_t>(PixelFormat::UNKNOWN) &&
-        val <= static_cast<int32_t>(PixelFormat::NV12)) {
+        val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return true;
     }
 
@@ -990,7 +993,7 @@ static bool IsSupportPixelFormat(int32_t val)
 
 static PixelFormat ParsePixlForamt(int32_t val)
 {
-    if (val <= static_cast<int32_t>(PixelFormat::CMYK)) {
+    if (val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return PixelFormat(val);
     }
 

@@ -70,6 +70,7 @@ constexpr int32_t NV21_BYTES = 2;  // Each pixel is sorted on 3/2 bytes.
 constexpr uint8_t MOVE_BITS_8 = 8;
 constexpr uint8_t MOVE_BITS_16 = 16;
 constexpr uint8_t MOVE_BITS_24 = 24;
+constexpr int32_t NV21P010_BYTES = 3;
 constexpr int32_t ASTC_4X4_BYTES = 1;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
@@ -158,6 +159,10 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
         case PixelFormat::ASTC_6x6:
         case PixelFormat::ASTC_8x8:
             pixelBytes = ASTC_4X4_BYTES;
+            break;
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:
+            pixelBytes = NV21P010_BYTES;
             break;
         default:
             IMAGE_LOGE("[ImageUtil]get pixel bytes failed, pixelFormat:%{public}d.",
@@ -259,6 +264,8 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         }
         case PixelFormat::NV21:
         case PixelFormat::NV12:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:
         case PixelFormat::CMYK:
         default: {
             IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
