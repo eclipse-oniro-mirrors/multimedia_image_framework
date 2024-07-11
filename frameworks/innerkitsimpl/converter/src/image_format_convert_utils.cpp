@@ -22,6 +22,7 @@
 #include "image_log.h"
 #include "log_tags.h"
 #include "securec.h"
+#include "pixel_convert_adapter.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,22 +51,11 @@ namespace {
 #define LOG_TAG "ImageFormatConvert"
 namespace OHOS {
 namespace Media {
-static std::map<PixelFormat, AVPixelFormat> PixelFormatMap = {
-    {PixelFormat::UNKNOWN, AV_PIX_FMT_NONE},
-    {PixelFormat::NV12, AV_PIX_FMT_NV12},
-    {PixelFormat::NV21, AV_PIX_FMT_NV21},
-    {PixelFormat::RGB_565, AV_PIX_FMT_RGB565},
-    {PixelFormat::RGBA_8888, AV_PIX_FMT_RGBA},
-    {PixelFormat::BGRA_8888, AV_PIX_FMT_BGRA},
-    {PixelFormat::ARGB_8888, AV_PIX_FMT_ARGB},
-    {PixelFormat::RGBA_F16, AV_PIX_FMT_RGBA64},
-    {PixelFormat::RGB_888, AV_PIX_FMT_RGB24},
-};
-
 static AVPixelFormat findPixelFormat(PixelFormat format)
 {
-    if (PixelFormatMap.find(format) != PixelFormatMap.end()) {
-        return PixelFormatMap[format];
+    auto formatSearch = PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP.find(format);
+    if (formatSearch != PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP.end()) {
+        return formatSearch->second;
     } else {
         return AV_PIX_FMT_NONE;
     }

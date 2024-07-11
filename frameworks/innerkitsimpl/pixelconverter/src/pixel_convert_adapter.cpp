@@ -46,6 +46,20 @@ static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
+const std::map<PixelFormat, AVPixelFormat> PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP = {
+    {PixelFormat::UNKNOWN, AV_PIX_FMT_NONE},
+    {PixelFormat::NV12, AV_PIX_FMT_NV12},
+    {PixelFormat::NV21, AV_PIX_FMT_NV21},
+    {PixelFormat::RGB_565, AV_PIX_FMT_RGB565},
+    {PixelFormat::RGBA_8888, AV_PIX_FMT_RGBA},
+    {PixelFormat::BGRA_8888, AV_PIX_FMT_BGRA},
+    {PixelFormat::ARGB_8888, AV_PIX_FMT_ARGB},
+    {PixelFormat::RGBA_F16, AV_PIX_FMT_RGBA64},
+    {PixelFormat::RGB_888, AV_PIX_FMT_RGB24},
+    {PixelFormat::YCRCB_P010, AV_PIX_FMT_P010LE},
+    {PixelFormat::YCBCR_P010, AV_PIX_FMT_P010LE},
+};
+
 static const map<PixelFormat, SkColorType> PIXEL_FORMAT_MAP = {
     { PixelFormat::UNKNOWN, SkColorType::kUnknown_SkColorType},
     { PixelFormat::ARGB_8888, SkColorType::kRGBA_8888_SkColorType},

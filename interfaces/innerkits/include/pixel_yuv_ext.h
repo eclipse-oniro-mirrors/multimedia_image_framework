@@ -36,6 +36,9 @@ public:
     NATIVEEXPORT void scale(float xAxis, float yAxis, const AntiAliasingOption &option) override;
     NATIVEEXPORT bool resize(float xAxis, float yAxis) override;
     NATIVEEXPORT void flip(bool xAxis, bool yAxis) override;
+    NATIVEEXPORT int32_t GetByteCount() override;
+    NATIVEEXPORT void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
+                                    CustomFreePixelMap func) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     bool CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     int32_t ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, ImageInfo &imageInfo, PixelFormat &format,

@@ -314,7 +314,8 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
                                           const size_t destBufferSize, ImageInfo &info, AllocatorType allcatorType)
 {
     std::unique_ptr<PixelMap> pixelMap;
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
+    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
+        info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
         pixelMap = std::make_unique<PixelYuv>();
     } else {
         pixelMap = std::make_unique<PixelMap>();

@@ -14,6 +14,9 @@
  */
 
 #include "pixel_map.h"
+#ifdef EXT_PIXEL
+#include "pixel_yuv_ext.h"
+#endif
 #include <charconv>
 #include <iostream>
 #include <unistd.h>
@@ -36,6 +39,7 @@
 #include "pubdef.h"
 #include "exif_metadata.h"
 #include "image_mdk_common.h"
+#include "pixel_yuv.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -93,9 +97,11 @@ constexpr uint8_t ALIGN_NUMBER = 4;
 
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
+static const uint8_t NUM_4 = 4;
 static const uint8_t NUM_5 = 5;
 static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_7 = 7;
+static const uint8_t NUM_8 = 8;
 
 constexpr int32_t ANTIALIASING_SIZE = 350;
 
@@ -257,28 +263,23 @@ static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dst
 #endif
 }
 
-static const map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
-    { PixelFormat::UNKNOWN, AVPixelFormat::AV_PIX_FMT_NONE },
-    { PixelFormat::ARGB_8888, AVPixelFormat::AV_PIX_FMT_ARGB },
-    { PixelFormat::RGB_565, AVPixelFormat::AV_PIX_FMT_RGB565 },
-    { PixelFormat::RGBA_8888, AVPixelFormat::AV_PIX_FMT_RGBA },
-    { PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA },
-    { PixelFormat::RGB_888, AVPixelFormat::AV_PIX_FMT_RGB24 },
-    { PixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21 },
-    { PixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12 },
-    { PixelFormat::CMYK, AVPixelFormat::AV_PIX_FMT_GBRP },
-};
-
 static AVPixelFormat PixelFormatToAVPixelFormat(const PixelFormat &pixelFormat)
 {
-    auto formatSearch = FFMPEG_PIXEL_FORMAT_MAP.find(pixelFormat);
-    return (formatSearch != FFMPEG_PIXEL_FORMAT_MAP.end()) ? formatSearch->second : AVPixelFormat::AV_PIX_FMT_NONE;
+    auto formatSearch = PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP.find(pixelFormat);
+    return (formatSearch != PixelConvertAdapter::FFMPEG_PIXEL_FORMAT_MAP.end()) ?
+        formatSearch->second : AVPixelFormat::AV_PIX_FMT_NONE;
+}
+
+bool IsYUV(const PixelFormat &format)
+{
+    return format == PixelFormat::NV12 || format == PixelFormat::NV21 ||
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
 }
 
 int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
-    if (info.pixelFormat <= PixelFormat::UNKNOWN || (info.pixelFormat >= PixelFormat::NV21 &&
-        info.pixelFormat != PixelFormat::RGBA_1010102)) {
+    if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
+        IsYUV(info.pixelFormat)) {
         IMAGE_LOGE("[ImageUtil]unsupport pixel format");
         return -1;
     }
@@ -292,7 +293,7 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 
 int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 {
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
+    if (IsYUV(info.pixelFormat)) {
         IMAGE_LOGE("[ImageUtil]unsupport pixel format");
         return -1;
     }
@@ -306,7 +307,7 @@ int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 
 int32_t PixelMap::GetYUVByteCount(const ImageInfo& info)
 {
-    if (info.pixelFormat != PixelFormat::NV21 && info.pixelFormat != PixelFormat::NV12) {
+    if (!IsYUV(info.pixelFormat)) {
         IMAGE_LOGE("[ImageUtil]unsupport pixel format");
         return -1;
     }
@@ -324,10 +325,49 @@ int32_t PixelMap::GetYUVByteCount(const ImageInfo& info)
 
 int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
 {
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12) {
+    if (IsYUV(info.pixelFormat)) {
         return GetYUVByteCount(info);
     } else {
         return GetRGBxByteCount(info);
+    }
+}
+
+void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
+{
+    yuvInfo.yWidth = width;
+    yuvInfo.yHeight = height;
+    yuvInfo.uvWidth = (width + 1) / NUM_2;
+    yuvInfo.uvHeight = (height + 1) / NUM_2;
+    yuvInfo.yStride = width;
+    yuvInfo.uvStride = width + 1;
+    yuvInfo.uvOffset = width * height;
+}
+
+static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
+{
+    if (IsYUV(pixelFormat)) {
+#ifdef EXT_PIXEL
+        dstPixelMap = make_unique<PixelYuvExt>();
+#else
+        dstPixelMap = make_unique<PixelYuv>();
+#endif
+    } else {
+        dstPixelMap = make_unique<PixelMap>();
+    }
+    if (dstPixelMap == nullptr) {
+        IMAGE_LOGE("[image]Create: make pixelmap failed!");
+        errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
+        return false;
+    }
+    return true;
+}
+
+static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
+{
+    if (IsYUV(dstPixelMap->GetPixelFormat())) {
+        YUVDataInfo yDatainfo;
+        UpdateYUVDataInfo(dstPixelMap->GetWidth(), dstPixelMap->GetHeight(), yDatainfo);
+        dstPixelMap->SetImageYUVInfo(yDatainfo);
     }
 }
 
@@ -338,11 +378,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     if (!CheckParams(colors, colorLength, offset, info.width_, opts)) {
         return nullptr;
     }
-
-    unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
-    if (dstPixelMap == nullptr) {
-        IMAGE_LOGE("[image]Create: make pixelmap failed!");
-        errorCode = IMAGE_RESULT_PLUGIN_REGISTER_FAILED;
+    unique_ptr<PixelMap> dstPixelMap;
+    if (!ChoosePixelmap(dstPixelMap, opts.pixelFormat, errorCode)) {
         return nullptr;
     }
     PixelFormat format = PixelFormat::BGRA_8888;
@@ -351,7 +388,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
     ImageInfo srcImageInfo =
         MakeImageInfo(info.width_, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
+    PixelFormat dstPixelFormat =
+        (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
     AlphaType dstAlphaType =
         (opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
@@ -361,7 +399,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
-
     int fd = 0;
     uint32_t bufferSize = dstPixelMap->GetByteCount();
     void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
@@ -379,10 +416,10 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
-
     dstPixelMap->SetEditable(opts.editable);
     MakePixelMap(dstPixels, fd, dstPixelMap);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
+    SetYUVDataInfoToPixelMap(dstPixelMap);
     return dstPixelMap;
 }
 
@@ -867,6 +904,11 @@ bool PixelMap::GetPixelFormatDetail(const PixelFormat format)
             pixelBytes_ = YUV420_BYTES;
             break;
         }
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010: {
+            pixelBytes_ = YUV420_P010_BYTES;
+            break;
+        }
         case PixelFormat::CMYK:
             pixelBytes_ = ARGB_8888_BYTES;
             break;
@@ -1190,7 +1232,7 @@ int32_t PixelMap::GetRowBytes()
 int32_t PixelMap::GetByteCount()
 {
     IMAGE_LOGD("GetByteCount");
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+    if (IsYUV(imageInfo_.pixelFormat)) {
         return GetYUVByteCount(imageInfo_);
     } else {
         return rowDataSize_ * imageInfo_.size.height;
@@ -1322,7 +1364,7 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
             static_cast<unsigned long long>(bufferSize), pixelsSize_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+    if (IsYUV(imageInfo_.pixelFormat)) {
         uint64_t tmpSize = 0;
         int readSize = MAX_READ_COUNT;
         while (tmpSize < bufferSize) {
@@ -1586,7 +1628,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+    if (IsYUV(imageInfo_.pixelFormat)) {
         uint64_t tmpSize = 0;
         int readSize = MAX_READ_COUNT;
         while (tmpSize < bufferSize) {
@@ -2046,16 +2088,11 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
     return true;
 }
 
-bool isYUV(const PixelFormat &format)
-{
-    return format == PixelFormat::NV12 || format == PixelFormat::NV21;
-}
-
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
-    if (isAstc_ || isYUV(imageInfo_.pixelFormat)) {
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
         bufferSize = pixelsSize_;
     }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
@@ -2160,7 +2197,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail");
         return false;
     }
-    if ((!isAstc) && (!isYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height) {
+    if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         return false;
@@ -2528,6 +2565,10 @@ static const string GetNamedPixelFormat(const PixelFormat pixelFormat)
             return "Pixel Format NV21";
         case PixelFormat::NV12:
             return "Pixel Format NV12";
+        case PixelFormat::YCBCR_P010:
+            return "Pixel Format YCBCR_P010";
+        case PixelFormat::YCRCB_P010:
+            return "Pixel Format YCRCB_P010";
         case PixelFormat::CMYK:
             return "Pixel Format CMYK";
         case PixelFormat::ARGB_8888:
@@ -2633,6 +2674,49 @@ static void SetUintPixelAlpha(uint8_t *pixel, const float percent,
     pixel[alphaIndex] = static_cast<uint8_t>(UINT8_MAX * percent + HALF_ONE);
 }
 
+static constexpr uint8_t UINT2_MAX = 3;
+static constexpr uint16_t UINT10_MAX = 1023;
+static void CheckPixel(uint16_t &pixel, uint16_t alpha, const float percent)
+{
+    if (alpha != 0) {
+        float rPixel = pixel * percent * UINT2_MAX / alpha;
+        if ((rPixel + HALF_ONE) >= UINT10_MAX) {
+            pixel = UINT10_MAX;
+        }
+        pixel = static_cast<uint16_t>(rPixel + HALF_ONE);
+    } else {
+        pixel = 0;
+    }
+}
+
+static void SetRGBA1010102PixelAlpha(uint8_t *src, const float percent, int8_t alphaIndex, bool isPixelPremul)
+{
+    if (isPixelPremul) {
+        uint16_t r = 0;
+        uint16_t g = 0;
+        uint16_t b = 0;
+        uint16_t a = 0;
+        a = (uint16_t)((src[NUM_3] >> NUM_6) & 0x03);
+        uint16_t rHigh = (uint16_t)(src[0] & 0xFF);
+        r = (rHigh) + ((uint16_t)(src[1] << NUM_8) & 0x300);
+        CheckPixel(r, a, percent);
+        uint16_t gHigh = (uint16_t)(src[1] & 0xFF);
+        g = (gHigh >> NUM_2) + ((uint16_t)(src[NUM_2] << NUM_6) & 0x3C0);
+        CheckPixel(g, a, percent);
+        uint16_t bHigh = (uint16_t)(src[NUM_2] & 0xFF);
+        b = (bHigh >> NUM_4) + ((uint16_t)(src[NUM_3] << NUM_4) & 0x3F0);
+        CheckPixel(b, a, percent);
+        a = static_cast<uint16_t>(UINT2_MAX * percent + HALF_ONE);
+        src[0] = (uint8_t)(r);
+        src[1] = (uint8_t)(g << NUM_2 | r >> NUM_8);
+        src[NUM_2] = (uint8_t)(b << NUM_4 | g >> NUM_6);
+        src[NUM_3] = (uint8_t)(a << NUM_6 | b >> NUM_4);
+    } else {
+        uint8_t alpha = static_cast<uint8_t>(UINT2_MAX * percent + HALF_ONE);
+        src[alphaIndex] = static_cast<uint8_t>((src[alphaIndex] & 0x3F) | (alpha << NUM_6));
+    }
+}
+
 static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
 {
     switch (pixelFormat) {
@@ -2642,6 +2726,7 @@ static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
         case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102:
             return BGRA_ALPHA_INDEX;
         default:
             return INVALID_ALPHA_INDEX;
@@ -2785,6 +2870,8 @@ uint32_t PixelMap::SetAlpha(const float percent)
         uint8_t* pixel = data_ + i;
         if (pixelFormat == PixelFormat::RGBA_F16) {
             SetF16PixelAlpha(pixel, percent, isPixelPremul);
+        } else if (pixelFormat == PixelFormat::RGBA_1010102) {
+            SetRGBA1010102PixelAlpha(pixel, percent, alphaIndex, isPixelPremul);
         } else {
             SetUintPixelAlpha(pixel, percent, pixelBytes_, alphaIndex, isPixelPremul);
         }
@@ -3025,7 +3112,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
 bool PixelMap::resize(float xAxis, float yAxis)
 {
-    if (imageInfo_.pixelFormat == PixelFormat::NV12 || imageInfo_.pixelFormat == PixelFormat::NV21) {
+    if (IsYUV(imageInfo_.pixelFormat)) {
         IMAGE_LOGE("resize temp disabled for YUV data");
         return true;
     }
