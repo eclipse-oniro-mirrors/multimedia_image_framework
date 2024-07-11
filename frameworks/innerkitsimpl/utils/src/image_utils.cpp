@@ -469,6 +469,10 @@ uint32_t ImageUtils::SaveDataToFile(const std::string& fileName, const char* dat
         IMAGE_LOGI("ImageUtils::SaveDataToFile write error, path=%{public}s", fileName.c_str());
         return IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED;
     }
+    if (data == nullptr) {
+        IMAGE_LOGE("ImageUtils::SaveDataToFile data is nullptr");
+        return IMAGE_RESULT_SAVE_DATA_TO_FILE_FAILED;
+    }
     outFile.write(data, totalSize);
     return SUCCESS;
 }
