@@ -39,7 +39,7 @@ public:
                           const PixelFormat &format, YUVDataInfo &info);
     static void ConvertYuvMode(OpenSourceLibyuv ::FilterMode &filterMode, const AntiAliasingOption &option);
     static void ScaleYuv420(float xAxis, float yAxis, const AntiAliasingOption &option,
-                            YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst);
+                            YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, uint32_t dstYStride);
     static bool ReversalYuv(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info);
     static bool FlipYuv(uint8_t *src, uint8_t *dst, ImageInfo &imageinfo, bool isXaxis, YUVDataInfo &info);
 };

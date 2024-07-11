@@ -298,33 +298,28 @@ void PixelYuvExtUtils::ConvertYuvMode(OpenSourceLibyuv::FilterMode &filterMode, 
 }
 
 static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::FilterMode filterMode,
-    YuvImageInfo &yuvInfo, uint32_t dstYStride, uint32_t dstYHeight)
+    YuvImageInfo &yuvInfo, uint32_t dstYStride, uint32_t dstYHeight, uint32_t dstYWidth)
 {
     uint32_t srcUWidth = static_cast<uint32_t>(GetUStride(yuvInfo.width));
     uint32_t srcUHeight = static_cast<uint32_t>(GetUVHeight(yuvInfo.height));
-    uint32_t dstUWidth = static_cast<uint32_t>(GetUStride(dstYStride));
+    uint32_t dstUWidth = static_cast<uint32_t>(GetUStride(dstYWidth));
     uint32_t dstUHeight = static_cast<uint32_t>(GetUVHeight(dstYHeight));
     // Split VUplane
     std::unique_ptr<uint8_t[]> uvData = std::make_unique<uint8_t[]>(NUM_2 * srcUWidth * srcUHeight);
     uint8_t *uData = nullptr;
     uint8_t *vData = nullptr;
-    if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        uData = uvData.get();
-        vData = uvData.get() + srcUWidth * srcUHeight;
-    } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        vData = uvData.get();
-        uData = uvData.get() + srcUWidth * srcUHeight;
-    }
     uint32_t dstSplitStride = srcUWidth;
     const uint8_t *srcUV = src + yuvInfo.yuvDataInfo.uvOffset;
     uint32_t uvStride = yuvInfo.yuvDataInfo.uvStride;
     auto converter = ConverterHandle::GetInstance().GetHandle();
     if (yuvInfo.yuvFormat == PixelFormat::NV12) {
-        converter.SplitUVPlane(srcUV, uvStride, uData, dstSplitStride, vData, dstSplitStride,
-                               srcUWidth, srcUHeight);
+        uData = uvData.get();
+        vData = uvData.get() + srcUWidth * srcUHeight;
+        converter.SplitUVPlane(srcUV, uvStride, uData, dstSplitStride, vData, dstSplitStride, srcUWidth, srcUHeight);
     } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
-        converter.SplitUVPlane(srcUV, uvStride, vData, dstSplitStride, uData, dstSplitStride,
-                               srcUWidth, srcUHeight);
+        vData = uvData.get();
+        uData = uvData.get() + srcUWidth * srcUHeight;
+        converter.SplitUVPlane(srcUV, uvStride, vData, dstSplitStride, uData, dstSplitStride, srcUWidth, srcUHeight);
     }
     // malloc memory to store temp u v
     std::unique_ptr<uint8_t[]> tempUVData = std::make_unique<uint8_t[]>(NUM_2 * dstUWidth * dstUHeight);
@@ -346,7 +341,12 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
                          tempVData, dstUWidth, dstUWidth, dstUHeight, filterMode);
     // Merge  the UV
     uint8_t *dstUV = dst + GetYSize(dstYStride, dstYHeight);
+
     int32_t dstUVStride = static_cast<int32_t>(dstUWidth * NUM_2);
+    //AllocatorType DMA_ALLOC
+    if (dstYStride != dstYWidth) {
+        dstUVStride = dstYStride;
+    }
     if (yuvInfo.yuvFormat == PixelFormat::NV12) {
         converter.MergeUVPlane(tempUData, dstUWidth, tempVData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);
     } else if (yuvInfo.yuvFormat == PixelFormat::NV21) {
@@ -394,7 +394,7 @@ static void ScaleP010(PixelSize pixelSize, uint8_t *src, uint8_t *dst, OpenSourc
 }
 
 void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingOption &option,
-    YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst)
+    YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, uint32_t dstYStride)
 {
     OpenSourceLibyuv::FilterMode filterMode = OpenSourceLibyuv ::FilterMode::kFilterNone;
     ConvertYuvMode(filterMode, option);
@@ -402,8 +402,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     uint32_t srcYWidth = static_cast<uint32_t>(yuvInfo.width);
     uint32_t srcYHeight = static_cast<uint32_t>(yuvInfo.height);
 
-    int32_t dstYStride = srcYWidth * xAxis;
-    int32_t dstYWidth = dstYStride;
+    int32_t dstYWidth = srcYWidth * xAxis;
     int32_t dstYHeight = srcYHeight * yAxis;
     PixelSize pixelSize = {srcYWidth, srcYHeight, dstYWidth, dstYHeight};
     auto converter = ConverterHandle::GetInstance().GetHandle();
@@ -422,7 +421,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
                              dstYWidth,
                              dstYHeight,
                              filterMode);
-        ScaleUVPlane(src, dst, filterMode, yuvInfo, dstYStride, dstYHeight);
+        ScaleUVPlane(src, dst, filterMode, yuvInfo, dstYStride, dstYHeight, dstYWidth);
     }
 }
 
