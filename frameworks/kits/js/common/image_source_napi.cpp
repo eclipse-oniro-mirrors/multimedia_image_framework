@@ -1736,6 +1736,53 @@ static void ModifyImagePropertyComplete(napi_env env, napi_status status, ImageS
     context = nullptr;
 }
 
+static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg)
+{
+    if (context == nullptr) {
+        return;
+    }
+    switch (context->status) {
+        case ERR_IMAGE_DECODE_EXIF_UNSUPPORT:
+            errMsg = "Unsupport EXIF info key.";
+            break;
+        case ERROR:
+            errMsg = "The operation failed.";
+            break;
+        case ERR_IMAGE_DATA_UNSUPPORT:
+            errMsg = "The image data is not supported.";
+            break;
+        case ERR_IMAGE_SOURCE_DATA:
+            errMsg = "The image source data is incorrect.";
+            break;
+        case ERR_IMAGE_SOURCE_DATA_INCOMPLETE:
+            errMsg = "The image source data is incomplete.";
+            break;
+        case ERR_IMAGE_MISMATCHED_FORMAT:
+            errMsg = "The image format does not mastch.";
+            break;
+        case ERR_IMAGE_UNKNOWN_FORMAT:
+            errMsg = "Unknow image format.";
+            break;
+        case ERR_IMAGE_INVALID_PARAMETER:
+            errMsg = "Invalid image parameter.";
+            break;
+        case ERR_IMAGE_DECODE_FAILED:
+            errMsg = "Failed to decode the image.";
+            break;
+        case ERR_IMAGE_PLUGIN_CREATE_FAILED:
+            errMsg = "Failed to create the image plugin.";
+            break;
+        case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
+            errMsg = "The image decoding header is abnormal.";
+            break;
+        case ERR_MEDIA_VALUE_INVALID:
+            errMsg = "The EXIF value is invalid.";
+            break;
+        default:
+            errMsg = "There is unknown error happened.";
+    }
+}
+
 static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSourceAsyncContext *context)
 {
     if (context == nullptr) {
@@ -1760,8 +1807,8 @@ static void GetImagePropertyComplete(napi_env env, napi_status status, ImageSour
         if (context->isBatch) {
             result[NUM_0] = CreateObtainErrorArray(env, context->errMsgArray);
         } else {
-            std::string errMsg = context->status == ERR_IMAGE_DECODE_EXIF_UNSUPPORT ? "Unsupport EXIF info key!" :
-                "There is generic napi failure!";
+            std::string errMsg;
+            GenerateErrMsg(context, errMsg);
             ImageNapiUtils::CreateErrorObj(env, result[NUM_0], context->status, errMsg);
 
             if (!context->defaultValueStr.empty()) {
@@ -1843,7 +1890,7 @@ static uint32_t CheckExifDataValue(const std::string &key, const std::string &va
 {
     auto status = static_cast<uint32_t>(ExifMetadatFormatter::Validate(key, value));
     if (status != SUCCESS) {
-        errorInfo = key + "has invalid exif value: ";
+        errorInfo = key + " has invalid exif value: ";
         errorInfo.append(value);
     }
     return status;
