@@ -407,10 +407,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapInitializationOptions_SetGetSrcPixelFormat
     OH_PixelmapInitializationOptions_SetSrcPixelFormat(ops, 1);
     OH_PixelmapInitializationOptions_GetSrcPixelFormat(ops, &srcpixelFormat);
     ASSERT_EQ(srcpixelFormat, 1);
-    if (ops != nullptr) {
-        free(ops);
-    }
-    ops = nullptr;
+    Image_ErrorCode ret = OH_PixelmapInitializationOptions_Release(ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_InitializationSetOptionsGetSrcPixelFormat end";
 }
 
