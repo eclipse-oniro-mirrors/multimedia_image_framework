@@ -106,6 +106,8 @@ private:
     uint32_t HeifYUVMemAlloc(DecodeContext &context);
     void SetHeifDecodeError(DecodeContext &context);
     void SetHeifParseError();
+    uint32_t ConvertFormatToYUV(DecodeContext &context, SkImageInfo &dstInfo,
+        uint64_t byteCount, OHOS::Media::PixelFormat format);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;

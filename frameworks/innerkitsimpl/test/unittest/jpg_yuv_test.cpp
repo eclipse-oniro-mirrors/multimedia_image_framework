@@ -1156,7 +1156,7 @@ HWTEST_F(JpgYuvTest, JpgYuvTest007, TestSize.Level3)
     decodeOpts.desiredSize.width = 0;
     decodeOpts.desiredSize.height = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(errorCode, SUCCESS);
 }
 
 HWTEST_F(JpgYuvTest, JpgYuvTest008, TestSize.Level3)
