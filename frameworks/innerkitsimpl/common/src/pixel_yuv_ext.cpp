@@ -120,26 +120,31 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     int32_t dstH = imageInfo.size.height * yAxis;
     Size desiredSize = {dstW, dstH};
     MemoryData memoryData = {nullptr, GetImageSize(dstW, dstH, imageInfo.pixelFormat), "Trans ImageData",
-        desiredSize};
+        desiredSize, imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("scale CreateMemory failed");
         return;
     }
-#if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
-    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
-            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
-        }
-    }
-#endif
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
                             imageInfo.pixelFormat, yuvDataInfo};
-    PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst);
+    uint32_t dstYStride = static_cast<uint32_t>(yuvInfo.width) * xAxis;
+    #if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        if (m->extend.data == nullptr) {
+            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
+        } else {
+            auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
+            dstYStride = sb->GetStride();
+        }
+    }
+    #endif
+
+    PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstYStride);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;
     imageInfo.size.height = dstH;
@@ -178,7 +183,7 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     int32_t width = imageInfo.size.width;
     int32_t height = imageInfo.size.height;
     uint32_t pictureSize = GetImageSize(width, height, imageInfo.pixelFormat);
-    MemoryData memoryData = {nullptr, pictureSize, "flip ImageData", {width, height}};
+    MemoryData memoryData = {nullptr, pictureSize, "flip ImageData", {width, height}, imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("flip CreateMemory failed");
