@@ -2988,6 +2988,7 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
     memoryInfo.memory = std::move(dstMemory);
     if (memset_s(memoryInfo.memory->data.data, memoryInfo.memory->data.size,
         0, memoryInfo.memory->data.size) != 0) {
+        memoryInfo.memory->Release();
         return false;
     }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -3071,6 +3072,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     auto skimage = SkImage::MakeFromBitmap(src.bitmap);
     if (skimage == nullptr) {
         IMAGE_LOGE("MakeFromBitmap failed with nullptr");
+        dstMemory.memory->Release();
         this->errorCode = IMAGE_RESULT_TRANSFORM;
         return false;
     }
