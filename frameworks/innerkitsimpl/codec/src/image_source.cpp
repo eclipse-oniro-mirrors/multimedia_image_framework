@@ -494,6 +494,11 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
+        IMAGE_LOGE("desiredSize is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageTrace imageTrace("ImageSource::CreatePixelMapEx, index:%u, desiredSize:(%d, %d)", index,
         opts.desiredSize.width, opts.desiredSize.height);
     IMAGE_LOGD("CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
