@@ -3603,8 +3603,8 @@ static uint32_t AiSrProcess(sptr<SurfaceBuffer> &input, DecodeContext &aisrCtx)
         IMAGE_LOGE("[ImageSource]AiSrProcess DetailEnhancerImage Processed failed");
         FreeContextBuffer(aisrCtx.freeFunc, aisrCtx.allocatorType, aisrCtx.pixelsBuffer);
     } else {
-        aisrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
-        aisrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
+        aisrCtx.outInfo.size.width = static_cast<uint32_t>(output->GetSurfaceBufferWidth());
+        aisrCtx.outInfo.size.height = static_cast<uint32_t>(output->GetSurfaceBufferHeight());
         aisrCtx.yuvInfo.imageSize.width = aisrCtx.outInfo.size.width;
         aisrCtx.yuvInfo.imageSize.height = aisrCtx.outInfo.size.height;
         aisrCtx.hdrType = Media::ImageHdrType::SDR;
