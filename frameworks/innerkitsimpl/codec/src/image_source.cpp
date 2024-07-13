@@ -1803,7 +1803,7 @@ AbsImageDecoder *DoCreateDecoder(std::string codecFormat, PluginServer &pluginSe
     return decoder;
 }
 
-uint32_t ImageSource::GetFormatExtended(string &format)
+uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_sanitize("cfi")))
 {
     if (mainDecoder_ != nullptr) {
         format = sourceInfo_.encodedFormat;
