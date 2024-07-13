@@ -272,7 +272,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+        IMAGE_LOGD("read outData end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
