@@ -225,14 +225,14 @@ static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, Ope
     uint16_t* rotateU = rotatePixels.get() + GetYSize(size.dstW, size.dstH);
     uint16_t* rotateV = rotatePixels.get() + GetVOffset(size.dstW, size.dstH);
 
-    if (converter.I010Rotate(dstY, info.yWidth, dstU, info.uvWidth, dstV, info.uvWidth, rotateY, info.yWidth, rotateU,
-        info.uvWidth, rotateV, info.uvWidth, info.yWidth, info.yHeight, rotateNum) == -1) {
+    if (converter.I010Rotate(dstY, info.yWidth, dstU, info.uvWidth, dstV, info.uvWidth, rotateY, size.dstW, rotateU,
+        GetUStride(size.dstW), rotateV, GetUStride(size.dstW), info.yWidth, info.yHeight, rotateNum) == -1) {
         IMAGE_LOGE("I010Rotate failed");
         return false;
     }
 
-    if (converter.I010ToP010(rotateY, info.yWidth, rotateU, info.uvWidth, rotateV, info.uvWidth, srcbuffer,
-        info.yWidth, srcbuffer + GetYSize(size.dstW, size.dstH), GetUVStride(info.yWidth), size.dstW,
+    if (converter.I010ToP010(rotateY, size.dstW, rotateU, GetUStride(size.dstW), rotateV, GetUStride(size.dstW),
+        srcbuffer, size.dstW, srcbuffer + GetYSize(size.dstW, size.dstH), GetUVStride(size.dstW), size.dstW,
         size.dstH) == -1) {
         IMAGE_LOGE("I010ToP010 failed");
         return false;
