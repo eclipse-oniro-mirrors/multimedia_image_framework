@@ -146,6 +146,7 @@ constexpr uint8_t BYTE_POS_0 = 0;
 constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
+constexpr uint32_t SUT_FILE_SIGNATURE = 0x53555401;
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
 using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
@@ -2620,8 +2621,8 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize) __attribute__
         return true;
     }
 #ifdef SUT_DECODE_ENABLE
-    if (g_sutDecSoManager.isSutFunc_ != nullptr) {
-        return g_sutDecSoManager.isSutFunc_(fileData, fileSize);
+    if (magicVal == SUT_FILE_SIGNATURE) {
+        return true;
     }
 #endif
     return false;
