@@ -15,7 +15,7 @@
 #ifndef EXIF_INFO_H
 #define EXIF_INFO_H
 
-#include <map>
+#include <safe_map.h>
 #include <string>
 #include <vector>
 
@@ -166,7 +166,7 @@ private:
     ExifIfd imageFileDirectory_;
     ExifData* exifData_;
     bool isExifDataParsed_;
-    std::map<ExifTag, std::string> exifTags_;
+    SafeMap<ExifTag, std::string> exifTags_;
 };
 
 class ByteOrderedBuffer {
