@@ -482,12 +482,12 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Scale_AntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
-    OH_PixelmapNative_AntiAliasingOption *opts)
+    OH_PixelmapNative_AntiAliasingLevel level)
 {
     if (pixelmap == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(*opts));
+    pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
     return IMAGE_SUCCESS;
 }
 
