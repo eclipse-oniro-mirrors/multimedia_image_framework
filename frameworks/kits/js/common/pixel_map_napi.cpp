@@ -3303,6 +3303,9 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.context->rPixelMap == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IPC, "marshalling pixel map to parcel failed.");
+    }
     if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
