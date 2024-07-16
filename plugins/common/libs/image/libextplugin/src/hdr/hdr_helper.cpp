@@ -99,6 +99,8 @@ static const map<HeifImageHdrType, ImageHdrType> HEIF_HDR_TYPE_MAP = {
     { HeifImageHdrType::UNKNOWN, ImageHdrType::UNKNOWN},
     { HeifImageHdrType::VIVID_DUAL, ImageHdrType::HDR_VIVID_DUAL},
     { HeifImageHdrType::ISO_DUAL, ImageHdrType::HDR_ISO_DUAL},
+    { HeifImageHdrType::VIVID_SINGLE, ImageHdrType::HDR_VIVID_SINGLE},
+    { HeifImageHdrType::ISO_SINGLE, ImageHdrType::HDR_ISO_SINGLE},
 };
 #endif
 
@@ -771,6 +773,7 @@ static bool GetISOGainmapMetadata(jpeg_marker_struct* markerList, HdrMetadata& m
 static bool GetJpegGainMapMetadata(SkJpegCodec* codec, ImageHdrType type, HdrMetadata& metadata)
 {
     if (codec == nullptr || codec->decoderMgr() == nullptr) {
+        IMAGE_LOGE("GetJpegGainMapMetadata codec is nullptr");
         return false;
     }
     jpeg_marker_struct* markerList = codec->decoderMgr()->dinfo()->marker_list;
@@ -863,7 +866,7 @@ static bool GetHeifMetadata(HeifDecoder* heifDecoder, ImageHdrType type, HdrMeta
             }
         }
         return res;
-    } else if (type == ImageHdrType::HDR_ISO_DUAL) {
+    } else if (type == ImageHdrType::HDR_ISO_DUAL || type == ImageHdrType::HDR_ISO_SINGLE) {
         vector<uint8_t> isoMetadata;
         heifDecoder->getISOMetadata(isoMetadata);
         if (isoMetadata.empty()) {

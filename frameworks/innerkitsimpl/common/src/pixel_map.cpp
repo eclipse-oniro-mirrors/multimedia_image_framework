@@ -1291,7 +1291,8 @@ const uint8_t *PixelMap::GetPixels()
 
 bool PixelMap::IsHdr()
 {
-    if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102) {
+    if (imageInfo_.pixelFormat != PixelFormat::RGBA_1010102 && imageInfo_.pixelFormat != PixelFormat::YCRCB_P010 &&
+        imageInfo_.pixelFormat != PixelFormat::YCBCR_P010) {
         IMAGE_LOGD("PixelMap not hdr, pixelformat:%{public}d", imageInfo_.pixelFormat);
         return false;
     }
