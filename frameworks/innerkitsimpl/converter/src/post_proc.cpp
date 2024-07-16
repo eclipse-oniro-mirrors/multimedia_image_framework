@@ -800,8 +800,8 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         // Workaround for crash on odd number width, caused by FFmpeg 5.0 upgrade
         uint32_t byteCount = srcRowStride[0] * srcHeight;
         inBuf = malloc(byteCount);
-        srcPixels[0] = static_cast<uint8_t*>(inBuf);
-        errno_t errRet = memcpy_s(inBuf, byteCount, static_cast<uint8_t*>(pixelMap.GetWritablePixels()), byteCount);
+        srcPixels[0] = reinterpret_cast<uint8_t*>(inBuf);
+        errno_t errRet = memcpy_s(inBuf, byteCount, pixelMap.GetWritablePixels(), byteCount);
         if (errRet != EOK) {
             if (inBuf != nullptr) {
                 free(inBuf);
