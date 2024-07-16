@@ -24,7 +24,8 @@ enum class ImageHdrType : int32_t {
     HDR_ISO_DUAL,
     HDR_CUVA,
     HDR_VIVID_DUAL,
-    HDR_VIVID_SINGLE
+    HDR_VIVID_SINGLE,
+    HDR_ISO_SINGLE,
 };
 
 typedef struct ISOMetadata {

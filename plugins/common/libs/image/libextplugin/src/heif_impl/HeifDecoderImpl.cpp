@@ -66,6 +66,8 @@ const static int MAX_ALPHA = 255;
 const static int GRID_NUM_2 = 2;
 const static uint32_t PLANE_COUNT_TWO = 2;
 
+const static uint16_t BT2020_PRIMARIES = 9;
+
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
@@ -163,6 +165,9 @@ static AVPixelFormat PixFmt2AvPixFmtForOutput(PixelFormat pixelFormat)
         case PixelFormat::NV21:
             res = AV_PIX_FMT_NV21;
             break;
+        case PixelFormat::RGBA_1010102:
+            res = AV_PIX_FMT_X2BGR10;
+            break;
         default:
             break;
     }
@@ -187,6 +192,15 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
             break;
         case kHeifColorFormat_NV21:
             res = PixelFormat::NV21;
+            break;
+        case kHeifColorFormat_RGBA_1010102:
+            res = PixelFormat::RGBA_1010102;
+            break;
+        case kHeifColorFormat_P010_NV12:
+            res = PixelFormat::YCBCR_P010;
+            break;
+        case kHeifColorFormat_P010_NV21:
+            res = PixelFormat::YCRCB_P010;
             break;
         default:
             IMAGE_LOGE("Unsupported dst pixel format: %{public}d", format);
@@ -653,7 +667,7 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
     }
 
     OH_NativeBuffer_Planes *dstBufferPlanesInfo = nullptr;
-    if (dstHwBuffer_ != nullptr) {
+    if (dstHwBuffer_ != nullptr && dstHwBuffer_->GetFormat() != GRAPHIC_PIXEL_FMT_RGBA_1010102) {
         dstHwBuffer_->GetPlanesInfo((void **)&dstBufferPlanesInfo);
         if (dstBufferPlanesInfo == nullptr) {
             IMAGE_LOGE("fail to get dst buffer planes info");
@@ -696,7 +710,13 @@ bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
 
 bool HeifDecoderImpl::IsDirectYUVDecode()
 {
-    return dstHwBuffer_ != nullptr && primaryImage_->GetLumaBitNum() != LUMA_10_BIT;
+    if (dstHwBuffer_ == nullptr) {
+        return false;
+    }
+    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT) {
+        return outPixelFormat_ == Media::PixelFormat::YCRCB_P010 || outPixelFormat_ == Media::PixelFormat::YCBCR_P010;
+    }
+    return outPixelFormat_ == Media::PixelFormat::NV21 || outPixelFormat_ == Media::PixelFormat::NV12;
 }
 
 bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
@@ -761,8 +781,9 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
-    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT) {
-        return uwaInfo.empty() ? HeifImageHdrType::UNKNOWN : HeifImageHdrType::VIVID_SINGLE;
+    if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && imageInfo_.hasNclxColor &&
+        imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES) {
+        return uwaInfo.empty() ? HeifImageHdrType::ISO_SINGLE : HeifImageHdrType::VIVID_SINGLE;
     }
     if (gainmapImage_ != nullptr) {
         return uwaInfo.empty() ? HeifImageHdrType::ISO_DUAL : HeifImageHdrType::VIVID_DUAL;
