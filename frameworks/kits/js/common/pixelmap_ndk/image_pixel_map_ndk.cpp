@@ -157,7 +157,7 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
 }
 
 MIDK_EXPORT
-int32_t OH_PixelMap_Scale_AntiAliasing(const NativePixelMap* native, float x, float y,
+int32_t OH_PixelMap_ScaleWithAntiAliasing(const NativePixelMap* native, float x, float y,
     OH_PixelMap_AntiAliasingLevel level)
 {
     if (native == nullptr || native->napi == nullptr) {

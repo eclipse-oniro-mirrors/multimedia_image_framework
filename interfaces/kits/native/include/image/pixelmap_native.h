@@ -125,19 +125,19 @@ typedef enum {
  */
 typedef enum {
     /**
-     * Nearest-neighbor interpolation algorithm
+     * Nearest-neighbor interpolation
      */
     OH_PixelmapNative_AntiAliasing_NONE = 0,
     /**
-     * Bilinear interpolation algorithm
+     * Bilinear interpolation
      */
     OH_PixelmapNative_AntiAliasing_LOW = 1,
     /**
-     * Bilinear interpolation algorithm with mipmap linear filtering
+     * Bilinear interpolation with mipmap linear filtering
      */
     OH_PixelmapNative_AntiAliasing_MEDIUM = 2,
     /**
-     * Cubic interpolation algorithm
+     * Cubic interpolation
      */
     OH_PixelmapNative_AntiAliasing_HIGH = 3,
 } OH_PixelmapNative_AntiAliasingLevel;
@@ -453,12 +453,12 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
  * @param pixelmap The Pixelmap pointer will be operated.
  * @param scaleX Scaling ratio of the width.
  * @param scaleY Scaling ratio of the height.
- * @param level The anti-aliasing algorithm to be used.
+ * @param level The anti-aliasing method to be used.
  * @return Returns {@link Image_ErrorCode}
  * @see OH_PixelmapNative
  * @since 12
  */
-Image_ErrorCode OH_PixelmapNative_Scale_AntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
     OH_PixelmapNative_AntiAliasingLevel level);
 
 /**

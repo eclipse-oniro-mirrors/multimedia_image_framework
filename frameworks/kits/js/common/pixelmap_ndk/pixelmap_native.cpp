@@ -481,7 +481,7 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_Scale_AntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
     OH_PixelmapNative_AntiAliasingLevel level)
 {
     if (pixelmap == nullptr) {
