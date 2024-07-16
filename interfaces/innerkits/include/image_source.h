@@ -319,6 +319,7 @@ private:
                             ImagePlugin::DecodeContext &context, ImagePlugin::PlImageInfo &plInfo);
     ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
         ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
+    void SetDngImageSize(uint32_t index, ImageInfo &imageInfo);
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
