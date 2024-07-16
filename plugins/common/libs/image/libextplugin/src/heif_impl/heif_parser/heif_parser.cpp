@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
-
+static constexpr uint32_t INVALID_ID = 0;
 HeifParser::HeifParser() = default;
 
 HeifParser::~HeifParser() = default;
@@ -65,12 +65,14 @@ void HeifParser::Write(HeifStreamWriter &writer)
         box->Write(writer);
     }
 
-    ilocBox_->WriteMdatBox(writer);
+    if (ilocBox_ != nullptr) {
+        ilocBox_->WriteMdatBox(writer);
+    }
 }
 
 heif_item_id HeifParser::GetPrimaryItemId() const
 {
-    return pitmBox_->GetItemId();
+    return pitmBox_ != nullptr ? pitmBox_->GetItemId() : INVALID_ID;
 }
 
 void HeifParser::GetAllItemId(std::vector<heif_item_id> &itemIdList) const
@@ -406,6 +408,9 @@ void HeifParser::ExtractGainmap(const std::vector<heif_item_id>& allItemIds)
 
 void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
 {
+    if (image == nullptr) {
+        return;
+    }
     heif_item_id itemId = image->GetItemId();
 
     auto ispe = GetProperty<HeifIspeBox>(itemId);
@@ -630,7 +635,7 @@ std::shared_ptr<HeifImage> HeifParser::GetPrimaryImage()
 
 std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
 {
-    return primaryImage_->GetGainmapImage();
+    return primaryImage_ != nullptr ? primaryImage_->GetGainmapImage() : nullptr;
 }
 
 std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
@@ -649,10 +654,16 @@ heif_item_id HeifParser::GetNextItemId() const
 
 std::shared_ptr<HeifInfeBox> HeifParser::AddItem(const char *itemType, bool hidden)
 {
+    if (itemType == nullptr) {
+        return nullptr;
+    }
     heif_item_id newItemId = GetNextItemId();
     auto newInfe = std::make_shared<HeifInfeBox>(newItemId, itemType, false);
     newInfe->SetHidden(hidden);
     infeBoxes_[newItemId] = newInfe;
+    if (iinfBox_ == nullptr) {
+        return nullptr;
+    }
     iinfBox_->AddChild(newInfe);
     return newInfe;
 }
@@ -666,6 +677,9 @@ void HeifParser::AddIspeProperty(heif_item_id itemId, uint32_t width, uint32_t h
 
 heif_property_id HeifParser::AddProperty(heif_item_id itemId, const std::shared_ptr<HeifBox>& property, bool essential)
 {
+    if (ipcoBox_ == nullptr) {
+        return INVALID_ID;
+    }
     int index = ipcoBox_->AddChild(property);
     ipmaBox_->AddProperty(itemId, PropertyAssociation{essential, uint16_t(index + 1)});
     return index + 1;
@@ -727,7 +741,9 @@ void HeifParser::AddReference(heif_item_id fromItemId, uint32_t type, const std:
 {
     if (!irefBox_) {
         irefBox_ = std::make_shared<HeifIrefBox>();
-        metaBox_->AddChild(irefBox_);
+        if (metaBox_ != nullptr) {
+            metaBox_->AddChild(irefBox_);
+        }
     }
     irefBox_->AddReferences(fromItemId, type, toItemIds);
 }
@@ -748,6 +764,9 @@ void HeifParser::SetColorProfile(heif_item_id itemId, const std::shared_ptr<cons
 
 void HeifParser::CheckExtentData()
 {
+    if (ilocBox_ == nullptr) {
+        return;
+    }
     const std::vector<HeifIlocBox::Item>& items = ilocBox_->GetItems();
     for (const HeifIlocBox::Item& item: items) {
         ilocBox_->ReadToExtentData(const_cast<HeifIlocBox::Item &>(item), inputStream_, idatBox_);
@@ -756,6 +775,9 @@ void HeifParser::CheckExtentData()
 
 void HeifParser::SetPrimaryImage(const std::shared_ptr<HeifImage> &image)
 {
+    if (image == nullptr) {
+        return;
+    }
     if (primaryImage_) {
         if (primaryImage_->GetItemId() == image->GetItemId()) {
             return;
@@ -825,6 +847,9 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
                                    const char *item_type, const char *content_type)
 {
     auto metadataInfe = AddItem(item_type, true);
+    if (metadataInfe == nullptr) {
+        return heif_error_no_iinf;
+    }
     if (content_type != nullptr) {
         metadataInfe->SetContentType(content_type);
     }
@@ -840,6 +865,9 @@ heif_error HeifParser::SetMetadata(const std::shared_ptr<HeifImage> &image, cons
 
 uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 {
+    if (ilocBox_ == nullptr) {
+        return 0;
+    }
     auto items = ilocBox_->GetItems();
     for (const auto &item: items) {
         if (item.itemId == id) {

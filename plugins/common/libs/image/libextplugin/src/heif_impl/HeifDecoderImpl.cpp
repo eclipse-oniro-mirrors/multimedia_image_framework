@@ -296,6 +296,10 @@ void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
 
 void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image)
 {
+    if (image == nullptr) {
+        IMAGE_LOGE("image is null");
+        return;
+    }
     auto &iccProfile = image->GetRawColorProfile();
     size_t iccSize = iccProfile != nullptr ? iccProfile->GetData().size() : 0;
     if (iccSize > 0) {
@@ -659,6 +663,10 @@ bool HeifDecoderImpl::ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, u
 bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
                                                  uint8_t *dstMemory, size_t dstRowStride)
 {
+    if (hwBuffer == nullptr) {
+        IMAGE_LOGE("hwBuffer is null");
+        return false;
+    }
     OH_NativeBuffer_Planes *srcBufferPlanesInfo = nullptr;
     hwBuffer->GetPlanesInfo((void **)&srcBufferPlanesInfo);
     if (srcBufferPlanesInfo == nullptr) {
@@ -780,6 +788,10 @@ bool HeifDecoderImpl::getTmapInfo(HeifFrameInfo* frameInfo)
 
 HeifImageHdrType HeifDecoderImpl::getHdrType()
 {
+    if (primaryImage_ == nullptr) {
+        IMAGE_LOGE("primaryImage_ is null");
+        return HeifImageHdrType::UNKNOWN;
+    }
     std::vector<uint8_t> uwaInfo = primaryImage_->GetUWAInfo();
     if (primaryImage_->GetLumaBitNum() == LUMA_10_BIT && imageInfo_.hasNclxColor &&
         imageInfo_.nclxColor.colorPrimaries == BT2020_PRIMARIES) {
@@ -794,6 +806,9 @@ HeifImageHdrType HeifDecoderImpl::getHdrType()
 void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
     std::vector<uint8_t>& lightInfo)
 {
+    if (primaryImage_ == nullptr) {
+        return;
+    }
     uwaInfo = primaryImage_->GetUWAInfo();
     displayInfo = primaryImage_->GetDisplayInfo();
     lightInfo = primaryImage_->GetLightInfo();
@@ -801,6 +816,9 @@ void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vecto
 
 void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
 {
+    if (primaryImage_ == nullptr) {
+        return;
+    }
     isoMetadata = primaryImage_->GetISOMetadata();
 }
 
