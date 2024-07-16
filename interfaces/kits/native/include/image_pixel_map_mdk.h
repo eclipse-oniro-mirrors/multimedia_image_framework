@@ -208,6 +208,31 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res);
 
 /**
+ * @brief Creates a <b>PixelMap</b> object with stride.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param info Indicates the options for setting the <b>PixelMap</b> object.
+ * @param buf Indicates the pointer to the buffer of the image.
+ * @param len Indicates the image size.
+ * @param rowStride Indicates the stride of the image buffer.
+ * @param res Indicates the pointer to the <b>PixelMap</b> object at the application layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if info, len and rowStride do not match.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
+ * @see OH_PixelMap_CreatePixelMapWithStride
+ * @since 12
+ * @version 1.0
+ */
+int32_t OH_PixelMap_CreatePixelMapWithStride(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, int32_t rowStride, napi_value* res);
+
+/**
  * @brief Creates a <b>PixelMap</b> object that contains only alpha channel information.
  *
  * @param env Indicates the NAPI environment pointer.
