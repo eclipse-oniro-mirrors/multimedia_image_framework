@@ -811,6 +811,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     if (inBuf != nullptr) {
         free(inBuf);
         inBuf = nullptr;
+        srcPixels[0] = nullptr;
     }
     if (!res) {
         sws_freeContext(swsContext);
