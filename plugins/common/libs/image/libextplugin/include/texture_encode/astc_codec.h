@@ -29,6 +29,13 @@ public:
     uint32_t AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
         int32_t blocksNum, uint8_t *outBuffer, int32_t outSize);
     static bool AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer);
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+    static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
+        uint8_t *buffer, const std::string &clBinPath);
+#endif
+#ifdef SUT_ENCODE_ENABLE
+    static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer);
+#endif
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;

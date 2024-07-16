@@ -393,6 +393,9 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncBasedOnCl001, TestSize.Level3)
     ret = AstcClFillImage(&imageIn, input, param.stride_, param.width_, RGBA_MAX_HEIGHT + 1);
     ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
 
+    ret = AstcClFillImage(&imageIn, input, param.stride_, RGBA_MAX_WIDTH + 1, RGBA_MAX_HEIGHT + 1);
+    ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
+
     ClAstcImageOption *imageInPtr = nullptr;
     ret = AstcClFillImage(imageInPtr, input, param.stride_, param.width_, param.height_);
     ASSERT_EQ(ret, CL_ASTC_ENC_FAILED);
@@ -560,7 +563,7 @@ static TestEncRet ReadFileExtern(uint8_t *pixMap, size_t bytesPerFile, size_t id
     }
     std::string fileStr(inFile);
     if (!CheckFileIsExist(fileStr)) {
-        GTEST_LOG_(ERROR) << "File is not exist: " << inFile;
+        GTEST_LOG_(INFO) << "File is not exist: " << inFile;
         return TestEncRet::ERR_FILE_NOT_FIND;
     }
     std::ifstream contents{fileStr};
@@ -876,6 +879,62 @@ HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_010, TestSize.Level3)
     testPara.isSelfCreatePixMap = false;
     testPara.privateProfile = CUSTOMIZED_PROFILE;
     ASSERT_LE(TestCaseMultiFrameEnc(testPara), TestEncRet::ERR_FILE_NOT_FIND);
+}
+#endif
+
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+/**
+ * @tc.name: AstcEncoderTime_011
+ * @tc.desc: BoundCheck for TryAstcEncBasedOnCl function
+ * @tc.type: branch coverage
+ */
+void FreeMem(uint8_t *inRgba, uint8_t *astcBuf)
+{
+    if (inRgba != nullptr) {
+        free(inRgba);
+    }
+    if (astcBuf != nullptr) {
+        free(astcBuf);
+    }
+}
+
+HWTEST_F(PluginTextureEncodeTest, AstcEncoderTime_011, TestSize.Level3)
+{
+    TextureEncodeOptions param = CreateDefaultEncParam();
+    const std::string clBinPathInvaild = "/data/local/tmp/AstcEncShader_ALN-AL00.bin";
+    ASSERT_EQ(AstcCodec::TryAstcEncBasedOnCl(param, nullptr, nullptr, clBinPathInvaild), false);
+
+    param.stride_ = param.stride_ << RGBA_BYTES_PIXEL_LOG2;
+    size_t inputSize = (static_cast<size_t>(param.width_ * param.height_)) << RGBA_BYTES_PIXEL_LOG2;
+    uint8_t *inRgba = static_cast<uint8_t *>(malloc(inputSize));
+    uint8_t *astcBuf = static_cast<uint8_t *>(malloc(inputSize));
+    bool mallocOk = inRgba == nullptr || astcBuf == nullptr;
+    if (mallocOk) {
+        FreeMem(inRgba, astcBuf);
+    }
+    ASSERT_EQ(mallocOk, false);
+    for (size_t i = 0; i < inputSize; ++i) {
+        inRgba[i] = static_cast<uint8_t>(i % PIXEL_VALUE_MAX);
+    }
+    bool gpuEnc = AstcCodec::TryAstcEncBasedOnCl(param, inRgba, astcBuf, clBinPathInvaild);
+    if (!gpuEnc) {
+        FreeMem(inRgba, astcBuf);
+    }
+    ASSERT_EQ(gpuEnc, true);
+#ifdef SUT_ENCODE_ENABLE
+    bool sutEnc = AstcCodec::TryTextureSuperCompress(param, astcBuf);
+    if (!sutEnc) {
+        FreeMem(inRgba, astcBuf);
+    }
+    ASSERT_EQ(sutEnc, true);
+#endif
+    const std::string clBinFalsePath = "/data/false/AstcEncShader_ALN-AL00.bin";
+    gpuEnc = AstcCodec::TryAstcEncBasedOnCl(param, inRgba, astcBuf, clBinFalsePath);
+    if (!gpuEnc) {
+        FreeMem(inRgba, astcBuf);
+    }
+    ASSERT_EQ(gpuEnc, true);
+    FreeMem(inRgba, astcBuf);
 }
 #endif
 
