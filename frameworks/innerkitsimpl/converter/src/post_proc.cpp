@@ -794,9 +794,35 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     dstRowStride[0] = (mem->GetType() == AllocatorType::DMA_ALLOC) ?
         reinterpret_cast<SurfaceBuffer*>(mem->extend.data)->GetStride() :
         desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+
+    void *inBuf = nullptr;
+    if ((srcWidth & 1) == 1 && pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+        // Workaround for crash on odd number width, caused by FFmpeg 5.0 upgrade
+        uint32_t byteCount = srcRowStride[0] * srcHeight;
+        inBuf = malloc(byteCount);
+        srcPixels[0] = reinterpret_cast<uint8_t*>(inBuf);
+        errno_t errRet = memcpy_s(inBuf, byteCount, pixelMap.GetWritablePixels(), byteCount);
+        if (errRet != EOK) {
+            if (inBuf != nullptr) {
+                free(inBuf);
+                inBuf = nullptr;
+                srcPixels[0] = nullptr;
+            }
+            mem->Release();
+            IMAGE_LOGE("ScalePixelMapEx memcpy_s failed with error code: %{public}d", errRet);
+            return false;
+        }
+    }
+
     SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
         pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
     auto res = sws_scale(swsContext, srcPixels, srcRowStride, 0, srcHeight, dstPixels, dstRowStride);
+
+    if (inBuf != nullptr) {
+        free(inBuf);
+        inBuf = nullptr;
+        srcPixels[0] = nullptr;
+    }
     if (!res) {
         sws_freeContext(swsContext);
         mem->Release();
