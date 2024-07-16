@@ -142,7 +142,26 @@ void ImageFormatConvertTest::RgbConvertToYuv(PixelFormat &srcFormat, PixelFormat
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(srcPixelMap.get(), nullptr);
 
+    auto yuvDataInfoTemp = srcPixelMap->yuvDataInfo_;
+    auto imageInfoTemp = srcPixelMap->imageInfo_;
+    srcPixelMap->yuvDataInfo_.yWidth = 0;
+    srcPixelMap->imageInfo_.size.width = 0;
     uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    ASSERT_NE(ret, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_.yWidth = 1;
+    srcPixelMap->yuvDataInfo_.yHeight = 0;
+    ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    ASSERT_NE(ret, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_.yHeight= PIXEL_MAP_MAX_RAM_SIZE;
+    srcPixelMap->yuvDataInfo_.yWidth = 2; // 2:Special case, anomalous branching
+    ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
+    ASSERT_NE(ret, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_ = yuvDataInfoTemp;
+    srcPixelMap->imageInfo_ = imageInfoTemp;
+    ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
     ASSERT_EQ(ret, SUCCESS);
     uint8_t *data = const_cast<uint8_t *>(srcPixelMap->GetPixels());
     ASSERT_NE(data, nullptr);
@@ -214,7 +233,26 @@ void ImageFormatConvertTest::RgbConvertToYuvByPixelMap(PixelFormat &tempFormat, 
     ASSERT_EQ(errorCode, SUCCESS);
     ASSERT_NE(srcPixelMap.get(), nullptr);
 
+    auto yuvDataInfoTemp = srcPixelMap->yuvDataInfo_;
+    auto imageInfoTemp = srcPixelMap->imageInfo_;
+    srcPixelMap->yuvDataInfo_.yWidth = 0;
+    srcPixelMap->imageInfo_.size.width = 0;
     uint32_t tmpRet = ImageFormatConvert::ConvertImageFormat(srcPixelMap, srcFormat);
+    ASSERT_NE(tmpRet, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_.yWidth = 1;
+    srcPixelMap->yuvDataInfo_.yHeight = 0;
+    tmpRet = ImageFormatConvert::ConvertImageFormat(srcPixelMap, srcFormat);
+    ASSERT_NE(tmpRet, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_.yHeight= PIXEL_MAP_MAX_RAM_SIZE;
+    srcPixelMap->yuvDataInfo_.yWidth = 2; // 2:Special case, anomalous branching
+    tmpRet = ImageFormatConvert::ConvertImageFormat(srcPixelMap, srcFormat);
+    ASSERT_NE(tmpRet, SUCCESS);
+
+    srcPixelMap->yuvDataInfo_ = yuvDataInfoTemp;
+    srcPixelMap->imageInfo_ = imageInfoTemp;
+    tmpRet = ImageFormatConvert::ConvertImageFormat(srcPixelMap, srcFormat);
     ASSERT_EQ(tmpRet, SUCCESS);
     ASSERT_EQ(srcPixelMap->GetPixelFormat(), srcFormat);
 
