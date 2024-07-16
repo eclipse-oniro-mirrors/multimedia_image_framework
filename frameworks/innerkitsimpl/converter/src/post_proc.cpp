@@ -802,14 +802,16 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         inBuf = malloc(byteCount);
         srcPixels[0] = static_cast<uint8_t*>(inBuf);
         errno_t errRet = memcpy_s(inBuf, byteCount, static_cast<uint8_t*>(pixelMap.GetWritablePixels()), byteCount);
-        if (inBuf != nullptr) {
-            free(inBuf);
-            inBuf = nullptr;
-            srcPixels[0] = nullptr;
+        if (errRet != EOK) {
+            if (inBuf != nullptr) {
+                free(inBuf);
+                inBuf = nullptr;
+                srcPixels[0] = nullptr;
+            }
+            mem->Release();
+            IMAGE_LOGE("ScalePixelMapEx memcpy_s failed with error code: %{public}d", errRet);
+            return false;
         }
-        mem->Release();
-        IMAGE_LOGE("ScalePixelMapEx memcpy_s failed with error code: %{public}d", errRet);
-        return false;
     }
 
     SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
