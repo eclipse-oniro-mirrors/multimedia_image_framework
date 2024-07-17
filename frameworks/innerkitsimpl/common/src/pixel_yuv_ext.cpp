@@ -119,26 +119,32 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     int32_t dstW = imageInfo.size.width  * xAxis;
     int32_t dstH = imageInfo.size.height * yAxis;
     Size desiredSize = {dstW, dstH};
-    MemoryData memoryData = {nullptr, GetImageSize(dstW, dstH), "Trans ImageData", desiredSize};
+    MemoryData memoryData = {nullptr, GetImageSize(dstW, dstH, imageInfo.pixelFormat), "Trans ImageData",
+        desiredSize, imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("scale CreateMemory failed");
         return;
     }
-#if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
-    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
-            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
-        }
-    }
-#endif
     uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
                             imageInfo.pixelFormat, yuvDataInfo};
-    PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst);
+    uint32_t dstYStride = static_cast<uint32_t>(yuvInfo.width) * xAxis;
+    #if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        if (m->extend.data == nullptr) {
+            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
+        } else {
+            auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
+            dstYStride = sb->GetStride();
+        }
+    }
+    #endif
+
+    PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstYStride);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;
     imageInfo.size.height = dstH;
@@ -167,11 +173,17 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     }
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
+    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
+        imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
+        IMAGE_LOGD("P010 use PixelYuv flip");
+        PixelYuv::flip(xAxis, yAxis);
+        return;
+    }
     uint8_t *dst = nullptr;
     int32_t width = imageInfo.size.width;
     int32_t height = imageInfo.size.height;
-    uint32_t pictureSize = GetImageSize(width, height);
-    MemoryData memoryData = {nullptr, pictureSize, "flip ImageData", {width, height}};
+    uint32_t pictureSize = GetImageSize(width, height, imageInfo.pixelFormat);
+    MemoryData memoryData = {nullptr, pictureSize, "flip ImageData", {width, height}, imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
         IMAGE_LOGE("flip CreateMemory failed");
@@ -205,6 +217,16 @@ void PixelYuvExt::flip(bool xAxis, bool yAxis)
     AssignYuvDataOnType(imageInfo.pixelFormat, width, height);
 }
 
+int32_t PixelYuvExt::GetByteCount()
+{
+    return PixelYuv::GetByteCount();
+}
+
+void PixelYuvExt::SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type, CustomFreePixelMap func)
+{
+    PixelYuv::SetPixelsAddr(addr, context, size, type, func);
+}
+
 #ifdef IMAGE_COLORSPACE_FLAG
 bool PixelYuvExt::CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
 {
@@ -226,7 +248,7 @@ int32_t PixelYuvExt::ColorSpaceBGRAToYuv(
 {
     int32_t dstWidth = dst.info.width();
     int32_t dstHeight = dst.info.height();
-    uint32_t pictureSize = GetImageSize(dstWidth, dstHeight);
+    uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, format);
     std::unique_ptr<uint8_t[]> yuvData = std::make_unique<uint8_t[]>(pictureSize);
     if (!PixelYuvExtUtils::BGRAToYuv420(bgraData, yuvData.get(), dstWidth, dstHeight, format)) {
         IMAGE_LOGE("BGRAToYuv420 failed");

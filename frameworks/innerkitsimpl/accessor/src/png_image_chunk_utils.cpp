@@ -59,7 +59,6 @@ int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType c
 
     bool foundExifKeyword = FindExifKeyword(keyword.CData(), keyword.Size());
     if (!foundExifKeyword) {
-        IMAGE_LOGI("Ignoring the text chunk without an Exif keyword");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
 
@@ -210,7 +209,6 @@ DataBuf PngImageChunkUtils::GetRawTextFromChunk(const DataBuf &chunkData, size_t
 bool PngImageChunkUtils::FindExifKeyword(const byte *keyword, size_t size)
 {
     if ((keyword == nullptr) || (size < PNG_CHUNK_KEYWORD_EXIF_APP1_SIZE)) {
-        IMAGE_LOGE("FindExifKeyword:Unexpected chunk keyword or size");
         return false;
     }
     if ((memcmp(PNG_PROFILE_EXIF, keyword, PNG_CHUNK_KEYWORD_EXIF_APP1_SIZE) == 0) ||

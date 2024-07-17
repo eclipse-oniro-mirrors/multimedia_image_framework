@@ -24,25 +24,17 @@ namespace OHOS {
 namespace Media {
 
 class ImageImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(ImageImpl, OHOS::FFI::FFIData)
 public:
     explicit ImageImpl(std::shared_ptr<NativeImage> nativeImage);
     std::shared_ptr<NativeImage> GetNativeImage();
-    int64_t GetClipRect(CRegion *ret);
-    int64_t GetSize(CSize *ret);
-    int64_t GetFormat(int32_t *ret);
-    int64_t GetComponent(int32_t componentType, CRetComponent *ret);
+    uint32_t GetClipRect(CRegion *ret);
+    uint32_t GetSize(CSize *ret);
+    uint32_t GetFormat(int32_t *ret);
+    uint32_t GetComponent(int32_t componentType, CRetComponent *ret);
     void Release();
-    OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageImpl");
-        return &runtimeType;
-    }
     static int64_t Create(ImageImpl *image, std::shared_ptr<NativeImage> nativeImage);
     std::shared_ptr<NativeImage> native_;
     bool isTestImage_;

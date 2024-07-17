@@ -97,8 +97,10 @@ uint32_t PluginMgr::TraverseFiles(const string &canonicalPath)
         if (!CheckPluginMetaFile(file, libraryPath)) {
             continue;
         }
+        if (RegisterPlugin(file, std::move(libraryPath)) != SUCCESS) {
+            continue;
+        }
         noTarget = false;
-        RegisterPlugin(file, std::move(libraryPath));
     }
 
     if (noTarget) {
@@ -131,21 +133,16 @@ bool PluginMgr::CheckPluginMetaFile(const string &candidateFile, string &library
     }
 
     ifstream metadata(candidateFile);
-    if (!metadata) {
+    if (!metadata.is_open()) {
         IMAGE_LOGE("failed to open metadata file.");
         return false;
     }
-    std::streampos position = metadata.tellg();
-    if (!json::accept(metadata)) {
+    json root = nlohmann::json::parse(metadata, nullptr, false); // no callback, no exceptions
+    metadata.close();
+    if (root.is_discarded()) {
         IMAGE_LOGE("metadata json parsing failed.");
-        metadata.close();
         return false;
     }
-    metadata.seekg(position, std::ios::beg);
-
-    json root;
-    metadata >> root;
-    metadata.close();
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
         IMAGE_LOGE("read libraryPath failed.");
         return false;
@@ -190,7 +187,7 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataPath, string &&libraryP
     }
 
     ifstream metadata(metadataPath);
-    if (!metadata) {
+    if (!metadata.is_open()) {
         IMAGE_LOGE("failed to open metadata file.");
         return ERR_GENERAL;
     }
@@ -233,10 +230,14 @@ uint32_t PluginMgr::RegisterPlugin(const string &metadataJson)
         return ERR_INVALID_PARAMETER;
     }
     string libraryPath;
-    json root = nlohmann::json::parse(metadataJson);
+    json root = nlohmann::json::parse(metadataJson, nullptr, false); // no callback, no exceptions
+    if (root.is_discarded()) {
+        IMAGE_LOGE("RegisterPlugin parse json failed.");
+        return ERR_INVALID_PARAMETER;
+    }
     if (JsonHelper::GetStringValue(root, "libraryPath", libraryPath) != SUCCESS) {
         IMAGE_LOGE("read libraryPath failed.");
-        return false;
+        return ERR_INVALID_PARAMETER;
     }
 
     auto iter = plugins_.find(&libraryPath);

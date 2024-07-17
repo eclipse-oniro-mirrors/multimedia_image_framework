@@ -67,7 +67,7 @@ public:
         const Position &dstPos, const YUVDataInfo &yuvDataInfo);
     static bool ReadYuvConvert(const void *srcPixels, const Position &srcPos, YuvImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
-    static void SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height);
+    static void SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format);
     static uint8_t GetYuv420Y(uint32_t x, uint32_t y, YUVDataInfo &info, const uint8_t *in);
     static uint8_t GetYuv420U(uint32_t x, uint32_t y, YUVDataInfo &info, PixelFormat format,
         const uint8_t *in);

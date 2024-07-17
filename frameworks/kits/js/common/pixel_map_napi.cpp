@@ -121,7 +121,7 @@ public:
 
 static PixelFormat ParsePixlForamt(int32_t val)
 {
-    if (val <= static_cast<int32_t>(PixelFormat::CMYK)) {
+    if (val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return PixelFormat(val);
     }
 
@@ -3303,6 +3303,9 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.context->rPixelMap == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IPC, "marshalling pixel map to parcel failed.");
+    }
     if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
@@ -3611,6 +3614,15 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     int32_t pixelFormatInt;
     napi_get_value_int32(env, jsArg, &pixelFormatInt);
     nVal.context->destFormat = static_cast<PixelFormat>(pixelFormatInt);
+
+    if (TypeFormat(nVal.context->destFormat) == FormatType::UNKNOWN) {
+        napi_value errCode = nullptr;
+        napi_create_int32(env, ERR_IMAGE_INVALID_PARAMETER, &errCode);
+        napi_reject_deferred(env, nVal.context->deferred, errCode);
+        IMAGE_LOGE("dstFormat is not support or invalid");
+        return nVal.result;
+    }
+
     nVal.result = PixelFormatConvert(env, info, nVal.context.get());
     nVal.context->nConstructor->nativePixelMap_ = nVal.context->rPixelMap;
     if (nVal.result == nullptr) {

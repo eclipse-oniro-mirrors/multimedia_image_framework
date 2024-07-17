@@ -70,7 +70,7 @@ static void ParseDecodingOps(DecodeOptions &decOps, struct OhosImageDecodingOps*
     decOps.desiredRegion.top = ops->region.y;
     decOps.desiredRegion.width = ops->region.width;
     decOps.desiredRegion.height = ops->region.height;
-    if (ops->pixelFormat <= static_cast<int32_t>(PixelFormat::CMYK)) {
+    if (ops->pixelFormat < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         decOps.desiredPixelFormat = PixelFormat(ops->pixelFormat);
     }
     decOps.fitDensity = ops->fitDensity;

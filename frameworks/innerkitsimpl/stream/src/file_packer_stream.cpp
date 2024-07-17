@@ -94,7 +94,7 @@ bool FilePackerStream::Write(const uint8_t *buffer, uint32_t size)
         return false;
     }
     if (fwrite(buffer, sizeof(uint8_t), size, file_) != size) {
-        IMAGE_LOGE("write %{public}u bytes failed.", size);
+        IMAGE_LOGE("write %{public}u bytes failed. error:%{public}d", size, errno);
         fclose(file_);
         file_ = nullptr;
         return false;

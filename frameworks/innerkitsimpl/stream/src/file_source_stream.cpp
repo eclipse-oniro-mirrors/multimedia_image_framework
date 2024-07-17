@@ -272,7 +272,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
     }
     size_t bytesRead = fread(readBuffer_, sizeof(uint8_t), desiredSize, filePtr_);
     if (bytesRead < desiredSize) {
-        IMAGE_LOGD("read outBuffer end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
+        IMAGE_LOGD("read outData end, bytesRead:%{public}zu, desiredSize:%{public}u, fileSize_:%{public}zu,"
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
@@ -321,7 +321,8 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     if (!DupFd(filePtr_, mmapFd_)) {
         return nullptr;
     }
-    auto mmptr = ::mmap(nullptr, fileSize_, PROT_READ, populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, 0);
+    auto mmptr = ::mmap(nullptr, fileSize_ - fileOriginalOffset_, PROT_READ,
+        populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
         return nullptr;

@@ -67,7 +67,7 @@ public:
 protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset, const Rect &region);
     void SetRowDataSizeForImageInfo(ImageInfo info);
-    static uint32_t GetImageSize(int32_t width, int32_t height);
+    static uint32_t GetImageSize(int32_t width, int32_t height, PixelFormat format);
     static bool IsYuvFormat(PixelFormat format);
     void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
     uint32_t SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
