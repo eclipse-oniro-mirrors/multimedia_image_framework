@@ -129,11 +129,11 @@ typedef enum {
      */
     OH_PixelMap_AntiAliasing_NONE = 0,
     /**
-     * Bilinear interpolation.
+     * Bilinear interpolation, without mipmap linear filtering.
      */
     OH_PixelMap_AntiAliasing_LOW = 1,
     /**
-     * Bilinear interpolation with mipmap linear filtering.
+     * Bilinear interpolation, with mipmap linear filtering.
      */
     OH_PixelMap_AntiAliasing_MEDIUM = 2,
     /**
@@ -443,27 +443,16 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
  * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
  * @param x Indicates the scaling ratio of the width.
  * @param y Indicates the scaling ratio of the height.
- * @param level Indicates the anti-aliasing method to be used.
+ * @param level Indicates the anti-aliasing algorithm to be used.
  * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if bad parameter.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter, x and y are incorrect.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DECODE_FAILED - if decode fail.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST - if sharememory error.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_CROP - if crop error.
  * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_REGISTER_FAILED - if register plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_PLUGIN_CREATE_FAILED - if create plugin fail.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_INDEX_INVALID - if invalid index.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALPHA_TYPE_ERROR - if hard decode failed.
- * returns {@link IRNdkErrCode} IMAGE_RESULT_ALLOCATER_TYPE_ERROR - if hard decode failed.
  * @see Scale
  * @since 12
  * @version 1.0

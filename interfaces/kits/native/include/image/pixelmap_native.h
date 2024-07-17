@@ -125,19 +125,19 @@ typedef enum {
  */
 typedef enum {
     /**
-     * Nearest-neighbor interpolation
+     * Nearest-neighbor interpolation algorithm
      */
     OH_PixelmapNative_AntiAliasing_NONE = 0,
     /**
-     * Bilinear interpolation
+     * Bilinear interpolation algorithm
      */
     OH_PixelmapNative_AntiAliasing_LOW = 1,
     /**
-     * Bilinear interpolation with mipmap linear filtering
+     * Bilinear interpolation algorithm with mipmap linear filtering
      */
     OH_PixelmapNative_AntiAliasing_MEDIUM = 2,
     /**
-     * Cubic interpolation
+     * Cubic interpolation algorithm
      */
     OH_PixelmapNative_AntiAliasing_HIGH = 3,
 } OH_PixelmapNative_AntiAliasingLevel;
@@ -248,29 +248,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetSrcPixelFormat(OH_Pixelmap_I
     int32_t srcpixelFormat);
 
 /**
- * @brief Get alphaType number for InitializationOtions struct.
- *
- * @param options The InitializationOtions pointer will be operated.
- * @param alphaType the number of image alphaType.
- * @return Returns {@link Image_ErrorCode}
- * @since 12
- */
-Image_ErrorCode OH_PixelmapInitializationOptions_GetAlphaType(OH_Pixelmap_InitializationOptions *options,
-    int32_t *alphaType);
-
-/**
- * @brief Set alphaType number for InitializationOtions struct.
- *
- * @param options The InitializationOtions pointer will be operated.
- * @param alphaType the number of image alphaType.
- * @return Returns {@link Image_ErrorCode}
- * @since 12
- */
-Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_InitializationOptions *options,
-    int32_t alphaType);
-
-/**
- * @brief Get rowStride number for InitializationOtions struct.
+ * @brief Get rowStride for InitializationOtions struct.
  *
  * @param options The InitializationOtions pointer will be operated.
  * @param rowStride the rowStride of image buffer.
@@ -294,6 +272,28 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_Initia
  */
 Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_InitializationOptions *options,
     int32_t rowStride);
+
+/**
+ * @brief Get alphaType number for InitializationOtions struct.
+ *
+ * @param options The InitializationOtions pointer will be operated.
+ * @param alphaType the number of image alphaType.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_GetAlphaType(OH_Pixelmap_InitializationOptions *options,
+    int32_t *alphaType);
+
+/**
+ * @brief Set alphaType number for InitializationOtions struct.
+ *
+ * @param options The InitializationOtions pointer will be operated.
+ * @param alphaType the number of image alphaType.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_InitializationOptions *options,
+    int32_t alphaType);
 
 /**
  * @brief delete InitializationOtions pointer.
@@ -479,8 +479,12 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
  * @param pixelmap The Pixelmap pointer will be operated.
  * @param scaleX Scaling ratio of the width.
  * @param scaleY Scaling ratio of the height.
- * @param level The anti-aliasing method to be used.
- * @return Returns {@link Image_ErrorCode}
+ * @param level The anti-aliasing algorithm to be used.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is sucessful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, x and y are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_TOO_LARGE - if image is too large.
+ * returns {@link Image_ErrorCode} IMAGE_ALLOC_FAILED - if device has no memory.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error.
  * @see OH_PixelmapNative
  * @since 12
  */
