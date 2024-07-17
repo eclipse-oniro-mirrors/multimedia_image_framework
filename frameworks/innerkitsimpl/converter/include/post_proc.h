@@ -44,7 +44,7 @@ public:
         const AntiAliasingOption &option = AntiAliasingOption::NONE);
 private:
     static uint8_t *AllocSharedMemory(const Size &size, const uint64_t bufferSize, int &fd, uint32_t uniqueId);
-    static uint8_t *AllocDmaMemory(const Size &size, const uint64_t bufferSize,
+    static uint8_t *AllocDmaMemory(ImageInfo info, const uint64_t bufferSize,
                                    void **nativeBuffer, int &targetRowStride);
     uint32_t NeedScanlineFilter(const Rect &cropRect, const Size &srcSize, const bool &hasPixelConvert);
     void GetDstImageInfo(const DecodeOptions &opts, PixelMap &pixelMap,

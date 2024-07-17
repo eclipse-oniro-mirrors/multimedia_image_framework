@@ -34,6 +34,7 @@
 #include <sys/mman.h>
 #include "ashmem.h"
 #include "surface_buffer.h"
+#include "vpe_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -243,17 +244,13 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
             return false;
         }
     } else if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
-        dstPixels = AllocDmaMemory(dstImageInfo.size, bufferSize, &nativeBuffer, targetRowStride);
-        if (dstPixels == nullptr) {
-            IMAGE_LOGE("[PostProc]CenterDisplay AllocDmaMemory failed");
-            return false;
-        }
+        dstPixels = AllocDmaMemory(dstImageInfo, bufferSize, &nativeBuffer, targetRowStride);
     } else {
         dstPixels = AllocSharedMemory(dstImageInfo.size, bufferSize, fd, pixelMap.GetUniqueId());
-        if (dstPixels == nullptr) {
-            IMAGE_LOGE("[PostProc]CenterDisplay AllocSharedMemory failed");
-            return false;
-        }
+    }
+    if (dstPixels == nullptr) {
+        IMAGE_LOGE("[PostProc]CenterDisplay AllocMemory[%{public}d] failed", pixelMap.GetAllocatorType());
+        return false;
     }
     if (!CopyPixels(pixelMap, dstPixels, dstImageInfo.size, srcWidth, srcHeight, srcRowStride, targetRowStride)) {
         IMAGE_LOGE("[PostProc]CopyPixels failed");
@@ -264,6 +261,11 @@ bool PostProc::CenterDisplay(PixelMap &pixelMap, int32_t srcWidth, int32_t srcHe
     if (pixelMap.GetAllocatorType() == AllocatorType::HEAP_ALLOC) {
         pixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
     } else if (pixelMap.GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelMap.GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (nativeBuffer));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+#endif
         pixelMap.SetPixelsAddr(dstPixels, nativeBuffer, bufferSize, AllocatorType::DMA_ALLOC, nullptr);
     } else {
         fdBuffer = new int32_t();
@@ -500,13 +502,14 @@ uint8_t *PostProc::AllocSharedMemory(const Size &size, const uint64_t bufferSize
 #endif
 }
 
-uint8_t *PostProc::AllocDmaMemory(const Size &size, const uint64_t bufferSize,
+uint8_t *PostProc::AllocDmaMemory(ImageInfo info, const uint64_t bufferSize,
                                   void **nativeBuffer, int &targetRowStride)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return nullptr;
 #else
-    MemoryData memoryData = {nullptr, (uint32_t)bufferSize, "PostProc", {size.width, size.height}};
+    MemoryData memoryData = {nullptr, (uint32_t)bufferSize, "PostProc", {info.size.width, info.size.height}};
+    memoryData.format = info.pixelFormat;
     auto dstMemory = MemoryManager::CreateMemory(AllocatorType::DMA_ALLOC, memoryData);
     if (dstMemory == nullptr) {
         return nullptr;
