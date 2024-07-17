@@ -67,7 +67,7 @@ int32_t OH_PixelMap_CreatePixelMapWithStride(napi_env env, OhosPixelMapCreateOps
     args.createOptions.editable = info.editable;
     args.createOptions.alphaType = info.alphaType;
     args.createOptions.scaleMode = info.scaleMode;
-    args.createOptions.rowStride = info.rowStride;
+    args.rowStride = rowStride;
     args.inBuffer = buf;
     args.bufferLen = len;
     args.outValue = res;

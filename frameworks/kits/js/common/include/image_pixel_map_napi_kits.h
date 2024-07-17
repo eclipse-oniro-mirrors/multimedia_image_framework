@@ -30,6 +30,7 @@ struct PixelMapNapiArgs {
     OhosPixelMapCreateOps createOptions;
     void* inBuffer;
     size_t bufferLen;
+    int32_t rowStride;
     napi_value inValue;
     int32_t inNum0;
     int32_t inNum1;
