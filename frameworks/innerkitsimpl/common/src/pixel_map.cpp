@@ -508,7 +508,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 }
 
 void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
-                                 PixelMap dstPixelMap)
+                                 PixelMap &dstPixelMap)
 {
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
         int8_t alphaIndex = -1;
@@ -2942,6 +2942,7 @@ SkSamplingOptions ToSkSamplingOption(const AntiAliasingOption &option)
 
 bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option)
 {
+    std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     TransMemoryInfo dstMemory;
