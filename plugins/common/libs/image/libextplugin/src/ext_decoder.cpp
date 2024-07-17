@@ -232,17 +232,16 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
         .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
     };
-    if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
-        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
-        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
-        IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
-    }
     if (context.info.pixelFormat == PixelFormat::RGBA_1010102) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA_1010102;
     } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_P010;
     } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    } else if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
+        IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
