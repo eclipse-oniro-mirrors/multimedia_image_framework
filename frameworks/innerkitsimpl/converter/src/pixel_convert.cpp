@@ -1510,8 +1510,8 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
         dstFFmpegInfo.alignSize);
 }
 
-int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
+    const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo)
 {
     if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0 ||
         (srcRowStride != 0 && srcRowStride < srcInfo.size.width)) {
