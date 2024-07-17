@@ -121,6 +121,9 @@ const string RAW_EXTENDED_FORMATS[] = {
 // BASE64 image prefix type data:image/<type>;base64,<data>
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string BASE64_URL_PREFIX = ";base64,";
+static const std::string KEY_IMAGE_WIDTH = "ImageWidth";
+static const std::string KEY_IMAGE_HEIGHT = "ImageLength";
+static const std::string IMAGE_FORMAT_RAW = "image/raw";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const int INT_255 = 255;
@@ -1329,6 +1332,22 @@ DecodeEvent ImageSource::GetDecodeEvent()
 {
     return decodeEvent_;
 }
+void ImageSource::SetDngImageSize(uint32_t index, ImageInfo &imageInfo)
+{
+    Size rawSize {0, 0};
+    uint32_t exifWidthRet = SUCCESS;
+    uint32_t exifHeightRet = SUCCESS;
+    if (imageInfo.encodedFormat == IMAGE_FORMAT_RAW) {
+        exifWidthRet = GetImagePropertyInt(index, KEY_IMAGE_WIDTH, rawSize.width);
+        exifHeightRet = GetImagePropertyInt(index, KEY_IMAGE_HEIGHT, rawSize.height);
+    }
+
+    if (rawSize.width != 0 && rawSize.height != 0
+        && exifWidthRet == SUCCESS && exifHeightRet == SUCCESS) {
+        imageInfo.size.width = rawSize.width;
+        imageInfo.size.height = rawSize.height;
+    }
+}
 
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
@@ -1349,6 +1368,9 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
         return ERR_IMAGE_DECODE_FAILED;
     }
     imageInfo = info;
+    guard.unlock();
+
+    SetDngImageSize(index, imageInfo);
     return SUCCESS;
 }
 
