@@ -161,6 +161,8 @@ struct OhosPixelMapCreateOps {
     uint32_t alphaType;
     /** Scale mode of the image. */
     uint32_t scaleMode;
+    /** Row stride of the image. */
+    int32_t rowStride;
 };
 
 /**

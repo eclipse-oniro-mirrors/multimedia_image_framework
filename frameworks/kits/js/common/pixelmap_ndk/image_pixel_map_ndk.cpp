@@ -57,6 +57,24 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
 }
 
 MIDK_EXPORT
+int32_t OH_PixelMap_CreatePixelMapWithStride(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, int32_t rowStride, napi_value* res)
+{
+    PixelMapNapiArgs args;
+    args.createOptions.width = info.width;
+    args.createOptions.height = info.height;
+    args.createOptions.pixelFormat = info.pixelFormat;
+    args.createOptions.editable = info.editable;
+    args.createOptions.alphaType = info.alphaType;
+    args.createOptions.scaleMode = info.scaleMode;
+    args.createOptions.rowStride = info.rowStride;
+    args.inBuffer = buf;
+    args.bufferLen = len;
+    args.outValue = res;
+    return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE, env, &args);
+}
+
+MIDK_EXPORT
 int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha)
 {
     PixelMapNapiArgs args;
