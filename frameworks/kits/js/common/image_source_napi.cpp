@@ -48,10 +48,10 @@ thread_local std::shared_ptr<ImageSource> ImageSourceNapi::sImgSrc_ = nullptr;
 thread_local std::shared_ptr<IncrementalPixelMap> ImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSource";
 static const std::string FILE_URL_PREFIX = "file://";
-std::string ImageSourceNapi::filePath_ = "";
-int ImageSourceNapi::fileDescriptor_ = -1;
-void* ImageSourceNapi::fileBuffer_ = nullptr;
-size_t ImageSourceNapi::fileBufferSize_ = 0;
+thread_local std::string ImageSourceNapi::filePath_ = "";
+thread_local int ImageSourceNapi::fileDescriptor_ = -1;
+thread_local void* ImageSourceNapi::fileBuffer_ = nullptr;
+thread_local size_t ImageSourceNapi::fileBufferSize_ = 0;
 
 napi_ref ImageSourceNapi::pixelMapFormatRef_ = nullptr;
 napi_ref ImageSourceNapi::propertyKeyRef_ = nullptr;
@@ -61,6 +61,8 @@ napi_ref ImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref ImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
 napi_ref ImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
+
+static std::mutex imageSourceCrossThreadMutex_;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -1285,10 +1287,14 @@ napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info i
         napi_get_undefined(env, &result);
         return result;
     }
-    filePath_ = asyncContext->pathName;
-    fileDescriptor_ = asyncContext->fdIndex;
-    fileBuffer_ = asyncContext->sourceBuffer;
-    fileBufferSize_ = asyncContext->sourceBufferSize;
+
+    {
+        std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
+        filePath_ = asyncContext->pathName;
+        fileDescriptor_ = asyncContext->fdIndex;
+        fileBuffer_ = asyncContext->sourceBuffer;
+        fileBufferSize_ = asyncContext->sourceBufferSize;
+    }
 
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
