@@ -1084,6 +1084,12 @@ ohos_unittest("ndktest") {
     "//third_party/googletest:gmock_main",
     "//third_party/googletest:gtest_main",
   ]
+
+  external_deps = [
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "drivers_peripheral_display:hdi_gralloc_client"
+  ]
 }
 
 ohos_unittest("ndktest2") {
