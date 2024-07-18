@@ -1086,9 +1086,9 @@ ohos_unittest("ndktest") {
   ]
 
   external_deps = [
+    "drivers_peripheral_display:hdi_gralloc_client",
     "graphic_2d:color_manager",
-    "graphic_surface:surface",
-    "drivers_peripheral_display:hdi_gralloc_client"
+    "graphic_surface:surface"
   ]
 }
 
