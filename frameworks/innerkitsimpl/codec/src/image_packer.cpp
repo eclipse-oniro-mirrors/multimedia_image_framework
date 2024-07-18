@@ -25,6 +25,7 @@
 #include "media_errors.h"
 #include "ostream_packer_stream.h"
 #include "plugin_server.h"
+#include "string_ex.h"
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
 #endif
@@ -40,7 +41,7 @@ namespace Media {
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 static constexpr uint8_t QUALITY_MAX = 100;
-const static std::string EXTENDED_ENCODER = "image/extended";
+const static std::string EXTENDED_ENCODER = "image/jpeg,image/png,image/webp";
 static constexpr size_t SIZE_ZERO = 0;
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
@@ -67,7 +68,11 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
             IMAGE_LOGE("attr data get format failed.");
             continue;
         }
-        formats.insert(format);
+        std::vector<std::string> splitedVector;
+        SplitStr(format, ",", splitedVector);
+        for (std::string item : splitedVector) {
+            formats.insert(item);
+        }
     }
     return SUCCESS;
 }
