@@ -1311,10 +1311,10 @@ HWTEST_F(JpgYuvTest, JpgYuvTest021, TestSize.Level3)
     PixelFormat outfmt[] = {PixelFormat::NV12, PixelFormat::NV21};
     std::string jpgpath = IMAGE_INPUT_JPG_PATH;
     jpgpath.append(srcjpg[0]);
-    float degrees[] = {90, 180, 270};
+    float degrees[] = {90, 180, 270, 280};
     int k = 0;
-    const char *outFileName[] = {"90-nv12.yuv", "180-nv12.yuv", "270-nv12.yuv",
-                                    "90-nv21.yuv", "180-nv21.yuv", "270-nv21.yuv"};
+    const char *outFileName[] = {"90-nv12.yuv", "180-nv12.yuv", "270-nv12.yuv", "280-nv12.yuv",
+                                    "90-nv21.yuv", "180-nv21.yuv", "270-nv21.yuv", "280-nv21.yuv"};
     for (int i = 0; i < sizeof(outfmt) / sizeof(PixelFormat); ++i) {
         for (int j = 0; j < sizeof(degrees) / sizeof(float); ++j) {
             std::string outname;
