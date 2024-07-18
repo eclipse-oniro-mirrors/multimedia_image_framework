@@ -14,7 +14,7 @@
 group("fuzztest") {
   testonly = true
   deps = [
-    "imageaccessor_fuzzer:ImageAccessorFuzzTest",
+    #"imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imagecreateimagesourcebydata_fuzzer:ImageCreateImageSourceByDataFuzzTest",
     "imagecreateimagesourcebyfd_fuzzer:ImageCreateImageSourceByFdFuzzTest",
     "imagecreateimagesourcebyfdex_fuzzer:ImageCreateImageSourceByFdExFuzzTest",

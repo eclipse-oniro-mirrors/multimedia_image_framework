@@ -43,27 +43,45 @@ const byte DNG_LITTLE_ENDIAN_HEADER[] = { 0x49, 0x49, 0x2A, 0x00 };
 
 void JpegAccessorTest(std::shared_ptr<JpegExifMetadataAccessor>& metadataAccessor)
 {
-
+    metadataAccessor->Read();
+    metadataAccessor->Write();
+    DataBuf inputBuf;
+    metadataAccessor->WriteBlob(inputBuf);
+    int marker = metadataAccessor->FindNextMarker();
+    metadataAccessor->ReadSegmentLength(static_cast<uint8_t>(marker));
+    metadataAccessor->ReadNextSegment(static_cast<byte>(marker));
+    metadataAccessor->GetInsertPosAndMarkerAPP1();
 }
 
 void PngAccessorTest(std::shared_ptr<PngExifMetadataAccessor>& metadataAccessor)
 {
-
+    metadataAccessor->IsPngType();
+    metadataAccessor->Read();
+    metadataAccessor->Write();
 }
 
 void WebpAccessorTest(std::shared_ptr<WebpExifMetadataAccessor>& metadataAccessor)
 {
-
+    metadataAccessor->Read();
+    metadataAccessor->Write();
+    Vp8xAndExifInfo exifFlag = Vp8xAndExifInfo::UNKNOWN;
+    metadataAccessor->CheckChunkVp8x(exifFlag);
+    metadataAccessor->GetImageWidthAndHeight();
+    std::string strChunkId = "000";
+    DataBuf chunkData = {};
+    metadataAccessor->GetWidthAndHeightFormChunk(strChunkId, chunkData);
 }
 
 void HeifAccessorTest(std::shared_ptr<HeifExifMetadataAccessor>& metadataAccessor)
 {
-
+    metadataAccessor->Read();
+    metadataAccessor->Write();
 }
 
 void DngAccessorTest(std::shared_ptr<DngExifMetadataAccessor>& metadataAccessor)
 {
-
+    metadataAccessor->Read();
+    metadataAccessor->Write();
 }
 
 void AccessorTest(const uint8_t *data, size_t size)
@@ -71,7 +89,7 @@ void AccessorTest(const uint8_t *data, size_t size)
     if (size <= IMAGE_HEADER_SIZE) {
         return;
     }
-    uint8_t * data_cpy = const_cast<uint8_t*>(data);
+    uint8_t* data_cpy = const_cast<uint8_t*>(data);
 
     if (EOK != memcpy_s(data_cpy, size, jpegHeader, sizeof(jpegHeader)) == 0) {
         return;
@@ -121,6 +139,18 @@ void AccessorTest(const uint8_t *data, size_t size)
     }
 }
 
+void DataBufTest(const uint8_t *data, size_t size)
+{
+    if (size == 0) {
+        return;
+    }
+    DataBuf dataBuf(data, size);
+    dataBuf.ReadUInt8(0);
+    dataBuf.Resize(size);
+    dataBuf.WriteUInt8(0, 0);
+    dataBuf.Reset();
+}
+
 } // namespace Media
 } // namespace OHOS
 
@@ -128,6 +158,7 @@ void AccessorTest(const uint8_t *data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    OHOS::Media::DataBufTest(data, size);
     OHOS::Media::AccessorTest(data, size);
     return 0;
 }
