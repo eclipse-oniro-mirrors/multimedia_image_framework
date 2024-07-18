@@ -21,5 +21,6 @@ group("fuzztest") {
     "imagecreateimagesourcebypathname_fuzzer:ImageCreateImageSourceByPathNameFuzzTest",
     "imagecreateincrementalpixelmap_fuzzer:ImageCreateIncrementalPixelMapFuzzTest",
     "imageframework_fuzzer:ImageFrameworkFuzzTest",
+    "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
   ]
 }
