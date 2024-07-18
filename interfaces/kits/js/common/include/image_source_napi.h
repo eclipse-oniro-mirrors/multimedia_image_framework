@@ -39,10 +39,10 @@ public:
         return navIncPixelMap_;
     }
 
-    static std::string filePath_;
-    static int fileDescriptor_;
-    static void* fileBuffer_;
-    static size_t fileBufferSize_;
+    static thread_local std::string filePath_;
+    static thread_local int fileDescriptor_;
+    static thread_local void* fileBuffer_;
+    static thread_local size_t fileBufferSize_;
     static int32_t CreateImageSourceNapi(napi_env env, napi_value* result);
     void SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap);
     void SetNativeImageSource(std::shared_ptr<ImageSource> imageSource);
