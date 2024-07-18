@@ -124,6 +124,7 @@ const static std::string HW_MNOTE_TAG_FOCUS_MODE = "HwMnoteFocusMode";
 const static std::string DEFAULT_PACKAGE_NAME = "entry";
 const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
+constexpr static int NUM_ONE = 1;
 #ifdef JPEG_HW_DECODE_ENABLE
 const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
@@ -394,21 +395,15 @@ bool ExtDecoder::GetHardwareScaledSize(int &dWidth, int &dHeight, float &scale) 
     // calculate sample size and dst size for hardware decode
     if (finalScale > HALF) {
         sampleSize_ = 1;
-        dWidth = oriWidth;
-        dHeight = oriHeight;
     } else if (finalScale > QUARTER) {
         sampleSize_ = 2;
-        dWidth = oriWidth * HALF;
-        dHeight = oriHeight * HALF;
     } else if (finalScale > ONE_EIGHTH) {
         sampleSize_ = 4;
-        dWidth = oriWidth * QUARTER;
-        dHeight = oriHeight * QUARTER;
     } else {
         sampleSize_ = 8;
-        dWidth = oriWidth * ONE_EIGHTH;
-        dHeight = oriHeight * ONE_EIGHTH;
     }
+    dWidth = (oriWidth + sampleSize_ - NUM_ONE) / sampleSize_;
+    dHeight = (oriHeight + sampleSize_ - NUM_ONE) / sampleSize_;
     return true;
 }
 #endif
