@@ -57,6 +57,24 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
 }
 
 MIDK_EXPORT
+int32_t OH_PixelMap_CreatePixelMapWithStride(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, int32_t rowStride, napi_value* res)
+{
+    PixelMapNapiArgs args;
+    args.createOptions.width = info.width;
+    args.createOptions.height = info.height;
+    args.createOptions.pixelFormat = info.pixelFormat;
+    args.createOptions.editable = info.editable;
+    args.createOptions.alphaType = info.alphaType;
+    args.createOptions.scaleMode = info.scaleMode;
+    args.rowStride = rowStride;
+    args.inBuffer = buf;
+    args.bufferLen = len;
+    args.outValue = res;
+    return PixelMapNapiNativeEnvCall(ENV_FUNC_CREATE, env, &args);
+}
+
+MIDK_EXPORT
 int32_t OH_PixelMap_CreateAlphaPixelMap(napi_env env, napi_value source, napi_value* alpha)
 {
     PixelMapNapiArgs args;
@@ -152,6 +170,21 @@ int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y)
     PixelMapNapiArgs args;
     args.inFloat0 = x;
     args.inFloat1 = y;
+    args.inNum0 = OH_PixelMap_AntiAliasingLevel::OH_PixelMap_AntiAliasing_NONE;
+    return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
+}
+
+MIDK_EXPORT
+int32_t OH_PixelMap_ScaleWithAntiAliasing(const NativePixelMap* native, float x, float y,
+    OH_PixelMap_AntiAliasingLevel level)
+{
+    if (native == nullptr || native->napi == nullptr) {
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+    PixelMapNapiArgs args;
+    args.inFloat0 = x;
+    args.inFloat1 = y;
+    args.inNum0 = level;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_SCALE, native->napi, &args);
 }
 

@@ -407,8 +407,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
         return nullptr;
     }
-    int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset),
-                                                    colorLength, srcImageInfo, dstPixels, dstImageInfo);
+    int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset), colorLength,
+                                                    opts.rowStride, srcImageInfo, dstPixels, dstImageInfo);
     if (dstLength < 0) {
         IMAGE_LOGE("[PixelMap]Create: pixel convert failed.");
         ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
@@ -491,6 +491,10 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     }
     if (width > MAX_DIMENSION) {
         IMAGE_LOGE("stride %{public}d is out of range", width);
+        return false;
+    }
+    if (opts.rowStride != 0 && opts.rowStride < dstWidth) {
+        IMAGE_LOGE("row stride %{public}d must be >= width %{public}d", opts.rowStride, dstWidth);
         return false;
     }
     int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * width + offset;

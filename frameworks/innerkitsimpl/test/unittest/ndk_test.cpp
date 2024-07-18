@@ -159,6 +159,24 @@ HWTEST_F(NdkTest, NdkTest008, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_PixelMap_ScaleWithAntiAliasingTest
+ * @tc.desc: OH_PixelMap_ScaleWithAntiAliasing
+ * @tc.type: FUNC
+ */
+HWTEST_F(NdkTest, OH_PixelMap_ScaleWithAntiAliasingTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_ScaleWithAntiAliasingTest start";
+    const NativePixelMap *p = nullptr;
+    float x = 0.5;
+    float y = 0.5;
+    int32_t res =
+        OH_PixelMap_ScaleWithAntiAliasing(p, x, y, OH_PixelMap_AntiAliasingLevel::OH_PixelMap_AntiAliasing_NONE);
+    ASSERT_EQ(res, IMAGE_RESULT_BAD_PARAMETER);
+
+    GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_ScaleWithAntiAliasingTest end";
+}
+
+/**
  * @tc.name: NdkTest009
  * @tc.desc: OH_PixelMap_Translate
  * @tc.type: FUNC

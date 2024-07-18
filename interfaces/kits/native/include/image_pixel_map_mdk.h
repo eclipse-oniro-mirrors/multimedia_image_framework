@@ -118,6 +118,31 @@ enum {
 };
 
 /**
+ * @brief Enumerates the anti-aliasing level.
+ *
+ * @since 12
+ * @version 1.0
+ */
+typedef enum {
+    /**
+     * Nearest-neighbor interpolation.
+     */
+    OH_PixelMap_AntiAliasing_NONE = 0,
+    /**
+     * Bilinear interpolation, without mipmap linear filtering.
+     */
+    OH_PixelMap_AntiAliasing_LOW = 1,
+    /**
+     * Bilinear interpolation, with mipmap linear filtering.
+     */
+    OH_PixelMap_AntiAliasing_MEDIUM = 2,
+    /**
+     * Cubic interpolation.
+     */
+    OH_PixelMap_AntiAliasing_HIGH = 3,
+} OH_PixelMap_AntiAliasingLevel;
+
+/**
  * @brief Defines the options used for creating a pixel map.
  *
  * @since 10
@@ -181,6 +206,31 @@ struct OhosPixelMapCreateOps {
  */
 int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res);
+
+/**
+ * @brief Creates a <b>PixelMap</b> object with stride.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param info Indicates the options for setting the <b>PixelMap</b> object.
+ * @param buf Indicates the pointer to the buffer of the image.
+ * @param len Indicates the image size.
+ * @param rowStride Indicates the stride of the image buffer.
+ * @param res Indicates the pointer to the <b>PixelMap</b> object at the application layer.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_BAD_PARAMETER - if info, len and rowStride do not match.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_ABNORMAL - if image input data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_DATA_UNSUPPORT - if image init error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
+ * @see OH_PixelMap_CreatePixelMapWithStride
+ * @since 12
+ * @version 1.0
+ */
+int32_t OH_PixelMap_CreatePixelMapWithStride(napi_env env, OhosPixelMapCreateOps info,
+    void* buf, size_t len, int32_t rowStride, napi_value* res);
 
 /**
  * @brief Creates a <b>PixelMap</b> object that contains only alpha channel information.
@@ -386,6 +436,29 @@ int32_t OH_PixelMap_SetOpacity(const NativePixelMap* native, float opacity);
  * @version 1.0
  */
 int32_t OH_PixelMap_Scale(const NativePixelMap* native, float x, float y);
+
+/**
+ * @brief Scales a <b>PixelMap</b> object with anti-aliasing.
+ *
+ * @param native Indicates the pointer to a <b>NativePixelMap</b> object.
+ * @param x Indicates the scaling ratio of the width.
+ * @param y Indicates the scaling ratio of the height.
+ * @param level Indicates the anti-aliasing algorithm to be used.
+ * @return Returns {@link IRNdkErrCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_JNI_ENV_ABNORMAL - if Abnormal JNI environment.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_INVALID_PARAMETER - if invalid parameter, x and y are incorrect.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_GET_DATA_ABNORMAL - if image get data error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_CHECK_FORMAT_ERROR - if check format failed.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_THIRDPART_SKIA_ERROR - if skia error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL - if sharememory data abnormal.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_MALLOC_ABNORMAL - if image malloc error.
+ * returns {@link IRNdkErrCode} IMAGE_RESULT_UNKNOWN_FORMAT - if image unknown format.
+ * @see Scale
+ * @since 12
+ * @version 1.0
+ */
+int32_t OH_PixelMap_ScaleWithAntiAliasing(const NativePixelMap* native, float x, float y,
+    OH_PixelMap_AntiAliasingLevel level);
 
 /**
  * @brief Translates a <b>PixelMap</b> object.

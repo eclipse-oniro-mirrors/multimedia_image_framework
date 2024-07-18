@@ -50,6 +50,7 @@ struct OH_Pixelmap_InitializationOptions {
     PIXEL_FORMAT pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
     uint32_t editable = false;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
+    int32_t rowStride = 0;
 };
 
 struct OH_Pixelmap_ImageInfo {
@@ -270,6 +271,28 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_Initia
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t *rowStride)
+{
+    if (options == nullptr || rowStride == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *rowStride = options->rowStride;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t rowStride)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->rowStride = rowStride;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_InitializationOptions *ops)
 {
     if (ops == nullptr) {
@@ -374,6 +397,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
+    info.rowStride = options->rowStride;
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
 
@@ -477,6 +501,17 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+    OH_PixelmapNative_AntiAliasingLevel level)
+{
+    if (pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
     return IMAGE_SUCCESS;
 }
 
