@@ -3682,8 +3682,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 {
     VpeUtils::SetSbMetadataType(input, CM_METADATA_NONE);
     VpeUtils::SetSurfaceBufferInfo(input, cmColorSpaceType);
-    hdrCtx.info.size.width = input->GetWidth();
-    hdrCtx.info.size.height = input->GetHeight();
+    hdrCtx.info.size.width = static_cast<uint32_t>(input->GetWidth());
+    hdrCtx.info.size.height = static_cast<uint32_t>(input->GetWidth());
     uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     if (res != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);

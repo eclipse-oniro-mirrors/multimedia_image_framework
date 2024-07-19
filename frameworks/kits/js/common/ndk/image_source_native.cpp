@@ -48,7 +48,7 @@ static constexpr int32_t FORMAT_9 = 9;
 struct OH_DecodingOptions {
     int32_t pixelFormat;
     uint32_t index;
-    uint32_t sampleSize;
+    uint32_t sampleSize = INVALID_SAMPLE_SIZE;
     uint32_t rotate;
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
@@ -421,7 +421,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source
         ParseDecodingOps(decOps, ops);
         index = ops->index;
     } else {
-        OH_DecodingOptions localOps;
+        OH_DecodingOptions localOps{};
         ParseDecodingOps(decOps, &localOps);
     }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);

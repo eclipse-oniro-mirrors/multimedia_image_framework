@@ -772,7 +772,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         return false;
     }
     uint64_t dstBufferSizeOverflow =
-        static_cast<uint64_t>(desiredSize.width) * desiredSize.height * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
+        static_cast<uint64_t>(desiredSize.width * desiredSize.height * ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
     if (dstBufferSizeOverflow > UINT_MAX) {
         IMAGE_LOGE("ScalePixelMapEx target size too large");
         return false;
