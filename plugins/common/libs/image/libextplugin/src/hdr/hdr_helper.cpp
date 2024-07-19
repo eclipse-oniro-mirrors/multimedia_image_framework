@@ -180,7 +180,8 @@ static bool GetVividJpegGainMapOffset(const vector<jpeg_marker_struct*>& markerL
     return false;
 }
 
-static bool GetCuvaJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList, uint32_t appSize, uint32_t& offset)
+static bool GetCuvaJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
+    uint32_t appSize, uint32_t& offset) __attribute__((no_sanitize("cfi")))
 {
     if (markerList.size() == EMPTY_SIZE) {
         return false;
@@ -197,7 +198,7 @@ static bool GetCuvaJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList, ui
     }
     bool result = false;
     for (auto marker : markerList) {
-        if (JPEG_MARKER_APP5 != marker->marker) {
+        if (marker == nullptr || marker->data == nullptr || JPEG_MARKER_APP5 != marker->marker) {
             continue;
         }
         result = check(marker, appSize, offset);
@@ -274,7 +275,8 @@ static bool GetISOJpegGainMapOffset(vector<jpeg_marker_struct*>& markerList,
 }
 
 
-static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec, uint32_t& offset)
+static ImageHdrType CheckJpegGainMapHdrType(SkJpegCodec* jpegCodec,
+    uint32_t& offset) __attribute__((no_sanitize("cfi")))
 {
     uint32_t allAppSize = JPEG_MARKER_TAG_SIZE;
     vector<jpeg_marker_struct*> vividMarkerList;
