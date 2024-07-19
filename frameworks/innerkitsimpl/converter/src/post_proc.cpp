@@ -750,6 +750,15 @@ int GetInterpolation(const AntiAliasingOption &option)
     }
 }
 
+void ReleaseTempBuffer(void *&buffer, const uint8_t *ref[])
+{
+    if (buffer != nullptr) {
+        free(buffer);
+        buffer = nullptr;
+        ref[0] = nullptr;
+    }
+}
+
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
@@ -799,18 +808,14 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         desiredSize.width * ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
 
     void *inBuf = nullptr;
-    if ((srcWidth & 1) == 1 && pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
+    if (srcWidth % HALF != 0 && pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
         // Workaround for crash on odd number width, caused by FFmpeg 5.0 upgrade
         uint32_t byteCount = srcRowStride[0] * srcHeight;
         inBuf = malloc(byteCount);
         srcPixels[0] = reinterpret_cast<uint8_t*>(inBuf);
         errno_t errRet = memcpy_s(inBuf, byteCount, pixelMap.GetWritablePixels(), byteCount);
         if (errRet != EOK) {
-            if (inBuf != nullptr) {
-                free(inBuf);
-                inBuf = nullptr;
-                srcPixels[0] = nullptr;
-            }
+            ReleaseTempBuffer(inBuf, srcPixels);
             mem->Release();
             IMAGE_LOGE("ScalePixelMapEx memcpy_s failed with error code: %{public}d", errRet);
             return false;
@@ -819,15 +824,17 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
 
     SwsContext *swsContext = sws_getContext(srcWidth, srcHeight, pixelFormat, desiredSize.width, desiredSize.height,
         pixelFormat, GetInterpolation(option), nullptr, nullptr, nullptr);
+    if (swsContext == nullptr) {
+        ReleaseTempBuffer(inBuf, srcPixels);
+        mem->Release();
+        IMAGE_LOGE("sws_getContext failed");
+        return false;
+    }
     auto res = sws_scale(swsContext, srcPixels, srcRowStride, 0, srcHeight, dstPixels, dstRowStride);
 
-    if (inBuf != nullptr) {
-        free(inBuf);
-        inBuf = nullptr;
-        srcPixels[0] = nullptr;
-    }
+    sws_freeContext(swsContext);
+    ReleaseTempBuffer(inBuf, srcPixels);
     if (!res) {
-        sws_freeContext(swsContext);
         mem->Release();
         IMAGE_LOGE("sws_scale failed");
         return false;
@@ -835,7 +842,6 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     pixelMap.SetPixelsAddr(mem->data.data, mem->extend.data, dstBufferSize, mem->GetType(), nullptr);
     imgInfo.size = desiredSize;
     pixelMap.SetImageInfo(imgInfo, true);
-    sws_freeContext(swsContext);
     return true;
 }
 #endif
