@@ -3219,8 +3219,6 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
 {
     ImageTrace imageTrace("PixelMap decomposeImage");
     VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
-    VpeUtils::SetSbStaticMetadata(hdr, std::vector<uint8_t>(0));
-    VpeUtils::SetSbDynamicMetadata(hdr, std::vector<uint8_t>(0));
     VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
@@ -3247,8 +3245,14 @@ uint32_t PixelMap::ToSdr()
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
-    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size,
-                          PixelFormat::RGBA_8888};
+    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
+    PixelFormat outFormat = PixelFormat::RGBA_8888;
+    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010) {
+        outFormat = PixelFormat::NV12;
+    } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
+        outFormat = PixelFormat::NV21;
+    }
+    sdrData.format = outFormat;
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
     if (sdrMemory == nullptr) {
         IMAGE_LOGI("sdr memory alloc failed.");
@@ -3262,7 +3266,7 @@ uint32_t PixelMap::ToSdr()
         return IMAGE_RESULT_GET_SURFAC_FAILED;
     }
     SetPixelsAddr(sdrMemory->data.data, sdrMemory->extend.data, sdrMemory->data.size, dstType, nullptr);
-    imageInfo.pixelFormat = PixelFormat::RGBA_8888;
+    imageInfo.pixelFormat = outFormat;
     SetImageInfo(imageInfo, true);
 #ifdef IMAGE_COLORSPACE_FLAG
     InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::SRGB));
