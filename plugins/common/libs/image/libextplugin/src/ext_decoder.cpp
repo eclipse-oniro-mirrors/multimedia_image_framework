@@ -288,8 +288,14 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     HeifHardwareDecoder decoder;
-    GraphicPixelFormat graphicPixelFormat = context.info.pixelFormat
-            == PixelFormat::NV12 ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    GraphicPixelFormat graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    if (context.info.pixelFormat == PixelFormat::NV12) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+    } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
     sptr<SurfaceBuffer> hwBuffer
             = decoder.AllocateOutputBuffer(info_.width(), info_.height(), graphicPixelFormat);
     if (hwBuffer == nullptr) {
@@ -1763,9 +1769,17 @@ uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
     }
 
     uint64_t byteCount = static_cast<uint64_t>(info_.computeMinByteSize());
-    if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
-        return ERR_IMAGE_DATA_UNSUPPORT;
+    if (context.info.pixelFormat == PixelFormat::YCBCR_P010 || context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        uint32_t allocRet = HeifYUVMemAlloc(context);
+        if (allocRet != SUCCESS) {
+            return allocRet;
+        }
+    } else {
+        if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
+            return ERR_IMAGE_DATA_UNSUPPORT;
+        }
     }
+
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     SkHeifColorFormat heifFormat = kHeifColorFormat_RGBA_1010102;
     auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);
