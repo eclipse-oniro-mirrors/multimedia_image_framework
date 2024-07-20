@@ -630,7 +630,7 @@ std::shared_ptr<HeifImage> HeifParser::GetPrimaryImage()
 
 std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
 {
-    return primaryImage_->GetGainmapImage();
+    return primaryImage_ != nullptr ? primaryImage_->GetGainmapImage() : nullptr;
 }
 
 std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
@@ -653,6 +653,9 @@ std::shared_ptr<HeifInfeBox> HeifParser::AddItem(const char *itemType, bool hidd
     auto newInfe = std::make_shared<HeifInfeBox>(newItemId, itemType, false);
     newInfe->SetHidden(hidden);
     infeBoxes_[newItemId] = newInfe;
+    if (iinfBox_ == nullptr) {
+        return nullptr;
+    }
     iinfBox_->AddChild(newInfe);
     return newInfe;
 }

@@ -14,6 +14,7 @@
 group("fuzztest") {
   testonly = true
   deps = [
+    #"imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imagecreateimagesourcebydata_fuzzer:ImageCreateImageSourceByDataFuzzTest",
     "imagecreateimagesourcebyfd_fuzzer:ImageCreateImageSourceByFdFuzzTest",
     "imagecreateimagesourcebyfdex_fuzzer:ImageCreateImageSourceByFdExFuzzTest",
@@ -21,5 +22,6 @@ group("fuzztest") {
     "imagecreateimagesourcebypathname_fuzzer:ImageCreateImageSourceByPathNameFuzzTest",
     "imagecreateincrementalpixelmap_fuzzer:ImageCreateIncrementalPixelMapFuzzTest",
     "imageframework_fuzzer:ImageFrameworkFuzzTest",
+    "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
   ]
 }
