@@ -1073,7 +1073,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);

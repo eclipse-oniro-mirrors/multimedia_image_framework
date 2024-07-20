@@ -1419,7 +1419,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
 
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1719,7 +1719,7 @@ NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &pt
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
 {
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
