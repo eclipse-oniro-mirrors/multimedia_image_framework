@@ -790,7 +790,8 @@ uint8_t PixelYuvUtils::GetYuv420V(uint32_t x, uint32_t y, YUVDataInfo &info, Pix
 
 bool PixelYuvUtils::BGRAToYuv420(const uint8_t *src, YuvImageInfo &srcInfo, uint8_t *dst, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo,
+                 static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
         IMAGE_LOGE("BGRAToYuv420 failed");
         return false;
     }
@@ -1011,7 +1012,8 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
                 *(dstUV + newY * info.size.width + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
-                *(dstUV + newY * info.size.width + newX + 1) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
+                *(dstUV + newY * info.size.width + newX + 1) =
+                *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
             }
         }
     }

@@ -612,7 +612,8 @@ void PixelYuv::SetRowDataSizeForImageInfo(ImageInfo info)
 
 uint32_t PixelYuv::GetImageSize(int32_t width, int32_t height, PixelFormat format)
 {
-    uint32_t size = static_cast<uint32_t>(GetYSize(width, height) + GetUStride(width) * GetUVHeight(height) * TWO_SLICES);
+    uint32_t size = static_cast<uint32_t>(GetYSize(width, height) +
+                                          GetUStride(width) * GetUVHeight(height) * TWO_SLICES);
     if (IsYUVP010Format(format)) {
         size *= NUM_2;
     }
