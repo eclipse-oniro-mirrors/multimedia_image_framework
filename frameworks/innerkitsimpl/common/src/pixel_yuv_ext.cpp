@@ -139,7 +139,7 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
         } else {
             auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-            dstYStride = sb->GetStride();
+            dstYStride = static_cast<uint32_t>(sb->GetStride());
         }
     }
     #endif

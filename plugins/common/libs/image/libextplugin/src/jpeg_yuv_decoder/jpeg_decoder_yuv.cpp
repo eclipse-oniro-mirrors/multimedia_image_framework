@@ -137,11 +137,11 @@ bool JpegDecoderYuv::GetScaledSize(uint32_t jpgwidth, uint32_t jpgheight, int32_
     if (jpgwidth == 0 || jpgheight == 0) {
         return false;
     }
-    uint32_t reqWidth = width;
-    uint32_t reqHeight = height;
+    uint32_t reqWidth = static_cast<uint32_t>(width);
+    uint32_t reqHeight = static_cast<uint32_t>(height);
     if (reqWidth == 0 || reqHeight == 0) {
-        width = jpgwidth;
-        height = jpgheight;
+        width = static_cast<int32_t>(jpgwidth);
+        height = static_cast<int32_t>(jpgheight);
         return true;
     }
     tjscalingfactor factor = JpegDecoderYuv::GetScaledFactor(jpgwidth, jpgheight, width, height);
@@ -237,8 +237,8 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, YU
     if (width == 0 || height == 0) {
         return;
     }
-    info.imageSize.width = width;
-    info.imageSize.height = height;
+    info.imageSize.width = static_cast<int32_t>(width);
+    info.imageSize.height = static_cast<int32_t>(height);
     info.yWidth = Get420OutPlaneWidth(YCOM, width);
     info.yHeight = Get420OutPlaneHeight(YCOM, height);
     info.uvWidth = Get420OutPlaneWidth(UCOM, width);
@@ -261,8 +261,8 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
     if (width == 0 || height == 0) {
         return;
     }
-    info.imageSize.width = width;
-    info.imageSize.height = height;
+    info.imageSize.width = static_cast<int32_t>(width);
+    info.imageSize.height = static_cast<int32_t>(height);
     info.yWidth = Get420OutPlaneWidth(YCOM, width);
     info.yHeight = Get420OutPlaneHeight(YCOM, height);
     info.uvWidth = Get420OutPlaneWidth(UCOM, width);
@@ -276,8 +276,8 @@ void JpegDecoderYuv::InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, 
 void JpegDecoderYuv::InitYuvDataOutInfo(uint32_t width, uint32_t height, YUVDataInfo &info)
 {
     memset_s(&info, sizeof(info), 0, sizeof(info));
-    info.imageSize.width = width;
-    info.imageSize.height = height;
+    info.imageSize.width = static_cast<int32_t>(width);
+    info.imageSize.height = static_cast<int32_t>(height);
 }
 
 void JpegDecoderYuv::InitPlaneOutInfoTo420(uint32_t width, uint32_t height, YuvPlaneInfo &info)
