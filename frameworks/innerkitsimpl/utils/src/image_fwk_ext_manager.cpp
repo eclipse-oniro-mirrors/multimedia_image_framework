@@ -34,6 +34,7 @@ ImageFwkExtManager::ImageFwkExtManager()
 {
 #if !defined(_WIN32) && !defined(_APPLE)
     doHardWareEncodeFunc_ = nullptr;
+    hevcSoftwareDecodeFunc_ = nullptr;
     isImageFwkExtNativeSoOpened_ = false;
     extNativeSoHandle_ = nullptr;
 #endif
@@ -65,7 +66,9 @@ bool ImageFwkExtManager::LoadImageFwkExtNativeSo()
             return false;
         }
         doHardWareEncodeFunc_ = reinterpret_cast<DoHardWareEncodeFunc>(dlsym(extNativeSoHandle_, "DoHardwareEncode"));
-        if (doHardWareEncodeFunc_ == nullptr) {
+        hevcSoftwareDecodeFunc_ =
+            reinterpret_cast<HevcSoftwareDecodeFunc>(dlsym(extNativeSoHandle_, "HevcSoftwareDecode"));
+        if (doHardWareEncodeFunc_ == nullptr || hevcSoftwareDecodeFunc_ == nullptr) {
             IMAGE_LOGE("DoHardwareEncode dlsym falied");
             dlclose(extNativeSoHandle_);
             extNativeSoHandle_ = nullptr;
