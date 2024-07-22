@@ -185,6 +185,10 @@ uint32_t JpegEncoder::SetCommonConfig()
         IMAGE_LOGE("encode image failed, no pixel map input.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
+    if (pixelMaps_[0] == nullptr) {
+        IMAGE_LOGE("encode image failed, pixel map is null.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (setjmp(jerr_.setjmp_buffer)) {
         IMAGE_LOGE("encode image error, set config failed.");
         return ERR_IMAGE_ENCODE_FAILED;
