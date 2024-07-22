@@ -75,7 +75,6 @@ ohos_shared_library("cj_image_ffi") {
   } else {
     defines += [ "PREVIEWER" ]
     sources = [ "src/cj_image_mock.cpp" ]
-    external_deps = [ "napi:cj_bind_ffi" ]
   }
 
   if (is_ohos) {
