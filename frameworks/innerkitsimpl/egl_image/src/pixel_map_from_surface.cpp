@@ -220,6 +220,10 @@ std::unique_ptr<PixelMap> PixelMapFromSurface::Create(uint64_t surfaceId, const 
     options.srcPixelFormat = PixelFormat::RGBA_8888;
     options.pixelFormat = PixelFormat::RGBA_8888;
     auto pixelMap = PixelMap::Create(options);
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurface fail: pixelMap is nullptr");
+        return nullptr;
+    }
     auto imageInfo = SkImageInfo::Make(srcRect.width, srcRect.height, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
     SkPixmap skPixmap(imageInfo, pixelMap->GetPixel(0, 0), pixelMap->GetRowBytes());
     targetSurface_->readPixels(skPixmap, 0, 0);
