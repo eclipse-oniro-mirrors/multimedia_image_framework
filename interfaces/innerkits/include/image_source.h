@@ -330,6 +330,7 @@ private:
         ImagePlugin::DecodeContext& context, ImagePlugin::PlImageInfo& plInfo);
     ImagePlugin::DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
         const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, ImagePlugin::PlImageInfo& plInfo);
+    bool ParseHdrType();
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
