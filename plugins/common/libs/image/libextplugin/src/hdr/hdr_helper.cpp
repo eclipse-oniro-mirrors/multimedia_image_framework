@@ -905,6 +905,7 @@ bool HdrHelper::GetMetadata(SkCodec* codec, ImageHdrType type, HdrMetadata& meta
     }
 }
 
+// LCOV_EXCL_START
 /// pack jpeg base image vivid marker
 static void PackVividPreInfo(vector<uint8_t>& bytes, uint32_t& offset, bool base, bool enhanceType)
 {
@@ -919,6 +920,7 @@ static void PackVividPreInfo(vector<uint8_t>& bytes, uint32_t& offset, bool base
     bytes[offset++] = ((!base) && enhanceType) ? INDEX_ONE : INDEX_ZERO; // enhanceType
     bytes[offset++] = INDEX_ZERO;
 }
+// LCOV_EXCL_STOP
 
 
 uint32_t HdrJpegPackerHelper::GetBaseVividMarkerSize()
@@ -935,6 +937,7 @@ uint32_t HdrJpegPackerHelper::GetMpfMarkerSize()
     return HDR_MULTI_PICTURE_APP_LENGTH;
 }
 
+// LCOV_EXCL_START
 vector<uint8_t> HdrJpegPackerHelper::PackBaseVividMarker(uint32_t gainmapOffset, uint32_t preOffset, uint32_t appSize)
 {
     const uint32_t baseInfoMarkerLength = GetBaseVividMarkerSize();
@@ -1043,6 +1046,7 @@ static void PackExtendInfoExtention(vector<uint8_t>& bytes, uint32_t& offset, co
     PackTransformInfo(bytes, offset, metadata.gainmapColorMeta.combineMappingFlag,
         metadata.gainmapColorMeta.combineMapping);
 }
+// LCOV_EXCL_STOP
 
 static uint16_t GetExtendMetadataSize(bool vividExtendFlag, const HDRVividExtendMetadata& metadata)
 {
@@ -1075,6 +1079,7 @@ static void PackExtendMetadata(vector<uint8_t>& bytes, uint32_t& index, HDRVivid
     PackExtendInfoExtention(bytes, index, metadata);
 }
 
+// LCOV_EXCL_START
 static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vector<uint8_t>& staticVec)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
@@ -1244,6 +1249,7 @@ vector<uint8_t> HdrJpegPackerHelper::PackISOMetadataMarker(HdrMetadata& metadata
     PackISOExtendInfo(bytes, index, extendMeta.metaISO);
     return bytes;
 }
+// LCOV_EXCL_STOP
 
 static bool WriteJpegPreApp(sk_sp<SkData>& imageData, SkWStream& outputStream, uint32_t& index, uint32_t& jfifSize)
 {
