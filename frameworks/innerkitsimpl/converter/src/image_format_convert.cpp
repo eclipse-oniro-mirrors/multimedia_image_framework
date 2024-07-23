@@ -56,6 +56,22 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, ConvertFunction> g_cv
         {std::make_pair(PixelFormat::RGB_888, PixelFormat::NV12), ImageFormatConvertUtils::RGBToNV12},
         {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::NV21), ImageFormatConvertUtils::RGBAF16ToNV21},
         {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::NV12), ImageFormatConvertUtils::RGBAF16ToNV12},
+        {std::make_pair(PixelFormat::RGB_565, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::RGB565ToNV12P010},
+        {std::make_pair(PixelFormat::RGB_565, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::RGB565ToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::RGBAToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::RGBAToNV21P010},
+        {std::make_pair(PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::BGRAToNV12P010},
+        {std::make_pair(PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::BGRAToNV21P010},
+        {std::make_pair(PixelFormat::RGB_888, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::RGBToNV12P010},
+        {std::make_pair(PixelFormat::RGB_888, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::RGBToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::RGBAF16ToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::RGBAF16ToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::NV12), ImageFormatConvertUtils::RGBA1010102ToNV12},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::NV21), ImageFormatConvertUtils::RGBA1010102ToNV21},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::YCBCR_P010),
+            ImageFormatConvertUtils::RGBA1010102ToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::YCRCB_P010),
+            ImageFormatConvertUtils::RGBA1010102ToNV21P010},
     };
 #else
     static const std::map<std::pair<PixelFormat, PixelFormat>, ConvertFunction> cvtFuncMap = {
@@ -69,6 +85,22 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, ConvertFunction> g_cv
         {std::make_pair(PixelFormat::RGB_888, PixelFormat::NV12), ImageFormatConvertExtUtils::RGBToNV12},
         {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::NV21), ImageFormatConvertUtils::RGBAF16ToNV21},
         {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::NV12), ImageFormatConvertUtils::RGBAF16ToNV12},
+        {std::make_pair(PixelFormat::RGB_565, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::RGB565ToNV12P010},
+        {std::make_pair(PixelFormat::RGB_565, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::RGB565ToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::RGBAToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::RGBAToNV21P010},
+        {std::make_pair(PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::BGRAToNV12P010},
+        {std::make_pair(PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::BGRAToNV21P010},
+        {std::make_pair(PixelFormat::RGB_888, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::RGBToNV12P010},
+        {std::make_pair(PixelFormat::RGB_888, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::RGBToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::NV12), ImageFormatConvertExtUtils::RGBA1010102ToNV12},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::NV21), ImageFormatConvertExtUtils::RGBA1010102ToNV21},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::YCBCR_P010),
+            ImageFormatConvertUtils::RGBA1010102ToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_1010102, PixelFormat::YCRCB_P010),
+            ImageFormatConvertUtils::RGBA1010102ToNV21P010},
+        {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::RGBAF16ToNV12P010},
+        {std::make_pair(PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::RGBAF16ToNV21P010},
     };
 #endif
     return cvtFuncMap;
@@ -89,6 +121,34 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
         {std::make_pair(PixelFormat::NV21, PixelFormat::RGBA_F16), ImageFormatConvertUtils::NV21ToRGBAF16},
         {std::make_pair(PixelFormat::NV21, PixelFormat::RGBA_8888), ImageFormatConvertUtils::NV21ToRGBA},
         {std::make_pair(PixelFormat::NV21, PixelFormat::BGRA_8888), ImageFormatConvertUtils::NV21ToBGRA},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::NV12ToNV12P010},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::NV12ToNV21P010},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::YCBCR_P010), ImageFormatConvertUtils::NV21ToNV12P010},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::YCRCB_P010), ImageFormatConvertUtils::NV21ToNV21P010},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::RGBA_1010102), ImageFormatConvertUtils::NV12ToRGBA1010102},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::RGBA_1010102), ImageFormatConvertUtils::NV21ToRGBA1010102},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::NV12), ImageFormatConvertUtils::NV12P010ToNV12},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::NV21), ImageFormatConvertUtils::NV12P010ToNV21},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010),
+            ImageFormatConvertUtils::NV12P010ToNV21P010},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGB_565), ImageFormatConvertUtils::NV12P010ToRGB565},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_8888), ImageFormatConvertUtils::NV12P010ToRGBA8888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::BGRA_8888), ImageFormatConvertUtils::NV12P010ToBGRA8888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGB_888), ImageFormatConvertUtils::NV12P010ToRGB888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_F16), ImageFormatConvertUtils::NV12P010ToRGBAF16},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::NV12), ImageFormatConvertUtils::NV21P010ToNV12},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::NV21), ImageFormatConvertUtils::NV21P010ToNV21},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::YCBCR_P010),
+            ImageFormatConvertUtils::NV21P010ToNV12P010},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_1010102),
+            ImageFormatConvertUtils::NV12P010ToRGBA1010102},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGB_565), ImageFormatConvertUtils::NV21P010ToRGB565},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_8888), ImageFormatConvertUtils::NV21P010ToRGBA8888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::BGRA_8888), ImageFormatConvertUtils::NV21P010ToBGRA8888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGB_888), ImageFormatConvertUtils::NV21P010ToRGB888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_F16), ImageFormatConvertUtils::NV21P010ToRGBAF16},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_1010102),
+            ImageFormatConvertUtils::NV21P010ToRGBA1010102},
     };
 #else
     std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> yuvCvtFuncMap = {
@@ -104,6 +164,38 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
         {std::make_pair(PixelFormat::NV12, PixelFormat::RGBA_8888), ImageFormatConvertExtUtils::NV12ToRGBA},
         {std::make_pair(PixelFormat::NV12, PixelFormat::BGRA_8888), ImageFormatConvertExtUtils::NV12ToBGRA},
         {std::make_pair(PixelFormat::NV12, PixelFormat::RGB_888), ImageFormatConvertExtUtils::NV12ToRGB},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::RGBA_1010102), ImageFormatConvertExtUtils::NV12ToRGBA1010102},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::RGBA_1010102), ImageFormatConvertExtUtils::NV21ToRGBA1010102},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::NV12ToNV12P010},
+        {std::make_pair(PixelFormat::NV12, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::NV12ToNV21P010},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::YCBCR_P010), ImageFormatConvertExtUtils::NV21ToNV12P010},
+        {std::make_pair(PixelFormat::NV21, PixelFormat::YCRCB_P010), ImageFormatConvertExtUtils::NV21ToNV21P010},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::NV12), ImageFormatConvertExtUtils::NV12P010ToNV12},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::NV21), ImageFormatConvertExtUtils::NV12P010ToNV21},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::YCRCB_P010),
+            ImageFormatConvertUtils::NV12P010ToNV21P010},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGB_565), ImageFormatConvertExtUtils::NV12P010ToRGB565},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_8888),
+            ImageFormatConvertExtUtils::NV12P010ToRGBA8888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::BGRA_8888),
+            ImageFormatConvertExtUtils::NV12P010ToBGRA8888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGB_888), ImageFormatConvertExtUtils::NV12P010ToRGB888},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_F16), ImageFormatConvertUtils::NV12P010ToRGBAF16},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::NV12), ImageFormatConvertExtUtils::NV21P010ToNV12},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::NV21), ImageFormatConvertExtUtils::NV21P010ToNV21},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::YCBCR_P010),
+            ImageFormatConvertUtils::NV21P010ToNV12P010},
+        {std::make_pair(PixelFormat::YCBCR_P010, PixelFormat::RGBA_1010102),
+            ImageFormatConvertExtUtils::NV12P010ToRGBA1010102},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGB_565), ImageFormatConvertExtUtils::NV21P010ToRGB565},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_8888),
+            ImageFormatConvertExtUtils::NV21P010ToRGBA8888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::BGRA_8888),
+            ImageFormatConvertExtUtils::NV21P010ToBGRA8888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGB_888), ImageFormatConvertExtUtils::NV21P010ToRGB888},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_F16), ImageFormatConvertUtils::NV21P010ToRGBAF16},
+        {std::make_pair(PixelFormat::YCRCB_P010, PixelFormat::RGBA_1010102),
+            ImageFormatConvertExtUtils::NV21P010ToRGBA1010102},
     };
 #endif
     return yuvCvtFuncMap;
@@ -151,7 +243,8 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
     }
 
     PixelFormat srcFormat = srcPiexlMap->GetPixelFormat();
-    if ((srcFormat == PixelFormat::NV21) || (srcFormat == PixelFormat::NV12)) {
+    if ((srcFormat == PixelFormat::NV21) || (srcFormat == PixelFormat::NV12) ||
+        (srcFormat == PixelFormat::YCBCR_P010) || (srcFormat == PixelFormat::YCRCB_P010)) {
         uint32_t ret = YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
         if (ret != SUCCESS) {
             IMAGE_LOGE("convert yuv format failed!");
@@ -273,7 +366,8 @@ size_t ImageFormatConvert::GetBufferSizeByFormat(PixelFormat format, const Size 
         }
         case PixelFormat::ARGB_8888:
         case PixelFormat::RGBA_8888:
-        case PixelFormat::BGRA_8888:{
+        case PixelFormat::BGRA_8888:
+        case PixelFormat::RGBA_1010102:{
             return size.width * size.height * NUM_4;
         }
         case PixelFormat::RGBA_F16:{
@@ -283,6 +377,11 @@ size_t ImageFormatConvert::GetBufferSizeByFormat(PixelFormat format, const Size 
         case PixelFormat::NV12:{
             return size.width * size.height + ((size.width + NUM_1) / NUM_2) *
                 ((size.height + NUM_1) / NUM_2) * NUM_2;
+        }
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010: {
+            return (size.width * size.height + ((size.width + NUM_1) / NUM_2) *
+                ((size.height + NUM_1) / NUM_2) * NUM_2) * NUM_2;
         }
         default:{
             return NUM_0;
@@ -338,6 +437,9 @@ bool ImageFormatConvert::IsSupport(PixelFormat format)
         case PixelFormat::BGRA_8888:
         case PixelFormat::RGB_888:
         case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:
         case PixelFormat::NV21:
         case PixelFormat::NV12:{
             return true;

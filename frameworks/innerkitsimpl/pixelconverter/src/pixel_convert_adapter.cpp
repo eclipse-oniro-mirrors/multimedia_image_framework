@@ -70,6 +70,7 @@ static const map<PixelFormat, SkColorType> PIXEL_FORMAT_MAP = {
     { PixelFormat::BGRA_8888, SkColorType::kBGRA_8888_SkColorType},
     { PixelFormat::RGB_888, SkColorType::kRGB_888x_SkColorType},
     { PixelFormat::RGBA_1010102, SkColorType::kRGBA_1010102_SkColorType},
+    { PixelFormat::RGBA_U16, SkColorType::kR16G16B16A16_unorm_SkColorType},
 };
 
 static SkColorType PixelFormatConvert(const PixelFormat &pixelFormat)
