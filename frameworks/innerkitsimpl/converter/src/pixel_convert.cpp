@@ -1195,7 +1195,7 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
         return false;
     }
     ImageInfo tmpInfo = srcInfo;
-    tmpInfo.pixelFormat = PixelFormat::RGBA_F16;
+    tmpInfo.pixelFormat = PixelFormat::RGBA_U16;
     tmpInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     Position pos;
     if (!PixelConvertAdapter::WritePixelsConvert(tmpPixels, PixelMap::GetRGBxRowDataSize(tmpInfo), tmpInfo,
@@ -1214,7 +1214,7 @@ static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
     void *dstPixels, ImageInfo dstInfo)
 {
     ImageInfo tmpInfo = srcInfo;
-    tmpInfo.pixelFormat = PixelFormat::RGBA_F16;
+    tmpInfo.pixelFormat = PixelFormat::RGBA_U16;
     int tmpPixelsLen = PixelMap::GetRGBxByteCount(tmpInfo);
     if (tmpPixelsLen <= 0) {
         IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");

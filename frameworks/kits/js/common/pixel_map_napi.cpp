@@ -3416,7 +3416,9 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
     if (type == FormatType::YUV) {
         switch (format) {
             case PixelFormat::NV21:
-            case PixelFormat::NV12:{
+            case PixelFormat::NV12:
+            case PixelFormat::YCBCR_P010:
+            case PixelFormat::YCRCB_P010:{
                 return true;
             }
             default:{
@@ -3430,7 +3432,8 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
             case PixelFormat::RGBA_8888:
             case PixelFormat::BGRA_8888:
             case PixelFormat::RGB_888:
-            case PixelFormat::RGBA_F16:{
+            case PixelFormat::RGBA_F16:
+            case PixelFormat::RGBA_1010102:{
                 return true;
             }
             default:{
@@ -3456,11 +3459,14 @@ static FormatType TypeFormat(PixelFormat &pixelForamt)
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
         case PixelFormat::RGB_888:
-        case PixelFormat::RGBA_F16:{
+        case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102:{
             return FormatType::RGB;
         }
         case PixelFormat::NV21:
-        case PixelFormat::NV12:{
+        case PixelFormat::NV12:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:{
             return FormatType::YUV;
         }
         default:
