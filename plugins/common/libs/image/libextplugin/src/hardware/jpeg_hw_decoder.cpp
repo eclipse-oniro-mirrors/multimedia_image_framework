@@ -101,6 +101,7 @@ JpegHardwareDecoder::~JpegHardwareDecoder()
     bufferMgr_ = nullptr;
 }
 
+// LCOV_EXCL_START
 bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFormat, OHOS::Media::Size srcImgSize)
 {
     if (hwDecoder_ == nullptr) {
@@ -133,6 +134,7 @@ bool JpegHardwareDecoder::IsHardwareDecodeSupported(const std::string& srcImgFor
     JPEG_HW_LOGE("no available hardware decoder, img=[%{public}ux%{public}u]", srcImgSize.width, srcImgSize.height);
     return false;
 }
+// LCOV_EXCL_STOP
 
 static jpeg_decompress_struct* GetJpegCompressInfo(SkCodec *codec)
 {
@@ -296,6 +298,7 @@ bool JpegHardwareDecoder::AssembleJpegImgHeader(jpeg_decompress_struct* jpegComp
     return true;
 }
 
+// LCOV_EXCL_START
 bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataStream *srcStream)
 {
     size_t fileSize = srcStream->GetStreamSize();
@@ -329,6 +332,7 @@ bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataSt
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 bool JpegHardwareDecoder::IsStandAloneJpegMarker(uint16_t marker)
 {

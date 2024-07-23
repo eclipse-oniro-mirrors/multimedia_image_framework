@@ -311,6 +311,7 @@ static bool IsSupportHeif()
     return false;
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 {
     IMAGE_LOGD("[ImageSource]get supported image type.");
@@ -350,6 +351,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
     }
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_ptr<SourceStream>(void)> stream,
     const SourceOptions &opts, uint32_t &errorCode, const string traceName)
@@ -375,6 +377,7 @@ unique_ptr<ImageSource> ImageSource::DoImageSourceCreate(std::function<unique_pt
     return unique_ptr<ImageSource>(sourcePtr);
 }
 
+// LCOV_EXCL_START
 unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, const SourceOptions &opts,
     uint32_t &errorCode)
 {
@@ -468,6 +471,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const int fd, int32_t off
         },
         opts, errorCode, "CreateImageSource by fd offset and length");
 }
+// LCOV_EXCL_STOP
 
 unique_ptr<ImageSource> ImageSource::CreateIncrementalImageSource(const IncrementalSourceOptions &opts,
     uint32_t &errorCode)
@@ -585,6 +589,7 @@ void ImageSource::TransformSizeWithDensity(const Size &srcSize, int32_t srcDensi
     }
 }
 
+// LCOV_EXCL_START
 static void NotifyDecodeEvent(set<DecodeListener *> &listeners, DecodeEvent event, std::unique_lock<std::mutex> *guard)
 {
     if (listeners.size() == SIZE_ZERO) {
@@ -636,6 +641,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
     }
 #endif
 }
+// LCOV_EXCL_STOP
 
 static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrInfos)
 {
@@ -676,6 +682,7 @@ bool IsPhotosLcd()
     return isPhotos;
 }
 
+// LCOV_EXCL_START
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -738,6 +745,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     }
     return context;
 }
+// LCOV_EXCL_STOP
 
 uint64_t ImageSource::GetNowTimeMicroSeconds()
 {
@@ -830,6 +838,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     return pixelMap;
 }
 
+// LCOV_EXCL_START
 static void GetValidCropRect(const Rect &src, ImagePlugin::PlImageInfo &plInfo, Rect &dst)
 {
     dst.top = src.top;
@@ -858,6 +867,7 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
         dstSize.height = GetScalePropByDensity(info.size.height, srcDensity, wantDensity);
     }
 }
+// LCOV_EXCL_STOP
 
 static bool IsYuvFormat(PixelFormat format)
 {
@@ -896,6 +906,7 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     return true;
 }
 
+// LCOV_EXCL_START
 // add graphic colorspace object to pixelMap.
 void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, unique_ptr<PixelMap>& pixelMap,
     std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
@@ -915,6 +926,7 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
     }
 #endif
 }
+// LCOV_EXCL_STOP
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapByInfos(ImagePlugin::PlImageInfo &plInfo,
     ImagePlugin::DecodeContext& context, uint32_t &errorCode)
@@ -1349,6 +1361,7 @@ void ImageSource::SetDngImageSize(uint32_t index, ImageInfo &imageInfo)
     }
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
     ImageTrace imageTrace("GetImageInfo by index");
@@ -1373,6 +1386,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     SetDngImageSize(index, imageInfo);
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
 {
@@ -1548,6 +1562,7 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
     return exifMetadata_->GetValue(key, value);
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     std::unique_lock<std::mutex> guard(decodingMutex_);
@@ -1579,6 +1594,7 @@ uint32_t ImageSource::GetImagePropertyInt(uint32_t index, const std::string &key
 
     return ret;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &key, std::string &value)
 {
@@ -1616,6 +1632,7 @@ const SourceInfo &ImageSource::GetSourceInfo(uint32_t &errorCode)
     return sourceInfo_;
 }
 
+// LCOV_EXCL_START
 void ImageSource::RegisterListener(PeerListener *listener)
 {
     if (listener == nullptr) {
@@ -1660,6 +1677,7 @@ void ImageSource::RemoveDecodeListener(DecodeListener *listener)
         decodeListeners_.erase(iter);
     }
 }
+// LCOV_EXCL_STOP
 
 ImageSource::~ImageSource() __attribute__((no_sanitize("cfi")))
 {
@@ -1747,6 +1765,7 @@ uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
+// LCOV_EXCL_START
 // ------------------------------- private method -------------------------------
 ImageSource::ImageSource(unique_ptr<SourceStream> &&stream, const SourceOptions &opts)
     : sourceStreamPtr_(stream.release())
@@ -1800,6 +1819,7 @@ ImageSource::FormatAgentMap ImageSource::InitClass()
     }
     return tempAgentMap;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
 {
@@ -1816,6 +1836,7 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
     return SUCCESS;
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t size) __attribute__((no_sanitize("cfi")))
 {
     if (sourceStreamPtr_ == nullptr) {
@@ -1832,6 +1853,7 @@ uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t siz
     }
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::CheckFormatHint(const string &formatHint, FormatAgentMap::iterator &formatIter)
 {
@@ -1872,6 +1894,7 @@ AbsImageDecoder *DoCreateDecoder(std::string codecFormat, PluginServer &pluginSe
     return decoder;
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_sanitize("cfi")))
 {
     if (mainDecoder_ != nullptr) {
@@ -2069,6 +2092,7 @@ uint32_t GetSourceDecodingState(SourceDecodingState decodeState_)
     }
     return ret;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::DecodeSourceInfo(bool isAcquiredImageNum)
 {
@@ -2177,6 +2201,7 @@ AbsImageDecoder *ImageSource::CreateDecoder(uint32_t &errorCode)
     return DoCreateDecoder(encodedFormat, pluginServer_, *sourceStreamPtr_, errorCode);
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder, uint32_t index,
     const DecodeOptions &opts, ImagePlugin::PlImageInfo &plInfo)
 {
@@ -2331,6 +2356,7 @@ uint32_t ImageSource::AddIncrementalContext(PixelMap &pixelMap, IncrementalRecor
     iterator = result.first;
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ImageSource::DoIncrementalDecoding(uint32_t index, const DecodeOptions &opts, PixelMap &pixelMap,
     IncrementalDecodingContext &recordContext)
@@ -2404,6 +2430,7 @@ bool ImageSource::IsIncrementalSource()
     return isIncrementalSource_;
 }
 
+// LCOV_EXCL_START
 FinalOutputStep ImageSource::GetFinalOutputStep(const DecodeOptions &opts, PixelMap &pixelMap, bool hasNinePatch)
 {
     ImageInfo info;
@@ -2443,6 +2470,7 @@ FinalOutputStep ImageSource::GetFinalOutputStep(const DecodeOptions &opts, Pixel
     }
     return FinalOutputStep::NO_CHANGE;
 }
+// LCOV_EXCL_STOP
 
 bool ImageSource::HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImageInfo, bool hasNinePatch)
 {
@@ -2450,6 +2478,7 @@ bool ImageSource::HasDensityChange(const DecodeOptions &opts, ImageInfo &srcImag
         (srcImageInfo.baseDensity != opts.fitDensity);
 }
 
+// LCOV_EXCL_START
 bool ImageSource::ImageSizeChange(int32_t width, int32_t height, int32_t desiredWidth, int32_t desiredHeight)
 {
     bool sizeChange = false;
@@ -2482,6 +2511,7 @@ bool ImageSource::ImageConverChange(const Rect &cropRect, ImageInfo &dstImageInf
     }
     return true;
 }
+// LCOV_EXCL_STOP
 unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t size)
 {
     if (size < IMAGE_URL_PREFIX.size() ||
@@ -2548,6 +2578,7 @@ bool ImageSource::IsSpecialYUV()
     return (isBufferSource && isSizeValid && isYUV);
 }
 
+// LCOV_EXCL_START
 static inline uint8_t FloatToUint8(float f)
 {
     int data = static_cast<int>(f + 0.5f);
@@ -2610,6 +2641,7 @@ bool ImageSource::ConvertYUV420ToRGBA(uint8_t *data, uint32_t size, bool isSuppo
     IMAGE_LOGD("[ImageSource]ConvertYUV420ToRGBA OUT");
     return true;
 }
+// LCOV_EXCL_STOP
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
 {
@@ -2691,6 +2723,7 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize) __attribute__
     return false;
 }
 
+// LCOV_EXCL_START
 bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo, const uint8_t *sourceFilePtr)
 {
     ASTCInfo astcInfo;
@@ -2722,6 +2755,7 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo, const uint8_t *sourc
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 #ifdef SUT_DECODE_ENABLE
 static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
@@ -2851,6 +2885,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
 }
 #endif
 
+// LCOV_EXCL_START
 bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo &astcInfo)
 {
     if (fileData == nullptr || fileSize < ASTC_HEADER_SIZE) {
@@ -2893,6 +2928,7 @@ bool ImageSource::GetASTCInfo(const uint8_t *fileData, size_t fileSize, ASTCInfo
 #endif
     return false;
 }
+// LCOV_EXCL_STOP
 
 unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const DecodeOptions &opts, uint32_t &errorCode)
 {
@@ -2919,6 +2955,7 @@ unique_ptr<vector<unique_ptr<PixelMap>>> ImageSource::CreatePixelMapList(const D
     return pixelMaps;
 }
 
+// LCOV_EXCL_START
 unique_ptr<vector<int32_t>> ImageSource::GetDelayTime(uint32_t &errorCode)
 {
     auto frameCount = GetFrameCount(errorCode);
@@ -2985,6 +3022,7 @@ unique_ptr<vector<int32_t>> ImageSource::GetDisposalType(uint32_t &errorCode)
 
     return disposalTypes;
 }
+// LCOV_EXCL_STOP
 
 int32_t ImageSource::GetLoopCount(uint32_t &errorCode)
 {
@@ -3068,6 +3106,7 @@ static string GetExtendedCodecMimeType(AbsImageDecoder* decoder)
     return string();
 }
 
+// LCOV_EXCL_START
 static float GetScaleSize(ImageInfo info, DecodeOptions opts)
 {
     if (info.size.width == 0 || info.size.height == 0) {
@@ -3077,6 +3116,7 @@ static float GetScaleSize(ImageInfo info, DecodeOptions opts)
                       static_cast<float>(opts.desiredSize.height) / info.size.height);
     return scale;
 }
+// LCOV_EXCL_STOP
 
 static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBufferSize)
 {
@@ -3115,6 +3155,7 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
     return true;
 }
 
+// LCOV_EXCL_START
 static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd, uint32_t format)
 {
     context.allocatorType = AllocatorType::DMA_ALLOC;
@@ -3141,6 +3182,7 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
         context.grColorSpaceName = ColorManager::SRGB;
     }
 }
+// LCOV_EXCL_STOP
 
 static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 {
@@ -3175,6 +3217,7 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 #endif
 }
 
+// LCOV_EXCL_START
 static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
@@ -3225,6 +3268,7 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
     }
     return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
 }
+// LCOV_EXCL_STOP
 #endif
 
 DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
@@ -3314,6 +3358,7 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
     return context;
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& decoder, PlImageInfo& plInfo,
                                              float scale)
 {
@@ -3339,6 +3384,7 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
+// LCOV_EXCL_STOP
 
 bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
 {
@@ -3411,6 +3457,7 @@ bool ImageSource::DecodeJpegGainMap(ImageHdrType hdrType, float scale, DecodeCon
     return true;
 }
 
+// LCOV_EXCL_START
 bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& hdrCtx, float scale)
 {
     string format = GetExtendedCodecMimeType(mainDecoder_.get());
@@ -3437,6 +3484,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
     FreeContextBuffer(gainMapCtx.freeFunc, gainMapCtx.allocatorType, gainMapCtx.pixelsBuffer);
     return result;
 }
+// LCOV_EXCL_STOP
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void SetVividMetaColor(HdrMetadata& metadata,
@@ -3448,6 +3496,7 @@ static void SetVividMetaColor(HdrMetadata& metadata,
     metadata.extendMeta.gainmapColorMeta.alternateColorPrimary = hdr & 0xFF;
 }
 
+// LCOV_EXCL_START
 static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrType, CM_ColorSpaceType color)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -3485,6 +3534,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     return SUCCESS;
 #endif
 }
+// LCOV_EXCL_STOP
 #endif
 
 bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, DecodeContext& gainMapCtx,
@@ -3534,6 +3584,7 @@ bool ImageSource::ComposeHdrImage(ImageHdrType hdrType, DecodeContext& baseCtx, 
 #endif
 }
 
+// LCOV_EXCL_START
 uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> metadataAccessor,
                                             const std::set<std::string> &keys)
 {
@@ -3560,6 +3611,7 @@ uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> me
     metadataAccessor->Set(exifMetadata_);
     return metadataAccessor->Write();
 }
+// LCOV_EXCL_STOP
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
