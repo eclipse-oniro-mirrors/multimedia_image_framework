@@ -1477,7 +1477,7 @@ bool ImageSource::PrereadSourceStream()
                                           IMAGE_HEADER_SIZE, prereadSize);
     sourceStreamPtr_->Seek(savedPosition);
     if (!retRead) {
-        IMAGE_LOGE("SourceStream read failed.");
+        IMAGE_LOGE("Preread source stream failed.");
         delete[] prereadBuffer; // Don't forget to delete tmpBuffer if read failed
         return false;
     }
