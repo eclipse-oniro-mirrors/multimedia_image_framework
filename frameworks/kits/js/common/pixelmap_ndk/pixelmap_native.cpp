@@ -50,6 +50,7 @@ struct OH_Pixelmap_InitializationOptions {
     PIXEL_FORMAT pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
     uint32_t editable = false;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
+    int32_t rowStride = 0;
 };
 
 struct OH_Pixelmap_ImageInfo {
@@ -270,6 +271,28 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetAlphaType(OH_Pixelmap_Initia
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t *rowStride)
+{
+    if (options == nullptr || rowStride == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *rowStride = options->rowStride;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t rowStride)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    options->rowStride = rowStride;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_InitializationOptions *ops)
 {
     if (ops == nullptr) {
@@ -374,6 +397,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
+    info.rowStride = options->rowStride;
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
 
@@ -417,7 +441,7 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
 {
-    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr) {
+    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(*bufferSize, destination));
@@ -426,7 +450,7 @@ Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8_t *source, size_t bufferSize)
 {
-    if (pixelmap == nullptr || source == nullptr) {
+    if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
@@ -435,7 +459,7 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ToSdr(OH_PixelmapNative *pixelmap)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     if (pixelmap->GetInnerPixelmap()->ToSdr() != IMAGE_SUCCESS) {
@@ -447,7 +471,7 @@ Image_ErrorCode OH_PixelmapNative_ToSdr(OH_PixelmapNative *pixelmap)
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_Pixelmap_ImageInfo *imageInfo)
 {
-    if (pixelmap == nullptr || imageInfo == nullptr) {
+    if (pixelmap == nullptr || imageInfo == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     ImageInfo srcInfo;
@@ -463,7 +487,7 @@ Image_ErrorCode OH_PixelmapNative_GetImageInfo(OH_PixelmapNative *pixelmap, OH_P
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Opacity(OH_PixelmapNative *pixelmap, float rate)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->SetAlpha(rate);
@@ -473,7 +497,7 @@ Image_ErrorCode OH_PixelmapNative_Opacity(OH_PixelmapNative *pixelmap, float rat
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scaleX, float scaleY)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY);
@@ -481,9 +505,20 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y)
+Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+    OH_PixelmapNative_AntiAliasingLevel level)
 {
     if (pixelmap == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    pixelmap->GetInnerPixelmap()->scale(scaleX, scaleY, static_cast<AntiAliasingOption>(level));
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x, float y)
+{
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->translate(x, y);
@@ -493,7 +528,7 @@ Image_ErrorCode OH_PixelmapNative_Translate(OH_PixelmapNative *pixelmap, float x
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Rotate(OH_PixelmapNative *pixelmap, float angle)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->rotate(angle);
@@ -504,7 +539,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Flip(OH_PixelmapNative *pixelmap, bool shouldFilpHorizontally,
     bool shouldFilpVertically)
 {
-    if (pixelmap == nullptr) {
+    if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     pixelmap->GetInnerPixelmap()->flip(shouldFilpHorizontally, shouldFilpVertically);
@@ -514,7 +549,7 @@ Image_ErrorCode OH_PixelmapNative_Flip(OH_PixelmapNative *pixelmap, bool shouldF
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region *region)
 {
-    if (pixelmap == nullptr || region == nullptr) {
+    if (pixelmap == nullptr || region == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     Rect rect;
@@ -540,7 +575,8 @@ MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ConvertAlphaFormat(OH_PixelmapNative* srcpixelmap,
     OH_PixelmapNative* dstpixelmap, const bool isPremul)
 {
-    if (srcpixelmap == nullptr || dstpixelmap == nullptr) {
+    if (srcpixelmap == nullptr || dstpixelmap == nullptr ||
+        !srcpixelmap->GetInnerPixelmap() || !dstpixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     srcpixelmap->GetInnerPixelmap()->ConvertAlphaFormat(*(dstpixelmap->GetInnerPixelmap()), isPremul);

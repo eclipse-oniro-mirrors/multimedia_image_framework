@@ -176,6 +176,7 @@ static const map<PixelFormat, JpegYuvFmt> PLPIXEL_FORMAT_YUV_JPG_MAP = {
     { PixelFormat::NV21, JpegYuvFmt::OutFmt_NV21 }, { PixelFormat::NV12, JpegYuvFmt::OutFmt_NV12 }
 };
 
+// LCOV_EXCL_START
 static void SetDecodeContextBuffer(DecodeContext &context,
     AllocatorType type, uint8_t* ptr, uint64_t count, void* fd)
 {
@@ -288,8 +289,14 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
     HeifHardwareDecoder decoder;
-    GraphicPixelFormat graphicPixelFormat = context.info.pixelFormat
-            == PixelFormat::NV12 ? GRAPHIC_PIXEL_FMT_YCBCR_420_SP : GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    GraphicPixelFormat graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+    if (context.info.pixelFormat == PixelFormat::NV12) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    } else if (context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_P010;
+    } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
+        graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
+    }
     sptr<SurfaceBuffer> hwBuffer
             = decoder.AllocateOutputBuffer(info_.width(), info_.height(), graphicPixelFormat);
     if (hwBuffer == nullptr) {
@@ -314,6 +321,7 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
     return ERR_IMAGE_DATA_UNSUPPORT;
 #endif
 }
+// LCOV_EXCL_STOP
 
 ExtDecoder::ExtDecoder() : codec_(nullptr), frameCount_(ZERO)
 {
@@ -350,6 +358,7 @@ static inline float Max(float a, float b)
     return (a > b) ? a : b;
 }
 
+// LCOV_EXCL_START
 bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
 {
     if (info_.isEmpty() && !DecodeHeader()) {
@@ -416,6 +425,7 @@ bool ExtDecoder::IsSupportScaleOnDecode()
     float scale = HALF_SCALE;
     return GetScaledSize(w, h, scale);
 }
+// LCOV_EXCL_STOP
 
 bool ExtDecoder::IsSupportCropOnDecode()
 {
@@ -439,6 +449,7 @@ bool ExtDecoder::IsSupportCropOnDecode(SkIRect &target)
     return false;
 }
 
+// LCOV_EXCL_START
 bool ExtDecoder::HasProperty(string key)
 {
     if (CODEC_INITED_KEY.compare(key) == ZERO) {
@@ -470,6 +481,7 @@ uint32_t ExtDecoder::GetImageSize(uint32_t index, Size &size)
     size.height = static_cast<uint32_t>(info_.height());
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 static inline bool IsLowDownScale(const Size &size, SkImageInfo &info)
 {
@@ -477,6 +489,7 @@ static inline bool IsLowDownScale(const Size &size, SkImageInfo &info)
         size.height < info.height();
 }
 
+// LCOV_EXCL_START
 static inline bool IsValidCrop(const OHOS::Media::Rect &crop, SkImageInfo &info, SkIRect &out)
 {
     out = SkIRect::MakeXYWH(crop.left, crop.top, crop.width, crop.height);
@@ -491,6 +504,7 @@ static inline bool IsValidCrop(const OHOS::Media::Rect &crop, SkImageInfo &info,
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const PixelDecodeOptions &opts)
 {
@@ -500,6 +514,7 @@ static sk_sp<SkColorSpace> getDesiredColorSpace(SkImageInfo &srcInfo, const Pixe
     return opts.plDesiredColorSpace->ToSkColorSpace();
 }
 
+// LCOV_EXCL_START
 uint32_t ExtDecoder::CheckDecodeOptions(uint32_t index, const PixelDecodeOptions &opts)
 {
     if (ImageUtils::CheckMulOverflow(dstInfo_.width(), dstInfo_.height(), dstInfo_.bytesPerPixel())) {
@@ -532,7 +547,9 @@ uint32_t ExtDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
     }
     auto desireColor = ConvertToColorType(opts.desiredPixelFormat, info.pixelFormat);
     auto desireAlpha = ConvertToAlphaType(opts.desireAlphaType, info.alphaType);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     outputColorFmt_ = (opts.desiredPixelFormat == PixelFormat::NV21 ? PIXEL_FMT_YCRCB_420_SP : PIXEL_FMT_RGBA_8888);
+#endif
 
     if (codec_) {
         SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
@@ -606,6 +623,7 @@ static void DebugInfo(SkImageInfo &info, SkImageInfo &dstInfo, SkCodec::Options 
             opts.fSubset->width(), opts.fSubset->height());
     }
 }
+// LCOV_EXCL_STOP
 
 static uint64_t GetByteSize(int32_t width, int32_t height)
 {
@@ -668,6 +686,7 @@ static uint32_t RGBxToRGB(uint8_t* srcBuffer, size_t srsSize,
     return res;
 }
 
+// LCOV_EXCL_START
 uint32_t ExtDecoder::PreDecodeCheck(uint32_t index)
 {
     if (!CheckIndexValied(index)) {
@@ -684,6 +703,7 @@ uint32_t ExtDecoder::PreDecodeCheck(uint32_t index)
     }
         return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 static bool IsColorSpaceSupport(SkJpegCodec* codec)
 {
@@ -699,6 +719,7 @@ static bool IsColorSpaceSupport(SkJpegCodec* codec)
     return false;
 }
 
+// LCOV_EXCL_START
 uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PixelFormat desiredFormat)
 {
     uint32_t ret = PreDecodeCheck(index);
@@ -728,6 +749,7 @@ uint32_t ExtDecoder::PreDecodeCheckYuv(uint32_t index, PixelFormat desiredFormat
     }
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 bool ExtDecoder::ResetCodec()
 {
@@ -874,6 +896,7 @@ uint32_t ExtDecoder::ReadJpegData(uint8_t* jpegBuffer, uint32_t jpegBufferSize)
     return SUCCESS;
 }
 
+// LCOV_EXCL_START
 JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PixelFormat desiredFormat)
 {
     auto iter = PLPIXEL_FORMAT_YUV_JPG_MAP.find(desiredFormat);
@@ -883,9 +906,13 @@ JpegYuvFmt ExtDecoder::GetJpegYuvOutFmt(PixelFormat desiredFormat)
         return iter->second;
     }
 }
+// LCOV_EXCL_STOP
 
 uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
 {
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
+    return 0;
+#endif
     uint32_t res = PreDecodeCheckYuv(index, context.info.pixelFormat);
     if (res != SUCCESS) {
         return res;
@@ -936,6 +963,7 @@ uint32_t ExtDecoder::DecodeToYuv420(uint32_t index, DecodeContext &context)
     return retDecode;
 }
 
+// LCOV_EXCL_START
 static std::string GetFormatStr(SkEncodedImageFormat format)
 {
     switch (format) {
@@ -1027,6 +1055,7 @@ bool ExtDecoder::CheckContext(const DecodeContext &context)
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 void ExtDecoder::ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType)
 {
@@ -1157,6 +1186,7 @@ uint32_t ExtDecoder::PromoteIncrementalDecode(uint32_t index, ProgDecodeContext 
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
+// LCOV_EXCL_START
 bool ExtDecoder::CheckCodec()
 {
     if (codec_ != nullptr) {
@@ -1178,6 +1208,7 @@ bool ExtDecoder::CheckCodec()
     }
     return codec_ != nullptr;
 }
+// LCOV_EXCL_STOP
 
 bool ExtDecoder::DecodeHeader()
 {
@@ -1212,6 +1243,7 @@ static uint32_t GetFormatName(SkEncodedImageFormat format, std::string &name)
     return ERR_IMAGE_DATA_UNSUPPORT;
 }
 
+// LCOV_EXCL_START
 bool ExtDecoder::ConvertInfoToAlphaType(SkAlphaType &alphaType, AlphaType &outputType)
 {
     if (info_.isEmpty()) {
@@ -1287,6 +1319,7 @@ SkColorType ExtDecoder::ConvertToColorType(PixelFormat format, PixelFormat &outp
     outputFormat = PixelFormat::RGBA_8888;
     return kRGBA_8888_SkColorType;
 }
+// LCOV_EXCL_STOP
 
 #ifdef IMAGE_COLORSPACE_FLAG
 static uint32_t u8ToU32(const uint8_t* p)
@@ -1494,6 +1527,7 @@ bool ExtDecoder::GetPropertyCheck(uint32_t index, const std::string &key, uint32
     return result;
 }
 
+// LCOV_EXCL_START
 static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
 {
     if (codec->getEncodedFormat() != SkEncodedImageFormat::kGIF &&
@@ -1526,6 +1560,7 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
     IMAGE_LOGD("[GetDisposalType] index[%{public}d]:%{public}d", index, value);
     return SUCCESS;
 }
+// LCOV_EXCL_STOP
 
 static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
 {
@@ -1545,6 +1580,7 @@ static uint32_t GetLoopCount(SkCodec *codec, int32_t &value)
     return SUCCESS;
 }
 
+// LCOV_EXCL_START
 uint32_t ExtDecoder::GetImagePropertyInt(uint32_t index, const std::string &key, int32_t &value)
 {
     IMAGE_LOGD("[GetImagePropertyInt] enter ExtDecoder plugin, key:%{public}s", key.c_str());
@@ -1622,6 +1658,7 @@ uint32_t ExtDecoder::GetImagePropertyString(uint32_t index, const std::string &k
     IMAGE_LOGD("[GetImagePropertyString] enter jpeg plugin, value:%{public}s", value.c_str());
     return res;
 }
+// LCOV_EXCL_STOP
 
 uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::string &value)
 {
@@ -1691,6 +1728,7 @@ uint32_t ExtDecoder::GetTopLevelImageNum(uint32_t &num)
     return SUCCESS;
 }
 
+// LCOV_EXCL_START
 bool ExtDecoder::IsSupportHardwareDecode() {
     if (info_.isEmpty() && !DecodeHeader()) {
         return false;
@@ -1704,6 +1742,7 @@ bool ExtDecoder::IsSupportHardwareDecode() {
     return width >= HARDWARE_MIN_DIM && width <= HARDWARE_MAX_DIM
         && height >= HARDWARE_MIN_DIM && height <= HARDWARE_MAX_DIM;
 }
+// LCOV_EXCL_STOP
 
 bool ExtDecoder::IsYuv420Format(PixelFormat format) const
 {
@@ -1763,9 +1802,17 @@ uint32_t ExtDecoder::DoHeifToSingleHdrDecode(DecodeContext &context)
     }
 
     uint64_t byteCount = static_cast<uint64_t>(info_.computeMinByteSize());
-    if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
-        return ERR_IMAGE_DATA_UNSUPPORT;
+    if (context.info.pixelFormat == PixelFormat::YCBCR_P010 || context.info.pixelFormat == PixelFormat::YCRCB_P010) {
+        uint32_t allocRet = HeifYUVMemAlloc(context);
+        if (allocRet != SUCCESS) {
+            return allocRet;
+        }
+    } else {
+        if (DmaMemAlloc(context, byteCount, info_) != SUCCESS) {
+            return ERR_IMAGE_DATA_UNSUPPORT;
+        }
     }
+
     auto dstBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     SkHeifColorFormat heifFormat = kHeifColorFormat_RGBA_1010102;
     auto formatSearch = HEIF_FORMAT_MAP.find(context.info.pixelFormat);

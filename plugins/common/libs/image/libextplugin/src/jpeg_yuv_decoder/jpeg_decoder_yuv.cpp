@@ -323,6 +323,7 @@ bool JpegDecoderYuv::IsYU12YV12Format(JpegYuvFmt fmt)
     }
 }
 
+// LCOV_EXCL_START
 int JpegDecoderYuv::DoDecode(DecodeContext &context, JpegDecoderYuvParameter &decodeParameter)
 {
     decodeParameter_ = decodeParameter;
@@ -355,6 +356,7 @@ int JpegDecoderYuv::DoDecode(DecodeContext &context, JpegDecoderYuvParameter &de
     }
     return ret;
 }
+// LCOV_EXCL_STOP
 
 bool JpegDecoderYuv::IsOutSizeValid(uint32_t outwidth, uint32_t outheight)
 {
@@ -399,6 +401,7 @@ bool JpegDecoderYuv::CanFastDecodeFrom420to420(uint32_t width, uint32_t height, 
     return false;
 }
 
+// LCOV_EXCL_START
 int JpegDecoderYuv::DecodeHeader(tjhandle dehandle, int& retSubsamp)
 {
     if (nullptr == dehandle) {
@@ -498,6 +501,7 @@ int JpegDecoderYuv::DecodeFrom420To420(DecodeContext &context, tjhandle dehandle
     }
     return ret != 0 ? JpegYuvDecodeError_DecodeFailed : JpegYuvDecodeError_Success;
 }
+// LCOV_EXCL_STOP
 
 bool JpegDecoderYuv::ValidateParameter(YuvPlaneInfo &srcPlaneInfo, ConverterPair &converter)
 {

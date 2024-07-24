@@ -62,6 +62,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetPathName(path);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPath success");
         return nativeImage->GetID();
@@ -90,6 +95,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetPathName(path);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByPathWithOption success");
         return nativeImage->GetID();
@@ -104,6 +114,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetFd(fd);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByFd success");
         return nativeImage->GetID();
@@ -119,6 +134,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetFd(fd);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByFdWithOption success");
         return nativeImage->GetID();
@@ -133,6 +153,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetBuffer(data, size);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByBuffer success");
         return nativeImage->GetID();
@@ -149,6 +174,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         nativeImage->SetBuffer(data, size);
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByBufferWithOption success");
         return nativeImage->GetID();
@@ -165,6 +195,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(ptr_));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateImageSourceByRawFile success");
         return nativeImage->GetID();
     }
@@ -178,6 +213,11 @@ extern "C"
             return INIT_FAILED;
         }
         auto nativeImage = FFIData::Create<ImageSourceImpl>(move(std::get<0>(ptr)), move(std::get<1>(ptr)));
+        if (!nativeImage) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         IMAGE_LOGD("[ImageSource] FfiOHOSCreateIncrementalSource success");
         
         return nativeImage->GetID();
@@ -482,9 +522,13 @@ extern "C"
         if (!ptr_) {
             return INIT_FAILED;
         }
-        auto nativeImage = FFIData::Create<PixelMapImpl>(move(ptr_));
+        auto native = FFIData::Create<PixelMapImpl>(move(ptr_));
+        if (!native) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            return INIT_FAILED;
+        }
         IMAGE_LOGD("[PixelMap] FfiOHOSCreatePixelMap success");
-        return nativeImage->GetID();
+        return native->GetID();
     }
 
     uint32_t FfiOHOSPixelMapRelease(int64_t id)
@@ -524,10 +568,15 @@ extern "C"
             IMAGE_LOGE("[PixelMap] tmpPixelMap is nullptr!");
             return 0;
         }
-        auto nativeImage = FFIData::Create<PixelMapImpl>(move(tmpPixelMap));
+        auto native = FFIData::Create<PixelMapImpl>(move(tmpPixelMap));
+        if (!native) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         IMAGE_LOGD("[PixelMap] FfiOHOSCreateAlphaPixelMap success");
         *errCode = SUCCESS_CODE;
-        return nativeImage->GetID();
+        return native->GetID();
     }
 
     uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t *dst)
@@ -798,6 +847,11 @@ extern "C"
         }
         auto native = FFIData::Create<ColorManager::CjColorManager>(colorSpace);
         if (!native) {
+            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
+        if (!native) {
             *errCode = ERR_IMAGE_INIT_ABNORMAL;
             return 0;
         }
@@ -996,6 +1050,9 @@ extern "C"
     int64_t FFiOHOSImagePackerConstructor()
     {
         auto ret = FFIData::Create<ImagePackerImpl>();
+        if (!ret) {
+            return INIT_FAILED;
+        }
         return ret->GetID();
     }
 
@@ -1183,6 +1240,9 @@ extern "C"
     int64_t FFiOHOSImageCreatorConstructor(int32_t width, int32_t height, int32_t format, int32_t capacity)
     {
         auto ret = FFIData::Create<ImageCreatorImpl>(width, height, format, capacity);
+        if (!ret) {
+            return INIT_FAILED;
+        }
         return ret->GetID();
     }
 
@@ -1248,20 +1308,24 @@ extern "C"
         auto instance = FFIData::GetData<ImageCreatorImpl>(id);
         if (!instance) {
             *errCode = ERR_IMAGE_INIT_ABNORMAL;
-            return -1;
+            return INIT_FAILED;
         }
         
         std::shared_ptr<ImageCreator> imageCreator = instance->GetImageCreator();
         if (!imageCreator) {
             *errCode = ERR_IMAGE_INIT_ABNORMAL;
-            return -1;
+            return INIT_FAILED;
         }
         std::shared_ptr<NativeImage> nativeImageRes = imageCreator->DequeueNativeImage();
         if (!nativeImageRes) {
             *errCode = ERR_IMAGE_INIT_ABNORMAL;
-            return -1;
+            return INIT_FAILED;
         }
         auto ret = FFIData::Create<ImageImpl>(nativeImageRes);
+        if (!ret) {
+            *errCode = ERR_IMAGE_INIT_ABNORMAL;
+            return INIT_FAILED;
+        }
         *errCode = SUCCESS_CODE;
         return ret->GetID();
     }

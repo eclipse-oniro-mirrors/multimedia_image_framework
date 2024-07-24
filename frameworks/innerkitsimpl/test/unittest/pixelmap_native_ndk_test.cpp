@@ -318,6 +318,23 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Scale, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_ScaleWithAntiAliasing
+ * @tc.desc: OH_PixelmapNative_ScaleWithAntiAliasing
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ScaleWithAntiAliasing, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ScaleWithAntiAliasing start";
+    OH_PixelmapNative *pixelMap = nullptr;
+    float x = 0;
+    float y = 0;
+    Image_ErrorCode ret = OH_PixelmapNative_ScaleWithAntiAliasing(pixelMap, x, y,
+        OH_PixelmapNative_AntiAliasingLevel::OH_PixelmapNative_AntiAliasing_NONE);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ScaleWithAntiAliasing end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_Translate
  * @tc.desc: OH_PixelmapNative_Translate
  * @tc.type: FUNC

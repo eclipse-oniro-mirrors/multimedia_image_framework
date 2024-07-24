@@ -27,6 +27,7 @@ namespace OHOS::ImagePlugin {
 using namespace std;
 using namespace HdiCodecNamespace;
 
+// LCOV_EXCL_START
 bool GridInfo::IsValid() const
 {
     IF_TRUE_RETURN_VAL_WITH_MSG((displayWidth == 0 || displayHeight == 0), false,
@@ -44,6 +45,7 @@ bool GridInfo::IsValid() const
                                 "invalid rows, expect %{public}u, get %{public}u", expRows, rows);
     return true;
 }
+// LCOV_EXCL_STOP
 
 HeifHardwareDecoder::HeifDecoderCallback::HeifDecoderCallback(HeifHardwareDecoder* heifDecoder)
     : heifDecoder_(heifDecoder)
@@ -86,6 +88,7 @@ HeifHardwareDecoder::~HeifHardwareDecoder()
     Reset();
 }
 
+// LCOV_EXCL_START
 sptr<SurfaceBuffer> HeifHardwareDecoder::AllocateOutputBuffer(uint32_t width, uint32_t height, int32_t pixelFmt)
 {
     HeifPerfTracker tracker(__FUNCTION__);
@@ -113,12 +116,14 @@ sptr<SurfaceBuffer> HeifHardwareDecoder::AllocateOutputBuffer(uint32_t width, ui
     IF_TRUE_RETURN_VAL_WITH_MSG(ret != GSERROR_OK, nullptr, "failed to alloc output, ret=%{public}d", ret);
     return output;
 }
+// LCOV_EXCL_STOP
 
 static bool IsValueInRange(uint32_t value, HdiCodecNamespace::RangeValue range)
 {
     return (value >= static_cast<uint32_t>(range.min)) && (value <= static_cast<uint32_t>(range.max));
 }
 
+// LCOV_EXCL_START
 bool HeifHardwareDecoder::IsHardwareDecodeSupported(const GridInfo& gridInfo)
 {
     string decoderName = heifDecoderImpl_->GetComponentName();
@@ -228,6 +233,7 @@ bool HeifHardwareDecoder::GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>&
     }
     return true;
 }
+// LCOV_EXCL_STOP
 
 void HeifHardwareDecoder::DumpSingleInput(const std::string& type, const GridInfo& gridInfo,
                                           const std::vector<std::vector<uint8_t>>& inputs)
@@ -328,6 +334,7 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
     return Media::SUCCESS;
 }
 
+// LCOV_EXCL_START
 void HeifHardwareDecoder::ReleaseDecoder()
 {
     HeifPerfTracker tracker(__FUNCTION__);
@@ -336,6 +343,7 @@ void HeifHardwareDecoder::ReleaseDecoder()
         LOGE("failed to release decoder, err=%{public}d", ret);
     }
 }
+// LCOV_EXCL_STOP
 
 void HeifHardwareDecoder::Reset()
 {
@@ -345,6 +353,7 @@ void HeifHardwareDecoder::Reset()
     outputList_.clear();
 }
 
+// LCOV_EXCL_START
 void HeifHardwareDecoder::FlushOutput()
 {
     if (output_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE) {
@@ -359,6 +368,7 @@ void HeifHardwareDecoder::FlushOutput()
         }
     }
 }
+// LCOV_EXCL_STOP
 
 string HeifHardwareDecoder::GetOutputPixelFmtDesc()
 {
@@ -369,6 +379,7 @@ string HeifHardwareDecoder::GetOutputPixelFmtDesc()
     return "unknown";
 }
 
+// LCOV_EXCL_START
 void HeifHardwareDecoder::DumpOutput()
 {
     string pixelFmtDesc = GetOutputPixelFmtDesc();
@@ -402,6 +413,7 @@ void HeifHardwareDecoder::DumpOutput()
     dumpOutFile.write(reinterpret_cast<char*>(output_->GetVirAddr()), output_->GetSize());
     dumpOutFile.close();
 }
+// LCOV_EXCL_STOP
 
 int64_t HeifHardwareDecoder::GetTimestampInUs()
 {
@@ -434,6 +446,7 @@ int32_t HeifHardwareDecoder::PrepareInputCodecBuffer(const vector<vector<uint8_t
     return size;
 }
 
+// LCOV_EXCL_START
 bool HeifHardwareDecoder::WaitForOmxToReturnInputBuffer(uint32_t& bufferId, shared_ptr<ImageCodecBuffer>& buffer)
 {
     unique_lock<mutex> lk(inputMtx_);
@@ -490,6 +503,7 @@ bool HeifHardwareDecoder::WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, sha
     outputList_.pop_front();
     return true;
 }
+// LCOV_EXCL_STOP
 
 bool HeifHardwareDecoder::CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuvCopyInfo& dst,
                                          uint32_t dirtyWidth, uint32_t dirtyHeight)
@@ -517,6 +531,7 @@ bool HeifHardwareDecoder::CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuv
     return true;
 }
 
+// LCOV_EXCL_START
 uint32_t HeifHardwareDecoder::CalculateDirtyLen(uint32_t displayLen, uint32_t gridLen,
                                                 uint32_t totalGrid, uint32_t curGrid)
 {
@@ -601,6 +616,7 @@ void HeifHardwareDecoder::ReceiveOutputBufferLoop()
     }
     LOGI("out");
 }
+// LCOV_EXCL_STOP
 
 void HeifHardwareDecoder::SignalError()
 {

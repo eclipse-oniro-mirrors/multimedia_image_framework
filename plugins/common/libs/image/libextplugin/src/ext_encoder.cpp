@@ -325,6 +325,8 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
         return DoHardWareEncode(skStream);
     }
+    IMAGE_LOGD("ExtEncoder::DoEncode format: %{public}d, quality: %{public}d", static_cast<int>(skFormat),
+        opts_.quality);
     if (!SkEncodeImage(skStream, src, skFormat, opts_.quality)) {
         IMAGE_LOGE("Failed to encode image without exif data");
         ReportEncodeFault(imageInfo.size.width, imageInfo.size.height, opts_.format, "Failed to encode image");

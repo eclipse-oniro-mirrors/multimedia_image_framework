@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define FFI_EXPORT __attribute__((visibility("default")))
 
 extern "C" {
 FFI_EXPORT int FfiOHOSCreateImageSourceByPath = 0;

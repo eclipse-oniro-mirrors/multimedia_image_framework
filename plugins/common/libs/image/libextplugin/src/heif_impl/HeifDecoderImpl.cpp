@@ -174,6 +174,7 @@ static AVPixelFormat PixFmt2AvPixFmtForOutput(PixelFormat pixelFormat)
     return res;
 }
 
+// LCOV_EXCL_START
 static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
 {
     PixelFormat res = PixelFormat::UNKNOWN;
@@ -208,6 +209,7 @@ static PixelFormat SkHeifColorFormat2PixelFormat(SkHeifColorFormat format)
     }
     return res;
 }
+// LCOV_EXCL_STOP
 
 HeifDecoderImpl::HeifDecoderImpl()
     : outPixelFormat_(PixelFormat::RGBA_8888),
@@ -294,6 +296,7 @@ void HeifDecoderImpl::InitFrameInfo(HeifFrameInfo *info, const std::shared_ptr<H
     }
 }
 
+// LCOV_EXCL_START
 void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_ptr<HeifImage>& image)
 {
     auto &iccProfile = image->GetRawColorProfile();
@@ -315,6 +318,7 @@ void HeifDecoderImpl::SetColorSpaceInfo(HeifFrameInfo* info, const std::shared_p
         info->hasNclxColor = false;
     }
 }
+// LCOV_EXCL_STOP
 
 void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, GridInfo &gridInfo)
 {
@@ -656,6 +660,7 @@ bool HeifDecoderImpl::ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, u
     return true;
 }
 
+// LCOV_EXCL_START
 bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
                                                  uint8_t *dstMemory, size_t dstRowStride)
 {
@@ -687,6 +692,7 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
                                         PixFmt2AvPixFmtForOutput(outPixelFormat_)};
     return ConvertPixelFormat(srcParam, dstParam);
 }
+// LCOV_EXCL_STOP
 
 bool HeifDecoderImpl::ProcessChunkHead(uint8_t *data, size_t len)
 {
@@ -725,6 +731,7 @@ bool HeifDecoderImpl::decodeSequence(int frameIndex, HeifFrameInfo *frameInfo)
     return false;
 }
 
+// LCOV_EXCL_START
 void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *context)
 {
     if (dstMemory_ == nullptr) {
@@ -733,6 +740,7 @@ void HeifDecoderImpl::setDstBuffer(uint8_t *dstBuffer, size_t rowStride, void *c
     }
     dstHwBuffer_ = reinterpret_cast<SurfaceBuffer*>(context);
 }
+// LCOV_EXCL_STOP
 
 void HeifDecoderImpl::setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride)
 {

@@ -1195,7 +1195,7 @@ static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
         return false;
     }
     ImageInfo tmpInfo = srcInfo;
-    tmpInfo.pixelFormat = PixelFormat::RGBA_F16;
+    tmpInfo.pixelFormat = PixelFormat::RGBA_U16;
     tmpInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     Position pos;
     if (!PixelConvertAdapter::WritePixelsConvert(tmpPixels, PixelMap::GetRGBxRowDataSize(tmpInfo), tmpInfo,
@@ -1214,7 +1214,7 @@ static bool ConvertRGBA1010102ToYUV(const void *srcPixels, ImageInfo srcInfo,
     void *dstPixels, ImageInfo dstInfo)
 {
     ImageInfo tmpInfo = srcInfo;
-    tmpInfo.pixelFormat = PixelFormat::RGBA_F16;
+    tmpInfo.pixelFormat = PixelFormat::RGBA_U16;
     int tmpPixelsLen = PixelMap::GetRGBxByteCount(tmpInfo);
     if (tmpPixelsLen <= 0) {
         IMAGE_LOGE("[PixelMap]Convert: Get tmp pixels length failed!");
@@ -1510,11 +1510,12 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
         dstFFmpegInfo.alignSize);
 }
 
-int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
-    void *dstPixels, const ImageInfo &dstInfo)
+int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
+    const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length invalid.");
+    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0 ||
+        (srcRowStride != 0 && srcRowStride < srcInfo.size.width)) {
+        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or src row stride invalid.");
         return -1;
     }
     if (((srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) &&
@@ -1532,8 +1533,9 @@ int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLeng
         return ConvertToP010(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
     }
     Position pos;
-    if (!PixelConvertAdapter::WritePixelsConvert(srcPixels, PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo,
-        dstPixels, pos, PixelMap::GetRGBxRowDataSize(dstInfo), dstInfo)) {
+    if (!PixelConvertAdapter::WritePixelsConvert(srcPixels,
+        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(srcInfo) : srcRowStride, srcInfo, dstPixels, pos,
+        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(dstInfo) : srcRowStride, dstInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: PixelsConvert: pixel convert in adapter failed.");
         return -1;
     }
