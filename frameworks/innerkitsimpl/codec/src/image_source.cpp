@@ -721,7 +721,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     }
 
     context.info.pixelFormat = plInfo.pixelFormat;
-    ImageHdrType hdrType = IsHdrImage() ? sourceHdrType_ : ImageHdrType::SDR;
+    ImageHdrType hdrType = sourceHdrType_;
     if (opts_.desiredDynamicRange == DecodeDynamicRange::SDR && !IsSingleHdrImage(hdrType)) {
         // If the image is a single-layer HDR, it needs to be decoded into HDR first and then converted into SDR.
         hdrType = ImageHdrType::SDR;
@@ -778,6 +778,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+    ParseHdrType();
 #ifdef IMAGE_QOS_ENABLE
     if (IsSupportSize(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
@@ -1694,16 +1695,31 @@ bool ImageSource::IsStreamCompleted()
     return sourceStreamPtr_->IsStreamCompleted();
 }
 
+bool ImageSource::ParseHdrType()
+{
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    uint32_t ret = SUCCESS;
+    auto iter = GetValidImageStatus(0, ret);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsHdrImage, get valid image status fail, ret:%{public}u.", ret);
+        return false;
+    }
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsHdrImage ,get decoder failed");
+        return false;
+    }
+    sourceHdrType_ = mainDecoder_->CheckHdrType();
+    return true;
+}
+
 bool ImageSource::IsHdrImage()
 {
     if (sourceHdrType_ != ImageHdrType::UNKNOWN) {
         return sourceHdrType_ > ImageHdrType::SDR;
     }
-
-    if (InitMainDecoder() != SUCCESS) {
+    if (!ParseHdrType()) {
         return false;
     }
-    sourceHdrType_ = mainDecoder_->CheckHdrType();
     return sourceHdrType_ > ImageHdrType::SDR;
 }
 
@@ -2213,7 +2229,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         plOptions.desiredPixelFormat = opts.desiredPixelFormat;
     }
 
-    if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && IsHdrImage()) ||
+    if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && (sourceHdrType_ > ImageHdrType::SDR)) ||
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
@@ -3325,6 +3341,7 @@ DecodeContext ImageSource::HandleDualHdrImage(ImageHdrType decodedHdrType, Image
         hdrContext.outInfo.size = hdrContext.info.size;
         return hdrContext;
     }
+    context.hdrType = ImageHdrType::SDR;
     return context;
 }
 
