@@ -420,7 +420,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     int32_t dstRowStride = 0;
     AllocatorType allocatorType = opts.useDMA && ImageUtils::IsSupportDMA(dstImageInfo.size, dstImageInfo.pixelFormat) ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
-    erroCode = AllocPixelMapMemory(dstMemory, dstImageInfo, allocatorType, dstRowStride);
+    errorCode = AllocPixelMapMemory(dstMemory, dstImageInfo, allocatorType, dstRowStride);
     if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
