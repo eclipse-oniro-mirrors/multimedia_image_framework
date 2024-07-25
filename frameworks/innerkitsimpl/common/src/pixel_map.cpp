@@ -377,6 +377,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 {
     int offset = info.offset_;
     if (!CheckParams(colors, colorLength, offset, info.width_, opts)) {
+        errorCode = IMAGE_RESULT_BAD_PARAMETER;
         return nullptr;
     }
     unique_ptr<PixelMap> dstPixelMap;
@@ -400,25 +401,45 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
-    int fd = 0;
-    uint32_t bufferSize = dstPixelMap->GetByteCount();
-    void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
-    if (dstPixels == nullptr) {
-        IMAGE_LOGE("[PixelMap]Create: allocate memory size %{public}u fail", bufferSize);
-        errorCode = IMAGE_RESULT_ERR_SHAMEM_NOT_EXIST;
+    
+    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * dstImageInfo.size.height *
+        ImageUtils::GetPixelBytes(dstPixelFormat);
+    if (bufferSize > UINT_MAX) {
+        IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
+            dstImageInfo.size.width, dstImageInfo.size.height);
+        errorCode = IMAGE_RESULT_BAD_PARAMETER;
         return nullptr;
     }
+
+    MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstPixelFormat};
+    AllocatorType allocatorType = opts.useDMA && ImageUtils::IsSupportDMA(dstImageInfo.size, dstPixelFormat) ?
+        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    auto dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
+        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+        return nullptr;
+    }
+
+    int32_t dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstPixelFormat);
+    if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        dstRowStride = sbBuffer->GetStride();
+    }
+
     int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset), colorLength,
-                                                    opts.rowStride, srcImageInfo, dstPixels, dstImageInfo);
+        opts.srcRowStride, srcImageInfo, dstMemory->data.data, dstRowStride, dstImageInfo,
+        dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
         IMAGE_LOGE("[PixelMap]Create: pixel convert failed.");
-        ReleaseBuffer(AllocatorType::SHARE_MEM_ALLOC, fd, bufferSize, &dstPixels);
-        dstPixels = nullptr;
+        dstMemory->Release();
         errorCode = IMAGE_RESULT_THIRDPART_SKIA_ERROR;
         return nullptr;
     }
+
     dstPixelMap->SetEditable(opts.editable);
-    MakePixelMap(dstPixels, fd, dstPixelMap);
+    dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     SetYUVDataInfoToPixelMap(dstPixelMap);
     return dstPixelMap;
@@ -495,8 +516,9 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
         IMAGE_LOGE("stride %{public}d is out of range", width);
         return false;
     }
-    if (opts.rowStride != 0 && opts.rowStride < dstWidth) {
-        IMAGE_LOGE("row stride %{public}d must be >= width %{public}d", opts.rowStride, dstWidth);
+    if (opts.srcRowStride != 0 && opts.srcRowStride < width * ImageUtils::GetPixelBytes(opts.srcPixelFormat)) {
+        IMAGE_LOGE("row stride %{public}d must be >= width (%{public}d) * row bytes (%{public}d)",
+            opts.srcRowStride, width, ImageUtils::GetPixelBytes(opts.srcPixelFormat));
         return false;
     }
     int64_t lastLine = static_cast<int64_t>(dstHeight - 1) * width + offset;

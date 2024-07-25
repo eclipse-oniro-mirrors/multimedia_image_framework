@@ -110,7 +110,8 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     info.editable = args->createOptions.editable != NUM_0;
     info.pixelFormat = ParsePixelForamt(args->createOptions.pixelFormat);
     info.scaleMode = ParseScaleMode(args->createOptions.scaleMode);
-    info.rowStride = args->rowStride;
+    info.srcRowStride = args->rowStride;
+    info.useDMA = args->useDMA;
     info.size.height = static_cast<int32_t>(args->createOptions.height);
     info.size.width = static_cast<int32_t>(args->createOptions.width);
 

@@ -1511,11 +1511,12 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
 }
 
 int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
-    const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo)
+    const ImageInfo &srcInfo, void *dstPixels, const int32_t dstRowStride, const ImageInfo &dstInfo, bool useDMA)
 {
     if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0 ||
-        (srcRowStride != 0 && srcRowStride < srcInfo.size.width)) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or src row stride invalid.");
+        srcRowStride < srcInfo.size.width * ImageUtils::GetPixelBytes(srcInfo.pixelFormat) ||
+        dstRowStride < dstInfo.size.width * ImageUtils::GetPixelBytes(dstInfo.pixelFormat)) {
+        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or row stride invalid.");
         return -1;
     }
     if (((srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) &&
@@ -1534,8 +1535,8 @@ int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLeng
     }
     Position pos;
     if (!PixelConvertAdapter::WritePixelsConvert(srcPixels,
-        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(srcInfo) : srcRowStride, srcInfo, dstPixels, pos,
-        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(dstInfo) : srcRowStride, dstInfo)) {
+        useDMA == 0 ? srcRowStride : PixelMap::GetRGBxRowDataSize(srcInfo), srcInfo, dstPixels, pos,
+        useDMA == 0 ? dstRowStride : PixelMap::GetRGBxRowDataSize(dstInfo), dstInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: PixelsConvert: pixel convert in adapter failed.");
         return -1;
     }

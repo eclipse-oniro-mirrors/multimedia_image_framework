@@ -183,7 +183,7 @@ public:
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
 
     static int32_t PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
-        const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo);
+        const ImageInfo &srcInfo, void *dstPixels, const int32_t dstRowStride, const ImageInfo &dstInfo, bool useDMA);
 
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
