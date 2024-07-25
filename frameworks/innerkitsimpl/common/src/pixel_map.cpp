@@ -404,12 +404,10 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     if (info.flag_) {
         format = ((opts.srcPixelFormat == PixelFormat::UNKNOWN) ? PixelFormat::BGRA_8888 : opts.srcPixelFormat);
     }
-    ImageInfo srcImageInfo =
-        MakeImageInfo(info.width_, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    PixelFormat dstPixelFormat =
-        (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
+    ImageInfo srcImageInfo = MakeImageInfo(info.width_, opts.size.height, format, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    PixelFormat dstPixelFormat = opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat;
     AlphaType dstAlphaType =
-        (opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN) ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
+        opts.alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ? AlphaType::IMAGE_ALPHA_TYPE_PREMUL : opts.alphaType;
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (!CheckPixelmap(dstPixelMap, dstImageInfo)) {
