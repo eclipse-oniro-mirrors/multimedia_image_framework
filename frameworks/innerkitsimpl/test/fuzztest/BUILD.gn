@@ -23,5 +23,6 @@ group("fuzztest") {
     "imagecreateincrementalpixelmap_fuzzer:ImageCreateIncrementalPixelMapFuzzTest",
     "imageframework_fuzzer:ImageFrameworkFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
+    "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
   ]
 }
