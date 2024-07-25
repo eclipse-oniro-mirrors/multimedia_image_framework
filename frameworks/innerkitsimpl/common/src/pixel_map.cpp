@@ -359,6 +359,33 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
     }
 }
 
+static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, const ImageInfo &dstImageInfo,
+    const AllocatorType &allocatorType, int32_t &dstRowStride)
+{
+    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * dstImageInfo.size.height *
+        ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
+    if (bufferSize > UINT_MAX) {
+        IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
+            dstImageInfo.size.width, dstImageInfo.size.height);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
+
+    MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
+    dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
+        return IMAGE_RESULT_MALLOC_ABNORMAL;
+    }
+
+    dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat)
+    if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        dstRowStride = sbBuffer->GetStride();
+    }
+
+    return IMAGE_RESULT_SUCCESS;
+}
+
 // LCOV_EXCL_START
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
@@ -368,6 +395,7 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_BAD_PARAMETER;
         return nullptr;
     }
+
     unique_ptr<PixelMap> dstPixelMap;
     if (!ChoosePixelmap(dstPixelMap, opts.pixelFormat, errorCode)) {
         return nullptr;
@@ -389,30 +417,14 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         errorCode = IMAGE_RESULT_DATA_ABNORMAL;
         return nullptr;
     }
-    
-    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * dstImageInfo.size.height *
-        ImageUtils::GetPixelBytes(dstPixelFormat);
-    if (bufferSize > UINT_MAX) {
-        IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
-            dstImageInfo.size.width, dstImageInfo.size.height);
-        errorCode = IMAGE_RESULT_BAD_PARAMETER;
-        return nullptr;
-    }
 
-    MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstPixelFormat};
-    AllocatorType allocatorType = opts.useDMA && ImageUtils::IsSupportDMA(dstImageInfo.size, dstPixelFormat) ?
+    std::unique_ptr<AbsMemory> dstMemory = nullptr;
+    int32_t dstRowStride = 0;
+    AllocatorType allocatorType = opts.useDMA && ImageUtils::IsSupportDMA(dstImageInfo.size, dstImageInfo.pixelFormat) ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
-    auto dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (dstMemory == nullptr) {
-        IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
-        errorCode = IMAGE_RESULT_MALLOC_ABNORMAL;
+    erroCode = AllocPixelMapMemory(dstMemory, dstImageInfo, allocatorType, dstRowStride);
+    if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
-    }
-
-    int32_t dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstPixelFormat);
-    if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
-        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
-        dstRowStride = sbBuffer->GetStride();
     }
 
     int32_t dstLength = PixelConvert::PixelsConvert(reinterpret_cast<const void *>(colors + offset), colorLength,
