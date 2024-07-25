@@ -151,6 +151,45 @@ void DataBufTest(const uint8_t *data, size_t size)
     dataBuf.Reset();
 }
 
+void MetadataAccessorFuncTest001(std::shared_ptr<MetadataAccessor>& metadataAccessor)
+{
+    if (metadataAccessor == nullptr) {
+        return;
+    }
+    metadataAccessor->Read();
+    auto exifMetadata = metadataAccessor->Get();
+    if (exifMetadata == nullptr) {
+        return;
+    }
+    std::string key = "ImageWidth";
+    exifMetadata->SetValue(key, "500");
+    std::string value;
+    exifMetadata->GetValue(key, value);
+    metadataAccessor->Write();
+    metadataAccessor->Set(exifMetadata);
+    DataBuf inputBuf;
+    metadataAccessor->ReadBlob(inputBuf);
+    metadataAccessor->WriteBlob(inputBuf);
+}
+
+void AccessorTest002(const uint8_t* data, size_t size)
+{
+    std::string pathName = "/data/local/tmp/test1.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
+        close(fd);
+        return;
+    }
+    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
+    std::shared_ptr<MetadataAccessor> metadataAccessor1 = MetadataAccessorFactory::Create(const_cast<uint8_t*>(data),
+        size, mode);
+    MetadataAccessorFuncTest001(metadataAccessor1);
+    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(fd);
+    MetadataAccessorFuncTest001(metadataAccessor2);
+    std::shared_ptr<MetadataAccessor> metadataAccessor3 = MetadataAccessorFactory::Create(pathName);
+    MetadataAccessorFuncTest001(metadataAccessor3);
+    close(fd);
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -159,6 +198,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::Media::DataBufTest(data, size);
-    OHOS::Media::AccessorTest(data, size);
+    OHOS::Media::AccessorTest001(data, size);
+    OHOS::Media::AccessorTest002(data, size);
     return 0;
 }

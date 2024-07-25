@@ -13,11 +13,14 @@
  * limitations under the License.
  */
 
-#include "image_create_image_source_by_data_fuzz.h"
+#include "image_source_fuzz.h"
 
 #define private public
 #include <cstdint>
 #include <string>
+#include <unistd.h>
+#include <fcntl.h>
+#include <fstream>
 
 #include "securec.h"
 #include "image_source.h"
@@ -86,6 +89,92 @@ void CreateImageSourceByDataFuzz(const uint8_t* data, size_t size)
     imagesource->CreatePixelMap(dopts, errorCode);
     imagesource->Reset();
 }
+
+void CreateImageSourceByFDEXFuzz(const uint8_t* data, size_t size)
+{
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    uint32_t offset = 0;
+    uint32_t length = 1;
+    std::string pathName = "/data/local/tmp/test2.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
+        close(fd);
+        return;
+    }
+    auto imagesource = Media::ImageSource::CreateImageSource(fd, offset, length, opts, errorCode);
+    Media ::DecodeOptions dopts;
+    imagesource->CreatePixelMap(dopts, errorCode);
+    close(fd);
+}
+
+void CreateImageSourceByIstreamFuzz(const uint8_t* data, size_t size)
+{
+    std::string pathName = "/data/local/tmp/test1.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != (ssize_t)size) {
+        close(fd);
+        return;
+    }
+    std::unique_ptr<std::istream> is = std::make_unique<std::ifstream>(pathName.c_str());
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    Media ::DecodeOptions dopts;
+    auto imagesource = Media::ImageSource::CreateImageSource(std::move(is), opts, errorCode);
+    if (imagesource != nullptr) {
+        imagesource->CreatePixelMap(dopts, errorCode);
+    }
+    close(fd);
+}
+
+void CreateImageSourceByPathNameFuzz(const uint8_t* data, size_t size)
+{
+    std::string pathName = "/data/local/tmp/test4.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
+        close(fd);
+        return;
+    }
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    Media ::DecodeOptions dopts;
+    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    if (imagesource != nullptr) {
+        imagesource->CreatePixelMap(dopts, errorCode);
+    }
+    close(fd);
+}
+
+void CreateIncrementalPixelMapFuzz(const uint8_t* data, size_t size)
+{
+    std::string pathName = "/data/local/tmp/test5.jpg";
+    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (write(fd, data, size) != (ssize_t)size) {
+        close(fd);
+        return;
+    }
+    Media::SourceOptions opts;
+    uint32_t errorCode;
+    auto imagesource = Media::ImageSource::CreateImageSource(pathName, opts, errorCode);
+    Media ::DecodeOptions dopts;
+    uint32_t index = 1;
+    if (imagesource != nullptr) {
+        imagesource->CreateIncrementalPixelMap(index, dopts, errorCode);
+    }
+    close(fd);
+}
+
+static inline std::string FuzzString(const uint8_t *data, size_t size)
+{
+    return {reinterpret_cast<const char*>(data), size};
+}
+
+void CreateImageSourceByPathname(const uint8_t* data, size_t size)
+{
+    uint32_t errCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(FuzzString(data, size), opts, errCode);
+}
 } // namespace Media
 } // namespace OHOS
 
@@ -94,5 +183,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
     OHOS::Media::CreateImageSourceByDataFuzz(data, size);
+    OHOS::Media::CreateImageSourceByFDEXFuzz(data, size);
+    OHOS::Media::CreateImageSourceByIstreamFuzz(data, size);
+    OHOS::Media::CreateImageSourceByPathNameFuzz(data, size);
+    OHOS::Media::CreateIncrementalPixelMapFuzz(data, size);
+    OHOS::Media::CreateImageSourceByPathname(data, size);
     return 0;
 }

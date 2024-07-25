@@ -14,9 +14,9 @@
 import("//build/test.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-ohos_fuzztest("ImageCreateImageSourceByFdFuzzTest") {
+ohos_fuzztest("ImagePluginFuzzTest") {
   module_out_path = "multimedia_image/image_framework"
-  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagecreateimagesourcebyfd_fuzzer"
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imageplugin_fuzzer"
 
   include_dirs = [
     "./include",
@@ -31,7 +31,7 @@ ohos_fuzztest("ImageCreateImageSourceByFdFuzzTest") {
     "HEIF_HW_DECODE_ENABLE",
   ]
 
-  sources = [ "src/image_create_image_source_by_fd_fuzz.cpp" ]
+  sources = [ "src/image_plugin_fuzz.cpp" ]
 
   deps = [
     "$image_subsystem/interfaces/innerkits:image_native",

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "image_create_image_source_by_fd_fuzz.h"
+#include "image_plugin_fuzz.h"
 
 #define private public
 #include <cstdint>
@@ -21,9 +21,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include "ext_decoder.h"
 #include "image_source.h"
-#include "metadata_accessor_factory.h"
+#include "ext_decoder.h"
 #include "svg_decoder.h"
 
 namespace OHOS {
@@ -112,28 +111,7 @@ void SvgDecoderFuncTest001(int fd)
     imageSource->Reset();
 }
 
-void MetadataAccessorFuncTest001(std::shared_ptr<MetadataAccessor>& metadataAccessor)
-{
-    if (metadataAccessor == nullptr) {
-        return;
-    }
-    metadataAccessor->Read();
-    auto exifMetadata = metadataAccessor->Get();
-    if (exifMetadata == nullptr) {
-        return;
-    }
-    std::string key = "ImageWidth";
-    exifMetadata->SetValue(key, "500");
-    std::string value;
-    exifMetadata->GetValue(key, value);
-    metadataAccessor->Write();
-    metadataAccessor->Set(exifMetadata);
-    DataBuf inputBuf;
-    metadataAccessor->ReadBlob(inputBuf);
-    metadataAccessor->WriteBlob(inputBuf);
-}
-
-void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
+void ImagePluginFuzzTest001(const uint8_t* data, size_t size)
 {
     std::string pathName = "/data/local/tmp/test1.jpg";
     int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
@@ -143,14 +121,6 @@ void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
     }
     ExtDecoderFuncTest001(fd);
     SvgDecoderFuncTest001(fd);
-    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
-    std::shared_ptr<MetadataAccessor> metadataAccessor1 = MetadataAccessorFactory::Create(const_cast<uint8_t*>(data),
-        size, mode);
-    MetadataAccessorFuncTest001(metadataAccessor1);
-    std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(fd);
-    MetadataAccessorFuncTest001(metadataAccessor2);
-    std::shared_ptr<MetadataAccessor> metadataAccessor3 = MetadataAccessorFactory::Create(pathName);
-    MetadataAccessorFuncTest001(metadataAccessor3);
     close(fd);
 }
 } // namespace Media
@@ -160,6 +130,6 @@ void CreateImageSourceByFDFuzz(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     /* Run your code on data */
-    OHOS::Media::CreateImageSourceByFDFuzz(data, size);
+    OHOS::Media::ImagePluginFuzzTest001(data, size);
     return 0;
 }
