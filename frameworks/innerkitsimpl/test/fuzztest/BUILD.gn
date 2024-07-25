@@ -16,8 +16,8 @@ group("fuzztest") {
   deps = [
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
-    "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imageplugin_fuzzer:ImagePluginFuzzTest",
+    "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagesource_fuzzer:ImageSourceFuzzTest",
   ]
 }

@@ -21,23 +21,30 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "convert_utils.h"
 #include "image_source.h"
 #include "ext_decoder.h"
 #include "svg_decoder.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "PLUGIN_FUZZ"
 
 namespace OHOS {
 namespace Media {
 using namespace OHOS::ImagePlugin;
 void ExtDecoderFuncTest001(int fd)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
     SourceOptions srcOpts;
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(fd, srcOpts, errorCode);
     Media::DecodeOptions dopts;
     imageSource->CreatePixelMap(dopts, errorCode);
-
-    imageSource->sourceInfo_.encodedFormat = "image/x-skia";
-    auto extDecoder = static_cast<ExtDecoder*>(imageSource->CreateDecoder(errorCode));
+    auto extDecoder = static_cast<ExtDecoder*>((imageSource->mainDecoder_).get());
     if (extDecoder == nullptr || !extDecoder->DecodeHeader()) {
         return;
     }
@@ -77,10 +84,12 @@ void ExtDecoderFuncTest001(int fd)
     extDecoder->GetMakerImagePropertyString(key, value);
     extDecoder->DoHeifToYuvDecode(context);
     extDecoder->Reset();
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
 void SvgDecoderFuncTest001(int fd)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
     SourceOptions srcOpts;
     uint32_t errorCode;
     auto imageSource = ImageSource::CreateImageSource(fd, srcOpts, errorCode);
@@ -109,14 +118,13 @@ void SvgDecoderFuncTest001(int fd)
     imageSource = ImageSource::CreateImageSource(fd, srcOpts, errorCode);
     imageSource->CreatePixelMapExtended(0, dstOpts, errorCode);
     imageSource->Reset();
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
 void ImagePluginFuzzTest001(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/data/local/tmp/test1.jpg";
-    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
-        close(fd);
+    int fd = ConvertDataToFd(data, size);
+    if (fd < 0) {
         return;
     }
     ExtDecoderFuncTest001(fd);

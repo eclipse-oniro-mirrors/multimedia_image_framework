@@ -21,6 +21,7 @@ ohos_fuzztest("ImagePluginFuzzTest") {
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
@@ -31,7 +32,10 @@ ohos_fuzztest("ImagePluginFuzzTest") {
     "HEIF_HW_DECODE_ENABLE",
   ]
 
-  sources = [ "src/image_plugin_fuzz.cpp" ]
+  sources = [
+    "src/image_plugin_fuzz.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/convert_utils.cpp",
+  ]
 
   deps = [
     "$image_subsystem/interfaces/innerkits:image_native",
@@ -47,6 +51,7 @@ ohos_fuzztest("ImagePluginFuzzTest") {
     "drivers_interface_display:libdisplay_composer_hdi_impl",
     "drivers_interface_display:libdisplay_composer_proxy_1.0",
     "graphic_2d:color_manager",
+    "hilog:libhilog",
     "libexif:libexif",
     "libjpeg-turbo:turbojpeg",
   ]

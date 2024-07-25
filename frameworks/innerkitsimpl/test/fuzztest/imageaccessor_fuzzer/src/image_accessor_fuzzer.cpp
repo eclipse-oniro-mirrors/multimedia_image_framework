@@ -19,30 +19,46 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <unistd.h>
+#include <fcntl.h>
 #include "securec.h"
 
+#include "convert_utils.h"
 #include "metadata_accessor_factory.h"
 #include "dng_exif_metadata_accessor.h"
 #include "heif_exif_metadata_accessor.h"
 #include "jpeg_exif_metadata_accessor.h"
 #include "png_exif_metadata_accessor.h"
 #include "webp_exif_metadata_accessor.h"
+#include "file_metadata_stream.h"
+#include "image_log.h"
+
+#undef LOG_DOMAIN
+#define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
+
+#undef LOG_TAG
+#define LOG_TAG "IMAGE_ACCESSOR_FUZZ"
 
 namespace OHOS {
 namespace Media {
 using namespace std;
-const int IMAGE_HEADER_SIZE = 12;
-const int WEBP_HEADER_OFFSET = 8;
-const int IMAGE_HEIF_HEADER_OFFSET = 4;
-const byte jpegHeader[] = { 0xff, 0xd8, 0xff };
-const byte pngHeader[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
-const byte webpHeader[] = { 0x57, 0x45, 0x42, 0x50 };
-const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
-const byte heifHeader[] = { 0x66, 0x74, 0x79, 0x70 };
-const byte DNG_LITTLE_ENDIAN_HEADER[] = { 0x49, 0x49, 0x2A, 0x00 };
 
-void JpegAccessorTest(std::shared_ptr<JpegExifMetadataAccessor>& metadataAccessor)
+void JpegAccessorTest(const uint8_t *data, size_t size)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
+    int fd = ConvertDataToFd(data, size);
+    if (fd < 0) {
+        return;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return;
+    }
+    if (EncodedFormat::JPEG != MetadataAccessorFactory::GetImageType(stream)) {
+        return;
+    }
+    std::shared_ptr<JpegExifMetadataAccessor> metadataAccessor = std::make_shared<JpegExifMetadataAccessor>(stream);
     metadataAccessor->Read();
     metadataAccessor->Write();
     DataBuf inputBuf;
@@ -51,17 +67,52 @@ void JpegAccessorTest(std::shared_ptr<JpegExifMetadataAccessor>& metadataAccesso
     metadataAccessor->ReadSegmentLength(static_cast<uint8_t>(marker));
     metadataAccessor->ReadNextSegment(static_cast<byte>(marker));
     metadataAccessor->GetInsertPosAndMarkerAPP1();
+
+    close(fd);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void PngAccessorTest(std::shared_ptr<PngExifMetadataAccessor>& metadataAccessor)
+void PngAccessorTest(const uint8_t *data, size_t size)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
+    int fd = ConvertDataToFd(data, size, "image/png");
+    if (fd < 0) {
+        return;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return;
+    }
+    if (EncodedFormat::PNG != MetadataAccessorFactory::GetImageType(stream)) {
+        return;
+    }
+    std::shared_ptr<PngExifMetadataAccessor> metadataAccessor = std::make_shared<PngExifMetadataAccessor>(stream);
     metadataAccessor->IsPngType();
     metadataAccessor->Read();
     metadataAccessor->Write();
+
+    close(fd);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void WebpAccessorTest(std::shared_ptr<WebpExifMetadataAccessor>& metadataAccessor)
+void WebpAccessorTest(const uint8_t *data, size_t size)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
+    int fd = ConvertDataToFd(data, size, "image/webp");
+    if (fd < 0) {
+        return;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return;
+    }
+    if (EncodedFormat::WEBP != MetadataAccessorFactory::GetImageType(stream)) {
+        return;
+    }
+
+    std::shared_ptr<WebpExifMetadataAccessor> metadataAccessor = std::make_shared<WebpExifMetadataAccessor>(stream);
     metadataAccessor->Read();
     metadataAccessor->Write();
     Vp8xAndExifInfo exifFlag = Vp8xAndExifInfo::UNKNOWN;
@@ -70,73 +121,66 @@ void WebpAccessorTest(std::shared_ptr<WebpExifMetadataAccessor>& metadataAccesso
     std::string strChunkId = "000";
     DataBuf chunkData = {};
     metadataAccessor->GetWidthAndHeightFormChunk(strChunkId, chunkData);
+
+    close(fd);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void HeifAccessorTest(std::shared_ptr<HeifExifMetadataAccessor>& metadataAccessor)
+void HeifAccessorTest(const uint8_t *data, size_t size)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
+    int fd = ConvertDataToFd(data, size, "image/heif");
+    if (fd < 0) {
+        return;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return;
+    }
+    if (EncodedFormat::HEIF != MetadataAccessorFactory::GetImageType(stream)) {
+        return;
+    }
+
+    std::shared_ptr<HeifExifMetadataAccessor> metadataAccessor = std::make_shared<HeifExifMetadataAccessor>(stream);
     metadataAccessor->Read();
     metadataAccessor->Write();
+
+    close(fd);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void DngAccessorTest(std::shared_ptr<DngExifMetadataAccessor>& metadataAccessor)
+void DngAccessorTest(const uint8_t *data, size_t size)
 {
+    IMAGE_LOGI("%{public}s IN", __func__);
+    int fd = ConvertDataToFd(data, size, "image/dng");
+    if (fd < 0) {
+        return;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return;
+    }
+    if (EncodedFormat::DNG != MetadataAccessorFactory::GetImageType(stream)) {
+        return;
+    }
+
+    std::shared_ptr<DngExifMetadataAccessor> metadataAccessor = std::make_shared<DngExifMetadataAccessor>(stream);
     metadataAccessor->Read();
     metadataAccessor->Write();
+
+    close(fd);
+    IMAGE_LOGI("%{public}s SUCCESS", __func__);
 }
 
-void AccessorTest(const uint8_t *data, size_t size)
+void AccessorTest001(const uint8_t *data, size_t size)
 {
-    if (size <= IMAGE_HEADER_SIZE) {
-        return;
-    }
-    uint8_t* data_cpy = const_cast<uint8_t*>(data);
-
-    if (EOK != memcpy_s(data_cpy, size, jpegHeader, sizeof(jpegHeader)) == 0) {
-        return;
-    }
-    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
-    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(data_cpy, size, mode);
-    if (EncodedFormat::JPEG == MetadataAccessorFactory::GetImageType(stream)) {
-        std::shared_ptr<JpegExifMetadataAccessor> metadataAccessor = std::make_shared<JpegExifMetadataAccessor>(stream);
-        JpegAccessorTest(metadataAccessor);
-    }
-
-    if (EOK != memcpy_s(data_cpy, size, pngHeader, sizeof(pngHeader)) == 0) {
-        return;
-    }
-    stream = std::make_shared<BufferMetadataStream>(data_cpy, size, mode);
-    if (EncodedFormat::PNG == MetadataAccessorFactory::GetImageType(stream)) {
-        std::shared_ptr<PngExifMetadataAccessor> metadataAccessor = std::make_shared<PngExifMetadataAccessor>(stream);
-        PngAccessorTest(metadataAccessor);
-    }
-
-    if (EOK != memcpy_s(data_cpy, size, riffHeader, sizeof(riffHeader)) == 0 &&
-        EOK != memcpy_s(data_cpy + WEBP_HEADER_OFFSET, size, webpHeader, sizeof(webpHeader))) {
-        return;
-    }
-    stream = std::make_shared<BufferMetadataStream>(data_cpy, size, mode);
-    if (EncodedFormat::WEBP == MetadataAccessorFactory::GetImageType(stream)) {
-        std::shared_ptr<WebpExifMetadataAccessor> metadataAccessor = std::make_shared<WebpExifMetadataAccessor>(stream);
-        WebpAccessorTest(metadataAccessor);
-    }
-
-    if (EOK != memcpy_s(data_cpy + IMAGE_HEIF_HEADER_OFFSET, size, heifHeader, sizeof(heifHeader)) == 0) {
-        return;
-    }
-    stream = std::make_shared<BufferMetadataStream>(data_cpy, size, mode);
-    if (EncodedFormat::HEIF == MetadataAccessorFactory::GetImageType(stream)) {
-        std::shared_ptr<HeifExifMetadataAccessor> metadataAccessor = std::make_shared<HeifExifMetadataAccessor>(stream);
-        HeifAccessorTest(metadataAccessor);
-    }
-
-    if (EOK != memcpy_s(data_cpy, size, DNG_LITTLE_ENDIAN_HEADER, sizeof(DNG_LITTLE_ENDIAN_HEADER)) == 0) {
-        return;
-    }
-    stream = std::make_shared<BufferMetadataStream>(data_cpy, size, mode);
-    if (EncodedFormat::DNG == MetadataAccessorFactory::GetImageType(stream)) {
-        std::shared_ptr<DngExifMetadataAccessor> metadataAccessor = std::make_shared<DngExifMetadataAccessor>(stream);
-        DngAccessorTest(metadataAccessor);
-    }
+    JpegAccessorTest(data, size);
+    PngAccessorTest(data, size);
+    WebpAccessorTest(data, size);
+    HeifAccessorTest(data, size);
+    DngAccessorTest(data, size);
 }
 
 void DataBufTest(const uint8_t *data, size_t size)
@@ -174,10 +218,8 @@ void MetadataAccessorFuncTest001(std::shared_ptr<MetadataAccessor>& metadataAcce
 
 void AccessorTest002(const uint8_t* data, size_t size)
 {
-    std::string pathName = "/data/local/tmp/test1.jpg";
-    int fd = open(pathName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    if (write(fd, data, size) != static_cast<ssize_t>(size)) {
-        close(fd);
+    int fd = ConvertDataToFd(data, size);
+    if (fd < 0) {
         return;
     }
     BufferMetadataStream::MemoryMode mode = BufferMetadataStream::MemoryMode::Dynamic;
@@ -186,8 +228,6 @@ void AccessorTest002(const uint8_t* data, size_t size)
     MetadataAccessorFuncTest001(metadataAccessor1);
     std::shared_ptr<MetadataAccessor> metadataAccessor2 = MetadataAccessorFactory::Create(fd);
     MetadataAccessorFuncTest001(metadataAccessor2);
-    std::shared_ptr<MetadataAccessor> metadataAccessor3 = MetadataAccessorFactory::Create(pathName);
-    MetadataAccessorFuncTest001(metadataAccessor3);
     close(fd);
 }
 } // namespace Media
