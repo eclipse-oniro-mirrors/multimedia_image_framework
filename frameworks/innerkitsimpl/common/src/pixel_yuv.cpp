@@ -233,7 +233,7 @@ uint32_t PixelYuv::crop(const Rect &rect)
         "Trans ImageData", desiredSize, imageInfo_.pixelFormat};
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
-    YUVStrideInfo dstStrides = {rect.width, (rect.width + 1) / NUM_2 * NUM_2};
+    YUVStrideInfo dstStrides = {rect.width, (rect.width + 1) / NUM_2 * NUM_2, 0, rect.width * rect.height};
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("crop CreateMemory failed");
@@ -243,8 +243,17 @@ uint32_t PixelYuv::crop(const Rect &rect)
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC && dstMemory->extend.data != nullptr) {
         auto sb = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
-        auto dstYStride = sb->GetStride();
-        dstStrides = {dstYStride, dstYStride};
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            auto yStride = planes->planes[0].columnStride;
+            auto uvStride = planes->planes[1].columnStride;
+            auto yOffset = planes->planes[0].offset;
+            auto uvOffset = planes->planes[1].offset - 1;
+            dstStrides = {yStride, uvStride, yOffset, uvOffset};
+        }
     }
 #endif
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo_.pixelFormat),
@@ -456,7 +465,7 @@ void PixelYuv::translate(float xAxis, float yAxis)
     uint32_t dstSize = GetImageSize(width, height, format);
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
-    YUVStrideInfo dstStrides = {yuvDataInfo.yStride, yuvDataInfo.uvStride};
+    YUVStrideInfo dstStrides = {yuvDataInfo.yStride, yuvDataInfo.uvStride, yuvDataInfo.yOffset, yuvDataInfo.uvOffset};
     MemoryData memoryData = {nullptr, dstSize, "translate ImageData", {width, height}, imageInfo_.pixelFormat};
     auto dstMemory = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (dstMemory == nullptr) {
@@ -469,8 +478,17 @@ void PixelYuv::translate(float xAxis, float yAxis)
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
         } else {
             auto sb = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
-            auto dstStride = sb->GetStride();
-            dstStrides = {dstStride, dstStride};
+            OH_NativeBuffer_Planes *planes = nullptr;
+            GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+            if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+                IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
+            } else if (planes->planeCount >= NUM_2) {
+                auto yStride = planes->planes[0].columnStride;
+                auto uvStride = planes->planes[1].columnStride;
+                auto yOffset = planes->planes[0].offset;
+                auto uvOffset = planes->planes[1].offset - 1;
+                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+            }
         }
     }
 #endif

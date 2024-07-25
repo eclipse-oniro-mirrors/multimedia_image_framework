@@ -2581,11 +2581,11 @@ void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t heig
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(strides.yStride);
+        yuvDataInfo_.yOffset = strides.yOffset;
         yuvDataInfo_.uvStride = strides.uvStride;
+        yuvDataInfo_.uvOffset = strides.uvOffset;
         yuvDataInfo_.uvWidth = (width + 1) / NUM_2 * NUM_2;
         yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
-        yuvDataInfo_.yOffset = 0;
-        yuvDataInfo_.uvOffset =  yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
     }
 }
 

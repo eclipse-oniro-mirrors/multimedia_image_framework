@@ -355,7 +355,6 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
     IMAGE_LOGD("exif data existing");
 
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
-        // from 'OHOS::ImagePlugin::MetadataWStream' to 'SkWStream *'
         retCode = DoHardWareEncode(&tStream);
         if (retCode != SUCCESS)
         {
@@ -365,10 +364,8 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
     }
     ImageInfo imageInfo;
     pixelmap_->GetImageInfo(imageInfo);
-    //static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,
-    // ImageInfo &imageInfo, PlEncodeOptions &opts)
-    auto exifRet = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, opts_);
-    IMAGE_LOGD("exifRet :%{public}d", exifRet);
+    retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, opts_);
+    IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
     return (retCode == SUCCESS);
 }
 
@@ -411,7 +408,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
     if (IsYuvImage(imageData.info.pixelFormat)) {
         IMAGE_LOGD("YUV format, convert to RGB");
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_4);
-        if (!YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelMap))
+        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelMap) != SUCCESS)
         {
             IMAGE_LOGD("YUV format, convert to RGB fail");
             return ERR_IMAGE_ENCODE_FAILED;
@@ -536,7 +533,7 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
             IMAGE_LOGE("Memory allocate fail");
             return ERR_IMAGE_ENCODE_FAILED;
         }
-        if (!YuvToRgbaSkInfo(imageInfo, info, dstData.get(), pixelmap_))
+        if (YuvToRgbaSkInfo(imageInfo, info, dstData.get(), pixelmap_) != SUCCESS)
         {
             IMAGE_LOGD("YUV format, convert to RGB fail");
             return ERR_IMAGE_ENCODE_FAILED;

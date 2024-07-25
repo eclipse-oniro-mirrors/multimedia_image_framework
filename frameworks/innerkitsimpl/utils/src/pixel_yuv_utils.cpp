@@ -210,8 +210,8 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
 
 static void FillRectFrameInfo(AVFrame *frame, uint8_t *pixels, const Rect &rect, YUVStrideInfo &info)
 {
-    frame->data[0] = pixels;
-    frame->data[1] = pixels + info.yStride * rect.height;
+    frame->data[0] = pixels + info.yOffset;
+    frame->data[1] = pixels + info.uvOffset;
     frame->linesize[0] = info.yStride;
     frame->linesize[1] = info.uvStride;
 }
@@ -723,7 +723,7 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
     rect.width = dstInfo.size.width;
     rect.height = dstInfo.size.height;
     YUVStrideInfo strides;
-    YUVStrideInfo dstStrides = {rect.width, rect.width};
+    YUVStrideInfo dstStrides = {rect.width, rect.width, 0, rect.width * rect.height};
     if (!YuvCrop((uint8_t *)srcPixels, info, static_cast<uint8_t *>(dstPixels), rect, dstStrides)) {
         return false;
     }
