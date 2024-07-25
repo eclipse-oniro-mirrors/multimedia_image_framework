@@ -216,7 +216,7 @@ struct Convert10bitInfo {
     uint32_t srcBytes = 0;
     PixelFormat dstPixelFormat = PixelFormat::UNKNOWN;
     uint32_t dstBytes = 0;
-}
+};
 
 struct YUVStrideInfo {
     uint32_t yStride = 0;

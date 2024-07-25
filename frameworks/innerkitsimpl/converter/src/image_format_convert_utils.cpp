@@ -1125,7 +1125,7 @@ bool ImageFormatConvertUtils::RGBAF16ToNV12(const uint8_t *srcBuffer, const RGBD
     return true;
 }
 
-static bool RGBAToP010SoftDecode(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+static bool RGBAToP010SoftDecode(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                  Convert10bitInfo convertInfo)
 {
     AVPixelFormat srcFormat = findPixelFormat(convertInfo.srcPixelFormat);
@@ -1151,7 +1151,7 @@ static bool RGBAToP010SoftDecode(const uint8_t *srcBuffer, const Size &imageSize
     return true;
 }
 
-bool ImageFormatConvertUtils::RGB565ToNV12P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGB565ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1183,7 +1183,7 @@ bool ImageFormatConvertUtils::RGB565ToNV12P010(const uint8_t *srcBuffer, const S
     return true;
 }
 
-bool ImageFormatConvertUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1232,7 +1232,7 @@ bool ImageFormatConvertUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, const S
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                              size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1264,7 +1264,7 @@ bool ImageFormatConvertUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const Siz
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                              size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1313,7 +1313,7 @@ bool ImageFormatConvertUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const Siz
     return true;
 }
 
-bool ImageFormatConvertUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                              size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1345,7 +1345,7 @@ bool ImageFormatConvertUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const Siz
     return true;
 }
 
-bool ImageFormatConvertUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                              size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1394,7 +1394,7 @@ bool ImageFormatConvertUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const Siz
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBToNV12P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1425,7 +1425,7 @@ bool ImageFormatConvertUtils::RGBToNV12P010(const uint8_t *srcBuffer, const Size
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBToNV21P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1473,7 +1473,7 @@ bool ImageFormatConvertUtils::RGBToNV21P010(const uint8_t *srcBuffer, const Size
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBAF16ToNV12P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBAF16ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                 size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1505,7 +1505,7 @@ bool ImageFormatConvertUtils::RGBAF16ToNV12P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBAF16ToNV21P010(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBAF16ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                 size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1554,7 +1554,7 @@ bool ImageFormatConvertUtils::RGBAF16ToNV21P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-static bool RGBA1010102ToNV12SoftDecode(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer)
+static bool RGBA1010102ToNV12SoftDecode(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer)
 {
     size_t midBufferSize = static_cast<size_t>(imageSize.width * imageSize.height * STRIDES_PER_PLANE);
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
@@ -1605,7 +1605,7 @@ static bool RGBA1010102ToNV12SoftDecode(const uint8_t *srcBuffer, const Size &im
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBA1010102ToNV12(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBA1010102ToNV12(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                 size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1633,7 +1633,7 @@ bool ImageFormatConvertUtils::RGBA1010102ToNV12(const uint8_t *srcBuffer, const 
     return true;
 }
 
-static bool RGBA1010102ToNV21SoftDecode(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer)
+static bool RGBA1010102ToNV21SoftDecode(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer)
 {
     size_t midBufferSize = static_cast<size_t>(imageSize.width * imageSize.height * STRIDES_PER_PLANE);
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
@@ -1684,7 +1684,7 @@ static bool RGBA1010102ToNV21SoftDecode(const uint8_t *srcBuffer, const Size &im
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBA1010102ToNV21(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer,
+bool ImageFormatConvertUtils::RGBA1010102ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                                 size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
@@ -1712,7 +1712,7 @@ bool ImageFormatConvertUtils::RGBA1010102ToNV21(const uint8_t *srcBuffer, const 
     return true;
 }
 
-static bool RGBA1010102ToP010SoftDecode(const uint8_t *srcBuffer, const Size &imageSize, uint8_t **destBuffer)
+static bool RGBA1010102ToP010SoftDecode(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer)
 {
     size_t midBufferSize = static_cast<size_t>(imageSize.width * imageSize.height * STRIDES_PER_PLANE);
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
@@ -1752,7 +1752,7 @@ static bool RGBA1010102ToP010SoftDecode(const uint8_t *srcBuffer, const Size &im
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBA1010102ToNV12P010(const uint8_t *srcBuffer, const Size &imageSize,
+bool ImageFormatConvertUtils::RGBA1010102ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
                                                     uint8_t **destBuffer, size_t &destBufferSize,
                                                     [[maybe_unused]]ColorSpace colorSpace)
 {
@@ -1781,7 +1781,7 @@ bool ImageFormatConvertUtils::RGBA1010102ToNV12P010(const uint8_t *srcBuffer, co
     return true;
 }
 
-bool ImageFormatConvertUtils::RGBA1010102ToNV21P010(const uint8_t *srcBuffer, const Size &imageSize,
+bool ImageFormatConvertUtils::RGBA1010102ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
                                                     uint8_t **destBuffer, size_t &destBufferSize,
                                                     [[maybe_unused]]ColorSpace colorSpace)
 {
