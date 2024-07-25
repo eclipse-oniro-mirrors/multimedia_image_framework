@@ -213,45 +213,6 @@ void PixelYuvExt::rotate(float degrees)
     return;
 }
 
-std::unique_ptr<AbsMemory> PixelYuvExt::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
-    int32_t dstHeight, YUVStrideInfo &dstStrides)
-{
-    uint32_t pictureSize = GetImageSize(dstWidth, dstHeight);
-    int32_t dst_yStride = dstWidth;
-    int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
-    int32_t dst_yOffset = 0;
-    int32_t dst_uvOffset = dst_yStride * dstHeight;
-    dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
-    MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat};
-    auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return m;
-    }
-    IMAGE_LOGE("CreateMemory allocatorType: %{public}d", allocatorType_);
-    #if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
-    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
-            IMAGE_LOGE("CreateMemory get surfacebuffer failed");
-        } else {
-            auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-            OH_NativeBuffer_Planes *planes = nullptr;
-            GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-            if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-                IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
-            } else if (planes->planeCount >= NUM_2) {
-                auto yStride = planes->planes[0].columnStride;
-                auto uvStride = planes->planes[1].columnStride;
-                auto yOffset = planes->planes[0].offset;
-                auto uvOffset = planes->planes[1].offset - 1;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            }
-        }
-    }
-    #endif
-    return m;
-}
-
 void PixelYuvExt::flip(bool xAxis, bool yAxis)
 {
     if (!IsYuvFormat() || (xAxis == false && yAxis == false)) {

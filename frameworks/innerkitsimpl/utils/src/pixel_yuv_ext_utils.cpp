@@ -378,8 +378,8 @@ bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFo
     int32_t width = size.width;
     int32_t height = size.height;
 
-    uint8_t* dstY = dst;
-    uint8_t* dstUV = dst + (dstStrides.yStride * height);
+    uint8_t* dstY = dst + dstStrides.yOffset;
+    uint8_t* dstUV = dst + dstStrides.uvOffset;
     int dstYStride = dstStrides.yStride;
     int dstUVStride = dstStrides.uvStride;
 
@@ -387,65 +387,6 @@ bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFo
     converter.NV12Copy(srcY, srcYStride, srcUV, srcUVStride, dstY, dstYStride, dstUV, dstUVStride, width, -height);
     return true;
 }
-
-static bool FlipYaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
-                      uint32_t dstStride)
-{
-    uint8_t *srcY = src + info.yOffset;
-    uint8_t *srcUV = srcY + size.width*size.height;
-    int32_t width = size.width;
-    int32_t height = size.height;
-    auto converter = ConverterHandle::GetInstance().GetHandle();
-    if (format == PixelFormat::NV12) {
-        IMAGE_LOGE("PixelYuvExtUtils FlipYaxis yStride=%{public}d uvStride=%{public}d", info.yStride, info.uvStride);
-
-        int srcYStride = info.yStride;
-        int srcUVStride = info.uvStride;
-        uint8_t *dstY = dst;
-        int dstYStride = width;
-        uint8_t *dstU = dst + GetYSize(width, height);
-        int dstUStride = GetUStride(width);
-        uint8_t *dstV = dst + GetVOffset(width, height);
-        int dstVStride = GetUStride(width);
-
-        converter.NV12ToI420(srcY, info.yStride, srcUV, info.uvStride, dst, width,
-            dst + GetYSize(width, height), GetUStride(width), dst + GetVOffset(width, height), GetUStride(width),
-            width, height);
-        if (SUCCESS != converter.I420Mirror(dst, width, dst + GetYSize(width, height), GetUStride(width),
-            dst + GetVOffset(width, height), GetUStride(width), const_cast<uint8_t *>(src),
-            width, const_cast<uint8_t *>(src) + GetYSize(width, height), GetUStride(width),
-            const_cast<uint8_t *>(src) + GetVOffset(width, height), GetUStride(width), width, height)) {
-            IMAGE_LOGE("Flip YUV420SP, YUV420SP Mirror failed");
-            return false;
-        }
-        IMAGE_LOGE("PixelYuvExtUtils FlipYaxis NV12 Stride=%{public}d", GetUStride(width));
-
-        converter.I420ToNV12(
-            src, width, src + GetYSize(width, height), GetUStride(width),
-            src + GetVOffset(width, height), GetUStride(width), dst, width,
-            dst + GetYSize(width, height), GetUVStride(width), width, height);
-    } else if (format == PixelFormat::NV21) {
-        converter.NV21ToI420(srcY, info.yStride, srcUV, info.uvStride, dst, width,
-            dst + GetYSize(width, height), GetUStride(width), dst + GetVOffset(width, height), GetUStride(width),
-            width, height);
-
-        IMAGE_LOGE("PixelYuvExtUtils FlipYaxis NV21 Stride=%{public}d", GetUStride(width));
-
-        if (SUCCESS != converter.I420Mirror(dst, width, dst + GetYSize(width, height), GetUStride(width),
-            dst + GetVOffset(width, height), GetUStride(width), const_cast<uint8_t *>(src),
-            width, const_cast<uint8_t *>(src) + GetYSize(width, height), GetUStride(width),
-            const_cast<uint8_t *>(src) + GetVOffset(width, height), GetUStride(width), width, height)) {
-            IMAGE_LOGE("Flip YUV420SP,YUV420SP Mirror failed");
-            return false;
-        }
-
-        converter.I420ToNV21(src, width, src + GetYSize(width, height), GetUStride(width),
-            src + GetVOffset(width, height), GetUStride(width), dst, dstStride,
-            dst + GetYSize(dstStride, height), dstStride, width, height);
-    }
-    return true;
-}
-
 
 bool PixelYuvExtUtils::Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
     YUVStrideInfo &dstStrides, bool isReversed)
@@ -458,8 +399,8 @@ bool PixelYuvExtUtils::Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelForma
     int srcYStride = info.yStride;
     int srcUVStride = info.uvStride;
 
-    uint8_t *dstY = dst;
-    uint8_t *dstUV = dst +  dstStrides.yStride * size.height;
+    uint8_t *dstY = dst + dstStrides.yStride;
+    uint8_t *dstUV = dst +  dstStrides.uvStride;
     int dstYStride = dstStrides.yStride;
     int dstUVStride = dstStrides.uvStride;
     height = isReversed? -height : height;

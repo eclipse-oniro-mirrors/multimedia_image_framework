@@ -72,6 +72,8 @@ protected:
     bool IsYuvFormat();
     uint32_t SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
         PixelFormat &format, uint64_t rowStride);
+    std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat, std::string memoryTag,
+        int32_t dstWidth, int32_t dstHeight, YUVStrideInfo &dstStrides);
 #ifdef IMAGE_COLORSPACE_FLAG
     bool CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     int32_t ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, ImageInfo &imageInfo, PixelFormat &format,
