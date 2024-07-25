@@ -145,6 +145,7 @@ static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
+static const int IMAGE_HEADER_SIZE = 12;
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
@@ -1466,6 +1467,24 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
+bool ImageSource::PrereadSourceStream()
+{
+    uint8_t* prereadBuffer = new (std::nothrow) uint8_t[IMAGE_HEADER_SIZE];
+    uint32_t prereadSize = 0;
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    bool retRead = sourceStreamPtr_->Read(IMAGE_HEADER_SIZE, prereadBuffer,
+                                          IMAGE_HEADER_SIZE, prereadSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("Preread source stream failed.");
+        delete[] prereadBuffer; // Don't forget to delete tmpBuffer if read failed
+        return false;
+    }
+    delete[] prereadBuffer;
+    return true;
+}
+
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
     IMAGE_LOGD("CreatExifMetadataByImageSource");
@@ -1479,7 +1498,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
+    IMAGE_LOGD("sourceStreamPtr create metadataAccessor");
+    if (!PrereadSourceStream()) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
