@@ -91,13 +91,13 @@ using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
-#endif
 
 static const map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
     { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
     { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
+#endif
 
 namespace InnerFormat {
 const string RAW_FORMAT = "image/x-raw";
