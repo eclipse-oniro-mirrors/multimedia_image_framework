@@ -377,7 +377,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, const Imag
         return IMAGE_RESULT_MALLOC_ABNORMAL;
     }
 
-    dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat)
+    dstRowStride = dstImageInfo.size.width * ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
     if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data);
         dstRowStride = sbBuffer->GetStride();
