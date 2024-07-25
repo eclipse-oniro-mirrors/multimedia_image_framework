@@ -69,7 +69,7 @@ protected:
     void SetRowDataSizeForImageInfo(ImageInfo info);
     static uint32_t GetImageSize(int32_t width, int32_t height, PixelFormat format);
     static bool IsYuvFormat(PixelFormat format);
-    void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
+    bool IsYuvFormat();
     uint32_t SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
         PixelFormat &format, uint64_t rowStride);
 #ifdef IMAGE_COLORSPACE_FLAG

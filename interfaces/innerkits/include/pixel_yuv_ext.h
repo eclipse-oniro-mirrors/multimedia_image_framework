@@ -45,6 +45,9 @@ public:
         const OHOS::ColorManager::ColorSpace &grColorSpace);
     NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace) override;
 #endif
+private:
+    std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat, std::string memoryTag,
+        int32_t dstWidth, int32_t dstHeight, YUVStrideInfo &dstStrides);
 };
 } // namespace Media
 } // namespace OHOS

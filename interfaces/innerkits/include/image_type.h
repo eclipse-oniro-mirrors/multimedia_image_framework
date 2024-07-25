@@ -216,6 +216,19 @@ struct Convert10bitInfo {
     uint32_t srcBytes = 0;
     PixelFormat dstPixelFormat = PixelFormat::UNKNOWN;
     uint32_t dstBytes = 0;
+}
+
+struct YUVStrideInfo {
+    uint32_t yStride = 0;
+    uint32_t uvStride = 0;
+    uint32_t yOffset = 0;
+    uint32_t uvOffset = 0;
+};
+
+struct RGBDataInfo {
+    int32_t width = 0;
+    int32_t height = 0;
+    uint32_t stride = 0;
 };
 
 struct FillColor {

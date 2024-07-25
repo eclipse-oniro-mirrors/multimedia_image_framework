@@ -58,6 +58,7 @@ static const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::BGRA_8888, AVPixelFormat::AV_PIX_FMT_BGRA},
     {PixelFormat::YCRCB_P010, AVPixelFormat::AV_PIX_FMT_P010LE},
     {PixelFormat::YCBCR_P010, AVPixelFormat::AV_PIX_FMT_P010LE},
+    {PixelFormat::RGBA_8888, AVPixelFormat::AV_PIX_FMT_RGBA},
 };
 
 int32_t PixelYuvUtils::YuvConvertOption(const AntiAliasingOption &option)
@@ -207,12 +208,12 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
     }
 }
 
-static void FillRectFrameInfo(AVFrame *frame, uint8_t *pixels, const Rect &rect)
+static void FillRectFrameInfo(AVFrame *frame, uint8_t *pixels, const Rect &rect, YUVStrideInfo &info)
 {
     frame->data[0] = pixels;
-    frame->data[1] = pixels + GetYSize(rect.width, rect.height);
-    frame->linesize[0] = rect.width;
-    frame->linesize[1] = GetUVStride(rect.width);
+    frame->data[1] = pixels + info.yStride * rect.height;
+    frame->linesize[0] = info.yStride;
+    frame->linesize[1] = info.uvStride;
 }
 
 static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info)
@@ -325,9 +326,10 @@ static bool CreateBufferSinkFilter(AVFilterGraph **filterGraph, AVFilterContext 
 }
 
 static bool CreateCropFilter(AVFilterGraph **filterGraph, AVFilterContext **cropCtx,
-    const Rect &rect)
+    const Rect &rect, YUVStrideInfo &strides)
 {
-    const char *cropArgs = av_asprintf("x=%d:y=%d:out_w=%d:out_h=%d", rect.left, rect.top, rect.width, rect.height);
+    const char *cropArgs = av_asprintf("x=%d:y=%d:out_w=%d:out_h=%d",
+        rect.left, rect.top, strides.yStride, rect.height);
     if (!cropArgs) {
         IMAGE_LOGE("YuvCrop cropArgs is null");
         return false;
@@ -344,9 +346,9 @@ static bool CreateCropFilter(AVFilterGraph **filterGraph, AVFilterContext **crop
     return true;
 }
 
-static bool CropUpDataDstdata(uint8_t *dstData, AVFrame *dstFrame, const Rect &rect)
+static bool CropUpDataDstdata(uint8_t *dstData, AVFrame *dstFrame, const Rect &rect, YUVStrideInfo &strides)
 {
-    dstFrame->width = rect.width;
+    dstFrame->width = strides.yStride;
     dstFrame->height = rect.height;
 
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
@@ -365,7 +367,8 @@ static bool CropUpDataDstdata(uint8_t *dstData, AVFrame *dstFrame, const Rect &r
     return true;
 }
 
-bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, const Rect &rect)
+bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, const Rect &rect,
+    YUVStrideInfo &dstStrides)
 {
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
@@ -375,7 +378,7 @@ bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *ds
     }
     SetAVFrameInfo(srcFrame, srcInfo);
     FillSrcFrameInfo(srcFrame, srcData, srcInfo);
-    FillRectFrameInfo(dstFrame, dstData, rect);
+    FillRectFrameInfo(dstFrame, dstData, rect, dstStrides);
     AVFilterGraph *filterGraph = avfilter_graph_alloc();
     if (!filterGraph) {
         CleanUpFilterGraph(&filterGraph, &srcFrame, &dstFrame);
@@ -389,7 +392,7 @@ bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *ds
     }
     // Create crop filter
     AVFilterContext *cropCtx = nullptr;
-    if (!CreateCropFilter(&filterGraph, &cropCtx, rect)) {
+    if (!CreateCropFilter(&filterGraph, &cropCtx, rect, dstStrides)) {
         CleanUpFilterGraph(&filterGraph, &srcFrame, &dstFrame);
         return false;
     }
@@ -408,7 +411,7 @@ bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *ds
         CleanUpFilterGraph(&filterGraph, &srcFrame, &dstFrame);
         return false;
     }
-    if (!CropUpDataDstdata(dstData, dstFrame, rect)) {
+    if (!CropUpDataDstdata(dstData, dstFrame, rect, dstStrides)) {
         CleanUpFilterGraph(&filterGraph, &srcFrame, &dstFrame);
         return false;
     }
@@ -719,7 +722,9 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
     rect.top = srcPos.y;
     rect.width = dstInfo.size.width;
     rect.height = dstInfo.size.height;
-    if (!YuvCrop((uint8_t *)srcPixels, info, static_cast<uint8_t *>(dstPixels), rect)) {
+    YUVStrideInfo strides;
+    YUVStrideInfo dstStrides = {rect.width, rect.width};
+    if (!YuvCrop((uint8_t *)srcPixels, info, static_cast<uint8_t *>(dstPixels), rect, dstStrides)) {
         return false;
     }
     return true;
@@ -954,20 +959,20 @@ bool PixelYuvUtils::YuvWritePixel(uint8_t *srcPixels, const YUVDataInfo &yuvData
     }
 }
 
-static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
-    uint8_t *dstPixels, XYaxis &xyAxis, ImageInfo &info)
+void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
+    uint8_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides)
 {
     const uint8_t *srcY = srcPixels + yuvInfo.yOffset;
     const uint8_t *srcUV = srcPixels + yuvInfo.uvOffset;
     uint8_t *dstY = dstPixels;
-    uint8_t *dstUV = dstPixels + GetYSize(info.size.width, info.size.height);
+    uint8_t *dstUV = dstPixels + GetYSize(strides.yStride, info.size.height);
 
     for (int32_t y = 0; y < info.size.height; y++) {
         for (int32_t x = 0; x < info.size.width; x++) {
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * info.size.width + newX) = *(srcY + static_cast<uint32_t>(y) * yuvInfo.yStride + x);
+                *(dstY + newY * strides.yStride + newX) = *(srcY + static_cast<uint32_t>(y) * yuvInfo.yStride + x);
             }
         }
     }
@@ -976,10 +981,10 @@ static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         for (int32_t x = 0; x < GetUVStride(info.size.width); x += NUM_2) {
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(info.size.height)) {
-                *(dstUV + newY * GetUVStride(info.size.width) + newX) =
+            if (newX >= 0 && newX < info.size.width && newY >= 0 && newY < GetUVHeight(info.size.height)) {
+                *(dstUV + newY * strides.uvStride + newX) =
                     *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x);
-                *(dstUV + newY * GetUVStride(info.size.width) + newX + 1) =
+                *(dstUV + newY * strides.uvStride + newX + 1) =
                     *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x + 1);
             }
         }
@@ -1017,12 +1022,12 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
 }
 
 bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo, uint8_t *dstPixels, XYaxis &xyAxis,
-    ImageInfo &info)
+    ImageInfo &info, YUVStrideInfo &dstStrides)
 {
     switch (info.pixelFormat) {
         case PixelFormat::NV21:
         case PixelFormat::NV12: {
-            Yuv420SPTranslate(srcPixels, yuvInfo, dstPixels, xyAxis, info);
+            Yuv420SPTranslate(srcPixels, yuvInfo, dstPixels, xyAxis, info, dstStrides);
             return true;
         }
         case PixelFormat::YCBCR_P010:

@@ -233,6 +233,9 @@ public:
     {
         yuvDataInfo_ = yuvinfo;
     }
+    NATIVEEXPORT virtual void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
+    NATIVEEXPORT virtual void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
+        YUVStrideInfo &strides);
     NATIVEEXPORT virtual void GetImageYUVInfo(YUVDataInfo &yuvInfo) const
     {
         yuvInfo = yuvDataInfo_;
@@ -297,6 +300,10 @@ public:
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
+    NATIVEEXPORT void  setAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
