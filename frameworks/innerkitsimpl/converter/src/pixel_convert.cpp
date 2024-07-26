@@ -1515,6 +1515,12 @@ static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo)
     return rowStride != 0 && rowStride < imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
 }
 
+static bool IsInterYUVConvert(PixelFormat srcPixelFormat, PixelFormat dstPixelFormat)
+{
+    return (srcPixelFormat == PixelFormat::NV12 || srcPixelFormat == PixelFormat::NV21) &&
+        (dstPixelFormat == PixelFormat::NV12 || dstPixelFormat == PixelFormat::NV21);
+}
+
 int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstInfo, int32_t srcLength, bool useDMA)
 {
     ImageInfo srcImageInfo = *(srcInfo.imageInfo);
@@ -1524,8 +1530,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
         IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or row stride invalid.");
         return -1;
     }
-    if (((srcImageInfo.pixelFormat == PixelFormat::NV12 || srcImageInfo.pixelFormat == PixelFormat::NV21) &&
-        (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21)) ||
+    if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
         (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
         return YUVConvert(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
     }
