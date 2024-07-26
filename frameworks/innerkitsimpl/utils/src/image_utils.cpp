@@ -74,6 +74,7 @@ constexpr int32_t NV21P010_BYTES = 3;
 constexpr int32_t ASTC_4X4_BYTES = 1;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
+constexpr uint32_t DMA_SIZE = 512 * 512;
 static bool g_pluginRegistered = false;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -288,6 +289,11 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
+}
+
+bool ImageUtils::IsSupportDMA(const Size &size, const PixelFormat &format)
+{
+    return format == PixelFormat::RGBA_8888 && size.width * size.height >= DMA_SIZE;
 }
 
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)

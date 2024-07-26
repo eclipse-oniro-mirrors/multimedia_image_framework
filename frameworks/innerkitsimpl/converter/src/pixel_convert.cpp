@@ -1510,37 +1510,49 @@ static int32_t YUVConvert(const void *srcPixels, const int32_t srcLength, const 
         dstFFmpegInfo.alignSize);
 }
 
-int32_t PixelConvert::PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
-    const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo)
+static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo)
 {
-    if (srcPixels == nullptr || dstPixels == nullptr || srcLength <= 0 ||
-        (srcRowStride != 0 && srcRowStride < srcInfo.size.width)) {
-        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or src row stride invalid.");
+    return rowStride != 0 && rowStride < imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+}
+
+static bool IsInterYUVConvert(PixelFormat srcPixelFormat, PixelFormat dstPixelFormat)
+{
+    return (srcPixelFormat == PixelFormat::NV12 || srcPixelFormat == PixelFormat::NV21) &&
+        (dstPixelFormat == PixelFormat::NV12 || dstPixelFormat == PixelFormat::NV21);
+}
+
+int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstInfo, int32_t srcLength, bool useDMA)
+{
+    ImageInfo srcImageInfo = *(srcInfo.imageInfo);
+    ImageInfo dstImageInfo = *(dstInfo.imageInfo);
+    if (srcInfo.pixels == nullptr || dstInfo.pixels == nullptr || srcLength <= 0 ||
+        IsValidRowStride(srcInfo.rowStride, srcImageInfo) || IsValidRowStride(dstInfo.rowStride, dstImageInfo)) {
+        IMAGE_LOGE("[PixelMap]Convert: src pixels or dst pixels or src pixels length or row stride invalid.");
         return -1;
     }
-    if (((srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) &&
-        (dstInfo.pixelFormat == PixelFormat::NV12 || dstInfo.pixelFormat == PixelFormat::NV21)) ||
-        (IsYUVP010Format(srcInfo.pixelFormat) && IsYUVP010Format(dstInfo.pixelFormat))) {
-        return YUVConvert(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
+    if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
+        (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
+        return YUVConvert(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
     }
-    if (srcInfo.pixelFormat == PixelFormat::NV12 || srcInfo.pixelFormat == PixelFormat::NV21) {
-        return ConvertFromYUV(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
-    } else if (dstInfo.pixelFormat == PixelFormat::NV12 || dstInfo.pixelFormat == PixelFormat::NV21) {
-        return ConvertToYUV(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
-    } else if (IsYUVP010Format(srcInfo.pixelFormat)) {
-        return ConvertFromP010(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
-    } else if (IsYUVP010Format(dstInfo.pixelFormat)) {
-        return ConvertToP010(srcPixels, srcLength, srcInfo, dstPixels, dstInfo);
+    if (srcImageInfo.pixelFormat == PixelFormat::NV12 || srcImageInfo.pixelFormat == PixelFormat::NV21) {
+        return ConvertFromYUV(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
+    } else if (dstImageInfo.pixelFormat == PixelFormat::NV12 || dstImageInfo.pixelFormat == PixelFormat::NV21) {
+        return ConvertToYUV(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
+    } else if (IsYUVP010Format(srcImageInfo.pixelFormat)) {
+        return ConvertFromP010(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
+    } else if (IsYUVP010Format(dstImageInfo.pixelFormat)) {
+        return ConvertToP010(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
     }
+
     Position pos;
-    if (!PixelConvertAdapter::WritePixelsConvert(srcPixels,
-        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(srcInfo) : srcRowStride, srcInfo, dstPixels, pos,
-        srcRowStride == 0 ? PixelMap::GetRGBxRowDataSize(dstInfo) : srcRowStride, dstInfo)) {
+    if (!PixelConvertAdapter::WritePixelsConvert(srcInfo.pixels,
+        srcInfo.rowStride == 0 ? PixelMap::GetRGBxRowDataSize(srcImageInfo) : srcInfo.rowStride, srcImageInfo,
+        dstInfo.pixels, pos, useDMA ? dstInfo.rowStride : PixelMap::GetRGBxRowDataSize(dstImageInfo), dstImageInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: PixelsConvert: pixel convert in adapter failed.");
         return -1;
     }
 
-    return PixelMap::GetRGBxByteCount(dstInfo);
+    return PixelMap::GetRGBxByteCount(dstImageInfo);
 }
 
 PixelConvert::PixelConvert(ProcFuncType funcPtr, ProcFuncExtension extension, bool isNeedConvert)

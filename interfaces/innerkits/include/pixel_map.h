@@ -55,9 +55,10 @@ struct InitializationOptions {
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
+    int32_t srcRowStride = 0;
     bool editable = false;
     bool useSourceIfMatch = false;
-    int32_t rowStride = 0;
+    bool useDMA = false;
 };
 struct TransInfos;
 

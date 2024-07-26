@@ -50,7 +50,7 @@ struct OH_Pixelmap_InitializationOptions {
     PIXEL_FORMAT pixelFormat = PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN;
     uint32_t editable = false;
     PIXELMAP_ALPHA_TYPE alphaType = PIXELMAP_ALPHA_TYPE::PIXELMAP_ALPHA_TYPE_UNKNOWN;
-    int32_t rowStride = 0;
+    int32_t srcRowStride = 0;
 };
 
 struct OH_Pixelmap_ImageInfo {
@@ -277,7 +277,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_Initia
     if (options == nullptr || rowStride == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    *rowStride = options->rowStride;
+    *rowStride = options->srcRowStride;
     return IMAGE_SUCCESS;
 }
 
@@ -288,7 +288,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_Initia
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    options->rowStride = rowStride;
+    options->srcRowStride = rowStride;
     return IMAGE_SUCCESS;
 }
 
@@ -397,7 +397,7 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     info.alphaType = static_cast<AlphaType>(options->alphaType);
     info.srcPixelFormat = static_cast<PixelFormat>(options->srcPixelFormat);
     info.pixelFormat = static_cast<PixelFormat>(options->pixelFormat);
-    info.rowStride = options->rowStride;
+    info.srcRowStride = options->srcRowStride;
     info.size.height = static_cast<int32_t>(options->height);
     info.size.width = static_cast<int32_t>(options->width);
 
