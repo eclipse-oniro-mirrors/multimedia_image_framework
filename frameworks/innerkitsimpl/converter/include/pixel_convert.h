@@ -40,7 +40,7 @@ struct BufferInfo {
     void *pixels;
     int32_t rowStride;
     ImageInfo *imageInfo;
-}
+};
 
 // These values SHOULD be sync with image_type.h PixelFormat
 constexpr uint32_t GRAY_BIT = 0x80000001; /* Tow value image, just white or black. */
