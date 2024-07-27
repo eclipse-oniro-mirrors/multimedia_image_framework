@@ -75,6 +75,13 @@ public:
 #endif
 
 private:
+    typedef struct FrameCacheInfo {
+        int width;
+        int height;
+        uint64_t rowStride;
+        uint64_t byteCount;
+    } FrameCacheInfo;
+
     bool CheckCodec();
     bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
@@ -110,6 +117,10 @@ private:
         uint64_t byteCount, OHOS::Media::PixelFormat format);
     bool IsHeifToSingleHdrDecode(const DecodeContext &context) const;
     uint32_t DoHeifToSingleHdrDecode(OHOS::ImagePlugin::DecodeContext &context);
+    uint32_t HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight);
+    uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
+    FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
+    bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -122,6 +133,7 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     int gifCacheIndex_ = 0;
+    FrameCacheInfo frameCacheInfo_ = {0, 0, 0, 0};
     uint32_t heifParseErr_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;
