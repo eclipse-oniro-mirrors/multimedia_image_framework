@@ -1263,7 +1263,6 @@ static std::unique_ptr<ImageSource> CreateNativeImageSource(napi_env env, napi_v
 
 napi_value ImageSourceNapi::CreateImageSource(napi_env env, napi_callback_info info)
 {
-    PrepareNapiEnv(env);
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
 
