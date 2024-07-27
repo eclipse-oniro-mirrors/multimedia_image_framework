@@ -21,9 +21,13 @@ ohos_fuzztest("ImageAccessorFuzzTest") {
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/include",
   ]
 
-  sources = [ "src/image_accessor_fuzzer.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/convert_utils.cpp",
+    "src/image_accessor_fuzzer.cpp",
+  ]
 
   deps = [
     "$image_subsystem/interfaces/innerkits:image_native",
@@ -33,6 +37,7 @@ ohos_fuzztest("ImageAccessorFuzzTest") {
   external_deps = [
     "c_utils:utils",
     "graphic_2d:color_manager",
+    "hilog:libhilog",
     "libexif:libexif",
   ]
 }
