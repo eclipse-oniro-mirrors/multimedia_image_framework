@@ -294,6 +294,11 @@ public:
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
 
+    NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
