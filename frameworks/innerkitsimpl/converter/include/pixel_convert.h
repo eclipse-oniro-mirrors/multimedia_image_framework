@@ -192,6 +192,8 @@ public:
 
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
+    static bool IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo);
+    static bool IsValidBufferInfo(const BufferInfo &bufferInfo);
 
     ProcFuncType procFunc_;
     ProcFuncExtension procFuncExtension_;
