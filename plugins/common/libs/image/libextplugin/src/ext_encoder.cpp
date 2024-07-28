@@ -162,11 +162,6 @@ static bool IsYuvImage(PixelFormat format)
     return format == PixelFormat::NV21 || format == PixelFormat::NV12;
 }
 
-/* 
- * input: pixelmap, imageInfo
- * output: dstData(RGB), skInfo
- * function: convert image pixels from YUV420 to RGB format then make skInfo
- */
 static uint32_t YuvToRgbaSkInfo(ImageInfo info, SkImageInfo &skInfo, uint8_t * dstData, Media::PixelMap *pixelMap)
 {
     uint8_t *srcData = static_cast<uint8_t*>(pixelMap->GetWritablePixels());
@@ -356,8 +351,7 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
 
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
         retCode = DoHardWareEncode(&tStream);
-        if (retCode != SUCCESS)
-        {
+        if (retCode != SUCCESS) {
             IMAGE_LOGD("HardwareEncode failed");
             return false;
         }
@@ -396,8 +390,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
     uint32_t width  = static_cast<uint32_t>(imageData.info.size.width);
     uint32_t height = static_cast<uint32_t>(imageData.info.size.height);
 
-    if (HardwareEncode(outputStream, needExif) == true)
-    {
+    if (HardwareEncode(outputStream, needExif) == true) {
         IMAGE_LOGD("HardwareEncode Success return");
         return SUCCESS;
     }
@@ -408,8 +401,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
     if (IsYuvImage(imageData.info.pixelFormat)) {
         IMAGE_LOGD("YUV format, convert to RGB");
         dstData = std::make_unique<uint8_t[]>(width * height * NUM_4);
-        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelMap) != SUCCESS)
-        {
+        if (YuvToRgbaSkInfo(imageData.info, skInfo, dstData.get(), pixelMap) != SUCCESS) {
             IMAGE_LOGD("YUV format, convert to RGB fail");
             return ERR_IMAGE_ENCODE_FAILED;
         }
@@ -516,8 +508,7 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     /* do hardwareEncode first, if fail then soft encode*/
-    if (HardwareEncode(outputStream, needExif))
-    {
+    if (HardwareEncode(outputStream, needExif)) {
         IMAGE_LOGD("HardwareEncode Success return");
         return SUCCESS;
     }
@@ -528,20 +519,17 @@ uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuff
     if (IsYuvImage(imageInfo.pixelFormat)) {
         IMAGE_LOGD("EncodeImageBySurfaceBuffer: YUV format, convert to RGB first");
         dstData = std::make_unique<uint8_t[]>(imageInfo.size.width * imageInfo.size.height * NUM_4);
-        if (dstData == nullptr)
-        {
+        if (dstData == nullptr) {
             IMAGE_LOGE("Memory allocate fail");
             return ERR_IMAGE_ENCODE_FAILED;
         }
-        if (YuvToRgbaSkInfo(imageInfo, info, dstData.get(), pixelmap_) != SUCCESS)
-        {
+        if (YuvToRgbaSkInfo(imageInfo, info, dstData.get(), pixelmap_) != SUCCESS) {
             IMAGE_LOGD("YUV format, convert to RGB fail");
             return ERR_IMAGE_ENCODE_FAILED;
         }
         pixels = dstData.get();
         rowStride = info.minRowBytes64();
-    }
-    else {
+    } else {
         rowStride = surfaceBuffer->GetStride();
     }
 

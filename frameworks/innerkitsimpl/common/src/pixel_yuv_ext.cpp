@@ -46,10 +46,7 @@ using namespace std;
 
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
-static const int32_t DEGREES90 = 90;
-static const int32_t DEGREES180 = 180;
-static const int32_t DEGREES270 = 270;
-static const int32_t DEGREES360 = 360;
+
 static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace)
 {
     SkColorType colorType = ImageTypeConverter::ToSkColorType(info.pixelFormat);
@@ -148,28 +145,6 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
 }
 
-static bool YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, int32_t &dstHeight,
-    OpenSourceLibyuv::RotationMode &rotateNum)
-{
-    switch (degrees) {
-        case DEGREES90:
-            dstWidth = size.height;
-            dstHeight = size.width;
-            rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
-            return true;
-        case DEGREES180:
-            rotateNum = OpenSourceLibyuv::RotationMode::kRotate180;
-            return true;
-        case DEGREES270:
-            dstWidth = size.height;
-            dstHeight = size.width;
-            rotateNum = OpenSourceLibyuv::RotationMode::kRotate270;
-            return true;
-        default:
-            return false;
-    }
-}
-
 void PixelYuvExt::rotate(float degrees)
 {
     if (!IsYuvFormat() || degrees == 0) {
@@ -204,12 +179,10 @@ void PixelYuvExt::rotate(float degrees)
                                      rotateNum)) {
         return;
     }
-    SetImageYUVInfo(yuvDataInfo);
     imageInfo_.size = dstSize;
     SetImageInfo(imageInfo_, true);
-
     SetPixelsAddr(dst, m->extend.data, m->data.size, m->GetType(), nullptr);
-
+    UpdateYUVDataInfo(imageInfo_.pixelFormat, dstWidth, dstHeight, dstStrides)
     return;
 }
 

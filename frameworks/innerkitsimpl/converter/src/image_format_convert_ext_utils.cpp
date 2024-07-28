@@ -555,8 +555,8 @@ bool ImageFormatConvertExtUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, cons
     return true;
 }
 
-bool ImageFormatConvertExtUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
+bool ImageFormatConvertExtUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
+    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
         return false;
@@ -608,8 +608,8 @@ bool ImageFormatConvertExtUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-bool ImageFormatConvertExtUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
+bool ImageFormatConvertExtUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
+    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
         return false;
@@ -661,8 +661,8 @@ bool ImageFormatConvertExtUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-bool ImageFormatConvertExtUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
+bool ImageFormatConvertExtUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
+    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
         return false;
@@ -714,8 +714,8 @@ bool ImageFormatConvertExtUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-bool ImageFormatConvertExtUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
+bool ImageFormatConvertExtUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
+    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
         return false;
@@ -767,8 +767,8 @@ bool ImageFormatConvertExtUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const 
     return true;
 }
 
-bool ImageFormatConvertExtUtils::RGBToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
+bool ImageFormatConvertExtUtils::RGBToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
+    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
 {
     if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
         return false;

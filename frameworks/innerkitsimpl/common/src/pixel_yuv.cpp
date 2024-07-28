@@ -47,6 +47,9 @@ static const uint8_t NUM_4 = 4;
 static const uint32_t TWO_SLICES = 2;
 static const uint8_t YUV420_MIN_PIXEL_UINTBYTES = 4;
 static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
+static const int32_t DEGREES90 = 90;
+static const int32_t DEGREES180 = 180;
+static const int32_t DEGREES270 = 270;
 constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
@@ -180,22 +183,38 @@ static int32_t GetUVHeight(int32_t height)
     return (height + 1) / NUM_2;
 }
 
+bool PixelYuv::YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, int32_t &dstHeight,
+    OpenSourceLibyuv::RotationMode &rotateNum)
+{
+    switch (degrees) {
+        case DEGREES90:
+            dstWidth = size.height;
+            dstHeight = size.width;
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
+            return true;
+        case DEGREES180:
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate180;
+            return true;
+        case DEGREES270:
+            dstWidth = size.height;
+            dstHeight = size.width;
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate270;
+            return true;
+        default:
+            return false;
+    }
+}
+
 std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
     int32_t dstHeight, YUVStrideInfo &dstStrides)
 {
-
     uint32_t pictureSize = GetImageSize(dstWidth, dstHeight, pixelFormat);
     int32_t dst_yStride = dstWidth;
     int32_t dst_uvStride = (dstWidth + 1) / NUM_2 * NUM_2;
     int32_t dst_yOffset = 0;
     int32_t dst_uvOffset = dst_yStride * dstHeight;
-    if (memoryTag == "translate ImageData") {
-        YUVDataInfo info;
-        GetImageYUVInfo(info);
-        dstStrides = {info.yStride, info.uvStride, info.yOffset, info.uvOffset};
-    } else {
-        dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
-    }
+
+    dstStrides = {dst_yStride, dst_uvStride, dst_yOffset, dst_uvOffset};
     MemoryData memoryData = {nullptr, pictureSize, memoryTag.c_str(), {dstWidth, dstHeight}, pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
     if (m == nullptr) {
@@ -231,8 +250,15 @@ void PixelYuv::rotate(float degrees)
     if (!IsYuvFormat() || degrees == 0) {
         return;
     }
+    OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
+    int32_t dstWidth = imageInfo_.size.width;
+    int32_t dstHeight = imageInfo_.size.height;
+    if (!YuvRotateConvert(imageInfo_.size, degrees, dstWidth, dstHeight, rotateNum)) {
+        IMAGE_LOGI("rotate degress is invalid, don't need rotate");
+        return ;
+    }
     YUVStrideInfo dstStrides;
-    auto dstMemory = CreateMemory(imageInfo_.pixelFormat, "Rotate ImageData", imageInfo_.size.width, imageInfo_.size.height, dstStrides);
+    auto dstMemory = CreateMemory(imageInfo_.pixelFormat, "Rotate ImageData", dstWidth, dstHeight, dstStrides);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("rotate CreateMemory failed");
         return;
@@ -253,7 +279,7 @@ void PixelYuv::rotate(float degrees)
     imageInfo_.size.height = dstInfo.height;
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo_, true);
-    AssignYuvDataOnType(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height);
+    UpdateYUVDataInfo(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height, dstStrides);
 }
 
 uint32_t PixelYuv::crop(const Rect &rect)
@@ -284,17 +310,7 @@ uint32_t PixelYuv::crop(const Rect &rect)
     imageInfo_.size.height = rect.height;
     imageInfo_.size.width = rect.width;
     SetImageInfo(imageInfo_, true);
-    yuvDataInfo.yWidth = static_cast<uint32_t>(rect.width);
-    yuvDataInfo.yHeight = static_cast<uint32_t>(rect.height);
-    yuvDataInfo.yStride = static_cast<uint32_t>(dstStrides.yStride);
-    yuvDataInfo.uvStride = dstStrides.uvStride;
-    yuvDataInfo.uvWidth = (rect.width + 1) / NUM_2 * NUM_2;
-    yuvDataInfo.uvHeight = static_cast<uint32_t>((rect.height + 1) / NUM_2);
-    yuvDataInfo.yOffset = 0;
-    yuvDataInfo.uvOffset =  yuvDataInfo.yHeight * yuvDataInfo.yStride;
-    yuvDataInfo.imageSize.height = rect.height;
-    yuvDataInfo.imageSize.width = rect.width;
-    SetImageYUVInfo(yuvDataInfo);
+    UpdateYUVDataInfo(imageInfo_.pixelFormat, rect.width, rect.height, dstStrides);
     return SUCCESS;
 }
 
@@ -346,7 +362,7 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
-    AssignYuvDataOnType(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height);
+    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
 }
 
 void PixelYuv::flip(bool xAxis, bool yAxis)
@@ -385,7 +401,7 @@ void PixelYuv::flip(bool xAxis, bool yAxis)
         }
     }
     SetPixelsAddr(dst, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
-    AssignYuvDataOnType(format, srcW, srcH);
+    UpdateYUVDataInfo(format, srcW, srcH, dstStrides);
 }
 
 uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,

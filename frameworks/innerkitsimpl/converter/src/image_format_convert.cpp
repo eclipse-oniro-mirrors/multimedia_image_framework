@@ -438,6 +438,7 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
         if (pixelMap == nullptr) {
             return false;
         }
+        // will be modified by 004 soon.
         pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
     } else {
         pixelMap = std::make_unique<PixelMap>();

@@ -161,18 +161,13 @@ bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &in
     int dstUVStride = dstStrides.uvStride;
     int dstWidth = size.dstW;
     int dstHeight = size.dstH;
+    auto dstY = dst + dstStrides.yOffset;
+    auto dstUV = dst + dstStrides.uvOffset;
     if (converter.I420ToNV12(tmpY, tmpYStride, tmpU, tmpUStride, tmpV, tmpVStride,
-        dst, dstYStride, dst + GetYSize(dstYStride, dstHeight), dstUVStride, dstWidth, dstHeight) == -1) {
+        dstY, dstYStride, dstUV, dstUVStride, dstWidth, dstHeight) == -1) {
         return false;
     }
-    info.yOffset = 0;
-    info.uvOffset =  dstHeight * dstYStride;
-    info.yWidth = static_cast<uint32_t>(dstWidth);
-    info.yHeight = static_cast<uint32_t>(dstHeight);
-    info.yStride = static_cast<uint32_t>(dstYStride);
-    info.uvWidth = dstUVStride;
-    info.uvHeight = static_cast<uint32_t>((dstHeight + 1) / NUM_2);
-    info.uvStride = dstUVStride;
+
     return true;
 }
 
@@ -219,6 +214,13 @@ bool PixelYuvExtUtils::YuvRotate(uint8_t* srcPixels, const PixelFormat& format, 
     int32_t dstWidth = dstSize.width;
     int32_t dstHeight = dstSize.height;
     PixelSize pixelSize = {info.imageSize.width, info.imageSize.height, dstWidth, dstHeight};
+    if (format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010) {
+        IMAGE_LOGD("YuvRotate P010Rotate enter");
+        if (!NV12P010Rotate(srcPixels, pixelSize, info, rotateNum)) {
+            IMAGE_LOGE("YuvRotate P010Rotate fail");
+            return false;
+        }
+    }
     if (!NV12Rotate(srcPixels, pixelSize, info, rotateNum, dstPixels, dstStrides)) {
         return false;
     }
@@ -361,8 +363,10 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     int dstYStride = dstStrides.yStride;
     uint8_t* dstUV = dst + dstStrides.uvOffset;
     int dstUVStride = dstStrides.uvStride;
-
     auto converter = ConverterHandle::GetInstance().GetHandle();
+    if (yuvInfo.yuvFormat == PixelFormat::YCBCR_P010 || yuvInfo.yuvFormat == PixelFormat::YCRCB_P010) {
+        ScaleP010(pixelSize, src, dst, converter, filterMode);
+    }
     converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
         dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);
 }
