@@ -336,31 +336,28 @@ uint32_t ExtEncoder::DoEncode(SkWStream* skStream, const SkBitmap& src, const Sk
 bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
 {
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
-
-    if (!needExif || pixelmap_->GetExifMetadata() == nullptr ||
-        pixelmap_->GetExifMetadata()->GetExifData() == nullptr) {
-        if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
-            retCode = DoHardWareEncode(&skStream);
-            IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
-            return (retCode == SUCCESS);
-        }
-    }
-
-    MetadataWStream tStream;
-    IMAGE_LOGD("exif data existing");
-
     if (IsHardwareEncodeSupported(opts_, pixelmap_)) {
+        if (!needExif || pixelmap_->GetExifMetadata() == nullptr ||
+            pixelmap_->GetExifMetadata()->GetExifData() == nullptr) {
+                retCode = DoHardWareEncode(&skStream);
+                IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
+                return (retCode == SUCCESS);
+
+        }
+        MetadataWStream tStream;
         retCode = DoHardWareEncode(&tStream);
         if (retCode != SUCCESS) {
             IMAGE_LOGD("HardwareEncode failed");
             return false;
         }
+        ImageInfo imageInfo;
+        pixelmap_->GetImageInfo(imageInfo);
+        retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, opts_);
+        IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
+        return (retCode == SUCCESS);
     }
-    ImageInfo imageInfo;
-    pixelmap_->GetImageInfo(imageInfo);
-    retCode = CreateAndWriteBlob(tStream, pixelmap_, skStream, imageInfo, opts_);
-    IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
-    return (retCode == SUCCESS);
+
+    return  (retCode == SUCCESS);;
 }
 
 uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream)

@@ -341,6 +341,7 @@ protected:
     static bool IsSameSize(const Size &src, const Size &dst);
     static bool ScalePixelMap(const Size &targetSize, const Size &dstSize, const ScaleMode &scaleMode,
                               PixelMap &dstPixelMap);
+    static bool IsYuvFormat(PixelFormat format);
     bool GetPixelFormatDetail(const PixelFormat format);
     uint32_t CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremul);
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
@@ -400,7 +401,7 @@ protected:
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
-
+    bool IsYuvFormat();
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     uint8_t *data_ = nullptr;

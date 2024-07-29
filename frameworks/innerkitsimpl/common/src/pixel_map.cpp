@@ -2557,9 +2557,20 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     return pixelMap;
 }
 
+bool PixelMap::IsYuvFormat(PixelFormat format)
+{
+    return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
+bool PixelMap::IsYuvFormat()
+{
+    return IsYuvFormat(imageInfo_.pixelFormat);
+}
+
 void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
 {
-    if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
+    if (PixelMap::IsYuvFormat(format)) {
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(width);
@@ -2577,7 +2588,7 @@ void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t he
 
 void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVStrideInfo &strides)
 {
-    if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
+    if (PixelMap::IsYuvFormat(format)) {
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(strides.yStride);

@@ -226,7 +226,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
         return m;
     }
     IMAGE_LOGE("CreateMemory allocatorType: %{public}d", allocatorType_);
-    #if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
+    #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             IMAGE_LOGE("CreateMemory get surfacebuffer failed");
@@ -668,16 +668,6 @@ uint32_t PixelYuv::GetImageSize(int32_t width, int32_t height, PixelFormat forma
     return size;
 }
 
-bool PixelYuv::IsYuvFormat(PixelFormat format)
-{
-    return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
-        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
-}
-
-bool PixelYuv::PixelYuv::IsYuvFormat()
-{
-    return imageInfo_.pixelFormat == PixelFormat::NV21 || imageInfo_.pixelFormat == PixelFormat::NV12;
-}
 
 #ifdef IMAGE_COLORSPACE_FLAG
 uint32_t PixelYuv::SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
