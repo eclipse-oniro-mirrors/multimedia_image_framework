@@ -1600,7 +1600,7 @@ AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, con
 
 bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo)
 {
-    return rowStride != 0 && rowStride < imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
+    return rowStride == 0 || rowStride >= imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
 }
 
 bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
