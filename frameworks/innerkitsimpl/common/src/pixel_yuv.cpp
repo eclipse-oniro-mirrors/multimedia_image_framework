@@ -230,32 +230,32 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             IMAGE_LOGE("CreateMemory get surfacebuffer failed");
-        } else {
-            auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-            OH_NativeBuffer_Planes *planes = nullptr;
-            GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-            if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
-                IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
-            } else if (planes->planeCount >= NUM_2) {
-                int32_t pixelFmt = sb->GetFormat();
-                if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-                    auto yStride = planes->planes[PLANE_Y].columnStride;
-                    auto uvStride = planes->planes[PLANE_U].columnStride;
-                    auto yOffset = planes->planes[PLANE_Y].offset;
-                    auto uvOffset = planes->planes[PLANE_U].offset;
-                    dstStrides = {yStride, uvStride, yOffset, uvOffset};
-                } else {
-                    auto yStride = planes->planes[PLANE_Y].columnStride;
-                    auto uvStride = planes->planes[PLANE_V].columnStride;
-                    auto yOffset = planes->planes[PLANE_Y].offset;
-                    auto uvOffset = planes->planes[PLANE_V].offset;
-                    dstStrides = {yStride, uvStride, yOffset, uvOffset};
-                }
-            }
-            sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
-            sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
-            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+            return m;
         }
+        auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            int32_t pixelFmt = sb->GetFormat();
+            if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+                auto yStride = planes->planes[PLANE_Y].columnStride;
+                auto uvStride = planes->planes[PLANE_U].columnStride;
+                auto yOffset = planes->planes[PLANE_Y].offset;
+                auto uvOffset = planes->planes[PLANE_U].offset;
+                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+            } else {
+                auto yStride = planes->planes[PLANE_Y].columnStride;
+                auto uvStride = planes->planes[PLANE_V].columnStride;
+                auto yOffset = planes->planes[PLANE_Y].offset;
+                auto uvOffset = planes->planes[PLANE_V].offset;
+                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+            }
+        }
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
     #endif
     return m;
