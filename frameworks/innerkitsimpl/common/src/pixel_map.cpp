@@ -2555,6 +2555,49 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     return pixelMap;
 }
 
+bool PixelMap::IsYuvFormat(PixelFormat format)
+{
+    return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
+        format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
+}
+
+bool PixelMap::IsYuvFormat()
+{
+    return IsYuvFormat(imageInfo_.pixelFormat);
+}
+
+void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height)
+{
+    if (PixelMap::IsYuvFormat(format)) {
+        yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
+        yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
+        yuvDataInfo_.yStride = static_cast<uint32_t>(width);
+        yuvDataInfo_.uvWidth = (width % NUM_2 == 0) ? static_cast<uint32_t>(width) : static_cast<uint32_t>(width + 1);
+        yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+        yuvDataInfo_.yOffset = 0;
+        yuvDataInfo_.uvOffset =  yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
+        if (GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            yuvDataInfo_.uvStride = yuvDataInfo_.yStride;
+        } else {
+            yuvDataInfo_.uvStride = static_cast<uint32_t>((width + 1) / NUM_2 * NUM_2);
+        }
+    }
+}
+
+void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height, YUVStrideInfo &strides)
+{
+    if (PixelMap::IsYuvFormat(format)) {
+        yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
+        yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
+        yuvDataInfo_.yStride = static_cast<uint32_t>(strides.yStride);
+        yuvDataInfo_.yOffset = strides.yOffset;
+        yuvDataInfo_.uvStride = strides.uvStride;
+        yuvDataInfo_.uvOffset = strides.uvOffset;
+        yuvDataInfo_.uvWidth = (width + 1) / NUM_2 * NUM_2;
+        yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+    }
+}
+
 static const string GetNamedAlphaType(const AlphaType alphaType)
 {
     switch (alphaType) {

@@ -42,6 +42,7 @@ private:
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
     static bool IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::PixelMap* pixelMap);
     uint32_t DoHardWareEncode(SkWStream* skStream);
+    bool HardwareEncode(SkWStream &skStream, bool needExif);
     uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t EncodeSdrImage(ExtWStream& outputStream);

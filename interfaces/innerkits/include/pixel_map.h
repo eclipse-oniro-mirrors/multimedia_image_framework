@@ -234,6 +234,9 @@ public:
     {
         yuvDataInfo_ = yuvinfo;
     }
+    NATIVEEXPORT virtual void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
+    NATIVEEXPORT virtual void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
+        YUVStrideInfo &strides);
     NATIVEEXPORT virtual void GetImageYUVInfo(YUVDataInfo &yuvInfo) const
     {
         yuvInfo = yuvDataInfo_;
@@ -303,6 +306,10 @@ public:
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
+    NATIVEEXPORT void  setAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
@@ -340,6 +347,7 @@ protected:
     static bool IsSameSize(const Size &src, const Size &dst);
     static bool ScalePixelMap(const Size &targetSize, const Size &dstSize, const ScaleMode &scaleMode,
                               PixelMap &dstPixelMap);
+    static bool IsYuvFormat(PixelFormat format);
     bool GetPixelFormatDetail(const PixelFormat format);
     uint32_t CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremul);
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
@@ -399,7 +407,7 @@ protected:
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
-
+    bool IsYuvFormat();
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     uint8_t *data_ = nullptr;
