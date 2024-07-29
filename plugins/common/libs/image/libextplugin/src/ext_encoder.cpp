@@ -342,7 +342,6 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
                 retCode = DoHardWareEncode(&skStream);
                 IMAGE_LOGD("HardwareEncode retCode:%{public}d", retCode);
                 return (retCode == SUCCESS);
-
         }
         MetadataWStream tStream;
         retCode = DoHardWareEncode(&tStream);
@@ -356,8 +355,7 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
         IMAGE_LOGD("HardwareEncode retCode :%{public}d", retCode);
         return (retCode == SUCCESS);
     }
-
-    return  (retCode == SUCCESS);;
+    return (retCode == SUCCESS);
 }
 
 uint32_t ExtEncoder::EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream)
