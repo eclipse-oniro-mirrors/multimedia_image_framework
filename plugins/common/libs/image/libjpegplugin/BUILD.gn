@@ -82,10 +82,7 @@ ohos_shared_library("jpegplugin") {
   } else {
     defines = [ "DUAL_ADAPTER" ]
     DUAL_ADAPTER = true
-    sources += [
-      "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/src/jpeg_encoder.cpp",
-      "//third_party/skia/third_party/externals/libjpeg-turbo/jdicc.c",
-    ]
+    sources += [ "src/jpeg_encoder.cpp" ]
     deps = [
       "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
@@ -108,7 +105,7 @@ ohos_shared_library("jpegplugin") {
       "hilog:libhilog",
       "hitrace:hitrace_meter",
       "libexif:libexif",
-      "skia:libjpeg",
+      "libjpeg-turbo:turbojpeg",
       "skia:skia_canvaskit",
     ]
   }

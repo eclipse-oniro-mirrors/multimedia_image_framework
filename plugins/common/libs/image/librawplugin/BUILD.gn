@@ -70,11 +70,13 @@ ohos_shared_library("rawplugin") {
     }
 
     external_deps = [
+      "c_utils:utils",
       "graphic_2d:color_manager",
       "hilog:libhilog",
       "libexif:libexif",
       "skia:libjpeg",
       "skia:piex",
+      "skia:skia_canvaskit",
     ]
   }
 

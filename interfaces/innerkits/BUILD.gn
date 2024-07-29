@@ -50,7 +50,8 @@ config("image_external_config") {
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser",
   ]
   if (is_arkui_x) {
-    include_dirs += [ "//foundation/graphic/graphic_2d/utils/color_manager/export" ]
+    include_dirs +=
+        [ "//foundation/graphic/graphic_2d/utils/color_manager/export" ]
   }
 
   if (use_mingw_win) {
@@ -124,6 +125,7 @@ if (use_clang_android) {
     cflags = [
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
+      "-DNEW_SKIA",
     ]
 
     sources = [
@@ -229,8 +231,8 @@ if (use_clang_android) {
         "hilog:libhilog",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
+        "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
-        "skia:libjpeg",
         "skia:skia_canvaskit",
         "zlib:libz",
       ]

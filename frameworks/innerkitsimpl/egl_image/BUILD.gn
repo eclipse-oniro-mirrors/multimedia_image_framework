@@ -18,6 +18,14 @@ config("egl_image_public_config") {
   include_dirs = [ "include" ]
 }
 
+config("egl_image_private_config") {
+  defines = [
+    "SK_SUPPORT_GPU=1",
+    "GR_TEST_UTILS=1",
+    "SK_GL=1",
+  ]
+}
+
 ohos_shared_library("egl_image") {
   sanitize = {
     cfi = true
@@ -27,6 +35,7 @@ ohos_shared_library("egl_image") {
   }
 
   public_configs = [ ":egl_image_public_config" ]
+  configs = [ ":egl_image_private_config" ]
   sources = [
     "src/pixel_map_from_surface.cpp",
     "src/render_context.cpp",
@@ -42,6 +51,7 @@ ohos_shared_library("egl_image") {
     "graphic_surface:sync_fence",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "ipc:ipc_single",
     "skia:skia_canvaskit",
   ]
 
