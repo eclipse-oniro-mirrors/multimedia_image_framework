@@ -24,6 +24,7 @@
 #include "pubdef.h"
 #include "pixel_yuv_utils.h"
 #include "securec.h"
+#include "vpe_utils.h"
 #include "image_log.h"
 #include "image_mdk_common.h"
 #include "image_system_properties.h"
@@ -50,6 +51,9 @@ static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
 static const int32_t DEGREES90 = 90;
 static const int32_t DEGREES180 = 180;
 static const int32_t DEGREES270 = 270;
+static const int32_t PLANE_Y = 0;
+static const int32_t PLANE_U = 1;
+static const int32_t PLANE_V = 2;
 constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
@@ -233,12 +237,24 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
                 IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
             } else if (planes->planeCount >= NUM_2) {
-                auto yStride = planes->planes[0].columnStride;
-                auto uvStride = planes->planes[1].columnStride;
-                auto yOffset = planes->planes[0].offset;
-                auto uvOffset = planes->planes[1].offset - 1;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+                int32_t pixelFmt = sb->GetFormat();
+                if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+                    auto yStride = planes->planes[PLANE_Y].columnStride;
+                    auto uvStride = planes->planes[PLANE_U].columnStride;
+                    auto yOffset = planes->planes[PLANE_Y].offset;
+                    auto uvOffset = planes->planes[PLANE_U].offset;
+                    dstStrides = {yStride, uvStride, yOffset, uvOffset};
+                } else {
+                    auto yStride = planes->planes[PLANE_Y].columnStride;
+                    auto uvStride = planes->planes[PLANE_V].columnStride;
+                    auto yOffset = planes->planes[PLANE_Y].offset;
+                    auto uvOffset = planes->planes[PLANE_V].offset;
+                    dstStrides = {yStride, uvStride, yOffset, uvOffset};
+                }
             }
+            sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
+            sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
+            VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
         }
     }
     #endif
