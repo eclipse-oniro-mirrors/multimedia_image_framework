@@ -216,6 +216,7 @@ uint32_t Plugin::ResolveLibrary()
     createFunc_ = PluginExternalCreate;
     return SUCCESS;
 #else
+    IMAGE_LOGD("ResolveLibrary start loading library path %{public}s.", libraryPath_.c_str());
     handle_ = platformAdp_.LoadLibrary(libraryPath_);
     if (handle_ == nullptr) {
         IMAGE_LOGE("failed to load library.");
