@@ -24,6 +24,12 @@
 #include "log_tags.h"
 #include "media_errors.h"
 #include "pixel_yuv.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v1_0/cm_color_space.h"
+#include "v1_0/hdr_static_metadata.h"
+#include "surface_buffer.h"
+#endif
 
 namespace {
     constexpr uint8_t NUM_0 = 0;
@@ -42,6 +48,10 @@ namespace {
 
 namespace OHOS {
 namespace Media {
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 
 static const std::map<std::pair<PixelFormat, PixelFormat>, ConvertFunction> g_cvtFuncMap = []() {
 #ifndef EXT_PIXEL
@@ -219,7 +229,10 @@ uint32_t ImageFormatConvert::ConvertImageFormat(const ConvertDataInfo &srcDataIn
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
-    if (!cvtFunc(srcDataInfo.buffer, srcDataInfo.imageSize, &destDataInfo.buffer,
+    uint32_t stride = NUM_4 * srcDataInfo.imageSize.width;
+    RGBDataInfo RgbDataInfo = {srcDataInfo.imageSize.width, srcDataInfo.imageSize.height, stride};
+
+    if (!cvtFunc(srcDataInfo.buffer, RgbDataInfo, &destDataInfo.buffer,
                  destDataInfo.bufferSize, srcDataInfo.colorSpace)) {
         IMAGE_LOGE("format convert failed!");
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
@@ -246,11 +259,8 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
     if ((srcFormat == PixelFormat::NV21) || (srcFormat == PixelFormat::NV12) ||
         (srcFormat == PixelFormat::YCBCR_P010) || (srcFormat == PixelFormat::YCRCB_P010)) {
         uint32_t ret = YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat);
-        if (ret != SUCCESS) {
-            IMAGE_LOGE("convert yuv format failed!");
-            return ret;
-        }
-        return SUCCESS;
+        IMAGE_LOGD("convert yuv format ret = %{public}d!", ret);
+        return ret;
     }
 
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcFormat, destFormat);
@@ -260,10 +270,17 @@ uint32_t ImageFormatConvert::ConvertImageFormat(std::shared_ptr<PixelMap> &srcPi
     }
 
     const_uint8_buffer_type srcBuffer = srcPiexlMap->GetPixels();
-    Size size = {srcPiexlMap->GetWidth(), srcPiexlMap->GetHeight()};
+    uint32_t stride = NUM_4 * srcPiexlMap->GetWidth();
+    #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (srcPiexlMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
+        stride = sb->GetStride();
+    }
+    #endif
+    RGBDataInfo srcDataInfo = {srcPiexlMap->GetWidth(), srcPiexlMap->GetHeight(), stride};
     uint8_buffer_type destBuffer = nullptr;
     size_t destBufferSize = 0;
-    if (!cvtFunc(srcBuffer, size, &destBuffer, destBufferSize, srcPiexlMap->GetColorSpace())) {
+    if (!cvtFunc(srcBuffer, srcDataInfo, &destBuffer, destBufferSize, srcPiexlMap->GetColorSpace())) {
         IMAGE_LOGE("format convert failed!");
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
@@ -327,13 +344,15 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     srcPiexlMap->GetImageYUVInfo(yDInfo);
     ImageInfo srcInfo;
     srcPiexlMap->GetImageInfo(srcInfo);
-    if (srcFormat == PixelFormat::NV21 && yDInfo.yWidth == 0) {
+    if (srcFormat == PixelFormat::NV21 &&
+        (yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0)) {
         IMAGE_LOGE("info is invalid");
         yDInfo.yWidth = static_cast<uint32_t>(srcInfo.size.width);
         yDInfo.yHeight = static_cast<uint32_t>(srcInfo.size.height);
         yDInfo.uvWidth = static_cast<uint32_t>((srcInfo.size.width + 1) / NUM_2);
         yDInfo.uvHeight = static_cast<uint32_t>((srcInfo.size.height + 1) / NUM_2);
     }
+
     uint8_buffer_type destBuffer = nullptr;
     size_t destBufferSize = 0;
     if (!yuvCvtFunc(data, yDInfo, &destBuffer, destBufferSize, srcPiexlMap->GetColorSpace())) {
@@ -416,6 +435,11 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
         pixelMap = std::make_unique<PixelYuv>();
+        if (pixelMap == nullptr) {
+            return false;
+        }
+        // will be modified by 004 soon.
+        pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
     } else {
         pixelMap = std::make_unique<PixelMap>();
     }
@@ -424,6 +448,9 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
         return false;
     }
     pixelMap->SetPixelsAddr(destBuffer, nullptr, destBufferSize, allcatorType, nullptr);
+#ifdef EXT_PIXEL
+    pixelMap->setAllocatorType(AllocatorType::HEAP_ALLOC);
+#endif
     destPixelMap = std::move(pixelMap);
     return true;
 }

@@ -16,6 +16,7 @@
 #ifndef INTERFACES_INNERKITS_INCLUDE_PIXEL_YUV_H
 #define INTERFACES_INNERKITS_INCLUDE_PIXEL_YUV_H
 
+#include "image_converter.h"
 #include "image_type.h"
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
@@ -64,14 +65,16 @@ public:
     ColorYuv420 GetYuv420Color(uint32_t x, uint32_t y);
     NATIVEEXPORT void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
                                     CustomFreePixelMap func) override;
+    bool YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, int32_t &dstHeight,
+        OpenSourceLibyuv::RotationMode &rotateNum);
 protected:
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset, const Rect &region);
     void SetRowDataSizeForImageInfo(ImageInfo info);
     static uint32_t GetImageSize(int32_t width, int32_t height, PixelFormat format);
-    static bool IsYuvFormat(PixelFormat format);
-    void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
     uint32_t SetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, SkTransYuvInfo &src,
         PixelFormat &format, uint64_t rowStride);
+    std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat, std::string memoryTag,
+        int32_t dstWidth, int32_t dstHeight, YUVStrideInfo &dstStrides);
 #ifdef IMAGE_COLORSPACE_FLAG
     bool CheckColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
     int32_t ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, ImageInfo &imageInfo, PixelFormat &format,

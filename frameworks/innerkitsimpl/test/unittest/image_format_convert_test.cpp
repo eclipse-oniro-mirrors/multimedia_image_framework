@@ -1615,7 +1615,7 @@ HWTEST_F(ImageFormatConvertTest, GetConvertFuncByFormat_Test_001, TestSize.Level
     ConvertFunction cvtFunc = ImageFormatConvertTest::TestGetConvertFuncByFormat(srcFormat, destFormat);
 
     const_uint8_buffer_type srcBuffer = nullptr;
-    Size size = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
+    RGBDataInfo size = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
     uint8_buffer_type destBuffer = nullptr;
     size_t destBufferSize = 0;
     ColorSpace colorspace = ColorSpace::UNKNOWN;

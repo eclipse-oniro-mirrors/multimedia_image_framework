@@ -28,7 +28,7 @@ namespace {
 #if (defined(__aarch64__) || defined(__x86_64__))
 const std::string YUV_LIB_PATH = "libyuv.z.so";
 #else
-const std::string YUV_LIB_PATH = "/system/lib/chipset-pub-sdk/libyuv.z.so";
+const std::string YUV_LIB_PATH = "libyuv.z.so";
 #endif
 const std::string GET_IMAGE_CONVERTER_FUNC = "GetImageYuvConverter";
 }

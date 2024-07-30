@@ -15,7 +15,7 @@
 -->
 <fuzz_config>
   <fuzztest>
-    <!-- maximum length of a test input 2000 -->
+    <!-- maximum length of a test input -->
     <max_len>2000</max_len>
     <!-- maximum total time in seconds to run the fuzzer -->
     <max_total_time>300</max_total_time>

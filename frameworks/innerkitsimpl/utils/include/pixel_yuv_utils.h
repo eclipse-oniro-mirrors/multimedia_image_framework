@@ -79,18 +79,21 @@ public:
         YuvImageInfo &dstInfo);
     static bool Yuv420ToARGB(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo);
     static bool YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo, uint8_t *dstPixels, XYaxis &xyAxis,
-        ImageInfo &info);
+        ImageInfo &info, YUVStrideInfo &dstStrides);
     static bool Yuv420WritePixels(const YUVDataInfo &yuvInfo, uint8_t *srcPixels, ImageInfo &info,
         const uint32_t &color);
     static bool YuvWritePixel(uint8_t *srcPixels, const YUVDataInfo &yuvDataInfo, const PixelFormat &format,
         const Position &pos, const uint32_t &color);
-    static bool YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, const Rect &rect);
+    static bool YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, const Rect &rect,
+        YUVStrideInfo &dstStrides);
     static bool YuvRotate(uint8_t *srcData, YuvImageInfo &srcInfo,
         uint8_t *dstData, YuvImageInfo &dstInfo, int32_t degrees);
     static bool YuvFlip(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, bool xAxis);
     static bool YuvReversal(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *dstData, YuvImageInfo &dstInfo);
     static int32_t YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
         uint8_t *dstPixels, YuvImageInfo &dstInfo, int32_t module);
+    static void Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
+        uint8_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides);
 };
 } // namespace Media
 } // namespace OHOS

@@ -266,7 +266,7 @@ void JpegHardwareDecoder::AssembleQuantizationTable(jpeg_decompress_struct* jpeg
 {
     for (int i = 0; i < NUM_QUANT_TBLS; ++i) {
         if (jpegCompressInfo->quant_tbl_ptrs[i]) {
-            uint16_t* quantStart = jpegCompressInfo->quant_tbl_ptrs[i]->quantval;
+            uint16_t* quantStart = reinterpret_cast<uint16_t *>(jpegCompressInfo->quant_tbl_ptrs[i]->quantval);
             decodeInfo_.quantTbl.emplace_back(CodecJpegQuantTable {
                 .quantVal = std::vector<uint16_t>(quantStart, quantStart + DCTSIZE2),
                 .tableFlag = true

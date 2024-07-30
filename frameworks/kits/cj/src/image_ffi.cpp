@@ -847,11 +847,6 @@ extern "C"
         }
         auto native = FFIData::Create<ColorManager::CjColorManager>(colorSpace);
         if (!native) {
-            IMAGE_LOGE("[ImageSource] FfiOHOSCreateImageSourceByPath failed");
-            *errCode = ERR_IMAGE_INIT_ABNORMAL;
-            return INIT_FAILED;
-        }
-        if (!native) {
             *errCode = ERR_IMAGE_INIT_ABNORMAL;
             return 0;
         }

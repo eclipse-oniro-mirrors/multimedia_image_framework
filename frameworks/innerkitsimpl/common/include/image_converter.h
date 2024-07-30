@@ -149,6 +149,15 @@ struct ImageYuvConverter {
         const uint16_t* src_v, int src_stride_v, int src_width, int src_height, uint16_t* dst_y, int dst_stride_y,
         uint16_t* dst_u, int dst_stride_u, uint16_t* dst_v, int dst_stride_v, int dst_width, int dst_height,
         enum FilterMode filtering);
+    int32_t (*NV12Mirror)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_uv, int src_stride_uv,
+        uint8_t* dst_y, int dst_stride_y, uint8_t* dst_uv, int dst_stride_uv,
+        int width, int height);
+    int32_t (*NV12Copy)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_uv, int src_stride_uv,
+        uint8_t* dst_y, int dst_stride_y, uint8_t* dst_uv, int dst_stride_uv,
+        int width, int height);
+    int32_t (*NV12Scale)(const uint8_t* src_y, int src_stride_y, const uint8_t* src_uv, int src_stride_uv,
+        int src_width, int src_height, uint8_t* dst_y, int dst_stride_y, uint8_t* dst_uv, int dst_stride_uv,
+        int dst_width, int dst_height, enum FilterMode filtering);
 };
 struct ImageYuvConverter GetImageYuvConverter(void);
 

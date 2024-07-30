@@ -26,7 +26,7 @@
 #undef LOG_TAG
 #define LOG_TAG "ImageFwkExtManager"
 
-static const std::string IMAGE_FWK_EXT_NATIVE_SO = "/system/lib64/platformsdk/libimage_codec_ext_native.so";
+static const std::string IMAGE_FWK_EXT_NATIVE_SO = "libimage_codec_ext_native.so";
 
 namespace OHOS {
 namespace Media {

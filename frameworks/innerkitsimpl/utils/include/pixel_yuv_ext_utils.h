@@ -30,18 +30,23 @@ namespace OHOS {
 namespace Media {
 class PixelYuvExtUtils {
 public:
-    static bool BGRAToYuv420(const uint8_t *src, uint8_t *dst, int srcW, int srcH, PixelFormat pixelFormat);
+    static bool BGRAToYuv420(const uint8_t *src, uint8_t *dst, int srcW, int srcH,
+        PixelFormat pixelFormat, YUVDataInfo &yuvDataInfo);
     static bool Yuv420ToBGRA(const uint8_t *sample, uint8_t *dst_argb, Size &size,
-                             PixelFormat pixelFormat, YUVDataInfo &info);
+        PixelFormat pixelFormat, YUVDataInfo &info);
     static bool Yuv420ToARGB(const uint8_t *sample, uint8_t *dst_argb, Size &size,
-                             PixelFormat pixelFormat, YUVDataInfo &info);
-    static bool YuvRotate(uint8_t *srcPixels, Size &size, int32_t degrees,
-                          const PixelFormat &format, YUVDataInfo &info);
+        PixelFormat pixelFormat, YUVDataInfo &info);
+    static bool YuvRotate(uint8_t* srcPixels, const PixelFormat& format, YUVDataInfo& info, Size& dstSize,
+        uint8_t* dstPixels, YUVStrideInfo& dstStrides, OpenSourceLibyuv::RotationMode &rotateNum);
     static void ConvertYuvMode(OpenSourceLibyuv ::FilterMode &filterMode, const AntiAliasingOption &option);
     static void ScaleYuv420(float xAxis, float yAxis, const AntiAliasingOption &option,
-                            YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, uint32_t dstYStride);
-    static bool ReversalYuv(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info);
-    static bool FlipYuv(uint8_t *src, uint8_t *dst, ImageInfo &imageinfo, bool isXaxis, YUVDataInfo &info);
+        YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, YUVStrideInfo &dstStrides);
+    static bool Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
+        YUVStrideInfo &dstStrides, bool isReversed);
+    static bool FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format, YUVDataInfo &info,
+        YUVStrideInfo &dstStrides);
+    static bool NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &info,
+        OpenSourceLibyuv::RotationMode &rotateNum, uint8_t* dst, YUVStrideInfo &dstStrides);
 };
 } // namespace Media
 } // namespace OHOS
