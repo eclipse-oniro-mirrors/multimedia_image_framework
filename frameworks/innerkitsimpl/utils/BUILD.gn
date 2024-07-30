@@ -149,6 +149,7 @@ if (use_clang_ios) {
         "hilog:libhilog",
         "hisysevent:libhisysevent",
         "hitrace:hitrace_meter",
+        "ipc:ipc_single",
       ]
 
       if (is_standard_system) {

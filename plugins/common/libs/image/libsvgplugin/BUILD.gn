@@ -51,7 +51,10 @@ ohos_shared_library("svgplugin") {
     "skia:skia_canvaskit",
   ]
 
-  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
+  cflags = [
+    "-DIMAGE_COLORSPACE_FLAG",
+    "-DNEW_SKIA",
+  ]
 
   innerapi_tags = [ "platformsdk" ]
   part_name = "image_framework"

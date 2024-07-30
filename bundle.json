@@ -56,7 +56,9 @@
           "json",
           "ffrt",
           "openmax",
-          "qos_manager"
+          "qos_manager",
+          "eventhandler",
+          "ets_runtime"
         ],
         "third_party": [
           "flutter",
