@@ -208,7 +208,7 @@ int32_t OH_PixelMap_CreatePixelMap(napi_env env, OhosPixelMapCreateOps info,
     void* buf, size_t len, napi_value* res);
 
 /**
- * @brief Creates a <b>PixelMap</b> object with stride.
+ * @brief Creates a <b>PixelMap</b> object with stride, whose memory is default as DMA.
  *
  * @param env Indicates the NAPI environment pointer.
  * @param info Indicates the options for setting the <b>PixelMap</b> object.

@@ -279,7 +279,7 @@ const std::vector<std::string> META_DATA = {
                 {
                   "name":"encodeFormat",
                   "type":"string",
-                  "value": "image/extended"
+                  "value": "image/jpeg,image/png,image/webp"
                 }
               ]
             }

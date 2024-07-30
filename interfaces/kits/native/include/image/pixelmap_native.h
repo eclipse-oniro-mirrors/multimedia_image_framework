@@ -260,26 +260,26 @@ Image_ErrorCode OH_PixelmapInitializationOptions_SetSrcPixelFormat(OH_Pixelmap_I
     int32_t srcpixelFormat);
 
 /**
- * @brief Get rowStride for InitializationOtions struct.
+ * @brief Get rowStride for InitializationOptions struct.
  *
- * @param options The InitializationOtions pointer will be operated.
+ * @param options The InitializationOptions pointer will be operated.
  * @param rowStride the rowStride of image buffer.
- * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is sucessful.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
  * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if rowStride is null.
- * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe options is released.
  * @since 12
  */
 Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_InitializationOptions *options,
     int32_t *rowStride);
 
 /**
- * @brief Set rowStride number for InitializationOtions struct.
+ * @brief Set rowStride number for InitializationOptions struct.
  *
- * @param options The InitializationOtions pointer will be operated.
+ * @param options The InitializationOptions pointer will be operated.
  * @param rowStride the rowStride of image buffer.
- * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is sucessful.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
  * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if rowStride does not match width.
- * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe options is released.
  * @since 12
  */
 Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_InitializationOptions *options,
@@ -492,11 +492,11 @@ Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scale
  * @param scaleX Scaling ratio of the width.
  * @param scaleY Scaling ratio of the height.
  * @param level The anti-aliasing algorithm to be used.
- * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is sucessful.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
  * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, x and y are incorrect.
  * returns {@link Image_ErrorCode} IMAGE_TOO_LARGE - if image is too large.
  * returns {@link Image_ErrorCode} IMAGE_ALLOC_FAILED - if device has no memory.
- * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe source pixelmap is released.
  * @see OH_PixelmapNative
  * @since 12
  */

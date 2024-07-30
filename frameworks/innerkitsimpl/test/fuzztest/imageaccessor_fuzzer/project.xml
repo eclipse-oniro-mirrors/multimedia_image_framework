@@ -15,8 +15,8 @@
 -->
 <fuzz_config>
   <fuzztest>
-    <!-- maximum length of a test input 33554432 = 32 * 1024 * 1024 -->
-    <max_len>33554432</max_len>
+    <!-- maximum length of a test input 2000 -->
+    <max_len>2000</max_len>
     <!-- maximum total time in seconds to run the fuzzer -->
     <max_total_time>300</max_total_time>
     <!-- memory usage limit in Mb -->

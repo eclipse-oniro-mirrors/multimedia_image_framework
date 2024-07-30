@@ -36,6 +36,12 @@ struct ProcFuncExtension {
     AlphaConvertType alphaConvertType;
 };
 
+struct BufferInfo {
+    void *pixels;
+    int32_t rowStride;
+    ImageInfo *imageInfo;
+};
+
 // These values SHOULD be sync with image_type.h PixelFormat
 constexpr uint32_t GRAY_BIT = 0x80000001; /* Tow value image, just white or black. */
 constexpr uint32_t GRAY_ALPHA = 0x80000002;
@@ -182,8 +188,7 @@ public:
     static std::unique_ptr<PixelConvert> Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo);
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
 
-    static int32_t PixelsConvert(const void *srcPixels, const int32_t srcLength, const int32_t srcRowStride,
-        const ImageInfo &srcInfo, void *dstPixels, const ImageInfo &dstInfo);
+    static int32_t PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstInfo, int32_t srcLength, bool useDMA);
 
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);

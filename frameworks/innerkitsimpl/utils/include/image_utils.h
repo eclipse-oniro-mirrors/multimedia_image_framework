@@ -39,6 +39,7 @@ public:
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsSupportDMA(const Size &size, const PixelFormat &format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);

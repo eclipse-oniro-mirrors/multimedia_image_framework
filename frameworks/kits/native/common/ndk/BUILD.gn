@@ -43,6 +43,7 @@ ohos_shared_library("ohimage") {
     "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]
@@ -72,6 +73,7 @@ ohos_shared_library("image_receiver") {
     "drivers_peripheral_display:hdi_gralloc_client",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "ipc:ipc_single",
   ]
 
   innerapi_tags = [ "ndk" ]
