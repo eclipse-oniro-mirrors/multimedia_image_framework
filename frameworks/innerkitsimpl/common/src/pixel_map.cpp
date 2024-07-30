@@ -253,13 +253,13 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
 
 static void MakePixelMap(void *dstPixels, int fd, std::unique_ptr<PixelMap> &dstPixelMap)
 {
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
     uint32_t bufferSize = static_cast<uint32_t>(dstPixelMap->GetByteCount());
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    void *fdBuffer = new int32_t();
+    *static_cast<int32_t *>(fdBuffer) = fd;
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 #endif
 }
 
@@ -540,12 +540,12 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     // update alpha opaque
     UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
                       static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 #endif
     dstPixelMap->SetEditable(opts.editable);
     return dstPixelMap;
@@ -692,12 +692,12 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
-    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 #endif
     return true;
 }
