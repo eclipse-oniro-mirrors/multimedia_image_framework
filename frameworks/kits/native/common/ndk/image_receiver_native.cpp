@@ -206,7 +206,8 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
         return IMAGE_UNKNOWN_ERROR;
     }
 
-    auto surfaceBuffer = receiver->ptrImgRcv->ReadLastImage();
+    int64_t timestamp = 0;
+    auto surfaceBuffer = receiver->ptrImgRcv->ReadLastImage(timestamp);
     if (nullptr == surfaceBuffer) {
         IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
@@ -218,7 +219,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
         return IMAGE_ALLOC_FAILED;
     }
 
-    rst->imgNative = new OHOS::Media::NativeImage(surfaceBuffer, bufferProcessor);
+    rst->imgNative = new OHOS::Media::NativeImage(surfaceBuffer, bufferProcessor, timestamp);
     if (!(rst->imgNative)) {
         delete rst;
         IMAGE_LOGE("OH_ImageNative data create failed.");
@@ -248,7 +249,8 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
         return IMAGE_UNKNOWN_ERROR;
     }
 
-    auto surfaceBuffer = receiver->ptrImgRcv->ReadNextImage();
+    int64_t timestamp = 0;
+    auto surfaceBuffer = receiver->ptrImgRcv->ReadNextImage(timestamp);
     if (nullptr == surfaceBuffer) {
         IMAGE_LOGE("Bad data: surfacebuffer empty.");
         return IMAGE_UNKNOWN_ERROR;
@@ -260,7 +262,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
         return IMAGE_ALLOC_FAILED;
     }
 
-    rst->imgNative = new OHOS::Media::NativeImage(surfaceBuffer, bufferProcessor);
+    rst->imgNative = new OHOS::Media::NativeImage(surfaceBuffer, bufferProcessor, timestamp);
     if (!(rst->imgNative)) {
         delete rst;
         IMAGE_LOGE("OH_ImageNative data create failed.");
