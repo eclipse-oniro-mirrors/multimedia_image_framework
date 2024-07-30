@@ -132,17 +132,6 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
                             imageInfo.size.width, imageInfo.size.height,
                             imageInfo.pixelFormat, yuvDataInfo};
-    uint32_t dstYStride = static_cast<uint32_t>(yuvInfo.width) * xAxis;
-    #if !defined(IOS_PLATFORM)&& !defined(ANDROID_PLATFORM)
-    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        if (m->extend.data == nullptr) {
-            IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
-        } else {
-            auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
-            dstYStride = static_cast<uint32_t>(sb->GetStride());
-        }
-    }
-    #endif
 
     PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstYStride);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);

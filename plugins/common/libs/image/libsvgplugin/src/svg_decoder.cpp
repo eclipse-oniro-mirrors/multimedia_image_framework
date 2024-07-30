@@ -541,8 +541,8 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         svgDom_->setResizePercentage(DEFAULT_RESIZE_PERCENTAGE * scaleFitDesired);
     }
 
-    opts_.desiredSize.width = static_cast<int32_t>(svgDom_->containerSize().width());
-    opts_.desiredSize.height = static_cast<int32_t>(svgDom_->containerSize().height());
+    opts_.desiredSize.width = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().width()));
+    opts_.desiredSize.height = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().height()));
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
@@ -572,8 +572,8 @@ uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
         return Media::ERROR;
     }
 
-    size.width = static_cast<int32_t>(svgSize.width());
-    size.height = static_cast<int32_t>(svgSize.height());
+    size.width = static_cast<int32_t>(Float2UInt32(svgSize.width()));
+    size.height = static_cast<int32_t>(Float2UInt32(svgSize.height()));
 
     IMAGE_LOGD("[DoGetImageSize] OUT size=(%{public}u, %{public}u)", size.width, size.height);
     return Media::SUCCESS;
