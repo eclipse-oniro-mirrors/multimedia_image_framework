@@ -22,15 +22,21 @@
 #include "image_plugin_type.h"
 #include "image_type.h"
 #include "pixel_map.h"
+#include "memory_manager.h"
 
 namespace OHOS {
 namespace Media {
 using uint8_buffer_type = uint8_t *;
 using const_uint8_buffer_type = const uint8_t *;
-using ConvertFunction = bool(*)(const uint8_t*, const RGBDataInfo&, uint8_t**, size_t&, [[maybe_unused]]ColorSpace);
-using YUVConvertFunction = bool(*)(const uint8_t*, const YUVDataInfo&, uint8_t**, size_t&,
+using ConvertFunctionP010 = bool(*)(const uint8_t*, const RGBDataInfo&, uint8_t**, size_t&,
+    [[maybe_unused]]ColorSpace);
+using YUVConvertFunctionP010 = bool(*)(const uint8_t*, const YUVDataInfo&, uint8_t**, size_t&,
     [[maybe_unused]]ColorSpace);
 
+using ConvertFunction = bool(*)(const uint8_t*, const RGBDataInfo&, DestConvertInfo &destInfo,
+    [[maybe_unused]]ColorSpace);
+using YUVConvertFunction = bool(*)(const uint8_t*, const YUVDataInfo&, DestConvertInfo &destInfo,
+    [[maybe_unused]]ColorSpace);
 struct ConvertDataInfo {
     uint8_buffer_type buffer = nullptr;
     size_t bufferSize;
@@ -52,9 +58,22 @@ private:
     static size_t GetBufferSizeByFormat(PixelFormat format, const Size &size);
     static ConvertFunction GetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
     static YUVConvertFunction YUVGetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
-    static bool MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, uint8_buffer_type destBuffer,
-                                 const size_t destBufferSize, ImageInfo &info, AllocatorType allcatorType);
+    static bool MakeDestPixelMapP010(std::shared_ptr<PixelMap> &destPixelMap, uint8_buffer_type destBuffer,
+                                     const size_t destBufferSize, ImageInfo &info, AllocatorType allcatorType);
     static bool IsSupport(PixelFormat format);
+    static ConvertFunctionP010 GetConvertFuncByFormatP010(PixelFormat srcFormat, PixelFormat destFormat);
+    static YUVConvertFunctionP010 YUVGetConvertFuncByFormatP010(PixelFormat srcFormat, PixelFormat destFormat);
+    static uint32_t RGBConvertImageFormatOptionP010(std::shared_ptr<PixelMap> &srcPiexlMap,
+                                                    const PixelFormat &srcFormat, PixelFormat destFormat);
+    static uint32_t RGBConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
+                                                const PixelFormat &srcFormat, PixelFormat destFormat);
+    static bool MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
+                                 DestConvertInfo &destInfo, void *context);
+    static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
+                                                   AllocatorType allocatorType, int32_t width, int32_t height,
+                                                   YUVStrideInfo &strides);
+    static uint32_t YUVConvertImageFormatOptionP010(std::shared_ptr<PixelMap> &srcPiexlMap,
+                                                    const PixelFormat &srcFormat, PixelFormat destFormat);
 };
 } //OHOS
 } //Media

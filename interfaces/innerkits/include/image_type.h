@@ -231,6 +231,41 @@ struct RGBDataInfo {
     uint32_t stride = 0;
 };
 
+struct DestConvertInfo {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    PixelFormat format = PixelFormat::UNKNOWN;
+    AllocatorType allocType = AllocatorType::SHARE_MEM_ALLOC;
+    uint8_t *buffer = nullptr;
+    uint32_t bufferSize = 0;
+    uint32_t yStride = 0;
+    uint32_t uvStride = 0;
+    uint32_t yOffset = 0;
+    uint32_t uvOffset = 0;
+};
+
+struct SrcConvertParam {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    AllocatorType allocType = AllocatorType::SHARE_MEM_ALLOC ;
+    PixelFormat format = PixelFormat::UNKNOWN;
+    const uint8_t *buffer = nullptr;
+    uint32_t bufferSize = 0;
+    int stride[2] = {0, 0};
+    const uint8_t *slice[2] = {nullptr, nullptr};
+};
+
+struct DestConvertParam {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    AllocatorType allocType = AllocatorType::SHARE_MEM_ALLOC;
+    PixelFormat format = PixelFormat::UNKNOWN;
+    uint8_t *buffer = nullptr;
+    uint32_t bufferSize = 0;
+    int stride[2] = {0, 0};
+    uint8_t *slice[2] = {nullptr, nullptr};
+};
+
 struct FillColor {
     bool isValidColor = false;
     uint32_t color = 0;
