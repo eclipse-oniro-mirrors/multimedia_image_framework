@@ -403,8 +403,8 @@ bool PixelYuvExtUtils::Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelForma
     int srcYStride = info.yStride;
     int srcUVStride = info.uvStride;
 
-    uint8_t *dstY = dst + dstStrides.yStride;
-    uint8_t *dstUV = dst +  dstStrides.uvStride;
+    uint8_t *dstY = dst + dstStrides.yOffset;
+    uint8_t *dstUV = dst +  dstStrides.uvOffset;
     int dstYStride = dstStrides.yStride;
     int dstUVStride = dstStrides.uvStride;
     height = isReversed? -height : height;

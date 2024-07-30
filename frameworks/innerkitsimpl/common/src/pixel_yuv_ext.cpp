@@ -46,6 +46,7 @@ using namespace std;
 
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+static const int32_t DEGREES360 = 360;
 
 static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace)
 {
