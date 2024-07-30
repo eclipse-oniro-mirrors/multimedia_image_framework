@@ -56,11 +56,11 @@ bool JpegHwDecoderFlow::AllocOutputBuffer()
     }
     if (outputColorFmt_ == PIXEL_FMT_RGBA_8888) {
         static constexpr uint32_t bitDepthForRgba = 4;
-        outputBufferSize_.width = static_cast<uint32_t>(handle->stride) / bitDepthForRgba;
+        outputBufferSize_.width = static_cast<int32_t>((handle->stride) / bitDepthForRgba);
     } else { // PIXEL_FMT_YCRCB_420_SP
-        outputBufferSize_.width = static_cast<uint32_t>(handle->stride);
+        outputBufferSize_.width = static_cast<int32_t>(handle->stride);
     }
-    outputBufferSize_.height = static_cast<uint32_t>(handle->height);
+    outputBufferSize_.height = static_cast<int32_t>(handle->height);
     outputBuffer_.buffer = new NativeBuffer(handle);
     return true;
 }
@@ -94,7 +94,7 @@ bool JpegHwDecoderFlow::DumpDecodeResult()
     constexpr int maxPathLen = 256;
     char outputFilePath[maxPathLen] = {0};
     std::string colorDesc = getColorDesc();
-    int ret = sprintf_s(outputFilePath, sizeof(outputFilePath), "%s/out_%u(%u)x%u_org_%ux%u_%s.bin",
+    int ret = sprintf_s(outputFilePath, sizeof(outputFilePath), "%s/out_%d(%d)x%d_org_%dx%d_%s.bin",
                         outputPath_.c_str(), scaledImgSize_.width, outputBufferSize_.width, scaledImgSize_.height,
                         orgImgSize_.width, orgImgSize_.height, colorDesc.c_str());
     if (ret == -1) {
@@ -148,8 +148,8 @@ bool JpegHwDecoderFlow::Run(const CommandOpt& opt, bool needDumpOutput)
     orgImgSize_.width = opt.width;
     orgImgSize_.height = opt.height;
     sampleSize_ = opt.sampleSize;
-    scaledImgSize_.width = AlignUp(opt.width / opt.sampleSize, ALIGN_8);
-    scaledImgSize_.height = AlignUp(opt.height / opt.sampleSize, ALIGN_8);
+    scaledImgSize_.width = static_cast<int32_t>(AlignUp(opt.width / opt.sampleSize, ALIGN_8));
+    scaledImgSize_.height = static_cast<int32_t>(AlignUp(opt.height / opt.sampleSize, ALIGN_8));
     JPEG_HW_LOGD("orgImgSize=[%{public}ux%{public}u], scaledImgSize=[%{public}ux%{public}u], sampleSize=%{public}u",
                  orgImgSize_.width, orgImgSize_.height, scaledImgSize_.width, scaledImgSize_.height, sampleSize_);
 

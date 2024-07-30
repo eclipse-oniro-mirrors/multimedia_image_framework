@@ -296,7 +296,7 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
     int32_t dstUVStride = static_cast<int32_t>(dstUWidth * NUM_2);
     //AllocatorType DMA_ALLOC
     if (dstYStride != dstYWidth) {
-        dstUVStride = dstYStride;
+        dstUVStride = static_cast<int32_t>(dstYStride);
     }
     if (yuvInfo.yuvFormat == PixelFormat::NV12) {
         converter.MergeUVPlane(tempUData, dstUWidth, tempVData, dstUWidth, dstUV, dstUVStride, dstUWidth, dstUHeight);

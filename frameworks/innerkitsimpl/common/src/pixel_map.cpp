@@ -322,13 +322,13 @@ int32_t PixelMap::GetAllocatedByteCount(const ImageInfo& info)
 
 void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
 {
-    yuvInfo.yWidth = width;
-    yuvInfo.yHeight = height;
-    yuvInfo.uvWidth = (width + 1) / NUM_2;
-    yuvInfo.uvHeight = (height + 1) / NUM_2;
-    yuvInfo.yStride = width;
-    yuvInfo.uvStride = width + 1;
-    yuvInfo.uvOffset = width * height;
+    yuvInfo.yWidth = static_cast<uint32_t>(width);
+    yuvInfo.yHeight = static_cast<uint32_t>(height);
+    yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
+    yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
+    yuvInfo.yStride = static_cast<uint32_t>(width);
+    yuvInfo.uvStride = static_cast<uint32_t>(width + 1);
+    yuvInfo.uvOffset = static_cast<uint32_t>(width * height);
 }
 
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)

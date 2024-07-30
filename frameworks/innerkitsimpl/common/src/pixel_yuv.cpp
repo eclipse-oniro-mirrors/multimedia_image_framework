@@ -661,7 +661,8 @@ void PixelYuv::SetRowDataSizeForImageInfo(ImageInfo info)
 
 uint32_t PixelYuv::GetImageSize(int32_t width, int32_t height, PixelFormat format)
 {
-    uint32_t size = GetYSize(width, height) + GetUStride(width) * GetUVHeight(height) * TWO_SLICES;
+    uint32_t size = static_cast<uint32_t>(GetYSize(width, height) +
+                                          GetUStride(width) * GetUVHeight(height) * TWO_SLICES);
     if (IsYUVP010Format(format)) {
         size *= NUM_2;
     }
@@ -769,7 +770,7 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
         SurfaceBuffer *sbBuffer = reinterpret_cast<SurfaceBuffer *>(GetFd());
-        rowStride = sbBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
     srcData = static_cast<uint8_t *>(GetWritablePixels());
 #endif

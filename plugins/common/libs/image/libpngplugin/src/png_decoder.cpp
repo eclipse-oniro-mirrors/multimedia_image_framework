@@ -102,8 +102,8 @@ uint32_t PngDecoder::GetImageSize(uint32_t index, Size &size)
         IMAGE_LOGD("decode header error on get image ret:%{public}u.", ret);
         return ret;
     }
-    size.width = png_get_image_width(pngStructPtr_, pngInfoPtr_);
-    size.height = png_get_image_height(pngStructPtr_, pngInfoPtr_);
+    size.width = static_cast<int32_t>(png_get_image_width(pngStructPtr_, pngInfoPtr_));
+    size.height = static_cast<int32_t>(png_get_image_height(pngStructPtr_, pngInfoPtr_));
     return SUCCESS;
 }
 
@@ -143,8 +143,8 @@ uint32_t PngDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         IMAGE_LOGE("config decoding failed on set decode options:%{public}u.", ret);
         return ret;
     }
-    info.size.width = pngImageInfo_.width;
-    info.size.height = pngImageInfo_.height;
+    info.size.width = static_cast<int32_t>(pngImageInfo_.width);
+    info.size.height = static_cast<int32_t>(pngImageInfo_.height);
     info.pixelFormat = outputFormat_;
     info.alphaType = alphaType_;
     opts_ = opts;

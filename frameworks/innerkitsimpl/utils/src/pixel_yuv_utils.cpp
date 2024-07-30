@@ -49,6 +49,7 @@ constexpr uint8_t Y_DEFAULT = 0x10;
 constexpr uint8_t UV_DEFAULT = 0x80;
 constexpr uint8_t TRANSPOSE_CLOCK = 1;
 constexpr uint8_t TRANSPOSE_CCLOCK = 2;
+constexpr int32_t EXPR_SUCCESS = 0;
 
 static const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::UNKNOWN, AVPixelFormat::AV_PIX_FMT_NONE},
@@ -794,7 +795,8 @@ uint8_t PixelYuvUtils::GetYuv420V(uint32_t x, uint32_t y, YUVDataInfo &info, Pix
 
 bool PixelYuvUtils::BGRAToYuv420(const uint8_t *src, YuvImageInfo &srcInfo, uint8_t *dst, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo,
+                 static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
         IMAGE_LOGE("BGRAToYuv420 failed");
         return false;
     }
@@ -803,7 +805,7 @@ bool PixelYuvUtils::BGRAToYuv420(const uint8_t *src, YuvImageInfo &srcInfo, uint
 
 bool PixelYuvUtils::Yuv420ToBGRA(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
         IMAGE_LOGE("Yuv420ToBGRA failed");
         return false;
     }
@@ -812,7 +814,7 @@ bool PixelYuvUtils::Yuv420ToBGRA(const uint8_t *in, YuvImageInfo &srcInfo, uint8
 
 bool PixelYuvUtils::Yuv420ToARGB(const uint8_t *in, YuvImageInfo &srcInfo, uint8_t *out, YuvImageInfo &dstInfo)
 {
-    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != SUCCESS) {
+    if (YuvScale(const_cast<uint8_t *>(in), srcInfo, out, dstInfo, static_cast<int32_t>(SWS_BICUBIC)) != EXPR_SUCCESS) {
         IMAGE_LOGE("Yuv420ToBGRA failed");
         return false;
     }
@@ -1004,7 +1006,7 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * info.size.width + newX) = *(srcY + y * yuvInfo.yStride + x);
+                *(dstY + newY * info.size.width + newX) = *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
         }
     }
@@ -1014,8 +1016,9 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
-                *(dstUV + newY * info.size.width + newX) = *(srcUV + y * yuvInfo.yWidth + x);
-                *(dstUV + newY * info.size.width + newX + 1) = *(srcUV + y * yuvInfo.yWidth + x + 1);
+                *(dstUV + newY * info.size.width + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
+                *(dstUV + newY * info.size.width + newX + 1) =
+                *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
             }
         }
     }
