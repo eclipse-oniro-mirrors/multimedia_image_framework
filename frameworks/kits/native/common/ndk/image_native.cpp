@@ -19,6 +19,7 @@
 #include "image_log.h"
 #include "image_native.h"
 #include "image_kits.h"
+#include "media_errors.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,21 @@ Image_ErrorCode OH_ImageNative_GetPixelStride(OH_ImageNative* image, uint32_t co
 
     *pixelStride = component->pixelStride;
     return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image, int64_t *timestamp)
+{
+    if (nullptr == image || nullptr == image->imgNative || nullptr == timestamp) {
+        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, timestamp=0x%{public}p", image, timestamp);
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (OHOS::Media::SUCCESS == image->imgNative->GetTimestamp(*timestamp)) {
+        return IMAGE_SUCCESS;
+    } else {
+        IMAGE_LOGE("image buffer is unusable");
+        return IMAGE_BAD_PARAMETER;
+    }
 }
 
 MIDK_EXPORT
