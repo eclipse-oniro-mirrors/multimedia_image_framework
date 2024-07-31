@@ -1493,6 +1493,9 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 bool ImageSource::PrereadSourceStream()
 {
     uint8_t* prereadBuffer = new (std::nothrow) uint8_t[IMAGE_HEADER_SIZE];
+    if (prereadBuffer == nullptr) {
+        return false;
+    }
     uint32_t prereadSize = 0;
     uint32_t savedPosition = sourceStreamPtr_->Tell();
     sourceStreamPtr_->Seek(0);
