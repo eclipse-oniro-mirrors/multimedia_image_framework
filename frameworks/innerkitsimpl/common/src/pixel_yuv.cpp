@@ -268,7 +268,8 @@ void PixelYuv::rotate(float degrees)
         return;
     }
     if (degrees < 0) {
-        degrees += DEGREES360;
+        int n = abs(degrees / DEGREES360);
+        degrees += DEGREES360 * (n + 1);
     }
     OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
     int32_t dstWidth = imageInfo_.size.width;
