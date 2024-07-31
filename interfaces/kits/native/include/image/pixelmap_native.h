@@ -36,6 +36,8 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #include "image_common.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -414,6 +416,30 @@ Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info);
  */
 Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Convert a native <b>PixelMap</b> object to <b>PixelMap</b> napi object.
+ *
+ * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
+ * @param pixelmapNative The Pixelmap pointer will be operated.
+ * @param pixelmapNapi Indicates a pointer to the <b>PixelMap</b> object created at the native layer.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
+    napi_value *pixelmapNapi);
+
+/**
+ * @brief Convert a <b>PixelMap</b> napi object to native <b>PixelMap</b> object.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNapi Indicates the options for setting the <b>PixelMap</b> object.
+ * @param pixelmapNative Pixelmap pointer for created.
+ * @return Returns {@link Image_ErrorCode}
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
+    OH_PixelmapNative **pixelmapNative);
 
 /**
  * @brief Reads data of this pixel map to an Buffer. If this pixel map is created in the BGRA_8888 format,
