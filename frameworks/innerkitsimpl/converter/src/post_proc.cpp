@@ -801,12 +801,13 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
     void *inBuf = nullptr;
     if (srcWidth % HALF != 0 && pixelMap.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
         // Workaround for crash on odd number width, caused by FFmpeg 5.0 upgrade
-        if (srcRowStride[0] < 0) {
+        int64_t byteCountOverflow = static_cast<int64_t>(srcRowStride[0]) * srcHeight;
+        if (srcRowStride[0] < 0 || byteCountOverflow > INT_MAX) {
             mem->Release();
-            IMAGE_LOGE("ScalePixelMapEx invalid srcRowStride");
+            IMAGE_LOGE("ScalePixelMapEx invalid srcRowStride or pixelMap size too large");
             return false;
         }
-        uint32_t byteCount = static_cast<uint32_t>(srcRowStride[0]) * static_cast<uint32_t>(srcHeight);
+        uint32_t byteCount = static_cast<uint32_t>(byteCountOverflow);
         inBuf = malloc(byteCount);
         srcPixels[0] = reinterpret_cast<uint8_t*>(inBuf);
         errno_t errRet = memcpy_s(inBuf, byteCount, pixelMap.GetWritablePixels(), byteCount);
