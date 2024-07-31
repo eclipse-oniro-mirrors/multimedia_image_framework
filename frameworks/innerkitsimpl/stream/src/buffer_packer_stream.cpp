@@ -65,5 +65,10 @@ bool BufferPackerStream::GetCapicity(size_t &size)
     size = maxSize_;
     return true;
 }
+
+ImagePlugin::OutputStreamType BufferPackerStream::GetType()
+{
+    return ImagePlugin::OutputStreamType::BUFFER_PACKER;
+}
 } // namespace Media
 } // namespace OHOS

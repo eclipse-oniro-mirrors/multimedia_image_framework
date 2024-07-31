@@ -39,6 +39,8 @@ public:
     {
         offset_ = offset;
     }
+
+    ImagePlugin::OutputStreamType GetType() override;
 private:
     DISALLOW_COPY(BufferPackerStream);
 

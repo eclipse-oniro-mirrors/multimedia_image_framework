@@ -1316,5 +1316,26 @@ uint32_t HdrJpegPackerHelper::SpliceHdrStream(sk_sp<SkData>& baseImage, sk_sp<Sk
     output.write(gainmapBytes + JPEG_MARKER_TAG_SIZE, gainmapImage->size() - JPEG_MARKER_TAG_SIZE);
     return SUCCESS;
 }
+
+bool HdrHeifPackerHelper::PackIT35Info(HdrMetadata& metadata, std::vector<uint8_t>& info)
+{
+    uint32_t dynamicMetadataSize = metadata.dynamicMetadata.size();
+
+    // metadataSize + staticMetadataSize + staticMetadata + dynamicMetadataSize + dynamicMetadata
+    const uint32_t metadataSize = UINT16_BYTE_COUNT + UINT16_BYTE_COUNT + VIVID_STATIC_METADATA_SIZE_IN_IMAGE +
+        UINT16_BYTE_COUNT + dynamicMetadataSize;
+    uint32_t extendInfoSize = GetExtendMetadataSize(false, metadata.extendMeta);
+    uint32_t infoLength = VIVID_METADATA_PRE_INFO_SIZE + metadataSize;
+    if (extendInfoSize != EMPTY_SIZE) {
+        infoLength += (UINT16_BYTE_COUNT + extendInfoSize);
+    }
+    info.resize(infoLength);
+    uint32_t index = 0;
+    if (!PackVividMetadata(info, index, metadata)) {
+        IMAGE_LOGE("hdr image package metadata failed");
+        return false;
+    }
+    return true;
+}
 }
 }

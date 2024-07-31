@@ -50,5 +50,10 @@ int64_t OstreamPackerStream::BytesWritten()
 {
     return (outputStream_ != nullptr) ? static_cast<int64_t>(outputStream_->tellp()) : 0;
 }
+
+ImagePlugin::OutputStreamType OstreamPackerStream::GetType()
+{
+    return ImagePlugin::OutputStreamType::OSTREAM_PACKER;
+}
 } // namespace Media
 } // namespace OHOS
