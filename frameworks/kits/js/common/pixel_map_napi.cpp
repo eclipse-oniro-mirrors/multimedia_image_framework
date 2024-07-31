@@ -2586,6 +2586,20 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
 }
 
+static void NapiParseCallbackOrAntiAliasing(napi_env &env, NapiValues &nVal, int argi)
+{
+    if (ImageNapiUtils::getType(env, nVal.argv[argi]) == napi_function) {
+        napi_create_reference(env, nVal.argv[argi], nVal.refCount, &(nVal.context->callbackRef));
+    } else {
+        int32_t antiAliasing;
+        if (!IMG_IS_OK(napi_get_value_int32(env, nVal.argv[argi], &antiAliasing))) {
+            IMAGE_LOGE("Arg %{public}d type mismatch", argi);
+            nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+        }
+        nVal.context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
+    }
+}
+
 napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
 {
     NapiValues nVal;
@@ -2612,16 +2626,7 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
         }
     }
     if (nVal.argc == NUM_3) {
-        if (ImageNapiUtils::getType(env, nVal.argv[NUM_2]) == napi_function) {
-            napi_create_reference(env, nVal.argv[NUM_2], nVal.refCount, &(nVal.context->callbackRef));
-        } else {
-            int32_t antiAliasing;
-            if (!IMG_IS_OK(napi_get_value_int32(env, nVal.argv[NUM_2], &antiAliasing))) {
-                IMAGE_LOGE("Arg 2 type mismatch");
-                nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
-            }
-            nVal.context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
-        }
+        NapiParseCallbackOrAntiAliasing(env, nVal, NUM_2);
     }
 
     if (nVal.context->callbackRef == nullptr) {
