@@ -420,10 +420,12 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
 /**
  * @brief Convert a native <b>PixelMap</b> object to <b>PixelMap</b> napi object.
  *
- * @param env Indicates a pointer to the Java Native Interface (JNI) environment.
- * @param pixelmapNative The Pixelmap pointer will be operated.
- * @param pixelmapNapi Indicates a pointer to the <b>PixelMap</b> object created at the native layer.
- * @return Returns {@link Image_ErrorCode}
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNative Indicates a pointer to the <b>PixelMap</b> object created at the native layer.
+ * @param pixelmapNapi the <b>PixelMap</b> pointer will be converted.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
@@ -433,9 +435,11 @@ Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_P
  * @brief Convert a <b>PixelMap</b> napi object to native <b>PixelMap</b> object.
  *
  * @param env Indicates the NAPI environment pointer.
- * @param pixelmapNapi Indicates the options for setting the <b>PixelMap</b> object.
- * @param pixelmapNative Pixelmap pointer for created.
- * @return Returns {@link Image_ErrorCode}
+ * @param pixelmapNapi Indicates napi <b>PixelMap</b> object.
+ * @param pixelmapNative Indicates native <b>PixelMap</b> pointer to created.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr, or pixelmapNapi is not a PixelMap
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,

@@ -462,14 +462,14 @@ Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, na
     if (napi == nullptr || napi->GetPixelNapiInner() == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    auto pixelmap2 = new OH_PixelmapNative(napi->GetPixelNapiInner());
-    if (pixelmap2 == nullptr || pixelmap2->GetInnerPixelmap() == nullptr) {
-        if (pixelmap2) {
-            delete pixelmap2;
+    auto pixelmap = new OH_PixelmapNative(napi->GetPixelNapiInner());
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        if (pixelmap) {
+            delete pixelmap;
         }
         return IMAGE_ALLOC_FAILED;
     }
-    *pixelmapNative = pixelmap2;
+    *pixelmapNative = pixelmap;
     return IMAGE_SUCCESS;
 }
 
