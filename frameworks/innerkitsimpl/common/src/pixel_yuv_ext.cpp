@@ -44,7 +44,6 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
 static const int32_t DEGREES360 = 360;
 
