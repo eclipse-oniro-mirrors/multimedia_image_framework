@@ -51,6 +51,7 @@ static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
 static const int32_t DEGREES90 = 90;
 static const int32_t DEGREES180 = 180;
 static const int32_t DEGREES270 = 270;
+static const int32_t DEGREES360 = 360;
 static const int32_t PLANE_Y = 0;
 static const int32_t PLANE_U = 1;
 static const int32_t PLANE_V = 2;
@@ -265,6 +266,10 @@ void PixelYuv::rotate(float degrees)
 {
     if (!IsYuvFormat() || degrees == 0) {
         return;
+    }
+    if (degrees < 0) {
+        int n = abs(degrees / DEGREES360);
+        degrees += DEGREES360 * (n + 1);
     }
     OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
     int32_t dstWidth = imageInfo_.size.width;

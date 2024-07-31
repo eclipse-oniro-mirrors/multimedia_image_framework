@@ -682,7 +682,8 @@ bool PixelYuvUtils::YuvRotate(uint8_t *srcData, YuvImageInfo &srcInfo,
     uint8_t *dstData, YuvImageInfo &dstInfo, int32_t degrees)
 {
     if (degrees < 0) {
-        degrees += degrees360;
+        int n = abs(degrees / degrees360);
+        degrees += degrees360 * (n + 1);
     }
     switch (degrees) {
         case 0:

@@ -365,10 +365,16 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     int dstUVStride = dstStrides.uvStride;
     auto converter = ConverterHandle::GetInstance().GetHandle();
     if (yuvInfo.yuvFormat == PixelFormat::YCBCR_P010 || yuvInfo.yuvFormat == PixelFormat::YCRCB_P010) {
+        uint32_t srcYWidth = static_cast<uint32_t>(yuvInfo.width);
+        uint32_t srcYHeight = static_cast<uint32_t>(yuvInfo.height);
+        int32_t dstYWidth = srcYWidth * xAxis;
+        int32_t dstYHeight = srcYHeight * yAxis;
+        PixelSize pixelSize = {srcYWidth, srcYHeight, dstYWidth, dstYHeight};
         ScaleP010(pixelSize, src, dst, converter, filterMode);
+    } else {
+        converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
+            dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);
     }
-    converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
-        dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);
 }
 
 bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format,
@@ -403,8 +409,8 @@ bool PixelYuvExtUtils::Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelForma
     int srcYStride = info.yStride;
     int srcUVStride = info.uvStride;
 
-    uint8_t *dstY = dst + dstStrides.yStride;
-    uint8_t *dstUV = dst +  dstStrides.uvStride;
+    uint8_t *dstY = dst + dstStrides.yOffset;
+    uint8_t *dstUV = dst +  dstStrides.uvOffset;
     int dstYStride = dstStrides.yStride;
     int dstUVStride = dstStrides.uvStride;
     height = isReversed? -height : height;
