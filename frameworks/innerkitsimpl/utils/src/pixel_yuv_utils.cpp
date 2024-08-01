@@ -724,7 +724,6 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
     rect.top = srcPos.y;
     rect.width = dstInfo.size.width;
     rect.height = dstInfo.size.height;
-    YUVStrideInfo strides;
     YUVStrideInfo dstStrides = {rect.width, rect.width, 0, rect.width * rect.height};
     if (!YuvCrop((uint8_t *)srcPixels, info, static_cast<uint8_t *>(dstPixels), rect, dstStrides)) {
         return false;
