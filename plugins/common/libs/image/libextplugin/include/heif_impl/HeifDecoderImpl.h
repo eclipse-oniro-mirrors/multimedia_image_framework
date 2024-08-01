@@ -20,10 +20,15 @@
 
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_parser.h"
+#include "hevc_sw_decode_param.h"
 #include "image_type.h"
 #include "surface_buffer.h"
 
 #include "hardware/heif_hw_decoder.h"
+
+namespace OHOS::Media {
+    class ImageFwkExtManager;
+}
 
 namespace OHOS {
 namespace ImagePlugin {
@@ -76,21 +81,35 @@ private:
 
     void ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse);
 
-    bool DecodeImage(HeifHardwareDecoder *hwDecoder,
-                     std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-                     sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+    bool HwDecodeImage(HeifHardwareDecoder *hwDecoder,
+                       std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+                       sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool DecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                     GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
+                       GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool DecodeIdenImage(HeifHardwareDecoder *hwDecoder,
-                         std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
-                         sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
+    bool HwDecodeIdenImage(HeifHardwareDecoder *hwDecoder,
+                           std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
+                           sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
-    bool DecodeSingleImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                           GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+    bool HwDecodeSingleImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
+                             GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
-    bool ApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
+    bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
+                       GridInfo &gridInfo, bool isPrimary);
+
+    bool SwDecodeGrids(Media::ImageFwkExtManager &extManager,
+                       std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+
+    bool SwDecodeIdenImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
+                           GridInfo &gridInfo, bool isPrimary);
+
+    bool SwDecodeSingleImage(Media::ImageFwkExtManager &extManager,
+                             std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param);
+
+    bool HwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
+
+    bool SwApplyAlphaImage(std::shared_ptr<HeifImage> &masterImage, uint8_t *dstMemory, size_t dstRowStride);
 
     bool ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, GridInfo &gridInfo,
                                     uint8_t *dstMemory, size_t dstRowStride);

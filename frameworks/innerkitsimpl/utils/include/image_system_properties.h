@@ -27,6 +27,7 @@ public:
     static bool GetDumpImageEnabled();
     static bool GetHardWareDecodeEnabled();
     static bool GetHardWareEncodeEnabled();
+    static bool GetHeifHardwareDecodeEnabled();
     static bool GetAstcHardWareEncodeEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
