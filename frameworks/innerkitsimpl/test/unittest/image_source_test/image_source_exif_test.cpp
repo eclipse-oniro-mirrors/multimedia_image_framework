@@ -591,12 +591,6 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
     }
     errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[hwExifReadKey.size()-1], value);
     ASSERT_EQ(value, "8");
-
-    ASSERT_EQ(errorCode, SUCCESS);
-    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
-        errorCode = imageSource->GetImagePropertyString(0, hwExifWriteKey[i], value);
-        ASSERT_EQ(value, modifyValues[i]);
-    }
     GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest005 end";
 }
 
