@@ -36,6 +36,8 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #include "image_common.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -414,6 +416,34 @@ Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info);
  */
 Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLength,
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap);
+
+/**
+ * @brief Convert a native <b>PixelMap</b> object to <b>PixelMap</b> napi object.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNative Indicates a pointer to the <b>PixelMap</b> object created at the native layer.
+ * @param pixelmapNapi the <b>PixelMap</b> pointer will be converted.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
+    napi_value *pixelmapNapi);
+
+/**
+ * @brief Convert a <b>PixelMap</b> napi object to native <b>PixelMap</b> object.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNapi Indicates napi <b>PixelMap</b> object.
+ * @param pixelmapNative Indicates native <b>PixelMap</b> pointer to created.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr, or pixelmapNapi is not a PixelMap
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
+    OH_PixelmapNative **pixelmapNative);
 
 /**
  * @brief Reads data of this pixel map to an Buffer. If this pixel map is created in the BGRA_8888 format,

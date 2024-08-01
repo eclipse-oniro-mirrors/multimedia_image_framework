@@ -1129,6 +1129,7 @@ ohos_unittest("ndktest2") {
   external_deps = [
     "graphic_2d:color_manager",
     "graphic_surface:surface",
+    "napi:ace_napi",
   ]
 }
 

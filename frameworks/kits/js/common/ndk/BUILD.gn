@@ -150,6 +150,7 @@ ohos_shared_library("image_source") {
 
   external_deps = [
     "c_utils:utils",
+    "napi:ace_napi",
     "resource_management:librawfile",
   ]
 
@@ -189,6 +190,7 @@ ohos_shared_library("image_packer") {
 
   external_deps = [
     "c_utils:utils",
+    "napi:ace_napi",
     "resource_management:librawfile",
   ]
 

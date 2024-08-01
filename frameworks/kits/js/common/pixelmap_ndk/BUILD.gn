@@ -69,10 +69,13 @@ ohos_shared_library("pixelmap") {
   public_configs =
       [ "$SUBSYSTEM_DIR/interfaces/innerkits:image_external_config" ]
 
-  deps = [  #"$SUBSYSTEM_DIR/interfaces/kits/js/common:image",
+  deps = [
     "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/egl_image:egl_image",
     "$SUBSYSTEM_DIR/interfaces/innerkits:image_native",
+    "$SUBSYSTEM_DIR/interfaces/kits/js/common:image",
   ]
+
+  public_external_deps = [ "napi:ace_napi" ]
 
   external_deps = [ "c_utils:utils" ]
 
