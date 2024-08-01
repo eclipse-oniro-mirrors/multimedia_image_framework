@@ -169,7 +169,7 @@ bool ImageSystemProperties::IsCamera()
     return processName == "com.huawei.hmos.camera";
 #else
     return false;
-#endif    
+#endif
 }
 
 } // namespace Media
