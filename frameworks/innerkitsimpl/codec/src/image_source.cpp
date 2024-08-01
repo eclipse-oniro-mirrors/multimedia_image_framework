@@ -683,6 +683,12 @@ bool IsPhotosLcd()
     return isPhotos;
 }
 
+bool IsCameraProcess()
+{
+    static bool isCamera = ImageSystemProperties::IsCamera();
+    return isCamera;
+}
+
 // LCOV_EXCL_START
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
@@ -699,8 +705,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
         return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             (IsWidthAligned(opts.desiredSize.width)
-            || opts.preferDma
-            || IsPhotosLcd());
+            || opts.preferDma || IsPhotosLcd() || IsCameraProcess());
     }
     return false;
 #endif

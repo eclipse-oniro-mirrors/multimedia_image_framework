@@ -31,6 +31,7 @@ public:
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
     static bool IsPhotos();
+    static bool IsCamera();
 private:
     ImageSystemProperties() = default;
 };

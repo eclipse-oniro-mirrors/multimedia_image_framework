@@ -161,5 +161,16 @@ bool ImageSystemProperties::IsPhotos()
     return false;
 #endif
 }
+
+bool ImageSystemProperties::IsCamera()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    static std::string processName = getCurrentProcessName();
+    return processName == "com.huawei.hmos.camera";
+#else
+    return false;
+#endif
+}
+
 } // namespace Media
 } // namespace OHOS
