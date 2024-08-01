@@ -38,45 +38,45 @@ static const std::string IMAGE_REMOVE_NO_EXIF_JPEG_PATH = "/data/local/tmp/image
 static const  std::string DEFAULT_EXIF_VALUE = "default_exif_value";
 
 static const std::vector<std::string> hwExifReadKey = {
-        "HwMnoteIsXmageSupported",
-        "HwMnoteXmageMode",
-        "HwMnoteXmageLeft",
-        "HwMnoteXmageTop",
-        "HwMnoteXmageRight",
-        "HwMnoteXmageBottom",
-        "HwMnoteCloudEnhancementMode",
-        "HwMnoteWindSnapshotMode",
+    "HwMnoteIsXmageSupported",
+    "HwMnoteXmageMode",
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom",
+    "HwMnoteCloudEnhancementMode",
+    "HwMnoteWindSnapshotMode",
 };
 
 static const std::vector<std::string> hwExifWriteKey = {
-        "HwMnoteIsXmageSupported",
-        "HwMnoteXmageMode",
-        "HwMnoteXmageLeft",
-        "HwMnoteXmageTop",
-        "HwMnoteXmageRight",
-        "HwMnoteXmageBottom",
-        "HwMnoteCloudEnhancementMode",
+    "HwMnoteIsXmageSupported",
+    "HwMnoteXmageMode",
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom",
+    "HwMnoteCloudEnhancementMode",
 };
 
 static const std::vector<std::string> jpgValues = {
-        "1",
-        "0",
-        "0",
-        "0",
-        "0",
-        "0",
-        "default_exif_value",
-        "default_exif_value",
+    "1",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "default_exif_value",
+    "default_exif_value",
 };
 
 static const std::vector<std::string> modifyValues = {
-        "1",
-        "10",
-        "11",
-        "259",
-        "12",
-        "999",
-        "100",
+    "1",
+    "10",
+    "11",
+    "259",
+    "12",
+    "999",
+    "100",
 };
 
 class ImageSourceExifTest : public testing::Test {
@@ -470,7 +470,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest001, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
 
     std::string value = "";
-    for(int i = 0; i < hwExifReadKey.size(); ++i) {
+    for (int i = 0; i < hwExifReadKey.size(); ++i) {
         errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[i], value);
         ASSERT_EQ(value, jpgValues[i]);
     }
@@ -499,7 +499,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest002, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
 
     std::string value = "";
-    for(auto key : hwExifReadKey) {
+    for (auto key : hwExifReadKey) {
         errorCode = imageSource->GetImagePropertyString(0, key, value);
         ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
     }
@@ -527,7 +527,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest003, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
 
     std::string value = "";
-    for(auto key : hwExifReadKey) {
+    for (auto key : hwExifReadKey) {
         errorCode = imageSource->GetImagePropertyString(0, key, value);
         ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
     }
@@ -556,7 +556,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest004, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
 
     std::string value = "";
-    for(auto key : hwExifReadKey) {
+    for (auto key : hwExifReadKey) {
         errorCode = imageSource->GetImagePropertyString(0, key, value);
         ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
     }
@@ -585,7 +585,7 @@ HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
     ASSERT_EQ(errorCode, SUCCESS);
 
     std::string value = "";
-    for(int i = 0; i < hwExifReadKey.size()-1; ++i) {
+    for (int i = 0; i < hwExifReadKey.size()-1; ++i) {
         errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[i], value);
         ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
     }
