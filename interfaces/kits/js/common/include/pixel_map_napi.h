@@ -68,6 +68,14 @@ public:
     {
         return sConstructor_;
     }
+    void SetTransferDetach(bool detach)
+    {
+        this->transaction = detach;
+    }
+    bool GetTransferDetach()
+    {
+        return this->transaction;
+    }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
@@ -144,6 +152,7 @@ private:
     bool isRelease = false;
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
+    bool transferDetach = false;
 };
 
 class PixelMapContainer {

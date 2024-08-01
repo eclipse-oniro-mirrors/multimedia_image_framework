@@ -441,6 +441,7 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_GETTER("isStrideAlignment", GetIsStrideAlignment),
         DECLARE_NAPI_FUNCTION("toSdr", ToSdr),
         DECLARE_NAPI_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_FUNCTION("setTransferDetached", SetTransferDetached),
     };
     return props;
 }
@@ -664,6 +665,9 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
     pixelNapi->setPixelNapiEditable(false);
     AgainstTransferGC *data = new AgainstTransferGC();
     data->pixelMap = pixelNapi->GetPixelNapiInner();
+    if (pixelNapi->GetTransferDetach()) {
+        pixelNapi->ReleasePixelNapiInner();
+    }
     return reinterpret_cast<void*>(data);
 }
 
@@ -3634,6 +3638,28 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     if (nVal.result == nullptr) {
         return nVal.result;
     }
+    return nVal.result;
+}
+
+napi_value PixelMapNapi::SetTransferDetached(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_value argValue[NUM_1];
+    nVal.argc = NUM_1;
+    nVal.argv = argValue;
+    napi_status status = napi_invalid_arg;
+    napi_get_undefined(env, &nVal.result);
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_RESOURCE_UNAVAILABLE, "Fail to unwrap context");
+    }
+    bool detach;
+    status = napi_get_value_bool(env, nVal.argv[NUM_0], &detach);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "SetTransferDetached get detach failed"),
+        IMAGE_LOGE("SetTransferDetached get detach failed"));
+    nVal.context->nConstructor->SetTransferDetach(detach);
     return nVal.result;
 }
 
