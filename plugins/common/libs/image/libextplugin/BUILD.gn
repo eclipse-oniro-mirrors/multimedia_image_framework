@@ -276,6 +276,11 @@ ohos_shared_library("extplugin") {
         "openmax:libopenmax_static",
       ]
     }
+
+    if (enable_heif_hw_encode) {
+      defines += [ "HEIF_HW_ENCODE_ENABLE" ]
+      external_deps += [ "drivers_interface_codec:libimage_proxy_1.0" ]
+    }
   }
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",

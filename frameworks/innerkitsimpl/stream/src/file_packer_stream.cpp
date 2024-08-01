@@ -113,5 +113,15 @@ int64_t FilePackerStream::BytesWritten()
 {
     return (file_ != nullptr) ? ftell(file_) : 0;
 }
+
+ImagePlugin::OutputStreamType FilePackerStream::GetType()
+{
+    return ImagePlugin::OutputStreamType::FILE_PACKER;
+}
+
+int FilePackerStream::GetFd()
+{
+    return fileno(file_);
+}
 } // namespace Media
 } // namespace OHOS

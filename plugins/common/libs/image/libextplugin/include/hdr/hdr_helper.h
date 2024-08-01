@@ -41,6 +41,11 @@ private:
     static uint32_t GetBaseVividMarkerSize();
     static uint32_t GetMpfMarkerSize();
 };
+
+class HdrHeifPackerHelper {
+public:
+    static bool PackIT35Info(Media::HdrMetadata& metadata, std::vector<uint8_t>& info);
+};
 } // namespace Media
 } // namespace OHOS
 

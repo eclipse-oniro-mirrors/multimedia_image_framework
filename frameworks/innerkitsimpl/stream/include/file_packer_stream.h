@@ -30,6 +30,8 @@ public:
     bool Write(const uint8_t *buffer, uint32_t size) override;
     void Flush() override;
     int64_t BytesWritten() override;
+    ImagePlugin::OutputStreamType GetType() override;
+    int GetFd();
 
 private:
     DISALLOW_COPY(FilePackerStream);
