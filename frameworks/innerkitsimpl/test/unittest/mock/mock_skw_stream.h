@@ -16,7 +16,7 @@
 #ifndef MOCK_SKW_STREAM_H
 #define MOCK_SKW_STREAM_H
 
-#include "SkStream.h"
+#include "include/core/SkStream.h"
 
 namespace OHOS {
 namespace Media {
