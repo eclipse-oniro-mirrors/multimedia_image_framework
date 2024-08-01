@@ -3650,8 +3650,7 @@ napi_value PixelMapNapi::SetTransferDetached(napi_env env, napi_callback_info in
     napi_status status = napi_invalid_arg;
     napi_get_undefined(env, &nVal.result);
     if (!prepareNapiEnv(env, info, &nVal)) {
-        return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_RESOURCE_UNAVAILABLE, "Fail to unwrap context");
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE, "Fail to unwrap context");
     }
     bool detach;
     status = napi_get_value_bool(env, nVal.argv[NUM_0], &detach);
