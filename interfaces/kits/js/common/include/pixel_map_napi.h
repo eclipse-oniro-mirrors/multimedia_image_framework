@@ -70,11 +70,11 @@ public:
     }
     void SetTransferDetach(bool detach)
     {
-        this->transferDetach = detach;
+        transferDetach_ = detach;
     }
     bool GetTransferDetach()
     {
-        return this->transferDetach;
+        return transferDetach_;
     }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
@@ -153,7 +153,7 @@ private:
     bool isRelease = false;
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
-    bool transferDetach = false;
+    bool transferDetach_ = false;
 };
 
 class PixelMapContainer {

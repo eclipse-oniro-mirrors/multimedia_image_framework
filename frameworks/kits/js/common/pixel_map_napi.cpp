@@ -654,7 +654,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
-inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
+void *DetachPixelMapFunc(napi_env env, void *value, void *)
 {
     IMAGE_LOGD("DetachPixelMapFunc in");
     if (value == nullptr) {
