@@ -314,6 +314,14 @@ static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"FRONT_CAMERA", 0, "HwMnoteFrontCamera"},
     {"SCENE_POINTER", 0, "HwMnoteScenePointer"},
     {"SCENE_VERSION", 0, "HwMnoteSceneVersion"},
+    {"IS_XMAGE_SUPPORTED", 0, "HwMnoteIsXmageSupported"},
+    {"XMAGE_MODE", 0, "HwMnoteXmageMode"},
+    {"XMAGE_LEFT", 0, "HwMnoteXmageLeft"},
+    {"XMAGE_TOP", 0, "HwMnoteXmageTop"},
+    {"XMAGE_RIGHT", 0, "HwMnoteXmageRight"},
+    {"XMAGE_BOTTOM", 0, "HwMnoteXmageBottom"},
+    {"CLOUD_ENHANCEMENT_MODE", 0, "HwMnoteCloudEnhancementMode"},
+    {"WIND_SNAPSHOT_MODE", 0, "HwMnoteWindSnapshotMode"},
     {"GIF_LOOP_COUNT", 0, "GIFLoopCount"},
 };
 static std::vector<struct ImageEnum> sImageFormatMap = {
