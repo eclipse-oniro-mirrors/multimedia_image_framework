@@ -159,6 +159,8 @@ GraphicPixelFormat GetRequestBufferFormatWithPixelFormat(const PixelFormat forma
             return GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
         case PixelFormat::NV21:
             return GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        case PixelFormat::BGRA_8888:
+            return GRAPHIC_PIXEL_FMT_BGRA_8888;
         default:
             return GRAPHIC_PIXEL_FMT_RGBA_8888;
     }

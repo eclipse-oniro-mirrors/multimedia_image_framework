@@ -414,7 +414,7 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd());
             rowStride = sbBuffer->GetStride();
-            IMAGE_LOGD("rowStride DMA: %{public}llu", rowStride);
+            IMAGE_LOGD("rowStride DMA: %{public}llu", static_cast<unsigned long long>(rowStride));
         }
 #endif
     }

@@ -17,6 +17,8 @@
 
 #include "common_utils.h"
 #include "image_type.h"
+#include "image_pixel_map_napi_kits.h"
+#include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
 
@@ -435,6 +437,39 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(
         return IMAGE_BAD_PARAMETER;
     }
     *pixelmap = pixelmap2;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
+    napi_value *pixelmapNapi)
+{
+    if (pixelmapNative == nullptr || pixelmapNative->GetInnerPixelmap() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    std::shared_ptr<OHOS::Media::PixelMap> pixelMap = pixelmapNative->GetInnerPixelmap();
+    *pixelmapNapi = PixelMapNapi::CreatePixelMap(env, pixelMap);
+    napi_valuetype valueType = napi_undefined;
+    napi_typeof(env, *pixelmapNapi, &valueType);
+    return (valueType == napi_undefined) ? IMAGE_BAD_PARAMETER : IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
+    OH_PixelmapNative **pixelmapNative)
+{
+    PixelMapNapi* napi = PixelMapNapi_Unwrap(env, pixelmapNapi);
+    if (napi == nullptr || napi->GetPixelNapiInner() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto pixelmap = new OH_PixelmapNative(napi->GetPixelNapiInner());
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr) {
+        if (pixelmap) {
+            delete pixelmap;
+        }
+        return IMAGE_ALLOC_FAILED;
+    }
+    *pixelmapNative = pixelmap;
     return IMAGE_SUCCESS;
 }
 

@@ -53,7 +53,7 @@ ohos_executable("jpeg_hw_decoder_demo") {
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "skia:libjpeg",
+    "libjpeg-turbo:turbojpeg",
     "skia:skia_canvaskit",
   ]
 }

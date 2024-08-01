@@ -39,7 +39,7 @@ private:
     ConverterHandle(ConverterHandle&&) = delete;
     ConverterHandle& operator= (ConverterHandle&&) = delete;
     ConverterHandle() = default;
-    virtual ~ConverterHandle() = default;
+    ~ConverterHandle() { DeInitConverter(); };
     std::atomic<bool> isInited_ = false;
     DlHandle dlHandler_ = nullptr;
     OHOS::OpenSourceLibyuv::ImageYuvConverter converter_ = {0};

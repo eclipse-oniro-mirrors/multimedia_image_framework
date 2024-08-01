@@ -325,6 +325,7 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         populate ? MAP_SHARED | MAP_POPULATE : MAP_SHARED, mmapFd_, fileOriginalOffset_);
     if (mmptr == MAP_FAILED) {
         IMAGE_LOGE("[FileSourceStream] mmap failed, errno:%{public}d", errno);
+        close(mmapFd_);
         return nullptr;
     }
     fileData_ = static_cast<uint8_t*>(mmptr);

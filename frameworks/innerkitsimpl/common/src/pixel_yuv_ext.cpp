@@ -44,8 +44,8 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 
-static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
+static const int32_t DEGREES360 = 360;
 
 static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace)
 {
@@ -154,7 +154,8 @@ void PixelYuvExt::rotate(float degrees)
     GetImageYUVInfo(yuvDataInfo);
 
     if (degrees < 0) {
-        degrees += DEGREES360;
+        int n = abs(degrees / DEGREES360);
+        degrees += DEGREES360 * (n + 1);
     }
     OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
     int32_t dstWidth = imageInfo_.size.width;

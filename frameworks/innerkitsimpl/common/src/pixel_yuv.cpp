@@ -51,6 +51,7 @@ static const uint8_t YUV420P010_MIN_PIXEL_UINTBYTES = 8;
 static const int32_t DEGREES90 = 90;
 static const int32_t DEGREES180 = 180;
 static const int32_t DEGREES270 = 270;
+static const int32_t DEGREES360 = 360;
 static const int32_t PLANE_Y = 0;
 static const int32_t PLANE_U = 1;
 static const int32_t PLANE_V = 2;
@@ -265,6 +266,10 @@ void PixelYuv::rotate(float degrees)
 {
     if (!IsYuvFormat() || degrees == 0) {
         return;
+    }
+    if (degrees < 0) {
+        int n = abs(degrees / DEGREES360);
+        degrees += DEGREES360 * (n + 1);
     }
     OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
     int32_t dstWidth = imageInfo_.size.width;
@@ -661,7 +666,8 @@ void PixelYuv::SetRowDataSizeForImageInfo(ImageInfo info)
 
 uint32_t PixelYuv::GetImageSize(int32_t width, int32_t height, PixelFormat format)
 {
-    uint32_t size = GetYSize(width, height) + GetUStride(width) * GetUVHeight(height) * TWO_SLICES;
+    uint32_t size = static_cast<uint32_t>(GetYSize(width, height) +
+                                          GetUStride(width) * GetUVHeight(height) * TWO_SLICES);
     if (IsYUVP010Format(format)) {
         size *= NUM_2;
     }
@@ -769,7 +775,7 @@ uint32_t PixelYuv::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
         SurfaceBuffer *sbBuffer = reinterpret_cast<SurfaceBuffer *>(GetFd());
-        rowStride = sbBuffer->GetStride();
+        rowStride = static_cast<uint64_t>(sbBuffer->GetStride());
     }
     srcData = static_cast<uint8_t *>(GetWritablePixels());
 #endif

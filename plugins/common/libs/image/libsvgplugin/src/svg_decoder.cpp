@@ -548,8 +548,8 @@ uint32_t SvgDecoder::DoSetDecodeOptions(uint32_t index, const PixelDecodeOptions
         svgDom_->setResizePercentage(DEFAULT_RESIZE_PERCENTAGE * scaleFitDesired);
     }
 
-    opts_.desiredSize.width = Float2UInt32(svgDom_->containerSize().width());
-    opts_.desiredSize.height = Float2UInt32(svgDom_->containerSize().height());
+    opts_.desiredSize.width = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().width()));
+    opts_.desiredSize.height = static_cast<int32_t>(Float2UInt32(svgDom_->containerSize().height()));
 
     info.size.width = opts_.desiredSize.width;
     info.size.height = opts_.desiredSize.height;
@@ -580,8 +580,8 @@ uint32_t SvgDecoder::DoGetImageSize(uint32_t index, Size &size)
         return Media::ERROR;
     }
 
-    size.width = Float2UInt32(svgSize.width());
-    size.height = Float2UInt32(svgSize.height());
+    size.width = static_cast<int32_t>(Float2UInt32(svgSize.width()));
+    size.height = static_cast<int32_t>(Float2UInt32(svgSize.height()));
 
     IMAGE_LOGD("[DoGetImageSize] OUT size=(%{public}u, %{public}u)", size.width, size.height);
     return Media::SUCCESS;
@@ -610,7 +610,7 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     }
 
     auto imageInfo = MakeImageInfo(opts_);
-    auto rowBytes = opts_.desiredSize.width * SVG_BYTES_PER_PIXEL;
+    auto rowBytes = static_cast<uint32_t>(opts_.desiredSize.width * SVG_BYTES_PER_PIXEL);
     auto pixels = context.pixelsBuffer.buffer;
 
     SkBitmap bitmap;
