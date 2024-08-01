@@ -70,11 +70,11 @@ public:
     }
     void SetTransferDetach(bool detach)
     {
-        this->transaction = detach;
+        this->transferDetach = detach;
     }
     bool GetTransferDetach()
     {
-        return this->transaction;
+        return this->transferDetach;
     }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
