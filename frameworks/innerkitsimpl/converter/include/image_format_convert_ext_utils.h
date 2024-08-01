@@ -21,13 +21,19 @@
 
 namespace OHOS {
 namespace Media {
-
+struct I420Info {
+    uint32_t width;
+    uint32_t height;
+    uint8_t *I420Y;
+    uint32_t yStride;
+    uint8_t *I420U;
+    uint32_t uStride;
+    uint8_t *I420V;
+    uint32_t vStride;
+    uint32_t uvHeight;
+};
 class ImageFormatConvertExtUtils {
 public:
-    static bool RGB565ToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool RGB565ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool RGB565ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                  size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool RGB565ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
@@ -48,39 +54,6 @@ public:
                                    size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool RGBA1010102ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer,
                                    size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool BGRAToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize,  [[maybe_unused]]ColorSpace colorSpace);
-    static bool RGBAToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize,  [[maybe_unused]]ColorSpace colorSpace);
-    static bool RGBAToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize,  [[maybe_unused]]ColorSpace colorSpace);
-    static bool RGBToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                          size_t &destBufferSize,  [[maybe_unused]]ColorSpace colorSpace);
-    static bool RGBToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                          size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool BGRAToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-
-    static bool NV21ToRGB(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                          size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV21ToRGBA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV21ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV21ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                             size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV21ToNV12(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToNV21(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToRGBA(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToBGRA(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                           size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToRGB(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-                          size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool NV12ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
                                   size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool NV21ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
@@ -121,6 +94,42 @@ public:
                                  size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
     static bool NV21P010ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
                                       size_t &destBufferSize, [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGB565ToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                             [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGB565ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                             [[maybe_unused]]ColorSpace colorSpace);
+    static bool BGRAToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGBAToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGBAToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGBToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                          [[maybe_unused]]ColorSpace colorSpace);
+    static bool RGBToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                          [[maybe_unused]]ColorSpace colorSpace);
+    static bool BGRAToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV21ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                          [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV21ToRGBA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV21ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV21ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                             [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV12ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                             [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV21ToNV12(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV12ToNV21(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV12ToRGBA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV12ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                           [[maybe_unused]]ColorSpace colorSpace);
+    static bool NV12ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
+                          [[maybe_unused]]ColorSpace colorSpace);
 };
 } // namespace Media
 } // namespace OHOS

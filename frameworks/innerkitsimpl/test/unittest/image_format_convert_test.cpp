@@ -1615,12 +1615,11 @@ HWTEST_F(ImageFormatConvertTest, GetConvertFuncByFormat_Test_001, TestSize.Level
     ConvertFunction cvtFunc = ImageFormatConvertTest::TestGetConvertFuncByFormat(srcFormat, destFormat);
 
     const_uint8_buffer_type srcBuffer = nullptr;
-    RGBDataInfo size = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
-    uint8_buffer_type destBuffer = nullptr;
-    size_t destBufferSize = 0;
+    RGBDataInfo rgbInfo = { TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT };
     ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = {TREE_ORIGINAL_WIDTH, TREE_ORIGINAL_HEIGHT};
 
-    EXPECT_EQ(cvtFunc(srcBuffer, size, &destBuffer, destBufferSize, colorspace), false);
+    EXPECT_EQ(cvtFunc(srcBuffer, rgbInfo, destInfo, colorspace), false);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: GetConvertFuncByFormat_Test_001 end";
 }
 
@@ -1729,7 +1728,7 @@ HWTEST_F(ImageFormatConvertTest, GetBufferSizeByFormat_Test_001, TestSize.Level1
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::ARGB_8888, size), 4);
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_8888, size), 4);
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::BGRA_8888, size), 4);
-    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_F16, size), 8);
+    EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_F16, size), 16);
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV21, size), 3);
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV12, size), 3);
     EXPECT_EQ(ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::UNKNOWN, size), 0);
@@ -1749,13 +1748,10 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMap_Test_001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 start";
     std::shared_ptr<PixelMap> destPixelMap = nullptr;
-    uint8_buffer_type destBuffer = nullptr;
-    const size_t destBufferSize = 0;
     ImageInfo info;
-    AllocatorType allcatorType = AllocatorType::DEFAULT;
     info.size = {0, 0};
-    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, destBuffer, destBufferSize, info, allcatorType),
-      false);
+    DestConvertInfo destInfo;
+    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, info, destInfo, nullptr), false);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 end";
 }
 
@@ -1770,7 +1766,7 @@ HWTEST_F(ImageFormatConvertTest, YUVConvertImageFormatOption_Test_001, TestSize.
     srcFormat = PixelFormat::NV21;
     destFormat = PixelFormat::RGB_888;
     EXPECT_EQ(ImageFormatConvert::YUVConvertImageFormatOption(srcPiexlMap, srcFormat, destFormat),
-    ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: YUVConvertImageFormatOption_Test_001 end";
 }
 
@@ -1781,11 +1777,11 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_004, TestSize.Level1)
     PixelFormat destFormat = PixelFormat::RGB_888;
     srcPixelMap->imageInfo_.pixelFormat = PixelFormat::NV21;
     uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
-    EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     srcPixelMap->imageInfo_.pixelFormat = PixelFormat::RGB_565;
     destFormat = PixelFormat::NV21;
     ret = ImageFormatConvert::ConvertImageFormat(srcPixelMap, destFormat);
-    EXPECT_EQ(ret, ERR_IMAGE_PIXELMAP_CREATE_FAILED);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_004 end";
 }
 
@@ -1811,6 +1807,7 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_005, TestSize.Level1)
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     srcDataInfo.pixelFormat = PixelFormat::RGB_565;
     destDataInfo.pixelFormat = PixelFormat::NV21;
+    srcDataInfo.bufferSize = 2;
     ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
     EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 end";
