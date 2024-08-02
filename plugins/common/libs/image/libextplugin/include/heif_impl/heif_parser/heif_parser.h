@@ -74,9 +74,17 @@ public:
     heif_error UpdateExifMetadata(const std::shared_ptr<HeifImage> &master_image, const uint8_t *data,
                                   uint32_t size, heif_item_id itemId);
 
+    long GetTiffOffset()
+    {
+        SetTiffOffset();
+        return tiffOffset_;
+    }
+
 private:
     // stream
     std::shared_ptr<HeifInputStream> inputStream_;
+
+    long tiffOffset_ = 0;
 
     // boxes
     std::shared_ptr<HeifFtypBox> ftypBox_;
@@ -193,6 +201,8 @@ private:
     void ExtractISOMetadata(const heif_item_id& itemId);
 
     void ExtractGainmapImage(const heif_item_id& tmapId);
+
+    void SetTiffOffset();
 };
 } // namespace ImagePlugin
 } // namespace OHOS

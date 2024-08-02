@@ -81,7 +81,7 @@ uint32_t JpegExifMetadataAccessor::Read()
     return SUCCESS;
 }
 
-bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     if (!imageStream_->IsOpen()) {
         IMAGE_LOGE("Output image stream is not open.");
@@ -104,6 +104,7 @@ bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob) const
                 return false;
             }
             if (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0) {
+                tiffOffset_ = imageStream_->Tell() - blob.Size() + EXIF_ID_SIZE;
                 return true;
             }
         }

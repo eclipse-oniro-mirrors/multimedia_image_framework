@@ -327,6 +327,11 @@
             <option name="push" value="images/exif/test_hw_property.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_append_exif.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_heif_writemetadata002.heic -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/get_filter_area.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/get_filter_area.png -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/get_filter_area.webp -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/get_filter_area.dng -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/exif/get_filter_area.heic -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_dng_readmetadata001.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_dng_readmetadata002.dng -> /data/local/tmp/image" src="res"/>
             <option name="push" value="images/exif/test_dng_readmetadata003.dng -> /data/local/tmp/image" src="res"/>

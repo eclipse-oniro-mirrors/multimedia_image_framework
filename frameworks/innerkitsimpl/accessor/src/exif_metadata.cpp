@@ -729,5 +729,43 @@ bool ExifMetadata::IsSpecialHwKey(const std::string &key) const
     return (iter != HW_SPECIAL_KEYS.end());
 }
 
+void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
+                                 std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    if (exifData_ == nullptr) {
+        IMAGE_LOGD("Exif data is null");
+        return ;
+    }
+    for (int keySize = 0; keySize < exifKeys.size(); keySize++) {
+        ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
+        FindRanges(tag, ranges);
+    }
+}
+
+void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    bool hasRange = false;
+
+    int ifd = 0;
+    while (ifd < EXIF_IFD_COUNT && !hasRange) {
+        ExifContent *content = exifData_->ifd[ifd];
+        if (!content) {
+            IMAGE_LOGD("IFD content is null, ifd: %{public}d.", ifd);
+            return ;
+        }
+
+        int i = 0;
+        while (i < content->count && !hasRange) {
+            if (tag == content->entries[i]->tag) {
+                std::pair<uint32_t, uint32_t> range =
+                        std::make_pair(content->entries[i]->offset, content->entries[i]->size);
+                ranges.push_back(range);
+                hasRange = true;
+            }
+            ++i;
+        }
+        ++ifd;
+    }
+}
 } // namespace Media
 } // namespace OHOS

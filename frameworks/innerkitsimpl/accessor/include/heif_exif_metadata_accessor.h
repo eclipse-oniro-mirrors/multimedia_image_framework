@@ -29,7 +29,7 @@ public:
     ~HeifExifMetadataAccessor();
 
     virtual uint32_t Read() override;
-    virtual bool ReadBlob(DataBuf &blob) const override;
+    virtual bool ReadBlob(DataBuf &blob) override;
     virtual uint32_t Write() override;
     virtual uint32_t WriteBlob(DataBuf &blob) override;
 

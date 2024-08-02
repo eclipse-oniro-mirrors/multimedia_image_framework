@@ -26,6 +26,8 @@
 namespace OHOS {
 namespace ImagePlugin {
 
+const auto EXIF_ID = "Exif\0\0";
+
 HeifParser::HeifParser() = default;
 
 HeifParser::~HeifParser() = default;
@@ -852,6 +854,45 @@ uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 
     // CONSTRUCTION_METHOD_FILE_OFFSET 0
     return 0;
+}
+
+void HeifParser::SetTiffOffset()
+{
+    if (tiffOffset_ != 0) {
+        return;
+    }
+    auto metadataList = GetPrimaryImage()->GetAllMetadata();
+    heif_item_id exifId = 0;
+    for (auto metadata : metadataList) {
+        if (metadata && metadata->itemType == EXIF_ID) {
+            exifId = metadata->itemId;
+            break;
+        }
+    }
+    if (exifId == 0) {
+        return;
+    }
+
+    if (!HasItemId(exifId)) {
+        return;
+    }
+
+    auto items = ilocBox_->GetItems();
+    const HeifIlocBox::Item *ilocItem = nullptr;
+    for (const auto &item: items) {
+        if (item.itemId == exifId) {
+            ilocItem = &item;
+            break;
+        }
+    }
+    if (!ilocItem) {
+        return;
+    }
+
+    tiffOffset_ = ilocItem->baseOffset;
+    if (!ilocItem->extents.empty()) {
+        tiffOffset_ += ilocItem->extents[0].offset;
+    }
 }
 } // namespace ImagePlugin
 } // namespace OHOS

@@ -25,17 +25,21 @@
 
 namespace OHOS {
 namespace Media {
+static constexpr int E_NO_EXIF_TAG = 1;
+
 class MetadataAccessor {
 public:
     virtual uint32_t Read() = 0;
     virtual uint32_t Write() = 0;
     virtual bool Create() = 0;
     virtual uint32_t WriteBlob(DataBuf &blob) = 0;
-    virtual bool ReadBlob(DataBuf &blob) const = 0;
+    virtual bool ReadBlob(DataBuf &blob) = 0;
     virtual bool WriteToOutput(SkWStream &output) = 0;
     virtual std::shared_ptr<MetadataStream> GetOutputStream() = 0;
     virtual std::shared_ptr<ExifMetadata> Get() = 0;
     virtual void Set(std::shared_ptr<ExifMetadata> &ptr) = 0;
+    virtual uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
+                                   std::vector<std::pair<uint32_t, uint32_t>> &ranges) = 0;
 };
 } // namespace Media
 } // namespace OHOS
