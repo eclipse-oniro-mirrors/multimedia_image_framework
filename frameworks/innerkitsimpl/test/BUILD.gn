@@ -1327,7 +1327,6 @@ ohos_unittest("jpgyuvtest") {
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
-    "googletest:gtest_main",
     "graphic_2d:color_manager",
   ]
 }
@@ -1386,7 +1385,6 @@ ohos_unittest("jpeg_yuv_decoder_test") {
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
-    "googletest:gtest_main",
     "skia:libjpeg",
   ]
 }
@@ -1561,7 +1559,6 @@ ohos_unittest("image_native_test") {
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
     "googletest:gtest",
-    "googletest:gtest_main",
     "graphic_surface:surface",
   ]
 }
@@ -1589,7 +1586,6 @@ ohos_unittest("image_receiver_native_test") {
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
     "googletest:gtest",
-    "googletest:gtest_main",
     "graphic_surface:surface",
   ]
 }
@@ -1666,7 +1662,6 @@ ohos_unittest("imageformatconverttest") {
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "googletest:gtest",
-    "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "ipc:ipc_core",
