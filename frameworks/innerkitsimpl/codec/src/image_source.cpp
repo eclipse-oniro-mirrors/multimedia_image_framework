@@ -58,6 +58,7 @@
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
+#include "native_buffer.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
@@ -92,10 +93,12 @@ using namespace MultimediaPlugin;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
 
-static const map<PixelFormat, GraphicPixelFormat> SURFACE_FORMAT_MAP = {
+static const map<PixelFormat, GraphicPixelFormat> SINGLE_HDR_CONVERT_FORMAT_MAP = {
     { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
     { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
     { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
+    { PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
+    { PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
 };
 #endif
 
@@ -878,7 +881,8 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
 
 static bool IsYuvFormat(PixelFormat format)
 {
-    return format == PixelFormat::NV21 || format == PixelFormat::NV12;
+    return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
 }
 
 static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
@@ -3340,9 +3344,47 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
 // LCOV_EXCL_STOP
 #endif
 
+void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGD("UnSupport SetContextYuvInfo");
+    return;
+#else
+    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGD("SetDmaContextYuvInfo allocatorType is not dma");
+        return;
+    }
+    PixelFormat format = context.info.pixelFormat;
+    if (!IsYuvFormat(format)) {
+        IMAGE_LOGI("SetDmaContextYuvInfo format is not yuv");
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("SetDmaContextYuvInfo surfacebuffer is nullptr");
+        return;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+        IMAGE_LOGE("SetDmaContextYuvInfo, GetPlanesInfo failed retVal:%{public}d", retVal);
+        return;
+    }
+    const OH_NativeBuffer_Plane &planeY = planes->planes[0];
+    const OH_NativeBuffer_Plane &planeUV =
+        planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::NV12) ? NUM_2 : NUM_1];
+    context.yuvInfo.yStride = planeY.columnStride;
+    context.yuvInfo.uvStride = planeUV.columnStride;
+    context.yuvInfo.yOffset = planeY.offset;
+    context.yuvInfo.uvOffset = planeUV.offset;
+    context.yuvInfo.imageSize = context.info.size;
+#endif
+}
+
 DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
     DecodeContext& context, ImagePlugin::PlImageInfo& plInfo)
 {
+    SetDmaContextYuvInfo(context);
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGE("UnSupport HandleSingleHdrImage");
     return context;
@@ -3360,9 +3402,9 @@ DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
         sdrCtx.info.size.height = plInfo.size.height;
         sdrCtx.hdrType = ImageHdrType::SDR;
         sdrCtx.outInfo.size = sdrCtx.info.size;
-        auto formatSearch = SURFACE_FORMAT_MAP.find(opts_.desiredPixelFormat);
+        auto formatSearch = SINGLE_HDR_CONVERT_FORMAT_MAP.find(opts_.desiredPixelFormat);
         auto allocFormat =
-            (formatSearch != SURFACE_FORMAT_MAP.end()) ? formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
+            (formatSearch != SINGLE_HDR_CONVERT_FORMAT_MAP.end()) ? formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
         uint32_t res = AllocSurfaceBuffer(sdrCtx, allocFormat);
         if (res != SUCCESS) {
             IMAGE_LOGI("single hdr convert to sdr,alloc surfacebuffer failed");
@@ -3372,6 +3414,7 @@ DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
         if (DecomposeImage(hdrSptr, sdr)) {
             FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
             plInfo = sdrCtx.info;
+            SetDmaContextYuvInfo(sdrCtx);
             return sdrCtx;
         }
         FreeContextBuffer(sdrCtx.freeFunc, sdrCtx.allocatorType, sdrCtx.pixelsBuffer);
