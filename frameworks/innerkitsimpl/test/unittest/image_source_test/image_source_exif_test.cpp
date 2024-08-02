@@ -32,8 +32,52 @@ static const std::string IMAGE_REMOVE_EXIF_JPEG_PATH = "/data/local/tmp/image/te
 static const std::string IMAGE_REMOVE_EXIF_PNG_PATH = "/data/local/tmp/image/test_remove_exif.png";
 static const std::string IMAGE_REMOVE_EXIF_WEBP_PATH = "/data/local/tmp/image/test_remove_exif.webp";
 static const std::string IMAGE_REMOVE_EXIF_HEIF_PATH = "/data/local/tmp/image/test_remove_exif.heic";
+static const std::string IMAGE_REMOVE_EXIF_DNG_PATH = "/data/local/tmp/image/test_remove_exif.dng";
 static const std::string IMAGE_REMOVE_HW_EXIF_PATH = "/data/local/tmp/image/test_remove_hw_exif.jpg";
 static const std::string IMAGE_REMOVE_NO_EXIF_JPEG_PATH = "/data/local/tmp/image/test_remove_no_exif.jpg";
+static const  std::string DEFAULT_EXIF_VALUE = "default_exif_value";
+
+static const std::vector<std::string> hwExifReadKey = {
+    "HwMnoteIsXmageSupported",
+    "HwMnoteXmageMode",
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom",
+    "HwMnoteCloudEnhancementMode",
+    "HwMnoteWindSnapshotMode",
+};
+
+static const std::vector<std::string> hwExifWriteKey = {
+    "HwMnoteIsXmageSupported",
+    "HwMnoteXmageMode",
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom",
+    "HwMnoteCloudEnhancementMode",
+};
+
+static const std::vector<std::string> jpgValues = {
+    "1",
+    "0",
+    "0",
+    "0",
+    "0",
+    "0",
+    "default_exif_value",
+    "default_exif_value",
+};
+
+static const std::vector<std::string> modifyValues = {
+    "1",
+    "10",
+    "11",
+    "259",
+    "12",
+    "999",
+    "100",
+};
 
 class ImageSourceExifTest : public testing::Test {
 public:
@@ -413,6 +457,141 @@ HWTEST_F(ImageSourceExifTest, RemoveImageProperty006, TestSize.Level3)
     ASSERT_EQ(errorCode, ERR_IMAGE_DECODE_EXIF_UNSUPPORT);
 
     GTEST_LOG_(INFO) << "ImageSourceExifTest: RemoveImageProperty006 end";
+}
+
+HWTEST_F(ImageSourceExifTest, HwXmageTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest001 start";
+
+    uint32_t errorCode = 0;
+    std::string path = IMAGE_REMOVE_EXIF_JPEG_PATH;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::string value = "";
+    for (int i = 0; i < hwExifReadKey.size(); ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[i], value);
+        ASSERT_EQ(value, jpgValues[i]);
+    }
+
+    ASSERT_EQ(hwExifWriteKey.size(), modifyValues.size());
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->ModifyImageProperty(0, hwExifWriteKey[i], modifyValues[i]);
+        ASSERT_EQ(errorCode, SUCCESS);
+    }
+
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifWriteKey[i], value);
+        ASSERT_EQ(value, modifyValues[i]);
+    }
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest001 end";
+}
+
+HWTEST_F(ImageSourceExifTest, HwXmageTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest002 start";
+
+    uint32_t errorCode = 0;
+    std::string path = IMAGE_REMOVE_EXIF_PNG_PATH;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::string value = "";
+    for (auto key : hwExifReadKey) {
+        errorCode = imageSource->GetImagePropertyString(0, key, value);
+        ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
+    }
+
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->ModifyImageProperty(0, hwExifWriteKey[i], modifyValues[i]);
+        ASSERT_EQ(errorCode, SUCCESS);
+    }
+
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifWriteKey[i], value);
+        ASSERT_EQ(value, modifyValues[i]);
+    }
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest002 end";
+}
+
+HWTEST_F(ImageSourceExifTest, HwXmageTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest003 start";
+
+    uint32_t errorCode = 0;
+    std::string path = IMAGE_REMOVE_EXIF_WEBP_PATH;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::string value = "";
+    for (auto key : hwExifReadKey) {
+        errorCode = imageSource->GetImagePropertyString(0, key, value);
+        ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
+    }
+
+    ASSERT_EQ(hwExifWriteKey.size(), modifyValues.size());
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->ModifyImageProperty(0, hwExifWriteKey[i], modifyValues[i]);
+        ASSERT_EQ(errorCode, SUCCESS);
+    }
+
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifWriteKey[i], value);
+        ASSERT_EQ(value, modifyValues[i]);
+    }
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest003 end";
+}
+
+HWTEST_F(ImageSourceExifTest, HwXmageTest004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest004 start";
+
+    uint32_t errorCode = 0;
+    std::string path = IMAGE_REMOVE_EXIF_HEIF_PATH;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::string value = "";
+    for (auto key : hwExifReadKey) {
+        errorCode = imageSource->GetImagePropertyString(0, key, value);
+        ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
+    }
+
+    ASSERT_EQ(hwExifWriteKey.size(), modifyValues.size());
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->ModifyImageProperty(0, hwExifWriteKey[i], modifyValues[i]);
+        ASSERT_EQ(errorCode, SUCCESS);
+    }
+
+    for (int i = 0; i < hwExifWriteKey.size(); ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifWriteKey[i], value);
+        ASSERT_EQ(value, modifyValues[i]);
+    }
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest004 end";
+}
+
+HWTEST_F(ImageSourceExifTest, HwXmageTest005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest005 start";
+
+    uint32_t errorCode = 0;
+    std::string path = IMAGE_REMOVE_EXIF_DNG_PATH;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(path, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    std::string value = "";
+    for (int i = 0; i < hwExifReadKey.size()-1; ++i) {
+        errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[i], value);
+        ASSERT_EQ(value, DEFAULT_EXIF_VALUE);
+    }
+    errorCode = imageSource->GetImagePropertyString(0, hwExifReadKey[hwExifReadKey.size()-1], value);
+    ASSERT_EQ(value, "8");
+    GTEST_LOG_(INFO) << "ImageSourceExifTest: HwXmageTest005 end";
 }
 
 } // namespace Multimedia
