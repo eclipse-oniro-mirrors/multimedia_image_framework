@@ -36,6 +36,7 @@ public:
     ExifData* GetExifData();
     bool CreateExifdata();
     NATIVEEXPORT std::shared_ptr<ExifMetadata> Clone();
+    void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
@@ -58,6 +59,7 @@ private:
     bool RemoveHwEntry(const std::string &key);
     bool SetCommonValue(const std::string &key, const std::string &value);
     bool IsSpecialHwKey(const std::string &key) const;
+    void FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     ExifData *exifData_;
 };
 } // namespace Media

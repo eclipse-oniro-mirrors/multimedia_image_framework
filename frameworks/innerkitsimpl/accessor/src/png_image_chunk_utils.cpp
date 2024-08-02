@@ -22,6 +22,7 @@
 #include "image_log.h"
 #include "media_errors.h"
 #include "metadata_stream.h"
+#include "png_exif_metadata_accessor.h"
 #include "png_image_chunk_utils.h"
 #include "tiff_parser.h"
 
@@ -49,7 +50,8 @@ constexpr auto NULL_CHAR_AMOUNT = 2;
 constexpr auto HEX_STRING_UNIT_SIZE = 2;
 }
 
-int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType, DataBuf &tiffData)
+int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType,
+    DataBuf &tiffData, bool &isCompressed)
 {
     DataBuf keyword = GetKeywordFromChunk(chunkData);
     if (keyword.Empty()) {
@@ -62,7 +64,7 @@ int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType c
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
     }
 
-    DataBuf rawText = GetRawTextFromChunk(chunkData, keyword.Size(), chunkType);
+    DataBuf rawText = GetRawTextFromChunk(chunkData, keyword.Size(), chunkType, isCompressed);
     if (rawText.Empty()) {
         IMAGE_LOGE("Failed to read the raw text from the chunk data. Chunk data size: %{public}zu", chunkData.Size());
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
@@ -91,7 +93,8 @@ DataBuf PngImageChunkUtils::GetKeywordFromChunk(const DataBuf &chunkData)
     return { chunkData.CData(), keywordLength };
 }
 
-DataBuf PngImageChunkUtils::GetRawTextFromZtxtChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText)
+DataBuf PngImageChunkUtils::GetRawTextFromZtxtChunk(const DataBuf &chunkData, size_t keySize,
+    DataBuf &rawText, bool &isCompressed)
 {
     if (*(chunkData.CData(keySize + 1)) != CHUNK_COMPRESS_METHOD_VALID) {
         IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
@@ -108,6 +111,7 @@ DataBuf PngImageChunkUtils::GetRawTextFromZtxtChunk(const DataBuf &chunkData, si
             IMAGE_LOGE("Failed to decompress text. Return code: %{public}d", ret);
             return {};
         }
+        isCompressed = true;
     }
     return rawText;
 }
@@ -132,7 +136,8 @@ std::string FetchString(const char *chunkData, size_t dataLength)
     return { chunkData, stringLength };
 }
 
-DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText)
+DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize,
+    DataBuf &rawText, bool &isCompressed)
 {
     const size_t nullCount = static_cast<size_t>(std::count(chunkData.CData(keySize + 3),
                                                             chunkData.CData(chunkData.Size() - 1), '\0'));
@@ -185,20 +190,22 @@ DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, si
             IMAGE_LOGE("Decompress text failed.");
             return {};
         }
+        isCompressed = true;
     }
     return rawText;
 }
 
-DataBuf PngImageChunkUtils::GetRawTextFromChunk(const DataBuf &chunkData, size_t keySize, TextChunkType chunkType)
+DataBuf PngImageChunkUtils::GetRawTextFromChunk(const DataBuf &chunkData, size_t keySize,
+    TextChunkType chunkType, bool &isCompressed)
 {
     DataBuf rawText;
-
+    isCompressed = false;
     if (chunkType == zTXtChunk) {
-        GetRawTextFromZtxtChunk(chunkData, keySize, rawText);
+        GetRawTextFromZtxtChunk(chunkData, keySize, rawText, isCompressed);
     } else if (chunkType == tEXtChunk) {
         GetRawTextFromTextChunk(chunkData, keySize, rawText);
     } else if (chunkType == iTXtChunk) {
-        GetRawTextFromItxtChunk(chunkData, keySize, rawText);
+        GetRawTextFromItxtChunk(chunkData, keySize, rawText, isCompressed);
     } else {
         IMAGE_LOGE("Unexpected chunk type encountered: %{public}d", chunkType);
         return {};

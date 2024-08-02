@@ -81,7 +81,7 @@ uint32_t WebpExifMetadataAccessor::Read()
     return SUCCESS;
 }
 
-bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     if (!imageStream_->IsOpen()) {
         if (!imageStream_->Open(OpenMode::ReadWrite)) {
@@ -128,6 +128,7 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob) const
 
         blob.Resize(size);
         imageStream_->Read(blob.Data(), size);
+        tiffOffset_ = imageStream_->Tell() - blob.Size();
         return true;
     }
 

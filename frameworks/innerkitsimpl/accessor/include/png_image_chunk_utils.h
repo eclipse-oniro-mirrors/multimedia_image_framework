@@ -36,7 +36,8 @@ public:
     enum TextChunkType { tEXtChunk = 0, zTXtChunk = 1, iTXtChunk = 2 };
 
     // parse exif meta data from text type chunk (tEXt/zTXt/iTXt)
-    static int ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType, DataBuf &tiffData);
+    static int ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType,
+        DataBuf &tiffData, bool &isCompressed);
 
     // lookup text chunk's exif keyword "raw profile xxx"
     static bool FindExifFromTxt(DataBuf &chunkData);
@@ -45,16 +46,19 @@ private:
     static DataBuf GetKeywordFromChunk(const DataBuf &chunkData);
 
     // get data from zTxt chunk
-    static DataBuf GetRawTextFromZtxtChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText);
+    static DataBuf GetRawTextFromZtxtChunk(const DataBuf &chunkData, size_t keySize,
+        DataBuf &rawText, bool &isCompressed);
 
     // get data from tExt chunk
     static DataBuf GetRawTextFromTextChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText);
 
     // get data from iTxt chunk
-    static DataBuf GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize, DataBuf &rawText);
+    static DataBuf GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize,
+        DataBuf &rawText, bool &isCompressed);
 
     // get text field from png txt chunk
-    static DataBuf GetRawTextFromChunk(const DataBuf &chunkData, size_t keySize, TextChunkType chunkType);
+    static DataBuf GetRawTextFromChunk(const DataBuf &chunkData, size_t keySize,
+        TextChunkType chunkType, bool &isCompressed);
 
     // lookup exif keyword
     static bool FindExifKeyword(const byte *keyword, size_t size);

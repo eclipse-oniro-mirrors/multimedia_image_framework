@@ -68,11 +68,12 @@ uint32_t DngExifMetadataAccessor::Read()
         return ERR_EXIF_DECODE_FAILED;
     }
 
+    tiffOffset_ = tiffHeaderPos;
     exifMetadata_ = std::make_shared<OHOS::Media::ExifMetadata>(exifData);
     return SUCCESS;
 }
 
-bool DngExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool DngExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     return false;
 }
