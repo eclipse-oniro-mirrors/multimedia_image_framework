@@ -252,6 +252,9 @@ public:
         return grColorSpace_;
     }
     NATIVEEXPORT virtual uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
+    // use for hdr pixelmap
+    NATIVEEXPORT void SetHdrToSdrColorSpaceName(const OHOS::ColorManager::ColorSpaceName colorSpaceName);
+    NATIVEEXPORT OHOS::ColorManager::ColorSpaceName GetHdrToSdrColorSpaceName();
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 
@@ -298,6 +301,9 @@ public:
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
+    // format support rgba8888, nv12, nv21. The default value is rgba8888
+    // If toSRGB is false, pixelmap will be converted to display_p3
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
 
     NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
     {
@@ -459,6 +465,7 @@ protected:
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
+    OHOS::ColorManager::ColorSpaceName sdrColorSpaceName_ = ColorManager::DISPLAY_P3;
 #else
     std::shared_ptr<uint8_t> grColorSpace_ = nullptr;
 #endif
