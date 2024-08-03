@@ -2111,7 +2111,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
-    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat) || imageInfo_.pixelFormat == PixelFormat::RGBA_F16) {
         bufferSize = pixelsSize_;
     }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&

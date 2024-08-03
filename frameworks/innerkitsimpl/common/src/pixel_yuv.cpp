@@ -509,7 +509,7 @@ void PixelYuv::translate(float xAxis, float yAxis)
     GetImageYUVInfo(yuvDataInfo);
     XYaxis xyAxis = {xAxis, yAxis};
     uint8_t *dst = reinterpret_cast<uint8_t *>(dstMemory->data.data);
-    PixelYuvUtils::SetTranslateDataDefault(dst, width, height, format);
+    PixelYuvUtils::SetTranslateDataDefault(dst, width, height, format, dstStrides);
 
     if (!PixelYuvUtils::YuvTranslate(data_, yuvDataInfo, dst, xyAxis, imageInfo_, dstStrides)) {
         dstMemory->Release();

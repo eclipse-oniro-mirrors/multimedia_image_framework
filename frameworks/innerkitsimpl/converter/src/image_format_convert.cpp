@@ -710,9 +710,6 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     YUVStrideInfo dstStrides;
     auto allocType = GetAllocatorType(srcPiexlMap, destFormat);
     DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height, destFormat, allocType};
-    if (destFormat == PixelFormat::RGBA_F16) {
-        destInfo.width = ((imageInfo.size.width + NUM_1) / NUM_2) * NUM_2;
-    }
     auto m = CreateMemory(destFormat, allocType, destInfo.width, destInfo.height, dstStrides);
     if (m == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -768,7 +765,7 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
     info.baseDensity = srcImageinfo.baseDensity;
     info.colorSpace = srcImageinfo.colorSpace;
     info.pixelFormat = destInfo.format;
-    info.size = srcImageinfo.size;
+    info.size = {destInfo.width, destInfo.height};
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
