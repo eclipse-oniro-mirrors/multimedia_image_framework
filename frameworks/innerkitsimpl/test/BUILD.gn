@@ -90,6 +90,7 @@ ohos_unittest("picturetest") {
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
@@ -120,6 +121,7 @@ ohos_unittest("auxiliarypicturetest") {
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
+    "graphic_surface:surface",
     "hilog:libhilog",
   ]
 }
