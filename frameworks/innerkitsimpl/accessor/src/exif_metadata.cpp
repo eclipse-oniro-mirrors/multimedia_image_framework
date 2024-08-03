@@ -134,6 +134,29 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     return SUCCESS;
 }
 
+const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
+{
+    ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
+    std::string value;
+    for (const auto key : ExifMetadatFormatter::GetRWKeys()) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    for (const auto key : ExifMetadatFormatter::GetROKeys()) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    IMAGE_LOGD("Get record arguments success.");
+    return result;
+}
+
+std::shared_ptr<ImageMetadata> ExifMetadata::CloneMetadata()
+{
+    return Clone();
+}
+
 int ExifMetadata::HandleMakerNote(std::string &value) const
 {
     value.clear();
@@ -766,6 +789,65 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
         }
         ++ifd;
     }
+}
+
+bool ExifMetadata::Marshalling(Parcel &parcel) const
+{
+    if (exifData_ == nullptr) {
+        return false;
+    }
+
+    unsigned char *data = nullptr;
+    unsigned int size = 0;
+    exif_data_save_data(exifData_, &data, &size);
+
+    if (!parcel.WriteBool(data != nullptr && size != 0)) {
+        IMAGE_LOGE("Failed to write exif data buffer existence value.");
+        return false;
+    }
+
+    if (data != nullptr && size != 0) {
+        std::unique_ptr<unsigned char[]> exifData(data);
+        if (!parcel.WriteUint32(static_cast<uint32_t>(size))) {
+            return false;
+        }
+        if (!parcel.WriteUnpadBuffer(exifData.get(), size)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel)
+{
+    PICTURE_ERR error;
+    ExifMetadata* dstExifMetadata = ExifMetadata::Unmarshalling(parcel, error);
+    if (dstExifMetadata == nullptr || error.errorCode != SUCCESS) {
+        IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
+            error.errorCode, error.errorInfo.c_str());
+    }
+    return dstExifMetadata;
+}
+
+ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
+{
+    bool hasExifDataBuffer = parcel.ReadBool();
+    if (hasExifDataBuffer) {
+        uint32_t size = 0;
+        if (!parcel.ReadUint32(size)) {
+            return nullptr;
+        }
+        
+        const uint8_t *data = parcel.ReadUnpadBuffer(static_cast<size_t>(size));
+        if (!data) {
+            return nullptr;
+        }
+        ExifData *ptrData = exif_data_new_from_data(data, static_cast<unsigned int>(size));
+        ExifMetadata *exifMetadata = new(std::nothrow) ExifMetadata(ptrData);
+        return exifMetadata;
+    }
+    return nullptr;
 }
 } // namespace Media
 } // namespace OHOS

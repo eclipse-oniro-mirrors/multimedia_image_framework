@@ -17,21 +17,28 @@
 #define FRAMEWORKS_INNERKITSIMPL_HDR_INCLUDE_JPEG_MPF_PARSER_H
 
 #include <vector>
+#include "image_type.h"
 
 namespace OHOS {
 namespace Media {
+
+constexpr uint32_t JPEG_MPF_IDENTIFIER_SIZE = 4;
+
 struct SingleJpegImage {
     uint32_t offset;
     uint32_t size;
+    AuxiliaryPictureType auxType;
 };
 
 class JpegMpfParser {
 public:
+    bool CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset);
     bool Parsing(uint8_t* data, uint32_t size);
     std::vector<SingleJpegImage> images_;
 private:
     bool ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dataOffset, bool isBigEndian);
     bool ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndian, uint32_t imageNums);
+    AuxiliaryPictureType ParsingImageAttribute(uint32_t imageAttr, bool isBigEndian);
     uint32_t imageNums_ = 0;
 };
 

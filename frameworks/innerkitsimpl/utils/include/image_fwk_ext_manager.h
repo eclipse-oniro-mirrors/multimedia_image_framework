@@ -26,6 +26,7 @@ namespace OHOS::ImagePlugin {
 
 namespace OHOS::Media {
     class PixelMap;
+    class Picture;
 }
 
 class SkWStream;
@@ -35,6 +36,9 @@ using DoHardWareEncodeFunc = int32_t (*)(SkWStream* output, const OHOS::ImagePlu
 using HevcSoftwareDecodeFunc = int32_t (*)(std::vector<std::vector<uint8_t>>& inputs,
                                            OHOS::ImagePlugin::HevcSoftDecodeParam& param);
 
+using DoHardwareEncodePictureFunc = int32_t (*)(SkWStream* output, const OHOS::ImagePlugin::PlEncodeOptions& opts,
+    OHOS::Media::Picture* picture);
+
 namespace OHOS {
 namespace Media {
 class ImageFwkExtManager {
@@ -43,6 +47,7 @@ public:
     ~ImageFwkExtManager();
     bool LoadImageFwkExtNativeSo();
     DoHardWareEncodeFunc doHardWareEncodeFunc_;
+    DoHardwareEncodePictureFunc doHardwareEncodePictureFunc_;
     HevcSoftwareDecodeFunc hevcSoftwareDecodeFunc_;
 private:
     bool isImageFwkExtNativeSoOpened_;

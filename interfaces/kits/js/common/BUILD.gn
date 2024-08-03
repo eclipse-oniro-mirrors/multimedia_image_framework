@@ -94,6 +94,9 @@ if (use_clang_ios) {
     public_configs = [ ":image_external_config" ]
     sources = [
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/auxiliary_picture_napi.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/metadata_napi.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/picture_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_napi_utils.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_packer_napi.cpp",
       "//foundation/multimedia/image_framework/frameworks/kits/js/common/image_source_napi.cpp",
@@ -213,6 +216,9 @@ if (use_clang_ios) {
       "$image_subsystem/frameworks/kits/js/common/image_pixel_map_napi_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_receiver_mdk_kits.cpp",
       "$image_subsystem/frameworks/kits/js/common/image_source_mdk_kits.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/auxiliary_picture_napi.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/metadata_napi.cpp",
+      "${image_subsystem}/frameworks/kits/js/common/picture_napi.cpp",
       "${image_subsystem}/frameworks/kits/js/common/sendable/sendable_image_napi.cpp",
       "${image_subsystem}/frameworks/kits/js/common/sendable/sendable_image_receiver_napi.cpp",
       "${image_subsystem}/frameworks/kits/js/common/sendable/sendable_image_source_napi.cpp",
@@ -302,9 +308,12 @@ if (use_clang_ios) {
     ohos_shared_library("multimedia_image") {
       public_configs = [ ":image_external_config" ]
       sources = [
+        "$image_subsystem/frameworks/kits/js/common/auxiliary_picture_napi.cpp",
         "$image_subsystem/frameworks/kits/js/common/image_packer_napi.cpp",
         "$image_subsystem/frameworks/kits/js/common/image_source_napi.cpp",
+        "$image_subsystem/frameworks/kits/js/common/metadata_napi.cpp",
         "$image_subsystem/frameworks/kits/js/common/native_module_ohos_image.cpp",
+        "$image_subsystem/frameworks/kits/js/common/picture_napi.cpp",
         "$image_subsystem/frameworks/kits/js/common/pixel_map_napi.cpp",
         "$image_subsystem/kits/js/common/image_napi_utils.cpp",
       ]

@@ -688,5 +688,32 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
     return;
 #endif
 }
+
+bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
+{
+    auto auxTypes = GetAllAuxiliaryPictureType();
+    return (auxTypes.find(type) != auxTypes.end());
+}
+
+bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
+{
+    if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
+{
+    static const std::set<AuxiliaryPictureType> auxTypes = {
+        AuxiliaryPictureType::GAINMAP,
+        AuxiliaryPictureType::DEPTH_MAP,
+        AuxiliaryPictureType::UNREFOCUS_MAP,
+        AuxiliaryPictureType::LINEAR_MAP,
+        AuxiliaryPictureType::FRAGMENT_MAP};
+    return auxTypes;
+}
+
 } // namespace Media
 } // namespace OHOS

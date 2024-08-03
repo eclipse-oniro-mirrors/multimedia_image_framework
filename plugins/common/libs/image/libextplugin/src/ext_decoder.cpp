@@ -40,11 +40,13 @@
 #endif
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "heif_impl/HeifDecoder.h"
+#include "heif_impl/HeifDecoderImpl.h"
 #include "hardware/heif_hw_decoder.h"
 #endif
 #include "color_utils.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
+#include "heif_type.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -2064,6 +2066,82 @@ void ExtDecoder::SetHeifParseError()
 
     stream_->Seek(originOffset);
     free(fileMem);
+}
+
+bool ExtDecoder::CheckAuxiliaryMap(AuxiliaryPictureType type)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        IMAGE_LOGE("Check heif auxiliaryMap failed! Invalid parameter, type %{public}d.", type);
+        return false;
+    }
+
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Get heif context failed, type %{public}d.", type);
+        return false;
+    }
+
+    if (!decoder->CheckAuxiliaryMap(type)) {
+        IMAGE_LOGE("Get heif auxiliary type %{public}d, decoder error", type);
+        return false;
+    }
+    return true;
+#endif
+    return false;
+}
+
+bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPictureType type)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        IMAGE_LOGE("decode heif auxiliaryMap type %{public}d, codec error", type);
+        return false;
+    }
+
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("decode heif auxiliaryMap %{public}d, decoder error", type);
+        return false;
+    }
+    if (!decoder->setAuxiliaryMap(type)) {
+        IMAGE_LOGE("set auxiliary map type failed, type is %{public}d", type);
+        return false;
+    }
+    HeifFrameInfo auxiliaryMapInfo;
+    decoder->getAuxiliaryMapInfo(&auxiliaryMapInfo);
+    uint32_t width = auxiliaryMapInfo.mWidth;
+    uint32_t height = auxiliaryMapInfo.mHeight;
+    if (width > INT_MAX || height > INT_MAX) {
+        IMAGE_LOGI("DecodeHeifAuxiliaryMap size exceeds the maximum value");
+        return false;
+    }
+    IMAGE_LOGD("DecodeHeifAuxiliaryMap size:%{public}d-%{public}d", width, height);
+    SkImageInfo dstInfo = SkImageInfo::Make(static_cast<int>(width), static_cast<int>(height), dstInfo_.colorType(),
+        dstInfo_.alphaType(), dstInfo_.refColorSpace());
+    uint64_t byteCount = static_cast<uint64_t>(dstInfo.computeMinByteSize());
+    context.info.size.width = width;
+    context.info.size.height = height;
+    if (DmaMemAlloc(context, byteCount, dstInfo) != SUCCESS) {
+        IMAGE_LOGI("DmaMemAlloc execution failed.");
+        return false;
+    }
+    auto* dstBuffer = static_cast<uint8_t*>(context.pixelsBuffer.buffer);
+    auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    int32_t rowStride = sbBuffer->GetStride();
+    if (rowStride <= 0) {
+        return false;
+    }
+    decoder->setAuxiliaryDstBuffer(dstBuffer, static_cast<size_t>(rowStride));
+    if (!decoder->decodeAuxiliaryMap()) {
+        IMAGE_LOGE("Decoded auxiliary map type is not supported, or decoded failed. Type: %{public}d", type);
+        return false;
+    }
+    context.outInfo.size.width = width;
+    context.outInfo.size.height = height;
+    return true;
+#endif
+    return false;
 }
 } // namespace ImagePlugin
 } // namespace OHOS
