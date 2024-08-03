@@ -635,6 +635,17 @@ std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
     return primaryImage_ != nullptr ? primaryImage_->GetGainmapImage() : nullptr;
 }
 
+std::shared_ptr<HeifImage> HeifParser::GetAuxiliaryMapImage(const std::string type)
+{
+    auto auxImages = primaryImage_->GetAuxImages();
+    for (auto image : auxImages) {
+        if (image->GetAuxImageType() == type) {
+            return image;
+        }
+    }
+    return nullptr;
+}
+
 std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
 {
     return tmapImage_;

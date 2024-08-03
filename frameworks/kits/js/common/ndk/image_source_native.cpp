@@ -14,11 +14,14 @@
  */
 
 #include "image_source_native.h"
-
+#include "picture_native_impl.h"
 #include "common_utils.h"
 #include "image_source.h"
 #include "image_source_native_impl.h"
 #include "pixelmap_native_impl.h"
+#include "picture_native.h"
+#include "media_errors.h"
+
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -63,6 +66,16 @@ struct OH_ImageSource_Info {
     /** Image dynamicRange*/
     bool isHdr;
 };
+
+static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPictureType type)
+{
+    return static_cast<Image_AuxiliaryPictureType>(static_cast<int>(type));
+}
+
+static OHOS::Media::AuxiliaryPictureType AuxTypeNativeToInner(Image_AuxiliaryPictureType type)
+{
+    return static_cast<OHOS::Media::AuxiliaryPictureType>(static_cast<int>(type));
+}
 
 static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
 {
@@ -463,6 +476,27 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source, OH_DecodingOptionsForPicture *options,
+    OH_PictureNative **picture)
+{
+    if (source == nullptr || !source->GetInnerImageSource() || options == nullptr
+        || picture == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    uint32_t errorCode;
+    auto pictureTemp = source->GetInnerImageSource()->CreatePicture(*innerDecodingOptionsForPicture, errorCode);
+    if (errorCode != SUCCESS) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    
+    auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
+    *picture = pictureNative;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_GetDelayTimeList(OH_ImageSourceNative *source, int32_t *delayTimeList, size_t size)
 {
     if (source == nullptr || delayTimeList == nullptr) {
@@ -600,6 +634,68 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
     source->~OH_ImageSourceNative();
     return IMAGE_SUCCESS;
 }
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture **options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto decodingOptionsForPicture = std::make_shared<OHOS::Media::DecodingOptionsForPicture>();
+    *options = new OH_DecodingOptionsForPicture(decodingOptionsForPicture);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
+    Image_AuxiliaryPictureType **desiredAuxiliaryPictures, size_t *length)
+{
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredAuxiliaryPictures == nullptr || length == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto innerDecodingSet = options->GetInnerDecodingOptForPicture()->desireAuxiliaryPictures;
+    if (innerDecodingSet.size() == 0) {
+        return IMAGE_BAD_SOURCE;
+    }
+    auto lenTmp = innerDecodingSet.size();
+    auto auxTypeArrayUniptr = std::make_unique<Image_AuxiliaryPictureType[]>(lenTmp);
+    int index = 0;
+    for (auto innerDecoding : innerDecodingSet) {
+        auxTypeArrayUniptr[index++] = AuxTypeInnerToNative(innerDecoding);
+    }
+    *desiredAuxiliaryPictures = auxTypeArrayUniptr.release();
+    *length = lenTmp;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
+    Image_AuxiliaryPictureType *desiredAuxiliaryPictures, size_t length)
+{
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredAuxiliaryPictures == nullptr || length <= 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    for (size_t index = 0; index < length; index++) {
+        auto auxTypeTmp = AuxTypeNativeToInner(desiredAuxiliaryPictures[index]);
+        innerDecodingOptionsForPicture->desireAuxiliaryPictures.insert(auxTypeTmp);
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif

@@ -27,6 +27,7 @@
  *
  * @brief Declares the common enums and structs used by the image interface.
  *
+ * @kit ImageKit
  * @syscap SystemCapability.Multimedia.Image.Core
  * @since 12
  */
@@ -95,6 +96,20 @@ struct Image_String {
 };
 
 /**
+ * @brief Define a PictureMetadata struct type, used for picture metadata.
+ *
+ * @since 12
+ */
+struct OH_PictureMetadata;
+
+/**
+ * @brief Define a PictureMetadata struct type, used for picture metadata.
+ *
+ * @since 12
+ */
+typedef struct OH_PictureMetadata OH_PictureMetadata;
+
+/**
  * @brief Defines the property string (in key-value format) of the image source.
  *
  * @since 12
@@ -145,6 +160,89 @@ typedef enum {
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
 } Image_ErrorCode;
+
+/**
+ * @brief Define the metadata type.
+ *
+ * @since 12
+ */
+typedef enum {
+    /*
+    * EXIF metadata.
+    */
+    EXIF_METADATA = 1,
+    /*
+    * Fragment metadata.
+    */
+    FRAGMENT_METADATA = 2,
+} Image_MetadataType;
+
+/**
+ * @brief Creates a <b>PictureMetadata</b> object.
+ *
+ * @param metadataType The type of metadata.
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
+ * @since 12
+ */
+Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_PictureMetadata **metadata);
+
+/**
+ * @brief Obtains the property of picture metadata.
+ *
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @param key The property's key.
+ * @param value The property's value.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or key is nullptr, or value is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
+ *         auxiliary picture type.
+ * @since 12
+ */
+Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
+
+/**
+ * @brief Set picture metadata property.
+ *
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @param key The property's key.
+ * @param value The property's value.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or key is nullptr, or value is nullptr.
+ *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
+ *         auxiliary picture type.
+ * @since 12
+ */
+Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
+
+/**
+ * @brief Releases this PictureMetadata object.
+ *
+ * @param metadata The PictureMetadata pointer will be operated.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
+ * @since 12
+ */
+Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
+
+/**
+ * @brief Obtains a clone of metadata.
+ *
+ * @param oldMetadata The PictureMetadata pointer will be operated.
+ * @param newMetadata The PictureMetadata pointer will be cloned.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
+ *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
+ *         {@link IMAGE_COPY_FAILED} memory copy failed.
+ * @since 12
+ */
+Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_PictureMetadata **newMetadata);
 
 /**
  * @brief Defines the bmp mime type.

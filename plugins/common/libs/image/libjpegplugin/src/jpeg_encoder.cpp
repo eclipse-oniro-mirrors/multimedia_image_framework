@@ -150,6 +150,12 @@ uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
     return SUCCESS;
 }
 
+uint32_t JpegEncoder::AddPicture(Media::Picture &picture)
+{
+    ImageTrace imageTrace("JpegEncoder::AddPicture");
+    return ERR_IMAGE_ENCODE_FAILED;
+}
+
 uint32_t JpegEncoder::FinalizeEncode()
 {
     ImageTrace imageTrace("JpegEncoder::FinalizeEncode");

@@ -26,6 +26,8 @@
 #include <filesystem>
 #include <vector>
 
+#include "auxiliary_generator.h"
+#include "auxiliary_picture.h"
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -42,6 +44,7 @@
 #include "image_utils.h"
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
+#include "jpeg_mpf_parser.h"
 #include "media_errors.h"
 #include "memory_manager.h"
 #include "metadata_accessor.h"
@@ -647,7 +650,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
 }
 // LCOV_EXCL_STOP
 
-static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrInfos)
+void ImageSource::ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrInfos)
 {
     addrInfos.addr = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     addrInfos.context = static_cast<uint8_t *>(context.pixelsBuffer.context);
@@ -879,7 +882,7 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
 }
 // LCOV_EXCL_STOP
 
-static bool IsYuvFormat(PixelFormat format)
+bool ImageSource::IsYuvFormat(PixelFormat format)
 {
     return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
         format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
@@ -1548,7 +1551,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
     }
-    
+
     if (bufferSize > MAX_BUFFER_SIZE) {
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
@@ -3338,7 +3341,7 @@ static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
 }
 
 // LCOV_EXCL_START
-static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
+CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
 {
     switch (colorSpace) {
         case ColorManager::ColorSpaceName::SRGB :
@@ -3647,7 +3650,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
 // LCOV_EXCL_STOP
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void SetVividMetaColor(HdrMetadata& metadata,
+void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
     metadata.extendMeta.baseColorMeta.baseColorPrimary = base & 0xFF;
@@ -4146,5 +4149,103 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
     guard.unlock();
     return context;
 }
+
+std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
+{
+    DecodeOptions dopts;
+    dopts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
+        DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
+    std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
+    std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("Picture is nullptr");
+        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        return nullptr;
+    }
+
+    string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (format != IMAGE_HEIF_FORMAT && format != IMAGE_JPEG_FORMAT) {
+        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", format.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
+
+    std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
+            opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    if (format == IMAGE_HEIF_FORMAT) {
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    } else if (format == IMAGE_JPEG_FORMAT) {
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+    }
+
+    return picture;
+}
+
+void ImageSource::DecodeHeifAuxiliaryPictures(
+    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("mainDecoder_ is nullptr");
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return;
+    }
+    for (auto& auxType : auxTypes) {
+        if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
+            IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
+            continue;
+        }
+        auto auxiliaryPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+            sourceHdrType_, auxType, IMAGE_HEIF_FORMAT, mainDecoder_, errorCode);
+        if (auxiliaryPicture == nullptr) {
+            IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
+                auxType, errorCode);
+        } else {
+            picture->SetAuxiliaryPicture(auxiliaryPicture);
+        }
+    }
+}
+
+void ImageSource::DecodeJpegAuxiliaryPicture(
+    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
+    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    uint32_t mpfOffset = 0;
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
+        IMAGE_LOGE("Jpeg calculate mpf offset failed! mpfOffset: %{public}u", mpfOffset);
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return;
+    }
+    if (!jpegMpfParser->Parsing(streamBuffer + mpfOffset, streamSize - mpfOffset)) {
+        IMAGE_LOGE("Jpeg parse mpf data failed!");
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return;
+    }
+
+    uint32_t preOffset = mpfOffset + JPEG_MPF_IDENTIFIER_SIZE;
+    for (auto &auxInfo : jpegMpfParser->images_) {
+        if (auxTypes.find(auxInfo.auxType) != auxTypes.end()) {
+            IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
+            std::unique_ptr<InputDataStream> auxStream =
+                BufferSourceStream::CreateSourceStream((streamBuffer + preOffset + auxInfo.offset), auxInfo.size);
+            if (auxStream == nullptr) {
+                IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
+                continue;
+            }
+            auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
+                DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
+            auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+                sourceHdrType_, auxInfo.auxType, IMAGE_JPEG_FORMAT, auxDecoder, errorCode);
+            if (auxPicture == nullptr) {
+                IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
+            } else {
+                picture->SetAuxiliaryPicture(auxPicture);
+            }
+        }
+    }
+}
+
 } // namespace Media
 } // namespace OHOS

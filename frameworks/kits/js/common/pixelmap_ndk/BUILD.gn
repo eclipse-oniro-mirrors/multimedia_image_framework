@@ -57,6 +57,7 @@ ohos_shared_library("pixelmap") {
     debug = false
   }
   include_dirs = [
+    "${image_subsystem}/frameworks/kits/js/common/ndk/include",
     "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
     "$SUBSYSTEM_DIR/interfaces/kits/native/include/image",
   ]

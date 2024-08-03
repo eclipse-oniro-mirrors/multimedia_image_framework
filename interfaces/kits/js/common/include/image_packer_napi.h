@@ -30,6 +30,7 @@
 #include "image_source.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "picture_napi.h"
 #include "pixel_map.h"
 #include "image_source_napi.h"
 

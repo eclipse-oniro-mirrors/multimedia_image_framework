@@ -407,6 +407,23 @@ Image_ErrorCode OH_ImagePacker_PackToDataMultiFrames(OH_ImagePackerNative *image
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PictureNative *picture, uint8_t *outData, size_t *size)
+{
+    if (imagePacker == nullptr || options == nullptr || picture == nullptr || outData == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    PackOption packOption;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if (errorCode != IMAGE_SUCCESS) {
+        return errorCode;
+    }
+    return ToNewErrorCode(imagePacker->PackToDataFromPicture(&packOption, picture, outData,
+        reinterpret_cast<int64_t*>(size)));
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromImageSource(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_ImageSourceNative *imageSource, int32_t fd)
 {
@@ -463,6 +480,22 @@ Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *image
         pixelmap.push_back(pixelmaps[i]);
     }
     return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmap, fd));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PictureNative *picture, int32_t fd)
+{
+    if (imagePacker == nullptr || options == nullptr || picture == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    PackOption packOption;
+    Image_ErrorCode errorCode = CopyPackingOptions(options, packOption);
+    if (errorCode != IMAGE_SUCCESS) {
+        return errorCode;
+    }
+    return ToNewErrorCode(imagePacker->PackToFileFromPicture(&packOption, picture, fd));
 }
 
 MIDK_EXPORT
