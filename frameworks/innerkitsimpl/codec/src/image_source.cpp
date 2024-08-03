@@ -3422,7 +3422,7 @@ void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
     }
     const OH_NativeBuffer_Plane &planeY = planes->planes[0];
     const OH_NativeBuffer_Plane &planeUV =
-        planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::NV12) ? NUM_2 : NUM_1];
+        planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010) ? NUM_2 : NUM_1];
     context.yuvInfo.yStride = planeY.columnStride;
     context.yuvInfo.uvStride = planeUV.columnStride;
     context.yuvInfo.yOffset = planeY.offset;
