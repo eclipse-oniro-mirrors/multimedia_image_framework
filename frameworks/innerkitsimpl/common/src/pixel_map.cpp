@@ -3273,12 +3273,13 @@ uint32_t PixelMap::crop(const Rect &rect)
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
+static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr, bool isSRGB = false)
 {
     ImageTrace imageTrace("PixelMap decomposeImage");
     VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
     VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(sdr,
+        isSRGB ? HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL : HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterImageProcess(hdr, sdr);
     if (res != VPE_ERROR_OK || sdr == nullptr) {
@@ -3289,6 +3290,24 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
 #endif
 
 uint32_t PixelMap::ToSdr()
+{
+    ImageTrace imageTrace("PixelMap ToSdr");
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    PixelFormat outFormat = PixelFormat::RGBA_8888;
+    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010) {
+        outFormat = PixelFormat::NV12;
+    } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
+        outFormat = PixelFormat::NV21;
+    }
+    bool toSRGB = false;
+#ifdef IMAGE_COLORSPACE_FLAG
+    toSRGB = sdrColorSpaceName_ == ColorManager::SRGB;
+#endif
+    return ToSdr(outFormat, toSRGB);
+}
+
+uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     IMAGE_LOGI("tosdr is not supported");
@@ -3304,11 +3323,9 @@ uint32_t PixelMap::ToSdr()
     GetImageInfo(imageInfo);
     SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
     MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
-    PixelFormat outFormat = PixelFormat::RGBA_8888;
-    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010) {
-        outFormat = PixelFormat::NV12;
-    } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        outFormat = PixelFormat::NV21;
+    PixelFormat outFormat = format;
+    if (format != PixelFormat::NV12 && format != PixelFormat::NV21 && format != PixelFormat::RGBA_8888) {
+        outFormat = PixelFormat::RGBA_8888;
     }
     sdrData.format = outFormat;
     auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
@@ -3318,7 +3335,7 @@ uint32_t PixelMap::ToSdr()
     }
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
     sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
-    if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer)) {
+    if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
         sdrMemory->Release();
         IMAGE_LOGI("ToSdr decompose failed");
         return IMAGE_RESULT_GET_SURFAC_FAILED;
@@ -3327,7 +3344,7 @@ uint32_t PixelMap::ToSdr()
     imageInfo.pixelFormat = outFormat;
     SetImageInfo(imageInfo, true);
 #ifdef IMAGE_COLORSPACE_FLAG
-    InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::SRGB));
+    InnerSetColorSpace(OHOS::ColorManager::ColorSpace(toSRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3));
 #endif
     return SUCCESS;
 #endif
@@ -3347,6 +3364,17 @@ OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()
             std::make_shared<OHOS::ColorManager::ColorSpace>(OHOS::ColorManager::ColorSpaceName::SRGB);
     }
     return *grColorSpace_;
+}
+
+void PixelMap::SetHdrToSdrColorSpaceName(const OHOS::ColorManager::ColorSpaceName colorSpaceName)
+{
+    sdrColorSpaceName_ =
+        colorSpaceName == ColorManager::SRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3;
+}
+
+OHOS::ColorManager::ColorSpaceName PixelMap::GetHdrToSdrColorSpaceName()
+{
+    return sdrColorSpaceName_;
 }
 
 static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,

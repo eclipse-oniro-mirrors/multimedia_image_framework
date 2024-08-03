@@ -79,7 +79,7 @@ private:
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
         bool needExif, SkWStream& outputStream);
     uint32_t EncodeHeifDualHdrImage(sptr<SurfaceBuffer>& sdr, sptr<SurfaceBuffer>& gainmap,
-        Media::HdrMetadata& metadata);
+        Media::HdrMetadata& metadata, bool sdrIsSRGB = false);
     uint32_t EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sdrInfo);
 #endif
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);

@@ -926,6 +926,14 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
     std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
+    bool isSupportICCProfile = (decoder == nullptr) ? false : decoder->IsSupportICCProfile();
+    if (IsSingleHdrImage(sourceHdrType_)) {
+        pixelMap->SetHdrToSdrColorSpaceName(ColorManager::DISPLAY_P3);
+    } else {
+        if (isSupportICCProfile) {
+            pixelMap->SetHdrToSdrColorSpaceName(decoder->getGrColorSpace().GetColorSpaceName());
+        }
+    }
     // If the original image is a single-layer HDR, colorSpace needs to be obtained from the DecodeContext.
     if (context.hdrType > ImageHdrType::SDR || IsSingleHdrImage(sourceHdrType_)) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
@@ -933,7 +941,6 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
             context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
         return ;
     }
-    bool isSupportICCProfile = decoder->IsSupportICCProfile();
     if (isSupportICCProfile) {
         OHOS::ColorManager::ColorSpace grColorSpace = decoder->getGrColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);

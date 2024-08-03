@@ -813,10 +813,10 @@ static uint32_t DecomposeImage(PixelMap* pixelMap, sptr<SurfaceBuffer>& base, sp
     return SUCCESS;
 }
 
-static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bool onlySdr)
+static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bool onlySdr, bool sdrIsSRGB = false)
 {
     VpeUtils::SetSbMetadataType(buffers.sdr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(buffers.sdr, CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(buffers.sdr, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res;
     if (onlySdr) {
@@ -826,7 +826,7 @@ static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bo
         res = utils->ColorSpaceConverterImageProcess(buffers.hdr, buffers.sdr);
     } else {
         VpeUtils::SetSbMetadataType(buffers.gainmap, CM_METADATA_NONE);
-        VpeUtils::SetSbColorSpaceType(buffers.gainmap, CM_SRGB_FULL);
+        VpeUtils::SetSbColorSpaceType(buffers.gainmap, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
         res = utils->ColorSpaceConverterDecomposeImage(buffers);
     }
     if (res != VPE_ERROR_OK) {
@@ -839,17 +839,17 @@ static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bo
     return true;
 }
 
-static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap)
+static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = false)
 {
     ImageInfo info;
     pixelMap->GetImageInfo(info);
     SkColorType colorType = kRGBA_8888_SkColorType;
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
-    sk_sp<SkColorSpace> colorSpace = nullptr;
+    sk_sp<SkColorSpace> colorSpace =
+        SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, isSRGB ? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
     int32_t width = info.size.width;
     int32_t height = info.size.height;
     if (isGainmap) {
-        colorSpace = SkColorSpace::MakeSRGB();
         const int halfSizeDenominator = 2;
         width = width / halfSizeDenominator;
         height = height / halfSizeDenominator;
@@ -862,8 +862,6 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap)
             cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
         colorSpace->SetIccCicp(cicp);
 #endif
-    } else {
-        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kSRGB);
     }
     return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
 }
@@ -968,14 +966,14 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF)) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
-    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true);
+    bool sdrIsSRGB = false;
+#ifdef IMAGE_COLORSPACE_FLAG
+    sdrIsSRGB = pixelmap_->GetHdrToSdrColorSpaceName() == ColorManager::SRGB;
+#endif
+    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
+    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
-    VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
     sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo.width(), gainmapInfo.height());
-    VpeUtils::SetSbMetadataType(gainMapSptr, CM_METADATA_NONE);
-    VpeUtils::SetSbColorSpaceType(gainMapSptr, CM_SRGB_FULL);
     if (baseSptr == nullptr || gainMapSptr == nullptr) {
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
@@ -987,7 +985,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         .gainmap = gainMapSptr,
         .hdr = hdrSurfaceBuffer,
     };
-    if (!DecomposeImage(buffers, metadata, false)) {
+    if (!DecomposeImage(buffers, metadata, false, sdrIsSRGB)) {
         IMAGE_LOGE("EncodeDualVivid decomposeImage failed");
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
@@ -1017,7 +1015,11 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     }
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
-    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
+    bool sdrIsSRGB = false;
+#ifdef IMAGE_COLORSPACE_FLAG
+    sdrIsSRGB = pixelmap_->GetHdrToSdrColorSpaceName() == ColorManager::SRGB;
+#endif
+    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
     VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
@@ -1032,7 +1034,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
         .hdr = hdrSurfaceBuffer,
     };
     HdrMetadata metadata;
-    if (!DecomposeImage(buffers, metadata, true)) {
+    if (!DecomposeImage(buffers, metadata, true, sdrIsSRGB)) {
         IMAGE_LOGE("EncodeSdrImage decomposeImage failed");
         ImageUtils::SurfaceBuffer_Unreference(baseSptr.GetRefPtr());
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
@@ -1048,19 +1050,21 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 }
 
 uint32_t ExtEncoder::EncodeHeifDualHdrImage(sptr<SurfaceBuffer>& sdr, sptr<SurfaceBuffer>& gainmap,
-    Media::HdrMetadata& metadata)
+    Media::HdrMetadata& metadata, bool sdrIsSRGB)
 {
 #ifdef HEIF_HW_ENCODE_ENABLE
     std::vector<ImageItem> inputImgs;
+    ColorSpaceManager colorspaceName =
+        sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
     std::shared_ptr<ImageItem> primaryItem =
-        AssembleHdrBaseImageItem(sdr, ColorManager::ColorSpaceName::SRGB, metadata, opts_);
+        AssembleHdrBaseImageItem(sdr, colorspaceName, metadata, opts_);
     if (primaryItem == nullptr) {
         IMAGE_LOGE("AssmbleHeifDualHdrImage, get primary image failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem =
-        AssembleGainmapImageItem(gainmap, ColorManager::ColorSpaceName::SRGB, opts_);
+        AssembleGainmapImageItem(gainmap, colorspaceName, opts_);
     if (gainmapItem == nullptr) {
         IMAGE_LOGE("AssembleDualHdrImage, get gainmap image item failed");
         return ERR_IMAGE_INVALID_PARAMETER;
