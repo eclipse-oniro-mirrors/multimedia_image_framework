@@ -38,6 +38,7 @@ constexpr uint32_t BYTES_PER_PIXEL_RGB565 = 2;
 constexpr uint32_t BYTES_PER_PIXEL_RGB = 3;
 constexpr uint32_t BYTES_PER_PIXEL_RGBA = 4;
 constexpr uint32_t BYTES_PER_PIXEL_BGRA = 4;
+constexpr uint32_t STRIDES_PER_PLANE = 8;
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 }
 
@@ -45,1969 +46,34 @@ constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 #define LOG_TAG "ImageFormatConvertExt"
 namespace OHOS {
 namespace Media {
-static bool RGB565ToNV12P010NoManual(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize)
-{
-    uint8_t *yu12Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (yu12Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.RGB565ToI420(srcBuffer, imageSize.width * NUM_2, yu12Buffer, imageSize.width,
-        yu12Buffer + imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2,
-        yu12Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] yu12Buffer;
-        return false;
-    }
-    converter.I420ToI010(yu12Buffer, imageSize.width, yu12Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, yu12Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width, I010Buffer +
-        imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, P010Buffer, imageSize.width, P010Buffer + imageSize.width *
-        imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2, imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] yu12Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGB565ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
-        IMAGE_LOGE("Input parameters not compliant!");
-        return false;
-    }
-    destBufferSize = static_cast<size_t>((imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2) * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = RGB565ToNV12P010NoManual(srcBuffer, imageSize, destBuffer, destBufferSize);
-    if (!result) {
-        IMAGE_LOGE("RGB565ToNV12P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool RGB565ToNV21P010NoManual(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize)
-{
-    uint8_t *yu12Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (yu12Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.RGB565ToI420(srcBuffer, imageSize.width * NUM_2, yu12Buffer, imageSize.width,
-        yu12Buffer + imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2,
-        yu12Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] yu12Buffer;
-        return false;
-    }
-    converter.I420ToI010(yu12Buffer, imageSize.width, yu12Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, yu12Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width,
-        I010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2), (imageSize.width + NUM_1) / NUM_2,
-        I010Buffer + imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2, P010Buffer,
-        imageSize.width, P010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2,
-        imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] yu12Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
-        IMAGE_LOGE("Input parameters not compliant!");
-        return false;
-    }
-    destBufferSize = static_cast<size_t>((imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2) * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = RGB565ToNV21P010NoManual(srcBuffer, imageSize, destBuffer, destBufferSize);
-    if (!result) {
-        IMAGE_LOGE("RGB565ToNV21P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t destPlaneSizeUV = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = (destPlaneSizeY + destPlaneSizeUV * NUM_2) * NUM_2;
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.ABGRToI420(srcBuffer, NUM_4 * imageSize.width, i420Y, imageSize.width, i420U, (imageSize.width +
-        NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2,
-        i420V, (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width,
-        I010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer + imageSize.width * imageSize.height + ((imageSize.width +
-        NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2), (imageSize.width + NUM_1) / NUM_2, P010Buffer,
-        imageSize.width, P010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2,
-        imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t destPlaneSizeUV = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = (destPlaneSizeY + destPlaneSizeUV * NUM_2) * NUM_2;
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.ABGRToI420(srcBuffer, NUM_4 * imageSize.width, i420Y, imageSize.width, i420U, (imageSize.width +
-        NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2,
-        i420V, (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width,
-        I010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2), (imageSize.width + NUM_1) / NUM_2,
-        I010Buffer + imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2, P010Buffer,
-        imageSize.width, P010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2,
-        imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t srcPlaneSizeUV = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = static_cast<size_t>((destPlaneSizeY + srcPlaneSizeUV * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.ARGBToI420(srcBuffer, imageSize.width * NUM_4, i420Y, imageSize.width, i420U, (imageSize.width +
-        NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2,
-        i420V, (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width,
-        I010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, P010Buffer, imageSize.width, P010Buffer + imageSize.width *
-        imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2, imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < 0 || imageSize.height < 0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t srcPlaneSizeUV = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = static_cast<size_t>((destPlaneSizeY + srcPlaneSizeUV * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[destBufferSize / NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.ARGBToI420(srcBuffer, imageSize.width * NUM_4, i420Y, imageSize.width, i420U, (imageSize.width +
-        NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2,
-        i420V, (imageSize.width + NUM_1) / NUM_2, I010Buffer, imageSize.width,
-        I010Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, imageSize.width, I010Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, I010Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, P010Buffer, imageSize.width, P010Buffer + imageSize.width *
-        imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2, imageSize.width, imageSize.height);
-    delete[] I010Buffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    destBufferSize = static_cast<size_t>((imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2 * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *yu12Buffer(new (std::nothrow) uint8_t[imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2 * NUM_2]());
-    if (yu12Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.RGB24ToI420(srcBuffer, imageSize.width * NUM_3, yu12Buffer, imageSize.width, yu12Buffer +
-        imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2, yu12Buffer + imageSize.width *
-        imageSize.height + (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2,
-        (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I420Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] yu12Buffer;
-        return false;
-    }
-    converter.I420ToI010(yu12Buffer, imageSize.width, yu12Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, yu12Buffer + imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2,
-        (imageSize.width + NUM_1) / NUM_2, I420Buffer, imageSize.width,
-        I420Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I420Buffer, imageSize.width, I420Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, I420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, P010Buffer, imageSize.width, P010Buffer + imageSize.width *
-        imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2, imageSize.width, imageSize.height);
-    delete[] yu12Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-static bool RGBToNV21P010NoManual(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize)
-{
-    uint8_t *yu12Buffer(new (std::nothrow) uint8_t[imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2 * NUM_2]());
-    if (yu12Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    converter.RGB24ToI420(srcBuffer, imageSize.width * NUM_3, yu12Buffer, imageSize.width,
-        yu12Buffer + imageSize.width * imageSize.height, (imageSize.width + NUM_1) / NUM_2,
-        yu12Buffer + imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2,
-        (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    uint16_t *I420Buffer = new (std::nothrow) uint16_t[destBufferSize / NUM_2];
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] yu12Buffer;
-        return false;
-    }
-    converter.I420ToI010(yu12Buffer, imageSize.width, yu12Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, yu12Buffer + imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2,
-        (imageSize.width + NUM_1) / NUM_2, I420Buffer, imageSize.width,
-        I420Buffer + imageSize.width * imageSize.height, ((imageSize.width + NUM_1) / NUM_2),
-        I420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        ((imageSize.width + NUM_1) / NUM_2), imageSize.width, imageSize.height);
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I420Buffer, imageSize.width, I420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2),
-        (imageSize.width + NUM_1) / NUM_2, I420Buffer + imageSize.width * imageSize.height,
-        (imageSize.width + NUM_1) / NUM_2, P010Buffer, imageSize.width, P010Buffer + imageSize.width *
-        imageSize.height, ((imageSize.width + NUM_1) / NUM_2) * NUM_2, imageSize.width, imageSize.height);
-    delete[] yu12Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    destBufferSize = static_cast<size_t>((imageSize.width * imageSize.height +
-        (imageSize.width + NUM_1) / NUM_2 * (imageSize.height + NUM_1) / NUM_2 * NUM_2) * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = RGBToNV21P010NoManual(srcBuffer, imageSize, destBuffer, destBufferSize);
-    if (!result) {
-        IMAGE_LOGE("RGBToNV21P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool RGBA1010102ToNV12NoManual(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer)
-{
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[imageSize.width * imageSize.height +
-        (((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2)) * NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);;
-    uint8_t *nv12Y = *destBuffer;
-    uint8_t *nv12UV = *destBuffer + imageSize.width * imageSize.height;
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    size_t RGBABufferSize = static_cast<size_t>(imageSize.width * imageSize.height * BYTES_PER_PIXEL_RGBA);
-    if (RGBABufferSize == 0 || RGBABufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        delete[] i420Buffer;
-        return false;
-    }
-    uint8_t *RGBABuffer = nullptr;
-    RGBABuffer = new (std::nothrow) uint8_t[RGBABufferSize]();
-    if (RGBABuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.AR30ToARGB(srcBuffer, NUM_4 * imageSize.width, RGBABuffer, NUM_4 * imageSize.width,
-        imageSize.width, imageSize.height);
-    converter.ABGRToI420(RGBABuffer, NUM_4 * imageSize.width, i420Y, imageSize.width, i420U, (imageSize.width +
-        NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width, imageSize.height);
-    converter.I420ToNV12(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2, i420V,
-        (imageSize.width + NUM_1) / NUM_2, nv12Y, imageSize.width, nv12UV, (imageSize.width + NUM_1) / NUM_2 * NUM_2,
-        imageSize.width, imageSize.height);
-    delete[] RGBABuffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBA1010102ToNV12(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t destPlaneSizeUV = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = destPlaneSizeY + destPlaneSizeUV * NUM_2;
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = RGBA1010102ToNV12NoManual(srcBuffer, imageSize, destBuffer);
-    if (!result) {
-        IMAGE_LOGE("RGBA1010102ToNV12 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool RGBA1010102ToNV21NoManual(const uint8_t *srcBuffer, const RGBDataInfo &imageSize, uint8_t **destBuffer)
-{
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[imageSize.width * imageSize.height +
-        (((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2)) * NUM_2];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = i420Buffer;
-    uint8_t *i420U = i420Buffer + imageSize.width * imageSize.height;
-    uint8_t *i420V = i420Buffer + imageSize.width * imageSize.height +
-        ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    uint8_t *nv21Y = *destBuffer;
-    uint8_t *nv21VU = *destBuffer + imageSize.width * imageSize.height;
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    size_t RGBABufferSize = static_cast<size_t>(imageSize.width * imageSize.height * BYTES_PER_PIXEL_RGBA);
-    if (RGBABufferSize == 0 || RGBABufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        delete[] i420Buffer;
-        return false;
-    }
-    uint8_t *RGBABuffer = nullptr;
-    RGBABuffer = new (std::nothrow) uint8_t[RGBABufferSize]();
-    if (RGBABuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    converter.AR30ToARGB(srcBuffer, NUM_4 * imageSize.width, RGBABuffer, NUM_4 * imageSize.width,
-        imageSize.width, imageSize.height);
-    converter.ABGRToI420(RGBABuffer, NUM_4 * imageSize.width, i420Y, imageSize.width, i420U,
-        (imageSize.width + NUM_1) / NUM_2, i420V, (imageSize.width + NUM_1) / NUM_2, imageSize.width,
-        imageSize.height);
-    converter.I420ToNV21(i420Y, imageSize.width, i420U, (imageSize.width + NUM_1) / NUM_2, i420V,
-        (imageSize.width + NUM_1) / NUM_2, nv21Y, imageSize.width, nv21VU, (imageSize.width + NUM_1) / NUM_2 * NUM_2,
-        imageSize.width, imageSize.height);
-    delete[] RGBABuffer;
-    delete[] i420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::RGBA1010102ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &imageSize,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || imageSize.width < NUM_0 || imageSize.height < NUM_0) {
-        return false;
-    }
-    size_t destPlaneSizeY = imageSize.width * imageSize.height;
-    size_t destPlaneSizeVU = ((imageSize.width + NUM_1) / NUM_2) * ((imageSize.height + NUM_1) / NUM_2);
-    destBufferSize = static_cast<size_t>(destPlaneSizeY + destPlaneSizeVU * NUM_2);
-    if (destBufferSize <= NUM_0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = RGBA1010102ToNV21NoManual(srcBuffer, imageSize, destBuffer);
-    if (!result) {
-        IMAGE_LOGE("RGBA1010102ToNV21 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12ToRGBA1010102NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t i420BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for p010 buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    int32_t ret = converter.NV12ToI420(srcBuffer + yDInfo.yOffset, yDInfo.yStride, srcBuffer + yDInfo.uvOffset,
-        yDInfo.uvStride, i420Buffer, yDInfo.yStride, i420Buffer + yDInfo.uvOffset, yDInfo.uvWidth, i420Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12ToI420 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        return false;
-    }
-    uint16_t *i010Buffer = new (std::nothrow) uint16_t[i420BufferSize];
-    if (i010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i010 buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    ret = converter.I420ToI010(i420Buffer, yDInfo.yStride, i420Buffer + yDInfo.uvOffset, yDInfo.uvWidth, i420Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        i010Buffer, yDInfo.yWidth, i010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        i010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToI010 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        delete[] i010Buffer;
-        return false;
-    }
-    ret = converter.I010ToAB30(i010Buffer, yDInfo.yWidth, i010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-               i010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-               *destBuffer, yDInfo.yWidth * BYTES_PER_PIXEL_RGBA, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        delete[] i010Buffer;
-        return false;
-    }
-    delete[] i420Buffer;
-    delete[] i010Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV12ToRGBA1010102NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12ToRGBA1010102 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-
-    return true;
-}
-
-static bool NV21ToRGBA1010102NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t i420BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
-    if (i420Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    int32_t ret = converter.NV21ToI420(srcBuffer + yDInfo.yOffset, yDInfo.yStride, srcBuffer + yDInfo.uvOffset,
-        yDInfo.uvStride, i420Buffer, yDInfo.yStride, i420Buffer + yDInfo.uvOffset, yDInfo.uvWidth, i420Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV21ToI420 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        return false;
-    }
-    uint16_t *i010Buffer = new (std::nothrow) uint16_t[i420BufferSize];
-    if (i010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i010 buffer failed!");
-        delete[] i420Buffer;
-        return false;
-    }
-    ret = converter.I420ToI010(i420Buffer, yDInfo.yStride, i420Buffer + yDInfo.uvOffset, yDInfo.uvWidth, i420Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        i010Buffer, yDInfo.yWidth, i010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        i010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToI010 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        delete[] i010Buffer;
-        return false;
-    }
-    ret = converter.I010ToAB30(i010Buffer, yDInfo.yWidth, i010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        i010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yWidth * BYTES_PER_PIXEL_RGBA, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
-        delete[] i420Buffer;
-        delete[] i010Buffer;
-        return false;
-    }
-    delete[] i420Buffer;
-    delete[] i010Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV21ToRGBA1010102NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21ToRGBA1010102 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-
-    return true;
-}
-
-static bool NV12ToNV12P010NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
+static bool I010ToP010(I010Info &i010, DestConvertParam &destParam)
 {
     auto &converter = ConverterHandle::GetInstance().GetHandle();
-    const uint8_t *nv12Y = srcBuffer;
-    const uint8_t *nv12UV = srcBuffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *I420Buffer = nullptr;
-    I420Buffer = new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR *
-        yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.NV12ToI420(nv12Y, yDInfo.yWidth, nv12UV, yDInfo.uvStride, i420Y, yDInfo.yWidth, i420U,
-        yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] I420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, I010Buffer, yDInfo.yWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight,
-        yDInfo.uvWidth, I010Buffer +  yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight,
-        yDInfo.uvWidth, P010Buffer, yDInfo.yWidth, P010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth * NUM_2,
-        yDInfo.yWidth, yDInfo.yHeight);
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12ToNV12P010(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight) * NUM_2;
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12ToNV12P010NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12ToNV12P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
+    switch (destParam.format) {
+        case PixelFormat::YCBCR_P010:
+            converter.I010ToP010(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+                reinterpret_cast<uint16_t *>(destParam.slice[0]), destParam.stride[0],
+                reinterpret_cast<uint16_t *>(destParam.slice[1]), destParam.stride[1],
+                destParam.width, destParam.height);
+            break;
+        case PixelFormat::YCRCB_P010:
+            converter.I010ToP010(i010.I010Y, i010.yStride, i010.I010V, i010.vStride, i010.I010U, i010.uStride,
+                reinterpret_cast<uint16_t *>(destParam.slice[0]), destParam.stride[0],
+                reinterpret_cast<uint16_t *>(destParam.slice[1]), destParam.stride[1],
+                destParam.width, destParam.height);
+            break;
+        default:
+            return false;
     }
     return true;
 }
 
-static bool NV12ToNV21P010NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
+static bool I420ToI010(I420Info &i420, I010Info &i010)
 {
     auto &converter = ConverterHandle::GetInstance().GetHandle();
-    const uint8_t *nv12Y = srcBuffer;
-    const uint8_t *nv12UV = srcBuffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *I420Buffer = nullptr;
-    I420Buffer =new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.NV12ToI420(nv12Y, yDInfo.yWidth, nv12UV, yDInfo.uvStride, i420Y, yDInfo.yWidth, i420U,
-        yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        delete[] I420Buffer;
-        return false;
-    }
-    converter.I420ToI010(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, I010Buffer, yDInfo.yWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    uint16_t *P010Buffer = reinterpret_cast<uint16_t *>(*destBuffer);
-    converter.I010ToP010(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight,
-        yDInfo.uvWidth, P010Buffer, yDInfo.yWidth, P010Buffer + yDInfo.yWidth * yDInfo.yHeight,
-        yDInfo.uvWidth * NUM_2, yDInfo.yWidth, yDInfo.yHeight);
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12ToNV21P010(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight) * NUM_2;
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12ToNV21P010NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12ToNV21P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21ToNV12P010(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight) * NUM_2;
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12ToNV21P010NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21ToNV12P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21ToNV21P010(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight) * NUM_2;
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12ToNV12P010NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21ToNV21P010 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToNV12NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth * NUM_2,
-        I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        yDInfo.yWidth, yDInfo.yHeight);
-
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.I010ToI420(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    converter.I420ToNV12(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yWidth, *destBuffer + yDInfo.yWidth * yDInfo.yHeight + NUM_1, yDInfo.uvWidth * NUM_2,
-        yDInfo.yWidth, yDInfo.yHeight);
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToNV12(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12P010ToNV12NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToNV12 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToNV21NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth * NUM_2,
-        I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth,
-        yDInfo.yWidth, yDInfo.yHeight);
-
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.I010ToI420(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-
-    converter.I420ToNV21(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yWidth, *destBuffer + yDInfo.yWidth * yDInfo.yHeight + NUM_1, yDInfo.uvWidth * NUM_2,
-        yDInfo.yWidth, yDInfo.yHeight);
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToNV21(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12P010ToNV21NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToNV21 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToRGB565NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth * NUM_2,
-        I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.I010ToI420(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    int32_t result = converter.I420ToRGB565(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yWidth * BYTES_PER_PIXEL_RGB565, yDInfo.yWidth, yDInfo.yHeight);
-    if (result) {
-        IMAGE_LOGE("I420 auto conversion to RGB565 failed!");
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 ||
-        yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0) {
-        return false;
-    }
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGB565);
-    if (destBufferSize <= 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = NV12P010ToRGB565NoManual(srcBuffer, yDInfo, destBuffer);
-    if (!result) {
-        IMAGE_LOGE("NV12P010ToRGB565 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToRGBANoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    uint32_t rgbaStride = yDInfo.yWidth * BYTES_PER_PIXEL_RGBA;
-    ret = converter.I420ToABGR(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, *destBuffer,
-        rgbaStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToABGR failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToRGBA8888(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV12P010ToRGBANoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToRGBA failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-
-    return true;
-}
-
-static bool NV12P010ToBGRANoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    uint32_t bgraStride = yDInfo.yWidth * BYTES_PER_PIXEL_BGRA;
-    ret = converter.I420ToARGB(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, *destBuffer,
-        bgraStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToARGB failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToBGRA8888(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_BGRA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV12P010ToBGRANoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToBGRA failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToRGBNoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-
-    ret = converter.I420ToRAW(i420Y, yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yStride * BYTES_PER_PIXEL_RGB, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToRGB24Matrix failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToRGB888(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGB);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12P010ToRGBNoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToRGB failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToNV12(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12P010ToNV21NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToNV12 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToNV21(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 ||
-        yDInfo.uvHeight == 0) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = (yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV12P010ToNV12NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToNV21 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12P010ToRGBA1010102NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint32_t rgbaStride = yDInfo.yWidth * BYTES_PER_PIXEL_RGBA;
-    ret = converter.I010ToAB30(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, *destBuffer,
-        rgbaStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV12P010ToRGBA1010102NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV12P010ToRGBA1010102 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV21P010ToRGB565NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth * NUM_2,
-        I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[yDInfo.yWidth * yDInfo.yHeight +
-        yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    converter.I010ToI420(I010Buffer, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth,
-        I010Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    int32_t result = converter.I420ToRGB565(i420Y, yDInfo.yWidth, i420V, yDInfo.uvWidth, i420U, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yWidth * BYTES_PER_PIXEL_RGB565, yDInfo.yWidth, yDInfo.yHeight);
-    if (result) {
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        IMAGE_LOGE("NV21P010 auto conversion to RGB565 failed!");
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destBuffer == nullptr || yDInfo.yWidth == 0 || yDInfo.yHeight == 0 ||
-        yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0) {
-        return false;
-    }
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGB565);
-    if (destBufferSize <= 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("apply space for dest buffer failed!");
-        return false;
-    }
-    bool result = NV21P010ToRGB565NoManual(srcBuffer, yDInfo, destBuffer);
-    if (!result) {
-        IMAGE_LOGE("NV21P010ToRGB565 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV21P010ToRGBANoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV21P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    uint32_t rgbaStride = yDInfo.yWidth * BYTES_PER_PIXEL_RGBA;
-    ret = converter.I420ToABGR(i420Y, yDInfo.yWidth, i420V, yDInfo.uvWidth, i420U, yDInfo.uvWidth, *destBuffer,
-        rgbaStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToABGR failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToRGBA8888(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV21P010ToRGBANoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToRGBA failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-
-    return true;
-}
-
-static bool ConvertP010ToBGRA(const uint16_t *src, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    uint16_t *I010Buffer, uint8_t *I420Buffer)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV21P010ToI010 failed, ret = %{public}d!", ret);
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        return false;
-    }
-    uint32_t bgraStride = yDInfo.yWidth * BYTES_PER_PIXEL_BGRA;
-    ret = converter.I420ToARGB(i420Y, yDInfo.yWidth, i420V, yDInfo.uvWidth, i420U, yDInfo.uvWidth, *destBuffer,
-        bgraStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToARGB failed, ret = %{public}d!", ret);
-        return false;
-    }
-    return true;
-}
-
-static bool NV21P010ToBGRANoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    if (I010BufferSize <= NUM_0 || I010BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    bool result = ConvertP010ToBGRA(src, yDInfo, destBuffer, I010Buffer, I420Buffer);
-    if (!result) {
-        IMAGE_LOGE("NV21P010ToBGRA failed!");
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToBGRA8888(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_BGRA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV21P010ToBGRANoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToBGRA failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool ConvertP010ToRGB(const uint16_t *src, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    uint16_t *I010Buffer, uint8_t *I420Buffer)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV21P010ToI010 failed, ret = %{public}d!", ret);
-        return false;
-    }
-    uint8_t *i420Y = I420Buffer;
-    uint8_t *i420U = I420Buffer + yDInfo.yWidth * yDInfo.yHeight;
-    uint8_t *i420V = I420Buffer + yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * yDInfo.uvHeight;
-    ret = converter.I010ToI420(ySrc, yDInfo.yWidth, uSrc, yDInfo.uvWidth, vSrc, yDInfo.uvWidth, i420Y,
-        yDInfo.yWidth, i420U, yDInfo.uvWidth, i420V, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToI420 failed, ret = %{public}d!", ret);
-        return false;
-    }
-    ret = converter.I420ToRAW(i420Y, yDInfo.yWidth, i420V, yDInfo.uvWidth, i420U, yDInfo.uvWidth,
-        *destBuffer, yDInfo.yStride * BYTES_PER_PIXEL_RGB, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I420ToRGB24Matrix failed, ret = %{public}d!", ret);
-        return false;
-    }
-    return true;
-}
-
-static bool NV21P010ToRGBNoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    if (I010BufferSize <= NUM_0 || I010BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    uint8_t *I420Buffer = new (std::nothrow) uint8_t[I010BufferSize]();
-    if (I420Buffer == nullptr) {
-        IMAGE_LOGE("apply space for I420 buffer failed!");
-        delete[] I010Buffer;
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    bool result = ConvertP010ToRGB(src, yDInfo, destBuffer, I010Buffer, I420Buffer);
-    if (!result) {
-        IMAGE_LOGE("NV21P010ToRGB failed!");
-        delete[] I010Buffer;
-        delete[] I420Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    delete[] I420Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToRGB888(const uint8_t *data, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGB);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    (*destBuffer) = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-
-    bool bRet = NV21P010ToRGBNoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToRGB failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV21P010ToRGBA1010102NoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    uint32_t I010BufferSize = yDInfo.yWidth * yDInfo.yHeight + yDInfo.uvWidth * EVEN_ODD_DIVISOR * yDInfo.uvHeight;
-    if (I010BufferSize <= NUM_0 || I010BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size calculation!");
-        return false;
-    }
-    uint16_t *I010Buffer = new (std::nothrow) uint16_t[I010BufferSize];
-    if (I010Buffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for i420 buffer failed!");
-        return false;
-    }
-    const uint16_t *src = reinterpret_cast<const uint16_t *>(srcBuffer);
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    uint16_t *ySrc = I010Buffer;
-    uint16_t *uSrc = I010Buffer + yDInfo.uvOffset;
-    uint16_t *vSrc = I010Buffer + yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight;
-    int32_t ret = converter.P010ToI010(src, yDInfo.yWidth, src + yDInfo.uvOffset, yDInfo.uvWidth * NUM_2,
-        ySrc, yDInfo.yWidth, I010Buffer + yDInfo.yWidth * yDInfo.yHeight, yDInfo.uvWidth, I010Buffer +
-        yDInfo.uvOffset + yDInfo.uvWidth * yDInfo.uvHeight, yDInfo.uvWidth, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV21P010ToI010 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    uint32_t rgbaStride = yDInfo.yWidth * BYTES_PER_PIXEL_RGBA;
-    ret = converter.I010ToAB30(ySrc, yDInfo.yWidth, vSrc, yDInfo.uvWidth, uSrc, yDInfo.uvWidth, *destBuffer,
-        rgbaStride, yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
-        delete[] I010Buffer;
-        return false;
-    }
-    delete[] I010Buffer;
-    return true;
-}
-
-bool ImageFormatConvertExtUtils::NV21P010ToRGBA1010102(const uint8_t *data, const YUVDataInfo &yDInfo,
-    uint8_t **destBuffer, size_t &destBufferSize, [[maybe_unused]] ColorSpace colorSpace)
-{
-    if (data == nullptr || destBuffer == nullptr) {
-        IMAGE_LOGE("Input buffer pointer data or destBuffer is null!");
-        return false;
-    }
-
-    destBufferSize = static_cast<size_t>(yDInfo.yWidth * yDInfo.yHeight * BYTES_PER_PIXEL_RGBA);
-    if (destBufferSize == 0 || destBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("Invalid destination buffer size is 0!");
-        return false;
-    }
-
-    *destBuffer = new (std::nothrow) uint8_t[destBufferSize]();
-    if (*destBuffer == nullptr) {
-        IMAGE_LOGE("Dynamically allocating memory for destination buffer failed!");
-        return false;
-    }
-    bool bRet = NV21P010ToRGBA1010102NoManual(data, yDInfo, destBuffer, colorSpace);
-    if (!bRet) {
-        IMAGE_LOGE("NV21P010ToRGBA1010102 failed!");
-        delete[](*destBuffer);
-        *destBuffer = nullptr;
-        return false;
-    }
-    return true;
-}
-
-static bool NV12ToRGBNoManual(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, uint8_t **destBuffer,
-    ColorSpace colorSpace)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    int32_t ret = converter.NV12ToRAW(srcBuffer + yDInfo.yOffset, yDInfo.yStride, srcBuffer + yDInfo.uvOffset,
-        yDInfo.uvStride, *destBuffer, yDInfo.yStride * BYTES_PER_PIXEL_RGB,
-        yDInfo.yWidth, yDInfo.yHeight);
-    if (ret != 0) {
-        IMAGE_LOGE("NV12ToRGB24Matrix failed, ret = %{public}d!", ret);
-        return false;
-    }
+    converter.I420ToI010(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+        i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+        i420.width, i420.height);
     return true;
 }
 
@@ -2025,6 +91,10 @@ static bool RGBToI420(SrcConvertParam &srcParam, I420Info &i420)
             break;
         case PixelFormat::RGBA_8888:
             converter.ABGRToI420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+                i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
+            break;
+        case PixelFormat::BGRA_8888:
+            converter.ARGBToI420(srcParam.slice[0], srcParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
                 i420.uStride, i420.I420V, i420.vStride, srcParam.width, srcParam.height);
             break;
         default:
@@ -2072,6 +142,101 @@ static void RGBToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam,
     }
 }
 
+static bool YuvToI420(SrcConvertParam &srcParam, I420Info &i420)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    switch (srcParam.format) {
+        case PixelFormat::NV12:
+            converter.NV12ToI420(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                i420.width, i420.height);
+            break;
+        case PixelFormat::NV21:
+            converter.NV21ToI420(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                i420.width, i420.height);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unused]]ColorSpace colorSpace)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    switch (destParam.format) {
+        case PixelFormat::RGBA_8888:
+            converter.I420ToABGR(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            break;
+        case PixelFormat::RGB_565:
+            converter.I420ToRGB565Matrix(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], static_cast<OHOS::OpenSourceLibyuv::ColorSpace>(colorSpace),
+                destParam.width, destParam.height);
+            break;
+        case PixelFormat::BGRA_8888:
+            converter.I420ToARGB(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            break;
+        case PixelFormat::RGB_888:
+            converter.I420ToRAW(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
+{
+    switch (format) {
+        case PixelFormat::RGB_565:
+            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB565);
+            break;
+        case PixelFormat::RGBA_8888:
+            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGBA);
+            break;
+        case PixelFormat::RGBA_1010102:
+            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGBA);
+            break;
+        case PixelFormat::RGBA_F16:
+            stride = static_cast<int>(width * STRIDES_PER_PLANE);
+            break;
+        case PixelFormat::BGRA_8888:
+            stride = static_cast<int>(width * BYTES_PER_PIXEL_BGRA);
+            break;
+        case PixelFormat::RGB_888:
+            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static void YuvToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam,
+                          DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    srcParam.slice[0] = srcParam.buffer + yuvInfo.yOffset;
+    srcParam.slice[1] = srcParam.buffer + yuvInfo.uvOffset;
+    srcParam.stride[0] = static_cast<int>(yuvInfo.yStride);
+    srcParam.stride[1] = static_cast<int>(yuvInfo.uvStride);
+    int dstStride = 0;
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        dstStride = static_cast<int>(destInfo.yStride);
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+    } else {
+        auto bRet = CalcRGBStride(destParam.format, destParam.width, dstStride);
+        if (!bRet) {
+            return ;
+        }
+        destParam.slice[0] = destInfo.buffer;
+    }
+    destParam.stride[0] = dstStride;
+}
+
 static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
 {
     i420Info.yStride = width;
@@ -2098,11 +263,943 @@ static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
     return true;
 }
 
-static bool RGBToI420ToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+static bool YuvToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
                                 DestConvertParam &destParam, DestConvertInfo &destInfo)
 {
+    YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+
+    return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
+}
+
+static bool YuvTo420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                          DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    if (srcBuffer == nullptr || destInfo.buffer == nullptr || yuvInfo.yWidth == 0 || yuvInfo.yHeight == 0 ||
+        destInfo.bufferSize == 0) {
+        return false;
+    }
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {destInfo.width, destInfo.height};
+    destParam.format = destInfo.format;
+
+    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+    auto bRet = YuvToI420(srcParam, i420Info);
+    if (!bRet) {
+        delete[] i420Info.I420Y;
+        return false;
+    }
+    bRet = I420ToRGB(i420Info, destParam, colorSpace);
+    delete[] i420Info.I420Y;
+    return bRet;
+}
+
+static bool YuvToRGBConverter(SrcConvertParam &srcParam, DestConvertParam &destParam)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    if (srcParam.format == PixelFormat::NV21) {
+        switch (destParam.format) {
+            case PixelFormat::RGB_888:
+                converter.NV21ToRAW(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+                break;
+            case PixelFormat::BGRA_8888:
+                converter.NV21ToARGB(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+                break;
+            default:
+                return false;
+        }
+    } else if (srcParam.format == PixelFormat::NV12) {
+        switch (destParam.format) {
+            case PixelFormat::RGB_888:
+                converter.NV12ToRAW(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+                break;
+            case PixelFormat::BGRA_8888:
+                converter.NV12ToARGB(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
+                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+                break;
+            default:
+                return false;
+        }
+    }
+    return true;
+}
+
+static bool YuvToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                     DestConvertInfo &destInfo, PixelFormat destFormat)
+{
+    if (srcBuffer == nullptr || destInfo.buffer == nullptr || yuvInfo.yWidth == 0 || yuvInfo.yHeight == 0 ||
+        destInfo.bufferSize == 0) {
+        return false;
+    }
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {destInfo.width, destInfo.height};
+    destParam.format = destFormat;
+
+    YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+    return YuvToRGBConverter(srcParam, destParam);
+}
+
+static bool I010Param(I010Info &i010Info)
+{
+    i010Info.yStride = i010Info.width;
+    i010Info.uStride = (i010Info.width + NUM_1) / NUM_2;
+    i010Info.vStride = (i010Info.width + NUM_1) / NUM_2;
+    i010Info.uvHeight = ((i010Info.height + NUM_1) / NUM_2);
+    const uint32_t i010BufferSize = static_cast<size_t>(i010Info.yStride * i010Info.height +
+        i010Info.uStride * i010Info.uvHeight * NUM_2);
+    if (i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint16_t *i010Buffer = new (std::nothrow) uint16_t[i010BufferSize];
+    if (i010Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i010Info.I010Y = i010Buffer;
+    i010Info.I010U = i010Info.I010Y + i010Info.height * i010Info.yStride;
+    i010Info.I010V = i010Info.I010U + i010Info.uStride * ((i010Info.height + NUM_1) / NUM_2);
+    return true;
+}
+
+static void RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
+                              DestConvertInfo &destInfo)
+{
+    srcParam.slice[0] = srcParam.buffer;
+    srcParam.stride[0] = static_cast<int>(rgbInfo.stride);
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        destParam.stride[0] = static_cast<int>(destInfo.yStride);
+        destParam.stride[1] = static_cast<int>(destInfo.uvStride);
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+        destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
+    } else {
+        int uvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        destParam.stride[0] = static_cast<int>(destParam.width);
+        destParam.stride[1] = static_cast<int>(uvStride);
+        destParam.slice[0] = destInfo.buffer;
+        destParam.slice[1] = destInfo.buffer + destParam.width * destParam.height * TWO_SLICES;
+    }
+}
+
+static bool RGBToI420ToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                    DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    RGBToYuvP010Param(rgbInfo, srcParam, destParam, destInfo);
+
+    i420Info.yStride = rgbInfo.width;
+    i420Info.uStride = (rgbInfo.width + NUM_1) / NUM_2;
+    i420Info.vStride = (rgbInfo.width + NUM_1) / NUM_2;
+    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
+    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
+    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    if (i420Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i420Info.I420Y = i420Buffer;
+    i420Info.I420U = i420Info.I420Y + rgbInfo.height * i420Info.yStride;
+    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((rgbInfo.height + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool RGBToI420ToI010ToP010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
+                                  DestConvertInfo &destInfo, PixelFormat dstFormat)
+{
+    SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {rgbInfo.width, rgbInfo.height};
+    destParam.format = dstFormat;
+    I420Info i420Info = {rgbInfo.width, rgbInfo.height};
+
+    if (!RGBToI420ToYuvP010Param(rgbInfo, srcParam, i420Info, destParam, destInfo)) {
+        IMAGE_LOGE("RGB conversion to YUV failed!");
+        return false;
+    }
+    I010Info i010Info = {rgbInfo.width, rgbInfo.height};
+    if (!I010Param(i010Info)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+    auto bRet = RGBToI420(srcParam, i420Info);
+    if (!bRet) {
+        IMAGE_LOGE("RGB conversion to I420 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    bRet = I420ToI010(i420Info, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("I420 conversion to I010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    bRet = I010ToP010(i010Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to P010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+static bool RGB10ToI420ToYuv(SrcConvertParam &srcParam, DestConvertParam &midParam,
+                             I420Info &i420, DestConvertParam &destParam)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    switch (destParam.format) {
+        case PixelFormat::NV12:
+            converter.AR30ToARGB(srcParam.slice[0], srcParam.stride[0], midParam.slice[0], midParam.stride[0],
+                srcParam.width, srcParam.height);
+            converter.ABGRToI420(midParam.slice[0], midParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+                i420.uStride, i420.I420V, i420.vStride, midParam.width, midParam.height);
+            converter.I420ToNV12(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], destParam.slice[1], destParam.stride[1],
+                destParam.width, destParam.height);
+            break;
+        case PixelFormat::NV21:
+            converter.AR30ToARGB(srcParam.slice[0], srcParam.stride[0], midParam.slice[0], midParam.stride[0],
+                srcParam.width, srcParam.height);
+            converter.ABGRToI420(midParam.slice[0], midParam.stride[0], i420.I420Y, i420.yStride, i420.I420U,
+                i420.uStride, i420.I420V, i420.vStride, midParam.width, midParam.height);
+            converter.I420ToNV21(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+                destParam.slice[0], destParam.stride[0], destParam.slice[1], destParam.stride[1],
+                destParam.width, destParam.height);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool RGBAParam(DestConvertParam &srcParam)
+{
+    const uint32_t midBufferSize = static_cast<size_t>(srcParam.width * srcParam.height * BYTES_PER_PIXEL_RGBA);
+    if (midBufferSize <= NUM_0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *midBuffer = new (std::nothrow) uint8_t[midBufferSize];
+    if (midBuffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    srcParam.buffer = midBuffer;
+    srcParam.slice[0] = srcParam.buffer;
+    srcParam.stride[0] = static_cast<int>(srcParam.width * BYTES_PER_PIXEL_RGBA);
+    return true;
+}
+
+static bool RGB10ToRGBToI420Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                  DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
     RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo);
-    return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
+
+    i420Info.yStride = rgbInfo.width;
+    i420Info.uStride = (rgbInfo.width + NUM_1) / NUM_2;
+    i420Info.vStride = (rgbInfo.width + NUM_1) / NUM_2;
+    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
+    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
+    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    if (i420Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i420Info.I420Y = i420Buffer;
+    i420Info.I420U = i420Info.I420Y + rgbInfo.height * i420Info.yStride;
+    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((rgbInfo.height + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool RGB10ToRGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
+                                  DestConvertInfo &destInfo, PixelFormat dstFormat)
+{
+    SrcConvertParam srcParam = {rgbInfo.width, rgbInfo.height};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {rgbInfo.width, rgbInfo.height};
+    destParam.format = dstFormat;
+
+    I420Info i420Info = {rgbInfo.width, rgbInfo.height};
+
+    if (!RGB10ToRGBToI420Param(rgbInfo, srcParam, i420Info, destParam, destInfo)) {
+        IMAGE_LOGE("RGB conversion to YUV failed!");
+        return false;
+    }
+
+    DestConvertParam midParam = {rgbInfo.width, rgbInfo.height};
+    if (!RGBAParam(midParam)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+
+    auto bRet = RGB10ToI420ToYuv(srcParam, midParam, i420Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("RGB10 conversion to YUV failed!");
+        delete[] i420Info.I420Y;
+        delete[] midParam.buffer;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] midParam.buffer;
+    return bRet;
+}
+
+static bool I010ToRGB10(I010Info &i010, DestConvertParam &destParam)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    bool ret = converter.I010ToAB30(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+                                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
+    if (ret != 0) {
+        IMAGE_LOGE("I010ToAB30 failed, ret = %{public}d!", ret);
+        return false;
+    }
+    return true;
+}
+
+static bool YuvToI420ToI010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                                   DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    destParam.format = destInfo.format;
+
+    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+
+    I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    if (!I010Param(i010Info)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+
+    auto bRet = YuvToI420(srcParam, i420Info);
+    if (!bRet) {
+        IMAGE_LOGE("Yuv conversion to I420 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I420ToI010(i420Info, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("I420 conversion to I010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I010ToRGB10(i010Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to RGB10 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+static bool YuvToP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
+                           DestConvertInfo &destInfo)
+{
+    srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
+    srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset;
+
+    srcParam.stride[0] = static_cast<int>(yDInfo.yStride);
+    srcParam.stride[1] = static_cast<int>(yDInfo.uvStride);
+
+    int dstyStride = 0;
+    int dstuvStride = 0;
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+        destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
+    } else {
+        dstyStride = static_cast<int>(destParam.width);
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        destParam.slice[0] = destInfo.buffer;
+        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height  * TWO_SLICES;
+    }
+    destParam.stride[0] = dstyStride;
+    destParam.stride[1] = dstuvStride;
+    return true;
+}
+
+static bool YuvToI420ToP010Param(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                 DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    YuvToP010Param(yuvInfo, srcParam, destParam, destInfo);
+    i420Info.yStride = yuvInfo.yWidth;
+    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
+    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
+    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    if (i420Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i420Info.I420Y = i420Buffer;
+    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
+    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool YuvToI420ToI010ToP010(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    destParam.format = destInfo.format;
+
+    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    YuvToI420ToP010Param(yuvInfo, srcParam, i420Info, destParam, destInfo);
+
+    I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    if (!I010Param(i010Info)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+
+    auto bRet = YuvToI420(srcParam, i420Info);
+    if (!bRet) {
+        IMAGE_LOGE("Yuv conversion to I420 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I420ToI010(i420Info, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("I420 conversion to I010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I010ToP010(i010Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to P010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+static bool P010ToI010(SrcConvertParam &srcParam, I010Info &i010)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    switch (srcParam.format) {
+        case PixelFormat::YCBCR_P010:
+            converter.P010ToI010(reinterpret_cast<const uint16_t *>(srcParam.slice[0]), srcParam.stride[0],
+                reinterpret_cast<const uint16_t *>(srcParam.slice[1]), srcParam.stride[1],
+                i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+                srcParam.width, srcParam.height);
+            break;
+        case PixelFormat::YCRCB_P010:
+            converter.P010ToI010(reinterpret_cast<const uint16_t *>(srcParam.slice[0]), srcParam.stride[0],
+                reinterpret_cast<const uint16_t *>(srcParam.slice[1]), srcParam.stride[1],
+                i010.I010Y, i010.yStride, i010.I010V, i010.vStride, i010.I010U, i010.uStride,
+                srcParam.width, srcParam.height);
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam, DestConvertParam &destParam,
+                              DestConvertInfo &destInfo)
+{
+    srcParam.slice[0] = srcParam.buffer + yDInfo.yOffset;
+    srcParam.slice[1] = srcParam.buffer + yDInfo.uvOffset * TWO_SLICES;
+
+    srcParam.stride[0] = static_cast<int>(yDInfo.yStride);
+    srcParam.stride[1] = static_cast<int>(yDInfo.uvStride);
+
+    int dstyStride = 0;
+    int dstuvStride = 0;
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+        destParam.slice[1] = destInfo.buffer + destInfo.uvOffset;
+    } else {
+        dstyStride = static_cast<int>(destParam.width);
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        destParam.slice[0] = destInfo.buffer;
+        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
+    }
+    destParam.stride[0] = dstyStride;
+    destParam.stride[1] = dstuvStride;
+    return true;
+}
+
+static bool YuvP010ToI420ToYuvParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                    DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    YuvP010ToYuvParam(yuvInfo, srcParam, destParam, destInfo);
+    i420Info.yStride = yuvInfo.yWidth;
+    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
+    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
+    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    if (i420Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i420Info.I420Y = i420Buffer;
+    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
+    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool I010ToI420(I010Info &i010, I420Info &i420)
+{
+    auto &converter = ConverterHandle::GetInstance().GetHandle();
+    converter.I010ToI420(i010.I010Y, i010.yStride, i010.I010U, i010.uStride, i010.I010V, i010.vStride,
+        i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
+        i010.width, i010.height);
+    return true;
+}
+
+static bool P010ToI010ToI420ToYuv(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    destParam.format = destInfo.format;
+
+    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    YuvP010ToI420ToYuvParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+
+    I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    if (!I010Param(i010Info)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+
+    auto bRet = P010ToI010(srcParam, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("P010 conversion to I010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I010ToI420(i010Info, i420Info);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to I420 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    bRet = I420ToYuv(i420Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("I420 conversion to Yuv failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+static void YuvP010ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam,
+                              DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    srcParam.slice[0] = srcParam.buffer + yuvInfo.yOffset;
+    srcParam.slice[1] = srcParam.buffer + yuvInfo.uvOffset * TWO_SLICES;
+    srcParam.stride[0] = static_cast<int>(yuvInfo.yStride);
+    srcParam.stride[1] = static_cast<int>(yuvInfo.uvStride);
+    int dstStride = 0;
+    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
+        dstStride = static_cast<int>(destInfo.yStride);
+        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
+    } else {
+        auto bRet = CalcRGBStride(destParam.format, destParam.width, dstStride);
+        if (!bRet) {
+            return;
+        }
+        destParam.slice[0] = destInfo.buffer;
+    }
+    destParam.stride[0] = dstStride;
+}
+
+static bool YuvP010ToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                    DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    YuvP010ToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+    i420Info.yStride = yuvInfo.yWidth;
+    i420Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i420Info.uvHeight = ((i420Info.height + NUM_1) / NUM_2);
+    const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
+    if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint8_t *i420Buffer = new (std::nothrow) uint8_t[i420BufferSize];
+    if (i420Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i420Info.I420Y = i420Buffer;
+    i420Info.I420U = i420Info.I420Y + yuvInfo.yHeight * i420Info.yStride;
+    i420Info.I420V = i420Info.I420U + i420Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool P010ToI010ToI420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    destParam.format = destInfo.format;
+
+    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    YuvP010ToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
+
+    I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    if (!I010Param(i010Info)) {
+        IMAGE_LOGE("I010 Param failed!");
+        delete[] i420Info.I420Y;
+        return false;
+    }
+
+    auto bRet = P010ToI010(srcParam, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("P010 conversion to I010 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I010ToI420(i010Info, i420Info);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to I420 failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    bRet = I420ToRGB(i420Info, destParam, colorSpace);
+    if (!bRet) {
+        IMAGE_LOGE("I420 conversion to RGB failed!");
+        delete[] i420Info.I420Y;
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i420Info.I420Y;
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+static bool P010ToI010ToRGB10Param(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I010Info &i010Info,
+                                   DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    YuvP010ToRGBParam(yuvInfo, srcParam, destParam, destInfo);
+    i010Info.yStride = yuvInfo.yWidth;
+    i010Info.uStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i010Info.vStride = (yuvInfo.yWidth + NUM_1) / NUM_2;
+    i010Info.uvHeight = ((i010Info.height + NUM_1) / NUM_2);
+    const uint32_t i010BufferSize = static_cast<size_t>(i010Info.yStride * i010Info.height +
+        i010Info.uStride * i010Info.uvHeight * NUM_2);
+    if (i010BufferSize <= NUM_0 || i010BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("Invalid destination buffer size calculation!");
+        return false;
+    }
+    uint16_t *i010Buffer = new (std::nothrow) uint16_t[i010BufferSize];
+    if (i010Buffer == nullptr) {
+        IMAGE_LOGE("apply space for I420 buffer failed!");
+        return false;
+    }
+    i010Info.I010Y = i010Buffer;
+    i010Info.I010U = i010Info.I010Y + yuvInfo.yHeight * i010Info.yStride;
+    i010Info.I010V = i010Info.I010U + i010Info.uStride * ((yuvInfo.yHeight + NUM_1) / NUM_2);
+    return true;
+}
+
+static bool P010ToI010ToRGB10(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
+                              DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    srcParam.buffer = srcBuffer;
+    srcParam.format = srcFormat;
+
+    DestConvertParam destParam = {yuvInfo.yWidth, yuvInfo.yHeight};
+    destParam.format = destInfo.format;
+
+    I010Info i010Info = {yuvInfo.yWidth, yuvInfo.yHeight};
+
+    P010ToI010ToRGB10Param(yuvInfo, srcParam, i010Info, destParam, destInfo);
+
+    auto bRet = P010ToI010(srcParam, i010Info);
+    if (!bRet) {
+        IMAGE_LOGE("P010 conversion to I010 failed!");
+        delete[] i010Info.I010Y;
+        return false;
+    }
+
+    bRet = I010ToRGB10(i010Info, destParam);
+    if (!bRet) {
+        IMAGE_LOGE("I010 conversion to RGB10 failed!");
+        delete[] i010Info.I010Y;
+        return false;
+    }
+    delete[] i010Info.I010Y;
+    return bRet;
+}
+
+bool ImageFormatConvertExtUtils::RGB565ToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGB_565, destInfo, PixelFormat::YCBCR_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGB565ToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGB_565, destInfo, PixelFormat::YCRCB_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGBAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGBA_8888, destInfo, PixelFormat::YCBCR_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGBAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGBA_8888, destInfo, PixelFormat::YCRCB_P010);
+}
+
+bool ImageFormatConvertExtUtils::BGRAToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGBA_8888, destInfo, PixelFormat::YCBCR_P010);
+}
+
+bool ImageFormatConvertExtUtils::BGRAToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGBA_8888, destInfo, PixelFormat::YCRCB_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGBToNV12P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                               DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGB_888, destInfo, PixelFormat::YCBCR_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGBToNV21P010(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                               DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGBToI420ToI010ToP010(srcBuffer, rgbInfo, PixelFormat::RGB_888, destInfo, PixelFormat::YCRCB_P010);
+}
+
+bool ImageFormatConvertExtUtils::RGBA1010102ToNV12(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                   DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGB10ToRGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::RGBA_1010102, destInfo, PixelFormat::NV12);
+}
+
+bool ImageFormatConvertExtUtils::RGBA1010102ToNV21(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo,
+                                                   DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return RGB10ToRGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::RGBA_1010102, destInfo, PixelFormat::NV21);
+}
+
+bool ImageFormatConvertExtUtils::NV12ToRGBA1010102(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                   DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21ToRGBA1010102(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                   DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12ToNV12P010(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToP010(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12ToNV21P010(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToP010(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21ToNV12P010(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToP010(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21ToNV21P010(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return YuvToI420ToI010ToP010(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToNV12(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToYuv(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToNV21(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToYuv(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToRGBA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                    DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToBGRA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                    DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToRGB888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToNV12(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToYuv(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToNV21(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToYuv(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV12P010ToRGBA1010102(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                       DestConvertInfo &destInfo,
+                                                       [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCBCR_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToRGBA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                    DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToBGRA8888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                    DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToRGB888(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                  DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToI420ToRGB(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+bool ImageFormatConvertExtUtils::NV21P010ToRGBA1010102(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
+                                                       DestConvertInfo &destInfo,
+                                                       [[maybe_unused]]ColorSpace colorSpace)
+{
+    return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
 }
 
 static bool RGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
@@ -2229,172 +1326,6 @@ bool ImageFormatConvertExtUtils::RGBAToNV12(const uint8_t *srcBuffer, const RGBD
                                             [[maybe_unused]] ColorSpace colorSpace)
 {
     return RGBToI420ToYuv(srcBuffer, rgbInfo, PixelFormat::RGBA_8888, destInfo, PixelFormat::NV12);
-}
-
-static bool YuvToI420(SrcConvertParam &srcParam, I420Info &i420)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    switch (srcParam.format) {
-        case PixelFormat::NV12:
-            converter.NV12ToI420(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                i420.width, i420.height);
-            break;
-        case PixelFormat::NV21:
-            converter.NV21ToI420(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                i420.width, i420.height);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
-static bool I420ToRGB(I420Info &i420, DestConvertParam &destParam, [[maybe_unused]]ColorSpace colorSpace)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    switch (destParam.format) {
-        case PixelFormat::RGBA_8888:
-            converter.I420ToABGR(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
-            break;
-        case PixelFormat::RGB_565:
-            converter.I420ToRGB565Matrix(i420.I420Y, i420.yStride, i420.I420U, i420.uStride, i420.I420V, i420.vStride,
-                destParam.slice[0], destParam.stride[0], static_cast<OHOS::OpenSourceLibyuv::ColorSpace>(colorSpace),
-                destParam.width, destParam.height);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
-static bool CalcRGBStride(PixelFormat format, uint32_t width, int &stride)
-{
-    switch (format) {
-        case PixelFormat::RGB_565:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB565);
-            break;
-        case PixelFormat::RGBA_8888:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGBA);
-            break;
-        case PixelFormat::BGRA_8888:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_BGRA);
-            break;
-        case PixelFormat::RGB_888:
-            stride = static_cast<int>(width * BYTES_PER_PIXEL_RGB);
-            break;
-        default:
-            return false;
-    }
-    return true;
-}
-
-static void YuvToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam,
-                          DestConvertParam &destParam, DestConvertInfo &destInfo)
-{
-    srcParam.slice[0] = srcParam.buffer + yuvInfo.yOffset;
-    srcParam.slice[1] = srcParam.buffer + yuvInfo.uvOffset;
-    srcParam.stride[0] = static_cast<int>(yuvInfo.yStride);
-    srcParam.stride[1] = static_cast<int>(yuvInfo.uvStride);
-
-    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        destParam.stride[0] = static_cast<int>(destInfo.yStride);
-        destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
-    } else {
-        bool bRet = CalcRGBStride(destParam.format, destParam.width, destParam.stride[0]);
-        if (!bRet) {
-            return ;
-        }
-        destParam.slice[0] = destInfo.buffer;
-    }
-}
-
-static bool YuvToI420ToRGBParam(const YUVDataInfo &yuvInfo, SrcConvertParam &srcParam, I420Info &i420Info,
-                                DestConvertParam &destParam, DestConvertInfo &destInfo)
-{
-    YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-
-    return I420Param(yuvInfo.yWidth, yuvInfo.yHeight, i420Info);
-}
-
-static bool YuvTo420ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
-                          DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
-{
-    if (srcBuffer == nullptr || destInfo.buffer == nullptr || yuvInfo.yWidth == 0 || yuvInfo.yHeight == 0 ||
-        destInfo.bufferSize == 0) {
-        return false;
-    }
-    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
-    srcParam.buffer = srcBuffer;
-    srcParam.format = srcFormat;
-
-    DestConvertParam destParam = {destInfo.width, destInfo.height};
-    destParam.format = destInfo.format;
-
-    I420Info i420Info = {yuvInfo.yWidth, yuvInfo.yHeight};
-
-    YuvToI420ToRGBParam(yuvInfo, srcParam, i420Info, destParam, destInfo);
-    auto bRet = YuvToI420(srcParam, i420Info);
-    if (!bRet) {
-        delete[] i420Info.I420Y;
-        return false;
-    }
-    bRet = I420ToRGB(i420Info, destParam, colorSpace);
-    delete[] i420Info.I420Y;
-    return bRet;
-}
-
-static bool YuvToRGBConverter(SrcConvertParam &srcParam, DestConvertParam &destParam)
-{
-    auto &converter = ConverterHandle::GetInstance().GetHandle();
-    if (srcParam.format == PixelFormat::NV21) {
-        switch (destParam.format) {
-            case PixelFormat::RGB_888:
-                converter.NV21ToRAW(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
-                break;
-            case PixelFormat::BGRA_8888:
-                converter.NV21ToARGB(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
-                break;
-            default:
-                return false;
-        }
-    } else if (srcParam.format == PixelFormat::NV12) {
-        switch (destParam.format) {
-            case PixelFormat::RGB_888:
-                converter.NV12ToRAW(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
-                break;
-            case PixelFormat::BGRA_8888:
-                converter.NV12ToARGB(srcParam.slice[0], srcParam.stride[0], srcParam.slice[1], srcParam.stride[1],
-                    destParam.slice[0], destParam.stride[0], destParam.width, destParam.height);
-                break;
-            default:
-                return false;
-        }
-    }
-    return true;
-}
-
-static bool YuvToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yuvInfo, PixelFormat srcFormat,
-                     DestConvertInfo &destInfo, PixelFormat destFormat)
-{
-    if (srcBuffer == nullptr || destInfo.buffer == nullptr || yuvInfo.yWidth == 0 || yuvInfo.yHeight == 0 ||
-        destInfo.bufferSize == 0) {
-        return false;
-    }
-    SrcConvertParam srcParam = {yuvInfo.yWidth, yuvInfo.yHeight};
-    srcParam.buffer = srcBuffer;
-    srcParam.format = srcFormat;
-
-    DestConvertParam destParam = {destInfo.width, destInfo.height};
-    destParam.format = destFormat;
-
-    YuvToRGBParam(yuvInfo, srcParam, destParam, destInfo);
-    return YuvToRGBConverter(srcParam, destParam);
 }
 
 bool ImageFormatConvertExtUtils::NV21ToRGB(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,

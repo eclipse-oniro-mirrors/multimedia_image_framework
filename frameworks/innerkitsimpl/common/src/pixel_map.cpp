@@ -327,7 +327,7 @@ void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
     yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
     yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
-    yuvInfo.uvStride = static_cast<uint32_t>(width + 1);
+    yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
     yuvInfo.uvOffset = static_cast<uint32_t>(width * height);
 }
 
