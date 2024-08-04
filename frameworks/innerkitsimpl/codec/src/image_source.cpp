@@ -2085,7 +2085,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
 
     // for raw image, we need check the original format after decoder initialzation
     string value;
-    ret = mainDecoder_->GetImagePropertyString(0, ACTUAL_IMAGE_ENCODED_FORMAT, value);
+    ret = mainDecoder_->GetImagePropertyString(FIRST_FRAME, ACTUAL_IMAGE_ENCODED_FORMAT, value);
     if (ret == SUCCESS) {
         // update new format
         sourceInfo_.encodedFormat = value;
