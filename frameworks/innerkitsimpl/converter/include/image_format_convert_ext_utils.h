@@ -133,10 +133,6 @@ public:
                              [[maybe_unused]]ColorSpace colorSpace);
     static bool NV12ToRGB565(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
                              [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV21ToNV12(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
-                           [[maybe_unused]]ColorSpace colorSpace);
-    static bool NV12ToNV21(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
-                           [[maybe_unused]]ColorSpace colorSpace);
     static bool NV12ToRGBA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,
                            [[maybe_unused]]ColorSpace colorSpace);
     static bool NV12ToBGRA(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo, DestConvertInfo &destInfo,

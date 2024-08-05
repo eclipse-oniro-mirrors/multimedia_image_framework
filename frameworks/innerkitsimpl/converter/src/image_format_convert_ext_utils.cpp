@@ -242,10 +242,10 @@ static bool I420Param(uint32_t width, uint32_t height, I420Info &i420Info)
     i420Info.yStride = width;
     i420Info.uStride = (width + NUM_1) / NUM_2;
     i420Info.vStride = (width + NUM_1) / NUM_2;
-    i420Info.uHeight = (height + NUM_1) / NUM_2;
+    i420Info.uvHeight = (height + NUM_1) / NUM_2;
 
     const uint32_t i420BufferSize = static_cast<size_t>(i420Info.yStride * i420Info.height +
-        i420Info.uStride * i420Info.uHeight * NUM_2);
+        i420Info.uStride * i420Info.uvHeight * NUM_2);
     if (i420BufferSize <= NUM_0 || i420BufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size calculation!");
         return false;
