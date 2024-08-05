@@ -53,7 +53,8 @@ const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::set<std::string_view> HW_SPECIAL_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
-    "MicroVideoPresentationTimestampUS"
+    "MicroVideoPresentationTimestampUS",
+    "HwUnknow",
 };
 const unsigned char INIT_HW_DATA[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x55, 0x41, 0x57, 0x45, 0x49, 0x00,
@@ -179,7 +180,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
         const char *mnoteKey = mnote_huawei_tag_get_name(entry->tag);
-        if (std::strcmp(mnoteKey, "HwUnknow") == 0) {
+        if (HW_SPECIAL_KEYS.find(mnoteKey) != HW_SPECIAL_KEYS.end()) {
             continue;
         }
         mnote_huawei_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
