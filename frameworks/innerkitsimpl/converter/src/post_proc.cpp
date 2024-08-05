@@ -394,6 +394,7 @@ uint32_t PostProc::PixelConvertProc(ImageInfo &dstImageInfo, PixelMap &pixelMap,
 
     int32_t pixelBytes = ImageUtils::GetPixelBytes(srcImageInfo.pixelFormat);
     if (pixelBytes == 0) {
+        ReleaseBuffer(decodeOpts_.allocatorType, fd, bufferSize, &resultData);
         return ERR_IMAGE_CROP;
     }
 
