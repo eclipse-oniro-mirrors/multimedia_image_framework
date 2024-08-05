@@ -789,11 +789,9 @@ ohos_unittest("pngtest") {
 
   deps = [
     "$image_subsystem/plugins/common/libs/image/libsvgplugin:svgplugin",
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin:pngplugin",
-    "//third_party/libpng:libpng",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -803,6 +801,7 @@ ohos_unittest("pngtest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
+    "libpng:libpng",
   ]
 }
 
@@ -1326,7 +1325,6 @@ ohos_unittest("pixelastctest") {
     "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "$graphic_subsystem/utils/color_manager/export",
     "${image_subsystem}/plugins/manager/include",
   ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_astc_test.cpp" ]
@@ -1776,11 +1774,9 @@ ohos_unittest("imageformatconverttest") {
     "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${graphic_subsystem}/utils/color_manager/export",
     "${image_subsystem}/plugins/manager/include",
     "${image_subsystem}/frameworks/innerkitsimpl/common/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${resource_management_subsystem}/interfaces/native/resource/include",
   ]
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_test.cpp" ]
   deps = [
@@ -1794,7 +1790,6 @@ ohos_unittest("imageformatconverttest") {
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "googletest:gtest",
-    "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "ipc:ipc_core",
@@ -1892,6 +1887,4 @@ group("unittest") {
     ]
   }
 }
-
 ################################################
-
