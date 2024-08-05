@@ -165,6 +165,9 @@ void US2Data(byte *buf, uint16_t value, ByteOrder byteOrder)
 
 size_t UL2Data(byte *buf, uint32_t l, ByteOrder byteOrder)
 {
+    if (buf == nullptr) {
+        return 0;
+    }
     if (byteOrder == littleEndian) {
         buf[BYTE_1_POSITION] = static_cast<byte>(l & BYTE_1_MASK);
         buf[BYTE_2_POSITION] = static_cast<byte>((l & BYTE_2_MASK) >> BYTE_2_SHIFT);
@@ -181,6 +184,9 @@ size_t UL2Data(byte *buf, uint32_t l, ByteOrder byteOrder)
 
 uint32_t GetULong(const byte *buf, ByteOrder byteOrder)
 {
+    if (buf == nullptr) {
+        return 0;
+    }
     if (byteOrder == littleEndian) {
         return (buf[BYTE_4_POSITION] << BYTE_4_SHIFT) | (buf[BYTE_3_POSITION] << BYTE_3_SHIFT) |
             (buf[BYTE_2_POSITION] << BYTE_2_SHIFT) | (buf[BYTE_1_POSITION] << BYTE_1_SHIFT);

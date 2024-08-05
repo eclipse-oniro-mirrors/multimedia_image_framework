@@ -319,6 +319,7 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {

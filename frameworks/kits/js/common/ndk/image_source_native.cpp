@@ -356,6 +356,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH
     }
     std::string tmp(uri, uriSize);
     if (tmp.empty()) {
+        delete imageSource;
         return IMAGE_BAD_PARAMETER;
     }
     imageSource->filePath_ = tmp;

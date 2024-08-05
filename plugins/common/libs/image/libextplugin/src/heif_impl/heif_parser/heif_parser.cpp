@@ -537,6 +537,9 @@ void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
         }
         heif_item_id fromItemId = ref.fromItemId;
         auto fromItemInfeBox = GetInfeBox(fromItemId);
+        if (fromItemInfeBox == nullptr) {
+            continue;
+        }
         if (fromItemInfeBox->GetItemType() != "tmap") {
             return;
         }

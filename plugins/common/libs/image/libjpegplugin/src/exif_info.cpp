@@ -1033,6 +1033,10 @@ unsigned long EXIFInfo::GetFileSize(FILE *fp)
 
 bool EXIFInfo::CreateExifData(unsigned char *buf, unsigned long length, ExifData **ptrData, bool &isNewExifData)
 {
+    if (buf == nullptr) {
+        IMAGE_LOGD("Create exif data but buf is null");
+        return false;
+    }
     if ((buf[BUFFER_POSITION_6] == 'E' && buf[BUFFER_POSITION_7] == 'x' &&
         buf[BUFFER_POSITION_8] == 'i' && buf[BUFFER_POSITION_9] == 'f')) {
         *ptrData = exif_data_new_from_data(buf, static_cast<unsigned int>(length));

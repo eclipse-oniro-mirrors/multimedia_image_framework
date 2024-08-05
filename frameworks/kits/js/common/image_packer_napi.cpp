@@ -165,6 +165,9 @@ static void ImagePackerErrorToNapiError(napi_env env, ImagePackerAsyncContext *c
 
 static void CommonCallbackRoutine(napi_env env, ImagePackerAsyncContext* &connect, const napi_value &valueParam)
 {
+    if (connect == nullptr) {
+        return;
+    }
     napi_value result[NUM_2] = {0};
     napi_value retVal;
     napi_value callback = nullptr;
