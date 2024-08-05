@@ -106,6 +106,7 @@ struct PixelMapAsyncContext {
     PixelFormat destFormat = PixelFormat::UNKNOWN;
     FormatType srcFormatType = FormatType::UNKNOWN;
     FormatType dstFormatType = FormatType::UNKNOWN;
+    AntiAliasingOption antiAliasing;
 };
 using PixelMapAsyncContextPtr = std::unique_ptr<PixelMapAsyncContext>;
 std::shared_ptr<PixelMap> srcPixelMap = nullptr;
@@ -144,6 +145,15 @@ static ScaleMode ParseScaleMode(int32_t val)
     }
 
     return ScaleMode::FIT_TARGET_SIZE;
+}
+
+static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
+{
+    if (val <= static_cast<int32_t>(AntiAliasingOption::SPLINE)) {
+        return AntiAliasingOption(val);
+    }
+
+    return AntiAliasingOption::NONE;
 }
 
 static bool parseSize(napi_env env, napi_value root, Size* size)
@@ -2560,7 +2570,12 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            if (context->antiAliasing == AntiAliasingOption::NONE) {
+                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            } else {
+                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
+                    context->antiAliasing);
+            }
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -2568,6 +2583,20 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
         }
     } else {
         IMAGE_LOGD("Scale has failed. do nothing");
+    }
+}
+
+static void NapiParseCallbackOrAntiAliasing(napi_env &env, NapiValues &nVal, int argi)
+{
+    if (ImageNapiUtils::getType(env, nVal.argv[argi]) == napi_function) {
+        napi_create_reference(env, nVal.argv[argi], nVal.refCount, &(nVal.context->callbackRef));
+    } else {
+        int32_t antiAliasing;
+        if (!IMG_IS_OK(napi_get_value_int32(env, nVal.argv[argi], &antiAliasing))) {
+            IMAGE_LOGE("Arg %{public}d type mismatch", argi);
+            nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+        }
+        nVal.context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
     }
 }
 
@@ -2596,8 +2625,8 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
             nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
         }
     }
-    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
-        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+    if (nVal.argc == NUM_3) {
+        NapiParseCallbackOrAntiAliasing(env, nVal, NUM_2);
     }
 
     if (nVal.context->callbackRef == nullptr) {
@@ -2632,16 +2661,17 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
     napi_status napiStatus;
     uint32_t status = SUCCESS;
     napi_value thisVar = nullptr;
-    size_t argCount = NUM_2;
-    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_3;
+    napi_value argValue[NUM_3] = {0};
     double xArg = 0;
     double yArg = 0;
+    int32_t antiAliasing = 0;
     IMAGE_LOGD("ScaleSync IN");
     IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
 
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
@@ -2649,6 +2679,10 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         result, IMAGE_LOGE("Arg 0 type mismatch"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &yArg)),
         result, IMAGE_LOGE("Arg 1 type mismatch"));
+    if (argCount == NUM_3) {
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_2], &antiAliasing)),
+            result, IMAGE_LOGE("Arg 2 type mismatch"));
+    }
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
@@ -2659,7 +2693,12 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Pixelmap has crossed threads . ScaleSync failed"));
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        if (antiAliasing == 0) {
+            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        } else {
+            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg),
+                ParseAntiAliasingOption(antiAliasing));
+        }
     } else {
         IMAGE_LOGE("Null native ref");
     }
