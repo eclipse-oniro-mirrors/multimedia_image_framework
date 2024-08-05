@@ -32,6 +32,8 @@
 
 namespace OHOS {
 namespace Media {
+struct HdrMetadata;
+enum class ImageHdrType : int32_t;
 using TransColorProc = bool (*)(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
 using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
@@ -250,6 +252,9 @@ public:
         return grColorSpace_;
     }
     NATIVEEXPORT virtual uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
+    // use for hdr pixelmap
+    NATIVEEXPORT void SetHdrToSdrColorSpaceName(const OHOS::ColorManager::ColorSpaceName colorSpaceName);
+    NATIVEEXPORT OHOS::ColorManager::ColorSpaceName GetHdrToSdrColorSpaceName();
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 
@@ -296,6 +301,29 @@ public:
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
+    // format support rgba8888, nv12, nv21. The default value is rgba8888
+    // If toSRGB is false, pixelmap will be converted to display_p3
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
+
+    NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
+    {
+        return hdrMetadata_;
+    }
+
+    NATIVEEXPORT void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
+    {
+        hdrMetadata_ = metadata;
+    }
+
+    NATIVEEXPORT ImageHdrType GetHdrType()
+    {
+        return hdrType_;
+    }
+
+    NATIVEEXPORT void SetHdrType(ImageHdrType hdrType)
+    {
+        hdrType_ = hdrType;
+    }
 
     NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
     {
@@ -432,9 +460,12 @@ protected:
     bool isAstc_ = false;
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
     Size astcrealSize_;
+    std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
+    ImageHdrType hdrType_;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
+    OHOS::ColorManager::ColorSpaceName sdrColorSpaceName_ = ColorManager::DISPLAY_P3;
 #else
     std::shared_ptr<uint8_t> grColorSpace_ = nullptr;
 #endif

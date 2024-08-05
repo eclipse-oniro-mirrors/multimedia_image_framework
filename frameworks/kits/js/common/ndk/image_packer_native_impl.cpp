@@ -15,13 +15,14 @@
 #include "image_packer_native_impl.h"
 #include "image_source_native_impl.h"
 #include "pixelmap_native_impl.h"
-
+#include "picture_native_impl.h"
 using namespace OHOS;
 using namespace Media;
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+constexpr int32_t defaultBufferSize = 25 * 1024 * 1024;
 
 OH_ImagePackerNative::OH_ImagePackerNative()
 {
@@ -134,6 +135,38 @@ int32_t OH_ImagePackerNative::PackToDataMultiFrames(OHOS::Media::PackOption *opt
     return IMAGE_ENCODE_FAILED;
 }
 
+int32_t OH_ImagePackerNative::PackToDataFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
+    uint8_t *outData, int64_t *size)
+{
+    if (option == nullptr || picture == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    OHOS::Media::Picture *picturePtr = picture->GetInnerPicture().get();
+
+    int64_t packedSize = 0;
+    uint32_t ret = IMAGE_ENCODE_FAILED;
+    const int64_t DEFAULT_BUFFER_SIZE = defaultBufferSize;
+    int64_t bufferSize = (*size <= 0) ? DEFAULT_BUFFER_SIZE : (*size);
+    ret = imagePacker->StartPacking(outData, bufferSize, *option);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    ret = imagePacker->AddPicture(*picturePtr);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    ret = imagePacker->FinalizePacking(packedSize);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    if (packedSize > 0 && (packedSize < bufferSize)) {
+        *size = packedSize;
+        return IMAGE_SUCCESS;
+    }
+    return IMAGE_ENCODE_FAILED;
+}
+
 int32_t OH_ImagePackerNative::PackToFileFromImageSource(OHOS::Media::PackOption *option,
     OH_ImageSourceNative *imageSource, const int fd)
 {
@@ -192,6 +225,27 @@ int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *opt
     for (int i = 0; i < pixelmap.size(); i++) {
         ret = imagePacker->AddImage(*(pixelmap[i]->GetInnerPixelmap().get()));
     }
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    return imagePacker->FinalizePacking(packedSize);
+}
+
+int32_t OH_ImagePackerNative::PackToFileFromPicture(OHOS::Media::PackOption *option, struct OH_PictureNative *picture,
+    const int32_t fd)
+{
+    if (option == nullptr || picture == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    OHOS::Media::ImagePacker *imagePacker = imagePacker_.get();
+    OHOS::Media::Picture *picturePtr = picture->GetInnerPicture().get();
+    int64_t packedSize = 0;
+    uint32_t ret = IMAGE_ENCODE_FAILED;
+    ret = imagePacker->StartPacking(fd, *option);
+    if (ret != IMAGE_SUCCESS) {
+        return ret;
+    }
+    ret = imagePacker->AddPicture(*picturePtr);
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }

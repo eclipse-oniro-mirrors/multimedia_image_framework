@@ -241,9 +241,15 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     return AddImage(*pixelMap_.get());
 }
 
+uint32_t ImagePacker::AddPicture(Picture &picture)
+{
+    return DoEncodingFunc([this, &picture](ImagePlugin::AbsImageEncoder* encoder) {
+        return encoder->AddPicture(picture);
+    });
+}
+
 uint32_t ImagePacker::FinalizePacking()
 {
-    ImageTrace imageTrace("ImagePacker::FinalizePacking");
     return DoEncodingFunc([](ImagePlugin::AbsImageEncoder* encoder) {
         auto res = encoder->FinalizeEncode();
         if (res != SUCCESS) {

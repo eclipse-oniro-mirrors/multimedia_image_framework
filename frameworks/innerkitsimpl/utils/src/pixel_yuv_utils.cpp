@@ -35,6 +35,8 @@
 namespace OHOS {
 namespace Media {
 
+static const uint8_t ODD = 1;
+static const uint8_t EVEN = 2;
 static const uint8_t NUM_2 = 2;
 
 static const int32_t degrees360 = 360;
@@ -732,7 +734,8 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
 }
 
 
-void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format)
+void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
+    YUVStrideInfo &dstStrides)
 {
     int32_t ySize = GetYSize(width, height);
     int32_t uvSize = GetUStride(width) * GetUVHeight(height) * NUM_2;
@@ -740,8 +743,10 @@ void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, i
         ySize *= NUM_2;
         uvSize *= NUM_2;
     }
-    if (memset_s(srcPixels, ySize, Y_DEFAULT, ySize) != EOK ||
-        memset_s(srcPixels + ySize, uvSize, UV_DEFAULT, uvSize) != EOK) {
+    auto ySizeNormal = dstStrides.yStride * height;
+    auto uvSizeNormal = dstStrides.uvStride * GetUVHeight(height);
+    if (memset_s(srcPixels, ySizeNormal, Y_DEFAULT, ySizeNormal) != EOK ||
+        memset_s(srcPixels + ySizeNormal, uvSizeNormal, UV_DEFAULT, uvSizeNormal) != EOK) {
         IMAGE_LOGW("set translate default color failed");
     }
 }
@@ -969,27 +974,26 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     uint8_t *dstY = dstPixels;
     uint8_t *dstUV = dstPixels + GetYSize(strides.yStride, info.size.height);
 
-    for (int32_t y = 0; y < info.size.height; y++) {
-        for (int32_t x = 0; x < info.size.width; x++) {
-            int32_t newX = x + xyAxis.xAxis;
-            int32_t newY = y + xyAxis.yAxis;
-            if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * strides.yStride + newX) = *(srcY + static_cast<uint32_t>(y) * yuvInfo.yStride + x);
-            }
-        }
+    int32_t yCopySize = info.size.width -  xyAxis.xAxis;
+    int32_t yCopyLine = info.size.height - xyAxis.yAxis;
+    uint8_t *dst = nullptr;
+    const uint8_t *src = nullptr;
+    for (int32_t y = 0; y<yCopyLine ; y++) {
+        int32_t newY = y + xyAxis.yAxis;
+        dst = dstY + newY * yuvInfo.yStride + (int32_t)xyAxis.xAxis;
+        src = srcY + y * yuvInfo.yStride;
+        memcpy_s(dst, yCopySize,  src, yCopySize);
     }
-
-    for (int32_t y = 0; y < GetUVHeight(info.size.height); y++) {
-        for (int32_t x = 0; x < GetUVStride(info.size.width); x += NUM_2) {
-            int32_t newX = x + GetUVStride(xyAxis.xAxis);
-            int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < info.size.width && newY >= 0 && newY < GetUVHeight(info.size.height)) {
-                *(dstUV + newY * strides.uvStride + newX) =
-                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x);
-                *(dstUV + newY * strides.uvStride + newX + 1) =
-                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x + 1);
-            }
-        }
+    int32_t xOffset = ((int32_t)xyAxis.xAxis % EVEN == 0) ?  xyAxis.xAxis : xyAxis.xAxis - 1;
+    int32_t uvWidth = (info.size.width + ODD) / EVEN * EVEN;
+    int32_t uvHeight = (yuvInfo.uvHeight != 0) ? yuvInfo.uvHeight : ((info.size.height + ODD) / EVEN);
+    int32_t uvCopySize = uvWidth - xOffset;
+    int32_t uvCopyLine = uvHeight - xyAxis.yAxis / EVEN;
+    for (int32_t y = 0; y<uvCopyLine ; y++) {
+        int32_t newY = (y + xyAxis.yAxis / EVEN);
+        dst = dstUV+ newY * yuvInfo.uvStride + xOffset ;
+        src = srcUV + y * yuvInfo.uvStride;
+        memcpy_s(dst, uvCopySize,  src, uvCopySize);
     }
 }
 

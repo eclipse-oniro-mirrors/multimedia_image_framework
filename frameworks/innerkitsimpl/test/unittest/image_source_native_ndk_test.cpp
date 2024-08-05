@@ -28,6 +28,7 @@ public:
     ~ImagSourceNdk2Test() {}
 };
 
+static constexpr int32_t TestLength = 2;
 /**
  * @tc.name: OH_ImageSourceInfo_Create
  * @tc.desc: test OH_ImageSourceInfo_Create
@@ -391,5 +392,84 @@ HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_Release, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagSourceNdk2Test: OH_ImageSourceNative_Release end";
 }
 
+/**
+ * @tc.name: OH_DecodingOptionsForPicture_CreateTest001
+ * @tc.desc: Tests the creation of decoding options for a picture.
+ *           The test checks if the decoding options are created successfully.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_CreateTest001, TestSize.Level1)
+{
+    OH_DecodingOptionsForPicture *options = nullptr;
+    Image_ErrorCode ret;
+    ret = OH_DecodingOptionsForPicture_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_DecodingOptionsForPicture_Release(options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForPicture_ReleaseTest001
+ * @tc.desc: test OH_DecodingOptionsForPicture_Release with a null pointer.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_ReleaseTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_DecodingOptionsForPicture_Release(nullptr);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPicturesTest001
+ * @tc.desc: Tests getting the desired auxiliary pictures from decoding options.
+ *           The test checks if the set and get functions work correctly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPicturesTest001, TestSize.Level1)
+{
+    OH_DecodingOptionsForPicture *options = nullptr;
+    Image_ErrorCode ret = OH_DecodingOptionsForPicture_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(options, nullptr);
+    size_t srcLength = TestLength;
+    Image_AuxiliaryPictureType srcAuxTypeList[srcLength];
+    srcAuxTypeList[0] = GAINMAP;
+    srcAuxTypeList[1] = DEPTH_MAP;
+    OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(options, srcAuxTypeList, srcLength);
+    Image_AuxiliaryPictureType *dstAuxTypeList = nullptr;
+    size_t dstLength = 0;
+    ret = OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(options, &dstAuxTypeList, &dstLength);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(dstAuxTypeList, nullptr);
+    EXPECT_EQ(srcLength, dstLength);
+    for (size_t index = 0; index < srcLength; index++) {
+        EXPECT_EQ(srcAuxTypeList[index], dstAuxTypeList[index]);
+    }
+    delete[] dstAuxTypeList;
+    ret = OH_DecodingOptionsForPicture_Release(options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPicturesTest002
+ * @tc.desc: test OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures with null pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPicturesTest002, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(nullptr, nullptr, nullptr);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPicturesTest001
+ * @tc.desc: test OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures with null pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPicturesTest001, TestSize.Level3)
+{
+    Image_ErrorCode ret = OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(nullptr, nullptr, 0);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
 }
 }

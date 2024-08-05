@@ -24,6 +24,7 @@
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
+#include "auxiliary_picture.h"
 #endif
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
@@ -240,6 +241,16 @@ public:
     virtual uint32_t GetHeifParseErr()
     {
         return 0;
+    }
+
+    virtual bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type)
+    {
+        return false;
+    }
+
+    virtual bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type)
+    {
+        return false;
     }
 
     // define multiple subservices for this interface

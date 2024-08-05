@@ -29,6 +29,7 @@
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
 #include "pixel_map.h"
+#include "picture.h"
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -50,8 +51,13 @@ struct DecodeContext;
 } // namespace ImagePlugin
 } // namespace OHOS
 
+namespace OHOS::HDI::Display::Graphic::Common::V1_0 {
+enum CM_ColorSpaceType : int32_t;
+}
+
 namespace OHOS {
 namespace Media {
+using namespace HDI::Display::Graphic::Common::V1_0;
 class ImageEvent;
 struct SourceOptions {
     std::string formatHint;
@@ -167,6 +173,11 @@ public:
 
     NATIVEEXPORT static bool IsSupportGenAstc();
 
+    NATIVEEXPORT static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base);
+    
+    NATIVEEXPORT static void SetVividMetaColor(HdrMetadata& metadata, CM_ColorSpaceType base,
+                                                CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr);
+    
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
         return CreatePixelMapEx(0, opts, errorCode);
@@ -178,6 +189,7 @@ public:
     NATIVEEXPORT std::unique_ptr<IncrementalPixelMap> CreateIncrementalPixelMap(uint32_t index,
                                                                                 const DecodeOptions &opts,
                                                                                 uint32_t &errorCode);
+    NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
     // for obtaining basic image information without decoding image data.
@@ -229,6 +241,8 @@ public:
 
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
     NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
+    NATIVEEXPORT static void ContextToAddrInfos(ImagePlugin::DecodeContext &context, PixelMapAddrInfos &addrInfos);
+    NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -336,6 +350,10 @@ private:
     bool ParseHdrType();
     bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
+    void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+                                     uint32_t &errorCode);
+    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+                                    uint32_t &errorCode);
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";

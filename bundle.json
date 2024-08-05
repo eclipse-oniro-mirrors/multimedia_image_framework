@@ -100,6 +100,8 @@
           {
             "header": {
               "header_files": [
+                "auxiliary_picture.h",
+                "picture.h",
                 "pixel_map.h",
                 "image_packer.h",
                 "image_source.h",
@@ -136,6 +138,16 @@
               ]
             },
             "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk:pixelmap"
+          },
+          {
+            "header": {
+              "header_base": "//foundation/multimedia/image_framework/interfaces/kits/native/include/image/",
+              "header_files": [
+                "image_common.h",
+                "picture_native.h"
+              ]
+            },
+            "name": "//foundation/multimedia/image_framework/frameworks/kits/js/common/picture_ndk:picture"
           },
           {
             "header": {

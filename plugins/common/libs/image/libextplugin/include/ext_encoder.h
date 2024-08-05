@@ -27,6 +27,7 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
+#include "v1_0/icodec_image.h"
 #include "hdr_type.h"
 
 #ifdef HEIF_HW_ENCODE_ENABLE
@@ -56,6 +57,7 @@ public:
     ~ExtEncoder() override;
     uint32_t StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option) override;
     uint32_t AddImage(Media::PixelMap &pixelMap) override;
+    uint32_t AddPicture(Media::Picture &picture) override;
     uint32_t FinalizeEncode() override;
 
 private:
@@ -64,16 +66,20 @@ private:
     uint32_t DoHardWareEncode(SkWStream* skStream);
     bool HardwareEncode(SkWStream &skStream, bool needExif);
     uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);
+    uint32_t DoHdrEncode(ExtWStream& wStream);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     sptr<SurfaceBuffer> ConvertToSurfaceBuffer(Media::PixelMap* pixelmap);
     uint32_t EncodeSdrImage(ExtWStream& outputStream);
     uint32_t EncodeDualVivid(ExtWStream& outputStream);
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);
+    uint32_t EncodePicture();
+    uint32_t EncodeCameraSencePicture(SkWStream& skStream);
+    uint32_t EncodeEditSencePicture(ExtWStream& outputStream);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
         bool needExif, SkWStream& outputStream);
     uint32_t EncodeHeifDualHdrImage(sptr<SurfaceBuffer>& sdr, sptr<SurfaceBuffer>& gainmap,
-        Media::HdrMetadata& metadata);
+        Media::HdrMetadata& metadata, bool sdrIsSRGB = false);
     uint32_t EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sdrInfo);
 #endif
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
@@ -119,6 +125,8 @@ private:
     OutputDataStream* output_ = nullptr;
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;
+    Media::Picture* picture_ = nullptr;
+    sptr<HDI::Codec::Image::V1_0::ICodecImage> hwEncoder_;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
 };
 } // namespace ImagePlugin

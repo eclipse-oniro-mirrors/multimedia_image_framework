@@ -1,0 +1,97 @@
+# Copyright (C) 2024 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/ohos.gni")
+import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
+
+ohos_shared_library("image_common") {
+  output_extension = "so"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+  include_dirs = [
+    "include",
+    "${image_subsystem}/interfaces/innerkits/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+    "${image_subsystem}/frameworks/kits/js/common/picture_ndk/include",
+  ]
+
+  sources = [
+    "image_common.cpp",
+    "image_common_impl.cpp",
+  ]
+
+  public_configs =
+      [ "${image_subsystem}/interfaces/innerkits:image_external_config" ]
+
+  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
+
+  if (enable_libexif) {
+    external_deps = [ "libexif:libexif" ]
+  }
+  external_deps += [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "ipc:ipc_core",
+  ]
+  innerapi_tags = [
+    "ndk",
+    "platformsdk",
+  ]
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}
+
+ohos_shared_library("picture") {
+  output_extension = "so"
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+  include_dirs = [
+    "include",
+    "${image_subsystem}/frameworks/kits/js/common/ndk/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
+    "${image_subsystem}/interfaces/kits/native/include/image",
+  ]
+
+  sources = [
+    "picture_native.cpp",
+    "picture_native_impl.cpp",
+  ]
+
+  public_configs =
+      [ "${image_subsystem}/interfaces/innerkits:image_external_config" ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/egl_image:egl_image",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/frameworks/kits/js/common/picture_ndk:image_common",
+    "${image_subsystem}/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  if (enable_libexif) {
+    external_deps = [ "libexif:libexif" ]
+  }
+  innerapi_tags = [ "ndk" ]
+  subsystem_name = "multimedia"
+  part_name = "image_framework"
+}
