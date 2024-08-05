@@ -322,9 +322,29 @@ HWTEST_F(NdkTest, OH_PixelMap_CreatePixelMapTest, TestSize.Level3)
     size_t len = 0;
     napi_value* res = nullptr;
     int32_t ret = OH_PixelMap_CreatePixelMap(env, info, buf, len, res);
-    ASSERT_EQ(ret, IMAGE_RESULT_BAD_PARAMETER);
+    ASSERT_EQ(ret, IMAGE_RESULT_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_CreatePixelMapTest end";
+}
+
+/**
+ * @tc.name: OH_PixelMap_CreatePixelMapWithStrideTest
+ * @tc.desc: OH_PixelMap_CreatePixelMapWithStride
+ * @tc.type: FUNC
+ */
+HWTEST_F(NdkTest, OH_PixelMap_CreatePixelMapWithStrideTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_CreatePixelMapWithStrideTest start";
+    napi_env env = nullptr;
+    OhosPixelMapCreateOps info;
+    void* buf = nullptr;
+    size_t len = 0;
+    int32_t rowStride = 0;
+    napi_value* res = nullptr;
+    int32_t ret = OH_PixelMap_CreatePixelMapWithStride(env, info, buf, len, rowStride, res);
+    ASSERT_EQ(ret, IMAGE_RESULT_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_CreatePixelMapWithStrideTest end";
 }
 
 /**
@@ -339,7 +359,7 @@ HWTEST_F(NdkTest, OH_PixelMap_CreateAlphaPixelMapTest, TestSize.Level3)
     napi_value source = nullptr;
     napi_value* alpha = nullptr;
     int32_t res = OH_PixelMap_CreateAlphaPixelMap(env, source, alpha);
-    ASSERT_EQ(res, IMAGE_RESULT_BAD_PARAMETER);
+    ASSERT_EQ(res, IMAGE_RESULT_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "NdkTest: OH_PixelMap_CreateAlphaPixelMapTest end";
 }

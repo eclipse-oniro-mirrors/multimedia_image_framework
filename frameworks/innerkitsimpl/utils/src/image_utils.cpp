@@ -277,6 +277,16 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
     return dstType;
 }
 
+AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    return useDMA && format == PixelFormat::RGBA_8888 && size.width * size.height >= DMA_SIZE ?
+        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+#else
+    return AllocatorType::HEAP_ALLOC;
+#endif
+}
+
 bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
 {
     if (info.size.width <= 0 || info.size.height <= 0 || info.size.width > MAX_DIMENSION ||
@@ -289,11 +299,6 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
-}
-
-bool ImageUtils::IsSupportDMA(const Size &size, const PixelFormat &format)
-{
-    return format == PixelFormat::RGBA_8888 && size.width * size.height >= DMA_SIZE;
 }
 
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
