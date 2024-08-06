@@ -395,42 +395,6 @@ YUVConvertFunction ImageFormatConvert::YUVGetConvertFuncByFormat(PixelFormat src
     return iter->second;
 }
 
-bool ImageFormatConvert::MakeDestPixelMapP010(std::shared_ptr<PixelMap> &destPixelMap, const DestConvertInfo &destInfo,
-    void *context)
-{
-    ImageInfo srcImageInfo;
-    destPixelMap->GetImageInfo(srcImageInfo);
-    ImageInfo info;
-    info.alphaType = srcImageInfo.alphaType;
-    info.baseDensity = srcImageInfo.baseDensity;
-    info.colorSpace = srcImageInfo.colorSpace;
-    info.pixelFormat = destInfo.format;
-    info.size = srcImageInfo.size;
-
-    std::unique_ptr<PixelMap> pixelMap;
-    if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
-        info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelMap = std::make_unique<PixelYuv>();
-    } else {
-        pixelMap = std::make_unique<PixelMap>();
-    }
-    if (pixelMap->SetImageInfo(info) != SUCCESS) {
-        IMAGE_LOGE("set imageInfo failed");
-        return false;
-    }
-    if (destInfo.allocType == AllocatorType::DMA_ALLOC && destPixelMap->IsHdr()) {
-        void *fdBuffer = nullptr;
-        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (context));
-        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (fdBuffer));
-        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
-        pixelMap->SetPixelsAddr(destInfo.buffer, fdBuffer, destInfo.bufferSize, AllocatorType::DMA_ALLOC, nullptr);
-    } else {
-        pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, destInfo.allocType, nullptr);
-    }
-    destPixelMap = std::move(pixelMap);
-    return true;
-}
-
 bool ImageFormatConvert::IsSupport(PixelFormat format)
 {
     switch (format) {
@@ -566,52 +530,6 @@ static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, Pi
     return allocType;
 }
 
-uint32_t ImageFormatConvert::P010ConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
-                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
-{
-    ConvertFunctionP010 cvtFunc = GetConvertFuncByFormatP010(srcFormat, destFormat);
-    if (cvtFunc == nullptr) {
-        IMAGE_LOGE("get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-    const_uint8_buffer_type srcBuffer = srcPiexlMap->GetPixels();
-
-    ImageInfo imageInfo;
-    srcPiexlMap->GetImageInfo(imageInfo);
-
-    DestConvertInfo destInfo = {imageInfo.size.width, imageInfo.size.height};
-    destInfo.allocType = srcPiexlMap->GetAllocatorType();
-    destInfo.format = destFormat;
-    int32_t width = imageInfo.size.width;
-    int32_t height = imageInfo.size.height;
-    YUVStrideInfo dstStrides;
-    auto allocType = srcPiexlMap->GetAllocatorType();
-    auto m = CreateMemory(destFormat, allocType, width, height, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("yyytest CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-
-    uint32_t stride = srcPiexlMap->GetRowStride();
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
-        stride = sb->GetStride();
-    }
-#endif
-    RGBDataInfo rgbDataInfo = {imageInfo.size.width, imageInfo.size.height, stride};
-
-    if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPiexlMap->GetColorSpace())) {
-        IMAGE_LOGE("format convert failed!");
-        return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
-    }
-    if (!MakeDestPixelMapP010(srcPiexlMap, destInfo, m->extend.data)) {
-        IMAGE_LOGE("create pixel map failed");
-        return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-    }
-    return SUCCESS;
-}
-
 uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
                                                          const PixelFormat &srcFormat, PixelFormat destFormat)
 {
@@ -658,63 +576,6 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
     }
     return SUCCESS;
-}
-
-ConvertFunctionP010 ImageFormatConvert::GetConvertFuncByFormatP010(PixelFormat srcFormat, PixelFormat destFormat)
-{
-    auto iter = g_cvtFuncMap.find(std::make_pair(srcFormat, destFormat));
-    if (iter == g_cvtFuncMap.end()) {
-        IMAGE_LOGE("current format is not supported or format is wrong");
-        return nullptr;
-    }
-    return iter->second;
-}
-
-uint32_t ImageFormatConvert::YUVP010ConvertImageFormatOption(std::shared_ptr<PixelMap> &srcPiexlMap,
-                                                             const PixelFormat &srcFormat, PixelFormat destFormat)
-{
-    YUVP010ConvertFunction yuvCvtFunc = YUVP010GetConvertFuncByFormat(srcFormat, destFormat);
-    if (yuvCvtFunc == nullptr) {
-        IMAGE_LOGE("get convert function by format failed!");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-
-    const_uint8_buffer_type data = srcPiexlMap->GetPixels();
-    YUVDataInfo yDInfo;
-    srcPiexlMap->GetImageYUVInfo(yDInfo);
-    ImageInfo srcInfo;
-    srcPiexlMap->GetImageInfo(srcInfo);
-    DestConvertInfo destInfo = {srcInfo.size.width, srcInfo.size.height};
-    destInfo.allocType = srcPiexlMap->GetAllocatorType();
-    auto allocType = GetAllocatorType(srcPiexlMap, destFormat);
-    destInfo.format = destFormat;
-    YUVStrideInfo dstStrides;
-    auto m = CreateMemory(destFormat, allocType, destInfo.width, destInfo.height, dstStrides);
-    if (m == nullptr) {
-        IMAGE_LOGE("CreateMemory failed");
-        return ERR_IMAGE_INVALID_PARAMETER;
-    }
-
-    if (!yuvCvtFunc(data, yDInfo, destInfo, srcPiexlMap->GetColorSpace())) {
-        IMAGE_LOGE("format convert failed!");
-        return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
-    }
-    if (!MakeDestPixelMapP010(srcPiexlMap, destInfo, m->extend.data)) {
-        IMAGE_LOGE("create pixel map failed");
-        return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
-    }
-
-    return SUCCESS;
-}
-
-YUVP010ConvertFunction ImageFormatConvert::YUVP010GetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat)
-{
-    auto iter = g_yuvCvtFuncMap.find(std::make_pair(srcFormat, destFormat));
-    if (iter == g_yuvCvtFuncMap.end()) {
-        IMAGE_LOGE("current format is not supported or format is wrong");
-        return nullptr;
-    }
-    return iter->second;
 }
 
 bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
