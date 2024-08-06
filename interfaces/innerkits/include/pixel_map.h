@@ -252,9 +252,6 @@ public:
         return grColorSpace_;
     }
     NATIVEEXPORT virtual uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
-    // use for hdr pixelmap
-    NATIVEEXPORT void SetHdrToSdrColorSpaceName(const OHOS::ColorManager::ColorSpaceName colorSpaceName);
-    NATIVEEXPORT OHOS::ColorManager::ColorSpaceName GetHdrToSdrColorSpaceName();
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----end-------
 #endif
 
@@ -304,6 +301,9 @@ public:
     // format support rgba8888, nv12, nv21. The default value is rgba8888
     // If toSRGB is false, pixelmap will be converted to display_p3
     NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
+    // use for hdr pixelmap, If isSRGB is false, the colorspace is p3 when converting to SDR.
+    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB);
+    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB();
 
     NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
     {
@@ -465,7 +465,6 @@ protected:
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
-    OHOS::ColorManager::ColorSpaceName sdrColorSpaceName_ = ColorManager::DISPLAY_P3;
 #else
     std::shared_ptr<uint8_t> grColorSpace_ = nullptr;
 #endif
@@ -479,6 +478,7 @@ protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
+    bool toSdrColorIsSRGB_ = false;
 };
 } // namespace Media
 } // namespace OHOS
