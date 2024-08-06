@@ -1789,26 +1789,28 @@ HWTEST_F(ImageFormatConvertTest, ConvertImageFormat_Test_005, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 start";
     ConvertDataInfo srcDataInfo;
-    ConvertDataInfo destDataInfo;
+    DestConvertInfo destInfo;
     srcDataInfo.buffer = nullptr;
-    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    uint32_t ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     uint8_t data = 0;
     srcDataInfo.buffer = &data;
     srcDataInfo.pixelFormat = PixelFormat::ARGB_8888;
     srcDataInfo.imageSize = {1, 1};
     srcDataInfo.bufferSize = 4;
-    destDataInfo.pixelFormat = PixelFormat::UNKNOWN;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    destInfo.format = PixelFormat::UNKNOWN;
+    destInfo.width = srcDataInfo.imageSize.width;
+    destInfo.height = srcDataInfo.imageSize.height;
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     srcDataInfo.pixelFormat = PixelFormat::UNKNOWN;
-    destDataInfo.pixelFormat = PixelFormat::ARGB_8888;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    destInfo.format = PixelFormat::ARGB_8888;
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     srcDataInfo.pixelFormat = PixelFormat::RGB_565;
-    destDataInfo.pixelFormat = PixelFormat::NV21;
+    destInfo.format = PixelFormat::NV21;
     srcDataInfo.bufferSize = 2;
-    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destDataInfo);
+    ret = ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
     EXPECT_EQ(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: ConvertImageFormat_Test_005 end";
 }

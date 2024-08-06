@@ -48,7 +48,7 @@ struct ConvertDataInfo {
 class ImageFormatConvert {
     friend class ImageFormatConvertTest;
 public:
-    static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, ConvertDataInfo &destDataInfo);
+    static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
     static uint32_t ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat);
 private:
     static bool IsValidSize(const Size &size);
