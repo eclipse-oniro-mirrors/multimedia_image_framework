@@ -966,10 +966,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF)) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    bool sdrIsSRGB = false;
-#ifdef IMAGE_COLORSPACE_FLAG
-    sdrIsSRGB = pixelmap_->GetHdrToSdrColorSpaceName() == ColorManager::SRGB;
-#endif
+    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
     SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
     SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
@@ -1015,10 +1012,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     }
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
-    bool sdrIsSRGB = false;
-#ifdef IMAGE_COLORSPACE_FLAG
-    sdrIsSRGB = pixelmap_->GetHdrToSdrColorSpaceName() == ColorManager::SRGB;
-#endif
+    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
     SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
     VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
