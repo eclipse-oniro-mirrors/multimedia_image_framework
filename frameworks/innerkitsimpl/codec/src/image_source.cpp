@@ -340,7 +340,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 
         AttrData &attr = iter->second;
         const string *format = nullptr;
-        if (attr.GetValue(format) != SUCCESS) {
+        if (attr.GetValue(format) != SUCCESS || format == nullptr) {
             IMAGE_LOGE("[ImageSource]attr data get format failed.");
             continue;
         }

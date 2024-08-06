@@ -522,6 +522,9 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
         return false;
     }
+    if (chunkData.Data() == nullptr) {
+        return false;
+    }
     chunkData.Data()[0] |= WEBP_EXIF_FLAG_BIT;
     return bufStream.Write(chunkData.Data(), chunkData.Size()) == (ssize_t)chunkData.Size();
 }

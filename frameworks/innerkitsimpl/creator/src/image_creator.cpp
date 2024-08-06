@@ -235,6 +235,7 @@ int32_t ImageCreator::SaveSenderBufferAsImage(OHOS::sptr<OHOS::SurfaceBuffer> bu
             return ERR_MEDIA_INVALID_VALUE;
         }
         errorcode = SaveSTP(addr, addr2, size, initializationOpts);
+        ReleaseBuffer(AllocatorType::HEAP_ALLOC, &addr2);
         (iraContext_->GetCreatorBufferConsumer())->ReleaseBuffer(buffer, -1);
         IMAGE_LOGI("start release");
     } else {
