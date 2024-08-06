@@ -3213,7 +3213,6 @@ static void ToSdrExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
         IMAGE_LOGE("ToSdrExec null context");
-        context->status = ERR_IMAGE_INIT_ABNORMAL;
         return;
     }
     if (!context->nConstructor->GetPixelNapiEditable()) {
