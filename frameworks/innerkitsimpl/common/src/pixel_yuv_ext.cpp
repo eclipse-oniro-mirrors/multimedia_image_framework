@@ -178,6 +178,7 @@ void PixelYuvExt::rotate(float degrees)
     Size dstSize = {dstWidth, dstHeight};
     if (!PixelYuvExtUtils::YuvRotate(data_, imageInfo_.pixelFormat, yuvDataInfo, dstSize, dst, dstStrides,
                                      rotateNum)) {
+        m->Release();
         return;
     }
     imageInfo_.size = dstSize;

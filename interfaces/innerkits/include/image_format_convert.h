@@ -62,8 +62,8 @@ private:
     static YUVConvertFunction YUVGetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
     static bool MakeDestPixelMapP010(std::shared_ptr<PixelMap> &destPixelMap, const DestConvertInfo &destInfo,
                                      void *context);
-    static bool MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
-                                 DestConvertInfo &destInfo, void *context);
+    static uint32_t MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
+                                     DestConvertInfo &destInfo, void *context);
     static bool IsSupport(PixelFormat format);
     static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
                                                    AllocatorType allocatorType, int32_t width, int32_t height,

@@ -1751,7 +1751,8 @@ HWTEST_F(ImageFormatConvertTest, MakeDestPixelMap_Test_001, TestSize.Level1)
     ImageInfo info;
     info.size = {0, 0};
     DestConvertInfo destInfo;
-    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, info, destInfo, nullptr), false);
+    EXPECT_EQ(ImageFormatConvert::MakeDestPixelMap(destPixelMap, info, destInfo, nullptr),
+        ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ImageFormatConvertTest: MakeDestPixelMap_Test_001 end";
 }
 

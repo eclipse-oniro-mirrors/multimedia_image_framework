@@ -460,7 +460,8 @@ bool ImageFormatConvert::IsSupport(PixelFormat format)
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
                                                             int32_t width, int32_t height, YUVStrideInfo &strides)
 {
-    if (width == 0 || height == 0) {
+    if (width == 0 || height == 0 || pixelFormat == PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("CreateMemory err ERR_IMAGE_INVALID_PARAMETER!");
         return nullptr;
     }
     uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, {width, height});
@@ -473,8 +474,12 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     }
     MemoryData memoryData = {nullptr, pictureSize, "PixelConvert", {width, height}, pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType, memoryData);
-    if (m == nullptr || allocatorType != AllocatorType::DMA_ALLOC) {
+    if (m == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
+        return m;
+    }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType != AllocatorType::DMA_ALLOC) {
         return m;
     }
     if (m->extend.data == nullptr) {
@@ -490,22 +495,16 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
     } else if (planes->planeCount >= NUM_2) {
         if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::YCBCR_P010) {
-            auto yStride = planes->planes[PLANE_Y].columnStride;
-            auto uvStride = planes->planes[PLANE_U].columnStride;
-            auto yOffset = planes->planes[PLANE_Y].offset;
-            auto uvOffset = planes->planes[PLANE_U].offset;
-            strides = {yStride, uvStride, yOffset, uvOffset};
+            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_U].columnStride,
+                planes->planes[PLANE_Y].offset, planes->planes[PLANE_U].offset};
         } else if (pixelFormat == PixelFormat::NV21 || pixelFormat == PixelFormat::YCRCB_P010) {
-            auto yStride = planes->planes[PLANE_Y].columnStride;
-            auto uvStride = planes->planes[PLANE_V].columnStride;
-            auto yOffset = planes->planes[PLANE_Y].offset;
-            auto uvOffset = planes->planes[PLANE_V].offset;
-            strides = {yStride, uvStride, yOffset, uvOffset};
+            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_V].columnStride,
+                planes->planes[PLANE_Y].offset, planes->planes[PLANE_V].offset};
         } else {
-            auto yOffset = planes->planes[0].offset;
-            strides = {stride, 0, yOffset, 0};
+            strides = {stride, 0, planes->planes[0].offset, 0};
         }
     }
+#endif
     return m;
 }
 
@@ -553,12 +552,11 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-
-    if (!MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data)) {
-        IMAGE_LOGE("create pixel map failed");
-        return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    auto ret = MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
+        m->Release();
     }
-    return SUCCESS;
+    return ret;
 }
 
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
@@ -661,10 +659,11 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    if (!MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data)) {
-        return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+    auto ret = MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
+        m->Release();
     }
-    return SUCCESS;
+    return ret;
 }
 
 ConvertFunctionP010 ImageFormatConvert::GetConvertFuncByFormatP010(PixelFormat srcFormat, PixelFormat destFormat)
@@ -725,9 +724,13 @@ YUVP010ConvertFunction ImageFormatConvert::YUVP010GetConvertFuncByFormat(PixelFo
     return iter->second;
 }
 
-bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
-                                          DestConvertInfo &destInfo, void *context)
+uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
+                                              DestConvertInfo &destInfo, void *context)
 {
+    if (srcImageinfo.size.width == 0 || srcImageinfo.size.height == 0 || destInfo.width == 0
+        || destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     ImageInfo info;
     info.alphaType = srcImageinfo.alphaType;
     info.baseDensity = srcImageinfo.baseDensity;
@@ -739,6 +742,9 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
         pixelMap = std::make_unique<PixelYuv>();
+        if (pixelMap == nullptr) {
+            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        }
         if (allcatorType != AllocatorType::DMA_ALLOC) {
             pixelMap->AssignYuvDataOnType(info.pixelFormat, info.size.width, info.size.height);
         } else {
@@ -747,16 +753,19 @@ bool ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMa
         }
     } else {
         pixelMap = std::make_unique<PixelMap>();
+        if (pixelMap == nullptr) {
+            return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
+        }
     }
 
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
-
-    if (pixelMap->SetImageInfo(info, true) != SUCCESS) {
+    auto ret = pixelMap->SetImageInfo(info, true);
+    if (ret != SUCCESS) {
         IMAGE_LOGE("set imageInfo failed");
-        return false;
+        return ret;
     }
     destPixelMap = std::move(pixelMap);
-    return true;
+    return SUCCESS;
 }
 } // namespace Media
 } // namespace OHOS

@@ -376,6 +376,7 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
         dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
+        dstMemory->Release();
         return;
     }
     imageInfo.size.height = dstH;
@@ -412,12 +413,14 @@ void PixelYuv::flip(bool xAxis, bool yAxis)
     if (xAxis && yAxis) {
         if (!PixelYuvUtils::YuvReversal(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo)) {
             IMAGE_LOGE("flip yuv xAxis and yAxis failed");
+            dstMemory->Release();
             return;
         }
     } else {
         bool isXaxis = ((xAxis | yAxis) && xAxis) ? true : false;
         if (!PixelYuvUtils::YuvFlip(const_cast<uint8_t *>(src), srcInfo, dst, isXaxis)) {
             IMAGE_LOGE("flip yuv xAxis or yAxis failed");
+            dstMemory->Release();
             return;
         }
     }
@@ -740,7 +743,6 @@ int32_t PixelYuv::ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, Im
     MemoryData memoryYuvData = {nullptr, pictureSize, "Trans ImageData", {dstWidth, dstHeight}};
     auto yuvMemory = MemoryManager::CreateMemory(allocatorType_, memoryYuvData);
     if (yuvMemory == nullptr) {
-        yuvMemory->Release();
         IMAGE_LOGE("applyColorSpace CreateYuvMemory failed");
         return ERR_IMAGE_COLOR_CONVERT;
     }
@@ -750,14 +752,16 @@ int32_t PixelYuv::ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, Im
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo_};
     if (!PixelYuvUtils::BGRAToYuv420(bgraData, srcInfo, reinterpret_cast<uint8_t *>(yuvMemory->data.data), dstInfo)) {
         IMAGE_LOGE("applyColorSpace BGRAToYuv420 failed");
-            return ERR_IMAGE_COLOR_CONVERT;
-        }
+        yuvMemory->Release();
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     imageInfo.pixelFormat = format;
     dst.info = ToSkImageInfo(imageInfo, grColorSpace.ToSkColorSpace());
     ToImageInfo(imageInfo, dst.info);
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace(), grName);
-    SetPixelsAddr(reinterpret_cast<void *>(yuvMemory->data.data), nullptr, pictureSize, yuvMemory->GetType(), nullptr);
+    SetPixelsAddr(reinterpret_cast<void *>(yuvMemory->data.data), yuvMemory->extend.data, pictureSize,
+        yuvMemory->GetType(), nullptr);
     return SUCCESS;
 }
 
