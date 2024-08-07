@@ -2073,7 +2073,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
     return SUCCESS;
 }
 
-uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
+uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum) __attribute__((no_sanitize("cfi")))
 {
     uint32_t ret = InitMainDecoder();
     if (ret != SUCCESS) {
