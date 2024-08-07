@@ -41,6 +41,7 @@ BufferSourceStream::BufferSourceStream(uint8_t *data, uint32_t size, uint32_t of
 
 BufferSourceStream::~BufferSourceStream()
 {
+    IMAGE_LOGD("[BufferSourceStream]destructor enter");
     if (inputBuffer_ != nullptr) {
         free(inputBuffer_);
         inputBuffer_ = nullptr;
