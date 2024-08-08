@@ -74,6 +74,10 @@ public:
     {
         surfaceBufferReleaseListener_ = release;
     };
+    void UnRegisterBufferReleaseListener()
+    {
+        surfaceBufferReleaseListener_.reset();
+    };
     sptr<IConsumerSurface> GetCreatorSurface();
     static sptr<IConsumerSurface> getSurfaceById(std::string id);
     void ReleaseCreator();

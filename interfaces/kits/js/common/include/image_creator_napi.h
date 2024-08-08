@@ -66,12 +66,15 @@ private:
     static napi_value JsDequeueImage(napi_env env, napi_callback_info info);
     static napi_value JsQueueImage(napi_env env, napi_callback_info info);
     static napi_value JsOn(napi_env env, napi_callback_info info);
+    static napi_value JsOff(napi_env env, napi_callback_info info);
     static napi_value JsRelease(napi_env env, napi_callback_info info);
 
     static bool GetNativeFromEnv(napi_env env, napi_callback_info info, std::shared_ptr<ImageCreator> &native);
     static napi_value JSCommonProcess(ImageCreatorCommonArgs &args);
     static void JsQueueImageCallBack(napi_env env, napi_status status,
                                      ImageCreatorAsyncContext* context);
+    static napi_value JsOffOneArg(napi_env env, napi_callback_info info);
+    static napi_value JsOffTwoArgs(napi_env env, napi_callback_info info);
 #ifdef IMAGE_DEBUG_FLAG
     static napi_value JsTest(napi_env env, napi_callback_info info);
 #endif
