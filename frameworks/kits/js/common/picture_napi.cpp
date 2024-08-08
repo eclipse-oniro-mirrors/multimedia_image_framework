@@ -86,8 +86,8 @@ static std::vector<struct PictureEnum> auxiliaryPictureTypeMap = {
 };
 
 static std::vector<struct PictureEnum> metadataTypeMap = {
-    {"EXIF", static_cast<uint32_t>(MetadataType::EXIF), ""},
-    {"FRAGMENT", static_cast<uint32_t>(MetadataType::FRAGMENT), ""},
+    {"EXIF_METADATA", static_cast<uint32_t>(MetadataType::EXIF), ""},
+    {"FRAGMENT_METADATA", static_cast<uint32_t>(MetadataType::FRAGMENT), ""},
 };
 
 struct NapiValues {
