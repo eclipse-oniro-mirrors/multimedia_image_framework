@@ -243,6 +243,7 @@ struct DestConvertInfo {
     uint32_t uvStride = 0;
     uint32_t yOffset = 0;
     uint32_t uvOffset = 0;
+    void *context = nullptr;
 };
 
 struct SrcConvertParam {

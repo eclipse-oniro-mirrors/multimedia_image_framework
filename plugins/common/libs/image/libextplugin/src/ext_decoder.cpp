@@ -47,6 +47,7 @@
 #include "heif_parser.h"
 #include "heif_format_agent.h"
 #include "heif_type.h"
+#include "image/image_plugin_type.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -632,47 +633,77 @@ static uint64_t GetByteSize(int32_t width, int32_t height)
     return static_cast<uint64_t>(width * height + ((width + 1) / NUM_2) * ((height + 1) / NUM_2) * NUM_2);
 }
 
-static void UpdateContextYuvInfo(DecodeContext &context, ConvertDataInfo &dstDataInfo)
+static void UpdateContextYuvInfo(DecodeContext &context, DestConvertInfo &destInfo)
 {
-    context.yuvInfo.yWidth = static_cast<uint32_t>(dstDataInfo.imageSize.width);
-    context.yuvInfo.yHeight = static_cast<uint32_t>(dstDataInfo.imageSize.height);
-    context.yuvInfo.yStride = static_cast<uint32_t>(dstDataInfo.imageSize.width);
-    context.yuvInfo.uvWidth = static_cast<uint32_t>((dstDataInfo.imageSize.width + 1) / NUM_2);
-    context.yuvInfo.uvHeight = static_cast<uint32_t>((dstDataInfo.imageSize.height + 1) / NUM_2);
-    context.yuvInfo.uvStride = static_cast<uint32_t>((dstDataInfo.imageSize.width + 1) / NUM_2 * NUM_2);
-    context.yuvInfo.yOffset = 0;
-    context.yuvInfo.uvOffset = static_cast<uint32_t>(context.yuvInfo.yHeight * context.yuvInfo.yStride);
+    context.yuvInfo.yWidth = static_cast<uint32_t>(destInfo.width);
+    context.yuvInfo.yHeight = static_cast<uint32_t>(destInfo.height);
+    context.yuvInfo.yStride = destInfo.yStride;
+    context.yuvInfo.uvWidth = static_cast<uint32_t>((destInfo.width + 1) / NUM_2);
+    context.yuvInfo.uvHeight = static_cast<uint32_t>((destInfo.height + 1) / NUM_2);
+    context.yuvInfo.uvStride = destInfo.uvStride;
+    context.yuvInfo.yOffset = destInfo.yOffset;
+    context.yuvInfo.uvOffset = destInfo.uvOffset;
 }
 
-uint32_t ExtDecoder::ConvertFormatToYUV(DecodeContext &context, SkImageInfo &dstInfo,
+static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorType allocType, PlImageBuffer &buffer)
+{
+    if (func != nullptr) {
+        func(buffer.buffer, buffer.context, buffer.bufferSize);
+        return;
+    }
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int *>(buffer.context);
+        if (buffer.buffer != nullptr) {
+            ::munmap(buffer.buffer, buffer.bufferSize);
+        }
+        if (fd != nullptr) {
+            ::close(*fd);
+        }
+        return;
+    } else if (allocType == AllocatorType::DMA_ALLOC) {
+        if (buffer.buffer != nullptr) {
+            ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer *>(buffer.context));
+            buffer.context = nullptr;
+        }
+    } else if (allocType == AllocatorType::HEAP_ALLOC) {
+        if (buffer.buffer != nullptr) {
+            free(buffer.buffer);
+            buffer.buffer = nullptr;
+        }
+    }
+#else
+    if (buffer.buffer != nullptr) {
+        free(buffer.buffer);
+        buffer.buffer = nullptr;
+    }
+#endif
+}
+
+uint32_t ExtDecoder::ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skInfo,
     uint64_t byteCount, PixelFormat format)
 {
     ConvertDataInfo srcDataInfo;
-    DecodeContext dstContext;
-    dstContext.allocatorType = context.allocatorType;
-    uint64_t dstCount = GetByteSize(dstInfo.width(), dstInfo.height());
-    uint32_t ret = SetContextPixelsBuffer(dstCount, dstContext);
-    if (ret != SUCCESS) {
-        IMAGE_LOGE("ConvertFormatToYUV SetContextPixelsBuffer failed");
-        return ret;
-    }
-    ConvertDataInfo dstDataInfo;
     srcDataInfo.buffer = static_cast<uint8_buffer_type>(context.pixelsBuffer.buffer);
     srcDataInfo.bufferSize = byteCount;
-    srcDataInfo.imageSize = {dstInfo.width(), dstInfo.height()};
+    srcDataInfo.imageSize = {skInfo.width(), skInfo.height()};
     srcDataInfo.pixelFormat = context.pixelFormat;
     srcDataInfo.colorSpace = static_cast<ColorSpace>(context.colorSpace);
-    dstDataInfo.buffer = static_cast<uint8_buffer_type>(dstContext.pixelsBuffer.buffer);
-    dstDataInfo.pixelFormat = format;
-    ret = Media::ImageFormatConvert::ConvertImageFormat(srcDataInfo, dstDataInfo);
+
+    DestConvertInfo destInfo = {skInfo.width(), skInfo.height()};
+    destInfo.format = format;
+    destInfo.allocType = context.allocatorType;
+    auto ret = Media::ImageFormatConvert::ConvertImageFormat(srcDataInfo, destInfo);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Decode convert failed , ret=%{public}d", ret);
         return ret;
     }
-    SetDecodeContextBuffer(context, dstContext.allocatorType, static_cast<uint8_t *>(dstDataInfo.buffer),
-        dstCount, context.pixelsBuffer.context);
+    FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+    SetDecodeContextBuffer(context, context.allocatorType, static_cast<uint8_t *>(destInfo.buffer),
+        destInfo.bufferSize, destInfo.context);
     context.info.pixelFormat = format;
-    UpdateContextYuvInfo(context, dstDataInfo);
+    UpdateContextYuvInfo(context, destInfo);
     return SUCCESS;
 }
 
