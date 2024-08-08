@@ -30,7 +30,7 @@
 #include "hdr_type.h"
 
 #ifdef HEIF_HW_ENCODE_ENABLE
-namespace OHOS::HDI::Codec::Image::V1_0 {
+namespace OHOS::HDI::Codec::Image::V2_0 {
     struct ImageItem;
     struct SharedBuffer;
     struct ColourInfo;
@@ -84,37 +84,37 @@ private:
     uint32_t EncodeImageByBitmap(SkBitmap& bitmap, bool needExif, SkWStream& outStream);
     uint32_t EncodeImageByPixelMap(Media::PixelMap* pixelMap, bool needExif, SkWStream& outputStream);
 #ifdef HEIF_HW_ENCODE_ENABLE
-    std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem> AssembleTmapImageItem(ColorManager::ColorSpaceName color,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleTmapImageItem(ColorManager::ColorSpaceName color,
         Media::HdrMetadata metadata, const PlEncodeOptions &opts);
     std::shared_ptr<Media::AbsMemory> AllocateNewSharedMem(size_t memorySize, std::string tag);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
         const PlEncodeOptions &opts);
-    std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem> AssembleBaseImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleBaseImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, Media::HdrMetadata& metadata, const PlEncodeOptions &opts);
-    std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, const PlEncodeOptions& opts);
 #endif
-    bool GetStaticMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V1_0::MasteringDisplayColourVolume& color,
-        HDI::Codec::Image::V1_0::ContentLightLevel& light);
-    bool GetToneMapChannel(Media::ISOMetadata& metadata, HDI::Codec::Image::V1_0::ToneMapChannel& channel,
+    bool GetStaticMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V2_0::MasteringDisplayColourVolume& color,
+        HDI::Codec::Image::V2_0::ContentLightLevel& light);
+    bool GetToneMapChannel(Media::ISOMetadata& metadata, HDI::Codec::Image::V2_0::ToneMapChannel& channel,
         uint8_t index);
-    bool GetToneMapMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V1_0::ToneMapMetadata& toneMapMetadata);
-    void GetColourInfo(ColorManager::ColorSpaceName color, HDI::Codec::Image::V1_0::ColourInfo& info);
-    bool AssembleIT35SharedBuffer(Media::HdrMetadata metadata, HDI::Codec::Image::V1_0::SharedBuffer& outBuffer);
-    bool AssembleICCImageProperty(sk_sp<SkData>& iccProfile, HDI::Codec::Image::V1_0::SharedBuffer& outBuffer);
-    bool FillNclxColorProperty(std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem>& item, size_t& offset,
-        HDI::Codec::Image::V1_0::ColourInfo& colorInfo);
-    bool AssembleOutputSharedBuffer(HDI::Codec::Image::V1_0::SharedBuffer& outBuffer,
+    bool GetToneMapMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V2_0::ToneMapMetadata& toneMapMetadata);
+    void GetColourInfo(ColorManager::ColorSpaceName color, HDI::Codec::Image::V2_0::ColourInfo& info);
+    bool AssembleIT35SharedBuffer(Media::HdrMetadata metadata, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
+    bool AssembleICCImageProperty(sk_sp<SkData>& iccProfile, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
+    bool FillNclxColorProperty(std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem>& item, size_t& offset,
+        HDI::Codec::Image::V2_0::ColourInfo& colorInfo);
+    bool AssembleOutputSharedBuffer(HDI::Codec::Image::V2_0::SharedBuffer& outBuffer,
         std::shared_ptr<Media::AbsMemory>& outMem);
-    void AssembleDualHdrRefItem(std::vector<HDI::Codec::Image::V1_0::ItemRef>& refs);
-    uint32_t DoHeifEncode(std::vector<HDI::Codec::Image::V1_0::ImageItem>& inputImgs,
-        std::vector<HDI::Codec::Image::V1_0::MetaItem>& inputMetas,
-        std::vector<HDI::Codec::Image::V1_0::ItemRef>& refs);
-    std::shared_ptr<HDI::Codec::Image::V1_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
+    void AssembleDualHdrRefItem(std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    uint32_t DoHeifEncode(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
+        std::vector<HDI::Codec::Image::V2_0::MetaItem>& inputMetas,
+        std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
         const PlEncodeOptions &opts);
-    bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V1_0::MetaItem>& metaItems);
-    void AssembleExifRefItem(std::vector<HDI::Codec::Image::V1_0::ItemRef>& refs);
+    bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V2_0::MetaItem>& metaItems);
+    void AssembleExifRefItem(std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
 #endif
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);

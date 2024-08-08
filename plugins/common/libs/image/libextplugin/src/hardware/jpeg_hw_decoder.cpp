@@ -30,7 +30,7 @@
 #include "src/codec/SkJpegCodec.h"
 
 namespace OHOS::ImagePlugin {
-using namespace OHOS::HDI::Codec::Image::V1_0;
+using namespace OHOS::HDI::Codec::Image::V2_0;
 using namespace OHOS::HDI::Display::Buffer::V1_0;
 
 static std::mutex g_codecMtx;
