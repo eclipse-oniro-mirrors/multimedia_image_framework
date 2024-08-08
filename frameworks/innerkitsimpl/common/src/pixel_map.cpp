@@ -1927,9 +1927,15 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
     }
     int fd = descriptor->GetFd();
     if (fd < 0) {
+        IMAGE_LOGE("ReadFileDescriptor GetFd failed, fd:[%{public}d].", fd);
         return -1;
     }
-    return dup(fd);
+    int dupFd = dup(fd);
+    if (dupFd < 0) {
+        IMAGE_LOGE("ReadFileDescriptor dup fd failed, dupFd:[%{public}d].", dupFd);
+        return -1;
+    }
+    return dupFd;
 #else
     return -1;
 #endif
