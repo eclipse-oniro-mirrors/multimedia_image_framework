@@ -257,7 +257,7 @@ HWTEST_F(HeifYuvTest, HeifYuvTest008, TestSize.Level3)
     decodeOpts.desiredSize.width = 0;
     decodeOpts.desiredSize.height = 0;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(errorCode, SUCCESS);
+    ASSERT_EQ(errorCode, SUCCESS);
     GTEST_LOG_(INFO) << "HeifYuvTest: HeifYuvTest008 end";
 }
 

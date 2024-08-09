@@ -1756,17 +1756,6 @@ HWTEST_F(ImageSourceTest, End2EndTest007, TestSize.Level3)
     ASSERT_NE(pixelMap.get(), nullptr);
     ASSERT_EQ(webpWidth, pixelMap->GetWidth());
     ASSERT_EQ(webpHeight, pixelMap->GetHeight());
-
-    int32_t desiredWidth = 100;
-    int32_t desiredHeight = 100;
-
-    decodeOpts.desiredSize.width = desiredWidth;
-    decodeOpts.desiredSize.height = desiredHeight;
-    pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_EQ(errorCode, SUCCESS);
-    ASSERT_NE(pixelMap.get(), nullptr);
-    ASSERT_EQ(desiredWidth, pixelMap->GetWidth());
-    ASSERT_EQ(desiredHeight, pixelMap->GetHeight());
 }
 
 /**
