@@ -84,7 +84,7 @@ OH_AuxiliaryPictureNative *CreateAuxiliaryPictureNative()
     OH_AuxiliaryPictureNative *picture = nullptr;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::GAINMAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &picture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
     return picture;
@@ -105,27 +105,27 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_CreateTest001, TestSize.Level
     OH_AuxiliaryPictureNative *picture = nullptr;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::GAINMAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &picture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     OH_AuxiliaryPictureNative_Release(picture);
 
     ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::DEPTH_MAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_DEPTH_MAP, &picture);
     EXPECT_EQ(ret, ::IMAGE_SUCCESS);
     OH_AuxiliaryPictureNative_Release(picture);
 
     ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::FRAGMENT_MAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP, &picture);
     EXPECT_EQ(ret, ::IMAGE_SUCCESS);
     OH_AuxiliaryPictureNative_Release(picture);
 
     ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::LINEAR_MAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_LINEAR_MAP, &picture);
     EXPECT_EQ(ret, ::IMAGE_SUCCESS);
     OH_AuxiliaryPictureNative_Release(picture);
 
     ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::UNREFOCUS_MAP, &picture);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_UNREFOCUS_MAP, &picture);
     EXPECT_EQ(ret, ::IMAGE_SUCCESS);
     OH_AuxiliaryPictureNative_Release(picture);
 }
@@ -143,7 +143,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_CreateTest002, TestSize.Level
     size.width = sizeWidth;
     size.height = sizeHeight;
     OH_AuxiliaryPictureNative *picture = nullptr;
-    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::GAINMAP;
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(color, dataLength, &size, type, &picture);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
@@ -162,7 +162,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_CreateTest003, TestSize.Level
     size.width = sizeWidthExceed;
     size.height = sizeHeightExceed;
     OH_AuxiliaryPictureNative *picture = nullptr;
-    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::GAINMAP;
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t*>(color),
         dataLength, &size, type, &picture);
@@ -285,7 +285,8 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_ReadPixelsTest003, TestSize.L
 
 /**
  * @tc.name: OH_AuxiliaryPictureNative_GetTypeTest001
- * @tc.desc: The input auxiliary image is GAINMAP, and the returned type is GAINMAP.
+ * @tc.desc: The input auxiliary image is AUXILIARY_PICTURE_TYPE_GAINMAP, and the returned type is
+ *           AUXILIARY_PICTURE_TYPE_GAINMAP.
  * @tc.type: FUNC
  */
 HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetTypeTest001, TestSize.Level1)
@@ -295,7 +296,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetTypeTest001, TestSize.Leve
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetType(picture, &type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
-    EXPECT_EQ(type, Image_AuxiliaryPictureType::GAINMAP);
+    EXPECT_EQ(type, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
@@ -330,7 +331,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetInfoTest001, TestSize.Leve
     Image_AuxiliaryPictureType type;
     ret = OH_AuxiliaryPictureInfo_GetType(infoptr, &type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
-    EXPECT_EQ(type, Image_AuxiliaryPictureType::GAINMAP);
+    EXPECT_EQ(type, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP);
 
     OH_AuxiliaryPictureInfo_Release(infoptr);
     OH_AuxiliaryPictureNative_Release(picture);
@@ -529,8 +530,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetGainmapPixelmap001, TestSize.Level1
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::GAINMAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, auxiliaryPicture);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
 
     OH_PixelmapNative *gainmapPixelmap = nullptr;
@@ -553,8 +554,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetGainmapPixelmap002, TestSize.Level3
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::FRAGMENT_MAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(
+        picture, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP, auxiliaryPicture);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
 
     OH_PixelmapNative *gainmapPixelmap = nullptr;
@@ -589,7 +590,7 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetAuxiliaryPicture001, TestSize.Level
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::GAINMAP;
+    Image_AuxiliaryPictureType type = Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP;
     Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, type, auxiliaryPicture);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
 
@@ -612,8 +613,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetAuxiliaryPicture002, TestSize.Level
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::GAINMAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(
+        picture, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, auxiliaryPicture);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
 
     OH_AuxiliaryPictureNative *auxPicture = nullptr;
@@ -636,12 +637,13 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetAuxiliaryPicture003, TestSize.Level
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::GAINMAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, auxiliaryPicture);
     ASSERT_EQ(ret, IMAGE_SUCCESS);
 
     OH_AuxiliaryPictureNative *auxPicture = nullptr;
-    ret = OH_PictureNative_GetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::FRAGMENT_MAP, &auxPicture);
+    ret = OH_PictureNative_GetAuxiliaryPicture(
+        picture, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP, &auxPicture);
     EXPECT_EQ(auxPicture, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 
@@ -652,14 +654,14 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetAuxiliaryPicture003, TestSize.Level
 /**
  * @tc.name: OH_PictureNative_GetAuxiliaryPicture004
  * @tc.desc: Verify the behavior of OH_PictureNative_GetAuxiliaryPicture when attempting
- *           to retrieve an auxiliary picture of type GAINMAP from a null picture pointer.
+ *           to retrieve an auxiliary picture of type AUXILIARY_PICTURE_TYPE_GAINMAP from a null picture pointer.
  * @tc.type: FUNC
  */
 HWTEST_F(PictureNdkTest, OH_PictureNative_GetAuxiliaryPicture004, TestSize.Level3)
 {
     OH_AuxiliaryPictureNative *auxiliaryPicture = nullptr;
-    Image_ErrorCode ret = OH_PictureNative_GetAuxiliaryPicture(nullptr, Image_AuxiliaryPictureType::GAINMAP,
-        &auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_GetAuxiliaryPicture(
+        nullptr, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &auxiliaryPicture);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 }
 
@@ -674,8 +676,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAuxiliaryPicture001, TestSize.Level
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::GAINMAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, auxiliaryPicture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
     OH_PictureNative_Release(picture);
@@ -710,8 +712,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAuxiliaryPicture003, TestSize.Level
     OH_PictureNative *picture = CreateNativePicture();
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(picture, Image_AuxiliaryPictureType::FRAGMENT_MAP,
-        auxiliaryPicture);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(
+        picture, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP, auxiliaryPicture);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 
     OH_PictureNative_Release(picture);
@@ -726,7 +728,8 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_SetAuxiliaryPicture003, TestSize.Level
  */
 HWTEST_F(PictureNdkTest, OH_PictureNative_SetAuxiliaryPicture004, TestSize.Level3)
 {
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(nullptr, Image_AuxiliaryPictureType::GAINMAP, nullptr);
+    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(nullptr,
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 }
 
@@ -770,7 +773,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_ReleaseTest001, TestSize.Leve
     OH_AuxiliaryPictureNative *auxiliaryPictureNative = nullptr;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_Create(reinterpret_cast<uint8_t *>(color), dataLength, &size,
-        Image_AuxiliaryPictureType::GAINMAP, &auxiliaryPictureNative);
+        Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_GAINMAP, &auxiliaryPictureNative);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(auxiliaryPictureNative, nullptr);
 
@@ -827,7 +830,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureInfo_SetTypeTest001, TestSize.Level1
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(auxiliaryPictureInfo, nullptr);
 
-    Image_AuxiliaryPictureType type = GAINMAP;
+    Image_AuxiliaryPictureType type = AUXILIARY_PICTURE_TYPE_GAINMAP;
     ret = OH_AuxiliaryPictureInfo_SetType(auxiliaryPictureInfo, type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
@@ -863,7 +866,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureInfo_GetTypeTest001, TestSize.Level1
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     EXPECT_NE(auxiliaryPictureInfo, nullptr);
 
-    Image_AuxiliaryPictureType type = GAINMAP;
+    Image_AuxiliaryPictureType type = AUXILIARY_PICTURE_TYPE_GAINMAP;
     Image_AuxiliaryPictureType retType;
     ret = OH_AuxiliaryPictureInfo_SetType(auxiliaryPictureInfo, type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
@@ -871,7 +874,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureInfo_GetTypeTest001, TestSize.Level1
     EXPECT_EQ(retType, type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
-    type = FRAGMENT_MAP;
+    type = AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP;
     ret = OH_AuxiliaryPictureInfo_SetType(auxiliaryPictureInfo, type);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     ret = OH_AuxiliaryPictureInfo_GetType(auxiliaryPictureInfo, &retType);
