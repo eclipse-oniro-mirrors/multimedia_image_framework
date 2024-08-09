@@ -109,8 +109,10 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
     struct RawFileDescriptorInfo rawFileInfo;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodingOptionsForPicture decodingOptsForPicture;
     std::shared_ptr<Picture> rPicture;
+#endif
 };
 
 struct ImageSourceSyncContext {
@@ -752,9 +754,9 @@ static napi_value DoInit(napi_env env, napi_value exports, struct ImageConstruct
     return exports;
 }
 
-napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
+std::vector<napi_property_descriptor> ImageSourceNapi::RegisterNapi()
 {
-    napi_property_descriptor properties[] = {
+    std::vector<napi_property_descriptor> properties = {
         DECLARE_NAPI_FUNCTION("getImageInfo", GetImageInfo),
         DECLARE_NAPI_FUNCTION("getImageInfoSync", GetImageInfoSync),
         DECLARE_NAPI_FUNCTION("modifyImageProperty", ModifyImageProperty),
@@ -770,9 +772,17 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
+#endif
     };
 
+    return properties;
+}
+
+napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
+{
+    std::vector<napi_property_descriptor> props = ImageSourceNapi::RegisterNapi();
     napi_property_descriptor static_prop[] = {
         DECLARE_NAPI_STATIC_FUNCTION("createImageSource", CreateImageSource),
         DECLARE_NAPI_STATIC_FUNCTION("CreateIncrementalSource", CreateIncrementalSource),
@@ -794,12 +804,11 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         .className = CLASS_NAME,
         .classRef = &sConstructor_,
         .constructor = Constructor,
-        .property = properties,
-        .propertyCount = sizeof(properties) / sizeof(properties[NUM_0]),
+        .property = props.data(),
+        .propertyCount = props.size(),
         .staticProperty = static_prop,
         .staticPropertyCount = sizeof(static_prop) / sizeof(static_prop[NUM_0]),
     };
-
     if (DoInit(env, exports, info)) {
         return nullptr;
     }
@@ -2774,6 +2783,7 @@ ImageResource ImageSourceNapi::GetImageResource()
     return resource_;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void CreatePictureExecute(napi_env env, void *data)
 {
     IMAGE_LOGD("CreatePictureExecute IN");
@@ -2908,5 +2918,7 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
+#endif
+
 }  // namespace Media
 }  // namespace OHOS
