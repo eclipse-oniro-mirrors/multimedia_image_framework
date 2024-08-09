@@ -44,7 +44,7 @@ struct ConvertDataInfo {
 class ImageFormatConvert {
     friend class ImageFormatConvertTest;
 public:
-    static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, ConvertDataInfo &destDataInfo);
+    static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
     static uint32_t ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat);
 private:
     static bool IsValidSize(const Size &size);
@@ -54,8 +54,8 @@ private:
     static size_t GetBufferSizeByFormat(PixelFormat format, const Size &size);
     static ConvertFunction GetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
     static YUVConvertFunction YUVGetConvertFuncByFormat(PixelFormat srcFormat, PixelFormat destFormat);
-    static bool MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
-                                 DestConvertInfo &destInfo, void *context);
+    static uint32_t MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
+                                     DestConvertInfo &destInfo, void *context);
     static bool IsSupport(PixelFormat format);
     static std::unique_ptr<AbsMemory> CreateMemory(PixelFormat pixelFormat,
                                                    AllocatorType allocatorType, int32_t width, int32_t height,

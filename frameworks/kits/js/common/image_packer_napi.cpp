@@ -165,6 +165,9 @@ static void ImagePackerErrorToNapiError(napi_env env, ImagePackerAsyncContext *c
 
 static void CommonCallbackRoutine(napi_env env, ImagePackerAsyncContext* &connect, const napi_value &valueParam)
 {
+    if (connect == nullptr) {
+        return;
+    }
     napi_value result[NUM_2] = {0};
     napi_value retVal;
     napi_value callback = nullptr;
@@ -1148,7 +1151,7 @@ STATIC_EXEC_FUNC(PackToFile)
             return;
         }
         context->rImagePacker->AddImage(*(context->rImageSource));
-    } else {
+    } else if (context->packType == TYPE_PIXEL_MAP) {
         IMAGE_LOGD("ImagePacker set pixelmap");
         if (context->rPixelMap == nullptr) {
             BuildMsgOnError(context, context->rImageSource == nullptr,
@@ -1156,6 +1159,14 @@ STATIC_EXEC_FUNC(PackToFile)
             return;
         }
         context->rImagePacker->AddImage(*(context->rPixelMap));
+    } else if (context->packType == TYPE_PICTURE) {
+        IMAGE_LOGD("ImagePacker set picture");
+        if (context->rPicture == nullptr) {
+            BuildMsgOnError(context, context->rImageSource == nullptr,
+                "Picture is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+            return;
+        }
+        context->rImagePacker->AddPicture(*(context->rPicture));
     }
     auto packRes = context->rImagePacker->FinalizePacking(packedSize);
     IMAGE_LOGD("packRes=%{public}d packedSize=%{public}" PRId64, packRes, packedSize);

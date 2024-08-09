@@ -362,8 +362,8 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * dstImageInfo.size.height *
-        ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
+    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
+        static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
     if (bufferSize > UINT_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
@@ -1927,9 +1927,15 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
     }
     int fd = descriptor->GetFd();
     if (fd < 0) {
+        IMAGE_LOGE("ReadFileDescriptor GetFd failed, fd:[%{public}d].", fd);
         return -1;
     }
-    return dup(fd);
+    int dupFd = dup(fd);
+    if (dupFd < 0) {
+        IMAGE_LOGE("ReadFileDescriptor dup fd failed, dupFd:[%{public}d].", dupFd);
+        return -1;
+    }
+    return dupFd;
 #else
     return -1;
 #endif
@@ -3299,9 +3305,18 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr, b
 }
 #endif
 
+void PixelMap::SetToSdrColorSpaceIsSRGB(bool isSRGB)
+{
+    toSdrColorIsSRGB_ = isSRGB;
+}
+
+bool PixelMap::GetToSdrColorSpaceIsSRGB()
+{
+    return toSdrColorIsSRGB_;
+}
+
 uint32_t PixelMap::ToSdr()
 {
-    ImageTrace imageTrace("PixelMap ToSdr");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
     PixelFormat outFormat = PixelFormat::RGBA_8888;
@@ -3310,10 +3325,7 @@ uint32_t PixelMap::ToSdr()
     } else if (imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
         outFormat = PixelFormat::NV21;
     }
-    bool toSRGB = false;
-#ifdef IMAGE_COLORSPACE_FLAG
-    toSRGB = sdrColorSpaceName_ == ColorManager::SRGB;
-#endif
+    bool toSRGB = toSdrColorIsSRGB_;
     return ToSdr(outFormat, toSRGB);
 }
 
@@ -3374,17 +3386,6 @@ OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()
             std::make_shared<OHOS::ColorManager::ColorSpace>(OHOS::ColorManager::ColorSpaceName::SRGB);
     }
     return *grColorSpace_;
-}
-
-void PixelMap::SetHdrToSdrColorSpaceName(const OHOS::ColorManager::ColorSpaceName colorSpaceName)
-{
-    sdrColorSpaceName_ =
-        colorSpaceName == ColorManager::SRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3;
-}
-
-OHOS::ColorManager::ColorSpaceName PixelMap::GetHdrToSdrColorSpaceName()
-{
-    return sdrColorSpaceName_;
 }
 
 static bool isSameColorSpace(const OHOS::ColorManager::ColorSpace &src,

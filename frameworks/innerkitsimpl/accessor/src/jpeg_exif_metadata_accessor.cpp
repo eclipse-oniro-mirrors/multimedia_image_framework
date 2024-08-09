@@ -286,6 +286,10 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
     ssize_t writeHeaderLength = MARKER_LENGTH_SIZE;
     ssize_t exifHeaderLength = EXIF_ID_LENGTH;
 
+    if (dataBlob == nullptr) {
+        IMAGE_LOGE("Failed to write data blob. dataBlob is nullptr");
+        return false;
+    }
     if (memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;

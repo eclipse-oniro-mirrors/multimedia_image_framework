@@ -319,6 +319,7 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
@@ -3212,7 +3213,6 @@ static void ToSdrExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
         IMAGE_LOGE("ToSdrExec null context");
-        context->status = ERR_IMAGE_INIT_ABNORMAL;
         return;
     }
     if (!context->nConstructor->GetPixelNapiEditable()) {
