@@ -419,11 +419,13 @@ bool ImageFormatConvert::MakeDestPixelMapP010(std::shared_ptr<PixelMap> &destPix
         return false;
     }
     if (destInfo.allocType == AllocatorType::DMA_ALLOC && destPixelMap->IsHdr()) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         void *fdBuffer = nullptr;
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (context));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (fdBuffer));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
         pixelMap->SetPixelsAddr(destInfo.buffer, fdBuffer, destInfo.bufferSize, AllocatorType::DMA_ALLOC, nullptr);
+#endif
     } else {
         pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, destInfo.allocType, nullptr);
     }
@@ -477,6 +479,7 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         IMAGE_LOGE("CreateMemory get surfacebuffer failed");
         return m;
     }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     auto sb = reinterpret_cast<SurfaceBuffer*>(m->extend.data);
     OH_NativeBuffer_Planes *planes = nullptr;
     GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
@@ -502,6 +505,7 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
             strides = {stride, 0, yOffset, 0};
         }
     }
+#endif
     return m;
 }
 

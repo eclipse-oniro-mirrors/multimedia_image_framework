@@ -14,11 +14,13 @@
  */
 
 #define protected public
+#include <fcntl.h>
 #include <gtest/gtest.h>
 #include <surface.h>
 #include "picture.h"
 #include "image_type.h"
 #include "image_utils.h"
+#include "image_source.h"
 #include "pixel_map.h"
 #include "metadata.h"
 #include "exif_metadata.h"
@@ -42,21 +44,21 @@ public:
 
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
-constexpr int32_t sizeWidth = 2;
-constexpr int32_t sizeHeight = 3;
-constexpr int32_t bufferLength = 8;
-constexpr int32_t strideAlignment = 8;
+constexpr int32_t SIZE_WIDTH = 2;
+constexpr int32_t SIZE_HEIGHT = 3;
+constexpr int32_t BUFFER_LENGTH = 8;
+constexpr int32_t STRIDE_ALIGNMENT = 8;
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
-    const uint32_t color[bufferLength] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
+    const uint32_t color[BUFFER_LENGTH] = { 0x80, 0x02, 0x04, 0x08, 0x40, 0x02, 0x04, 0x08 };
     InitializationOptions options;
-    options.size.width = sizeWidth;
-    options.size.height = sizeHeight;
+    options.size.width = SIZE_WIDTH;
+    options.size.height = SIZE_HEIGHT;
     options.srcPixelFormat = PixelFormat::UNKNOWN;
     options.pixelFormat = PixelFormat::UNKNOWN;
     options.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, bufferLength, options);
+    std::unique_ptr<PixelMap> tmpPixelMap = PixelMap::Create(color, BUFFER_LENGTH, options);
     std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelMap);
     return pixelmap;
 }
@@ -72,7 +74,7 @@ static std::shared_ptr<AuxiliaryPicture> CreateAuxiliaryPicture(AuxiliaryPicture
 {
     std::shared_ptr<PixelMap> pixelmap = CreatePixelMap();
     EXPECT_NE(pixelmap, nullptr);
-    Size size = {sizeWidth, sizeHeight};
+    Size size = {SIZE_WIDTH, SIZE_HEIGHT};
     std::unique_ptr<AuxiliaryPicture> tmpAuxiliaryPicture = AuxiliaryPicture::Create(pixelmap, type, size);
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(tmpAuxiliaryPicture);
     return auxiliaryPicture;
@@ -363,8 +365,8 @@ HWTEST_F(PictureTest, MarshallingTest001, TestSize.Level1)
     ASSERT_NE(dstPicture, nullptr);
     std::shared_ptr<PixelMap> dstMainPixelMap = dstPicture->GetMainPixel();
     ASSERT_NE(dstMainPixelMap, nullptr);
-    EXPECT_EQ(dstMainPixelMap->GetWidth(), sizeWidth);
-    EXPECT_EQ(dstMainPixelMap->GetHeight(), sizeHeight);
+    EXPECT_EQ(dstMainPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(dstMainPixelMap->GetHeight(), SIZE_HEIGHT);
 }
 
 /**
@@ -402,12 +404,12 @@ HWTEST_F(PictureTest, MarshallingTest003, TestSize.Level1)
     ASSERT_NE(dstPicture, nullptr);
     std::shared_ptr<PixelMap> dstMainPixelMap = dstPicture->GetMainPixel();
     ASSERT_NE(dstMainPixelMap, nullptr);
-    EXPECT_EQ(dstMainPixelMap->GetWidth(), sizeWidth);
-    EXPECT_EQ(dstMainPixelMap->GetHeight(), sizeHeight);
+    EXPECT_EQ(dstMainPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(dstMainPixelMap->GetHeight(), SIZE_HEIGHT);
     std::shared_ptr<PixelMap> dstGainmapPixelMap = dstPicture->GetGainmapPixelMap();
     ASSERT_NE(dstGainmapPixelMap, nullptr);
-    EXPECT_EQ(dstGainmapPixelMap->GetWidth(), sizeWidth);
-    EXPECT_EQ(dstGainmapPixelMap->GetHeight(), sizeHeight);
+    EXPECT_EQ(dstGainmapPixelMap->GetWidth(), SIZE_WIDTH);
+    EXPECT_EQ(dstGainmapPixelMap->GetHeight(), SIZE_HEIGHT);
 }
 
 /**
@@ -521,11 +523,46 @@ HWTEST_F(PictureTest, CreateTest002, TestSize.Level2)
 }
 
 /**
-* @tc.name: CreateTest003
+ * @tc.name: CreateTest003
+ * @tc.desc: When creating a Picture, pass in PixelMap with ExifMetadata and return ExifMetadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreateTest003, TestSize.Level1)
+{
+    const int fd = open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
+    ASSERT_NE(fd, -1);
+
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    DecodeOptions decodeOpts;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_NE(pixelMap, nullptr);
+    std::shared_ptr<PixelMap> newpixelMap = std::move(pixelMap);
+
+    std::unique_ptr<Picture> picture = Picture::Create(newpixelMap);
+    std::shared_ptr<ExifMetadata> newExifMetadata = picture->GetExifMetadata();
+    EXPECT_NE(newExifMetadata, nullptr);
+}
+
+/**
+ * @tc.name: CreateTest004
+ * @tc.desc: When creating a Picture, pass in a PixelMap without ExifMetadata and return null.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureTest, CreateTest004, TestSize.Level2)
+{
+    std::unique_ptr<Picture> picture = CreatePicture();
+    std::shared_ptr<ExifMetadata> newExifMetadata = picture->GetExifMetadata();
+    EXPECT_EQ(newExifMetadata, nullptr);
+}
+
+/**
+* @tc.name: CreateTest005
 * @tc.desc: Create a Picture using the correct SurfaceBuffer.
 * @tc.type: FUNC
 */
-HWTEST_F(PictureTest, CreateTest003, TestSize.Level1)
+HWTEST_F(PictureTest, CreateTest005, TestSize.Level1)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = OHOS::SurfaceBuffer::Create();
     ASSERT_NE(surfaceBuffer, nullptr);
@@ -534,11 +571,11 @@ HWTEST_F(PictureTest, CreateTest003, TestSize.Level1)
 }
 
 /**
-* @tc.name: CreateTest004
+* @tc.name: CreateTest006
 * @tc.desc: Create a Picture using the SurfaceBuffer with null ptr.
 * @tc.type: FUNC
 */
-HWTEST_F(PictureTest, CreateTest004, TestSize.Level2)
+HWTEST_F(PictureTest, CreateTest006, TestSize.Level2)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
     std::unique_ptr<Picture> picture = Picture::Create(surfaceBuffer);
@@ -575,7 +612,7 @@ HWTEST_F(PictureTest, GetGainmapPixelmapTest001, TestSize.Level1)
     picture->SetAuxiliaryPicture(gainmapAuxiliaryPic);
     auto mainPixelMap = picture->GetGainmapPixelMap();
     EXPECT_NE(mainPixelMap, nullptr);
-    EXPECT_EQ(mainPixelMap->GetHeight(), sizeHeight);
+    EXPECT_EQ(mainPixelMap->GetHeight(), SIZE_HEIGHT);
 }
 
 /**
@@ -619,7 +656,7 @@ HWTEST_F(PictureTest, SetExifMetadataTest001, TestSize.Level1)
     BufferRequestConfig requestConfig = {
         .width = std::stoi(imageLength),
         .height = std::stoi(iamgeWith),
-        .strideAlignment = strideAlignment,
+        .strideAlignment = STRIDE_ALIGNMENT,
         .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
@@ -659,7 +696,7 @@ HWTEST_F(PictureTest, GetExifMetadataTest001, TestSize.Level1)
     BufferRequestConfig requestConfig = {
         .width = std::stoi(imageLength),
         .height = std::stoi(iamgeWith),
-        .strideAlignment = strideAlignment,
+        .strideAlignment = STRIDE_ALIGNMENT,
         .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
@@ -691,9 +728,9 @@ HWTEST_F(PictureTest, SetMaintenanceDataTest001, TestSize.Level1)
     sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
     ASSERT_NE(maintenanceBuffer, nullptr);
     BufferRequestConfig requestConfig = {
-        .width = sizeWidth,
-        .height = sizeHeight,
-        .strideAlignment = strideAlignment,
+        .width = SIZE_WIDTH,
+        .height = SIZE_HEIGHT,
+        .strideAlignment = STRIDE_ALIGNMENT,
         .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,
@@ -721,9 +758,9 @@ HWTEST_F(PictureTest, GetMaintenanceDataTest001, TestSize.Level1)
     sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
     ASSERT_NE(maintenanceBuffer, nullptr);
     BufferRequestConfig requestConfig = {
-        .width = sizeWidth,
-        .height = sizeHeight,
-        .strideAlignment = strideAlignment,
+        .width = SIZE_WIDTH,
+        .height = SIZE_HEIGHT,
+        .strideAlignment = STRIDE_ALIGNMENT,
         .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
         .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
         .timeout = 0,

@@ -433,8 +433,8 @@ HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPic
     ASSERT_NE(options, nullptr);
     size_t srcLength = TestLength;
     Image_AuxiliaryPictureType srcAuxTypeList[srcLength];
-    srcAuxTypeList[0] = GAINMAP;
-    srcAuxTypeList[1] = DEPTH_MAP;
+    srcAuxTypeList[0] = AUXILIARY_PICTURE_TYPE_GAINMAP;
+    srcAuxTypeList[1] = AUXILIARY_PICTURE_TYPE_DEPTH_MAP;
     OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(options, srcAuxTypeList, srcLength);
     Image_AuxiliaryPictureType *dstAuxTypeList = nullptr;
     size_t dstLength = 0;

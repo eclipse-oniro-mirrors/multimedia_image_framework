@@ -109,8 +109,10 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
     struct RawFileDescriptorInfo rawFileInfo;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     DecodingOptionsForPicture decodingOptsForPicture;
     std::shared_ptr<Picture> rPicture;
+#endif
 };
 
 struct ImageSourceSyncContext {
@@ -770,7 +772,9 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
+#endif
     };
 
     napi_property_descriptor static_prop[] = {
@@ -2774,6 +2778,7 @@ ImageResource ImageSourceNapi::GetImageResource()
     return resource_;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void CreatePictureExecute(napi_env env, void *data)
 {
     IMAGE_LOGD("CreatePictureExecute IN");
@@ -2908,5 +2913,7 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
+#endif
+
 }  // namespace Media
 }  // namespace OHOS

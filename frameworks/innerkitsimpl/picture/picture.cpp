@@ -211,6 +211,9 @@ std::unique_ptr<Picture> Picture::Create(std::shared_ptr<PixelMap> &pixelMap)
         return nullptr;
     }
     std::unique_ptr<Picture> dstPicture = std::make_unique<Picture>();
+    if (pixelMap->GetExifMetadata() != nullptr) {
+        dstPicture->SetExifMetadata(pixelMap->GetExifMetadata());
+    }
     dstPicture->mainPixelMap_ = pixelMap;
     return dstPicture;
 }
