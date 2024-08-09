@@ -66,7 +66,7 @@ uint32_t HeifExifMetadataAccessor::Read()
         IMAGE_LOGE("Decode tiffBuf error.");
         return ERR_EXIF_DECODE_FAILED;
     }
-    tiffOffset_ = tiffOffset_ + byteOrderPos;
+    tiffOffset_ = tiffOffset_ + static_cast<long>(byteOrderPos);
     exifMetadata_ = std::make_shared<ExifMetadata>(exifData);
     return SUCCESS;
 }
