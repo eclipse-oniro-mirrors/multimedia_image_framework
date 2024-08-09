@@ -454,7 +454,7 @@ bool ExtEncoder::HardwareEncode(SkWStream &skStream, bool needExif)
         MetadataWStream tStream;
         retCode = DoHardWareEncode(&tStream);
         if (retCode != SUCCESS) {
-            IMAGE_LOGD("HardwareEncode failed");
+            IMAGE_LOGD("HardwareEncode failed, retCode:%{public}d", retCode);
             return false;
         }
         ImageInfo imageInfo;
