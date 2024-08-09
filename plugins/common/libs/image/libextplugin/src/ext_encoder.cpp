@@ -416,6 +416,7 @@ uint32_t ExtEncoder::DoHardWareEncode(SkWStream* skStream)
     if (imageFwkExtManager.doHardWareEncodeFunc_ != nullptr || imageFwkExtManager.LoadImageFwkExtNativeSo()) {
         int32_t retCode = imageFwkExtManager.doHardWareEncodeFunc_(skStream, opts_, pixelmap_);
         if (retCode == SUCCESS) {
+            IMAGE_LOGD("DoHardWareEncode Success return");
             return SUCCESS;
         }
         IMAGE_LOGE("hardware encode failed, retCode is %{public}d", retCode);
