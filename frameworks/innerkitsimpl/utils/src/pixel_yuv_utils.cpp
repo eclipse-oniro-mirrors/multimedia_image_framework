@@ -215,8 +215,8 @@ static void FillRectFrameInfo(AVFrame *frame, uint8_t *pixels, const Rect &rect,
 {
     frame->data[0] = pixels + info.yOffset;
     frame->data[1] = pixels + info.uvOffset;
-    frame->linesize[0] = info.yStride;
-    frame->linesize[1] = info.uvStride;
+    frame->linesize[0] = static_cast<int32_t>(info.yStride);
+    frame->linesize[1] = static_cast<int32_t>(info.uvStride);
 }
 
 static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info)
@@ -351,7 +351,7 @@ static bool CreateCropFilter(AVFilterGraph **filterGraph, AVFilterContext **crop
 
 static bool CropUpDataDstdata(uint8_t *dstData, AVFrame *dstFrame, const Rect &rect, YUVStrideInfo &strides)
 {
-    dstFrame->width = strides.yStride;
+    dstFrame->width = static_cast<int32_t>(strides.yStride);
     dstFrame->height = rect.height;
 
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
@@ -743,8 +743,8 @@ void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, i
         ySize *= NUM_2;
         uvSize *= NUM_2;
     }
-    auto ySizeNormal = dstStrides.yStride * height;
-    auto uvSizeNormal = dstStrides.uvStride * GetUVHeight(height);
+    auto ySizeNormal = static_cast<int32_t>(dstStrides.yStride) * height;
+    auto uvSizeNormal = static_cast<int32_t>(dstStrides.uvStride) * GetUVHeight(height);
     if (memset_s(srcPixels, ySizeNormal, Y_DEFAULT, ySizeNormal) != EOK ||
         memset_s(srcPixels + ySizeNormal, uvSizeNormal, UV_DEFAULT, uvSizeNormal) != EOK) {
         IMAGE_LOGW("set translate default color failed");
@@ -980,19 +980,20 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     const uint8_t *src = nullptr;
     for (int32_t y = 0; y<yCopyLine ; y++) {
         int32_t newY = y + xyAxis.yAxis;
-        dst = dstY + newY * yuvInfo.yStride + (int32_t)xyAxis.xAxis;
-        src = srcY + y * yuvInfo.yStride;
+        dst = dstY + newY * static_cast<int32_t>(yuvInfo.yStride) + static_cast<int32_t>(xyAxis.xAxis);
+        src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
         memcpy_s(dst, yCopySize,  src, yCopySize);
     }
     int32_t xOffset = ((int32_t)xyAxis.xAxis % EVEN == 0) ?  xyAxis.xAxis : xyAxis.xAxis - 1;
     int32_t uvWidth = (info.size.width + ODD) / EVEN * EVEN;
-    int32_t uvHeight = (yuvInfo.uvHeight != 0) ? yuvInfo.uvHeight : ((info.size.height + ODD) / EVEN);
+    int32_t uvHeight = (static_cast<int32_t>(yuvInfo.uvHeight) != 0) ? static_cast<int32_t>(yuvInfo.uvHeight)
+        : ((info.size.height + ODD) / EVEN);
     int32_t uvCopySize = uvWidth - xOffset;
     int32_t uvCopyLine = uvHeight - xyAxis.yAxis / EVEN;
     for (int32_t y = 0; y<uvCopyLine ; y++) {
         int32_t newY = (y + xyAxis.yAxis / EVEN);
-        dst = dstUV+ newY * yuvInfo.uvStride + xOffset ;
-        src = srcUV + y * yuvInfo.uvStride;
+        dst = dstUV+ newY * static_cast<int32_t>(yuvInfo.uvStride) + xOffset;
+        src = srcUV + y * static_cast<int32_t>(yuvInfo.uvStride);
         memcpy_s(dst, uvCopySize,  src, uvCopySize);
     }
 }

@@ -529,7 +529,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         IMAGE_LOGE("CreateMemory failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    uint32_t stride = srcPiexlMap->GetRowStride();
+    int32_t stride = srcPiexlMap->GetRowStride();
     #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocType == AllocatorType::DMA_ALLOC) {
         auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
@@ -539,7 +539,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
     #endif
-    RGBDataInfo rgbDataInfo = {width, height, stride};
+    RGBDataInfo rgbDataInfo = {width, height, static_cast<uint32_t>(stride)};
     DestConvertInfo destInfo = {width, height, destFormat, allocType};
     destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
     destInfo.bufferSize = GetBufferSizeByFormat(destFormat, {destInfo.width, destInfo.height});

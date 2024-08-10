@@ -760,7 +760,7 @@ void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
         IMAGE_LOGD("Exif data is null");
         return ;
     }
-    for (int keySize = 0; keySize < exifKeys.size(); keySize++) {
+    for (int keySize = 0; keySize < static_cast<int>(exifKeys.size()); keySize++) {
         ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
         FindRanges(tag, ranges);
     }
@@ -779,7 +779,7 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
         }
 
         int i = 0;
-        while (i < content->count && !hasRange) {
+        while (i < static_cast<int>(content->count) && !hasRange) {
             if (tag == content->entries[i]->tag) {
                 std::pair<uint32_t, uint32_t> range =
                         std::make_pair(content->entries[i]->offset, content->entries[i]->size);

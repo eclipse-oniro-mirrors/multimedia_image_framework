@@ -158,7 +158,7 @@ bool PngExifMetadataAccessor::ReadBlob(DataBuf &blob)
             return false;
         }
     }
-    tiffOffset_ = imageStream_->Tell() - blob.Size();
+    tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size());
     return true;
 }
 

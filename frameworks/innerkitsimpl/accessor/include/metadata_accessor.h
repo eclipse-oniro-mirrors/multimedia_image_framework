@@ -25,7 +25,7 @@
 
 namespace OHOS {
 namespace Media {
-static constexpr int E_NO_EXIF_TAG = 1;
+static constexpr uint32_t E_NO_EXIF_TAG = 1;
 
 class MetadataAccessor {
 public:
