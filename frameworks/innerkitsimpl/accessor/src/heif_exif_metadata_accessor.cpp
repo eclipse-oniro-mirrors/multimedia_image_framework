@@ -104,7 +104,10 @@ uint32_t HeifExifMetadataAccessor::Write()
     if (!CheckTiffPos(const_cast<byte *>(dataBuf.CData()), dataBuf.Size(), byteOrderPos)) {
         return ERR_MEDIA_WRITE_PARCEL_FAIL;
     }
-
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
     return WriteMetadata(dataBuf);
 }
 

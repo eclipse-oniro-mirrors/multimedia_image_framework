@@ -283,6 +283,10 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         return nullptr;
     }
     std::shared_ptr<ExifMetadata> exifDataPtr = std::make_shared<ExifMetadata>(newExifData);
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
     return exifDataPtr;
 }
 
