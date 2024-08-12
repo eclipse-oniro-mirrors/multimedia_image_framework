@@ -1089,7 +1089,7 @@ bool ImageFormatConvertExtUtils::NV12ToRGBA1010102(const uint8_t *srcBuffer, con
 bool ImageFormatConvertExtUtils::NV21ToRGBA1010102(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,
                                                    DestConvertInfo &destInfo, [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToI420ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, colorSpace);
+    return YuvToI420ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, colorSpace);
 }
 
 bool ImageFormatConvertExtUtils::NV12ToNV12P010(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,

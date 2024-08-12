@@ -240,17 +240,29 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
         } else if (planes->planeCount >= NUM_2) {
             int32_t pixelFmt = sb->GetFormat();
-            if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+            if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
                 auto yStride = planes->planes[PLANE_Y].columnStride;
                 auto uvStride = planes->planes[PLANE_U].columnStride;
                 auto yOffset = planes->planes[PLANE_Y].offset;
                 auto uvOffset = planes->planes[PLANE_U].offset;
                 dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            } else {
+            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
                 auto yStride = planes->planes[PLANE_Y].columnStride;
                 auto uvStride = planes->planes[PLANE_V].columnStride;
                 auto yOffset = planes->planes[PLANE_Y].offset;
                 auto uvOffset = planes->planes[PLANE_V].offset;
+                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+                auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+                auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+                auto yOffset = planes->planes[PLANE_Y].offset / 2;
+                auto uvOffset = planes->planes[PLANE_U].offset / 2;
+                dstStrides = {yStride, uvStride, yOffset, uvOffset};
+            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+                auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+                auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+                auto yOffset = planes->planes[PLANE_Y].offset / 2;
+                auto uvOffset = planes->planes[PLANE_V].offset / 2;
                 dstStrides = {yStride, uvStride, yOffset, uvOffset};
             }
         }

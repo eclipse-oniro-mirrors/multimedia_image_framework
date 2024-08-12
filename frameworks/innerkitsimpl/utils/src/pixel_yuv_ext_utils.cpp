@@ -171,19 +171,21 @@ bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &in
     return true;
 }
 
-static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, OpenSourceLibyuv::RotationMode& rotateNum)
+static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, OpenSourceLibyuv::RotationMode& rotateNum,
+                           uint8_t* dst, YUVStrideInfo& dstStrides)
 {
-    std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(size.srcW, size.srcH));
+    std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(info.yStride, size.srcH));
     uint16_t* srcbuffer = reinterpret_cast<uint16_t *>(src);
     uint16_t* srcY = srcbuffer + info.yOffset;
     uint16_t* srcUV = srcbuffer + info.uvOffset;
 
     uint16_t* dstY = dstPixels.get();
-    uint16_t* dstU = dstPixels.get() + GetYSize(size.dstW, size.dstH);
-    uint16_t* dstV = dstPixels.get() + GetVOffset(size.dstW, size.dstH);
+    uint16_t* dstU = dstPixels.get() + GetYSize(info.yStride, size.srcH);
+    uint16_t* dstV = dstPixels.get() + GetVOffset(info.yStride, size.srcH);
     auto converter = ConverterHandle::GetInstance().GetHandle();
-    if (converter.P010ToI010(srcY, info.yWidth, srcUV, info.uvWidth * NUM_2, dstY, info.yWidth, dstU, info.uvWidth,
-        dstV, info.uvWidth, info.yWidth, info.yHeight) == -1) {
+    if (converter.P010ToI010(srcY, info.yStride, srcUV, GetUVStride(info.yStride),
+        dstY, info.yStride, dstU, GetUStride(info.yStride),
+        dstV, GetUStride(info.yStride), size.srcW, size.srcH) == -1) {
         IMAGE_LOGE("NV12P010ToI010 failed");
         return false;
     }
@@ -193,15 +195,20 @@ static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, Ope
     uint16_t* rotateU = rotatePixels.get() + GetYSize(size.dstW, size.dstH);
     uint16_t* rotateV = rotatePixels.get() + GetVOffset(size.dstW, size.dstH);
 
-    if (converter.I010Rotate(dstY, info.yWidth, dstU, info.uvWidth, dstV, info.uvWidth, rotateY, size.dstW, rotateU,
-        GetUStride(size.dstW), rotateV, GetUStride(size.dstW), info.yWidth, info.yHeight, rotateNum) == -1) {
+    if (converter.I010Rotate(dstY, info.yStride, dstU, GetUStride(info.yStride),
+        dstV, GetUStride(info.yStride), rotateY, size.dstW, rotateU, GetUStride(size.dstW),
+        rotateV, GetUStride(size.dstW), size.srcW, size.srcH, rotateNum) == -1) {
         IMAGE_LOGE("I010Rotate failed");
         return false;
     }
 
+    uint16_t* dstbuffer = reinterpret_cast<uint16_t *>(dst);
+    int32_t dstYStride = dstStrides.yStride;
+    int32_t dstUVStride = dstStrides.uvStride;
+    uint16_t* dstbufferY = dstbuffer + dstStrides.yOffset;
+    uint16_t* dstbufferUV = dstbuffer + dstStrides.uvOffset;
     if (converter.I010ToP010(rotateY, size.dstW, rotateU, GetUStride(size.dstW), rotateV, GetUStride(size.dstW),
-        srcbuffer, size.dstW, srcbuffer + GetYSize(size.dstW, size.dstH), GetUVStride(size.dstW), size.dstW,
-        size.dstH) == -1) {
+        dstbufferY, dstYStride, dstbufferUV, dstUVStride, size.dstW, size.dstH) == -1) {
         IMAGE_LOGE("I010ToP010 failed");
         return false;
     }
@@ -216,10 +223,11 @@ bool PixelYuvExtUtils::YuvRotate(uint8_t* srcPixels, const PixelFormat& format, 
     PixelSize pixelSize = {info.imageSize.width, info.imageSize.height, dstWidth, dstHeight};
     if (format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010) {
         IMAGE_LOGD("YuvRotate P010Rotate enter");
-        if (!NV12P010Rotate(srcPixels, pixelSize, info, rotateNum)) {
+        if (!NV12P010Rotate(srcPixels, pixelSize, info, rotateNum, dstPixels, dstStrides)) {
             IMAGE_LOGE("YuvRotate P010Rotate fail");
             return false;
         }
+        return true;
     }
     if (!NV12Rotate(srcPixels, pixelSize, info, rotateNum, dstPixels, dstStrides)) {
         return false;
@@ -308,37 +316,48 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
     tempUData = tempVData = nullptr;
 }
 
-static void ScaleP010(PixelSize pixelSize, uint8_t *src, uint8_t *dst, OpenSourceLibyuv::ImageYuvConverter &converter,
-    OpenSourceLibyuv::FilterMode &filterMode)
+static void ScaleP010(uint8_t *src, uint8_t *dst, OpenSourceLibyuv::ImageYuvConverter &converter,
+    OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides,
+    float xAxis, float yAxis)
 {
     uint16_t *srcBuffer = reinterpret_cast<uint16_t *>(src);
+    uint16_t* srcY = srcBuffer + yuvInfo.yuvDataInfo.yOffset;
+    int srcYStride = yuvInfo.yuvDataInfo.yStride;
+    uint16_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
+    int srcUVStride = yuvInfo.yuvDataInfo.uvStride;
+    int srcWidth = yuvInfo.width;
+    int srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(dst);
-    std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(pixelSize.srcW, pixelSize.srcH));
+    int32_t dst_width = yuvInfo.width * xAxis;
+    int32_t dst_height = yuvInfo.height * yAxis;
+    uint16_t* dstBufferY = dstBuffer + dstStrides.yOffset;
+    int dstYStride = dstStrides.yStride;
+    uint16_t* dstBufferUV = dstBuffer + dstStrides.uvOffset;
+    int dstUVStride = dstStrides.uvStride;
+    std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcYStride, srcHeight));
     uint16_t* dstY = dstPixels.get();
-    uint16_t* dstU = dstPixels.get() + GetYSize(pixelSize.srcW, pixelSize.srcH);
-    uint16_t* dstV = dstPixels.get() + GetVOffset(pixelSize.srcW, pixelSize.srcH);
-    if (converter.P010ToI010(srcBuffer, pixelSize.srcW, srcBuffer + GetYSize(pixelSize.srcW, pixelSize.srcH),
-        GetUVStride(pixelSize.srcW), dstY, pixelSize.srcW, dstU, GetUStride(pixelSize.srcW), dstV,
-        GetUStride(pixelSize.srcW), pixelSize.srcW, pixelSize.srcH) == -1) {
+    uint16_t* dstU = dstPixels.get() + GetYSize(srcYStride, srcHeight);
+    uint16_t* dstV = dstPixels.get() + GetVOffset(srcYStride, srcHeight);
+
+    if (converter.P010ToI010(srcY, srcYStride, srcUV,
+        srcUVStride, dstY, srcYStride, dstU, GetUStride(srcYStride), dstV,
+        GetUStride(srcYStride), srcWidth, srcHeight) == -1) {
         IMAGE_LOGE("NV12P010ToI010 failed");
         return;
     }
-    std::unique_ptr<uint16_t[]> scalePixels = std::make_unique<uint16_t[]>(GetImageSize(pixelSize.dstW,
-        pixelSize.dstH));
+    std::unique_ptr<uint16_t[]> scalePixels = std::make_unique<uint16_t[]>(GetImageSize(dstYStride, dst_height));
     uint16_t* scaleY = scalePixels.get();
-    uint16_t* scaleU = scalePixels.get() + GetYSize(pixelSize.dstW, pixelSize.dstH);
-    uint16_t* scaleV = scalePixels.get() + GetVOffset(pixelSize.dstW, pixelSize.dstH);
-    if (converter.I420Scale_16(dstY, pixelSize.srcW, dstU, GetUStride(pixelSize.srcW), dstV,
-        GetUStride(pixelSize.srcW), pixelSize.srcW, pixelSize.srcH, scaleY, pixelSize.dstW, scaleU,
-        GetUStride(pixelSize.dstW), scaleV, GetUStride(pixelSize.dstW), pixelSize.dstW, pixelSize.dstH,
-        filterMode) == -1) {
+    uint16_t* scaleU = scalePixels.get() + GetYSize(dstYStride, dst_height);
+    uint16_t* scaleV = scalePixels.get() + GetVOffset(dstYStride, dst_height);
+    if (converter.I420Scale_16(dstY, srcYStride, dstU, GetUStride(srcYStride), dstV,
+        GetUStride(srcYStride), srcYStride, srcHeight, scaleY, dstYStride, scaleU,
+        GetUStride(dstYStride), scaleV, GetUStride(dstYStride), dst_width, dst_height, filterMode) == -1) {
         IMAGE_LOGE("I420Scale_16 failed");
         return;
     }
-    if (converter.I010ToP010(scaleY, pixelSize.dstW, scaleU, GetUStride(pixelSize.dstW),
-        scaleV, GetUStride(pixelSize.dstW), dstBuffer, pixelSize.dstW, dstBuffer +
-        GetYSize(pixelSize.dstW, pixelSize.dstH), GetUVStride(pixelSize.dstW),
-        pixelSize.dstW, pixelSize.dstH) == -1) {
+    if (converter.I010ToP010(scaleY, dstYStride, scaleU, GetUStride(dstYStride),
+        scaleV, GetUStride(dstYStride), dstBufferY, dstYStride, dstBufferUV, dstUVStride,
+        dst_width, dst_height) == -1) {
         IMAGE_LOGE("I010ToP010 failed");
         return;
     }
@@ -365,12 +384,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     int dstUVStride = static_cast<int>(dstStrides.uvStride);
     auto converter = ConverterHandle::GetInstance().GetHandle();
     if (yuvInfo.yuvFormat == PixelFormat::YCBCR_P010 || yuvInfo.yuvFormat == PixelFormat::YCRCB_P010) {
-        uint32_t srcYWidth = static_cast<uint32_t>(yuvInfo.width);
-        uint32_t srcYHeight = static_cast<uint32_t>(yuvInfo.height);
-        int32_t dstYWidth = srcYWidth * xAxis;
-        int32_t dstYHeight = srcYHeight * yAxis;
-        PixelSize pixelSize = {srcYWidth, srcYHeight, dstYWidth, dstYHeight};
-        ScaleP010(pixelSize, src, dst, converter, filterMode);
+        ScaleP010(src, dst, converter, filterMode, yuvInfo, dstStrides, xAxis, yAxis);
     } else {
         converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
             dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);

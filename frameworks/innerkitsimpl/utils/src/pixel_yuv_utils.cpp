@@ -207,7 +207,7 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride);
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
-            info.format, info.width, info.height, 1);
+            info.format, info.yuvDataInfo.yStride, info.height, 1);
     }
 }
 
@@ -228,7 +228,7 @@ static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->linesize[1] = GetUVStride(info.width);
     } else {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
-            info.format, info.width, info.height, 1);
+            info.format, info.yuvDataInfo.yStride, info.height, 1);
     }
 }
 
@@ -737,14 +737,12 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
 void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
     YUVStrideInfo &dstStrides)
 {
-    int32_t ySize = GetYSize(width, height);
-    int32_t uvSize = GetUStride(width) * GetUVHeight(height) * NUM_2;
-    if (IsYUVP010Format(format)) {
-        ySize *= NUM_2;
-        uvSize *= NUM_2;
-    }
     auto ySizeNormal = static_cast<int32_t>(dstStrides.yStride) * height;
     auto uvSizeNormal = static_cast<int32_t>(dstStrides.uvStride) * GetUVHeight(height);
+    if (IsYUVP010Format(format)) {
+        ySizeNormal *= NUM_2;
+        uvSizeNormal *= NUM_2;
+    }
     if (memset_s(srcPixels, ySizeNormal, Y_DEFAULT, ySizeNormal) != EOK ||
         memset_s(srcPixels + ySizeNormal, uvSizeNormal, UV_DEFAULT, uvSizeNormal) != EOK) {
         IMAGE_LOGW("set translate default color failed");
@@ -999,19 +997,19 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
 }
 
 static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
-    uint16_t *dstPixels, XYaxis &xyAxis, ImageInfo &info)
+    uint16_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides)
 {
     const uint16_t *srcY = srcPixels + yuvInfo.yOffset;
     const uint16_t *srcUV = srcPixels + yuvInfo.uvOffset;
     uint16_t *dstY = dstPixels;
-    uint16_t *dstUV = dstPixels + GetYSize(info.size.width, info.size.height);
+    uint16_t *dstUV = dstPixels + GetYSize(strides.yStride, info.size.height);
 
     for (int32_t y = 0; y < info.size.height; y++) {
         for (int32_t x = 0; x < info.size.width; x++) {
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * info.size.width + newX) = *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+                *(dstY + newY * strides.yStride + newX) = *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
         }
     }
@@ -1020,9 +1018,9 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
         for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(info.size.width) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
-                *(dstUV + newY * info.size.width + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
-                *(dstUV + newY * info.size.width + newX + 1) =
+            if (newX >= 0 && newX < GetUVStride(strides.yStride) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
+                *(dstUV + newY * strides.yStride + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
+                *(dstUV + newY * strides.yStride + newX + 1) =
                 *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
             }
         }
@@ -1040,7 +1038,7 @@ bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         }
         case PixelFormat::YCBCR_P010:
         case PixelFormat::YCRCB_P010: {
-            P010Translate((uint16_t *)srcPixels, yuvInfo, (uint16_t *)dstPixels, xyAxis, info);
+            P010Translate((uint16_t *)srcPixels, yuvInfo, (uint16_t *)dstPixels, xyAxis, info, dstStrides);
             return true;
         }
         default:
