@@ -58,7 +58,7 @@
 #include "file_packer_stream.h"
 #include "memory_manager.h"
 #ifdef HEIF_HW_ENCODE_ENABLE
-#include "v1_0/icodec_image.h"
+#include "v2_0/icodec_image.h"
 #include "iremote_object.h"
 #include "iproxy_broker.h"
 #endif
@@ -95,7 +95,7 @@ namespace {
     const static std::string IMAGE_DATA_TAG = "Heif Encoder Image";
     const static std::string HDR_GAINMAP_TAG = "Heif Encoder Gainmap";
     const static std::string EXIF_ASHMEM_TAG = "Heif Encoder Exif";
-    const static size_t DEFAULT_OUTPUT_SIZE = 25 * 1024 * 1024; // 25M
+    const static size_t DEFAULT_OUTPUT_SIZE = 35 * 1024 * 1024; // 35M
     const static uint16_t STATIC_METADATA_COLOR_SCALE = 50000;
     const static uint16_t STATIC_METADATA_LUM_SCALE = 10000;
     const static uint8_t INDEX_ZERO = 0;
@@ -130,7 +130,7 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
 #ifdef HEIF_HW_ENCODE_ENABLE
-using namespace OHOS::HDI::Codec::Image::V1_0;
+using namespace OHOS::HDI::Codec::Image::V2_0;
 static std::mutex g_codecMtx;
 static sptr<ICodecImage> g_codecMgr;
 class CodecHeifDeathRecipient : public IRemoteObject::DeathRecipient {
@@ -317,6 +317,7 @@ uint32_t ExtEncoder::PixelmapEncode(ExtWStream& wStream)
 {
     uint32_t error;
 #if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGD("pixelmapEncode EncodeImageByPixelMap");
     error = EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, wStream);
 #else
     switch (opts_.desiredDynamicRange) {
@@ -527,7 +528,6 @@ uint32_t ExtEncoder::EncodeImageByPixelMap(PixelMap* pixelMap, bool needExif, Sk
 
 uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOptions& opts)
 {
-#ifdef HEIF_HW_ENCODE_ENABLE
     if (output_ == nullptr) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -536,7 +536,8 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
         IMAGE_LOGE("EncodeHeifByPixelmap, invalid format:%{public}d", format);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && \
+    defined(HEIF_HW_ENCODE_ENABLE)
     sptr<SurfaceBuffer> surfaceBuffer;
     bool needConvertToSurfaceBuffer = pixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC;
     if (needConvertToSurfaceBuffer) {
@@ -550,7 +551,7 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
             IMAGE_LOGE("EncodeHeifByPixelmap pixelmap get fd failed");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
-        surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd());
+        surfaceBuffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(pixelmap->GetFd()));
     }
     std::vector<ImageItem> inputImgs;
     std::shared_ptr<ImageItem> primaryItem = AssemblePrimaryImageItem(surfaceBuffer, opts);
@@ -572,9 +573,7 @@ uint32_t ExtEncoder::EncodeHeifByPixelmap(PixelMap* pixelmap, const PlEncodeOpti
     }
     return result;
 #endif
-#else
     return ERR_IMAGE_INVALID_PARAMETER;
-#endif
 }
 
 void ExtEncoder::RecycleResources()
@@ -622,6 +621,7 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     uint32_t height = static_cast<uint32_t>(pixelmap->GetHeight());
     uint32_t width = static_cast<uint32_t>(pixelmap->GetWidth());
     PixelFormat format = pixelmap->GetPixelFormat();
+    IMAGE_LOGD("ExtEncoder::ConvertToSurfaceBuffer format is %{public}d", format);
     auto formatSearch = SURFACE_FORMAT_MAP.find(format);
     if (formatSearch == SURFACE_FORMAT_MAP.end()) {
         IMAGE_LOGE("format:[%{public}d] is not in SURFACE_FORMAT_MAP", format);
@@ -638,21 +638,24 @@ sptr<SurfaceBuffer> ExtEncoder::ConvertToSurfaceBuffer(PixelMap* pixelmap)
     uint8_t* dst = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
     uint32_t copyHeight = height;
+    uint64_t srcStride = width;
     if (format == PixelFormat::NV12 || format == PixelFormat::NV21) {
         const int32_t NUM_2 = 2;
         copyHeight = height + height / NUM_2;
+        srcStride = width;
     } else if (format == PixelFormat::RGBA_8888) {
         copyHeight = height;
+        srcStride = static_cast<uint64_t>(width * NUM_4);
     }
     for (uint32_t i = 0; i < copyHeight; i++) {
-        if (memcpy_s(dst, dstSize, src, width) != EOK) {
+        if (memcpy_s(dst, dstSize, src, srcStride) != EOK) {
             IMAGE_LOGE("ConvertToSurfaceBuffer memcpy failed");
             ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
             return nullptr;
         }
         dst += dstStride;
         dstSize -= dstStride;
-        src += width;
+        src += srcStride;
     }
     return surfaceBuffer;
 }
@@ -745,32 +748,10 @@ sk_sp<SkData> ExtEncoder::GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer,
     return stream.detachAsData();
 }
 
-static uint32_t DecomposeImage(PixelMap* pixelMap, sptr<SurfaceBuffer>& base, sptr<SurfaceBuffer>& gainmap,
-    ImagePlugin::HdrMetadata& metadata)
-{
-    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
-        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
-    }
-    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelMap->GetFd()));
-    VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
-    VpeSurfaceBuffers buffers = {
-        .sdr = base,
-        .gainmap = gainmap,
-        .hdr = hdrSurfaceBuffer,
-    };
-    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
-    int32_t res = utils->ColorSpaceConverterDecomposeImage(buffers);
-    if (res != VPE_ERROR_OK || base == nullptr || gainmap == nullptr) {
-        return IMAGE_RESULT_CREATE_SURFAC_FAILED;
-    }
-    metadata = GetHdrMetadata(hdrSurfaceBuffer, gainmap);
-    return SUCCESS;
-}
-
-static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bool onlySdr)
+static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bool onlySdr, bool sdrIsSRGB = false)
 {
     VpeUtils::SetSbMetadataType(buffers.sdr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(buffers.sdr, CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(buffers.sdr, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res;
     if (onlySdr) {
@@ -780,7 +761,7 @@ static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bo
         res = utils->ColorSpaceConverterImageProcess(buffers.hdr, buffers.sdr);
     } else {
         VpeUtils::SetSbMetadataType(buffers.gainmap, CM_METADATA_NONE);
-        VpeUtils::SetSbColorSpaceType(buffers.gainmap, CM_SRGB_FULL);
+        VpeUtils::SetSbColorSpaceType(buffers.gainmap, sdrIsSRGB ? CM_SRGB_FULL : CM_P3_FULL);
         res = utils->ColorSpaceConverterDecomposeImage(buffers);
     }
     if (res != VPE_ERROR_OK) {
@@ -793,17 +774,17 @@ static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bo
     return true;
 }
 
-static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap)
+static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = false)
 {
     ImageInfo info;
     pixelMap->GetImageInfo(info);
     SkColorType colorType = kRGBA_8888_SkColorType;
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
-    sk_sp<SkColorSpace> colorSpace = nullptr;
+    sk_sp<SkColorSpace> colorSpace =
+        SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, isSRGB ? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
     int32_t width = info.size.width;
     int32_t height = info.size.height;
     if (isGainmap) {
-        colorSpace = SkColorSpace::MakeSRGB();
         const int halfSizeDenominator = 2;
         width = width / halfSizeDenominator;
         height = height / halfSizeDenominator;
@@ -816,8 +797,6 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap)
             cicp.colour_primaries, cicp.transfer_characteristics, cicp.matrix_coefficients, cicp.full_range_flag);
         colorSpace->SetIccCicp(cicp);
 #endif
-    } else {
-        colorSpace = SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kSRGB);
     }
     return SkImageInfo::Make(width, height, colorType, alphaType, colorSpace);
 }
@@ -917,19 +896,17 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleGainmapImageItem(sptr<SurfaceBuff
 
 uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
 {
+    IMAGE_LOGD("ExtEncoder::EncodeDualVivid");
     if (!pixelmap_->IsHdr() ||
         pixelmap_->GetAllocatorType() != AllocatorType::DMA_ALLOC ||
         (encodeFormat_ != SkEncodedImageFormat::kJPEG && encodeFormat_ != SkEncodedImageFormat::kHEIF)) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
-    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true);
+    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
+    SkImageInfo gainmapInfo = GetSkInfo(pixelmap_, true, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
-    VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
     sptr<SurfaceBuffer> gainMapSptr = AllocSurfaceBuffer(gainmapInfo.width(), gainmapInfo.height());
-    VpeUtils::SetSbMetadataType(gainMapSptr, CM_METADATA_NONE);
-    VpeUtils::SetSbColorSpaceType(gainMapSptr, CM_SRGB_FULL);
     if (baseSptr == nullptr || gainMapSptr == nullptr) {
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
     }
@@ -941,7 +918,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
         .gainmap = gainMapSptr,
         .hdr = hdrSurfaceBuffer,
     };
-    if (!DecomposeImage(buffers, metadata, false)) {
+    if (!DecomposeImage(buffers, metadata, false, sdrIsSRGB)) {
         IMAGE_LOGE("EncodeDualVivid decomposeImage failed");
         FreeBaseAndGainMapSurfaceBuffer(baseSptr, gainMapSptr);
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
@@ -962,6 +939,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
 
 uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 {
+    IMAGE_LOGD("ExtEncoder EncodeSdrImage");
     if (!pixelmap_->IsHdr()) {
         return EncodeImageByPixelMap(pixelmap_, opts_.needsPackProperties, outputStream);
     }
@@ -971,7 +949,8 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     }
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
-    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false);
+    bool sdrIsSRGB = pixelmap_->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo baseInfo = GetSkInfo(pixelmap_, false, sdrIsSRGB);
     sptr<SurfaceBuffer> baseSptr = AllocSurfaceBuffer(baseInfo.width(), baseInfo.height());
     VpeUtils::SetSbMetadataType(baseSptr, CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(baseSptr, CM_SRGB_FULL);
@@ -986,7 +965,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
         .hdr = hdrSurfaceBuffer,
     };
     HdrMetadata metadata;
-    if (!DecomposeImage(buffers, metadata, true)) {
+    if (!DecomposeImage(buffers, metadata, true, sdrIsSRGB)) {
         IMAGE_LOGE("EncodeSdrImage decomposeImage failed");
         ImageUtils::SurfaceBuffer_Unreference(baseSptr.GetRefPtr());
         return IMAGE_RESULT_CREATE_SURFAC_FAILED;
@@ -1002,19 +981,21 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
 }
 
 uint32_t ExtEncoder::EncodeHeifDualHdrImage(sptr<SurfaceBuffer>& sdr, sptr<SurfaceBuffer>& gainmap,
-    Media::HdrMetadata& metadata)
+    Media::HdrMetadata& metadata, bool sdrIsSRGB)
 {
 #ifdef HEIF_HW_ENCODE_ENABLE
     std::vector<ImageItem> inputImgs;
+    ColorSpaceManager colorspaceName =
+        sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
     std::shared_ptr<ImageItem> primaryItem =
-        AssembleHdrBaseImageItem(sdr, ColorManager::ColorSpaceName::SRGB, metadata, opts_);
+        AssembleHdrBaseImageItem(sdr, colorspaceName, metadata, opts_);
     if (primaryItem == nullptr) {
         IMAGE_LOGE("AssmbleHeifDualHdrImage, get primary image failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem =
-        AssembleGainmapImageItem(gainmap, ColorManager::ColorSpaceName::SRGB, opts_);
+        AssembleGainmapImageItem(gainmap, colorspaceName, opts_);
     if (gainmapItem == nullptr) {
         IMAGE_LOGE("AssembleDualHdrImage, get gainmap image item failed");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -1293,13 +1274,10 @@ bool ExtEncoder::AssembleOutputSharedBuffer(SharedBuffer& outBuffer, std::shared
         return false;
     }
     OutputStreamType outType = output_->GetType();
-    if (outType == OutputStreamType::FILE_PACKER) {
-        auto fileOutput = reinterpret_cast<FilePackerStream*>(output_);
-        outBuffer.fd = fileOutput->GetFd();
-        return true;
-    }
     size_t outputCapacity = DEFAULT_OUTPUT_SIZE;
-    output_->GetCapicity(outputCapacity);
+    if (outType != OutputStreamType::FILE_PACKER) {
+        output_->GetCapicity(outputCapacity);
+    }
     std::shared_ptr<AbsMemory> mem = AllocateNewSharedMem(outputCapacity, OUTPUT_ASHMEM_TAG);
     if (mem == nullptr) {
         IMAGE_LOGE("AssembleOutputSharedBuffer alloc out sharemem failed");
@@ -1344,14 +1322,12 @@ uint32_t ExtEncoder::DoHeifEncode(std::vector<ImageItem>& inputImgs, std::vector
         IMAGE_LOGE("ExtEncoder::DoHeifEncode DoHeifEncode failed");
         return ERR_IMAGE_ENCODE_FAILED;
     }
-    if (output_->GetType() != OutputStreamType::FILE_PACKER) {
-        bool writeRes = output_->Write(reinterpret_cast<uint8_t *>(outputAshmem->data.data), outSize);
-        if (!writeRes) {
-            IMAGE_LOGE("ExtEncoder:;DoHeifEncode Write failed");
-            return ERR_IMAGE_ENCODE_FAILED;
-        }
-    }
     IMAGE_LOGI("ExtEncoder::DoHeifEncode output type is %{public}d", output_->GetType());
+    bool writeRes = output_->Write(reinterpret_cast<uint8_t *>(outputAshmem->data.data), outSize);
+    if (!writeRes) {
+        IMAGE_LOGE("ExtEncoder::DoHeifEncode Write failed");
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
     return SUCCESS;
 }
 

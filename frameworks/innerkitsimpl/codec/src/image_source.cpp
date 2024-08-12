@@ -937,6 +937,14 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
     std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
+    bool isSupportICCProfile = (decoder == nullptr) ? false : decoder->IsSupportICCProfile();
+    if (IsSingleHdrImage(sourceHdrType_)) {
+        pixelMap->SetToSdrColorSpaceIsSRGB(false);
+    } else {
+        if (isSupportICCProfile) {
+            pixelMap->SetToSdrColorSpaceIsSRGB(decoder->getGrColorSpace().GetColorSpaceName() == ColorManager::SRGB);
+        }
+    }
     // If the original image is a single-layer HDR, colorSpace needs to be obtained from the DecodeContext.
     if (context.hdrType > ImageHdrType::SDR || IsSingleHdrImage(sourceHdrType_)) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
@@ -944,7 +952,6 @@ void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, uni
             context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
         return ;
     }
-    bool isSupportICCProfile = decoder->IsSupportICCProfile();
     if (isSupportICCProfile) {
         OHOS::ColorManager::ColorSpace grColorSpace = decoder->getGrColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
@@ -3280,7 +3287,7 @@ static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
     ImageTrace iamgeTrace("ImageSource decomposeImage");
     VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
     VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
-    VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL);
+    VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
     std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
     int32_t res = utils->ColorSpaceConverterImageProcess(hdr, sdr);
     if (res != VPE_ERROR_OK || sdr == nullptr) {
@@ -3305,15 +3312,15 @@ static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd
     } else if (format == GRAPHIC_PIXEL_FMT_RGBA_8888) {
         context.pixelFormat = PixelFormat::RGBA_8888;
         context.info.pixelFormat = PixelFormat::RGBA_8888;
-        context.grColorSpaceName = ColorManager::SRGB;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
     } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
         context.pixelFormat = PixelFormat::NV12;
         context.info.pixelFormat = PixelFormat::NV12;
-        context.grColorSpaceName = ColorManager::SRGB;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
     } else if (format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
         context.pixelFormat = PixelFormat::NV21;
         context.info.pixelFormat = PixelFormat::NV21;
-        context.grColorSpaceName = ColorManager::SRGB;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
     }
 }
 // LCOV_EXCL_STOP
@@ -3373,9 +3380,9 @@ static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colo
         case ColorManager::ColorSpaceName::BT2020_PQ_LIMIT :
             return CM_BT2020_PQ_LIMIT;
         default:
-            return base ? CM_SRGB_FULL : CM_BT2020_HLG_FULL;
+            return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
     }
-    return base ? CM_SRGB_FULL : CM_BT2020_HLG_FULL;
+    return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
 }
 
 static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
@@ -3398,9 +3405,9 @@ static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colo
         case CM_BT2020_PQ_LIMIT :
             return ColorManager::BT2020_PQ_LIMIT;
         default:
-            return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
+            return base ? ColorManager::DISPLAY_P3 : ColorManager::BT2020_HLG;
     }
-    return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
+    return base ? ColorManager::DISPLAY_P3 : ColorManager::BT2020_HLG;
 }
 // LCOV_EXCL_STOP
 #endif

@@ -22,7 +22,7 @@
 #include "mock_jpeg_hw_decode_flow.h"
 
 namespace OHOS::ImagePlugin {
-using namespace OHOS::HDI::Codec::Image::V1_0;
+using namespace OHOS::HDI::Codec::Image::V2_0;
 using namespace OHOS::HDI::Display::Buffer::V1_0;
 
 JpegHwDecoderFlow::JpegHwDecoderFlow() : sampleSize_(1), outputColorFmt_(PIXEL_FMT_YCRCB_420_SP)

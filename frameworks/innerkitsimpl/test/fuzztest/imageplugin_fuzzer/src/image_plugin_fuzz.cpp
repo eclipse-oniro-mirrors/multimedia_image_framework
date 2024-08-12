@@ -64,7 +64,7 @@ void ExtDecoderFuncTest001(int fd)
     extDecoder->DoHardWareDecode(context);
     extDecoder->GetJpegYuvOutFmt(dstFormat);
     extDecoder->DecodeToYuv420(0, context);
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer;
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
     extDecoder->AllocOutputBuffer(context, outputBuffer);
     extDecoder->CheckContext(context);
     AllocatorType allocatorType = AllocatorType::DEFAULT;
