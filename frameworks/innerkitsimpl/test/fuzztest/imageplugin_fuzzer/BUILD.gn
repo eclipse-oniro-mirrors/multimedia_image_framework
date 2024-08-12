@@ -33,8 +33,8 @@ ohos_fuzztest("ImagePluginFuzzTest") {
   ]
 
   sources = [
-    "src/image_plugin_fuzz.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/common/src/convert_utils.cpp",
+    "src/image_plugin_fuzz.cpp",
   ]
 
   deps = [
@@ -45,7 +45,7 @@ ohos_fuzztest("ImagePluginFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:libimage_proxy_1.0",
+    "drivers_interface_codec:libimage_proxy_2.0",
     "drivers_interface_display:libdisplay_buffer_hdi_impl",
     "drivers_interface_display:libdisplay_buffer_proxy_1.0",
     "drivers_interface_display:libdisplay_composer_hdi_impl",

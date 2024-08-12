@@ -46,7 +46,7 @@ private:
     std::string inputFile_;
     std::string outputPath_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer_;
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer_;
 };
 } // OHOS::ImagePlugin
 

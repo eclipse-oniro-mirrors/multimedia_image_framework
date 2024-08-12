@@ -58,7 +58,7 @@
 #include "file_packer_stream.h"
 #include "memory_manager.h"
 #ifdef HEIF_HW_ENCODE_ENABLE
-#include "v1_0/icodec_image.h"
+#include "v2_0/icodec_image.h"
 #include "iremote_object.h"
 #include "iproxy_broker.h"
 #endif
@@ -130,7 +130,7 @@ static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
 #ifdef HEIF_HW_ENCODE_ENABLE
-using namespace OHOS::HDI::Codec::Image::V1_0;
+using namespace OHOS::HDI::Codec::Image::V2_0;
 static std::mutex g_codecMtx;
 static sptr<ICodecImage> g_codecMgr;
 class CodecHeifDeathRecipient : public IRemoteObject::DeathRecipient {

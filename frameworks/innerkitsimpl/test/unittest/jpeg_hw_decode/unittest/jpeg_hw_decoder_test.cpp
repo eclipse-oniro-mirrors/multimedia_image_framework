@@ -21,7 +21,7 @@
 namespace OHOS::Media {
 using namespace testing::ext;
 using namespace OHOS::ImagePlugin;
-using namespace OHOS::HDI::Codec::Image::V1_0;
+using namespace OHOS::HDI::Codec::Image::V2_0;
 
 class JpegHwDecoderTest : public testing::Test {
 public:
