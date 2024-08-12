@@ -88,9 +88,9 @@ private:
         Media::HdrMetadata metadata, const PlEncodeOptions &opts);
     std::shared_ptr<Media::AbsMemory> AllocateNewSharedMem(size_t memorySize, std::string tag);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssemblePrimaryImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         const PlEncodeOptions &opts);
-    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleBaseImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
+    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleHdrBaseImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, Media::HdrMetadata& metadata, const PlEncodeOptions &opts);
     std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, const PlEncodeOptions& opts);
@@ -111,8 +111,6 @@ private:
     uint32_t DoHeifEncode(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
         std::vector<HDI::Codec::Image::V2_0::MetaItem>& inputMetas,
         std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
-    std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssemblePrimaryImageItem(Media::PixelMap* pixelmap,
-        const PlEncodeOptions &opts);
     bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V2_0::MetaItem>& metaItems);
     void AssembleExifRefItem(std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
 #endif
