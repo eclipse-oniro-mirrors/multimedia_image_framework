@@ -404,7 +404,13 @@ HWTEST_F(JpegExifMetadataAccessorTest, Read007, TestSize.Level3)
               "HwMnoteFrontCamera:0,"
               "HwMnoteRollAngle:26,"
               "HwMnotePitchAngle:-83,"
-              "HwMnotePhysicalAperture:1");
+              "HwMnotePhysicalAperture:1,"
+              "HwMnoteIsXmageSupported:1,"
+              "HwMnoteXmageMode:0,"
+              "HwMnoteXmageLeft:0,"
+              "HwMnoteXmageTop:0,"
+              "HwMnoteXmageRight:0,"
+              "HwMnoteXmageBottom:0");
 }
 
 
