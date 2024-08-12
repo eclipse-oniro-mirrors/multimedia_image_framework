@@ -389,7 +389,6 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     return IMAGE_RESULT_SUCCESS;
 }
 
-// LCOV_EXCL_START
 unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLength, BUILD_PARAM &info,
     const InitializationOptions &opts, int &errorCode)
 {
@@ -445,7 +444,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     SetYUVDataInfoToPixelMap(dstPixelMap);
     return dstPixelMap;
 }
-// LCOV_EXCL_STOP
 
 void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer)
 {
@@ -531,7 +529,6 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
-// LCOV_EXCL_START
 unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 {
     IMAGE_LOGD("PixelMap::Create3 enter");
@@ -573,7 +570,6 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     dstPixelMap->SetEditable(opts.editable);
     return dstPixelMap;
 }
-// LCOV_EXCL_STOP
 
 void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
                                  PixelMap &dstPixelMap)
@@ -631,7 +627,6 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     return Create(source, srcRect, opts, error);
 }
 
-// LCOV_EXCL_START
 unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, const InitializationOptions &opts,
     int32_t &errorCode)
 {
@@ -678,7 +673,6 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     return dstPixelMap;
 }
-// LCOV_EXCL_STOP
 
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
@@ -1358,7 +1352,6 @@ bool PixelMap::IsSameImage(const PixelMap &other)
     return true;
 }
 
-// LCOV_EXCL_START
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
@@ -1402,7 +1395,6 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     }
     return SUCCESS;
 }
-// LCOV_EXCL_STOP
 
 bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
                                 const uint32_t &stride, const Rect &region)
@@ -1459,7 +1451,6 @@ bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, 
     return true;
 }
 
-// LCOV_EXCL_START
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                               const Rect &region, uint8_t *dst)
 {
@@ -1503,7 +1494,6 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
     }
     return SUCCESS;
 }
-// LCOV_EXCL_STOP
 
 uint32_t PixelMap::ResetConfig(const Size &size, const PixelFormat &format)
 {
@@ -1554,7 +1544,6 @@ bool PixelMap::SetAlphaType(const AlphaType &alphaType)
     return true;
 }
 
-// LCOV_EXCL_START
 uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
 {
     if (pos.x < 0 || pos.y < 0 || pos.x >= GetWidth() || pos.y >= GetHeight()) {
@@ -1692,7 +1681,6 @@ bool PixelMap::WritePixels(const uint32_t &color)
     }
     return true;
 }
-// LCOV_EXCL_STOP
 
 bool PixelMap::IsStrideAlignment()
 {
@@ -1750,7 +1738,6 @@ void PixelMap::ReleaseMemory(AllocatorType allocType, void *addr, void *context,
 #endif
 }
 
-// LCOV_EXCL_START
 bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
@@ -1798,7 +1785,6 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     IMAGE_LOGE("WriteAshmemData not support crossplatform");
     return false;
 }
-// LCOV_EXCL_STOP
 
 bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
 {
@@ -1818,7 +1804,6 @@ bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
     return WriteAshmemDataToParcel(parcel, size);
 }
 
-// LCOV_EXCL_START
 uint8_t *PixelMap::ReadHeapDataFromParcel(Parcel &parcel, int32_t bufferSize)
 {
     uint8_t *base = nullptr;
@@ -1886,7 +1871,6 @@ uint8_t *PixelMap::ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize)
 #endif
     return base;
 }
-// LCOV_EXCL_STOP
 
 uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 {
@@ -2355,7 +2339,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     return pixelMap;
 }
 
-// LCOV_EXCL_START
 void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const
 {
     buff.push_back(value);
@@ -3444,6 +3427,5 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
-// LCOV_EXCL_STOP
 } // namespace Media
 } // namespace OHOS
