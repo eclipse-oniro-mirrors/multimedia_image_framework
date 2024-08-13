@@ -14,6 +14,9 @@
  */
 
 #include "image_format_convert.h"
+#ifdef EXT_PIXEL
+#include "pixel_yuv_ext.h"
+#endif
 
 #include <map>
 #include <memory>
@@ -458,12 +461,18 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
         IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
     } else if (planes->planeCount >= NUM_2) {
-        if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::YCBCR_P010) {
+        if (pixelFormat == PixelFormat::NV12) {
             strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_U].columnStride,
                 planes->planes[PLANE_Y].offset, planes->planes[PLANE_U].offset};
-        } else if (pixelFormat == PixelFormat::NV21 || pixelFormat == PixelFormat::YCRCB_P010) {
+        } else if (pixelFormat == PixelFormat::NV21) {
             strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_V].columnStride,
                 planes->planes[PLANE_Y].offset, planes->planes[PLANE_V].offset};
+        } else if (pixelFormat == PixelFormat::YCBCR_P010) {
+            strides = {planes->planes[PLANE_Y].columnStride / 2, planes->planes[PLANE_U].columnStride / 2,
+                planes->planes[PLANE_Y].offset / 2, planes->planes[PLANE_U].offset / 2};
+        } else if (pixelFormat == PixelFormat::YCRCB_P010) {
+            strides = {planes->planes[PLANE_Y].columnStride / 2, planes->planes[PLANE_V].columnStride / 2,
+                planes->planes[PLANE_Y].offset / 2, planes->planes[PLANE_V].offset / 2};
         } else {
             strides = {stride, 0, planes->planes[0].offset, 0};
         }
@@ -545,7 +554,8 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     srcPiexlMap->GetImageYUVInfo(yDInfo);
     ImageInfo imageInfo;
     srcPiexlMap->GetImageInfo(imageInfo);
-    if (srcFormat == PixelFormat::NV21 &&
+    if ((srcFormat == PixelFormat::NV21 || srcFormat == PixelFormat::YCBCR_P010 ||
+        srcFormat == PixelFormat::YCRCB_P010) &&
         (yDInfo.yWidth == 0 || yDInfo.yHeight == 0 || yDInfo.uvWidth == 0 || yDInfo.uvHeight == 0)) {
         yDInfo.yWidth = static_cast<uint32_t>(imageInfo.size.width);
         yDInfo.yHeight = static_cast<uint32_t>(imageInfo.size.height);
@@ -600,7 +610,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
         info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
+#ifdef EXT_PIXEL
+        pixelMap = std::make_unique<PixelYuvExt>();
+#else
         pixelMap = std::make_unique<PixelYuv>();
+#endif
         if (pixelMap == nullptr) {
             return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         }
