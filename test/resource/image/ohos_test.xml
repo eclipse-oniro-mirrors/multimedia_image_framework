@@ -390,4 +390,22 @@
             <option name="push" value="images/hasNoExif.jpg -> /data/local/tmp/image" src="res"/>
         </preparer>
     </target>
+    <target name="ImageAccessorFuzzTest">
+        <preparer>
+            <option name="push" value="images/exif/test_exif.png -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.webp -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_exif.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.dng -> /data/local/tmp/" src="res"/>
+        </preparer>
+    </target>
+    <target name="ImagePluginFuzzTest">
+        <preparer>
+            <option name="push" value="images/test_hw.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test-tree-420.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_hw.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.webp -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test.gif -> /data/local/tmp/" src="res"/>
+        </preparer>
+    </target>
 </configuration>
