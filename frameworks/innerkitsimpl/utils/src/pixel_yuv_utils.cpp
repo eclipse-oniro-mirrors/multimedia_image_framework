@@ -426,9 +426,6 @@ bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *ds
 int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
     uint8_t *dstPixels, YuvImageInfo &dstInfo, int32_t module)
 {
-    int ret = 0;
-    AVFrame *srcFrame = nullptr;
-    AVFrame *dstFrame = nullptr;
     struct SwsContext *ctx = nullptr;
 
     if (srcInfo.format == AVPixelFormat::AV_PIX_FMT_NONE || dstInfo.format == AVPixelFormat::AV_PIX_FMT_NONE) {
@@ -439,32 +436,32 @@ int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
         IMAGE_LOGE("src/dst width/height error!");
         return -1;
     }
-
-    srcFrame = av_frame_alloc();
-    dstFrame = av_frame_alloc();
-    if (srcFrame != nullptr && dstFrame != nullptr) {
-        ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
-                             dstInfo.width, dstInfo.height, dstInfo.format,
-                             module, nullptr, nullptr, nullptr);
-        if (ctx != nullptr) {
-            FillSrcFrameInfo(srcFrame, srcPixels, srcInfo);
-            FillDstFrameInfo(dstFrame, dstPixels, dstInfo);
-            sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0, srcInfo.height,
-                dstFrame->data, dstFrame->linesize);
-        } else {
-            IMAGE_LOGE("FFMpeg: sws_getContext failed!");
-            ret = -1;
-        }
-    } else {
-        IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
-        ret = -1;
+    ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
+                         dstInfo.width, dstInfo.height, dstInfo.format,
+                         module, nullptr, nullptr, nullptr);
+    if (ctx == nullptr) {
+        IMAGE_LOGE("FFMpeg: sws_getContext failed!");
+        return -1;
     }
-
+    AVFrame *srcFrame = av_frame_alloc();
+    AVFrame *dstFrame = av_frame_alloc();
+    if (srcFrame == nullptr && dstFrame == nullptr) {
+        IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
+        sws_freeContext(ctx);
+        return  -1;
+    }
+    FillSrcFrameInfo(srcFrame, srcPixels, srcInfo);
+    FillDstFrameInfo(dstFrame, dstPixels, dstInfo);
+    auto ret = sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0, srcInfo.height,
+        dstFrame->data, dstFrame->linesize);
     av_frame_free(&srcFrame);
     av_frame_free(&dstFrame);
     sws_freeContext(ctx);
-
-    return ret;
+    if (ret <= 0) {
+        IMAGE_LOGE("FFMpeg: sws_scale failed!");
+        return -1;
+    }
+    return EXPR_SUCCESS;
 }
 
 static bool CreateRotateFilter(AVFilterGraph **filterGraph, AVFilterContext **transposeCtx,

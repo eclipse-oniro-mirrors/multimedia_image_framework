@@ -134,6 +134,14 @@ static bool RGBToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam,
     return true;
 }
 
+static void FillFrameInfo(AVFrame *frame, uint8_t *slice[], int stride[])
+{
+    frame->data[0] = slice[0];
+    frame->data[1] = slice[1];
+    frame->linesize[0] = stride[0];
+    frame->linesize[1] = stride[1];
+}
+
 static bool SoftDecode(const SrcConvertParam &srcParam, const DestConvertParam &destParam)
 {
     auto srcformat = findPixelFormat(srcParam.format);
@@ -145,16 +153,26 @@ static bool SoftDecode(const SrcConvertParam &srcParam, const DestConvertParam &
         IMAGE_LOGE("Error to create SwsContext.");
         return false;
     }
-    int height = 0;
-    const uint8_t *srcSlice[] = {srcParam.slice[0], srcParam.slice[1]};
-    int srcStride[] = {static_cast<int>(srcParam.stride[0]), static_cast<int>(srcParam.stride[1])};
-    uint8_t *dstSlice[] = {destParam.slice[0], destParam.slice[1]};
-    int dstStride[] = {static_cast<int>(destParam.stride[0]), static_cast<int>(destParam.stride[1])};
+    AVFrame *srcFrame = av_frame_alloc();
+    AVFrame *dstFrame = av_frame_alloc();
+    if (srcFrame == nullptr && dstFrame == nullptr) {
+        IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
+        sws_freeContext(swsContext);
+        return false;
+    }
+    uint8_t *srcSlice[4] = {const_cast<uint8_t *>(srcParam.slice[0]), const_cast<uint8_t *>(srcParam.slice[1]),
+        const_cast<uint8_t *>(srcParam.slice[2]), const_cast<uint8_t *>(srcParam.slice[3])};
+    FillFrameInfo(srcFrame, srcSlice, const_cast<int *>(srcParam.stride));
+    uint8_t *destSlice[4] = {const_cast<uint8_t *>(destParam.slice[0]), const_cast<uint8_t *>(destParam.slice[1]),
+        const_cast<uint8_t *>(destParam.slice[2]), const_cast<uint8_t *>(destParam.slice[3])};
+    FillFrameInfo(dstFrame, destSlice, const_cast<int *>(destParam.stride));
 
-    height = sws_scale(swsContext, srcSlice, srcStride, SRCSLICEY, destParam.height, dstSlice, dstStride);
-
+    auto ret = sws_scale(swsContext, srcFrame->data, srcFrame->linesize, SRCSLICEY, destParam.height,
+        dstFrame->data, dstFrame->linesize);
+    av_frame_free(&srcFrame);
+    av_frame_free(&dstFrame);
     sws_freeContext(swsContext);
-    if (height == 0) {
+    if (ret <= 0) {
         IMAGE_LOGE("Image pixel format conversion failed");
         return false;
     }
