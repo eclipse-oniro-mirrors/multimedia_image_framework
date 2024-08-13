@@ -165,7 +165,7 @@ void PixelYuvExt::rotate(float degrees)
         return ;
     }
 
-    IMAGE_LOGE("PixelYuvExt::rotate dstWidth=%{public}d dstHeight=%{public}d", dstWidth, dstHeight);
+    IMAGE_LOGD("PixelYuvExt::rotate dstWidth=%{public}d dstHeight=%{public}d", dstWidth, dstHeight);
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo_.pixelFormat, "rotate ImageData", dstWidth, dstHeight, dstStrides);
     if (m == nullptr) {

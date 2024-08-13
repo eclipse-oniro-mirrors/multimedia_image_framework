@@ -253,8 +253,8 @@ struct SrcConvertParam {
     PixelFormat format = PixelFormat::UNKNOWN;
     const uint8_t *buffer = nullptr;
     uint32_t bufferSize = 0;
-    int stride[2] = {0, 0};
-    const uint8_t *slice[2] = {nullptr, nullptr};
+    int stride[4] = {0, 0, 0, 0};
+    const uint8_t *slice[4] = {nullptr, nullptr, nullptr, nullptr};
 };
 
 struct DestConvertParam {
@@ -264,8 +264,8 @@ struct DestConvertParam {
     PixelFormat format = PixelFormat::UNKNOWN;
     uint8_t *buffer = nullptr;
     uint32_t bufferSize = 0;
-    int stride[2] = {0, 0};
-    uint8_t *slice[2] = {nullptr, nullptr};
+    int stride[4] = {0, 0, 0, 0};
+    uint8_t *slice[4] = {nullptr, nullptr, nullptr, nullptr};
 };
 
 struct FillColor {
