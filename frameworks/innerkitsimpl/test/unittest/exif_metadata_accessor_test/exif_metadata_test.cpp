@@ -1727,7 +1727,6 @@ HWTEST_F(ExifMetadataTest, GetIFD001, TestSize.Level3)
 std::string g_RemoveBatch001[] = {
     {"ImageLength"},
     {"HwMnoteCaptureMode"},
-    {"MovingPhotoId"},
     {"MovingPhotoVersion"},
     {"MicroVideoPresentationTimestampUS"},
 };
