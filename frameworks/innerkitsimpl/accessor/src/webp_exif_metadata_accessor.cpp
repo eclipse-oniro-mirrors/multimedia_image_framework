@@ -81,7 +81,7 @@ uint32_t WebpExifMetadataAccessor::Read()
     return SUCCESS;
 }
 
-bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     if (!imageStream_->IsOpen()) {
         if (!imageStream_->Open(OpenMode::ReadWrite)) {
@@ -128,6 +128,7 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob) const
 
         blob.Resize(size);
         imageStream_->Read(blob.Data(), size);
+        tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size());
         return true;
     }
 
@@ -519,6 +520,9 @@ bool WebpExifMetadataAccessor::WirteChunkVp8x(BufferMetadataStream &bufStream, c
     const uint32_t size = chunkHead.ReadUInt32(WEBP_CHUNK_ID_SIZE, littleEndian);
     DataBuf chunkData(size);
     if (static_cast<size_t>(imageStream_->Read(chunkData.Data(), chunkData.Size())) != chunkData.Size()) {
+        return false;
+    }
+    if (chunkData.Data() == nullptr) {
         return false;
     }
     chunkData.Data()[0] |= WEBP_EXIF_FLAG_BIT;

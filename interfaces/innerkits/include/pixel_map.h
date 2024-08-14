@@ -32,6 +32,8 @@
 
 namespace OHOS {
 namespace Media {
+struct HdrMetadata;
+enum class ImageHdrType : int32_t;
 using TransColorProc = bool (*)(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
 using CustomFreePixelMap = void (*)(void *addr, void *context, uint32_t size);
 
@@ -55,8 +57,10 @@ struct InitializationOptions {
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
     ScaleMode scaleMode = ScaleMode::FIT_TARGET_SIZE;
+    int32_t srcRowStride = 0;
     bool editable = false;
     bool useSourceIfMatch = false;
+    bool useDMA = false;
 };
 struct TransInfos;
 
@@ -232,6 +236,9 @@ public:
     {
         yuvDataInfo_ = yuvinfo;
     }
+    NATIVEEXPORT virtual void AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t height);
+    NATIVEEXPORT virtual void UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t height,
+        YUVStrideInfo &strides);
     NATIVEEXPORT virtual void GetImageYUVInfo(YUVDataInfo &yuvInfo) const
     {
         yuvInfo = yuvDataInfo_;
@@ -291,11 +298,46 @@ public:
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
+    // format support rgba8888, nv12, nv21. The default value is rgba8888
+    // If toSRGB is false, pixelmap will be converted to display_p3
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
+    // use for hdr pixelmap, If isSRGB is false, the colorspace is p3 when converting to SDR.
+    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB);
+    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB();
+
+    NATIVEEXPORT std::shared_ptr<HdrMetadata> GetHdrMetadata()
+    {
+        return hdrMetadata_;
+    }
+
+    NATIVEEXPORT void SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
+    {
+        hdrMetadata_ = metadata;
+    }
+
+    NATIVEEXPORT ImageHdrType GetHdrType()
+    {
+        return hdrType_;
+    }
+
+    NATIVEEXPORT void SetHdrType(ImageHdrType hdrType)
+    {
+        hdrType_ = hdrType;
+    }
+
+    NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
 
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
+    NATIVEEXPORT void  setAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
 
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
@@ -322,7 +364,7 @@ protected:
     static bool CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t offset, int32_t stride,
         const InitializationOptions &opts);
     static void UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
-                                  PixelMap dstPixelMap);
+                                  PixelMap &dstPixelMap);
     static void InitDstImageInfo(const InitializationOptions &opts, const ImageInfo &srcImageInfo,
                                  ImageInfo &dstImageInfo);
     static bool CopyPixMapToDst(PixelMap &source, void* &dstPixels, int &fd, uint32_t bufferSize);
@@ -333,6 +375,7 @@ protected:
     static bool IsSameSize(const Size &src, const Size &dst);
     static bool ScalePixelMap(const Size &targetSize, const Size &dstSize, const ScaleMode &scaleMode,
                               PixelMap &dstPixelMap);
+    static bool IsYuvFormat(PixelFormat format);
     bool GetPixelFormatDetail(const PixelFormat format);
     uint32_t CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremul);
     bool CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
@@ -349,6 +392,8 @@ protected:
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
     bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
+    bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
+    bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
     void SetEditable(bool editable)
     {
@@ -379,7 +424,7 @@ protected:
     static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
-    bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
+    static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
     bool WriteImageInfo(Parcel &parcel) const;
     void WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const;
     static uint8_t ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor);
@@ -392,7 +437,7 @@ protected:
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
-
+    bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     uint8_t *data_ = nullptr;
@@ -417,6 +462,8 @@ protected:
     bool isAstc_ = false;
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
     Size astcrealSize_;
+    std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
+    ImageHdrType hdrType_;
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
@@ -432,6 +479,8 @@ protected:
     YUVDataInfo yuvDataInfo_;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
+    std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
+    bool toSdrColorIsSRGB_ = false;
 };
 } // namespace Media
 } // namespace OHOS

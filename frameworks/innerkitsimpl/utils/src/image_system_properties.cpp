@@ -100,7 +100,7 @@ bool ImageSystemProperties::GetAntiAliasingEnabled()
 
 bool ImageSystemProperties::GetDumpImageEnabled()
 {
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.dumpimage.enabled", false);
 #else
     return false;
@@ -120,6 +120,15 @@ bool ImageSystemProperties::GetHardWareEncodeEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.hardwareencode.enabled", true);
+#else
+    return false;
+#endif
+}
+
+bool ImageSystemProperties::GetHeifHardwareDecodeEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.heifhardwaredecode.enabled", true);
 #else
     return false;
 #endif
@@ -161,5 +170,16 @@ bool ImageSystemProperties::IsPhotos()
     return false;
 #endif
 }
+
+bool ImageSystemProperties::IsCamera()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    static std::string processName = getCurrentProcessName();
+    return processName == "com.huawei.hmos.camera";
+#else
+    return false;
+#endif
+}
+
 } // namespace Media
 } // namespace OHOS

@@ -48,7 +48,14 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser",
+    "${image_subsystem}/plugins/common/libs/image/libextplugin/include/hdr",
   ]
+  if (is_arkui_x) {
+    include_dirs += [
+      "//foundation/graphic/graphic_2d/utils/color_manager/export",
+      "//commonlibrary/c_utils/base/include",
+    ]
+  }
 
   if (use_mingw_win) {
     include_dirs +=
@@ -121,6 +128,7 @@ if (use_clang_android) {
     cflags = [
       "-DIMAGE_DEBUG_FLAG",
       "-DIMAGE_COLORSPACE_FLAG",
+      "-DNEW_SKIA",
     ]
 
     sources = [
@@ -131,6 +139,7 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
@@ -144,6 +153,10 @@ if (use_clang_android) {
       "${image_subsystem}/frameworks/innerkitsimpl/common/src/pixel_yuv.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert.cpp",
       "${image_subsystem}/frameworks/innerkitsimpl/converter/src/image_format_convert_utils.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/picture/auxiliary_generator.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/picture/auxiliary_picture.cpp",
+      "${image_subsystem}/frameworks/innerkitsimpl/picture/picture.cpp",
+      "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hdr/jpeg_mpf_parser.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_packer_ex.cpp",
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/codec/src/image_source.cpp",
@@ -226,8 +239,8 @@ if (use_clang_android) {
         "hilog:libhilog",
         "hitrace:hitrace_meter",
         "ipc:ipc_core",
+        "libjpeg-turbo:turbojpeg",
         "napi:ace_napi",
-        "skia:libjpeg",
         "skia:skia_canvaskit",
         "zlib:libz",
       ]
@@ -299,6 +312,7 @@ ohos_static_library("image_static") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/file_metadata_stream.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/heif_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/jpeg_exif_metadata_accessor.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/metadata_accessor_factory.cpp",
@@ -386,6 +400,7 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
+    external_deps = []
   } else if (use_clang_android) {
     defines = image_decode_android_defines
     sources -= [
@@ -402,6 +417,7 @@ ohos_static_library("image_static") {
       "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
+    external_deps = []
   } else {
     defines = [
       "DUAL_ADAPTER",
@@ -433,7 +449,11 @@ ohos_static_library("image_static") {
       external_deps += [ "libexif:libexif" ]
     }
   }
-  external_deps += [ "zlib:libz" ]
+  if (is_arkui_x) {
+    deps += [ "//third_party/zlib:libz" ]
+  } else {
+    external_deps += [ "zlib:libz" ]
+  }
 
   if (defined(global_parts_info) &&
       defined(global_parts_info.open_source_libyuv)) {

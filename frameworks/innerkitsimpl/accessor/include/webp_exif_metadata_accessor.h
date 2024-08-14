@@ -40,7 +40,7 @@ public:
     ~WebpExifMetadataAccessor();
 
     virtual uint32_t Read() override;
-    bool ReadBlob(DataBuf &blob) const override;
+    bool ReadBlob(DataBuf &blob) override;
     virtual uint32_t Write() override;
     uint32_t WriteBlob(DataBuf &blob) override;
 

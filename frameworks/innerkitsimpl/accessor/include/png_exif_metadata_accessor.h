@@ -32,13 +32,15 @@ public:
 
     virtual uint32_t Read() override;
     virtual uint32_t Write() override;
-    bool ReadBlob(DataBuf &blob) const override;
+    bool ReadBlob(DataBuf &blob) override;
     uint32_t WriteBlob(DataBuf &blob) override;
+    uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
+                           std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
 
 private:
     bool IsPngType() const;
-    bool FindTiffFromText(const DataBuf &data, const std::string chunkType, DataBuf &tiffData) const;
-    bool ProcessExifData(DataBuf &blob, std::string chunkType, uint32_t chunkLength) const;
+    bool FindTiffFromText(const DataBuf &data, const std::string chunkType, DataBuf &tiffData);
+    bool ProcessExifData(DataBuf &blob, std::string chunkType, uint32_t chunkLength);
     bool GetExifEncodedBlob(uint8_t **dataBlob, uint32_t &size);
     bool UpdateExifMetadata(BufferMetadataStream &bufStream, uint8_t *dataBlob, uint32_t size);
     bool WriteData(BufferMetadataStream &bufStream, uint8_t *data, uint32_t size);
@@ -46,6 +48,7 @@ private:
                        DataBuf &chunkBuf, std::string chunkType);
     ssize_t ReadChunk(DataBuf &buffer) const;
     uint32_t UpdateData(uint8_t *dataBlob, uint32_t size);
+    bool isCompressed_ = false;
 };
 } // namespace Media
 } // namespace OHOS

@@ -26,6 +26,8 @@
 namespace OHOS {
 namespace ImagePlugin {
 
+const auto EXIF_ID = "Exif\0\0";
+
 HeifParser::HeifParser() = default;
 
 HeifParser::~HeifParser() = default;
@@ -535,6 +537,9 @@ void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
         }
         heif_item_id fromItemId = ref.fromItemId;
         auto fromItemInfeBox = GetInfeBox(fromItemId);
+        if (fromItemInfeBox == nullptr) {
+            continue;
+        }
         if (fromItemInfeBox->GetItemType() != "tmap") {
             return;
         }
@@ -630,7 +635,18 @@ std::shared_ptr<HeifImage> HeifParser::GetPrimaryImage()
 
 std::shared_ptr<HeifImage> HeifParser::GetGainmapImage()
 {
-    return primaryImage_->GetGainmapImage();
+    return primaryImage_ != nullptr ? primaryImage_->GetGainmapImage() : nullptr;
+}
+
+std::shared_ptr<HeifImage> HeifParser::GetAuxiliaryMapImage(const std::string type)
+{
+    auto auxImages = primaryImage_->GetAuxImages();
+    for (auto image : auxImages) {
+        if (image->GetAuxImageType() == type) {
+            return image;
+        }
+    }
+    return nullptr;
 }
 
 std::shared_ptr<HeifImage> HeifParser::GetTmapImage()
@@ -653,6 +669,9 @@ std::shared_ptr<HeifInfeBox> HeifParser::AddItem(const char *itemType, bool hidd
     auto newInfe = std::make_shared<HeifInfeBox>(newItemId, itemType, false);
     newInfe->SetHidden(hidden);
     infeBoxes_[newItemId] = newInfe;
+    if (iinfBox_ == nullptr) {
+        return nullptr;
+    }
     iinfBox_->AddChild(newInfe);
     return newInfe;
 }
@@ -849,6 +868,45 @@ uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 
     // CONSTRUCTION_METHOD_FILE_OFFSET 0
     return 0;
+}
+
+void HeifParser::SetTiffOffset()
+{
+    if (tiffOffset_ != 0) {
+        return;
+    }
+    auto metadataList = GetPrimaryImage()->GetAllMetadata();
+    heif_item_id exifId = 0;
+    for (auto metadata : metadataList) {
+        if (metadata && metadata->itemType == EXIF_ID) {
+            exifId = metadata->itemId;
+            break;
+        }
+    }
+    if (exifId == 0) {
+        return;
+    }
+
+    if (!HasItemId(exifId)) {
+        return;
+    }
+
+    auto items = ilocBox_->GetItems();
+    const HeifIlocBox::Item *ilocItem = nullptr;
+    for (const auto &item: items) {
+        if (item.itemId == exifId) {
+            ilocItem = &item;
+            break;
+        }
+    }
+    if (!ilocItem) {
+        return;
+    }
+
+    tiffOffset_ = ilocItem->baseOffset;
+    if (!ilocItem->extents.empty()) {
+        tiffOffset_ += ilocItem->extents[0].offset;
+    }
 }
 } // namespace ImagePlugin
 } // namespace OHOS

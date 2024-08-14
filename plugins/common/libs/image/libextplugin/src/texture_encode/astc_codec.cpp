@@ -68,7 +68,7 @@ public:
     SuperCompressTexture sutEncSoEncFunc_;
 private:
     void *textureEncSoHandle_;
-    bool LoadSutEncSo();
+    void LoadSutEncSo();
 };
 
 static SutEncSoManager g_sutEncSoManager;
@@ -77,36 +77,27 @@ SutEncSoManager::SutEncSoManager()
 {
     textureEncSoHandle_ = nullptr;
     sutEncSoEncFunc_ = nullptr;
-    if (LoadSutEncSo()) {
-        IMAGE_LOGD("astcenc sut enc so is success to be opened!");
-    } else {
-        IMAGE_LOGD("astcenc sut enc so is failed to be opened!");
-    }
+    LoadSutEncSo();
 }
 
 SutEncSoManager::~SutEncSoManager()
 {
-    if (textureEncSoHandle_ == nullptr) {
-        IMAGE_LOGD("astcenc sut enc so is not be opened when dlclose!");
-        return;
-    }
-    if (dlclose(textureEncSoHandle_) != 0) {
-        IMAGE_LOGE("astcenc sut enc so dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
-    } else {
-        IMAGE_LOGD("astcenc sut enc so dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
+    if (textureEncSoHandle_ != nullptr) {
+        int ret = dlclose(textureEncSoHandle_);
+        IMAGE_LOGD("sutenc dlclose ret = %{public}d!", ret);
     }
 }
 
-bool SutEncSoManager::LoadSutEncSo()
+void SutEncSoManager::LoadSutEncSo()
 {
     if (!CheckClBinIsExist(g_textureSuperEncSo)) {
         IMAGE_LOGE("sut %{public}s! is not found", g_textureSuperEncSo.c_str());
-        return false;
+        return;
     }
     textureEncSoHandle_ = dlopen(g_textureSuperEncSo.c_str(), 1);
     if (textureEncSoHandle_ == nullptr) {
         IMAGE_LOGE("sut libtextureSuperCompress dlopen failed!");
-        return false;
+        return;
     }
     sutEncSoEncFunc_ =
         reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTexture"));
@@ -114,9 +105,8 @@ bool SutEncSoManager::LoadSutEncSo()
         IMAGE_LOGE("sut libtextureSuperCompress dlsym failed!");
         dlclose(textureEncSoHandle_);
         textureEncSoHandle_ = nullptr;
-        return false;
+        return;
     }
-    return true;
 }
 #endif
 
@@ -135,10 +125,6 @@ uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOption
 // test ASTCEncoder
 uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions &encodeParams)
 {
-    if (header == nullptr) {
-        IMAGE_LOGE("header is nullptr");
-        return ERROR;
-    }
     uint8_t *tmp = header;
     *tmp++ = ASTC_MAGIC_ID & ASTC_MASK;
     *tmp++ = (ASTC_MAGIC_ID >> ASTC_NUM_8) & ASTC_MASK;
@@ -161,7 +147,8 @@ uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions 
 
 uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
 {
-    if ((work == nullptr) || (option == nullptr)) {
+    bool invaildInput = (work == nullptr) || (option == nullptr);
+    if (invaildInput) {
         IMAGE_LOGE("astc input work or option is nullptr.");
         return ERROR;
     }
@@ -173,14 +160,8 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
-    if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
-        IMAGE_LOGE("ERROR: block size is invalid");
-        return ERROR;
-    } else if (status == ASTCENC_ERR_BAD_CPU_FLOAT) {
-        IMAGE_LOGE("ERROR: astcenc must not be compiled with fast-math");
-        return ERROR;
-    } else if (status != ASTCENC_SUCCESS) {
-        IMAGE_LOGE("ERROR: config failed");
+    if (status != ASTCENC_SUCCESS) {
+        IMAGE_LOGE("ERROR: astcenc_config_init failed, status %{public}d", status);
         return ERROR;
     }
     work->config.privateProfile = option->privateProfile_;
@@ -380,11 +361,12 @@ static QualityProfile GetAstcQuality(int32_t quality)
 }
 
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
-static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
+bool AstcCodec::TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
     uint8_t *buffer, const std::string &clBinPath)
 {
     ClAstcHandle *astcClEncoder = nullptr;
-    if ((inData == nullptr) || (buffer == nullptr)) {
+    bool invalidPara = (inData == nullptr) || (buffer == nullptr);
+    if (invalidPara) {
         IMAGE_LOGE("astc Please check TryAstcEncBasedOnCl input!");
         return false;
     }
@@ -412,16 +394,13 @@ static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
 #endif
 
 #ifdef SUT_ENCODE_ENABLE
-static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
-    if ((param.sutProfile == SutProfile::SKIP_SUT) ||
-        ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE))) {
-        IMAGE_LOGD("astc sutProfile %{public}d or the astc profile could not be superCompress!", param.sutProfile);
-        param.sutProfile = SutProfile::SKIP_SUT;
-        return true;
-    }
-    if (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM) {
-        IMAGE_LOGD("astc sut enc only support 4x4!");
+    bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
+        ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
+        (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
+    if (skipSutEnc) {
+        IMAGE_LOGD("astc is not suit to be compressed to sut!");
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
@@ -486,6 +465,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
+    param.enableQualityCheck = enableQualityCheck;
     if (!AstcSoftwareEncodeCore(param, pixmapIn, outBuffer)) {
         IMAGE_LOGE("AstcSoftwareEncodeCore failed");
         return ERROR;
@@ -498,16 +478,13 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
-    if (openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
-        (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
+    bool enableClEnc = openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+        (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
+    if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
-        if (CheckClBinIsExist(clBinPath) && TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath)) {
-            param.hardwareFlag = true;
-            IMAGE_LOGI("astc hardware encode success!");
-        } else {
-            IMAGE_LOGI("astc AstcEncShader binany file is not exist, otherwise hardware encode failed!");
-        }
+        param.hardwareFlag = CheckClBinIsExist(clBinPath) &&
+            AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
     }
 #endif
     if (!param.hardwareFlag) {

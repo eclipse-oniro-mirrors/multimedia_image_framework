@@ -26,6 +26,11 @@
 #include <filesystem>
 #include <vector>
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "auxiliary_generator.h"
+#include "auxiliary_picture.h"
+#endif
+
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -42,6 +47,7 @@
 #include "image_utils.h"
 #include "incremental_source_stream.h"
 #include "istream_source_stream.h"
+#include "jpeg_mpf_parser.h"
 #include "media_errors.h"
 #include "memory_manager.h"
 #include "metadata_accessor.h"
@@ -58,6 +64,7 @@
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
+#include "native_buffer.h"
 #include "v1_0/buffer_handle_meta_key_type.h"
 #include "v1_0/cm_color_space.h"
 #include "v1_0/hdr_static_metadata.h"
@@ -91,6 +98,14 @@ using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+
+static const map<PixelFormat, GraphicPixelFormat> SINGLE_HDR_CONVERT_FORMAT_MAP = {
+    { PixelFormat::RGBA_8888, GRAPHIC_PIXEL_FMT_RGBA_8888 },
+    { PixelFormat::NV21, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
+    { PixelFormat::NV12, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
+    { PixelFormat::YCRCB_P010, GRAPHIC_PIXEL_FMT_YCRCB_420_SP },
+    { PixelFormat::YCBCR_P010, GRAPHIC_PIXEL_FMT_YCBCR_420_SP },
+};
 #endif
 
 namespace InnerFormat {
@@ -115,6 +130,9 @@ const string RAW_EXTENDED_FORMATS[] = {
 // BASE64 image prefix type data:image/<type>;base64,<data>
 static const std::string IMAGE_URL_PREFIX = "data:image/";
 static const std::string BASE64_URL_PREFIX = ";base64,";
+static const std::string KEY_IMAGE_WIDTH = "ImageWidth";
+static const std::string KEY_IMAGE_HEIGHT = "ImageLength";
+static const std::string IMAGE_FORMAT_RAW = "image/raw";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
 static const int INT_255 = 255;
@@ -136,6 +154,7 @@ static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
+static const int IMAGE_HEADER_SIZE = 12;
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
@@ -146,6 +165,7 @@ constexpr uint8_t BYTE_POS_0 = 0;
 constexpr uint8_t BYTE_POS_1 = 1;
 constexpr uint8_t BYTE_POS_2 = 2;
 constexpr uint8_t BYTE_POS_3 = 3;
+constexpr uint32_t SUT_FILE_SIGNATURE = 0x53555401;
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
 using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
@@ -322,7 +342,7 @@ uint32_t ImageSource::GetSupportedFormats(set<string> &formats)
 
         AttrData &attr = iter->second;
         const string *format = nullptr;
-        if (attr.GetValue(format) != SUCCESS) {
+        if (attr.GetValue(format) != SUCCESS || format == nullptr) {
             IMAGE_LOGE("[ImageSource]attr data get format failed.");
             continue;
         }
@@ -494,6 +514,11 @@ void ImageSource::Reset()
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
+    if (opts.desiredSize.width < 0 || opts.desiredSize.height < 0) {
+        IMAGE_LOGE("desiredSize is invalid");
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
     ImageTrace imageTrace("ImageSource::CreatePixelMapEx, index:%u, desiredSize:(%d, %d)", index,
         opts.desiredSize.width, opts.desiredSize.height);
     IMAGE_LOGD("CreatePixelMapEx imageId_: %{public}lu, desiredPixelFormat: %{public}d,"
@@ -514,6 +539,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
 #endif
 
     if (IsSpecialYUV()) {
+        opts_ = opts;
         return CreatePixelMapForYUV(errorCode);
     }
 
@@ -621,7 +647,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
 #endif
 }
 
-static void ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrInfos)
+void ImageSource::ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &addrInfos)
 {
     addrInfos.addr = static_cast<uint8_t *>(context.pixelsBuffer.buffer);
     addrInfos.context = static_cast<uint8_t *>(context.pixelsBuffer.context);
@@ -660,6 +686,12 @@ bool IsPhotosLcd()
     return isPhotos;
 }
 
+bool IsCameraProcess()
+{
+    static bool isCamera = ImageSystemProperties::IsCamera();
+    return isCamera;
+}
+
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -675,15 +707,14 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
         return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             (IsWidthAligned(opts.desiredSize.width)
-            || opts.preferDma
-            || IsPhotosLcd());
+            || opts.preferDma || IsPhotosLcd() || IsCameraProcess());
     }
     return false;
 #endif
 }
 
-DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
-    const MemoryUsagePreference &preference, bool hasDesiredSizeOptions)
+DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
+    const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, PlImageInfo& plInfo)
 {
     DecodeContext context;
     if (opts.allocatorType != AllocatorType::DEFAULT) {
@@ -695,6 +726,30 @@ DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info
         } else {
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
+    }
+
+    context.info.pixelFormat = plInfo.pixelFormat;
+    ImageHdrType hdrType = sourceHdrType_;
+    if (opts_.desiredDynamicRange == DecodeDynamicRange::SDR && !IsSingleHdrImage(hdrType)) {
+        // If the image is a single-layer HDR, it needs to be decoded into HDR first and then converted into SDR.
+        hdrType = ImageHdrType::SDR;
+    }
+    if (hdrType > ImageHdrType::SDR) {
+        // hdr pixelmap need use surfacebuffer.
+        context.allocatorType = AllocatorType::DMA_ALLOC;
+    }
+    context.hdrType = hdrType;
+    IMAGE_LOGD("[ImageSource] sourceHdrType_:%{public}d, deocdeHdrType:%{public}d", sourceHdrType_, hdrType);
+    if (IsSingleHdrImage(hdrType)) {
+        PixelFormat format = PixelFormat::RGBA_1010102;
+        if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::YCBCR_P010) {
+            format = PixelFormat::YCBCR_P010;
+        } else if (opts.desiredPixelFormat == PixelFormat::NV21 || opts.desiredPixelFormat == PixelFormat::YCRCB_P010) {
+            format = PixelFormat::YCRCB_P010;
+        }
+        context.pixelFormat = format;
+        context.info.pixelFormat = format;
+        plInfo.pixelFormat = format;
     }
     return context;
 }
@@ -730,6 +785,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     opts_ = opts;
     ImageInfo info;
     errorCode = GetImageInfo(FIRST_FRAME, info);
+    ParseHdrType();
 #ifdef IMAGE_QOS_ENABLE
     if (IsSupportSize(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
@@ -819,9 +875,10 @@ static void ResizeCropPixelmap(PixelMap &pixelmap, int32_t srcDensity, int32_t w
     }
 }
 
-static bool IsYuvFormat(PixelFormat format)
+bool ImageSource::IsYuvFormat(PixelFormat format)
 {
-    return format == PixelFormat::NV21 || format == PixelFormat::NV12;
+    return format == PixelFormat::NV21 || format == PixelFormat::NV12 ||
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
 }
 
 static void CopyYuvInfo(YUVDataInfo &yuvInfo, ImagePlugin::PlImageInfo &plInfo)
@@ -857,17 +914,25 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
 }
 
 // add graphic colorspace object to pixelMap.
-static void SetPixelMapColorSpace(ImagePlugin::DecodeContext context, unique_ptr<PixelMap>& pixelMap,
+void ImageSource::SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, unique_ptr<PixelMap>& pixelMap,
     std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (context.hdrType > ImageHdrType::SDR) {
+    bool isSupportICCProfile = (decoder == nullptr) ? false : decoder->IsSupportICCProfile();
+    if (IsSingleHdrImage(sourceHdrType_)) {
+        pixelMap->SetToSdrColorSpaceIsSRGB(false);
+    } else {
+        if (isSupportICCProfile) {
+            pixelMap->SetToSdrColorSpaceIsSRGB(decoder->getGrColorSpace().GetColorSpaceName() == ColorManager::SRGB);
+        }
+    }
+    // If the original image is a single-layer HDR, colorSpace needs to be obtained from the DecodeContext.
+    if (context.hdrType > ImageHdrType::SDR || IsSingleHdrImage(sourceHdrType_)) {
         pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(context.grColorSpaceName));
         IMAGE_LOGD("hdr set pixelmap colorspace is %{public}d-%{public}d",
             context.grColorSpaceName, pixelMap->InnerGetGrColorSpace().GetColorSpaceName());
         return ;
     }
-    bool isSupportICCProfile = decoder->IsSupportICCProfile();
     if (isSupportICCProfile) {
         OHOS::ColorManager::ColorSpace grColorSpace = decoder->getGrColorSpace();
         pixelMap->InnerSetColorSpace(grColorSpace);
@@ -1291,6 +1356,22 @@ DecodeEvent ImageSource::GetDecodeEvent()
 {
     return decodeEvent_;
 }
+void ImageSource::SetDngImageSize(uint32_t index, ImageInfo &imageInfo)
+{
+    Size rawSize {0, 0};
+    uint32_t exifWidthRet = SUCCESS;
+    uint32_t exifHeightRet = SUCCESS;
+    if (imageInfo.encodedFormat == IMAGE_FORMAT_RAW) {
+        exifWidthRet = GetImagePropertyInt(index, KEY_IMAGE_WIDTH, rawSize.width);
+        exifHeightRet = GetImagePropertyInt(index, KEY_IMAGE_HEIGHT, rawSize.height);
+    }
+
+    if (rawSize.width != 0 && rawSize.height != 0
+        && exifWidthRet == SUCCESS && exifHeightRet == SUCCESS) {
+        imageInfo.size.width = rawSize.width;
+        imageInfo.size.height = rawSize.height;
+    }
+}
 
 uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
 {
@@ -1313,6 +1394,32 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     imageInfo = info;
     return SUCCESS;
 }
+
+uint32_t ImageSource::GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo)
+{
+    ImageTrace imageTrace("GetImageInfoFromExif by index");
+    uint32_t ret = SUCCESS;
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    auto iter = GetValidImageStatus(index, ret);
+    if (iter == imageStatusMap_.end()) {
+        guard.unlock();
+        IMAGE_LOGE("[ImageSource]get valid image status fail on get image info from exif, ret:%{public}u.", ret);
+        return ret;
+    }
+    ImageInfo &info = (iter->second).imageInfo;
+    if (info.size.width == 0 || info.size.height == 0) {
+        IMAGE_LOGE("[ImageSource]get the image size fail on get image info from exif, width:%{public}d,"
+                   "height:%{public}d.",
+                   info.size.width, info.size.height);
+        return ERR_IMAGE_DECODE_FAILED;
+    }
+    imageInfo = info;
+    guard.unlock();
+
+    SetDngImageSize(index, imageInfo);
+    return SUCCESS;
+}
+
 
 uint32_t ImageSource::ModifyImageProperty(const std::string &key, const std::string &value)
 {
@@ -1359,7 +1466,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
 
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1391,6 +1498,27 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
+bool ImageSource::PrereadSourceStream()
+{
+    uint8_t* prereadBuffer = new (std::nothrow) uint8_t[IMAGE_HEADER_SIZE];
+    if (prereadBuffer == nullptr) {
+        return false;
+    }
+    uint32_t prereadSize = 0;
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    bool retRead = sourceStreamPtr_->Read(IMAGE_HEADER_SIZE, prereadBuffer,
+                                          IMAGE_HEADER_SIZE, prereadSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("Preread source stream failed.");
+        delete[] prereadBuffer; // Don't forget to delete tmpBuffer if read failed
+        return false;
+    }
+    delete[] prereadBuffer;
+    return true;
+}
+
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 {
     IMAGE_LOGD("CreatExifMetadataByImageSource");
@@ -1404,7 +1532,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    IMAGE_LOGD("sourceStreamPtr create metadataACCessor");
+    IMAGE_LOGD("sourceStreamPtr create metadataAccessor");
+    if (!PrereadSourceStream()) {
+        return ERR_IMAGE_SOURCE_DATA;
+    }
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
@@ -1416,7 +1547,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
     }
-    
+
     if (bufferSize > MAX_BUFFER_SIZE) {
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
@@ -1469,9 +1600,8 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
 
 uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &key, std::string &value)
 {
-    if (isExifReadFailed && exifMetadata_ == nullptr) {
-        IMAGE_LOGD("There is no exif in picture!");
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+    if (isExifReadFailed_ && exifMetadata_ == nullptr) {
+        return exifReadStatus_;
     }
     uint32_t ret = CreatExifMetadataByImageSource();
     if (ret != SUCCESS) {
@@ -1481,7 +1611,8 @@ uint32_t ImageSource::GetImagePropertyCommon(uint32_t index, const std::string &
         }
         IMAGE_LOGD("Failed to create Exif metadata "
             "when attempting to get property.");
-        isExifReadFailed = true;
+        isExifReadFailed_ = true;
+        exifReadStatus_ = ret;
         return ret;
     }
 
@@ -1616,17 +1747,42 @@ bool ImageSource::IsStreamCompleted()
     return sourceStreamPtr_->IsStreamCompleted();
 }
 
+bool ImageSource::ParseHdrType()
+{
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    uint32_t ret = SUCCESS;
+    auto iter = GetValidImageStatus(0, ret);
+    if (iter == imageStatusMap_.end()) {
+        IMAGE_LOGE("[ImageSource] IsHdrImage, get valid image status fail, ret:%{public}u.", ret);
+        return false;
+    }
+    if (InitMainDecoder() != SUCCESS) {
+        IMAGE_LOGE("[ImageSource] IsHdrImage ,get decoder failed");
+        return false;
+    }
+    sourceHdrType_ = mainDecoder_->CheckHdrType();
+    return true;
+}
+
 bool ImageSource::IsHdrImage()
 {
     if (sourceHdrType_ != ImageHdrType::UNKNOWN) {
         return sourceHdrType_ > ImageHdrType::SDR;
     }
-
-    if (InitMainDecoder() != SUCCESS) {
+    if (!ParseHdrType()) {
         return false;
     }
-    sourceHdrType_ = mainDecoder_->CheckHdrType();
     return sourceHdrType_ > ImageHdrType::SDR;
+}
+
+bool ImageSource::IsSingleHdrImage(ImageHdrType type)
+{
+    return type == ImageHdrType::HDR_VIVID_SINGLE || type == ImageHdrType::HDR_ISO_SINGLE;
+}
+
+bool ImageSource::IsDualHdrImage(ImageHdrType type)
+{
+    return type == ImageHdrType::HDR_VIVID_DUAL || type == ImageHdrType::HDR_ISO_DUAL || type == ImageHdrType::HDR_CUVA;
 }
 
 NATIVEEXPORT std::shared_ptr<ExifMetadata> ImageSource::GetExifMetadata()
@@ -1649,7 +1805,7 @@ NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &pt
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
 {
-#if !defined(IOS_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1802,7 +1958,7 @@ AbsImageDecoder *DoCreateDecoder(std::string codecFormat, PluginServer &pluginSe
     return decoder;
 }
 
-uint32_t ImageSource::GetFormatExtended(string &format)
+uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_sanitize("cfi")))
 {
     if (mainDecoder_ != nullptr) {
         format = sourceInfo_.encodedFormat;
@@ -1897,7 +2053,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
     return SUCCESS;
 }
 
-uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
+uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum) __attribute__((no_sanitize("cfi")))
 {
     uint32_t ret = InitMainDecoder();
     if (ret != SUCCESS) {
@@ -1909,7 +2065,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum)
 
     // for raw image, we need check the original format after decoder initialzation
     string value;
-    ret = mainDecoder_->GetImagePropertyString(0, ACTUAL_IMAGE_ENCODED_FORMAT, value);
+    ret = mainDecoder_->GetImagePropertyString(FIRST_FRAME, ACTUAL_IMAGE_ENCODED_FORMAT, value);
     if (ret == SUCCESS) {
         // update new format
         sourceInfo_.encodedFormat = value;
@@ -2118,7 +2274,7 @@ uint32_t ImageSource::SetDecodeOptions(std::unique_ptr<AbsImageDecoder> &decoder
         plOptions.desiredPixelFormat = opts.desiredPixelFormat;
     }
 
-    if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && IsHdrImage()) ||
+    if ((opts.desiredDynamicRange == DecodeDynamicRange::AUTO && (sourceHdrType_ > ImageHdrType::SDR)) ||
          opts.desiredDynamicRange == DecodeDynamicRange::HDR) {
         plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
     }
@@ -2322,6 +2478,53 @@ uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pai
         return ret;
     }
     return SUCCESS;
+}
+uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
+                                    std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    std::unique_lock<std::mutex> guard(decodingMutex_);
+    if (exifKeys.empty()) {
+        IMAGE_LOGD("GetFilterArea failed, exif key is empty.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (sourceStreamPtr_ == nullptr) {
+        IMAGE_LOGD("GetFilterArea failed, sourceStreamPtr is not existed.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
+    auto bufferPtr = sourceStreamPtr_->GetDataPtr();
+    if (bufferPtr != nullptr) {
+        auto metadataAccessor = MetadataAccessorFactory::Create(bufferPtr, bufferSize);
+        if (metadataAccessor == nullptr) {
+            IMAGE_LOGD("Create metadataAccessor failed.");
+            return ERR_IMAGE_SOURCE_DATA;
+        }
+        return metadataAccessor->GetFilterArea(exifKeys, ranges);
+    }
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    auto tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("New buffer failed, bufferSize:%{public}u.", bufferSize);
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    uint32_t readSize = 0;
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("SourceStream read failed.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    auto metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer, bufferSize);
+    if (metadataAccessor == nullptr) {
+        IMAGE_LOGD("Create metadataAccessor failed.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    return metadataAccessor->GetFilterArea(exifKeys, ranges);
 }
 
 void ImageSource::SetIncrementalSource(const bool isIncrementalSource)
@@ -2591,6 +2794,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         pixelMap->SetExifMetadata(metadataPtr);
     }
 
+    if (!ImageUtils::FloatCompareZero(opts_.rotateDegrees)) {
+        pixelMap->rotate(opts_.rotateDegrees);
+    } else if (opts_.rotateNewDegrees != INT_ZERO) {
+        pixelMap->rotate(opts_.rotateNewDegrees);
+    }
+
     return pixelMap;
 }
 
@@ -2608,8 +2817,8 @@ bool ImageSource::IsASTC(const uint8_t *fileData, size_t fileSize) __attribute__
         return true;
     }
 #ifdef SUT_DECODE_ENABLE
-    if (g_sutDecSoManager.isSutFunc_ != nullptr) {
-        return g_sutDecSoManager.isSutFunc_(fileData, fileSize);
+    if (magicVal == SUT_FILE_SIGNATURE) {
+        return true;
     }
 #endif
     return false;
@@ -3025,53 +3234,214 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void SetHdrContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
+static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
+{
+    ImageTrace iamgeTrace("ImageSource decomposeImage");
+    VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
+    VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
+    VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
+    std::unique_ptr<VpeUtils> utils = std::make_unique<VpeUtils>();
+    int32_t res = utils->ColorSpaceConverterImageProcess(hdr, sdr);
+    if (res != VPE_ERROR_OK || sdr == nullptr) {
+        return false;
+    }
+    return true;
+}
+
+static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd, uint32_t format)
 {
     context.allocatorType = AllocatorType::DMA_ALLOC;
     context.freeFunc = nullptr;
     context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
     context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
     context.pixelsBuffer.context = fd;
-    context.pixelFormat = PixelFormat::RGBA_1010102;
-    context.info.pixelFormat = PixelFormat::RGBA_1010102;
     context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
+    if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
+        context.pixelFormat = PixelFormat::RGBA_1010102;
+        context.info.pixelFormat = PixelFormat::RGBA_1010102;
+        context.grColorSpaceName = ColorManager::BT2020_HLG;
+    } else if (format == GRAPHIC_PIXEL_FMT_RGBA_8888) {
+        context.pixelFormat = PixelFormat::RGBA_8888;
+        context.info.pixelFormat = PixelFormat::RGBA_8888;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        context.pixelFormat = PixelFormat::NV12;
+        context.info.pixelFormat = PixelFormat::NV12;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
+    } else if (format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        context.pixelFormat = PixelFormat::NV21;
+        context.info.pixelFormat = PixelFormat::NV21;
+        context.grColorSpaceName = ColorManager::DISPLAY_P3;
+    }
+}
+
+static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGE("UnSupport dma mem alloc");
+    return ERR_IMAGE_DATA_UNSUPPORT;
+#else
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    IMAGE_LOGD("[ImageSource]AllocBufferForContext requestConfig, sizeInfo.width:%{public}u,height:%{public}u.",
+               context.info.size.width, context.info.size.height);
+    BufferRequestConfig requestConfig = {
+        .width = context.info.size.width,
+        .height = context.info.size.height,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = format,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        return ERR_DMA_NOT_EXIST;
+    }
+    void* nativeBuffer = sb.GetRefPtr();
+    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    if (err != OHOS::GSERROR_OK) {
+        IMAGE_LOGE("NativeBufferReference failed");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
+    SetContext(context, sb, nativeBuffer, format);
+    return SUCCESS;
+#endif
+}
+
+CM_ColorSpaceType ImageSource::ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
+{
+    switch (colorSpace) {
+        case ColorManager::ColorSpaceName::SRGB :
+            return CM_SRGB_FULL;
+        case ColorManager::ColorSpaceName::SRGB_LIMIT :
+            return CM_SRGB_LIMIT;
+        case ColorManager::ColorSpaceName::DISPLAY_P3 :
+            return CM_P3_FULL;
+        case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
+            return CM_P3_LIMIT;
+        case ColorManager::ColorSpaceName::BT2020 :
+        case ColorManager::ColorSpaceName::BT2020_HLG :
+            return CM_BT2020_HLG_FULL;
+        case ColorManager::ColorSpaceName::BT2020_HLG_LIMIT :
+            return CM_BT2020_HLG_LIMIT;
+        case ColorManager::ColorSpaceName::BT2020_PQ :
+            return CM_BT2020_PQ_FULL;
+        case ColorManager::ColorSpaceName::BT2020_PQ_LIMIT :
+            return CM_BT2020_PQ_LIMIT;
+        default:
+            return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
+    }
+    return base ? CM_P3_FULL : CM_BT2020_HLG_FULL;
+}
+
+static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
+{
+    switch (colorSpace) {
+        case CM_SRGB_FULL :
+            return ColorManager::SRGB;
+        case CM_SRGB_LIMIT :
+            return ColorManager::SRGB_LIMIT;
+        case CM_P3_FULL :
+            return ColorManager::DISPLAY_P3;
+        case CM_P3_LIMIT :
+            return ColorManager::DISPLAY_P3_LIMIT;
+        case CM_BT2020_HLG_FULL :
+            return ColorManager::BT2020_HLG;
+        case CM_BT2020_HLG_LIMIT :
+            return ColorManager::BT2020_HLG_LIMIT;
+        case CM_BT2020_PQ_FULL :
+            return ColorManager::BT2020_PQ;
+        case CM_BT2020_PQ_LIMIT :
+            return ColorManager::BT2020_PQ_LIMIT;
+        default:
+            return base ? ColorManager::DISPLAY_P3 : ColorManager::BT2020_HLG;
+    }
+    return base ? ColorManager::DISPLAY_P3 : ColorManager::BT2020_HLG;
 }
 #endif
 
-DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo info, ImagePlugin::PlImageInfo& plInfo,
-                                                    uint32_t& errorCode)
+void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
 {
-    DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions);
-    context.info.pixelFormat = plInfo.pixelFormat;
-    ImageHdrType decodedHdrType = ImageHdrType::UNKNOWN;
-    if (opts_.desiredDynamicRange != DecodeDynamicRange::SDR) {
-        decodedHdrType = IsHdrImage() ? sourceHdrType_ : ImageHdrType::SDR;
-        if (!ImageSystemProperties::GetDmaEnabled()) {
-            decodedHdrType = ImageHdrType::SDR;
-            IMAGE_LOGI("[ImageSource]DecodeImageDataToContext imageId_: %{public}lu don't support dma.",
-                static_cast<unsigned long>(imageId_));
-        } else if (decodedHdrType > ImageHdrType::SDR) {
-            context.allocatorType = AllocatorType::DMA_ALLOC;
-        }
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGD("UnSupport SetContextYuvInfo");
+    return;
+#else
+    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGD("SetDmaContextYuvInfo allocatorType is not dma");
+        return;
     }
-    IMAGE_LOGD("[ImageSource] sourceHdrType_:%{public}d, deocdeHdrType:%{public}d", sourceHdrType_, decodedHdrType);
-    errorCode = mainDecoder_->Decode(index, context);
-    context.grColorSpaceName = mainDecoder_->getGrColorSpace().GetColorSpaceName();
-    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
-        // hardware decode success, update plInfo.size
-        IMAGE_LOGI("hardware decode success, soft decode dstInfo:(%{public}u, %{public}u), use hardware dstInfo:"
-            "(%{public}u, %{public}u)", plInfo.size.width, plInfo.size.height, context.outInfo.size.width,
-            context.outInfo.size.height);
-        plInfo.size = context.outInfo.size;
+    PixelFormat format = context.info.pixelFormat;
+    if (!IsYuvFormat(format)) {
+        IMAGE_LOGI("SetDmaContextYuvInfo format is not yuv");
+        return;
     }
-    context.info = plInfo;
-    context.hdrType = ImageHdrType::SDR;
-    ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
-    ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
-    if (errorCode != SUCCESS) {
-        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("SetDmaContextYuvInfo surfacebuffer is nullptr");
+        return;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+        IMAGE_LOGE("SetDmaContextYuvInfo, GetPlanesInfo failed retVal:%{public}d", retVal);
+        return;
+    }
+    const OH_NativeBuffer_Plane &planeY = planes->planes[0];
+    const OH_NativeBuffer_Plane &planeUV =
+        planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010) ? NUM_2 : NUM_1];
+    context.yuvInfo.yStride = planeY.columnStride;
+    context.yuvInfo.uvStride = planeUV.columnStride;
+    context.yuvInfo.yOffset = planeY.offset;
+    context.yuvInfo.uvOffset = planeUV.offset;
+    context.yuvInfo.imageSize = context.info.size;
+#endif
+}
+
+DecodeContext ImageSource::HandleSingleHdrImage(ImageHdrType decodedHdrType,
+    DecodeContext& context, ImagePlugin::PlImageInfo& plInfo)
+{
+    SetDmaContextYuvInfo(context);
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    IMAGE_LOGE("UnSupport HandleSingleHdrImage");
+    return context;
+#else
+    if (context.allocatorType != AllocatorType::DMA_ALLOC) {
         return context;
     }
+    sptr<SurfaceBuffer> hdrSptr(reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context));
+    HdrMetadata metadata = mainDecoder_->GetHdrMetadata(decodedHdrType);
+    CM_ColorSpaceType baseCmColor = ConvertColorSpaceType(context.grColorSpaceName, true);
+    VpeUtils::SetSurfaceBufferInfo(hdrSptr, false, decodedHdrType, baseCmColor, metadata);
+    if (opts_.desiredDynamicRange == DecodeDynamicRange::SDR) {
+        DecodeContext sdrCtx;
+        sdrCtx.info.size.width = plInfo.size.width;
+        sdrCtx.info.size.height = plInfo.size.height;
+        sdrCtx.hdrType = ImageHdrType::SDR;
+        sdrCtx.outInfo.size = sdrCtx.info.size;
+        auto formatSearch = SINGLE_HDR_CONVERT_FORMAT_MAP.find(opts_.desiredPixelFormat);
+        auto allocFormat =
+            (formatSearch != SINGLE_HDR_CONVERT_FORMAT_MAP.end()) ? formatSearch->second : GRAPHIC_PIXEL_FMT_RGBA_8888;
+        uint32_t res = AllocSurfaceBuffer(sdrCtx, allocFormat);
+        if (res != SUCCESS) {
+            IMAGE_LOGI("single hdr convert to sdr,alloc surfacebuffer failed");
+            return context;
+        }
+        sptr<SurfaceBuffer> sdr(reinterpret_cast<SurfaceBuffer*>(sdrCtx.pixelsBuffer.context));
+        if (DecomposeImage(hdrSptr, sdr)) {
+            FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+            plInfo = sdrCtx.info;
+            SetDmaContextYuvInfo(sdrCtx);
+            return sdrCtx;
+        }
+        FreeContextBuffer(sdrCtx.freeFunc, sdrCtx.allocatorType, sdrCtx.pixelsBuffer);
+    }
+    return context;
+#endif
+}
+
+DecodeContext ImageSource::HandleDualHdrImage(ImageHdrType decodedHdrType, ImageInfo info,
+    DecodeContext& context, ImagePlugin::PlImageInfo& plInfo)
+{
     DecodeContext hdrContext;
     hdrContext.hdrType = decodedHdrType;
     hdrContext.info.size = plInfo.size;
@@ -3082,6 +3452,37 @@ DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo in
         plInfo = hdrContext.info;
         hdrContext.outInfo.size = hdrContext.info.size;
         return hdrContext;
+    }
+    context.hdrType = ImageHdrType::SDR;
+    return context;
+}
+
+DecodeContext ImageSource::DecodeImageDataToContext(uint32_t index, ImageInfo info, ImagePlugin::PlImageInfo& plInfo,
+                                                    uint32_t& errorCode)
+{
+    DecodeContext context = InitDecodeContext(opts_, info, preference_, hasDesiredSizeOptions, plInfo);
+    ImageHdrType decodedHdrType = context.hdrType;
+    errorCode = mainDecoder_->Decode(index, context);
+    context.grColorSpaceName = mainDecoder_->getGrColorSpace().GetColorSpaceName();
+    if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
+        // hardware decode success, update plInfo.size
+        IMAGE_LOGI("hardware decode success, soft decode dstInfo:(%{public}u, %{public}u), use hardware dstInfo:"
+            "(%{public}u, %{public}u)", plInfo.size.width, plInfo.size.height, context.outInfo.size.width,
+            context.outInfo.size.height);
+        plInfo.size = context.outInfo.size;
+    }
+    context.info = plInfo;
+    ninePatchInfo_.ninePatch = context.ninePatchContext.ninePatch;
+    ninePatchInfo_.patchSize = context.ninePatchContext.patchSize;
+    if (errorCode != SUCCESS) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
+        return context;
+    }
+    if (IsSingleHdrImage(decodedHdrType)) {
+        return HandleSingleHdrImage(decodedHdrType, context, plInfo);
+    }
+    if (IsDualHdrImage(decodedHdrType)) {
+        return HandleDualHdrImage(decodedHdrType, info, context, plInfo);
     }
     return context;
 }
@@ -3111,59 +3512,6 @@ uint32_t ImageSource::SetGainMapDecodeOption(std::unique_ptr<AbsImageDecoder>& d
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
-
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base)
-{
-    switch (colorSpace) {
-        case ColorManager::ColorSpaceName::SRGB :
-            return CM_SRGB_FULL;
-        case ColorManager::ColorSpaceName::SRGB_LIMIT :
-            return CM_SRGB_LIMIT;
-        case ColorManager::ColorSpaceName::DISPLAY_P3 :
-            return CM_P3_FULL;
-        case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
-            return CM_P3_LIMIT;
-        case ColorManager::ColorSpaceName::BT2020 :
-        case ColorManager::ColorSpaceName::BT2020_HLG :
-            return CM_BT2020_HLG_FULL;
-        case ColorManager::ColorSpaceName::BT2020_HLG_LIMIT :
-            return CM_BT2020_HLG_LIMIT;
-        case ColorManager::ColorSpaceName::BT2020_PQ :
-            return CM_BT2020_PQ_FULL;
-        case ColorManager::ColorSpaceName::BT2020_PQ_LIMIT :
-            return CM_BT2020_PQ_LIMIT;
-        default:
-            return base ? CM_SRGB_FULL : CM_BT2020_HLG_FULL;
-    }
-    return base ? CM_SRGB_FULL : CM_BT2020_HLG_FULL;
-}
-
-static ColorManager::ColorSpaceName ConvertColorSpaceName(CM_ColorSpaceType colorSpace, bool base)
-{
-    switch (colorSpace) {
-        case CM_SRGB_FULL :
-            return ColorManager::SRGB;
-        case CM_SRGB_LIMIT :
-            return ColorManager::SRGB_LIMIT;
-        case CM_P3_FULL :
-            return ColorManager::DISPLAY_P3;
-        case CM_P3_LIMIT :
-            return ColorManager::DISPLAY_P3_LIMIT;
-        case CM_BT2020_HLG_FULL :
-            return ColorManager::BT2020_HLG;
-        case CM_BT2020_HLG_LIMIT :
-            return ColorManager::BT2020_HLG_LIMIT;
-        case CM_BT2020_PQ_FULL :
-            return ColorManager::BT2020_PQ;
-        case CM_BT2020_PQ_LIMIT :
-            return ColorManager::BT2020_PQ_LIMIT;
-        default:
-            return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
-    }
-    return base ? ColorManager::SRGB : ColorManager::BT2020_HLG;
-}
-#endif
 
 bool GetStreamData(std::unique_ptr<SourceStream>& sourceStream, uint8_t* streamBuffer, uint32_t streamSize)
 {
@@ -3264,7 +3612,7 @@ bool ImageSource::ApplyGainMap(ImageHdrType hdrType, DecodeContext& baseCtx, Dec
 }
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static void SetVividMetaColor(HdrMetadata& metadata,
+void ImageSource::SetVividMetaColor(HdrMetadata& metadata,
     CM_ColorSpaceType base, CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr)
 {
     metadata.extendMeta.baseColorMeta.baseColorPrimary = base & 0xFF;
@@ -3297,7 +3645,7 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     if (err != OHOS::GSERROR_OK) {
         return ERR_DMA_DATA_ABNORMAL;
     }
-    SetHdrContext(context, sb, nativeBuffer);
+    SetContext(context, sb, nativeBuffer, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     context.grColorSpaceName = ConvertColorSpaceName(color, false);
     CM_HDR_Metadata_Type type;
     if (hdrType == ImageHdrType::HDR_VIVID_DUAL || hdrType == ImageHdrType::HDR_CUVA) {
@@ -3309,15 +3657,6 @@ static uint32_t AllocHdrSurfaceBuffer(DecodeContext& context, ImageHdrType hdrTy
     VpeUtils::SetSbColorSpaceType(sb, color);
     return SUCCESS;
 #endif
-}
-
-static void SetContext(DecodeContext& context, sptr<SurfaceBuffer>& sb, void* fd)
-{
-    context.allocatorType = AllocatorType::DMA_ALLOC;
-    context.freeFunc = nullptr;
-    context.pixelsBuffer.buffer = static_cast<uint8_t*>(sb->GetVirAddr());
-    context.pixelsBuffer.bufferSize = GetByteCount(context, sb->GetSize());
-    context.pixelsBuffer.context = fd;
 }
 #endif
 
@@ -3395,47 +3734,6 @@ uint32_t ImageSource::RemoveImageProperties(std::shared_ptr<MetadataAccessor> me
     return metadataAccessor->Write();
 }
 
-static uint32_t AllocSurfaceBuffer(DecodeContext &context, uint32_t format)
-{
-#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
-    IMAGE_LOGE("UnSupport dma mem alloc");
-    return ERR_IMAGE_DATA_UNSUPPORT;
-#else
-    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
-    IMAGE_LOGD("[ImageSource]AllocBufferForContext requestConfig, sizeInfo.width:%{public}u,height:%{public}u.",
-               context.info.size.width, context.info.size.height);
-    BufferRequestConfig requestConfig = {
-        .width = context.info.size.width,
-        .height = context.info.size.height,
-        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
-        .format = format,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-        .colorGamut = GraphicColorGamut::GRAPHIC_COLOR_GAMUT_SRGB,
-        .transform = GraphicTransformType::GRAPHIC_ROTATE_NONE,
-    };
-    GSError ret = sb->Alloc(requestConfig);
-    if (ret != GSERROR_OK) {
-        IMAGE_LOGE("SurfaceBuffer Alloc failed, %{public}s", GSErrorStr(ret).c_str());
-        return ERR_DMA_NOT_EXIST;
-    }
-    void* nativeBuffer = sb.GetRefPtr();
-    int32_t err = ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-    if (err != OHOS::GSERROR_OK) {
-        IMAGE_LOGE("NativeBufferReference failed");
-        return ERR_DMA_DATA_ABNORMAL;
-    }
-    if (format == GRAPHIC_PIXEL_FMT_RGBA_1010102) {
-        context.pixelFormat = PixelFormat::RGBA_1010102;
-        context.info.pixelFormat = PixelFormat::RGBA_1010102;
-        context.info.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL;
-        context.grColorSpaceName = ColorManager::BT2020_HLG;
-    }
-    SetContext(context, sb, nativeBuffer);
-    return SUCCESS;
-#endif
-}
-
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBuffer>& sb, PlImageInfo plInfo)
 {
@@ -3452,8 +3750,8 @@ static bool CopyRGBAToSurfaceBuffer(const DecodeContext& context, sptr<SurfaceBu
         return false;
     }
     uint64_t dstStride = sb->GetStride();
-    uint64_t srcStride = plInfo.size.width * NUM_4;
-    uint32_t dstHeight = plInfo.size.height;
+    uint64_t srcStride = static_cast<uint64_t>(plInfo.size.width * NUM_4);
+    uint32_t dstHeight = static_cast<uint32_t>(plInfo.size.height);
     for (uint32_t i = 0; i < dstHeight; i++) {
         errno_t err = memcpy_s(dstRow, dstStride, srcRow, srcStride);
         if (err != EOK) {
@@ -3547,7 +3845,7 @@ static uint32_t CopyContextIntoSurfaceBuffer(Size dstSize, const DecodeContext &
     if ((!CopyRGBAToSurfaceBuffer(context, sb, plInfo)) && (!CopyYUVToSurfaceBuffer(context, sb, plInfo))) {
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
-    SetContext(dstCtx, sb, nativeBuffer);
+    SetContext(dstCtx, sb, nativeBuffer, format);
     return SUCCESS;
 #endif
 }
@@ -3557,7 +3855,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 {
     VpeUtils::SetSbMetadataType(input, CM_METADATA_NONE);
     VpeUtils::SetSurfaceBufferInfo(input, cmColorSpaceType);
-
+    hdrCtx.info.size.width = static_cast<uint32_t>(input->GetWidth());
+    hdrCtx.info.size.height = static_cast<uint32_t>(input->GetHeight());
     uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     if (res != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);
@@ -3576,8 +3875,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
     } else {
         IMAGE_LOGD("[ImageSource]DoAiHdrProcess ColorSpaceConverterImageProcess Succ!");
         hdrCtx.hdrType = ImageHdrType::HDR_VIVID_SINGLE;
-        hdrCtx.outInfo.size.width = output->GetSurfaceBufferWidth();
-        hdrCtx.outInfo.size.height = output->GetSurfaceBufferHeight();
+        hdrCtx.outInfo.size.width = output->GetWidth();
+        hdrCtx.outInfo.size.height = output->GetHeight();
         hdrCtx.pixelFormat = PixelFormat::RGBA_1010102;
         hdrCtx.info.pixelFormat = PixelFormat::RGBA_1010102;
         hdrCtx.allocatorType = AllocatorType::DMA_ALLOC;
@@ -3808,5 +4107,105 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
     guard.unlock();
     return context;
 }
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
+{
+    DecodeOptions dopts;
+    dopts.desiredPixelFormat = PixelFormat::RGBA_8888;
+    dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
+        DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
+    std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
+    std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
+    if (picture == nullptr) {
+        IMAGE_LOGE("Picture is nullptr");
+        errorCode = ERR_IMAGE_PICTURE_CREATE_FAILED;
+        return nullptr;
+    }
+
+    string format = GetExtendedCodecMimeType(mainDecoder_.get());
+    if (format != IMAGE_HEIF_FORMAT && format != IMAGE_JPEG_FORMAT) {
+        IMAGE_LOGE("CreatePicture failed, unsupport format: %{public}s", format.c_str());
+        errorCode = ERR_IMAGE_MISMATCHED_FORMAT;
+        return nullptr;
+    }
+
+    std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
+            opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    if (format == IMAGE_HEIF_FORMAT) {
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+    } else if (format == IMAGE_JPEG_FORMAT) {
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+    }
+
+    return picture;
+}
+
+void ImageSource::DecodeHeifAuxiliaryPictures(
+    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    if (mainDecoder_ == nullptr) {
+        IMAGE_LOGE("mainDecoder_ is nullptr");
+        errorCode = ERR_IMAGE_PLUGIN_CREATE_FAILED;
+        return;
+    }
+    for (auto& auxType : auxTypes) {
+        if (!mainDecoder_->CheckAuxiliaryMap(auxType)) {
+            IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
+            continue;
+        }
+        auto auxiliaryPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+            sourceHdrType_, auxType, IMAGE_HEIF_FORMAT, mainDecoder_, errorCode);
+        if (auxiliaryPicture == nullptr) {
+            IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
+                auxType, errorCode);
+        } else {
+            picture->SetAuxiliaryPicture(auxiliaryPicture);
+        }
+    }
+}
+
+void ImageSource::DecodeJpegAuxiliaryPicture(
+    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
+    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    uint32_t mpfOffset = 0;
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
+        IMAGE_LOGE("Jpeg calculate mpf offset failed! mpfOffset: %{public}u", mpfOffset);
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return;
+    }
+    if (!jpegMpfParser->Parsing(streamBuffer + mpfOffset, streamSize - mpfOffset)) {
+        IMAGE_LOGE("Jpeg parse mpf data failed!");
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return;
+    }
+
+    uint32_t preOffset = mpfOffset + JPEG_MPF_IDENTIFIER_SIZE;
+    for (auto &auxInfo : jpegMpfParser->images_) {
+        if (auxTypes.find(auxInfo.auxType) != auxTypes.end()) {
+            IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
+            std::unique_ptr<InputDataStream> auxStream =
+                BufferSourceStream::CreateSourceStream((streamBuffer + preOffset + auxInfo.offset), auxInfo.size);
+            if (auxStream == nullptr) {
+                IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
+                continue;
+            }
+            auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
+                DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
+            auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+                sourceHdrType_, auxInfo.auxType, IMAGE_JPEG_FORMAT, auxDecoder, errorCode);
+            if (auxPicture == nullptr) {
+                IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
+            } else {
+                picture->SetAuxiliaryPicture(auxPicture);
+            }
+        }
+    }
+}
+#endif
+
 } // namespace Media
 } // namespace OHOS

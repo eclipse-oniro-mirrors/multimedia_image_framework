@@ -110,16 +110,16 @@ extern "C" {
     FFI_EXPORT uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId);
 
     // Image
-    FFI_EXPORT int64_t FfiOHOSImageGetClipRect(int64_t id, CRegion *retVal);
-    FFI_EXPORT int64_t FfiOHOSImageGetSize(int64_t id, CSize *retVal);
-    FFI_EXPORT int64_t FfiOHOSImageGetFormat(int64_t id, int32_t *retVal);
-    FFI_EXPORT int64_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent *ptr);
+    FFI_EXPORT uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion *retVal);
+    FFI_EXPORT uint32_t FfiOHOSImageGetSize(int64_t id, CSize *retVal);
+    FFI_EXPORT uint32_t FfiOHOSImageGetFormat(int64_t id, int32_t *retVal);
+    FFI_EXPORT uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent *ptr);
     FFI_EXPORT void FfiOHOSImageRelease(int64_t id);
 
     // ImageReceiver
-    FFI_EXPORT int64_t FfiOHOSReceiverGetSize(int64_t id, CSize *retVal);
-    FFI_EXPORT int64_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t *retVal);
-    FFI_EXPORT int64_t FfiOHOSReceiverGetFormat(int64_t id, int32_t *retVal);
+    FFI_EXPORT uint32_t FfiOHOSReceiverGetSize(int64_t id, CSize *retVal);
+    FFI_EXPORT uint32_t FfiOHOSReceiverGetCapacity(int64_t id, int32_t *retVal);
+    FFI_EXPORT uint32_t FfiOHOSReceiverGetFormat(int64_t id, int32_t *retVal);
     FFI_EXPORT int64_t FfiOHOSCreateImageReceiver(int32_t width, int32_t height, int32_t format, int32_t capacity);
     FFI_EXPORT char* FfiOHOSGetReceivingSurfaceId(int64_t id);
     FFI_EXPORT int64_t FfiOHOSReadNextImage(int64_t id);
@@ -129,14 +129,14 @@ extern "C" {
     // ImagePacker
     FFI_EXPORT int64_t FFiOHOSImagePackerConstructor();
     FFI_EXPORT uint64_t FfiOHOSGetPackOptionSize();
-    FFI_EXPORT RetDataCArrUnit FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption* option);
-    FFI_EXPORT RetDataCArrUnit FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source,
-        CPackingOption* option);
+    FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingPixelMap(int64_t id, int64_t source, CPackingOption option);
+    FFI_EXPORT RetDataCArrUI8 FfiOHOSImagePackerPackingImageSource(int64_t id, int64_t source,
+        CPackingOption option);
     FFI_EXPORT RetDataCArrString FfiOHOSImagePackerGetSupportedFormats(int64_t id);
     FFI_EXPORT uint32_t FfiOHOSImagePackerPackPixelMapToFile(int64_t id, int64_t source, int fd,
-        CPackingOption* option);
+        CPackingOption option);
     FFI_EXPORT uint32_t FfiOHOSImagePackerImageSourcePackToFile(int64_t id, int64_t source, int fd,
-        CPackingOption* option);
+        CPackingOption option);
     FFI_EXPORT void FFiOHOSImagePackerRelease(int64_t id);
 
     // ImageCreator

@@ -240,6 +240,38 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_CreatePixelMap, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_ConvertPixelmapNativeToNapi
+ * @tc.desc: test OH_PixelmapNative_ConvertPixelmapNativeToNapi
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertPixelmapNativeToNapi, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertPixelmapNativeToNapi start";
+    napi_env env = nullptr;
+    OH_PixelmapNative *pixelMap = nullptr;
+    napi_value res = nullptr;
+    Image_ErrorCode ret = OH_PixelmapNative_ConvertPixelmapNativeToNapi(env, pixelMap, &res);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertPixelmapNativeToNapi end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_ConvertPixelmapNativeFromNapi
+ * @tc.desc: test OH_PixelmapNative_ConvertPixelmapNativeFromNapi
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertPixelmapNativeFromNapi, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertPixelmapNativeFromNapi start";
+    napi_env env = nullptr;
+    napi_value source = nullptr;
+    OH_PixelmapNative *pixelMap = nullptr;
+    Image_ErrorCode ret = OH_PixelmapNative_ConvertPixelmapNativeFromNapi(env, source, &pixelMap);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertPixelmapNativeFromNapi end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_ReadPixels
  * @tc.desc: OH_PixelmapNative_ReadPixels
  * @tc.type: FUNC
@@ -315,6 +347,23 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_Scale, TestSize.Level3)
     Image_ErrorCode ret = OH_PixelmapNative_Scale(pixelMap, x, y);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_Scale end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_ScaleWithAntiAliasing
+ * @tc.desc: OH_PixelmapNative_ScaleWithAntiAliasing
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ScaleWithAntiAliasing, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ScaleWithAntiAliasing start";
+    OH_PixelmapNative *pixelMap = nullptr;
+    float x = 0;
+    float y = 0;
+    Image_ErrorCode ret = OH_PixelmapNative_ScaleWithAntiAliasing(pixelMap, x, y,
+        OH_PixelmapNative_AntiAliasingLevel::OH_PixelmapNative_AntiAliasing_NONE);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ScaleWithAntiAliasing end";
 }
 
 /**
@@ -407,6 +456,8 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapInitializationOptions_SetGetSrcPixelFormat
     OH_PixelmapInitializationOptions_SetSrcPixelFormat(ops, 1);
     OH_PixelmapInitializationOptions_GetSrcPixelFormat(ops, &srcpixelFormat);
     ASSERT_EQ(srcpixelFormat, 1);
+    Image_ErrorCode ret = OH_PixelmapInitializationOptions_Release(ops);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_InitializationSetOptionsGetSrcPixelFormat end";
 }
 
@@ -440,6 +491,5 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertAlphaFormat, TestSize.Level3
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertAlphaFormat end";
 }
-
 }
 }

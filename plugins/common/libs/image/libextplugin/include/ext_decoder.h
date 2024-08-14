@@ -41,7 +41,7 @@ public:
     uint32_t Decode(uint32_t index, DecodeContext &context) override;
     uint32_t DecodeToYuv420(uint32_t index, DecodeContext &context);
     #ifdef JPEG_HW_DECODE_ENABLE
-    uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer);
+    uint32_t AllocOutputBuffer(DecodeContext &context, OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
     void ReleaseOutputBuffer(DecodeContext &context, Media::AllocatorType allocatorType);
     uint32_t HardWareDecode(DecodeContext &context);
     uint32_t DoHardWareDecode(DecodeContext &context);
@@ -69,12 +69,21 @@ public:
     bool DecodeHeifGainMap(DecodeContext &context) override;
     bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr) override;
     uint32_t GetHeifParseErr() override;
+    bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type) override;
+    bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace getGrColorSpace() override;
     bool IsSupportICCProfile() override;
 #endif
 
 private:
+    typedef struct FrameCacheInfo {
+        int width;
+        int height;
+        uint64_t rowStride;
+        uint64_t byteCount;
+    } FrameCacheInfo;
+
     bool CheckCodec();
     bool CheckIndexValied(uint32_t index);
     bool DecodeHeader();
@@ -106,6 +115,14 @@ private:
     uint32_t HeifYUVMemAlloc(DecodeContext &context);
     void SetHeifDecodeError(DecodeContext &context);
     void SetHeifParseError();
+    uint32_t ConvertFormatToYUV(DecodeContext &context, SkImageInfo &skInfo,
+        uint64_t byteCount, OHOS::Media::PixelFormat format);
+    bool IsHeifToSingleHdrDecode(const DecodeContext &context) const;
+    uint32_t DoHeifToSingleHdrDecode(OHOS::ImagePlugin::DecodeContext &context);
+    uint32_t HandleGifCache(uint8_t* src, uint8_t* dst, uint64_t rowStride, int dstHeight);
+    uint32_t GetFramePixels(SkImageInfo& info, uint8_t* buffer, uint64_t rowStride, SkCodec::Options options);
+    FrameCacheInfo InitFrameCacheInfo(const uint64_t rowStride, SkImageInfo info);
+    bool FrameCacheInfoIsEqual(FrameCacheInfo& src, FrameCacheInfo& dst);
 
     ImagePlugin::InputDataStream *stream_ = nullptr;
     uint32_t streamOff_ = 0;
@@ -118,6 +135,7 @@ private:
     EXIFInfo exifInfo_;
     uint8_t *gifCache_ = nullptr;
     int gifCacheIndex_ = 0;
+    FrameCacheInfo frameCacheInfo_ = {0, 0, 0, 0};
     uint32_t heifParseErr_ = 0;
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> dstColorSpace_ = nullptr;

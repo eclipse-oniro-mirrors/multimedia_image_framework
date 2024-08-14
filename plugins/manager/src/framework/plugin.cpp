@@ -216,6 +216,7 @@ uint32_t Plugin::ResolveLibrary()
     createFunc_ = PluginExternalCreate;
     return SUCCESS;
 #else
+    IMAGE_LOGD("ResolveLibrary start loading library path %{public}s.", libraryPath_.c_str());
     handle_ = platformAdp_.LoadLibrary(libraryPath_);
     if (handle_ == nullptr) {
         IMAGE_LOGE("failed to load library.");
@@ -276,14 +277,11 @@ void Plugin::FreeLibrary()
 
 uint32_t Plugin::RegisterMetadata(istream &metadata, weak_ptr<Plugin> &plugin)
 {
-    std::streampos position = metadata.tellg();
-    if (!json::accept(metadata)) {
-        IMAGE_LOGE("RegisterMetadata json parsing failed.");
+    json root = nlohmann::json::parse(metadata, nullptr, false); // no callback, no exceptions
+    if (root.is_discarded()) {
+        IMAGE_LOGE("RegisterMetadata parse json failed.");
         return ERR_INVALID_PARAMETER;
     }
-    metadata.seekg(position, std::ios::beg);
-    json root;
-    metadata >> root;
     if (JsonHelper::GetStringValue(root, "packageName", packageName_) != SUCCESS) {
         IMAGE_LOGE("read packageName failed.");
         return ERR_INVALID_PARAMETER;

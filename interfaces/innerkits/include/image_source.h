@@ -29,6 +29,9 @@
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
 #include "pixel_map.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "picture.h"
+#endif
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -50,8 +53,19 @@ struct DecodeContext;
 } // namespace ImagePlugin
 } // namespace OHOS
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+namespace OHOS::HDI::Display::Graphic::Common::V1_0 {
+enum CM_ColorSpaceType : int32_t;
+}
+#else
+enum CM_ColorSpaceType : int32_t;
+#endif
+
 namespace OHOS {
 namespace Media {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 class ImageEvent;
 struct SourceOptions {
     std::string formatHint;
@@ -167,6 +181,11 @@ public:
 
     NATIVEEXPORT static bool IsSupportGenAstc();
 
+    NATIVEEXPORT static CM_ColorSpaceType ConvertColorSpaceType(ColorManager::ColorSpaceName colorSpace, bool base);
+    
+    NATIVEEXPORT static void SetVividMetaColor(HdrMetadata& metadata, CM_ColorSpaceType base,
+                                                CM_ColorSpaceType gainmap, CM_ColorSpaceType hdr);
+    
     NATIVEEXPORT std::unique_ptr<PixelMap> CreatePixelMap(const DecodeOptions &opts, uint32_t &errorCode)
     {
         return CreatePixelMapEx(0, opts, errorCode);
@@ -178,6 +197,9 @@ public:
     NATIVEEXPORT std::unique_ptr<IncrementalPixelMap> CreateIncrementalPixelMap(uint32_t index,
                                                                                 const DecodeOptions &opts,
                                                                                 uint32_t &errorCode);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
+#endif
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
     // for obtaining basic image information without decoding image data.
@@ -186,6 +208,7 @@ public:
         return GetImageInfo(0, imageInfo);
     }
     NATIVEEXPORT uint32_t GetImageInfo(uint32_t index, ImageInfo &imageInfo);
+    NATIVEEXPORT uint32_t GetImageInfoFromExif(uint32_t index, ImageInfo &imageInfo);
     NATIVEEXPORT const SourceInfo &GetSourceInfo(uint32_t &errorCode);
     NATIVEEXPORT void RegisterListener(PeerListener *listener);
     NATIVEEXPORT void UnRegisterListener(PeerListener *listener);
@@ -212,6 +235,8 @@ public:
     NATIVEEXPORT void SetMemoryUsagePreference(const MemoryUsagePreference preference);
     NATIVEEXPORT MemoryUsagePreference GetMemoryUsagePreference();
     NATIVEEXPORT uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    NATIVEEXPORT uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
+                                        std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     NATIVEEXPORT std::unique_ptr<std::vector<std::unique_ptr<PixelMap>>> CreatePixelMapList(const DecodeOptions &opts,
         uint32_t &errorCode);
     NATIVEEXPORT std::unique_ptr<std::vector<int32_t>> GetDelayTime(uint32_t &errorCode);
@@ -226,6 +251,8 @@ public:
 
     NATIVEEXPORT std::shared_ptr<ExifMetadata> GetExifMetadata();
     NATIVEEXPORT void SetExifMetadata(std::shared_ptr<ExifMetadata> &ptr);
+    NATIVEEXPORT static void ContextToAddrInfos(ImagePlugin::DecodeContext &context, PixelMapAddrInfos &addrInfos);
+    NATIVEEXPORT static bool IsYuvFormat(PixelFormat format);
 
 private:
     DISALLOW_COPY_AND_MOVE(ImageSource);
@@ -319,6 +346,26 @@ private:
                             ImagePlugin::DecodeContext &context, ImagePlugin::PlImageInfo &plInfo);
     ImagePlugin::DecodeContext DecodeImageDataToContextExtended(uint32_t index, ImageInfo &info,
         ImagePlugin::PlImageInfo &plInfo, ImageEvent &imageEvent, uint32_t &errorCode);
+    void SetDngImageSize(uint32_t index, ImageInfo &imageInfo);
+    void SetPixelMapColorSpace(ImagePlugin::DecodeContext& context, std::unique_ptr<PixelMap>& pixelMap,
+        std::unique_ptr<ImagePlugin::AbsImageDecoder>& decoder);
+    bool IsSingleHdrImage(ImageHdrType type);
+    bool IsDualHdrImage(ImageHdrType type);
+    ImagePlugin::DecodeContext HandleSingleHdrImage(ImageHdrType decodedHdrType,
+        ImagePlugin::DecodeContext& context, ImagePlugin::PlImageInfo& plInfo);
+    ImagePlugin::DecodeContext HandleDualHdrImage(ImageHdrType decodedHdrType, ImageInfo info,
+        ImagePlugin::DecodeContext& context, ImagePlugin::PlImageInfo& plInfo);
+    ImagePlugin::DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
+        const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, ImagePlugin::PlImageInfo& plInfo);
+    bool ParseHdrType();
+    bool PrereadSourceStream();
+    void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+                                     uint32_t &errorCode);
+    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+                                    uint32_t &errorCode);
+#endif
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
@@ -351,7 +398,8 @@ private:
     ImageHdrType sourceHdrType_; // source image hdr type;
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::string source_; // Image source fd buffer etc
-    bool isExifReadFailed = false;
+    bool isExifReadFailed_ = false;
+    uint32_t exifReadStatus_ = 0;
     uint32_t heifParseErr_ = 0;
 };
 } // namespace Media

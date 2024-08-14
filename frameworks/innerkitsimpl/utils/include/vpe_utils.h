@@ -65,6 +65,7 @@ public:
     static void SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer,
         HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType color);
     static bool SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer);
+    static void CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst);
 #endif
     static bool LoadLibVpe();
     static void UnloadLibVpe();

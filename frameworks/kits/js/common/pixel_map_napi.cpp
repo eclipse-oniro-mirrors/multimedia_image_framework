@@ -106,6 +106,7 @@ struct PixelMapAsyncContext {
     PixelFormat destFormat = PixelFormat::UNKNOWN;
     FormatType srcFormatType = FormatType::UNKNOWN;
     FormatType dstFormatType = FormatType::UNKNOWN;
+    AntiAliasingOption antiAliasing;
 };
 using PixelMapAsyncContextPtr = std::unique_ptr<PixelMapAsyncContext>;
 std::shared_ptr<PixelMap> srcPixelMap = nullptr;
@@ -121,7 +122,7 @@ public:
 
 static PixelFormat ParsePixlForamt(int32_t val)
 {
-    if (val <= static_cast<int32_t>(PixelFormat::CMYK)) {
+    if (val < static_cast<int32_t>(PixelFormat::EXTERNAL_MAX)) {
         return PixelFormat(val);
     }
 
@@ -144,6 +145,15 @@ static ScaleMode ParseScaleMode(int32_t val)
     }
 
     return ScaleMode::FIT_TARGET_SIZE;
+}
+
+static AntiAliasingOption ParseAntiAliasingOption(int32_t val)
+{
+    if (val <= static_cast<int32_t>(AntiAliasingOption::SPLINE)) {
+        return AntiAliasingOption(val);
+    }
+
+    return AntiAliasingOption::NONE;
 }
 
 static bool parseSize(napi_env env, napi_value root, Size* size)
@@ -309,6 +319,7 @@ static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncCont
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
@@ -441,6 +452,7 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_GETTER("isStrideAlignment", GetIsStrideAlignment),
         DECLARE_NAPI_FUNCTION("toSdr", ToSdr),
         DECLARE_NAPI_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_FUNCTION("setTransferDetached", SetTransferDetached),
     };
     return props;
 }
@@ -653,7 +665,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_UnAccessPix
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
-inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
+void *DetachPixelMapFunc(napi_env env, void *value, void *)
 {
     IMAGE_LOGD("DetachPixelMapFunc in");
     if (value == nullptr) {
@@ -664,6 +676,9 @@ inline void *DetachPixelMapFunc(napi_env env, void *value, void *)
     pixelNapi->setPixelNapiEditable(false);
     AgainstTransferGC *data = new AgainstTransferGC();
     data->pixelMap = pixelNapi->GetPixelNapiInner();
+    if (pixelNapi->GetTransferDetach()) {
+        pixelNapi->ReleasePixelNapiInner();
+    }
     return reinterpret_cast<void*>(data);
 }
 
@@ -1073,7 +1088,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -2556,7 +2571,12 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
     }
     if (context->status == SUCCESS) {
         if (context->rPixelMap != nullptr) {
-            context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            if (context->antiAliasing == AntiAliasingOption::NONE) {
+                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg));
+            } else {
+                context->rPixelMap->scale(static_cast<float>(context->xArg), static_cast<float>(context->yArg),
+                    context->antiAliasing);
+            }
             context->status = SUCCESS;
         } else {
             IMAGE_LOGE("Null native ref");
@@ -2564,6 +2584,20 @@ static void ScaleExec(napi_env env, PixelMapAsyncContext* context)
         }
     } else {
         IMAGE_LOGD("Scale has failed. do nothing");
+    }
+}
+
+static void NapiParseCallbackOrAntiAliasing(napi_env &env, NapiValues &nVal, int argi)
+{
+    if (ImageNapiUtils::getType(env, nVal.argv[argi]) == napi_function) {
+        napi_create_reference(env, nVal.argv[argi], nVal.refCount, &(nVal.context->callbackRef));
+    } else {
+        int32_t antiAliasing;
+        if (!IMG_IS_OK(napi_get_value_int32(env, nVal.argv[argi], &antiAliasing))) {
+            IMAGE_LOGE("Arg %{public}d type mismatch", argi);
+            nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+        }
+        nVal.context->antiAliasing = ParseAntiAliasingOption(antiAliasing);
     }
 }
 
@@ -2592,8 +2626,8 @@ napi_value PixelMapNapi::Scale(napi_env env, napi_callback_info info)
             nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
         }
     }
-    if (nVal.argc >= 1 && ImageNapiUtils::getType(env, nVal.argv[nVal.argc - 1]) == napi_function) {
-        napi_create_reference(env, nVal.argv[nVal.argc - 1], nVal.refCount, &(nVal.context->callbackRef));
+    if (nVal.argc == NUM_3) {
+        NapiParseCallbackOrAntiAliasing(env, nVal, NUM_2);
     }
 
     if (nVal.context->callbackRef == nullptr) {
@@ -2628,16 +2662,17 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
     napi_status napiStatus;
     uint32_t status = SUCCESS;
     napi_value thisVar = nullptr;
-    size_t argCount = NUM_2;
-    napi_value argValue[NUM_2] = {0};
+    size_t argCount = NUM_3;
+    napi_value argValue[NUM_3] = {0};
     double xArg = 0;
     double yArg = 0;
+    int32_t antiAliasing = 0;
     IMAGE_LOGD("ScaleSync IN");
     IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
 
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_2,
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_2 || argCount == NUM_3,
         ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
         "Invalid args count"),
         IMAGE_LOGE("Invalid args count %{public}zu", argCount));
@@ -2645,6 +2680,10 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         result, IMAGE_LOGE("Arg 0 type mismatch"));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_double(env, argValue[NUM_1], &yArg)),
         result, IMAGE_LOGE("Arg 1 type mismatch"));
+    if (argCount == NUM_3) {
+        IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napi_get_value_int32(env, argValue[NUM_2], &antiAliasing)),
+            result, IMAGE_LOGE("Arg 2 type mismatch"));
+    }
     PixelMapNapi* pixelMapNapi = nullptr;
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
 
@@ -2655,7 +2694,12 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Pixelmap has crossed threads . ScaleSync failed"));
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        if (antiAliasing == 0) {
+            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg));
+        } else {
+            pixelMapNapi->nativePixelMap_->scale(static_cast<float>(xArg), static_cast<float>(yArg),
+                ParseAntiAliasingOption(antiAliasing));
+        }
     } else {
         IMAGE_LOGE("Null native ref");
     }
@@ -3169,7 +3213,6 @@ static void ToSdrExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
         IMAGE_LOGE("ToSdrExec null context");
-        context->status = ERR_IMAGE_INIT_ABNORMAL;
         return;
     }
     if (!context->nConstructor->GetPixelNapiEditable()) {
@@ -3303,6 +3346,9 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
             env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.context->rPixelMap == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_IPC, "marshalling pixel map to parcel failed.");
+    }
     if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
@@ -3413,7 +3459,9 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
     if (type == FormatType::YUV) {
         switch (format) {
             case PixelFormat::NV21:
-            case PixelFormat::NV12:{
+            case PixelFormat::NV12:
+            case PixelFormat::YCBCR_P010:
+            case PixelFormat::YCRCB_P010:{
                 return true;
             }
             default:{
@@ -3427,7 +3475,8 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
             case PixelFormat::RGBA_8888:
             case PixelFormat::BGRA_8888:
             case PixelFormat::RGB_888:
-            case PixelFormat::RGBA_F16:{
+            case PixelFormat::RGBA_F16:
+            case PixelFormat::RGBA_1010102:{
                 return true;
             }
             default:{
@@ -3453,11 +3502,14 @@ static FormatType TypeFormat(PixelFormat &pixelForamt)
         case PixelFormat::RGBA_8888:
         case PixelFormat::BGRA_8888:
         case PixelFormat::RGB_888:
-        case PixelFormat::RGBA_F16:{
+        case PixelFormat::RGBA_F16:
+        case PixelFormat::RGBA_1010102:{
             return FormatType::RGB;
         }
         case PixelFormat::NV21:
-        case PixelFormat::NV12:{
+        case PixelFormat::NV12:
+        case PixelFormat::YCBCR_P010:
+        case PixelFormat::YCRCB_P010:{
             return FormatType::YUV;
         }
         default:
@@ -3611,11 +3663,41 @@ napi_value PixelMapNapi::ConvertPixelMapFormat(napi_env env, napi_callback_info 
     int32_t pixelFormatInt;
     napi_get_value_int32(env, jsArg, &pixelFormatInt);
     nVal.context->destFormat = static_cast<PixelFormat>(pixelFormatInt);
+
+    if (TypeFormat(nVal.context->destFormat) == FormatType::UNKNOWN) {
+        napi_value errCode = nullptr;
+        napi_create_int32(env, ERR_IMAGE_INVALID_PARAMETER, &errCode);
+        napi_reject_deferred(env, nVal.context->deferred, errCode);
+        IMAGE_LOGE("dstFormat is not support or invalid");
+        return nVal.result;
+    }
+
     nVal.result = PixelFormatConvert(env, info, nVal.context.get());
     nVal.context->nConstructor->nativePixelMap_ = nVal.context->rPixelMap;
     if (nVal.result == nullptr) {
         return nVal.result;
     }
+    return nVal.result;
+}
+
+napi_value PixelMapNapi::SetTransferDetached(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_value argValue[NUM_1];
+    nVal.argc = NUM_1;
+    nVal.argv = argValue;
+    napi_status status = napi_invalid_arg;
+    napi_get_undefined(env, &nVal.result);
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE, "Fail to unwrap context");
+    }
+    bool detach;
+    status = napi_get_value_bool(env, nVal.argv[NUM_0], &detach);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "SetTransferDetached get detach failed"),
+        IMAGE_LOGE("SetTransferDetached get detach failed"));
+    nVal.context->nConstructor->SetTransferDetach(detach);
     return nVal.result;
 }
 

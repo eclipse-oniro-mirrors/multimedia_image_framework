@@ -36,6 +36,11 @@
     *ExifMetadata*;
     *ImageFormatConvert*;
     *PixelYuv*;
+    *Picture*;
+    *AuxiliaryPicture*;
+    *FragmentMetadata*;
+    *MemoryManager*;
+    *FilePackerStream*;
   local:
     *;
 };

@@ -150,6 +150,12 @@ uint32_t JpegEncoder::AddImage(Media::PixelMap &pixelMap)
     return SUCCESS;
 }
 
+uint32_t JpegEncoder::AddPicture(Media::Picture &picture)
+{
+    ImageTrace imageTrace("JpegEncoder::AddPicture");
+    return ERR_IMAGE_ENCODE_FAILED;
+}
+
 uint32_t JpegEncoder::FinalizeEncode()
 {
     ImageTrace imageTrace("JpegEncoder::FinalizeEncode");
@@ -183,6 +189,10 @@ uint32_t JpegEncoder::SetCommonConfig()
 {
     if (pixelMaps_.empty()) {
         IMAGE_LOGE("encode image failed, no pixel map input.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (pixelMaps_[0] == nullptr) {
+        IMAGE_LOGE("encode image failed, pixel map is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (setjmp(jerr_.setjmp_buffer)) {

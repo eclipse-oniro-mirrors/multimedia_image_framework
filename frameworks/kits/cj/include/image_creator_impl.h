@@ -23,6 +23,7 @@
 namespace OHOS {
 namespace Media {
 class ImageCreatorImpl : public OHOS::FFI::FFIData {
+    DECL_TYPE(ImageCreatorImpl, OHOS::FFI::FFIData)
 public:
     ImageCreatorImpl(int32_t width, int32_t height, int32_t format, int32_t capacity);
     std::shared_ptr<ImageCreator> GetImageCreator();
@@ -30,17 +31,8 @@ public:
     {
         real_.reset();
     }
-    OHOS::FFI::RuntimeType *GetRuntimeType() override { return GetClassType(); }
 
 private:
-    friend class OHOS::FFI::RuntimeType;
-    friend class OHOS::FFI::TypeBase;
-    static OHOS::FFI::RuntimeType *GetClassType()
-    {
-        static OHOS::FFI::RuntimeType runtimeType =
-            OHOS::FFI::RuntimeType::Create<OHOS::FFI::FFIData>("ImageCreatorImpl");
-        return &runtimeType;
-    }
     std::shared_ptr<ImageCreator> real_ = nullptr;
 };
 } // namespace Media

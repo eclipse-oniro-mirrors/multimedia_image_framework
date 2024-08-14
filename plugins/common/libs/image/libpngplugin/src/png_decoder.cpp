@@ -102,8 +102,8 @@ uint32_t PngDecoder::GetImageSize(uint32_t index, Size &size)
         IMAGE_LOGD("decode header error on get image ret:%{public}u.", ret);
         return ret;
     }
-    size.width = png_get_image_width(pngStructPtr_, pngInfoPtr_);
-    size.height = png_get_image_height(pngStructPtr_, pngInfoPtr_);
+    size.width = static_cast<int32_t>(png_get_image_width(pngStructPtr_, pngInfoPtr_));
+    size.height = static_cast<int32_t>(png_get_image_height(pngStructPtr_, pngInfoPtr_));
     return SUCCESS;
 }
 
@@ -143,8 +143,8 @@ uint32_t PngDecoder::SetDecodeOptions(uint32_t index, const PixelDecodeOptions &
         IMAGE_LOGE("config decoding failed on set decode options:%{public}u.", ret);
         return ret;
     }
-    info.size.width = pngImageInfo_.width;
-    info.size.height = pngImageInfo_.height;
+    info.size.width = static_cast<int32_t>(pngImageInfo_.width);
+    info.size.height = static_cast<int32_t>(pngImageInfo_.height);
     info.pixelFormat = outputFormat_;
     info.alphaType = alphaType_;
     opts_ = opts;
@@ -685,6 +685,11 @@ uint32_t PngDecoder::GetImageIdatSize(InputDataStream *stream)
             break;
         }
         png_byte *chunk = const_cast<png_byte *>(readData.inputStreamBuffer);
+        if (chunk == nullptr) {
+            ret = ERR_MEDIA_NULL_POINTER;
+            IMAGE_LOGE("chunk cast failed, ret:%{public}u", ret);
+            break;
+        }
         const size_t length = png_get_uint_32(chunk);
         if (IsChunk(chunk, "IDAT")) {
             IMAGE_LOGD("first idat Length is %{public}zu.", length);
@@ -872,6 +877,11 @@ uint32_t PngDecoder::PushAllToDecode(InputDataStream *stream, size_t bufferSize,
             break;
         }
         png_byte *chunk = const_cast<png_byte *>(ReadData.inputStreamBuffer);
+        if (chunk == nullptr) {
+            ret = ERR_MEDIA_NULL_POINTER;
+            IMAGE_LOGE("chunk cast fail, ret:%{public}u", ret);
+            break;
+        }
         png_process_data(pngStructPtr_, pngInfoPtr_, chunk, CHUNK_SIZE);
         if (IsChunk(chunk, "IEND")) {
             iend = true;
@@ -965,6 +975,11 @@ uint32_t PngDecoder::PushCurrentToDecode(InputDataStream *stream)
             break;
         }
         png_byte *chunk = const_cast<png_byte *>(ReadData.inputStreamBuffer);
+        if (chunk == nullptr) {
+            ret = ERR_MEDIA_NULL_POINTER;
+            IMAGE_LOGE("chunk is nullptr, ret:%{public}u", ret);
+            break;
+        }
         png_process_data(pngStructPtr_, pngInfoPtr_, chunk, CHUNK_SIZE);
         idatLength_ = png_get_uint_32(chunk) + CHUNK_DATA_LEN;
         incrementalLength_ = 0;

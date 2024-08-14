@@ -14,11 +14,14 @@
  */
 
 #include "image_source_native.h"
-
+#include "picture_native_impl.h"
 #include "common_utils.h"
 #include "image_source.h"
 #include "image_source_native_impl.h"
 #include "pixelmap_native_impl.h"
+#include "picture_native.h"
+#include "media_errors.h"
+
 #ifndef _WIN32
 #include "securec.h"
 #else
@@ -48,7 +51,7 @@ static constexpr int32_t FORMAT_9 = 9;
 struct OH_DecodingOptions {
     int32_t pixelFormat;
     uint32_t index;
-    uint32_t sampleSize;
+    uint32_t sampleSize = INVALID_SAMPLE_SIZE;
     uint32_t rotate;
     struct Image_Size desiredSize;
     struct Image_Region desiredRegion;
@@ -63,6 +66,16 @@ struct OH_ImageSource_Info {
     /** Image dynamicRange*/
     bool isHdr;
 };
+
+static Image_AuxiliaryPictureType AuxTypeInnerToNative(OHOS::Media::AuxiliaryPictureType type)
+{
+    return static_cast<Image_AuxiliaryPictureType>(static_cast<int>(type));
+}
+
+static OHOS::Media::AuxiliaryPictureType AuxTypeNativeToInner(Image_AuxiliaryPictureType type)
+{
+    return static_cast<OHOS::Media::AuxiliaryPictureType>(static_cast<int>(type));
+}
 
 static DecodeDynamicRange ParseImageDynamicRange(int32_t val)
 {
@@ -343,6 +356,7 @@ Image_ErrorCode OH_ImageSourceNative_CreateFromUri(char *uri, size_t uriSize, OH
     }
     std::string tmp(uri, uriSize);
     if (tmp.empty()) {
+        delete imageSource;
         return IMAGE_BAD_PARAMETER;
     }
     imageSource->filePath_ = tmp;
@@ -411,14 +425,19 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageSourceNative_CreatePixelmap(OH_ImageSourceNative *source, OH_DecodingOptions *ops,
     OH_PixelmapNative **pixelmap)
 {
-    if (source == nullptr || ops == nullptr) {
+    if (source == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-
     DecodeOptions decOps;
+    uint32_t index = DEFAULT_INDEX;
     uint32_t errorCode = IMAGE_BAD_PARAMETER;
-    ParseDecodingOps(decOps, ops);
-    uint32_t index = ops->index;
+    if (ops != nullptr) {
+        ParseDecodingOps(decOps, ops);
+        index = ops->index;
+    } else {
+        OH_DecodingOptions localOps{};
+        ParseDecodingOps(decOps, &localOps);
+    }
     std::unique_ptr<PixelMap> tmpPixelmap = source->GetInnerImageSource()->CreatePixelMapEx(index, decOps, errorCode);
     if (tmpPixelmap == nullptr || errorCode != IMAGE_SUCCESS) {
         return IMAGE_UNSUPPORTED_OPERATION;
@@ -454,6 +473,27 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
         resVecPixMap[index] = stPixMap;
         index ++;
     }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source, OH_DecodingOptionsForPicture *options,
+    OH_PictureNative **picture)
+{
+    if (source == nullptr || !source->GetInnerImageSource() || options == nullptr
+        || picture == nullptr || !options->GetInnerDecodingOptForPicture()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    uint32_t errorCode;
+    auto pictureTemp = source->GetInnerImageSource()->CreatePicture(*innerDecodingOptionsForPicture, errorCode);
+    if (errorCode != SUCCESS) {
+        return IMAGE_ALLOC_FAILED;
+    }
+    
+    auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
+    *picture = pictureNative;
     return IMAGE_SUCCESS;
 }
 
@@ -595,6 +635,68 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source)
     source->~OH_ImageSourceNative();
     return IMAGE_SUCCESS;
 }
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture **options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto decodingOptionsForPicture = std::make_shared<OHOS::Media::DecodingOptionsForPicture>();
+    *options = new OH_DecodingOptionsForPicture(decodingOptionsForPicture);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
+    Image_AuxiliaryPictureType **desiredAuxiliaryPictures, size_t *length)
+{
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredAuxiliaryPictures == nullptr || length == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto innerDecodingSet = options->GetInnerDecodingOptForPicture()->desireAuxiliaryPictures;
+    if (innerDecodingSet.size() == 0) {
+        return IMAGE_BAD_SOURCE;
+    }
+    auto lenTmp = innerDecodingSet.size();
+    auto auxTypeArrayUniptr = std::make_unique<Image_AuxiliaryPictureType[]>(lenTmp);
+    int index = 0;
+    for (auto innerDecoding : innerDecodingSet) {
+        auxTypeArrayUniptr[index++] = AuxTypeInnerToNative(innerDecoding);
+    }
+    *desiredAuxiliaryPictures = auxTypeArrayUniptr.release();
+    *length = lenTmp;
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
+    Image_AuxiliaryPictureType *desiredAuxiliaryPictures, size_t length)
+{
+    if (options == nullptr || !options->GetInnerDecodingOptForPicture() ||
+        desiredAuxiliaryPictures == nullptr || length <= 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
+    for (size_t index = 0; index < length; index++) {
+        auto auxTypeTmp = AuxTypeNativeToInner(desiredAuxiliaryPictures[index]);
+        innerDecodingOptionsForPicture->desireAuxiliaryPictures.insert(auxTypeTmp);
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options)
+{
+    if (options == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    delete options;
+    options = nullptr;
+    return IMAGE_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif

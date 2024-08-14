@@ -48,7 +48,6 @@ const static char* VPE_SO_NAME = "libvideoprocessingengine.z.so";
 void* VpeUtils::dlHandler_ = nullptr;
 __attribute__((destructor)) void VpeUtilsDeinitLibVpe()
 {
-    IMAGE_LOGD("destructor VpeUtilsDeinitLibVpe");
     VpeUtils::UnloadLibVpe();
 }
 
@@ -89,7 +88,6 @@ bool VpeUtils::LoadLibVpe()
 
 void VpeUtils::UnloadLibVpe()
 {
-    IMAGE_LOGD("VpeUtils UnloadLibVpe");
     if (dlHandler_) {
         dlclose(dlHandler_);
         dlHandler_ = nullptr;
@@ -465,6 +463,31 @@ bool VpeUtils::SetSbColorSpaceDefault(sptr<SurfaceBuffer>& buffer)
 void VpeUtils::SetSurfaceBufferInfo(sptr<SurfaceBuffer>& buffer, CM_ColorSpaceType color)
 {
     VpeUtils::SetSbColorSpaceType(buffer, color);
+}
+
+void VpeUtils::CopySurfaceBufferInfo(sptr<SurfaceBuffer>& source, sptr<SurfaceBuffer>& dst)
+{
+    if (source == nullptr || dst == nullptr) {
+        IMAGE_LOGI("VpeUtils CopySurfaceBufferInfo failed, source or dst is nullptr");
+        return;
+    }
+    std::vector<uint8_t> hdrMetadataTypeVec;
+    std::vector<uint8_t> colorSpaceInfoVec;
+    std::vector<uint8_t> staticData;
+    std::vector<uint8_t> dynamicData;
+
+    if (source->GetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec) == GSERROR_OK) {
+        dst->SetMetadata(ATTRKEY_HDR_METADATA_TYPE, hdrMetadataTypeVec);
+    }
+    if (source->GetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec) == GSERROR_OK) {
+        dst->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoVec);
+    }
+    if (GetSbStaticMetadata(source, staticData) && (staticData.size() > 0)) {
+        SetSbStaticMetadata(dst, staticData);
+    }
+    if (GetSbDynamicMetadata(source, dynamicData) && (dynamicData.size()) > 0) {
+        SetSbDynamicMetadata(dst, dynamicData);
+    }
 }
 #endif
 }

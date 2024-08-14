@@ -23,48 +23,161 @@ ohos_unittest("pixelmaptest") {
   cflags = [
     "-DIMAGE_DEBUG_FLAG",
     "-DIMAGE_COLORSPACE_FLAG",
+    "-Dprivate=public",
+    "-Dprotected=public",
   ]
 
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "$graphic_subsystem/utils/color_manager/export",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//third_party/ffmpeg",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/native_image_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_parcel_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_map_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_map_test/pixel_yuv_ext_test.cpp",
   ]
 
   deps = [
-    "$graphic_subsystem/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]
 
+  defines = []
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
-    defines = [ "IMAGE_PURGEABLE_PIXELMAP" ]
+    defines += [ "IMAGE_PURGEABLE_PIXELMAP" ]
     external_deps += [ "memmgr_override:libpurgeablemem_plugin" ]
   }
 
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines += [ "EXT_PIXEL" ]
+  }
+
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
+ohos_unittest("picturetest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/picture_test/picture_test.cpp",
+  ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("auxiliarypicturetest") {
+  module_out_path = module_output_path
+
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/auxiliary_picture_test/auxiliary_picture_test.cpp",
+  ]
+
+  deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
+    "$image_subsystem/interfaces/innerkits:image_native",
+    "//third_party/googletest:gmock_main",
+    "//third_party/googletest:gtest_main",
+  ]
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("metadatatest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+  ]
+}
+
+ohos_unittest("fragmentmetadatatest") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/fragment_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/metadata_test/fragment_metadata_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gtest",
+    "hilog:libhilog",
+  ]
 }
 
 ohos_unittest("imagepixelmaptest") {
@@ -72,11 +185,7 @@ ohos_unittest("imagepixelmaptest") {
 
   include_dirs = [
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/common/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
   ]
@@ -90,12 +199,13 @@ ohos_unittest("imagepixelmaptest") {
   deps = [
     #    "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native:bitmapconverter",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
@@ -107,24 +217,19 @@ ohos_unittest("imagepixelmaptest") {
 ohos_unittest("imagepixelmapparceltest") {
   module_out_path = module_output_path
 
-  include_dirs = [
-    "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//foundation/communication/ipc/interfaces/innerkits/ipc_core/include",
-  ]
+  include_dirs =
+      [ "//foundation/multimedia/image_framework/interfaces/innerkits/include" ]
+
   sources = [ "./unittest/pixel_map_test/image_pixel_map_parcel_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "ipc:ipc_core",
@@ -147,9 +252,6 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin/include",
     "$image_subsystem/plugins/common/libs/image/libextplugin/include/hdr",
     "$image_subsystem/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/accessor/src/abstract_exif_metadata_accessor.cpp",
@@ -199,20 +301,20 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/plugins/common/libs/image/libextplugin:heifparser",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//third_party/zlib:libz",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
 
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "zlib:libz",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 
   if (memory_utils_purgeable_ashmem_enable && defined(global_parts_info) &&
       defined(global_parts_info.resourceschedule_memmgr_override)) {
@@ -241,7 +343,6 @@ ohos_unittest("jpegdecoderextest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//third_party/googletest/googletest/include",
   ]
   cflags = [
     "-DIMAGE_COLORSPACE_FLAG",
@@ -256,12 +357,12 @@ ohos_unittest("jpegdecoderextest") {
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin:jpegplugin",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "libexif:libexif",
     "skia:libjpeg",
   ]
@@ -278,7 +379,6 @@ ohos_unittest("jpegutilstest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/jpeg_utils_test.cpp" ]
@@ -286,12 +386,12 @@ ohos_unittest("jpegutilstest") {
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin:jpegplugin",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
     "libexif:libexif",
     "skia:libjpeg",
@@ -309,7 +409,6 @@ ohos_unittest("exifmakernotetest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//third_party/googletest/googletest/include",
   ]
   cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/exif_maker_note_test.cpp" ]
@@ -317,12 +416,12 @@ ohos_unittest("exifmakernotetest") {
     "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/plugins/common/libs/image/libjpegplugin:jpegplugin",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
     "libexif:libexif",
     "skia:libjpeg",
@@ -335,14 +434,12 @@ ohos_unittest("format_agent_plugin_src_test") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//commonlibrary/c_utils/base/include",
   ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/format_agent_plugin_src_test.cpp" ]
 
@@ -364,14 +461,15 @@ ohos_unittest("imageutilstest") {
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/media_utils_lite/interfaces/kits",
-    "//foundation/communication/ipc/utils/include",
+    "$image_subsystem/frameworks/innerkitsimpl/common/include",
   ]
-  sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp" ]
+  sources = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/color_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_utils_test.cpp",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_yuv_ext_utils_test.cpp",
+  ]
 
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
@@ -380,12 +478,18 @@ ohos_unittest("imageutilstest") {
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_2d:color_manager",
 
     #"hilog:libhilog",
     "hitrace:hitrace_meter",
   ]
 
+  defines = []
+  if (defined(global_parts_info) &&
+      defined(global_parts_info.open_source_libyuv)) {
+    defines += [ "EXT_PIXEL" ]
+  }
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
 
@@ -395,20 +499,19 @@ ohos_unittest("colorconvertertest") {
   include_dirs = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
   ]
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/color_converter_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 
   #  external_deps = [ "hilog:libhilog" ]
 }
@@ -420,18 +523,12 @@ ohos_unittest("transformtest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/converter/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_transform_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   if (use_clang_android || use_clang_ios) {
@@ -439,7 +536,11 @@ ohos_unittest("transformtest") {
         [ "//base/hiviewdfx/hilog/interfaces/native/innerkits/include" ]
   }
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 
   #  external_deps = [ "hilog:libhilog" ]
 }
@@ -453,10 +554,6 @@ ohos_unittest("imagecolorspacetest") {
     "$image_subsystem/frameworks/innerkitsimpl/utils/include",
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   cflags = [ "-DIMAGE_DEBUG_FLAG" ]
@@ -469,13 +566,13 @@ ohos_unittest("imagecolorspacetest") {
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
@@ -494,10 +591,6 @@ ohos_unittest("interfacetest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/interface_test.cpp" ]
@@ -505,13 +598,13 @@ ohos_unittest("interfacetest") {
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
@@ -528,10 +621,6 @@ ohos_unittest("formatagentplugintest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/formatagentplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [
@@ -544,12 +633,12 @@ ohos_unittest("formatagentplugintest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin:imageformatagent",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
   ]
 }
@@ -560,21 +649,18 @@ ohos_unittest("attrdatatest") {
   include_dirs = [
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/attr_data_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_2d:color_manager",
   ]
 }
@@ -588,10 +674,6 @@ ohos_unittest("convertertest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [
@@ -605,12 +687,13 @@ ohos_unittest("convertertest") {
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
 }
@@ -621,21 +704,20 @@ ohos_unittest("gstpluginfwtest") {
   include_dirs = [
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/src/thirdpartyadp/gstreamer",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/gst_plugin_fw_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 }
 
 ohos_unittest("pixelconvertadaptertest") {
@@ -648,10 +730,6 @@ ohos_unittest("pixelconvertadaptertest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/pixel_convert_adapter_test.cpp" ]
@@ -661,13 +739,14 @@ ohos_unittest("pixelconvertadaptertest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
 }
@@ -683,24 +762,21 @@ ohos_unittest("pluginsmanagersrcframeworktest") {
     "//foundation/multimedia/image_framework/plugins/manager/src/common",
     "//foundation/multimedia/image_framework/plugins/manager/src/framework",
     "//foundation/multimedia/image_framework/plugins/manager/src/pluginbase",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/src/framework",
-    "//third_party/googletest/googletest/include",
-    "//third_party/json/single_include/nlohmann",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugins_manager_src_framework_test.cpp" ]
 
   deps = [
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_2d:color_manager",
+    "json:nlohmann_json_static",
   ]
 }
 
@@ -709,10 +785,6 @@ ohos_unittest("pngtest") {
 
   include_dirs = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin/include",
     "$image_subsystem/plugins/common/libs/image/libsvgplugin/include",
   ]
@@ -726,19 +798,19 @@ ohos_unittest("pngtest") {
 
   deps = [
     "$image_subsystem/plugins/common/libs/image/libsvgplugin:svgplugin",
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libpngplugin:pngplugin",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//third_party/libpng:libpng",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
+    "libpng:libpng",
   ]
 }
 
@@ -751,10 +823,6 @@ ohos_unittest("receivertest") {
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [
@@ -765,13 +833,14 @@ ohos_unittest("receivertest") {
   deps = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
@@ -789,10 +858,6 @@ ohos_unittest("streamtest") {
     "$image_subsystem/interfaces/innerkits/include",
     "$image_subsystem/plugins/common/libs/image/formatagentplugin/include",
     "$image_subsystem/plugins/manager/include",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
   ]
 
   sources = [
@@ -807,12 +872,13 @@ ohos_unittest("streamtest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/formatagentplugin:imageformatagent",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
   ]
 }
@@ -820,13 +886,7 @@ ohos_unittest("streamtest") {
 ohos_unittest("creatortest") {
   module_out_path = module_output_path
 
-  include_dirs = [
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
-    "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include",
-  ]
+  include_dirs = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/creator/include" ]
 
   sources = [
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/image_creator_manager_test.cpp",
@@ -834,17 +894,17 @@ ohos_unittest("creatortest") {
   ]
 
   deps = [
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils:image_utils",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
   ]
@@ -858,19 +918,13 @@ ohos_unittest("webpplugintest") {
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
-    "//third_party/skia/third_party/externals/libwebp/src",
   ]
   sources = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugin_server_test.cpp",
@@ -884,18 +938,19 @@ ohos_unittest("webpplugintest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin:webpplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 }
 
 ohos_unittest("pluginlibjpegtest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
@@ -903,38 +958,30 @@ ohos_unittest("pluginlibjpegtest") {
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "$skia_root/skia/include/codec",
-    "$skia_root/skia",
-    "$skia_root/skia/include/core",
-    "//third_party/skia/third_party/libjpeg-turbo",
-    "//third_party/skia/third_party/externals/libjpeg-turbo",
-    "//third_party/skia/third_party/skcms",
-    "//third_party/libexif",
   ]
 
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/plugin_libjpeg_test.cpp" ]
 
   deps = [
-    "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libjpegplugin:jpegplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager_static",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//third_party/skia/third_party/libjpeg-turbo:libjpeg",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
+
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "skia:libjpeg",
     "skia:skia_canvaskit",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
 
 ohos_unittest("rawdecodertest") {
@@ -942,21 +989,14 @@ ohos_unittest("rawdecodertest") {
 
   include_dirs = [
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
-    "//foundation/multimedia/utils/include",
-    "//foundation/graphic/graphic_2d/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin/include",
-    "//third_party/skia",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libwebpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
   ]
 
   sources = [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/test/unittest/raw_decoder_test.cpp" ]
@@ -967,9 +1007,6 @@ ohos_unittest("rawdecodertest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/librawplugin:rawplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-    "//third_party/skia/third_party/piex",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -979,7 +1016,11 @@ ohos_unittest("rawdecodertest") {
   ]
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
+    "skia:piex",
   ]
 }
 
@@ -991,18 +1032,13 @@ ohos_unittest("bmpplugintest") {
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/bmp_decoder_test.cpp" ]
 
@@ -1011,11 +1047,13 @@ ohos_unittest("bmpplugintest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libbmpplugin:bmpplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 }
 
 ohos_unittest("gifplugintest") {
@@ -1026,18 +1064,13 @@ ohos_unittest("gifplugintest") {
     "//foundation/multimedia/image_framework/plugins/manager/test/unittest/common/plugin_example/interface/vision",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/pixelconverter/include",
-    "//foundation/multimedia/utils/include",
     "//foundation/multimedia/image_framework/plugins/manager/include",
     "//foundation/multimedia/image_framework/plugins/manager/include/image",
     "//foundation/multimedia/image_framework/plugins/manager/include/pluginbase",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin/include",
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "//foundation/multimedia/utils/include",
-    "//third_party/googletest/googletest/include",
-    "//commonlibrary/c_utils/base/include",
     "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/stream/include",
     "//foundation/multimedia/image_framework/adapter/frameworks/bitmapconverter/native/include",
-    "//base/hiviewdfx/hilog/interfaces/native/innerkits/include",
   ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/plugin_test/gif_encoder_test.cpp" ]
 
@@ -1046,11 +1079,13 @@ ohos_unittest("gifplugintest") {
     "//foundation/multimedia/image_framework/interfaces/innerkits:image_native",
     "//foundation/multimedia/image_framework/plugins/common/libs/image/libgifplugin:gifplugin",
     "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+  ]
 }
 
 ohos_unittest("ndktest") {
@@ -1060,11 +1095,6 @@ ohos_unittest("ndktest") {
     "$image_subsystem/frameworks/kits/js/common/ndk/include",
     "/utils/include",
     "/interfaces/innerkits/include",
-    "//third_party/googletest/googletest/include",
-    "../../../../../arkui/napi/interfaces/inner_api",
-    "../../../../../arkui/napi/interfaces/kits",
-    "//third_party/node/src",
-    "$resource_management_subsystem/interfaces/native/resource/include",
   ]
   sources = [
     "unittest/image_ndk_test.cpp",
@@ -1078,8 +1108,11 @@ ohos_unittest("ndktest") {
     "$image_subsystem/frameworks/kits/js/common/ndk:image_receiver_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source_ndk",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap_ndk",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
+  ]
+  external_deps = [
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "node:node_header_notice",
   ]
 }
 
@@ -1088,15 +1121,18 @@ ohos_unittest("ndktest2") {
 
   include_dirs = [
     "$image_subsystem/frameworks/kits/js/common/ndk/include",
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk/include",
     "/utils/include",
     "/interfaces/innerkits/include",
-    "//third_party/googletest/googletest/include",
-    "//third_party/node/src",
-    "$resource_management_subsystem/interfaces/native/resource/include",
   ]
   sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
+    "unittest/image_common_ndk_test.cpp",
     "unittest/image_packer_native_ndk_test.cpp",
     "unittest/image_source_native_ndk_test.cpp",
+    "unittest/picture_native_ndk_test.cpp",
     "unittest/pixelmap_native_ndk_test.cpp",
   ]
 
@@ -1104,14 +1140,28 @@ ohos_unittest("ndktest2") {
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_packer",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk:image_common",
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
+  if (enable_libexif) {
+    deps += [ "//third_party/libexif:libexif" ]
+  }
+
   external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "graphic_2d:color_manager",
     "graphic_surface:surface",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "napi:ace_napi",
+    "napi:ark_interop",
+    "node:node_header_notice",
+    "resource_management:librawfile",
   ]
 }
 
@@ -1122,20 +1172,18 @@ ohos_unittest("napitest") {
     "$image_subsystem/frameworks/kits/js/common/include",
     "/utils/include",
     "/interfaces/innerkits/include",
-    "//third_party/googletest/googletest/include",
-    "../../../../../arkui/napi/interfaces/inner_api",
-    "../../../../../arkui/napi/interfaces/kits",
-    "//third_party/node/src",
   ]
   sources = [ "unittest/napi_test.cpp" ]
 
-  deps = [
-    "$image_subsystem/interfaces/kits/js/common:image",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
+  deps = [ "$image_subsystem/interfaces/kits/js/common:image" ]
 
-  external_deps = [ "graphic_2d:color_manager" ]
+  external_deps = [
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
+    "napi:ace_napi",
+    "node:node_header_notice",
+  ]
 }
 
 ohos_unittest("jpeg_hw_decoder_test") {
@@ -1158,12 +1206,6 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "${image_subsystem}/plugins/manager/include/",
     "${image_subsystem}/plugins/manager/include/pluginbase/",
     "${image_subsystem}/interfaces/innerkits/include/",
-    "${image_subsystem}/../../../drivers/peripheral/base/",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
-    "${image_subsystem}/../../../third_party/skia/",
-    "${image_subsystem}/../../../third_party/skia/include/codec/",
-    "${image_subsystem}/../../../third_party/skia/include/core/",
-    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
   ]
 
   deps = [
@@ -1171,24 +1213,25 @@ ohos_unittest("jpeg_hw_decoder_test") {
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
-    "//third_party/googletest:gtest_main",
-    "//third_party/skia:skia_ohos",
   ]
 
   external_deps = [
     "c_utils:utils",
-    "drivers_interface_codec:libimage_proxy_1.0",
+    "drivers_interface_codec:libimage_proxy_2.0",
     "drivers_interface_display:libdisplay_buffer_hdi_impl",
     "drivers_interface_display:libdisplay_buffer_proxy_1.0",
     "drivers_interface_display:libdisplay_composer_hdi_impl",
     "drivers_interface_display:libdisplay_composer_proxy_1.0",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hdf_core:libhdf_utils",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_single",
     "libexif:libexif",
+    "libjpeg-turbo:turbojpeg",
     "skia:libjpeg",
+    "skia:skia_canvaskit",
   ]
 
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
@@ -1221,23 +1264,13 @@ ohos_unittest("heif_hw_decoder_test") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include/",
     "${image_subsystem}/interfaces/innerkits/include/",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
-    "${image_subsystem}/../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
-    "${image_subsystem}/../../../base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/",
-    "${image_subsystem}/../../../base/startup/init/interfaces/innerkits/include/",
-    "${image_subsystem}/../../../commonlibrary/c_utils/base/include/",
-    "${image_subsystem}/../../../drivers/hdf_core/interfaces/inner_api/",
-    "${image_subsystem}/../../../drivers/peripheral/codec/interfaces/include/",
-    "${image_subsystem}/../../../foundation/graphic/graphic_surface/interfaces/inner_api/surface/",
-    "${image_subsystem}/../../../foundation/resourceschedule/qos_manager/interfaces/inner_api",
     "foundation/multimedia/image_framework/interfaces/innerkits/include",
   ]
-  deps = [
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
-    "//third_party/googletest:gtest_main",
-  ]
+  deps = [ "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils" ]
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
@@ -1246,6 +1279,32 @@ ohos_unittest("heif_hw_decoder_test") {
     "ipc:ipc_core",
     "openmax:libopenmax_static",
     "qos_manager:qos",
+  ]
+  resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
+}
+
+ohos_unittest("heif_hw_encoder_test") {
+  module_out_path = module_output_path
+
+  include_dirs = [
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/mock",
+    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/heif_hw_encode",
+  ]
+  sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/heif_hw_encode/heif_hw_encoder_test.cpp" ]
+
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "zlib:libz",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 }
@@ -1264,27 +1323,18 @@ ohos_unittest("heif_parser_test") {
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/heif_impl/heif_parser/box/",
-    "${image_subsystem}/../../../base/hiviewdfx/hilog/interfaces/native/innerkits/include/",
-    "${image_subsystem}/../../../base/hiviewdfx/hitrace/interfaces/native/innerkits/include/hitrace_meter/",
-    "${image_subsystem}/../../../base/startup/init/interfaces/innerkits/include/",
-    "${image_subsystem}/../../../commonlibrary/c_utils/base/include/",
-    "${image_subsystem}/../../../drivers/hdf_core/interfaces/inner_api/",
-    "${image_subsystem}/../../../drivers/peripheral/codec/interfaces/include/",
-    "${image_subsystem}/../../../foundation/graphic/graphic_surface/interfaces/inner_api/surface/",
-    "${image_subsystem}/../../../foundation/multimedia/image_framework/interfaces/innerkits/include",
-    "${image_subsystem}/../../../foundation/resourceschedule/qos_manager/interfaces/inner_api/",
   ]
 
   deps = [
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:textureEncoderCL",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_3.0",
+    "googletest:gtest_main",
     "graphic_surface:surface",
     "hdf_core:libhdi",
     "hilog:libhilog",
@@ -1310,25 +1360,21 @@ ohos_unittest("pixelastctest") {
     "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "$graphic_subsystem/utils/color_manager/export",
-    "${image_subsystem}/../../../foundation/multimedia/utils/include",
-    "${image_subsystem}/../../../third_party/ffmpeg",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
-    "${image_subsystem}/../../../commonlibrary/c_utils/base/include",
     "${image_subsystem}/plugins/manager/include",
   ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/pixel_astc_test.cpp" ]
 
   deps = [
-    "$graphic_subsystem/utils/color_manager:color_manager",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]
@@ -1352,13 +1398,6 @@ ohos_unittest("textureencodetest") {
     "${image_subsystem}/frameworks/innerkitsimpl/stream/include",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
-    "${image_subsystem}/../../../drivers/peripheral/base/",
-    "${image_subsystem}/../../../drivers/peripheral/display/interfaces/include/",
-    "${image_subsystem}/../../../third_party/skia/",
-    "${image_subsystem}/../../../third_party/skia/include/codec/",
-    "${image_subsystem}/../../../third_party/skia/include/core/",
-    "${image_subsystem}/../../../third_party/libjpeg-turbo/",
-    "${image_subsystem}/../../../third_party/astc-encoder/Source",
     "${image_subsystem}/frameworks/innerkitsimpl/test/unittest",
   ]
   sources = [
@@ -1367,8 +1406,6 @@ ohos_unittest("textureencodetest") {
   ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/astc-encoder:astc_encoder_shared",
-    "${image_subsystem}/../../../third_party/opencl-headers:libcl",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:exifhelper",
@@ -1386,13 +1423,18 @@ ohos_unittest("textureencodetest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.graphic_graphic_2d_ext)) {
     defines += [ "ASTC_CUSTOMIZED_ENABLE" ]
+    defines += [ "SUT_ENCODE_ENABLE" ]
   }
 
   external_deps = [
+    "astc-encoder:astc_encoder_shared",
     "c_utils:utils",
     "graphic_2d:color_manager",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
+    "libjpeg-turbo:turbojpeg",
+    "opencl-headers:libcl",
+    "skia:skia_canvaskit",
   ]
 }
 
@@ -1402,18 +1444,15 @@ ohos_unittest("eglimagetest") {
   include_dirs = [
     "$image_subsystem/frameworks/innerkitsimpl/egl_image/include",
     "$image_subsystem/interfaces/innerkits/include",
-    "//third_party/googletest/googletest/include",
   ]
   sources = [ "unittest/egl_image_test.cpp" ]
 
-  deps = [
-    "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
+  deps = [ "$image_subsystem/frameworks/innerkitsimpl/egl_image:egl_image" ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "graphic_2d:EGL",
     "graphic_2d:GLESv3",
     "graphic_2d:color_manager",
@@ -1433,14 +1472,11 @@ ohos_unittest("jpgyuvtest") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin/include",
     "${image_subsystem}/plugins/manager/include",
-    "${image_subsystem}/../../../foundation/multimedia/utils/include",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
   ]
 
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpg_yuv_test.cpp" ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/googletest:gtest_main",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
@@ -1450,6 +1486,8 @@ ohos_unittest("jpgyuvtest") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gtest",
+    "googletest:gtest_main",
     "graphic_2d:color_manager",
   ]
 }
@@ -1465,21 +1503,22 @@ ohos_unittest("heifyuvtest") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin/include",
     "${image_subsystem}/plugins/manager/include",
-    "${image_subsystem}/../../../foundation/multimedia/utils/include",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
   ]
 
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/heif_yuv_test.cpp" ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/googletest:gtest_main",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/formatagentplugin:imageformatagent",
     "${image_subsystem}/plugins/manager:pluginmanager",
   ]
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest",
+  ]
 }
 
 ohos_unittest("jpeg_yuv_decoder_test") {
@@ -1493,14 +1532,11 @@ ohos_unittest("jpeg_yuv_decoder_test") {
     "${image_subsystem}/interfaces/innerkits/include",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/include/jpeg_yuv_decoder",
     "${image_subsystem}/plugins/manager/include",
-    "${image_subsystem}/../../../foundation/multimedia/utils/include",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
   ]
 
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/jpeg_yuv_decoder/jpeg_yuv_decoder_test.cpp" ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/googletest:gtest_main",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
@@ -1509,6 +1545,8 @@ ohos_unittest("jpeg_yuv_decoder_test") {
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
   external_deps = [
     "c_utils:utils",
+    "googletest:gtest",
+    "googletest:gtest_main",
     "skia:libjpeg",
   ]
 }
@@ -1516,11 +1554,7 @@ ohos_unittest("jpeg_yuv_decoder_test") {
 ohos_unittest("imagestreamtest") {
   module_out_path = module_output_path
 
-  include_dirs = [
-    "${image_subsystem}/../../../third_party/googletest/googlemock/include",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
-    "${image_subsystem}/interfaces/innerkits/include",
-  ]
+  include_dirs = [ "${image_subsystem}/interfaces/innerkits/include" ]
 
   sources = [
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/buffer_metadata_stream.cpp",
@@ -1554,7 +1588,6 @@ ohos_unittest("imageaccessortest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/interfaces/innerkits/include",
   ]
@@ -1584,25 +1617,25 @@ ohos_unittest("imageaccessortest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:heifparser",
-    "//third_party/zlib:libz",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
+
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
     "c_utils:utils",
     "googletest:gtest",
     "hilog:libhilog",
+    "zlib:libz",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
 
 ohos_unittest("imagetiffparsertest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
@@ -1620,9 +1653,7 @@ ohos_unittest("imagetiffparsertest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
+
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
@@ -1630,13 +1661,15 @@ ohos_unittest("imagetiffparsertest") {
     "googletest:gtest",
     "hilog:libhilog",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
 
 ohos_unittest("exifmetadatatest") {
   module_out_path = module_output_path
 
   include_dirs = [
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/include",
     "${image_subsystem}/interfaces/innerkits/include",
   ]
@@ -1652,9 +1685,7 @@ ohos_unittest("exifmetadatatest") {
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
   ]
-  if (enable_libexif) {
-    deps += [ "//third_party/libexif:libexif" ]
-  }
+
   resource_config_file = "$image_subsystem/test/resource/image/ohos_test.xml"
 
   external_deps = [
@@ -1662,6 +1693,9 @@ ohos_unittest("exifmetadatatest") {
     "googletest:gtest",
     "hilog:libhilog",
   ]
+  if (enable_libexif) {
+    external_deps += [ "libexif:libexif" ]
+  }
 }
 
 ohos_unittest("image_native_test") {
@@ -1672,13 +1706,11 @@ ohos_unittest("image_native_test") {
     "${image_subsystem}/frameworks/kits/native/common/ndk/include",
     "${image_subsystem}/frameworks/kits/js/common/include",
     "${image_subsystem}/interfaces/kits/native/include/image",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
   ]
 
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_native_test.cpp" ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/googletest:gtest_main",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
     "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
@@ -1688,6 +1720,8 @@ ohos_unittest("image_native_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gtest",
+    "googletest:gtest_main",
     "graphic_surface:surface",
   ]
 }
@@ -1700,13 +1734,11 @@ ohos_unittest("image_receiver_native_test") {
     "${image_subsystem}/frameworks/kits/native/common/ndk/include",
     "${image_subsystem}/frameworks/kits/js/common/include",
     "${image_subsystem}/interfaces/kits/native/include/image",
-    "${image_subsystem}/../../../third_party/googletest/googletest/include",
   ]
 
   sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_receiver_native_test.cpp" ]
 
   deps = [
-    "${image_subsystem}/../../../third_party/googletest:gtest_main",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/frameworks/kits/native/common/ndk:image_receiver",
     "${image_subsystem}/frameworks/kits/native/common/ndk:ohimage",
@@ -1716,6 +1748,8 @@ ohos_unittest("image_receiver_native_test") {
   external_deps = [
     "c_utils:utils",
     "drivers_peripheral_display:hdi_gralloc_client",
+    "googletest:gtest",
+    "googletest:gtest_main",
     "graphic_surface:surface",
   ]
 }
@@ -1731,14 +1765,12 @@ ohos_unittest("datastatisticstest") {
   include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_data_statistics_test.cpp" ]
 
-  deps = [
-    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
+  deps = [ "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils" ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
     "ipc:ipc_core",
   ]
@@ -1755,14 +1787,12 @@ ohos_unittest("imageeventtest") {
   include_dirs = [ "$image_subsystem/frameworks/innerkitsimpl/utils/include" ]
   sources = [ "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_event_test.cpp" ]
 
-  deps = [
-    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
-  ]
+  deps = [ "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils" ]
 
   external_deps = [
     "c_utils:utils",
+    "googletest:gmock_main",
+    "googletest:gtest_main",
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "ipc:ipc_core",
@@ -1780,29 +1810,50 @@ ohos_unittest("imageformatconverttest") {
     "${image_subsystem}/frameworks/innerkitsimpl/converter/include",
     "${image_subsystem}/frameworks/innerkitsimpl/utils/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${graphic_subsystem}/utils/color_manager/export",
-    "//third_party/googletest/googletest/include",
     "${image_subsystem}/plugins/manager/include",
     "${image_subsystem}/frameworks/innerkitsimpl/common/include",
     "${image_subsystem}/interfaces/innerkits/include",
-    "${resource_management_subsystem}/interfaces/native/resource/include",
   ]
-  sources = [ "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_test.cpp" ]
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_fail_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/image_format_convert_test.cpp",
+  ]
   deps = [
-    "${graphic_subsystem}/utils/color_manager:color_manager",
     "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "${image_subsystem}/interfaces/innerkits:image_native",
     "${image_subsystem}/plugins/common/libs/image/libextplugin:extplugin",
     "${image_subsystem}/plugins/manager:pluginmanager",
-    "//third_party/ffmpeg:libohosffmpeg",
-    "//third_party/googletest:gmock_main",
-    "//third_party/googletest:gtest_main",
   ]
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "googletest:gmock_main",
     "googletest:gtest",
+    "graphic_2d:color_manager",
     "hilog:libhilog",
     "ipc:ipc_core",
+  ]
+  resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
+}
+
+ohos_unittest("image_cj_test") {
+  module_out_path = module_output_path
+
+  sources = [
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cj/image_ffi_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cj/image_impl_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cj/image_receiver_impl_test.cpp",
+    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/cj/image_source_impl_test.cpp",
+  ]
+
+  deps = [
+    "${image_subsystem}/frameworks/kits/cj:cj_image_ffi",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
+
+  external_deps = [
+    "napi:cj_bind_ffi",
+    "napi:cj_bind_native",
   ]
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
 }
@@ -1812,6 +1863,7 @@ group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
+    ":auxiliarypicturetest",
     ":bmpplugintest",
     ":colorconvertertest",
     ":convertertest",
@@ -1822,9 +1874,11 @@ group("unittest") {
     ":exifmetadatatest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
+    ":fragmentmetadatatest",
     ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
+    ":image_cj_test",
     ":image_native_test",
     ":image_receiver_native_test",
     ":imageaccessortest",
@@ -1842,8 +1896,10 @@ group("unittest") {
     ":jpegdecoderextest",
     ":jpegutilstest",
     ":jpgyuvtest",
+    ":metadatatest",
     ":napitest",
     ":ndktest2",
+    ":picturetest",
     ":pixelastctest",
     ":pixelconvertadaptertest",
     ":pixelmaptest",
@@ -1869,7 +1925,9 @@ group("unittest") {
       ":heifyuvtest",
     ]
   }
+
+  if (enable_heif_hw_encode) {
+    deps += [ ":heif_hw_encoder_test" ]
+  }
 }
-
 ################################################
-

@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <array>
 #include "jpeg_exif_metadata_accessor.h"
 
 #include <libexif/exif-data.h>
@@ -80,7 +81,7 @@ uint32_t JpegExifMetadataAccessor::Read()
     return SUCCESS;
 }
 
-bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     if (!imageStream_->IsOpen()) {
         IMAGE_LOGE("Output image stream is not open.");
@@ -103,6 +104,7 @@ bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob) const
                 return false;
             }
             if (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0) {
+                tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size()) + EXIF_ID_SIZE;
                 return true;
             }
         }
@@ -284,6 +286,10 @@ bool JpegExifMetadataAccessor::WriteData(BufferMetadataStream &bufStream, uint8_
     ssize_t writeHeaderLength = MARKER_LENGTH_SIZE;
     ssize_t exifHeaderLength = EXIF_ID_LENGTH;
 
+    if (dataBlob == nullptr) {
+        IMAGE_LOGE("Failed to write data blob. dataBlob is nullptr");
+        return false;
+    }
     if (memcmp(reinterpret_cast<char *>(dataBlob), EXIF_ID, EXIF_ID_SIZE) != 0) {
         writeHeaderLength = APP1_HEADER_LENGTH;
         exifHeaderLength = APP1_EXIF_LENGTH;

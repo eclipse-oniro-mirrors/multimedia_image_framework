@@ -36,6 +36,8 @@
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PIXELMAP_NATIVE_H
 #include "image_common.h"
+#include "napi/native_api.h"
+#include "napi/native_node_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -110,6 +112,18 @@ typedef enum {
     * NV12 format
     */
     PIXEL_FORMAT_NV12 = 9,
+    /*
+    * RGBA_1010102 format
+    */
+    PIXEL_FORMAT_RGBA_1010102 = 10,
+    /*
+    * YCBCR_P010 format
+    */
+    PIXEL_FORMAT_YCBCR_P010 = 11,
+    /*
+    * YCRCB_P010 format
+    */
+    PIXEL_FORMAT_YCRCB_P010 = 12,
 } PIXEL_FORMAT;
 
 typedef enum {
@@ -117,6 +131,30 @@ typedef enum {
     IMAGE_FORMAT_YUV_TYPE,
     IMAGE_FORMAT_RGB_TYPE
 } IMAGE_FORMAT;
+
+/**
+ * @brief Defines the anti-aliasing level.
+ *
+ * @since 12
+ */
+typedef enum {
+    /**
+     * Nearest-neighbor interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasing_NONE = 0,
+    /**
+     * Bilinear interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasing_LOW = 1,
+    /**
+     * Bilinear interpolation algorithm with mipmap linear filtering
+     */
+    OH_PixelmapNative_AntiAliasing_MEDIUM = 2,
+    /**
+     * Cubic interpolation algorithm
+     */
+    OH_PixelmapNative_AntiAliasing_HIGH = 3,
+} OH_PixelmapNative_AntiAliasingLevel;
 
 /**
  * @brief Defines the options used for creating a pixel map.
@@ -222,6 +260,32 @@ Image_ErrorCode OH_PixelmapInitializationOptions_GetSrcPixelFormat(OH_Pixelmap_I
  */
 Image_ErrorCode OH_PixelmapInitializationOptions_SetSrcPixelFormat(OH_Pixelmap_InitializationOptions *options,
     int32_t srcpixelFormat);
+
+/**
+ * @brief Get rowStride for InitializationOptions struct.
+ *
+ * @param options The InitializationOptions pointer will be operated.
+ * @param rowStride the rowStride of image buffer.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if rowStride is null.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe options is released.
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_GetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t *rowStride);
+
+/**
+ * @brief Set rowStride number for InitializationOptions struct.
+ *
+ * @param options The InitializationOptions pointer will be operated.
+ * @param rowStride the rowStride of image buffer.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if rowStride does not match width.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe options is released.
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapInitializationOptions_SetRowStride(OH_Pixelmap_InitializationOptions *options,
+    int32_t rowStride);
 
 /**
  * @brief Get alphaType number for InitializationOtions struct.
@@ -354,6 +418,34 @@ Image_ErrorCode OH_PixelmapNative_CreatePixelmap(uint8_t *data, size_t dataLengt
     OH_Pixelmap_InitializationOptions *options, OH_PixelmapNative **pixelmap);
 
 /**
+ * @brief Convert a native <b>PixelMap</b> object to <b>PixelMap</b> napi object.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNative Indicates a pointer to the <b>PixelMap</b> object created at the native layer.
+ * @param pixelmapNapi the <b>PixelMap</b> pointer will be converted.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeToNapi(napi_env env, OH_PixelmapNative *pixelmapNative,
+    napi_value *pixelmapNapi);
+
+/**
+ * @brief Convert a <b>PixelMap</b> napi object to native <b>PixelMap</b> object.
+ *
+ * @param env Indicates the NAPI environment pointer.
+ * @param pixelmapNapi Indicates napi <b>PixelMap</b> object.
+ * @param pixelmapNative Indicates native <b>PixelMap</b> pointer to created.
+ * @return Image functions result code.
+ *     {@link IMAGE_SUCCESS} if the execution is successful.
+ *     {@link IMAGE_BAD_PARAMETER} pixelmapNative is nullptr, or pixelmapNapi is not a PixelMap
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, napi_value pixelmapNapi,
+    OH_PixelmapNative **pixelmapNative);
+
+/**
  * @brief Reads data of this pixel map to an Buffer. If this pixel map is created in the BGRA_8888 format,
  * the data read is the same as the original data.
  *
@@ -422,6 +514,24 @@ Image_ErrorCode OH_PixelmapNative_Opacity(OH_PixelmapNative *pixelmap, float rat
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_Scale(OH_PixelmapNative *pixelmap, float scaleX, float scaleY);
+
+/**
+ * @brief Scales this image based on the input width and height with anti-aliasing.
+ *
+ * @param pixelmap The Pixelmap pointer will be operated.
+ * @param scaleX Scaling ratio of the width.
+ * @param scaleY Scaling ratio of the height.
+ * @param level The anti-aliasing algorithm to be used.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, x and y are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_TOO_LARGE - if image is too large.
+ * returns {@link Image_ErrorCode} IMAGE_ALLOC_FAILED - if device has no memory.
+ * returns {@link Image_ErrorCode} IMAGE_UNKNOWN_ERROR - inner unknown error, maybe source pixelmap is released.
+ * @see OH_PixelmapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_ScaleWithAntiAliasing(OH_PixelmapNative *pixelmap, float scaleX, float scaleY,
+    OH_PixelmapNative_AntiAliasingLevel level);
 
 /**
  * @brief Translates this image based on the input coordinates.

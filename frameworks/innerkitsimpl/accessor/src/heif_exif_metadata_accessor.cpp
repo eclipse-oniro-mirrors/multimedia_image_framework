@@ -66,12 +66,12 @@ uint32_t HeifExifMetadataAccessor::Read()
         IMAGE_LOGE("Decode tiffBuf error.");
         return ERR_EXIF_DECODE_FAILED;
     }
-
+    tiffOffset_ = tiffOffset_ + static_cast<long>(byteOrderPos);
     exifMetadata_ = std::make_shared<ExifMetadata>(exifData);
     return SUCCESS;
 }
 
-bool HeifExifMetadataAccessor::ReadBlob(DataBuf &blob) const
+bool HeifExifMetadataAccessor::ReadBlob(DataBuf &blob)
 {
     return false;
 }
@@ -104,7 +104,10 @@ uint32_t HeifExifMetadataAccessor::Write()
     if (!CheckTiffPos(const_cast<byte *>(dataBuf.CData()), dataBuf.Size(), byteOrderPos)) {
         return ERR_MEDIA_WRITE_PARCEL_FAIL;
     }
-
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
     return WriteMetadata(dataBuf);
 }
 
@@ -184,6 +187,7 @@ bool HeifExifMetadataAccessor::GetExifItemData(std::shared_ptr<HeifParser> &pars
     if (parser->GetItemData(exifItemId, &item) != heif_error::heif_error_ok) {
         return false;
     }
+    tiffOffset_ = parser->GetTiffOffset();
     dataBuf = DataBuf(item.data(), item.size());
     return true;
 }

@@ -24,6 +24,8 @@
 #include "pixel_map_napi.h"
 #include "incremental_pixel_map.h"
 #include "image_resource_utils.h"
+#include "picture.h"
+#include "picture_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -39,10 +41,10 @@ public:
         return navIncPixelMap_;
     }
 
-    static std::string filePath_;
-    static int fileDescriptor_;
-    static void* fileBuffer_;
-    static size_t fileBufferSize_;
+    static thread_local std::string filePath_;
+    static thread_local int fileDescriptor_;
+    static thread_local void* fileBuffer_;
+    static thread_local size_t fileBufferSize_;
     static int32_t CreateImageSourceNapi(napi_env env, napi_value* result);
     void SetIncrementalPixelMap(std::shared_ptr<IncrementalPixelMap> incrementalPixelMap);
     void SetNativeImageSource(std::shared_ptr<ImageSource> imageSource);
@@ -74,6 +76,10 @@ private:
     static napi_value GetDelayTime(napi_env env, napi_callback_info info);
     static napi_value GetDisposalType(napi_env env, napi_callback_info info);
     static napi_value GetFrameCount(napi_env env, napi_callback_info info);
+    static std::vector<napi_property_descriptor> RegisterNapi();
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static napi_value CreatePicture(napi_env env, napi_callback_info info);
+#endif
 
     void release();
     static thread_local napi_ref sConstructor_;

@@ -15,26 +15,24 @@
 
 #include "hardware/imagecodec/image_codec_list.h"
 #include "hardware/imagecodec/image_codec_log.h"
-#include "iservmgr_hdi.h" // drivers/hdf_core/interfaces/inner_api/hdi/
+#include "iremote_object.h"
+#include "iproxy_broker.h"
 #include "syspara/parameters.h" // base/startup/init/interfaces/innerkits/include/
 
 namespace OHOS::ImagePlugin {
 using namespace std;
-using namespace OHOS::HDI::ServiceManager::V1_0;
 using namespace HdiCodecNamespace;
 
 static mutex g_heifCodecMtx;
 static sptr<ICodecComponentManager> g_compMgrForHeif;
 
-class Listener : public ServStatListenerStub {
+class CodecHeifDeathRecipient : public IRemoteObject::DeathRecipient {
 public:
-    void OnReceive(const ServiceStatus &status) override
+    void OnRemoteDied(const wptr<IRemoteObject> &object) override
     {
-        if (status.serviceName == "codec_component_manager_service" && status.status == SERVIE_STATUS_STOP) {
-            LOGW("codec_component_manager_service died");
-            lock_guard<mutex> lk(g_heifCodecMtx);
-            g_compMgrForHeif = nullptr;
-        }
+        LOGW("codec_component_manager_service died");
+        std::lock_guard<std::mutex> lk(g_heifCodecMtx);
+        g_compMgrForHeif = nullptr;
     }
 };
 
@@ -53,13 +51,19 @@ sptr<ICodecComponentManager> GetManager()
     }
     LOGI("need to get ICodecComponentManager");
     bool isPassthrough = IsPassthrough();
-    if (!isPassthrough) {
-        sptr<IServiceManager> serviceMng = IServiceManager::Get();
-        if (serviceMng) {
-            serviceMng->RegisterServiceStatusListener(new Listener(), DEVICE_CLASS_DEFAULT);
-        }
-    }
     g_compMgrForHeif = ICodecComponentManager::Get(isPassthrough);
+    if (g_compMgrForHeif == nullptr || isPassthrough) {
+        return g_compMgrForHeif;
+    }
+    bool isDeathRecipientAdded = false;
+    const sptr<OHOS::IRemoteObject> &remote = OHOS::HDI::hdi_objcast<ICodecComponentManager>(g_compMgrForHeif);
+    if (remote) {
+        sptr<CodecHeifDeathRecipient> deathCallBack(new CodecHeifDeathRecipient());
+        isDeathRecipientAdded = remote->AddDeathRecipient(deathCallBack);
+    }
+    if (!isDeathRecipientAdded) {
+        LOGE("failed to add deathRecipient for ICodecComponentManager!");
+    }
     return g_compMgrForHeif;
 }
 

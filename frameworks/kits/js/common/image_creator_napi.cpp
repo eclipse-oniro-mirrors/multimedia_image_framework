@@ -123,6 +123,7 @@ napi_value ImageCreatorNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("dequeueImage", JsDequeueImage),
         DECLARE_NAPI_FUNCTION("queueImage", JsQueueImage),
         DECLARE_NAPI_FUNCTION("on", JsOn),
+        DECLARE_NAPI_FUNCTION("off", JsOff),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
 
 #ifdef IMAGE_DEBUG_FLAG
@@ -344,7 +345,6 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
                                                  (reinterpret_cast<napi_async_complete_callback>(args.callBack)),
                                                  static_cast<void *>((ic.context).get()), &(ic.context->work));
             napi_queue_async_work((args.env), (ic.context->work));
-            IMAGE_ERR("async success");
             ic.context.release();
         }
     } else {
@@ -883,6 +883,99 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
     };
 
     return JSCommonProcess(args);
+}
+
+napi_value ImageCreatorNapi::JsOffOneArg(napi_env env, napi_callback_info info)
+{
+    ImageCreatorCommonArgs args = {
+        .env = env, .info = info, .async = CreatorCallType::ASYNC,
+        .name = "JsOff", .argc = ARGS1, .asyncLater = true,
+    };
+
+    args.queryArgs = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
+        if (ic.argc != ARGS1) {
+            std::string errMsg = "Invalid argc: ";
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                errMsg.append(std::to_string(ic.argc)));
+            return false;
+        }
+        auto argType = ImageNapiUtils::getType(args.env, ic.argv[PARAM0]);
+        if (argType != napi_string) {
+            std::string errMsg = "Unsupport args type: ";
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                errMsg.append(std::to_string(argType)));
+            return false;
+        }
+        if (!ImageNapiUtils::GetUtf8String(args.env, ic.argv[PARAM0], ic.onType)) {
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                "Could not get On type string");
+            return false;
+        }
+        if (!CheckOnParam0(args.env, ic.argv[PARAM0], "imageRelease")) {
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                "Unsupport PARAM0");
+            return false;
+        }
+        napi_get_undefined(args.env, &ic.result);
+        return true;
+    };
+
+    args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
+        IMAGE_LINE_IN();
+        napi_get_undefined(args.env, &ic.result);
+        ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+        ic.context->status = SUCCESS;
+        napi_create_uint32(args.env, ic.context->status, &ic.result);
+        IMAGE_LINE_OUT();
+        return true;
+    };
+
+    return JSCommonProcess(args);
+}
+
+napi_value ImageCreatorNapi::JsOffTwoArgs(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    ImageCreatorCommonArgs args = {
+        .env = env, .info = info, .async = CreatorCallType::ASYNC,
+        .name = "JsOff", .argc = ARGS2, .queryArgs = JsOnQueryArgs,
+    };
+
+    args.callBack = [](napi_env env, napi_status status, Contextc context) {
+        IMAGE_LINE_IN();
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+        context->status = SUCCESS;
+        CommonCallbackRoutine(env, context, result);
+        IMAGE_LINE_OUT();
+    };
+
+    JSCommonProcess(args);
+    napi_create_uint32(args.env, SUCCESS, &result);
+    return result;
+}
+
+napi_value ImageCreatorNapi::JsOff(napi_env env, napi_callback_info info)
+{
+    IMAGE_FUNCTION_IN();
+    struct ImageCreatorInnerContext ic;
+    ic.argc = ARGS2;
+    ic.argv.resize(ic.argc);
+    napi_get_undefined(env, &ic.result);
+    IMG_JS_ARGS(env, info, ic.status, ic.argc, &(ic.argv[0]), ic.thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(ic.status), ic.result, IMAGE_ERR("fail to napi_get_cb_info"));
+
+    if (ic.argc == ARGS1) {
+        return JsOffOneArg(env, info);
+    } else if (ic.argc == ARGS2) {
+        return JsOffTwoArgs(env, info);
+    } else {
+        IMAGE_ERR("invalid argument count");
+        return ic.result;
+    }
 }
 
 napi_value ImageCreatorNapi::JsRelease(napi_env env, napi_callback_info info)

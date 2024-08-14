@@ -53,7 +53,8 @@ const static std::string HW_CAPTURE_MODE = "HwMnoteCaptureMode";
 const std::set<std::string_view> HW_SPECIAL_KEYS = {
     "MovingPhotoId",
     "MovingPhotoVersion",
-    "MicroVideoPresentationTimestampUS"
+    "MicroVideoPresentationTimestampUS",
+    "HwUnknow",
 };
 const unsigned char INIT_HW_DATA[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x55, 0x41, 0x57, 0x45, 0x49, 0x00,
@@ -134,6 +135,29 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
     return SUCCESS;
 }
 
+const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
+{
+    ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
+    std::string value;
+    for (const auto key : ExifMetadatFormatter::GetRWKeys()) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    for (const auto key : ExifMetadatFormatter::GetROKeys()) {
+        if (GetValue(key, value) == SUCCESS) {
+            result->insert(std::make_pair(key, value));
+        }
+    }
+    IMAGE_LOGD("Get record arguments success.");
+    return result;
+}
+
+std::shared_ptr<ImageMetadata> ExifMetadata::CloneMetadata()
+{
+    return Clone();
+}
+
 int ExifMetadata::HandleMakerNote(std::string &value) const
 {
     value.clear();
@@ -156,7 +180,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     for (unsigned int i = 0; i < ec->size; i++) {
         MnoteHuaweiEntry *entry = ec->entries[i];
         const char *mnoteKey = mnote_huawei_tag_get_name(entry->tag);
-        if (std::strcmp(mnoteKey, "HwUnknow") == 0) {
+        if (HW_SPECIAL_KEYS.find(mnoteKey) != HW_SPECIAL_KEYS.end()) {
             continue;
         }
         mnote_huawei_entry_get_value(entry, tagValueChar.data(), tagValueChar.size());
@@ -259,6 +283,10 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         return nullptr;
     }
     std::shared_ptr<ExifMetadata> exifDataPtr = std::make_shared<ExifMetadata>(newExifData);
+    if (dataBlob != nullptr) {
+        free(dataBlob);
+        dataBlob = nullptr;
+    }
     return exifDataPtr;
 }
 
@@ -729,5 +757,102 @@ bool ExifMetadata::IsSpecialHwKey(const std::string &key) const
     return (iter != HW_SPECIAL_KEYS.end());
 }
 
+void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
+                                 std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    if (exifData_ == nullptr) {
+        IMAGE_LOGD("Exif data is null");
+        return ;
+    }
+    for (int keySize = 0; keySize < static_cast<int>(exifKeys.size()); keySize++) {
+        ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
+        FindRanges(tag, ranges);
+    }
+}
+
+void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    bool hasRange = false;
+
+    int ifd = 0;
+    while (ifd < EXIF_IFD_COUNT && !hasRange) {
+        ExifContent *content = exifData_->ifd[ifd];
+        if (!content) {
+            IMAGE_LOGD("IFD content is null, ifd: %{public}d.", ifd);
+            return ;
+        }
+
+        int i = 0;
+        while (i < static_cast<int>(content->count) && !hasRange) {
+            if (tag == content->entries[i]->tag) {
+                std::pair<uint32_t, uint32_t> range =
+                        std::make_pair(content->entries[i]->offset, content->entries[i]->size);
+                ranges.push_back(range);
+                hasRange = true;
+            }
+            ++i;
+        }
+        ++ifd;
+    }
+}
+
+bool ExifMetadata::Marshalling(Parcel &parcel) const
+{
+    if (exifData_ == nullptr) {
+        return false;
+    }
+
+    unsigned char *data = nullptr;
+    unsigned int size = 0;
+    exif_data_save_data(exifData_, &data, &size);
+
+    if (!parcel.WriteBool(data != nullptr && size != 0)) {
+        IMAGE_LOGE("Failed to write exif data buffer existence value.");
+        return false;
+    }
+
+    if (data != nullptr && size != 0) {
+        std::unique_ptr<unsigned char[]> exifData(data);
+        if (!parcel.WriteUint32(static_cast<uint32_t>(size))) {
+            return false;
+        }
+        if (!parcel.WriteUnpadBuffer(exifData.get(), size)) {
+            return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel)
+{
+    PICTURE_ERR error;
+    ExifMetadata* dstExifMetadata = ExifMetadata::Unmarshalling(parcel, error);
+    if (dstExifMetadata == nullptr || error.errorCode != SUCCESS) {
+        IMAGE_LOGE("unmarshalling failed errorCode:%{public}d, errorInfo:%{public}s",
+            error.errorCode, error.errorInfo.c_str());
+    }
+    return dstExifMetadata;
+}
+
+ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
+{
+    bool hasExifDataBuffer = parcel.ReadBool();
+    if (hasExifDataBuffer) {
+        uint32_t size = 0;
+        if (!parcel.ReadUint32(size)) {
+            return nullptr;
+        }
+        
+        const uint8_t *data = parcel.ReadUnpadBuffer(static_cast<size_t>(size));
+        if (!data) {
+            return nullptr;
+        }
+        ExifData *ptrData = exif_data_new_from_data(data, static_cast<unsigned int>(size));
+        ExifMetadata *exifMetadata = new(std::nothrow) ExifMetadata(ptrData);
+        return exifMetadata;
+    }
+    return nullptr;
+}
 } // namespace Media
 } // namespace OHOS

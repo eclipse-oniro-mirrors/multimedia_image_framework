@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <atomic>
 #include "image/input_data_stream.h"
 #include "source_stream.h"
 
@@ -42,7 +43,7 @@ public:
 private:
     uint8_t *inputBuffer_ = nullptr;
     size_t dataSize_ = 0;
-    size_t dataOffset_ = 0;
+    std::atomic_size_t dataOffset_ = 0;
 };
 } // namespace Media
 } // namespace OHOS

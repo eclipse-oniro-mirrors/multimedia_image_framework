@@ -193,6 +193,13 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "OffsetTime",
     "PhotographicSensitivity",
     "HwMnoteCaptureMode",
+    "HwMnoteIsXmageSupported",
+    "HwMnoteXmageMode",
+    "HwMnoteXmageLeft",
+    "HwMnoteXmageTop",
+    "HwMnoteXmageRight",
+    "HwMnoteXmageBottom",
+    "HwMnoteCloudEnhancementMode",
     "MovingPhotoId",
     "MovingPhotoVersion",
     "MicroVideoPresentationTimestampUS",
@@ -214,7 +221,7 @@ const static std::set<std::string> READ_ONLY_KEYS = {
     "HwMnoteFaceRect",         "HwMnoteFaceLeyeCenter",
     "HwMnoteFaceReyeCenter",   "HwMnoteFaceMouthCenter",
     "JPEGInterchangeFormat",   "JPEGInterchangeFormatLength",
-    "MakerNote",
+    "MakerNote",               "HwMnoteWindSnapshotMode",
 };
 
 // Orientation, tag 0x0112
@@ -1244,6 +1251,13 @@ std::multimap<std::string, ValueFormatDelegate> ExifMetadatFormatter::valueForma
     {"PhotoMode", singleInt},
     {"JPEGProc", singleInt},
     {"HwMnoteCaptureMode", singleInt},
+    {"HwMnoteIsXmageSupported", singleInt},
+    {"HwMnoteXmageMode", singleInt},
+    {"HwMnoteXmageLeft", singleInt},
+    {"HwMnoteXmageTop", singleInt},
+    {"HwMnoteXmageRight", singleInt},
+    {"HwMnoteXmageBottom", singleInt},
+    {"HwMnoteCloudEnhancementMode", singleInt},
     {"DateTimeDigitized", dateTimeValidation},
     {"DateTimeDigitized", dateValidation},
     {"OffsetTime", dateTimeValidation},
@@ -1431,6 +1445,16 @@ bool ExifMetadatFormatter::IsKeySupported(const std::string &keyName)
     auto wit = READ_WRITE_KEYS.find(keyName);
     auto rit = READ_ONLY_KEYS.find(keyName);
     return (wit != READ_WRITE_KEYS.end() || rit != READ_ONLY_KEYS.end());
+}
+
+const std::set<std::string> &ExifMetadatFormatter::GetRWKeys()
+{
+    return READ_WRITE_KEYS;
+}
+
+const std::set<std::string> &ExifMetadatFormatter::GetROKeys()
+{
+    return READ_ONLY_KEYS;
 }
 
 bool ExifMetadatFormatter::IsModifyAllowed(const std::string &keyName)

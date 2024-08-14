@@ -62,5 +62,23 @@ std::shared_ptr<MetadataStream> AbstractExifMetadataAccessor::GetOutputStream()
     return imageStream_;
 }
 
+uint32_t AbstractExifMetadataAccessor::GetFilterArea(const std::vector<std::string> &exifKeys,
+                                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
+{
+    uint32_t ret = Read();
+    if (ret != SUCCESS) {
+        IMAGE_LOGD("Failed to read the exif info.");
+        return E_NO_EXIF_TAG;
+    }
+    exifMetadata_->GetFilterArea(exifKeys, ranges);
+    if (ranges.empty()) {
+        return E_NO_EXIF_TAG;
+    }
+    for (auto& range : ranges) {
+        range.first += GetTiffOffset();
+    }
+    return SUCCESS;
+}
+
 } // namespace Media
 } // namespace OHOS

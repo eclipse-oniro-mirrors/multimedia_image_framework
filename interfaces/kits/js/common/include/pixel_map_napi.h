@@ -68,6 +68,14 @@ public:
     {
         return sConstructor_;
     }
+    void SetTransferDetach(bool detach)
+    {
+        transferDetach_ = detach;
+    }
+    bool GetTransferDetach()
+    {
+        return transferDetach_;
+    }
 private:
     static napi_value Constructor(napi_env env, napi_callback_info info);
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
@@ -134,6 +142,7 @@ private:
     static napi_value ApplyColorSpace(napi_env env, napi_callback_info info);
     static ImageType ParserImageType(napi_env env, napi_value argv);
     static napi_value ConvertPixelMapFormat(napi_env env, napi_callback_info info);
+    static napi_value SetTransferDetached(napi_env env, napi_callback_info info);
     static std::vector<napi_property_descriptor> RegisterNapi();
 
     void release();
@@ -144,6 +153,7 @@ private:
     bool isRelease = false;
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
+    bool transferDetach_ = false;
 };
 
 class PixelMapContainer {

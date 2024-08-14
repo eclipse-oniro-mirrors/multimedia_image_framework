@@ -143,7 +143,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest001, TestSize.Level3)
     pixelAstc->GetTransformData(transformData);
     ASSERT_EQ(transformData.scaleX, 2.0); // 2.0 means scale width value
     ASSERT_EQ(transformData.scaleY, 2.0); // 2.0 means scale height value
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest001 end";
@@ -170,7 +170,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest002, TestSize.Level3)
     pixelAstc->GetTransformData(transformData);
     ASSERT_EQ(transformData.translateX, 2.0); // 2.0 means x_coordinate value
     ASSERT_EQ(transformData.translateY, 2.0); // 2.0 means y_coordinate value
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest002 end";
@@ -195,7 +195,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest003, TestSize.Level3)
     pixelAstc->GetTransformData(transformData);
     ASSERT_EQ(transformData.flipX, false);
     ASSERT_EQ(transformData.flipY, true);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest003 end";
@@ -219,7 +219,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest004, TestSize.Level3)
     TransformData transformData;
     pixelAstc->GetTransformData(transformData);
     ASSERT_EQ(transformData.rotateD, 2.0); // 2.0 means rotate angle value
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest004 end";
@@ -272,7 +272,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest005, TestSize.Level3)
     ASSERT_EQ(transformData.cropTop, 1);
     ASSERT_EQ(transformData.cropWidth, 1);
     ASSERT_EQ(transformData.cropHeight, 1);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest005 end";
@@ -293,7 +293,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest006, TestSize.Level3)
     float percent = 0.5;
     uint32_t ret = pixelAstc->SetAlpha(percent);
     EXPECT_EQ(ERR_IMAGE_DATA_UNSUPPORT, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest006 end";
@@ -314,7 +314,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest008, TestSize.Level3)
     uint32_t color = 1;
     uint8_t ret = pixelAstc->GetARGB32ColorA(color);
     EXPECT_EQ(0, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest008 end";
@@ -335,7 +335,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest009, TestSize.Level3)
     uint32_t color = 1;
     uint8_t ret = pixelAstc->GetARGB32ColorR(color);
     EXPECT_EQ(0, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest009 end";
@@ -357,7 +357,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest010, TestSize.Level3)
     uint32_t color = 1;
     uint8_t ret = pixelAstc->GetARGB32ColorG(color);
     EXPECT_EQ(0, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest010 end";
@@ -378,7 +378,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest011, TestSize.Level3)
     uint32_t color = 1;
     uint8_t ret = pixelAstc->GetARGB32ColorB(color);
     EXPECT_EQ(0, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest011 end";
@@ -398,7 +398,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest012, TestSize.Level3)
     PixelMap pixelmap;
     bool ret = pixelAstc->IsSameImage(pixelmap);
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest012 end";
@@ -418,7 +418,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest013, TestSize.Level3)
     PixelMap pixelmap;
     bool ret = pixelAstc->IsSameImage(pixelmap);
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest013 end";
@@ -442,7 +442,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest014, TestSize.Level3)
     uint8_t dst;
     uint32_t ret = pixelAstc->ReadPixels(bufferSize, offset, stride, region, &dst);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest014 end";
@@ -463,7 +463,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest015, TestSize.Level3)
     uint8_t dst;
     uint32_t ret = pixelAstc->ReadPixels(bufferSize, &dst);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest015 end";
@@ -484,7 +484,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest016, TestSize.Level3)
     uint32_t dst;
     uint32_t ret = pixelAstc->ReadPixel(pos, dst);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest016 end";
@@ -505,7 +505,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest017, TestSize.Level3)
     PixelFormat format = PixelFormat::RGBA_8888;
     uint32_t ret = pixelAstc->ResetConfig(size, format);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest017 end";
@@ -525,7 +525,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest018, TestSize.Level3)
     const AlphaType alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     bool ret = pixelAstc->SetAlphaType(alphaType);
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest018 end";
@@ -546,7 +546,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest019, TestSize.Level3)
     const uint32_t dst = 0;
     uint32_t ret = pixelAstc->WritePixel(pos, dst);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest019 end";
@@ -570,7 +570,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest020, TestSize.Level3)
     Rect region;
     uint32_t ret = pixelAstc->WritePixels(source, bufferSize, offset, stride, region);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest020 end";
@@ -590,7 +590,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest021, TestSize.Level3)
     const uint32_t color = 0;
     bool ret = pixelAstc->WritePixels(color);
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest021 end";
@@ -611,7 +611,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest022, TestSize.Level3)
     const uint64_t bufferSize = 0;
     uint32_t ret = pixelAstc->WritePixels(source, bufferSize);
     EXPECT_EQ(ERR_IMAGE_INVALID_PARAMETER, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest022 end";
@@ -632,7 +632,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest023, TestSize.Level3)
     pixelAstc->SetTransformered(isTransFormered);
     bool ret = pixelAstc->IsTransformered();
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest023 end";
@@ -651,7 +651,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest024, TestSize.Level3)
     ConstructPixelAstc(pixelAstc, &data);
     int32_t ret = pixelAstc->GetRowStride();
     EXPECT_EQ(0, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest024 end";
@@ -670,7 +670,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest025, TestSize.Level3)
     ConstructPixelAstc(pixelAstc, &data);
     bool ret = pixelAstc->IsSourceAsResponse();
     EXPECT_EQ(false, ret);
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest025 end";
@@ -688,7 +688,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest026, TestSize.Level3)
     uint8_t* data = nullptr;
     ConstructPixelAstc(pixelAstc, &data);
     EXPECT_EQ(nullptr, pixelAstc->GetWritablePixels());
-    if (data == nullptr) {
+    if (data != nullptr) {
         free(data);
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest026 end";

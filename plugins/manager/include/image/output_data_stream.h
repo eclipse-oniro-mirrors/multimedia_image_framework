@@ -20,6 +20,13 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+enum class OutputStreamType : int32_t {
+    UNKNOWN = 0,
+    BUFFER_PACKER = 1,
+    FILE_PACKER = 2,
+    OSTREAM_PACKER = 3,
+};
+
 class OutputDataStream {
 public:
     virtual ~OutputDataStream() {}
@@ -41,6 +48,8 @@ public:
     }
 
     virtual void SetOffset(uint32_t offset) {}
+
+    virtual OutputStreamType GetType() { return OutputStreamType::UNKNOWN; }
 };
 } // namespace ImagePlugin
 } // namespace OHOS

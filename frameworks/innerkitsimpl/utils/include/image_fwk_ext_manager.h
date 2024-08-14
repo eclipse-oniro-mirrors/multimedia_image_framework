@@ -17,19 +17,27 @@
 #define FRAMEWORKS_INNERKITSIMPL_UTILS_INCLUDE_IMAGE_FWK_EXT_MANAGER_H
 
 #include <cstdint>
+#include <vector>
 
 namespace OHOS::ImagePlugin {
     struct PlEncodeOptions;
+    struct HevcSoftDecodeParam;
 }
 
 namespace OHOS::Media {
     class PixelMap;
+    class Picture;
 }
 
 class SkWStream;
 
 using DoHardWareEncodeFunc = int32_t (*)(SkWStream* output, const OHOS::ImagePlugin::PlEncodeOptions& opts,
     OHOS::Media::PixelMap* pixelMap);
+using HevcSoftwareDecodeFunc = int32_t (*)(std::vector<std::vector<uint8_t>>& inputs,
+                                           OHOS::ImagePlugin::HevcSoftDecodeParam& param);
+
+using DoHardwareEncodePictureFunc = int32_t (*)(SkWStream* output, const OHOS::ImagePlugin::PlEncodeOptions& opts,
+    OHOS::Media::Picture* picture);
 
 namespace OHOS {
 namespace Media {
@@ -39,6 +47,8 @@ public:
     ~ImageFwkExtManager();
     bool LoadImageFwkExtNativeSo();
     DoHardWareEncodeFunc doHardWareEncodeFunc_;
+    DoHardwareEncodePictureFunc doHardwareEncodePictureFunc_;
+    HevcSoftwareDecodeFunc hevcSoftwareDecodeFunc_;
 private:
     bool isImageFwkExtNativeSoOpened_;
     void* extNativeSoHandle_;
