@@ -306,5 +306,49 @@ HWTEST_F(ImageCreatorTest, QueueNativeImage001, TestSize.Level3)
     ASSERT_EQ(image, nullptr);
     GTEST_LOG_(INFO) << "ImageCreatorTest: QueueNativeImage001 end";
 }
+
+/**
+ * @tc.name: CreateImageCreator002
+ * @tc.desc: test CreateImageCreator
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, CreateImageCreator002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator->creatorConsumerSurface_, nullptr);
+    ASSERT_NE(creator->creatorProducerSurface_, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: CreateImageCreator002 end";
+}
+
+/**
+ * @tc.name: GetCreatorSurface001
+ * @tc.desc: test GetCreatorSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, GetCreatorSurface001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    sptr<IConsumerSurface> buffer = creator->GetCreatorSurface();
+    ASSERT_NE(buffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: GetCreatorSurface001 end";
+}
+
+/**
+ * @tc.name: DequeueNativeImage001
+ * @tc.desc: test DequeueNativeImage
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, DequeueNativeImage001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueNativeImage001 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    ASSERT_NE(creator, nullptr);
+    std::shared_ptr<NativeImage> buffer = creator->DequeueNativeImage();
+    ASSERT_NE(buffer, nullptr);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: DequeueNativeImage001 end";
+}
 } // namespace Multimedia
 } // namespace OHOS
