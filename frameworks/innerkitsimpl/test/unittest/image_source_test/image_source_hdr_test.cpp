@@ -27,6 +27,8 @@
 #include "file_source_stream.h"
 #include "buffer_source_stream.h"
 #include "ext_stream.h"
+#include "jpeg_mpf_parser.h"
+#include "image_packer.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -43,6 +45,7 @@ static const std::string IMAGE_INPUT_JPEG_SDR_PATH = "/data/local/tmp/image/test
 static const std::string IMAGE_INPUT_HEIF_SDR_PATH = "/data/local/tmp/image/test.heic";
 static const std::string IMAGE_INPUT_HEIF_10BIT_SDR_PATH = "/data/local/tmp/image/test-10bit-1.heic";
 static const std::string IMAGE_INPUT_JPEG_HDR_PATH = "/data/local/tmp/image/hdr.jpg";
+static const std::string IMAGE_INPUT_JPEG_HDR_VIVID_PATH = "/data/local/tmp/image/HdrVivid.jpg";
 
 class ImageSourceHdrTest : public testing::Test {
 public:
@@ -239,6 +242,37 @@ HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr004, TestSize.Level3)
 }
 
 /**
+ * @tc.name: CheckPixelMapHdr005
+ * @tc.desc: Test HdrVivid PixelMap IsHdr()
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, CheckPixelMapHdr005, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    HiLog::Debug(LABEL_TEST, "pixel map create");
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    bool isHdr = pixelMap->IsHdr();
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_EQ(isHdr, true);
+#else
+    ASSERT_EQ(isHdr, false);
+#endif
+}
+
+/**
  * @tc.name: CheckPixelMapDynamicRangeSdr001
  * @tc.desc: Test PixelMap IsHdr()
  * @tc.type: FUNC
@@ -367,6 +401,74 @@ HWTEST_F(ImageSourceHdrTest, ToSdr002, TestSize.Level3)
     ASSERT_EQ(ret, SUCCESS);
     uint32_t errCode = pixelMap->ToSdr();
     ASSERT_NE(errCode, SUCCESS);
+}
+
+/**
+ * @tc.name: PackHdrPixelMap001
+ * @tc.desc: Test pack hdr pixelmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, PackHdrPixelMap001, TestSize.Level3)
+{
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource =
+        ImageSource::CreateImageSource(IMAGE_INPUT_JPEG_HDR_VIVID_PATH, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    uint32_t index = 0;
+    DecodeOptions optsPixel;
+    optsPixel.desiredDynamicRange = Media::DecodeDynamicRange::AUTO;
+    errorCode = 0;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(index, optsPixel, errorCode);
+    HiLog::Debug(LABEL_TEST, "pixel map create");
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(pixelMap.get(), nullptr);
+
+    const int fileSize = 1024 * 1024 * 35;
+    std::vector<uint8_t> outputData(fileSize);
+    ImagePacker pack;
+    PackOption option;
+    option.format = "image/jpeg";
+    option.desiredDynamicRange = EncodeDynamicRange::AUTO;
+    errorCode = pack.StartPacking(outputData.data(), fileSize, option);
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    errorCode = pack.AddImage(*(pixelMap.get()));
+    ASSERT_EQ(errorCode, OHOS::Media::SUCCESS);
+    uint32_t retFinalizePacking = pack.FinalizePacking();
+    ASSERT_EQ(retFinalizePacking, OHOS::Media::SUCCESS);
+
+    std::unique_ptr<ImageSource> outImageSource =
+        ImageSource::CreateImageSource(outputData.data(), outputData.size(), opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(outImageSource.get(), nullptr);
+    bool isHdr = outImageSource->IsHdrImage();
+#ifdef IMAGE_VPE_FLAG
+    ASSERT_EQ(isHdr, true);
+#else
+    ASSERT_EQ(isHdr, false);
+#endif
+}
+
+/**
+ * @tc.name: JpegMpfPackerTest001
+ * @tc.desc: test PackHdrJpegMpfMarker
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageSourceHdrTest, JpegMpfPackerTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageSourceHdrTest: JpegMpfPackerTest001 start";
+    SingleJpegImage baseImage = {
+        .offset = 0,
+        .size = 1000,
+    };
+    SingleJpegImage gainmapImage = {
+        .offset = 1000,
+        .size = 1000,
+    };
+    std::vector<uint8_t> data = JpegMpfPacker::PackHdrJpegMpfMarker(baseImage, gainmapImage);
+    ASSERT_NE(data.size(), 0);
 }
 }
 }
