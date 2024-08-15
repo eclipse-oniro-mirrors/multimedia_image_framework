@@ -770,7 +770,8 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
     if (plInfo.size.width != context.outInfo.size.width || plInfo.size.height != context.outInfo.size.height) {
         plInfo.size = context.outInfo.size;
     }
-    if ((plInfo.pixelFormat == PixelFormat::NV12 || plInfo.pixelFormat == PixelFormat::NV21) &&
+    if ((plInfo.pixelFormat == PixelFormat::NV12 || plInfo.pixelFormat == PixelFormat::NV21 ||
+         plInfo.pixelFormat == PixelFormat::YCBCR_P010 || plInfo.pixelFormat == PixelFormat::YCRCB_P010) &&
         context.yuvInfo.imageSize.width != 0) {
         plInfo.yuvDataInfo = context.yuvInfo;
         plInfo.size = context.yuvInfo.imageSize;
@@ -2317,7 +2318,7 @@ uint32_t ImageSource::UpdatePixelMapInfo(const DecodeOptions &opts, ImagePlugin:
     info.alphaType = static_cast<AlphaType>(plInfo.alphaType);
     info.encodedFormat = sourceInfo_.encodedFormat;
 
-    if (info.pixelFormat == PixelFormat::NV12 || info.pixelFormat == PixelFormat::NV21) {
+    if (IsYuvFormat(info.pixelFormat)) {
         YUVDataInfo yuvInfo;
         CopyYuvInfo(yuvInfo, plInfo);
         pixelMap.SetImageYUVInfo(yuvInfo);
@@ -3389,11 +3390,22 @@ void ImageSource::SetDmaContextYuvInfo(DecodeContext& context)
     const OH_NativeBuffer_Plane &planeY = planes->planes[0];
     const OH_NativeBuffer_Plane &planeUV =
         planes->planes[(format == PixelFormat::NV21 || format == PixelFormat::YCRCB_P010) ? NUM_2 : NUM_1];
-    context.yuvInfo.yStride = planeY.columnStride;
-    context.yuvInfo.uvStride = planeUV.columnStride;
-    context.yuvInfo.yOffset = planeY.offset;
-    context.yuvInfo.uvOffset = planeUV.offset;
+    if (format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010) {
+        context.yuvInfo.yStride = planeY.columnStride / NUM_2;
+        context.yuvInfo.uvStride = planeUV.columnStride / NUM_2;
+        context.yuvInfo.yOffset = planeY.offset / NUM_2;
+        context.yuvInfo.uvOffset = planeUV.offset / NUM_2;
+    } else {
+        context.yuvInfo.yStride = planeY.columnStride;
+        context.yuvInfo.uvStride = planeUV.columnStride;
+        context.yuvInfo.yOffset = planeY.offset;
+        context.yuvInfo.uvOffset = planeUV.offset;
+    }
     context.yuvInfo.imageSize = context.info.size;
+    IMAGE_LOGD("SetDmaContextYuvInfo format:%{public}d, yStride:%{public}d, uvStride:%{public}d, yOffset:%{public}d,"
+        "uvOffset:%{public}d, imageSize:%{public}d-%{public}d", format, context.yuvInfo.yStride,
+        context.yuvInfo.uvStride, context.yuvInfo.yOffset, context.yuvInfo.uvOffset,
+        context.yuvInfo.imageSize.width, context.yuvInfo.imageSize.height);
 #endif
 }
 
