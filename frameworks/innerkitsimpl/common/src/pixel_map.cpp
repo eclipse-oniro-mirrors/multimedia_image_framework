@@ -371,9 +371,8 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     }
 
     MemoryData memoryData = {nullptr, bufferSize, "Create PixelMap", dstImageInfo.size, dstImageInfo.pixelFormat};
-    AllocatorType allocatorType = useDMA && ImageUtils::IsSupportDMA(dstImageInfo.size, dstImageInfo.pixelFormat) ?
-        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
-    dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
+    dstMemory = MemoryManager::CreateMemory(
+        ImageUtils::GetPixelMapAllocatorType(dstImageInfo.size, dstImageInfo.pixelFormat, useDMA), memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("[PixelMap]Create: allocate memory failed");
         return IMAGE_RESULT_MALLOC_ABNORMAL;
