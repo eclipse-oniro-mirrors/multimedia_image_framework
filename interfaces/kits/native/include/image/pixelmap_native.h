@@ -157,6 +157,186 @@ typedef enum {
 } OH_PixelmapNative_AntiAliasingLevel;
 
 /**
+ * @brief Enumerates the HDR metadata types that need to be stored in Pixelmap.
+ *
+ * @since 12
+ */
+ typedef enum {
+    /**
+     * Indicates the types of metadata that image needs to use.
+     */
+    HDR_METADATA_TYPE = 0,
+    /**
+     * Static metadata key.
+     */
+    HDR_STATIC_METADATA = 1,
+    /**
+     * Dynamic metadata key.
+     */
+    HDR_DYNAMIC_METADATA = 2,
+    /**
+     * Gainmap metadata key.
+     */
+    HDR_GAINMAP_METADATA = 3,
+} OH_Pixelmap_HdrMetadataKey;
+
+/**
+ * @brief Value for HDR_METADATA_TYPE.
+ *
+ * @since 12
+ */
+ typedef enum {
+    /**
+     * No metadata.
+     */
+    HDR_METADATA_TYPE_NONE = 0,
+    /**
+     * Indicates that metadata will be used for the base image.
+     */
+    HDR_METADATA_TYPE_BASE = 1,
+    /**
+     * Indicates that metadata will be used for the gainmap image.
+     */
+    HDR_METADATA_TYPE_GAINMAP = 2,
+    /**
+     * Indicates that metadata will be used for the alternate image.
+     */
+    HDR_METADATA_TYPE_ALTERNATE = 3,
+} OH_Pixelmap_HdrMetadataType;
+
+/**
+ * @brief Value for HDR_DYNAMIC_METADATA.
+ *
+ * @since 12
+ */
+typedef struct OH_Pixelmap_HdrStaticMetadata {
+    /**
+     * The X-coordinate of the primary colors. The length of the array is three. Store in the order of r, g, b.
+     */
+    float displayPrimariesX[3];
+    /**
+     * The Y-coordinate of the primary colors. The length of the array is three. Store in the order of r, g, b.
+     */
+    float displayPrimariesY[3];
+    /**
+     * The X-coordinate of the white point value.
+     */
+    float whitePointX[3];
+    /**
+     * The Y-coordinate of the white point value.
+     */
+    float whitePointY[3];
+    /**
+     * Max luminance.
+     */
+    float maxLuminance;
+    /**
+     * Min luminance.
+     */
+    float minLuminance;
+    /**
+     * Maximun brightness of displayed content.
+     */
+    float maxContentLightLevel;
+    /**
+     * Maximun average brightness of displayed content.
+     */
+    float maxFrameAverageLightLevel;
+} OH_Pixelmap_HdrStaticMetadata;
+
+/**
+ * @brief Value for HDR_DYNAMIC_METADATA.
+ *
+ * @since 12
+ */
+typedef struct OH_Pixelmap_HdrDynamicMetadata {
+    /**
+     * The value of dynamic metadata.
+     */
+    uint8_t* data;
+    /**
+     * The length of dynamic metadata.
+     */
+    uint32_t length;
+} OH_Pixelmap_HdrDynamicMetadata;
+
+/**
+ * @brief Value for HDR_GAINMAP_METADATA.
+ *
+ * @since 12
+ */
+typedef struct OH_Pixelmap_HdrGainmapMetadata {
+    /**
+     * The version used by the writer.
+     */
+    uint16_t writerVersion;
+    /**
+     * The minmum version a parser needs to understand.
+     */
+    uint16_t minVersion;
+    /**
+     * The number of gain map channels, with a value of 1 or 3.
+     */
+    uint8_t gainmapChannelNum;
+    /**
+     * Indicate whether to use the color space of the base image.
+     */
+    bool useBaseColorFlag;
+    /**
+     * The baseline hdr headroom.
+     */
+    float baseHdrHeadroom;
+    /**
+     * The alternate hdr headroom.
+     */
+    float alternateHdrHeadroom;
+    /**
+     * The per-component max gain map values.
+     */
+    float gainmapMax[3];
+    /**
+     * The per-component min gain map values.
+     */
+    float gainmapMin[3];
+    /**
+     * The per-component gamma values.
+     */
+    float gamma[3];
+    /**
+     * The per-component baseline offset.
+     */
+    float baselineOffset[3];
+    /**
+     * The per-component alternate offset.
+     */
+    float alternateOffset[3];
+} OH_Pixelmap_HdrGainmapMetadata;
+
+/**
+ * @brief Value for HDR_METADATA_KEY. Corresponding relationship with HDR_METADATA_KEY.
+ *
+ * @since 12
+ */
+typedef struct OH_Pixelmap_HdrMetadataValue {
+    /**
+     * The value corresponding to the HDR_METADATA_TYPE key
+     */
+    OH_Pixelmap_HdrMetadataType type;
+    /**
+     * The value corresponding to the HDR_STATIC_METADATA key
+     */
+    OH_Pixelmap_HdrStaticMetadata staticMetadata;
+    /**
+     * The value corresponding to the HDR_DYNAMIC_METADATA key
+     */
+    OH_Pixelmap_HdrDynamicMetadata dynamicMetadata;
+    /**
+     * The value corresponding to the HDR_GAINMAP_METADATA key
+     */
+    OH_Pixelmap_HdrGainmapMetadata gainmapMetadata;
+} OH_Pixelmap_HdrMetadataValue;
+
+/**
  * @brief Defines the options used for creating a pixel map.
  *
  * @since 12
@@ -624,6 +804,38 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(OH_Pixelmap_Initialization
  */
 Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                                      int32_t destPixelFormat);
+
+/**
+ * @brief Get metadata.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param key Type of metadata.
+ * @param value Value of metadata.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, key and value are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_COPY_FAILED - if memory copy failed.
+ * @see OH_PixelMapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelMapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue **value);
+
+/**
+ * @brief Set metadata.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param key Type of metadata.
+ * @param value Value of metadata.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, key and value are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_COPY_FAILED - if memory copy failed.
+ * @see OH_PixelMapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelMapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue *value);
 
 #ifdef __cplusplus
 };

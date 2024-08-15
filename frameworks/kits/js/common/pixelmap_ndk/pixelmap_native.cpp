@@ -22,6 +22,12 @@
 #include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
 
+#include "vpe_utils.h"
+#include "refbase.h"
+#include "securec.h"
+#include "color_utils.h"
+#include "image_log.h"
+
 using namespace OHOS::Media;
 #ifdef __cplusplus
 extern "C" {
@@ -587,7 +593,7 @@ Image_ErrorCode OH_PixelmapNative_Crop(OH_PixelmapNative *pixelmap, Image_Region
     if (pixelmap == nullptr || region == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
-    Rect rect;
+    OHOS::Media::Rect rect;
     rect.left = static_cast<int32_t>(region->x);
     rect.top = static_cast<int32_t>(region->y);
     rect.width = static_cast<int32_t>(region->width);
@@ -681,6 +687,250 @@ Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixel
     } else {
         return IMAGE_BAD_PARAMETER;
     }
+    return IMAGE_SUCCESS;
+}
+constexpr uint8_t INDEX_ZERO = 0;
+constexpr uint8_t INDEX_ONE = 1;
+constexpr uint8_t INDEX_TWO = 2;
+static std::map<OH_Pixelmap_HdrMetadataType, const CM_HDR_Metadata_Type> NdkMetadataTypeMap =
+{
+    {HDR_METADATA_TYPE_NONE, CM_METADATA_NONE},
+    {HDR_METADATA_TYPE_BASE, CM_IMAGE_HDR_VIVID_DUAL},
+    {HDR_METADATA_TYPE_GAINMAP, CM_METADATA_NONE},
+    {HDR_METADATA_TYPE_ALTERNATE, CM_IMAGE_HDR_VIVID_SINGLE},
+};
+
+static std::map<CM_HDR_Metadata_Type, OH_Pixelmap_HdrMetadataType> MetadataNdkTypeMap =
+{
+    {CM_METADATA_NONE, HDR_METADATA_TYPE_NONE},
+    {CM_IMAGE_HDR_VIVID_DUAL, HDR_METADATA_TYPE_BASE},
+    {CM_METADATA_NONE, HDR_METADATA_TYPE_GAINMAP},
+    {CM_IMAGE_HDR_VIVID_SINGLE, HDR_METADATA_TYPE_ALTERNATE},
+};
+
+static bool ConvertStaticMetadata(const OH_Pixelmap_HdrStaticMetadata &metadata, std::vector<uint8_t> &staticMetadataVec)
+{
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return {};
+#else
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
+    staticMetadata.smpte2086.displayPrimaryRed.x = metadata.displayPrimarysX[INDEX_ZERO];
+    staticMetadata.smpte2086.displayPrimaryRed.y = metadata.displayPrimarysY[INDEX_ZERO];
+    staticMetadata.smpte2086.displayPrimaryGreen.x = metadata.displayPrimarysX[INDEX_ONE];
+    staticMetadata.smpte2086.displayPrimaryGreen.y = metadata.displayPrimarysY[INDEX_ONE];
+    staticMetadata.smpte2086.displayPrimaryBlue.x = metadata.displayPrimarysX[INDEX_TWO];
+    staticMetadata.smpte2086.displayPrimaryBlue.y = metadata.displayPrimarysY[INDEX_TWO];
+    staticMetadata.smpte2086.whitePoint.x = metadata.whitePointX;
+    staticMetadata.smpte2086.whitePoint.x = metadata.whitePointY;
+    staticMetadata.smpte2086.maxLuminance = metadata.maxLuminance;
+    staticMetadata.smpte2086.minLuminance = metadata.minLuminance;
+    staticMetadata.cta861.maxContentLightLevel = metadata.maxContentLightLevel;
+    staticMetadata.cta861.maxFrameAverageLightLevel = metadata.maxFrameAverageLightLevel;
+    uint32_t vecSize = size_of(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    if (memcpy_s(staticMetadataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
+        return false;
+    }
+    return true;
+#endif
+}
+
+static void ConvertGainmapMetadata(OH_Pixelmap_HdrGainmapMetadata &metadata, HDRVividExtendMetadata &extendMetadata)
+{
+    extendMetadata.metaISO.writeVersion = metadata.writerVersion;
+    extendMetadata.metaISO.minVersion = metadata.minVersion;
+    extendMetadata.metaISO.gainmapChannelNum = metadata.gainmapChannelNum;
+    extendMetadata.metaISO.useBaseColorFlag = metadata.useBaseColorFlag;
+    extendMetadata.metaISO.baseHeadroom = metadata.baseHeadroom;
+    extendMetadata.metaISO.alternateHeadroom = metadata.alternateHeadroom;
+
+    extendMetadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO] = metadata.gainmapMax[INDEX_ZERO];
+    extendMetadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE] = metadata.gainmapMax[INDEX_ONE];
+    extendMetadata.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO] = metadata.gainmapMax[INDEX_TWO];
+
+    extendMetadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO] = metadata.gainmapMin[INDEX_ZERO];
+    extendMetadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE] = metadata.gainmapMin[INDEX_ONE];
+    extendMetadata.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO] = metadata.gainmapMin[INDEX_TWO];
+
+    extendMetadata.metaISO.enhanceMappingGamma[INDEX_ZERO] = metadata.gamma[INDEX_ZERO];
+    extendMetadata.metaISO.enhanceMappingGamma[INDEX_ONE] = metadata.gamma[INDEX_ONE];
+    extendMetadata.metaISO.enhanceMappingGamma[INDEX_TWO] = metadata.gamma[INDEX_TWO];
+
+    extendMetadata.metaISO.enhanceMappingBaselineOffset[INDEX_ZERO] = metadata.baselineOffset[INDEX_ZERO];
+    extendMetadata.metaISO.enhanceMappingBaselineOffset[INDEX_ONE] = metadata.baselineOffset[INDEX_ONE];
+    extendMetadata.metaISO.enhanceMappingBaselineOffset[INDEX_TWO] = metadata.baselineOffset[INDEX_TWO];
+
+    extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_ZERO] = metadata.alternateOffset[INDEX_ZERO];
+    extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_ONE] = metadata.alternateOffset[INDEX_ONE];
+    extendMetadata.metaISO.enhanceMappingAlternateOffset[INDEX_TWO] = metadata.alternateOffset[INDEX_TWO];
+}
+
+static bool BuildGainmapMetadata(OHOS::Media::PixelMap &pixelmap, OH_Pixelmap_HdrGainmapMetadata &metadata, std::vector<uint8_t> &extendMetadataVec)
+{
+    HDRVividExtendMetadata extendMetadata;
+    #ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorSpace = pixelmap.InnerGetColorSpace();
+    uint16_t SS = ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+    #else
+    uint16_t SS = 0;
+    #endif
+    extendMetadata.baseColorMeta.baseColorPrimary = SS;
+    extendMetadata.gainmapColorMeta.combineColorPrimary = metadata.useBaseColorFlag ? SS: (uint8_t)CM_BT2020_HLG_FULL;
+    extendMetadata.gainmapColorMeta.enhanceColorModel = metadata.useBaseColorFlag ? SS: (uint8_t)CM_BT2020_HLG_FULL;
+    extendMetadata.gainmapColorMeta.alternateColorPrimary = (uint8_t)CM_BT2020_HLG_FULL;
+    ConvertGainmapMetadata(metadata, extendMetadata);
+    uint32_t vecSize = size_of(HDRVividExtendMetadata);
+    if (memcpy_s(extendMetadataVec.data(), vecSize, &extendMetadataVec, vecSize) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+static bool SetHdrMetadata(OHOS::Media::PixelMap &pixelmap, OHOS::sptr<OHOS::SurfaceBuffer> buffer,
+    OH_Pixelmap_HdrMetadataKey key, OH_Pixelmap_HdrMetadataValue &value)
+{
+    switch (key) {
+        case OH_Pixelmap_HdrMetadataKey::HDR_METADATA_TYPE:
+            if (NdkMetadataTypeMap.find(value.type) != NdkMetadataTypeMap.end()) {
+                VpeUtils::SetSbMetadataTypeMap(buffer, NdkMetadataTypeMap[value.type]);
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_STATIC_METADATA:
+            {
+                OH_Pixelmap_HdrStaticMetadata &staticMetadata = value.staticMetadata;
+                uint32_t vecSize = size_of(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+                std::vector<uint8_t> metadataVec(vecSize);
+                if (!ConvertStaticMetadata(staticMetadata, metadataVec)) {
+                    return false;
+                }
+                VpeUtils::SetSbStaticMetadata(buffer, metadataVec);
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_DYNAMIC_METADATA:
+            {
+                std::vector<uint8_t> metadataVec(value.dynamicMetadata.length);
+                if (memcpy_s(metadataVec.data(), value.dynamicMetadata.length, &value.dynamicMetadata.data, value.dynamicMetadata.length) != EOK) {
+                    return false;
+                }
+                VpeUtils::SetSbDynamicMetadata(buffer, metadataVec);
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_GAINMAP_METADATA:
+            {
+                std::vector<uint8_t> extendMetadataVec(sizeof(HDRVividExtendMetadata));
+                if (!BuildGainmapMetadata(pixelmap, value.gainmapMetadata, extendMetadataVec)) {
+                    return false;
+                }
+                VpeUtils::SetSbDynamicMetadata(buffer, extendMetadataVec);
+            }
+            break;
+        default:
+            break;
+    }
+
+    return true;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_SetMetaData(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue *value)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || value == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
+    OHSO::sptr<OHOS::SurfaceBuffer> sourceSurfaceBuffer(
+        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd()));
+    if (!SetHdrMetadata(*(pixelmap->GetInnerPixelmap().get()), sourceSurfaceBuffer, key, *value)) {
+        return IMAGE_COPY_FAILED;
+    }
+
+    return IMAGE_SUCCESS;
+}
+
+static bool GetHdrMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> buffer, OH_Pixelmap_HdrMetadataKey key, OH_Pixelmap_HdrMetadataValue *metadataValue)
+{
+    if (buffer == nullptr || metadataValue == nullptr) {
+        IMAGE_LOG("GetHdrMetadata buffer is nullptr");
+        return false;
+    }
+    switch (key) {
+        case OH_Pixelmap_HdrMetadataKey::HDR_METADATA_TYPE:
+            {
+                CM_HDR_Metadata_Type type;
+                VpeUtils::GetSbMetadataType(buffer, type);
+                if (MetadataNdkTypeMap.find(type) != MetadataNdkTypeMap.end()) {
+                    metadataValue->type = MetadataNdkTypeMap[type];
+                    return true;
+                }
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_STATIC_METADATA:
+            {
+                uint32_t vecSize = size_of(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+                std::vector<uint8_t> staticData(vecSize);
+                if (VpeUtils::GetSbStaticMetadata(buffer, staticData) && (staticData.size() > 0)) {
+                    OH_Pixelmap_HdrStaticMetadata &dst = metadataValue->staticData;
+                    if (memcpy_s(&dst, vecSize, staticData.data(), vecSize) != EOK) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_DYNAMIC_METADATA:
+            {
+                std::vector<uint8_t> dynamicData;
+                if (VpeUtils::GetSbDynamicMetadata(buffer, dynamicData) && (dynamicData.size() > 0)) {
+                    metadataValue->dynamicMetadata.data = dynamicData.data();
+                    metadataValue->dynamicMetadata.length = dynamicData.size();
+                    return true;
+                }
+            }
+            break;
+        case OH_Pixelmap_HdrMetadataKey::HDR_GAINMAP_METADATA:
+            {
+                uint32_t vecSize = sizeof(OH_Pixelmap_HdrGainmapMetadata);
+                std::vector<uint8_t> gainmapData(vecSize);
+                if (VpeUtils::GetSbDynamicMetadata(buffer, gainmapData) && (gainmapData.size() > 0)) {
+                    OH_Pixelmap_HdrGainmapMetadata &dst = metadataValue->gainmapMetadata;
+                    if (memcpy_s(&dst, vecSize, gainmapData.data(), vecSize) != EOK) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+
+    return false;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue **value)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || value == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
+    OHSO::sptr<OHOS::SurfaceBuffer> sourceSurfaceBuffer(
+        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd()));
+    OH_Pixelmap_HdrMetadataValue *metadataValue = new OH_Pixelmap_HdrMetadataValue();
+    if (!GetHdrMetadata(sourceSurfaceBuffer, key, metadataValue)) {
+        return IMAGE_COPY_FAILED;
+    }
+
+    *value = metadataValue;
     return IMAGE_SUCCESS;
 }
 

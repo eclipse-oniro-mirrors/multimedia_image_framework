@@ -159,6 +159,8 @@ typedef enum {
     IMAGE_DECODE_FAILED = 7700301,
     /** encode failed */
     IMAGE_ENCODE_FAILED = 7800301,
+    /** not DMA memory */
+    IMAGE_DMA_NOT_EXIST = 7600173,
 } Image_ErrorCode;
 
 /**
