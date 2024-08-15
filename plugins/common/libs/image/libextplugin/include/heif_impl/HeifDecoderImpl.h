@@ -84,6 +84,8 @@ private:
 
     bool ProcessChunkHead(uint8_t *data, size_t len);
 
+    bool SwDecode();
+
     void ReleaseHwDecoder(HeifHardwareDecoder *hwDecoder, bool isReuse);
 
     bool HwDecodeImage(HeifHardwareDecoder *hwDecoder,

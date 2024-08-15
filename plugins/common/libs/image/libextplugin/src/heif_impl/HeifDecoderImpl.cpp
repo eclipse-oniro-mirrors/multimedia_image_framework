@@ -469,22 +469,12 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
 {
     ImageTrace trace("HeifDecoderImpl::decode");
     if (!IsSupportHardwareDecode(gridInfo_)) {
-        HevcSoftDecodeParam param {
-            gridInfo_, outPixelFormat_,
-            dstMemory_, 0,
-            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_
-        };
-        bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true);
-        if (!decodeRes) {
-            return false;
-        }
-        SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
-        return true;
+        return SwDecode();
     }
     sptr<SurfaceBuffer> hwBuffer;
     bool decodeRes = HwDecodeImage(nullptr, primaryImage_, gridInfo_, &hwBuffer, true);
     if (!decodeRes) {
-        return false;
+        return SwDecode();
     }
 
     bool convertRes = IsDirectYUVDecode() ||
@@ -494,6 +484,21 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     }
     HwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
     return true;
+}
+
+bool HeifDecoderImpl::SwDecode()
+{
+    HevcSoftDecodeParam param {
+            gridInfo_, outPixelFormat_,
+            dstMemory_, 0,
+            static_cast<uint32_t>(dstRowStride_), dstHwBuffer_
+    };
+    bool decodeRes = SwDecodeImage(primaryImage_, param, gridInfo_, true);
+    if (!decodeRes) {
+        return false;
+    }
+    SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    return false;
 }
 
 bool HeifDecoderImpl::decodeGainmap()
