@@ -205,9 +205,12 @@ static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->data[1] = pixels + info.yuvDataInfo.uvOffset;
         frame->linesize[0] = static_cast<int32_t>(info.yuvDataInfo.yStride);
         frame->linesize[1] = static_cast<int32_t>(info.yuvDataInfo.uvStride);
-    } else {
+    } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.yuvDataInfo.yStride, info.height, 1);
+    } else {
+        av_image_fill_arrays(frame->data, frame->linesize, pixels,
+            info.format, info.width, info.height, 1);
     }
 }
 
@@ -226,9 +229,12 @@ static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info
         frame->data[1] = pixels + GetYSize(info.width, info.height);
         frame->linesize[0] = info.width;
         frame->linesize[1] = GetUVStride(info.width);
-    } else {
+    } else if (info.format == AVPixelFormat::AV_PIX_FMT_P010LE) {
         av_image_fill_arrays(frame->data, frame->linesize, pixels,
             info.format, info.yuvDataInfo.yStride, info.height, 1);
+    } else {
+        av_image_fill_arrays(frame->data, frame->linesize, pixels,
+            info.format, info.width, info.height, 1);
     }
 }
 
@@ -1016,9 +1022,9 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(strides.yStride) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
-                *(dstUV + newY * strides.yStride + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x);
+                *(dstUV + newY * strides.yStride + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
                 *(dstUV + newY * strides.yStride + newX + 1) =
-                *(srcUV + y * static_cast<int32_t>(yuvInfo.yWidth) + x + 1);
+                *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
             }
         }
     }
