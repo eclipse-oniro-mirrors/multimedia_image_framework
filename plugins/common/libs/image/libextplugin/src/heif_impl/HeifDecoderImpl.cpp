@@ -498,7 +498,7 @@ bool HeifDecoderImpl::SwDecode()
         return false;
     }
     SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
-    return false;
+    return true;
 }
 
 bool HeifDecoderImpl::decodeGainmap()
