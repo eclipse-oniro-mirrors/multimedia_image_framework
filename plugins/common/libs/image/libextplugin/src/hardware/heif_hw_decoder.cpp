@@ -462,6 +462,7 @@ void HeifHardwareDecoder::SendInputBufferLoop(const vector<vector<uint8_t>>& inp
         }
         if (buffer == nullptr) {
             LOGE("got null input buffer");
+            SignalError();
             break;
         }
         int32_t size = PrepareInputCodecBuffer(inputs, inputIndex, buffer);
@@ -599,7 +600,12 @@ void HeifHardwareDecoder::ReceiveOutputBufferLoop()
             LOGE("failed to release output buffer");
         }
     }
-    LOGI("out");
+    uint32_t expectedOutputCnt = gridInfo_.enableGrid ? gridInfo_.cols * gridInfo_.rows : 1;
+    if (outputIndex < expectedOutputCnt) {
+        LOGE("expect %{public}u output, got %{public}u", expectedOutputCnt, outputIndex);
+        SignalError();
+    }
+    LOGI("received %{public}u output in total", outputIndex);
 }
 
 void HeifHardwareDecoder::SignalError()
