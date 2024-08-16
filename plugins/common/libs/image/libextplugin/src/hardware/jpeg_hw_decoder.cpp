@@ -28,7 +28,6 @@
 #include "src/codec/SkJpegUtility.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "src/codec/SkJpegCodec.h"
-#include "hitrace_meter.h"
 #include "image_trace.h"
 
 namespace OHOS::ImagePlugin {
