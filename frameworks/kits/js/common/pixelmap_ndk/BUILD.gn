@@ -59,6 +59,7 @@ ohos_shared_library("pixelmap") {
   include_dirs = [
     "${image_subsystem}/frameworks/kits/js/common/ndk/include",
     "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
+    "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/utils/include",
     "$SUBSYSTEM_DIR/interfaces/kits/native/include/image",
   ]
 
@@ -74,11 +75,20 @@ ohos_shared_library("pixelmap") {
     "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/egl_image:egl_image",
     "$SUBSYSTEM_DIR/interfaces/innerkits:image_native",
     "$SUBSYSTEM_DIR/interfaces/kits/js/common:image",
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
   ]
+
+  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
 
   public_external_deps = [ "napi:ace_napi" ]
 
-  external_deps = [ "c_utils:utils" ]
+  external_deps = [
+    "c_utils:utils",
+    "drivers_interface_display:display_commontype_idl_headers",
+    "graphic_2d:color_manager",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+  ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"

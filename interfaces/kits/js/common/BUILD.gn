@@ -271,6 +271,7 @@ if (use_clang_ios) {
     external_deps += [
       "ability_runtime:runtime",
       "c_utils:utils",
+      "drivers_interface_display:display_commontype_idl_headers",
       "ets_runtime:libark_jsruntime",
       "eventhandler:libeventhandler",
       "graphic_2d:2d_graphics",

@@ -104,6 +104,10 @@ do \
 #define GET_INT32_BY_NAME(root, name, res) ImageNapiUtils::GetInt32ByName(env, (root), (name), &(res))
 #define GET_BOOL_BY_NAME(root, name, res) ImageNapiUtils::GetBoolByName(env, (root), (name), &(res))
 #define GET_NODE_BY_NAME(root, name, res) ImageNapiUtils::GetNodeByName(env, (root), (name), &(res))
+#define GET_DOUBLE_BY_NAME(root, name, res) ImageNapiUtils::GetDoubleByName(env, (root), (name), &(res))
+
+#define CREATE_NAPI_INT32(value, root) ImageNapiUtils::CreateNapiInt32(env, (value), (root))
+#define CREATE_NAPI_DOUBLE(value, root) ImageNapiUtils::CreateNapiDouble(env, (value), (root))
 
 #define STATIC_EXEC_FUNC(name) static void name ## Exec(napi_env env, void *data)
 #define STATIC_COMPLETE_FUNC(name) static void name ## Complete(napi_env env, napi_status status, void *data)
@@ -138,11 +142,14 @@ public:
     static bool GetBufferByName(napi_env env, napi_value root, const char* name, void **res, size_t* len);
     static bool GetUint32ByName(napi_env env, napi_value root, const char* name, uint32_t *res);
     static bool GetInt32ByName(napi_env env, napi_value root, const char* name, int32_t *res);
+    static bool GetDoubleByName(napi_env env, napi_value root, const char* name, double *res);
     static bool GetBoolByName(napi_env env, napi_value root, const char* name, bool *res);
     static bool GetNodeByName(napi_env env, napi_value root, const char* name, napi_value *res);
     static bool GetUtf8String(napi_env env, napi_value root, std::string &res, bool eof = true);
     static napi_valuetype getType(napi_env env, napi_value root);
     static bool CreateArrayBuffer(napi_env env, void* src, size_t srcLen, napi_value *res);
+    static bool CreateNapiInt32(napi_env env, int32_t value, napi_value &root);
+    static bool CreateNapiDouble(napi_env env, double value, napi_value &root);
     static bool ParseImageCreatorReceiverArgs(napi_env env, size_t argc,
         napi_value argv[], int32_t args[], std::string &errMsg);
     static void HicheckerReport();
