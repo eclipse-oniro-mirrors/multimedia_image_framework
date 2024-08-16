@@ -234,12 +234,12 @@ ohos_shared_library("extplugin") {
       "graphic_surface:surface",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
+      "hitrace:hitrace_meter",
       "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
       "skia:libjpeg",
       "skia:skia_canvaskit",
       "zlib:libz",
-      "hitrace:hitrace_meter",
     ]
 
     if (defined(global_parts_info) &&
