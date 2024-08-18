@@ -3437,10 +3437,14 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
+void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct)
 {
-    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
-        grColorSpace.GetColorSpaceName());
+    if (direct) {
+        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace);
+    } else {
+        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
+            grColorSpace.GetColorSpaceName());
+    }
 }
 
 OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()

@@ -72,6 +72,11 @@ constexpr uint8_t MOVE_BITS_16 = 16;
 constexpr uint8_t MOVE_BITS_24 = 24;
 constexpr int32_t NV21P010_BYTES = 3;
 constexpr int32_t ASTC_4X4_BYTES = 1;
+constexpr int32_t ASTC_4X4_BLOCK = 4;
+constexpr int32_t ASTC_6X6_BLOCK = 6;
+constexpr int32_t ASTC_8X8_BLOCK = 8;
+constexpr int32_t ASTC_BLOCK_SIZE = 16;
+constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 constexpr int32_t DMA_SIZE = 512 * 512;
@@ -692,6 +697,63 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 #else
     return;
 #endif
+}
+
+bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
+{
+    auto auxTypes = GetAllAuxiliaryPictureType();
+    return (auxTypes.find(type) != auxTypes.end());
+}
+
+bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
+{
+    if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
+{
+    static const std::set<AuxiliaryPictureType> auxTypes = {
+        AuxiliaryPictureType::GAINMAP,
+        AuxiliaryPictureType::DEPTH_MAP,
+        AuxiliaryPictureType::UNREFOCUS_MAP,
+        AuxiliaryPictureType::LINEAR_MAP,
+        AuxiliaryPictureType::FRAGMENT_MAP};
+    return auxTypes;
+}
+
+size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
+{
+    size_t astcBytesCount = 0;
+    uint32_t blockWidth = 0;
+    uint32_t blockHeight = 0;
+
+    switch (imageInfo.pixelFormat) {
+        case PixelFormat::ASTC_4x4:
+            blockWidth = ASTC_4X4_BLOCK;
+            blockHeight = ASTC_4X4_BLOCK;
+            break;
+        case PixelFormat::ASTC_6x6:
+            blockWidth = ASTC_6X6_BLOCK;
+            blockHeight = ASTC_6X6_BLOCK;
+            break;
+        case PixelFormat::ASTC_8x8:
+            blockWidth = ASTC_8X8_BLOCK;
+            blockHeight = ASTC_8X8_BLOCK;
+            break;
+        default:
+            IMAGE_LOGE("ImageUtils GetAstcBytesCount failed, format is not supported %{public}d",
+                imageInfo.pixelFormat);
+            return 0;
+    }
+    if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
+        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
+            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+    }
+    return astcBytesCount;
 }
 } // namespace Media
 } // namespace OHOS

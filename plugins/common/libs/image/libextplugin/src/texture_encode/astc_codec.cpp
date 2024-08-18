@@ -45,6 +45,10 @@ static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 constexpr uint8_t DEFAULT_DIM = 4;
 constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 for thumbnail
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
+constexpr uint8_t MASKBITS_FOR_8BITS = 255;
+constexpr uint8_t UINT32_1TH_BYTES = 8;
+constexpr uint8_t UINT32_2TH_BYTES = 16;
+constexpr uint8_t UINT32_3TH_BYTES = 24;
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 constexpr int32_t WIDTH_CL_THRESHOLD = 256;
 constexpr int32_t HEIGHT_CL_THRESHOLD = 256;
@@ -449,6 +453,7 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
     }
     free(sutBuffer);
     param.astcBytes = param.sutBytes;
+    param.outIsSut = true;
     return true;
 }
 #endif
@@ -464,6 +469,7 @@ static bool InitAstcEncPara(TextureEncodeOptions &param,
     param.height_ = height;
     param.stride_ = stride;
     param.privateProfile_ = GetAstcQuality(astcOpts.quality);
+    param.outIsSut = false;
     extractDimensions(astcOpts.format, param);
     if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
         IMAGE_LOGE("InitAstcEncPara failed %{public}dx%{public}d is invalid!", param.blockX_, param.blockY_);
@@ -531,31 +537,128 @@ uint32_t AstcCodec::ASTCEncode()
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
-    IMAGE_LOGD("astcenc start: %{public}dx%{public}d, enableQualityCheck %{public}d, astcProfile %{public}d",
-        imageInfo.size.width, imageInfo.size.height, param.enableQualityCheck, param.privateProfile_);
-    uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(param.astcBytes));
+    AstcExtendInfo extendInfo = {0};
+    if (!InitAstcExtendInfo(extendInfo)) {
+        IMAGE_LOGE("InitAstcExtendInfo failed");
+        return ERROR;
+    }
+    uint32_t packSize = static_cast<uint32_t>(param.astcBytes) +
+        extendInfo.extendBufferSumBytes + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
+    uint8_t *astcBuffer = static_cast<uint8_t *>(malloc(packSize));
     if (astcBuffer == nullptr) {
         IMAGE_LOGE("astc astcBuffer malloc failed!");
+        ReleaseExtendInfoMemory(extendInfo);
         return ERROR;
     }
     if (!AstcEncProcess(param, pixmapIn, astcBuffer)) {
         IMAGE_LOGE("astc AstcEncProcess failed!");
+        ReleaseExtendInfoMemory(extendInfo);
         free(astcBuffer);
         return ERROR;
     }
 #ifdef SUT_ENCODE_ENABLE
     if (!TryTextureSuperCompress(param, astcBuffer)) {
         IMAGE_LOGE("astc TryTextureSuperCompress failed!");
+        ReleaseExtendInfoMemory(extendInfo);
         free(astcBuffer);
         return ERROR;
     }
 #endif
-    astcOutput_->Write(astcBuffer, param.astcBytes);
+    if (!param.outIsSut) { // only support astc for color space
+        WriteAstcExtendInfo(astcBuffer, static_cast<uint32_t>(param.astcBytes), extendInfo);
+    } else {
+        packSize = param.sutBytes;
+    }
+    ReleaseExtendInfoMemory(extendInfo);
+    astcOutput_->Write(astcBuffer, packSize);
     free(astcBuffer);
     IMAGE_LOGD("astcenc end: %{public}dx%{public}d, GpuFlag %{public}d, sut%{public}d",
         imageInfo.size.width, imageInfo.size.height, param.hardwareFlag, param.sutProfile);
-    astcOutput_->SetOffset(param.astcBytes);
+    astcOutput_->SetOffset(packSize);
     return SUCCESS;
+}
+
+bool AllocMemForExtInfo(AstcExtendInfo &extendInfo, uint8_t idx)
+{
+    AstcExtendInfoType type = static_cast<AstcExtendInfoType>(idx);
+    switch (type) {
+        case AstcExtendInfoType::COLOR_SPACE:
+            extendInfo.extendInfoLength[idx] = ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
+            extendInfo.extendBufferSumBytes += ASTC_EXTEND_INFO_TYPE_LENGTH +
+                ASTC_EXTEND_INFO_LENGTH_LENGTH + ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH;
+            extendInfo.extendInfoValue[idx] = static_cast<uint8_t*>(malloc(extendInfo.extendInfoLength[idx]));
+            if (extendInfo.extendInfoValue[idx] == nullptr) {
+                IMAGE_LOGE("[AstcCodec] SetColorSpaceInfo malloc failed!");
+                return false;
+            }
+            break;
+        default:
+            return false;
+    }
+    return true;
+}
+
+bool AstcCodec::InitAstcExtendInfo(AstcExtendInfo &extendInfo)
+{
+    if (memset_s(&extendInfo, sizeof(AstcExtendInfo), 0, sizeof(AstcExtendInfo)) != 0) {
+        return false;
+    }
+    extendInfo.extendNums = ASTC_EXTEND_INFO_TLV_NUM;
+    extendInfo.extendBufferSumBytes = 0;
+    for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
+        if (!AllocMemForExtInfo(extendInfo, idx)) {
+            ReleaseExtendInfoMemory(extendInfo);
+            IMAGE_LOGE("[AstcCodec] AllocMemForExtInfo failed!");
+            return false;
+        }
+    }
+    return true;
+}
+
+void AstcCodec::ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo)
+{
+    for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
+        if (extendInfo.extendInfoValue[idx] != nullptr) {
+            free(extendInfo.extendInfoValue[idx]);
+            extendInfo.extendInfoValue[idx] = nullptr;
+        }
+    }
+}
+
+static void FillDataSize(uint8_t *buf, uint32_t bytes)
+{
+    *buf++ = (bytes) & MASKBITS_FOR_8BITS;
+    *buf++ = (bytes >> UINT32_1TH_BYTES) & MASKBITS_FOR_8BITS;
+    *buf++ = (bytes >> UINT32_2TH_BYTES) & MASKBITS_FOR_8BITS;
+    *buf++ = (bytes >> UINT32_3TH_BYTES) & MASKBITS_FOR_8BITS;
+}
+
+void AstcCodec::WriteAstcExtendInfo(uint8_t *buffer, uint32_t offset, AstcExtendInfo &extendInfo)
+{
+    uint8_t* offsetBuffer = buffer + offset;
+    FillDataSize(offsetBuffer, extendInfo.extendBufferSumBytes);
+    offsetBuffer += ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpace colorspace = astcPixelMap_->InnerGetGrColorSpace();
+    ColorManager::ColorSpaceName csName = colorspace.GetColorSpaceName();
+#endif
+    for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
+        *offsetBuffer++ = idx;
+        FillDataSize(offsetBuffer, extendInfo.extendInfoLength[idx]);
+        offsetBuffer += ASTC_EXTEND_INFO_LENGTH_LENGTH;
+        AstcExtendInfoType type = static_cast<AstcExtendInfoType>(idx);
+        switch (type) {
+            case AstcExtendInfoType::COLOR_SPACE:
+#ifdef IMAGE_COLORSPACE_FLAG
+                *offsetBuffer = static_cast<uint8_t>(csName);
+#else
+                *offsetBuffer = 0;
+#endif
+                break;
+            default:
+                return;
+        }
+    }
 }
 } // namespace ImagePlugin
 } // namespace OHOS
