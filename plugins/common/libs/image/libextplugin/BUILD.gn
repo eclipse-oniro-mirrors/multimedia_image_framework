@@ -234,7 +234,6 @@ ohos_shared_library("extplugin") {
       "graphic_surface:surface",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
-      "hitrace:hitrace_meter",
       "libexif:libexif",
       "libjpeg-turbo:turbojpeg",
       "skia:libjpeg",
