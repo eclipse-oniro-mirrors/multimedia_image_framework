@@ -69,6 +69,7 @@ public:
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
+    static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
