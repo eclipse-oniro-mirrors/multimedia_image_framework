@@ -486,6 +486,7 @@ HWTEST_F(ImageReceiverTest, SaveBufferAsImageTest001, TestSize.Level3)
     opts.size.width = 0;
     opts.size.height = 0;
     opts.editable = true;
+    std::shared_ptr<ImageReceiver> imageReceiver;
     imageReceiver = ImageReceiver::CreateImageReceiver(0,
         0, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ASSERT_NE(imageReceiver, nullptr);
@@ -509,6 +510,7 @@ HWTEST_F(ImageReceiverTest, SaveBufferAsImageTest002, TestSize.Level3)
     opts.size.width = 0;
     opts.size.height = 0;
     opts.editable = true;
+    std::shared_ptr<ImageReceiver> imageReceiver;
     imageReceiver = ImageReceiver::CreateImageReceiver(0,
         0, RECEIVER_TEST_FORMAT, RECEIVER_TEST_CAPACITY);
     ASSERT_NE(imageReceiver, nullptr);
@@ -555,7 +557,7 @@ HWTEST_F(ImageReceiverTest, getSurfacePixelMapTest001, TestSize.Level3)
     opts.size.height = RECEIVER_TEST_HEIGHT;
     opts.editable = true;
     imageReceiver->iraContext_->currentBuffer_ = SurfaceBuffer::Create();
-    std::unique_ptr<PixelMap> pixelmp_ptr = imageReceiver->getSurfacePixelMap();
+    std::unique_ptr<PixelMap> pixelmp_ptr = imageReceiver->getSurfacePixelMap(opts);
     ASSERT_EQ(pixelmp_ptr, nullptr);
     GTEST_LOG_(INFO) << "ImageReceiverTest: getSurfacePixelMapTest001 end";
 }
