@@ -246,6 +246,7 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
+        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
@@ -1119,6 +1120,8 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
             context.yuvInfo.uvStride = planes->planes[1].columnStride;
             context.yuvInfo.yOffset = planes->planes[0].offset;
             context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+            context.yuvInfo.uvWidth = static_cast<uint32_t>((hwDstInfo_.width() + 1) / NUM_2);
+            context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
     }
 
