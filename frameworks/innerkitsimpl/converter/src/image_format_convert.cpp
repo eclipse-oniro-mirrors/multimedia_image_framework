@@ -419,11 +419,13 @@ bool ImageFormatConvert::MakeDestPixelMapP010(std::shared_ptr<PixelMap> &destPix
         pixelMap = std::make_unique<PixelMap>();
     }
     if (destInfo.allocType == AllocatorType::DMA_ALLOC && destPixelMap->IsHdr()) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         void *fdBuffer = nullptr;
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (context));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (fdBuffer));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
         pixelMap->SetPixelsAddr(destInfo.buffer, fdBuffer, destInfo.bufferSize, AllocatorType::DMA_ALLOC, nullptr);
+#endif
     } else {
         pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, destInfo.allocType, nullptr);
     }
