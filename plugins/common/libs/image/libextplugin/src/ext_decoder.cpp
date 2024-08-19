@@ -46,7 +46,6 @@
 #include "color_utils.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
-#include "hitrace_meter.h"
 #include "image_trace.h"
 #include "heif_type.h"
 #include "image/image_plugin_type.h"
