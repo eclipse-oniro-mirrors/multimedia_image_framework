@@ -1253,7 +1253,7 @@ bool ImageFormatConvertUtils::NV21ToRGBAF16(const uint8_t *srcBuffer, const YUVD
                                             DestConvertInfo &destInfo,
                                             [[maybe_unused]]ColorSpace colorSpace)
 {
-    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV12, destInfo, PixelFormat::RGBA_F16);
+    return YuvToRGB(srcBuffer, yDInfo, PixelFormat::NV21, destInfo, PixelFormat::RGBA_F16);
 }
 
 bool ImageFormatConvertUtils::NV12ToRGBAF16(const uint8_t *srcBuffer, const YUVDataInfo &yDInfo,

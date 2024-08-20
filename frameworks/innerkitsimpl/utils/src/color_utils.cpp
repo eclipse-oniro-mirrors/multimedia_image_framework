@@ -98,7 +98,7 @@ ColorManager::ColorSpaceName ColorUtils::CicpToColorSpace(uint16_t primaries, ui
     return ColorManager::NONE;
 }
 
-uint16_t GetPrimaries(ColorManager::ColorSpaceName name)
+uint16_t ColorUtils::GetPrimaries(ColorManager::ColorSpaceName name)
 {
     switch (name) {
         case ColorManager::ColorSpaceName::SRGB:

@@ -3333,6 +3333,17 @@ void PixelMap::flip(bool xAxis, bool yAxis)
     scale(xAxis ? -1 : 1, yAxis ? -1 : 1);
 }
 
+void PixelMap::CopySurfaceBufferInfo(void *data)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (allocatorType_ == AllocatorType::DMA_ALLOC) {
+        sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(data));
+        VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
+    }
+#endif
+}
+
 uint32_t PixelMap::crop(const Rect &rect)
 {
     ImageTrace imageTrace("PixelMap crop");
@@ -3379,8 +3390,10 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     ToImageInfo(imageInfo, dst.info);
+    CopySurfaceBufferInfo(m->extend.data);
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
+    ImageUtils::FlushSurfaceBuffer(this);
     return SUCCESS;
 }
 
@@ -3469,10 +3482,14 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
 }
 
 #ifdef IMAGE_COLORSPACE_FLAG
-void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
+void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct)
 {
-    grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
-        grColorSpace.GetColorSpaceName());
+    if (direct) {
+        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace);
+    } else {
+        grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
+            grColorSpace.GetColorSpaceName());
+    }
 }
 
 OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()

@@ -27,6 +27,12 @@ enum class SutProfile {
     SKIP_SUT = 255
 }; // the profile of superCompress for texture
 
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
+constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
+constexpr uint8_t ASTC_EXTEND_INFO_TYPE_LENGTH = 1; // 1 byte to discripte the content type for every TLV group
+constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
+constexpr uint8_t ASTC_EXTEND_INFO_COLOR_SPACE_VALUE_LENGTH = 1; // 1 bytes to discripte the content for color space
+
 struct TextureEncodeOptions {
     int32_t width_;
     int32_t height_;
@@ -40,6 +46,7 @@ struct TextureEncodeOptions {
     bool hardwareFlag;
     SutProfile sutProfile;
     int32_t sutBytes;
+    bool outIsSut;
 };
 
 struct AstcEncoder {
@@ -54,6 +61,18 @@ struct AstcEncoder {
     bool calQualityEnable;
     int32_t *mse[RGBA_COM + 1];
 #endif
+};
+
+struct AstcExtendInfo {
+    uint32_t extendBufferSumBytes = 0;
+    uint8_t extendNums = ASTC_EXTEND_INFO_TLV_NUM;
+    uint8_t extendInfoType[ASTC_EXTEND_INFO_TLV_NUM];
+    uint32_t extendInfoLength[ASTC_EXTEND_INFO_TLV_NUM];
+    uint8_t *extendInfoValue[ASTC_EXTEND_INFO_TLV_NUM];
+};
+
+enum class AstcExtendInfoType : uint8_t {
+    COLOR_SPACE = 0
 };
 } // namespace ImagePlugin
 } // namespace OHOS

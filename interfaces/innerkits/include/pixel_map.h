@@ -245,7 +245,7 @@ public:
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----begin----
-    NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
+    NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct = false);
     NATIVEEXPORT OHOS::ColorManager::ColorSpace InnerGetGrColorSpace();
     NATIVEEXPORT std::shared_ptr<OHOS::ColorManager::ColorSpace> InnerGetGrColorSpacePtr()
     {
@@ -440,6 +440,7 @@ protected:
     bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
+    void CopySurfaceBufferInfo(void *data);
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;
