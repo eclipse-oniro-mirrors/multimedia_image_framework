@@ -46,6 +46,7 @@
 #include "color_utils.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
+#include "image_trace.h"
 #include "heif_type.h"
 #include "image/image_plugin_type.h"
 
@@ -1048,6 +1049,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
 {
+    ImageTrace imageTrace("Ext AllocOutputBuffer");
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {

@@ -28,6 +28,7 @@
 #include "src/codec/SkJpegUtility.h"
 #include "src/codec/SkJpegDecoderMgr.h"
 #include "src/codec/SkJpegCodec.h"
+#include "image_trace.h"
 
 namespace OHOS::ImagePlugin {
 using namespace OHOS::HDI::Codec::Image::V2_0;
@@ -170,6 +171,7 @@ bool JpegHardwareDecoder::CheckInputColorFmt(SkCodec *codec)
 uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream,
                                      OHOS::Media::Size srcImgSize, uint32_t sampleSize, CodecImageBuffer& outputBuffer)
 {
+    Media::ImageTrace imageTrace("jpeg_hw_decoder Decode");
     LifeSpanTimer decodeTimer("jpeg hardware decode");
     JPEG_HW_LOGD("img=[%{public}ux%{public}u], sampleSize=%{public}u",
                  srcImgSize.width, srcImgSize.height, sampleSize);
@@ -298,6 +300,7 @@ bool JpegHardwareDecoder::AssembleJpegImgHeader(jpeg_decompress_struct* jpegComp
 
 bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataStream *srcStream)
 {
+    Media::ImageTrace imageTrace("CopySrcImgToDecodeInputBuffer");
     size_t fileSize = srcStream->GetStreamSize();
     uint32_t positionRecord = srcStream->Tell();
     JPEG_HW_LOGI("input stream, size=%{public}zu, curPos=%{public}u", fileSize, positionRecord);
@@ -396,6 +399,7 @@ bool JpegHardwareDecoder::GetCompressedDataStart()
 
 bool JpegHardwareDecoder::PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream)
 {
+    Media::ImageTrace imageTrace("PrepareInputData");
     LifeSpanTimer decodeTimer("prepare input data");
     jpeg_decompress_struct* jpegCompressInfo = GetJpegCompressInfo(codec);
     if (jpegCompressInfo == nullptr || srcStream == nullptr) {
@@ -421,6 +425,7 @@ bool JpegHardwareDecoder::InitDecoder()
 
 bool JpegHardwareDecoder::DoDecode(CodecImageBuffer& outputBuffer)
 {
+    Media::ImageTrace imageTrace("DoDecode");
     LifeSpanTimer decodeTimer("do decode");
     int32_t ret = hwDecoder_->DoJpegDecode(inputBuffer_, outputBuffer, decodeInfo_);
     if (ret != HDF_SUCCESS) {
@@ -432,6 +437,7 @@ bool JpegHardwareDecoder::DoDecode(CodecImageBuffer& outputBuffer)
 
 void JpegHardwareDecoder::RecycleAllocatedResource()
 {
+    Media::ImageTrace imageTrace("RecycleAllocatedResource");
     LifeSpanTimer decodeTimer("recycle resource");
     int32_t ret = hwDecoder_->FreeInBuffer(inputBuffer_);
     if (ret != HDF_SUCCESS) {
