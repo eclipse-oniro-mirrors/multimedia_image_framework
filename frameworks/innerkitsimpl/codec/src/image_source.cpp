@@ -4253,12 +4253,16 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    uint32_t auxErrorCode = SUCCESS;
     if (format == IMAGE_HEIF_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, auxErrorCode);
     } else if (format == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, auxErrorCode);
     }
 
+    if (auxErrorCode != SUCCESS) {
+        IMAGE_LOGI("Decode auxiliary pictures failed, error code: %{public}u", auxErrorCode);
+    }
     return picture;
 }
 
@@ -4281,6 +4285,7 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
         } else {
+            auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
     }
@@ -4321,6 +4326,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             if (auxPicture == nullptr) {
                 IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
             } else {
+                auxPicture->GetContentPixel()->SetEditable(true);
                 picture->SetAuxiliaryPicture(auxPicture);
             }
         }
