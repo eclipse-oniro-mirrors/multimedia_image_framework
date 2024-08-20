@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#define private public
 #include "common_utils.h"
 #include "image_native.h"
 #include "image_receiver_native.h"
@@ -165,6 +166,126 @@ HWTEST_F(ImageNativeTest, OH_ImageNative_GetComponentTypesTest002, TestSize.Leve
     nRst = OH_ImageNative_GetPixelStride(pImg, componentType, pixelStride);
     ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetComponentTypesTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetByteBufferTest002
+ * @tc.desc: OH_ImageNative_GetByteBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetByteBufferTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest002 start";
+    struct OH_ImageNative imageNative;
+    OH_ImageNative* pImg = &imageNative;
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    pImg->imgNative = &imgNative;
+    OH_NativeBuffer* pBuffer;
+    uint32_t type = 128;
+    Image_ErrorCode nRst = OH_ImageNative_GetByteBuffer(pImg, type, &pBuffer);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetByteBufferTest003
+ * @tc.desc: OH_ImageNative_GetByteBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetByteBufferTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest003 start";
+    struct OH_ImageNative imageNative;
+    OH_ImageNative* pImg = &imageNative;
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    pImg->imgNative = &imgNative;
+    OH_NativeBuffer* pBuffer;
+    uint32_t type = 1;
+    uint8_t vir = 0;
+    pImg->imgNative->CreateComponent(1, 1, 1, 1, &vir);
+    Image_ErrorCode nRst = OH_ImageNative_GetByteBuffer(pImg, type, &pBuffer);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetByteBufferTest003 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetImageSizeTest002
+ * @tc.desc: OH_ImageNative_GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetImageSizeTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest002 start";
+    struct OH_ImageNative imageNative;
+    OH_ImageNative* pImg = &imageNative;
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    pImg->imgNative = &imgNative;
+    Image_Size szImg = {0, 0};
+    Image_ErrorCode nRst = OH_ImageNative_GetImageSize(pImg, &szImg);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest002 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetImageSizeTest003
+ * @tc.desc: OH_ImageNative_GetImageSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetImageSizeTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest003 start";
+    struct OH_ImageNative imageNative;
+    OH_ImageNative* pImg = &imageNative;
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    pImg->imgNative = &imgNative;
+    pImg->imgNative->buffer_ = nullptr;
+    Image_Size szImg = {0, 0};
+    Image_ErrorCode nRst = OH_ImageNative_GetImageSize(pImg, &szImg);
+    ASSERT_EQ(nRst, ERR_MEDIA_DEAD_OBJECT);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetImageSizeTest003 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetTimestampTest001
+ * @tc.desc: OH_ImageNative_GetTimestamp
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetTimestampTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest001 start";
+    OH_ImageNative* pImg = nullptr;
+    int64_t timestamp = 0;
+    Image_ErrorCode nRst = OH_ImageNative_GetTimestamp(pImg, &timestamp);
+    ASSERT_EQ(nRst, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest001 end";
+}
+
+/**
+ * @tc.name: OH_ImageNative_GetTimestampTest002
+ * @tc.desc: OH_ImageNative_GetTimestamp
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageNativeTest, OH_ImageNative_GetTimestampTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest002 start";
+    struct OH_ImageNative imageNative;
+    OH_ImageNative* pImg = &imageNative;
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    std::shared_ptr<IBufferProcessor> releaser;
+    NativeImage imgNative(buffer, releaser);
+    pImg->imgNative = &imgNative;
+    int64_t timestamp = 0;
+    Image_ErrorCode nRst = OH_ImageNative_GetTimestamp(pImg, &timestamp);
+    ASSERT_EQ(nRst, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "ImageNativeTest: OH_ImageNative_GetTimestampTest002 end";
 }
 } // namespace Media
 } // namespace OHOS
