@@ -40,6 +40,7 @@
 #include "exif_metadata.h"
 #include "image_mdk_common.h"
 #include "pixel_yuv.h"
+#include "color_utils.h"
 
 #ifndef _WIN32
 #include "securec.h"
@@ -1301,7 +1302,8 @@ bool PixelMap::IsHdr()
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace colorSpace = InnerGetGrColorSpace();
-    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
+    if (colorSpace.GetColorSpaceName() != ColorManager::BT2020 &&
+        colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_HLG_LIMIT &&
         colorSpace.GetColorSpaceName() != ColorManager::BT2020_PQ_LIMIT) {
@@ -3466,6 +3468,15 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     }
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
     sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType;
+    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+    if ((colorspaceType & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
+        HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020) {
+#ifdef IMAGE_COLORSPACE_FLAG
+        colorspaceType = ColorUtils::ConvertToCMColor(InnerGetGrColorSpace().GetColorSpaceName());
+        VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+#endif
+    }
     if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
         sdrMemory->Release();
         IMAGE_LOGI("ToSdr decompose failed");
@@ -3490,6 +3501,18 @@ void PixelMap::InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorS
         grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(grColorSpace.ToSkColorSpace(),
             grColorSpace.GetColorSpaceName());
     }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    ColorManager::ColorSpaceName name = grColorSpace.GetColorSpaceName();
+    if (name == ColorManager::BT2020 || name == ColorManager::BT2020_HLG || name == ColorManager::BT2020_HLG_LIMIT ||
+        name == ColorManager::BT2020_PQ || name == ColorManager::BT2020_PQ_LIMIT) {
+        if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
+            HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType = ColorUtils::ConvertToCMColor(name);
+            sptr<SurfaceBuffer> buffer = sptr<SurfaceBuffer>(reinterpret_cast<SurfaceBuffer*>(GetFd()));
+            IMAGE_LOGD("InnerSetColorSpace colorspaceType is %{public}d", colorspaceType);
+            VpeUtils::SetSbColorSpaceType(buffer, colorspaceType);
+        }
+    }
+#endif
 }
 
 OHOS::ColorManager::ColorSpace PixelMap::InnerGetGrColorSpace()

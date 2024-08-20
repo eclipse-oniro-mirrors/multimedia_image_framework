@@ -760,6 +760,24 @@ sk_sp<SkData> ExtEncoder::GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer,
     return stream.detachAsData();
 }
 
+void ExtEncoder::SetHdrColorSpaceType(sptr<SurfaceBuffer>& surfaceBuffer)
+{
+    if (pixelmap_ == nullptr) {
+        IMAGE_LOGI("SetHdrColorSpaceType pixelmap_ is nullptr");
+        return;
+    }
+    CM_ColorSpaceType colorspaceType;
+    VpeUtils::GetSbColorSpaceType(surfaceBuffer, colorspaceType);
+    if ((colorspaceType & CM_PRIMARIES_MASK) != COLORPRIMARIES_BT2020) {
+#ifdef IMAGE_COLORSPACE_FLAG
+        ColorManager::ColorSpaceName colorspace = pixelmap_->InnerGetGrColorSpace().GetColorSpaceName();
+        IMAGE_LOGI("ExtEncoder SetHdrColorSpaceType, color is %{public}d", colorspace);
+        colorspaceType = ColorUtils::ConvertToCMColor(colorspace);
+        VpeUtils::SetSbColorSpaceType(surfaceBuffer, colorspaceType);
+#endif
+    }
+}
+
 static bool DecomposeImage(VpeSurfaceBuffers& buffers, HdrMetadata& metadata, bool onlySdr, bool sdrIsSRGB = false)
 {
     VpeUtils::SetSbMetadataType(buffers.sdr, CM_IMAGE_HDR_VIVID_DUAL);
@@ -792,6 +810,9 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
     pixelMap->GetImageInfo(info);
     SkColorType colorType = kRGBA_8888_SkColorType;
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
+    if (alphaType == SkAlphaType::kUnknown_SkAlphaType) {
+        alphaType = SkAlphaType::kOpaque_SkAlphaType;
+    }
     sk_sp<SkColorSpace> colorSpace =
         SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, isSRGB ? SkNamedGamut::kSRGB : SkNamedGamut::kDisplayP3);
     int32_t width = info.size.width;
@@ -924,6 +945,7 @@ uint32_t ExtEncoder::EncodeDualVivid(ExtWStream& outputStream)
     }
     HdrMetadata metadata;
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (pixelmap_->GetFd()));
+    SetHdrColorSpaceType(hdrSurfaceBuffer);
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
@@ -972,6 +994,7 @@ uint32_t ExtEncoder::EncodeSdrImage(ExtWStream& outputStream)
     }
     sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(pixelmap_->GetFd()));
     VpeUtils::SetSbMetadataType(hdrSurfaceBuffer, CM_IMAGE_HDR_VIVID_SINGLE);
+    SetHdrColorSpaceType(hdrSurfaceBuffer);
     VpeSurfaceBuffers buffers = {
         .sdr = baseSptr,
         .hdr = hdrSurfaceBuffer,
