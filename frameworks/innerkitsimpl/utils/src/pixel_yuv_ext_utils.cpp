@@ -377,6 +377,32 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     }
 }
 
+void PixelYuvExtUtils::ScaleYuv420(int32_t dst_width, int32_t dst_height, const AntiAliasingOption &option,
+    YuvImageInfo &yuvInfo, uint8_t *src, uint8_t *dst, YUVStrideInfo &dstStrides)
+{
+    OpenSourceLibyuv::FilterMode filterMode = OpenSourceLibyuv ::FilterMode::kFilterLinear;
+    ConvertYuvMode(filterMode, option);
+
+    uint8_t* srcY = src + yuvInfo.yuvDataInfo.yOffset;
+    int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride);
+    uint8_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
+    int srcUVStride = yuvInfo.yuvDataInfo.uvStride;
+    int srcWidth = yuvInfo.width;
+    int srcHeight = yuvInfo.height;
+
+    uint8_t* dstY = dst + dstStrides.yOffset;
+    int dstYStride = static_cast<int>(dstStrides.yStride);
+    uint8_t* dstUV = dst + dstStrides.uvOffset;
+    int dstUVStride = static_cast<int>(dstStrides.uvStride);
+    auto converter = ConverterHandle::GetInstance().GetHandle();
+
+    PixelSize pixelSize = {srcWidth, srcHeight, dst_width, dst_height};
+    if (yuvInfo.yuvFormat != PixelFormat::YCBCR_P010 && yuvInfo.yuvFormat != PixelFormat::YCRCB_P010) {
+        converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
+            dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);
+    }
+}
+
 bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format,
     YUVDataInfo &info, YUVStrideInfo &dstStrides)
 {
