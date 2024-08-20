@@ -606,8 +606,8 @@ void PixelYuv::translate(float xAxis, float yAxis)
     if (!IsYuvFormat() || (xAxis == 0 && yAxis == 0)) {
         return;
     }
-    int32_t width = imageInfo_.size.width;
-    int32_t height = imageInfo_.size.height;
+    int32_t width = imageInfo_.size.width + xAxis;
+    int32_t height = imageInfo_.size.height + yAxis;
     PixelFormat format = imageInfo_.pixelFormat;
 
     YUVStrideInfo dstStrides;
