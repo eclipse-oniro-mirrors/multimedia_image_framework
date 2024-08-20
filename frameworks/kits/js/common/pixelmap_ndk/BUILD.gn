@@ -59,7 +59,6 @@ ohos_shared_library("pixelmap") {
   include_dirs = [
     "${image_subsystem}/frameworks/kits/js/common/ndk/include",
     "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
-    "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/utils/include",
     "$SUBSYSTEM_DIR/interfaces/kits/native/include/image",
   ]
 
@@ -73,32 +72,13 @@ ohos_shared_library("pixelmap") {
 
   deps = [
     "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/egl_image:egl_image",
-    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
     "$SUBSYSTEM_DIR/interfaces/innerkits:image_native",
     "$SUBSYSTEM_DIR/interfaces/kits/js/common:image",
   ]
 
-  cflags = [ "-DIMAGE_COLORSPACE_FLAG" ]
-
   public_external_deps = [ "napi:ace_napi" ]
 
-  external_deps = [
-    # "astc-encoder:astc_encoder_shared",
-    "c_utils:utils",
-    "drivers_interface_display:display_commontype_idl_headers",
-    # "drivers_peripheral_display:display_commontype_idl_headers",
-
-    # "ffrt:libffrt",
-    # "ffmpeg:libohosffmpeg",
-    "graphic_2d:color_manager",
-    "graphic_surface:surface",
-
-    # "hilog:libhilog",
-    # "hisysevent:libhisysevent",
-    # "libexif:libexif",
-    # "libjpeg-turbo:turbojpeg",
-    # "zlib:libz",
-  ]
+  external_deps = [ "c_utils:utils" ]
 
   innerapi_tags = [ "ndk" ]
   subsystem_name = "multimedia"

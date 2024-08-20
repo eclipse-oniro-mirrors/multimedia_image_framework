@@ -288,7 +288,6 @@ if (use_clang_ios) {
       "ipc:ipc_single",
       "napi:ace_napi",
       "resource_management:librawfile",
-      "drivers_interface_display:display_commontype_idl_headers",
     ]
 
     public_external_deps = [ "graphic_2d:color_manager" ]
