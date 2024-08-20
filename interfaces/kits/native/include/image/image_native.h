@@ -143,7 +143,8 @@ Image_ErrorCode OH_ImageNative_GetPixelStride(OH_ImageNative *image,
 *     {@link IMAGE_BAD_PARAMETER} if the input parameter is invalid.
 * @since 12
 */
-Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image, int64_t *timestamp);
+Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image,
+    int64_t *timestamp);
 
 /**
  * @brief Releases an {@link OH_ImageNative} object.
