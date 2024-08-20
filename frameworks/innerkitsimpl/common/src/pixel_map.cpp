@@ -450,7 +450,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
-        if (*buffer != nullptr) {
+        if (buffer != nullptr && *buffer != nullptr) {
             ::munmap(*buffer, dataSize);
             ::close(fd);
         }
@@ -459,7 +459,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
 #endif
 
     if (allocatorType == AllocatorType::HEAP_ALLOC) {
-        if (*buffer != nullptr) {
+        if (buffer != nullptr && *buffer != nullptr) {
             free(*buffer);
             *buffer = nullptr;
         }
@@ -575,6 +575,11 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &pixelFormat, uint8_t *dstPixels,
                                  PixelMap &dstPixelMap)
 {
+    if (dstPixels == nullptr) {
+        IMAGE_LOGE("UpdatePixelsAlpha invalid input parameter: dstPixels is null");
+        return;
+    }
+
     if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
         int8_t alphaIndex = -1;
         if (pixelFormat == PixelFormat::RGBA_8888 || pixelFormat == PixelFormat::BGRA_8888) {
@@ -1137,6 +1142,10 @@ uint32_t PixelMap::GetImagePropertyString(const std::string &key, std::string &v
 
 bool PixelMap::ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("ALPHA8ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (inCount != outCount) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -1150,6 +1159,10 @@ bool PixelMap::ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
 
 bool PixelMap::RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("RGB565ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (((inCount / RGB_565_BYTES) != outCount) && ((inCount % RGB_565_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -1164,6 +1177,10 @@ bool PixelMap::RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, 
 
 bool PixelMap::ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("ARGB8888ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -1179,6 +1196,10 @@ bool PixelMap::ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 
 bool PixelMap::RGBA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("RGBA8888ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -1194,6 +1215,10 @@ bool PixelMap::RGBA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 
 bool PixelMap::BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("BGRA8888ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (((inCount / ARGB_8888_BYTES) != outCount) && ((inCount % ARGB_8888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -1209,6 +1234,10 @@ bool PixelMap::BGRA8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out
 
 bool PixelMap::RGB888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount)
 {
+    if (in == nullptr || out == nullptr) {
+        IMAGE_LOGE("RGB888ToARGB invalid input parameter: in or out is null");
+        return false;
+    }
     if (((inCount / RGB_888_BYTES) != outCount) && ((inCount % RGB_888_BYTES) != 0)) {
         IMAGE_LOGE("input count:%{public}u is not match to output count:%{public}u.", inCount, outCount);
         return false;
@@ -2205,6 +2234,11 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
 
 bool PixelMap::ReadTransformData(Parcel &parcel, PixelMap *pixelMap)
 {
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("ReadTransformData invalid input parameter: pixelMap is null");
+        return false;
+    }
+
     if (pixelMap->IsAstc()) {
         TransformData transformData;
         transformData.scaleX = parcel.ReadFloat();
@@ -2266,6 +2300,11 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
 
 bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 {
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("ReadAstcRealSize invalid input parameter: pixelMap is null");
+        return false;
+    }
+
     if (pixelMap->IsAstc()) {
         Size realSize;
         realSize.width = parcel.ReadInt32();
@@ -2362,6 +2401,11 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
 
 bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo)
 {
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("UpdatePixelMapMemInfo invalid input parameter: pixelMap is null");
+        return false;
+    }
+
     uint32_t ret = pixelMap->SetImageInfo(imgInfo);
     if (ret != SUCCESS) {
         if (pixelMap->freePixelMapProc_ != nullptr) {
@@ -2509,6 +2553,11 @@ int32_t PixelMap::ReadVarint(std::vector<uint8_t> &buff, int32_t &cursor)
 void PixelMap::WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
     const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("WriteData invalid input parameter: data is null");
+        return;
+    }
+
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < rowDataSize; col++) {
@@ -2617,7 +2666,9 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_DATA:
                 size = len;
-                *data = ReadData(buff, size, cursor);
+                if (data != nullptr) {
+                    *data = ReadData(buff, size, cursor);
+                }
                 break;
             default:
                 cursor += len; // skip unknown tag
@@ -2796,6 +2847,11 @@ static float ProcessPremulF16Pixel(float mulPixel, float alpha, const float perc
 
 static void SetF16PixelAlpha(uint8_t *pixel, const float percent, bool isPixelPremul)
 {
+    if (pixel == nullptr) {
+        IMAGE_LOGE("SetF16PixelAlpha invalid input parameter: pixel is null");
+        return;
+    }
+
     float a = HalfTranslate(pixel + RGBA_F16_A_OFFSET);
     if (isPixelPremul) {
         float r = HalfTranslate(pixel + RGBA_F16_R_OFFSET);
@@ -2832,6 +2888,11 @@ static uint8_t ProcessPremulPixel(uint8_t mulPixel, uint8_t alpha, const float p
 static void SetUintPixelAlpha(uint8_t *pixel, const float percent,
     uint8_t pixelByte, int8_t alphaIndex, bool isPixelPremul)
 {
+    if (pixel == nullptr) {
+        IMAGE_LOGE("SetUintPixelAlpha invalid input parameter: pixel is null");
+        return;
+    }
+
     if (isPixelPremul) {
         for (int32_t pixelIndex = 0; pixelIndex < pixelByte; pixelIndex++) {
             if (pixelIndex != alphaIndex) {
@@ -2905,6 +2966,11 @@ static int8_t GetAlphaIndex(const PixelFormat& pixelFormat)
 static void ConvertUintPixelAlpha(uint8_t *rpixel,
     uint8_t pixelByte, int8_t alphaIndex, bool isPremul, uint8_t *wpixel)
 {
+    if (rpixel == nullptr || wpixel == nullptr) {
+        IMAGE_LOGE("ConvertUintPixelAlpha invalid input parameter: rpixel or wpixel is null");
+        return;
+    }
+
     float alphaValue = static_cast<float>(rpixel[alphaIndex]) / UINT8_MAX;
     for (int32_t pixelIndex = 0; pixelIndex < pixelByte; pixelIndex++) {
         float pixelValue = static_cast<float>(rpixel[pixelIndex]);
@@ -3052,6 +3118,10 @@ uint32_t PixelMap::SetAlpha(const float percent)
 static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
 {
 #ifdef IMAGE_COLORSPACE_FLAG
+    if (pixelmap == nullptr) {
+        IMAGE_LOGE("ToSkColorSpace invalid input parameter: pixelmap is null");
+        return nullptr;
+    }
     if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
         return nullptr;
     }
@@ -3388,6 +3458,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     }
 #endif
     if (!src.bitmap.readPixels(dst.info, m->data.data, rowStride, dstIRect.fLeft, dstIRect.fTop)) {
+        m->Release();
         IMAGE_LOGE("ReadPixels failed");
         return ERR_IMAGE_CROP;
     }
