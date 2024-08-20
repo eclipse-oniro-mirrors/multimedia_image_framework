@@ -1972,7 +1972,7 @@ STATIC_NAPI_VALUE_FUNC(GetImageInfo)
 {
     if (data == nullptr) {
         IMAGE_LOGE("GetImageInfoNapiValue invalid parameter: data is null");
-        return;
+        return nullptr;
     }
 
     IMAGE_LOGD("[PixelMap]GetImageInfoNapiValue IN");
