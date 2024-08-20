@@ -886,6 +886,15 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return res;
         }
     }
+    if (context.allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+            GSError err = surfaceBuffer->FlushCache();
+            if (err != GSERROR_OK) {
+                IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+            }
+        }
+    }
     return SUCCESS;
 }
 
@@ -1129,6 +1138,12 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     context.outInfo.size.height = static_cast<uint32_t>(hwDstInfo_.height());
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
+    }
+    if (sbuffer && (sbuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = sbuffer->InvalidateCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
+        }
     }
     return SUCCESS;
 }
