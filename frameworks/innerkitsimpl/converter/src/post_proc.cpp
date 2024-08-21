@@ -813,7 +813,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         }
         inBuf = malloc(allocSize);
         srcPixels[0] = reinterpret_cast<uint8_t*>(inBuf);
-        errno_t errRet = memcpy_s(inBuf, byteCount, pixelMap.GetWritablePixels(), byteCount);
+        errno_t errRet = memcpy_s(inBuf, allocSize, pixelMap.GetWritablePixels(), byteCount);
         if (errRet != EOK) {
             if (inBuf != nullptr) {
                 free(inBuf);
