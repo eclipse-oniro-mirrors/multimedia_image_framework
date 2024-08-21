@@ -217,8 +217,8 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     }
 
     OHOS::Media::InitializationOptions initializationOptions;
-    initializationOptions.size.width = size->width;
-    initializationOptions.size.height = size->height;
+    initializationOptions.size.width = static_cast<int32_t>(size->width);
+    initializationOptions.size.height = static_cast<int32_t>(size->height);
     initializationOptions.editable = true;
     auto dataTmp = reinterpret_cast<uint32_t*>(data);
     auto dataLengthTmp = static_cast<uint32_t>(dataLength);
@@ -411,8 +411,8 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_GetSize(OH_AuxiliaryPictureInfo *info, I
     }
     auto sizeIner = info->GetInnerAuxiliaryPictureInfo()->size;
     Image_Size sizeTmp = Image_Size();
-    sizeTmp.height = sizeIner.height;
-    sizeTmp.width = sizeIner.width;
+    sizeTmp.height = static_cast<uint32_t>(sizeIner.height);
+    sizeTmp.width = static_cast<uint32_t>(sizeIner.width);
     *size = sizeTmp;
     return  IMAGE_SUCCESS;
 }
@@ -424,8 +424,8 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetSize(OH_AuxiliaryPictureInfo *info, I
         return IMAGE_BAD_PARAMETER;
     }
     OHOS::Media::Size sizeTmp = OHOS::Media::Size();
-    sizeTmp.height = size->height;
-    sizeTmp.width = size->width;
+    sizeTmp.height = static_cast<int32_t>(size->height);
+    sizeTmp.width = static_cast<int32_t>(size->width);
     info->GetInnerAuxiliaryPictureInfo()->size = sizeTmp;
     return IMAGE_SUCCESS;
 }
@@ -446,7 +446,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetRowStride(OH_AuxiliaryPictureInfo *in
     if (info == nullptr || !info->GetInnerAuxiliaryPictureInfo()) {
         return IMAGE_BAD_PARAMETER;
     }
-    info->GetInnerAuxiliaryPictureInfo()->rowStride = rowStride;
+    info->GetInnerAuxiliaryPictureInfo()->rowStride = static_cast<int32_t>(rowStride);
     return  IMAGE_SUCCESS;
 }
 

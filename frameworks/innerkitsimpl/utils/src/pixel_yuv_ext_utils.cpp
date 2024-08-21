@@ -203,8 +203,8 @@ static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, Ope
     }
 
     uint16_t* dstbuffer = reinterpret_cast<uint16_t *>(dst);
-    int32_t dstYStride = dstStrides.yStride;
-    int32_t dstUVStride = dstStrides.uvStride;
+    int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
+    int32_t dstUVStride = static_cast<int32_t>(dstStrides.uvStride);
     uint16_t* dstbufferY = dstbuffer + dstStrides.yOffset;
     uint16_t* dstbufferUV = dstbuffer + dstStrides.uvOffset;
     if (converter.I010ToP010(rotateY, size.dstW, rotateU, GetUStride(size.dstW), rotateV, GetUStride(size.dstW),
@@ -322,18 +322,18 @@ static void ScaleP010(uint8_t *src, uint8_t *dst, OpenSourceLibyuv::ImageYuvConv
 {
     uint16_t *srcBuffer = reinterpret_cast<uint16_t *>(src);
     uint16_t* srcY = srcBuffer + yuvInfo.yuvDataInfo.yOffset;
-    int srcYStride = yuvInfo.yuvDataInfo.yStride;
+    int32_t srcYStride = static_cast<int32_t>(yuvInfo.yuvDataInfo.yStride);
     uint16_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
-    int srcUVStride = yuvInfo.yuvDataInfo.uvStride;
-    int srcWidth = yuvInfo.width;
-    int srcHeight = yuvInfo.height;
+    int32_t srcUVStride = static_cast<int32_t>(yuvInfo.yuvDataInfo.uvStride);
+    int32_t srcWidth = yuvInfo.width;
+    int32_t srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(dst);
     int32_t dst_width = yuvInfo.width * xAxis;
     int32_t dst_height = yuvInfo.height * yAxis;
     uint16_t* dstBufferY = dstBuffer + dstStrides.yOffset;
-    int dstYStride = dstStrides.yStride;
+    int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
     uint16_t* dstBufferUV = dstBuffer + dstStrides.uvOffset;
-    int dstUVStride = dstStrides.uvStride;
+    int32_t dstUVStride = static_cast<int32_t>(dstStrides.uvStride);
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcYStride, srcHeight));
     uint16_t* dstY = dstPixels.get();
     uint16_t* dstU = dstPixels.get() + GetYSize(srcYStride, srcHeight);
@@ -372,7 +372,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     uint8_t* srcY = src + yuvInfo.yuvDataInfo.yOffset;
     int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride)
     uint8_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
-    int srcUVStride = yuvInfo.yuvDataInfo.uvStride;
+    int srcUVStride = static_cast<int>(yuvInfo.yuvDataInfo.uvStride);
     int srcWidth = yuvInfo.width;
     int srcHeight = yuvInfo.height;
 
