@@ -430,11 +430,11 @@ static void inline DumpTagsMap(SafeMap<ExifTag, std::string> &tags)
 {
     auto callbackIt = [](const ExifTag &key, std::string &value) {
         if (TAG_MAP.count(key) == 0) {
-            IMAGE_LOGD("DumpTagsMap %{public}d -> %{public}s.", key, value.c_str());
+            IMAGE_LOGD("DumpTagsMap %{public}d.", key);
             return;
         }
         std::string name = TAG_MAP.at(key);
-        IMAGE_LOGD("DumpTagsMap %{public}s(%{public}d) -> %{public}s.", name.c_str(), key, value.c_str());
+        IMAGE_LOGD("DumpTagsMap %{public}s(%{public}d).", name.c_str(), key);
     };
     tags.Iterate(callbackIt);
 }
