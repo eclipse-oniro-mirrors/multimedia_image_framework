@@ -362,8 +362,8 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * dstImageInfo.size.height *
-        ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat);
+    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
+        static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
     if (bufferSize > UINT_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
             dstImageInfo.size.width, dstImageInfo.size.height);
