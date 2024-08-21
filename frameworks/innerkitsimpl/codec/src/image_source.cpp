@@ -155,16 +155,21 @@ static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
 static const int IMAGE_HEADER_SIZE = 12;
+constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
+constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
+constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
+
+struct AstcExtendInfo {
+    uint32_t extendBufferSumBytes = 0;
+    uint8_t extendNums = ASTC_EXTEND_INFO_TLV_NUM;
+    uint8_t extendInfoType[ASTC_EXTEND_INFO_TLV_NUM];
+    uint32_t extendInfoLength[ASTC_EXTEND_INFO_TLV_NUM];
+    uint8_t *extendInfoValue[ASTC_EXTEND_INFO_TLV_NUM];
+};
+
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
-constexpr uint8_t ASTC_MAGIC_0 = 0x13;
-constexpr uint8_t ASTC_MAGIC_1 = 0xAB;
-constexpr uint8_t ASTC_MAGIC_2 = 0xA1;
-constexpr uint8_t ASTC_MAGIC_3 = 0x5C;
-constexpr uint8_t BYTE_POS_0 = 0;
-constexpr uint8_t BYTE_POS_1 = 1;
-constexpr uint8_t BYTE_POS_2 = 2;
-constexpr uint8_t BYTE_POS_3 = 3;
+constexpr uint8_t SUT_HEAD_BYTES = 16
 constexpr uint32_t SUT_FILE_SIGNATURE = 0x53555401;
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
@@ -843,7 +848,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
     }
-    ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     return pixelMap;
 }
 
@@ -2864,11 +2868,6 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
         IMAGE_LOGE("astc GetAstcSizeBytes input is nullptr or fileSize is smaller than ASTC HEADER");
         return 0;
     }
-    if ((fileBuf[BYTE_POS_0] == ASTC_MAGIC_0) && (fileBuf[BYTE_POS_1] == ASTC_MAGIC_1) &&
-        (fileBuf[BYTE_POS_2] == ASTC_MAGIC_2) && (fileBuf[BYTE_POS_3] == ASTC_MAGIC_3)) {
-        IMAGE_LOGI("astc GetAstcSizeBytes input is pure astc!");
-        return fileSize;
-    }
     if (g_sutDecSoManager.sutDecSoGetSizeFunc_ != nullptr) {
         return g_sutDecSoManager.sutDecSoGetSizeFunc_(fileBuf, fileSize);
     } else {
@@ -2900,6 +2899,112 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
 }
 #endif
 
+static uint32_t GetDataSize(uint8_t *buf)
+{
+    return static_cast<uint32_t>(buf[NUM_0]) +
+        (static_cast<uint32_t>(buf[NUM_1]) << NUM_8) +
+        (static_cast<uint32_t>(buf[NUM_2]) << NUM_16) +
+        (static_cast<uint32_t>(buf[NUM_3]) << NUM_24);
+}
+
+void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo)
+{
+    for (uint8_t idx = 0; idx < extendInfo.extendNums; idx++) {
+        if (extendInfo.extendInfoValue[idx] != nullptr) {
+            free(extendInfo.extendInfoValue[idx]);
+            extendInfo.extendInfoValue[idx] = nullptr;
+        }
+    }
+}
+
+enum class AstcExtendInfoType : uint8_t {
+    COLOR_SPACE = 0
+};
+
+static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc)
+{
+    uint8_t colorSpace = 0;
+    for (uint8_t idx = 0; idx < extInfo.extendNums; idx++) {
+        switch (static_cast<AstcExtendInfoType>(extInfo.extendInfoType[idx])) {
+            case AstcExtendInfoType::COLOR_SPACE:
+                colorSpace = *extInfo.extendInfoValue[idx];
+                break;
+            default:
+                return false;
+        }
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    ColorManager::ColorSpace grColorspace (static_cast<ColorManager::ColorSpaceName>(colorSpace));
+    pixelAstc->InnerSetColorSpace(grColorspace, true);
+#endif
+    return true;
+}
+
+static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t fileSize,
+    unique_ptr<PixelAstc> &pixelAstc)
+{
+    uint8_t *extInfoBuf = const_cast<uint8_t*>(sourceFilePtr) + astcSize;
+    /* */
+    AstcExtendInfo extInfo = {0};
+    bool invalidData = (astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH >= fileSize) ||
+        (memset_s(&extInfo, sizeof(AstcExtendInfo), 0, sizeof(AstcExtendInfo)) != 0);
+    if (invalidData) {
+        IMAGE_LOGE("ResolveExtInfo file data is invalid!");
+        return false;
+    }
+    extInfo.extendBufferSumBytes = GetDataSize(extInfoBuf);
+    if (extInfo.extendBufferSumBytes + astcSize + ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH != fileSize) {
+        IMAGE_LOGE("ResolveExtInfo file size is not equal to astc add ext bytes!");
+        return false;
+    }
+    extInfoBuf += ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH;
+    int32_t leftBytes = static_cast<int32_t>(extInfo.extendBufferSumBytes);
+    for (; leftBytes > 0;) {
+        if (extInfo.extendNums >= ASTC_EXTEND_INFO_TLV_NUM) {
+            return false;
+        }
+        extInfo.extendInfoType[extInfo.extendNums] = *extInfoBuf++;
+        leftBytes--;
+        extInfo.extendInfoLength[extInfo.extendNums] = GetDataSize(extInfoBuf);
+        leftBytes -= ASTC_EXTEND_INFO_LENGTH_LENGTH;
+        extInfoBuf += ASTC_EXTEND_INFO_LENGTH_LENGTH;
+        if (extInfo.extendInfoLength[extInfo.extendNums] > 0) {
+            extInfo.extendInfoValue[extInfo.extendNums] =
+                static_cast<uint8_t*>(malloc(extInfo.extendInfoLength[extInfo.extendNums]));
+            bool ret = (extInfo.extendInfoValue[extInfo.extendNums] != nullptr) &&
+                (memcpy_s(extInfo.extendInfoValue[extInfo.extendNums], extInfo.extendInfoLength[extInfo.extendNums],
+                extInfoBuf, extInfo.extendInfoLength[extInfo.extendNums]) == 0);
+            if (!ret) {
+                ReleaseExtendInfoMemory(extInfo);
+                return false;
+            }
+            leftBytes -= extInfo.extendInfoLength[extInfo.extendNums];
+            extInfoBuf += extInfo.extendInfoLength[extInfo.extendNums];
+        }
+        extInfo.extendNums++;
+    }
+    if (!GetExtInfoForPixelAstc(extInfo, pixelAstc)) {
+        IMAGE_LOGE("ResolveExtInfo Could not get ext info!");
+    }
+    ReleaseExtendInfoMemory(extInfo);
+    return true;
+}
+
+#ifdef SUT_DECODE_ENABLE
+static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
+{
+    if (fileData == nullptr || fileSize < SUT_HEAD_BYTES) {
+        IMAGE_LOGE("FormatIsSUT fileData incorrect.");
+        return false;
+    }
+    uint32_t magicVal = static_cast<uint32_t>(fileData[NUM_0]) +
+        (static_cast<uint32_t>(fileData[NUM_1]) << NUM_8) +
+        (static_cast<uint32_t>(fileData[NUM_2]) << NUM_16) +
+        (static_cast<uint32_t>(fileData[NUM_3]) << NUM_24);
+    return magicVal == SUT_FILE_SIGNATURE;
+}
+#endif
+
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr)
 {
@@ -2919,7 +3024,8 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
         nullptr);
     bool successMemCpyOrDec = true;
 #ifdef SUT_DECODE_ENABLE
-    if (fileSize < astcSize) {
+    bool isSutFormat = FormatIsSUT(sourceFilePtr, fileSize);
+    if (isSutFormat) {
         if (TextureSuperCompressDecode(sourceFilePtr, fileSize,
             static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
             IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
@@ -2927,15 +3033,16 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
         }
     } else {
 #endif
-        if (memcpy_s(dstMemory->data.data, fileSize, sourceFilePtr, fileSize) != 0) {
+        if (memcpy_s(dstMemory->data.data, astcSize, sourceFilePtr, astcSize) != 0) {
             IMAGE_LOGE("[ImageSource] astc memcpy_s failed!");
             successMemCpyOrDec = false;
         }
+        successMemCpyOrDec = successMemCpyOrDec && ((fileSize == astcSize) ||
+            ((fileSize > astcSize) && ResolveExtInfo(sourceFilePtr, astcSize, fileSize, pixelAstc)));
 #ifdef SUT_DECODE_ENABLE
     }
 #endif
     if (!successMemCpyOrDec) {
-        dstMemory->Release();
         return false;
     }
 #endif
@@ -2967,13 +3074,14 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
     pixelAstc->SetEditable(false);
     size_t fileSize = sourceStreamPtr_->GetStreamSize();
 #ifdef SUT_DECODE_ENABLE
-    size_t astcSize = GetAstcSizeBytes(sourceFilePtr, fileSize);
+    size_t astcSize = (!FormatIsSUT(sourceFilePtr, fileSize)) ?
+        ImageUtils::GetAstcBytesCount(info) : GetAstcSizeBytes(sourceFilePtr, fileSize);
     if (astcSize == 0) {
         IMAGE_LOGE("[ImageSource] astc GetAstcSizeBytes failed.");
         return nullptr;
     }
 #else
-    size_t astcSize = fileSize;
+    size_t astcSize = ImageUtils::GetAstcBytesCount(info);
 #endif
     if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceFilePtr)) {
         IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
@@ -4144,12 +4252,16 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    uint32_t auxErrorCode = SUCCESS;
     if (format == IMAGE_HEIF_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, auxErrorCode);
     } else if (format == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, auxErrorCode);
     }
 
+    if (auxErrorCode != SUCCESS) {
+        IMAGE_LOGI("Decode auxiliary pictures failed, error code: %{public}u", auxErrorCode);
+    }
     return picture;
 }
 
@@ -4172,6 +4284,7 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
         } else {
+            auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
     }
@@ -4212,6 +4325,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             if (auxPicture == nullptr) {
                 IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
             } else {
+                auxPicture->GetContentPixel()->SetEditable(true);
                 picture->SetAuxiliaryPicture(auxPicture);
             }
         }

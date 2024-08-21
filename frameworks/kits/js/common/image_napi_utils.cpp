@@ -64,6 +64,17 @@ bool ImageNapiUtils::GetInt32ByName(napi_env env, napi_value root, const char* n
     return true;
 }
 
+bool ImageNapiUtils::GetDoubleByName(napi_env env, napi_value root, const char* name, double *res)
+{
+    napi_value tempValue = nullptr;
+
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_named_property(env, root, name, &tempValue)), false);
+
+    IMG_NAPI_CHECK_RET(IMG_IS_OK(napi_get_value_double(env, tempValue, res)), false);
+
+    return true;
+}
+
 bool ImageNapiUtils::GetBoolByName(napi_env env, napi_value root, const char* name, bool *res)
 {
     napi_value tempValue = nullptr;
@@ -111,6 +122,22 @@ bool ImageNapiUtils::CreateArrayBuffer(napi_env env, void* src, size_t srcLen, n
     }
 
     if (memcpy_s(nativePtr, srcLen, src, srcLen) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+bool ImageNapiUtils::CreateNapiInt32(napi_env env, int32_t value, napi_value &root)
+{
+    if (napi_create_int32(env, value, &root) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+bool ImageNapiUtils::CreateNapiDouble(napi_env env, double value, napi_value &root)
+{
+    if (napi_create_double(env, value, &root) != napi_ok) {
         return false;
     }
     return true;

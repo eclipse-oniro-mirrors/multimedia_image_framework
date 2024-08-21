@@ -20,6 +20,9 @@
 #include <cstdio>
 #include <string>
 #include "image_type.h"
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include "v1_0/cm_color_space.h"
+#endif
 
 namespace OHOS {
 namespace Media {
@@ -30,6 +33,10 @@ public:
         uint16_t matrix, uint8_t range);
     static void ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& primaries, uint16_t& transfer,
         uint16_t& matrix, uint8_t& range);
+    static uint16_t GetPrimaries(ColorManager::ColorSpaceName name);
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    static HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ConvertToCMColor(ColorManager::ColorSpaceName name);
+#endif
 };
 } // namespace Media
 } // namespace OHOS

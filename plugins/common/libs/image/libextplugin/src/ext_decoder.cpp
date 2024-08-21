@@ -46,6 +46,7 @@
 #include "color_utils.h"
 #include "heif_parser.h"
 #include "heif_format_agent.h"
+#include "image_trace.h"
 #include "heif_type.h"
 #include "image/image_plugin_type.h"
 
@@ -246,6 +247,7 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         requestConfig.format = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
+        count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
@@ -885,6 +887,15 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return res;
         }
     }
+    if (context.allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+        if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+            GSError err = surfaceBuffer->FlushCache();
+            if (err != GSERROR_OK) {
+                IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+            }
+        }
+    }
     return SUCCESS;
 }
 
@@ -1038,6 +1049,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
 {
+    ImageTrace imageTrace("Ext AllocOutputBuffer");
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
@@ -1119,6 +1131,8 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
             context.yuvInfo.uvStride = planes->planes[1].columnStride;
             context.yuvInfo.yOffset = planes->planes[0].offset;
             context.yuvInfo.uvOffset = planes->planes[1].offset - 1;
+            context.yuvInfo.uvWidth = static_cast<uint32_t>((hwDstInfo_.width() + 1) / NUM_2);
+            context.yuvInfo.uvHeight = static_cast<uint32_t>((hwDstInfo_.height() + 1) / NUM_2);
         }
     }
 
@@ -1126,6 +1140,12 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     context.outInfo.size.height = static_cast<uint32_t>(hwDstInfo_.height());
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
+    }
+    if (sbuffer && (sbuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = sbuffer->InvalidateCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
+        }
     }
     return SUCCESS;
 }

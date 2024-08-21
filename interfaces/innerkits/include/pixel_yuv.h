@@ -56,8 +56,10 @@ public:
     NATIVEEXPORT void flip(bool xAxis, bool yAxis) override;
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
                                       const uint32_t &stride, const Rect &region) override;
+    NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize) override;
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst) override;
+    NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst) override;
     NATIVEEXPORT void translate(float xAxis, float yAxis) override;
     NATIVEEXPORT uint32_t ReadPixel(const Position &pos, uint32_t &dst) override;
     NATIVEEXPORT bool WritePixels(const uint32_t &color) override;
