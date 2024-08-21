@@ -34,7 +34,10 @@ public:
     NATIVEEXPORT void rotate(float degrees) override;
     NATIVEEXPORT void scale(float xAxis, float yAxis) override;
     NATIVEEXPORT void scale(float xAxis, float yAxis, const AntiAliasingOption &option) override;
+    NATIVEEXPORT void scale(int32_t dstW, int32_t dstH);
+    NATIVEEXPORT void scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option);
     NATIVEEXPORT bool resize(float xAxis, float yAxis) override;
+    NATIVEEXPORT bool resize(int32_t dstW, int32_t dstH);
     NATIVEEXPORT void flip(bool xAxis, bool yAxis) override;
     NATIVEEXPORT int32_t GetByteCount() override;
     NATIVEEXPORT void SetPixelsAddr(void *addr, void *context, uint32_t size, AllocatorType type,
