@@ -292,6 +292,12 @@ static uint32_t HeapMemAlloc(DecodeContext &context, uint64_t count)
 uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE
+    auto heifContext = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (heifContext == nullptr) {
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    GridInfo gridInfo = heifContext->GetGridInfo();
+
     HeifHardwareDecoder decoder;
     GraphicPixelFormat graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
     if (context.info.pixelFormat == PixelFormat::NV12) {
@@ -301,8 +307,9 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
     } else if (context.info.pixelFormat == PixelFormat::YCBCR_P010) {
         graphicPixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_P010;
     }
-    sptr<SurfaceBuffer> hwBuffer
-            = decoder.AllocateOutputBuffer(info_.width(), info_.height(), graphicPixelFormat);
+    sptr<SurfaceBuffer> hwBuffer = decoder.AllocateOutputBuffer(gridInfo.tileWidth * gridInfo.cols,
+                                                                gridInfo.tileHeight * gridInfo.rows,
+                                                                graphicPixelFormat);
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("HeifHardwareDecoder AllocateOutputBuffer return null");
         return ERR_DMA_NOT_EXIST;

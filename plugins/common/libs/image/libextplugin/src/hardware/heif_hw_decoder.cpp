@@ -181,7 +181,9 @@ bool HeifHardwareDecoder::ConfigureDecoder(const GridInfo& gridInfo, sptr<Surfac
     static constexpr double OUTPUT_FRAME_RATE = 120.0;
     format.SetValue(ImageCodecDescriptionKey::FRAME_RATE, OUTPUT_FRAME_RATE);
     format.SetValue(ImageCodecDescriptionKey::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
-    format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, output->GetFormat());
+    int32_t pixelFmt = output->GetFormat();
+    format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, pixelFmt);
+    is10Bit_ = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010 || pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010);
     format.SetValue(ImageCodecDescriptionKey::ENABLE_HEIF_GRID, gridInfo.enableGrid);
     if (!gridInfo.enableGrid) {
         static constexpr uint32_t INPUT_BUFFER_CNT_WHEN_NO_GRID = 3;
@@ -278,6 +280,22 @@ void HeifHardwareDecoder::DumpInput(const GridInfo& gridInfo, const std::vector<
     DumpSingleInput("data", gridInfo, inputs);
 }
 
+bool HeifHardwareDecoder::CheckOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output)
+{
+    IF_TRUE_RETURN_VAL_WITH_MSG(output == nullptr, false, "null output");
+    uint32_t actualBufferWidth = static_cast<uint32_t>(output->GetWidth());
+    uint32_t actualBufferHeight = static_cast<uint32_t>(output->GetHeight());
+    uint32_t expectBufferWidth = gridInfo.enableGrid ? (gridInfo.tileWidth * gridInfo.cols) : gridInfo.displayWidth;
+    uint32_t expectBufferHeight = gridInfo.enableGrid ? (gridInfo.tileHeight * gridInfo.rows) : gridInfo.displayHeight;
+    IF_TRUE_RETURN_VAL_WITH_MSG(actualBufferWidth < expectBufferWidth, false,
+                                "invalid buffer width: %{public}u < %{public}u",
+                                actualBufferWidth, expectBufferWidth);
+    IF_TRUE_RETURN_VAL_WITH_MSG(actualBufferHeight < expectBufferHeight, false,
+                                "invalid buffer height: %{public}u < %{public}u",
+                                actualBufferHeight, expectBufferHeight);
+    return true;
+}
+
 uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs,
                                        sptr<SurfaceBuffer>& output)
 {
@@ -287,7 +305,7 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
          gridInfo.tileWidth, gridInfo.tileHeight);
     HeifPerfTracker tracker(__FUNCTION__);
     IF_TRUE_RETURN_VAL(!gridInfo.IsValid(), Media::ERR_IMAGE_INVALID_PARAMETER);
-    IF_TRUE_RETURN_VAL_WITH_MSG(output == nullptr, Media::ERR_IMAGE_INVALID_PARAMETER, "null output");
+    IF_TRUE_RETURN_VAL(!CheckOutputBuffer(gridInfo, output), Media::ERR_IMAGE_INVALID_PARAMETER);
     IF_TRUE_RETURN_VAL_WITH_MSG(inputs.size() < MIN_SIZE_OF_INPUT, Media::ERR_IMAGE_INVALID_PARAMETER,
                                 "input size < %{public}zu", MIN_SIZE_OF_INPUT);
     IF_TRUE_RETURN_VAL_WITH_MSG(heifDecoderImpl_ == nullptr, Media::ERR_IMAGE_DECODE_FAILED,
@@ -518,21 +536,6 @@ bool HeifHardwareDecoder::CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuv
     return true;
 }
 
-uint32_t HeifHardwareDecoder::CalculateDirtyLen(uint32_t displayLen, uint32_t gridLen,
-                                                uint32_t totalGrid, uint32_t curGrid)
-{
-    uint32_t dirtyLen = 0;
-    if (gridLen >= displayLen) {
-        dirtyLen = displayLen;
-    } else {
-        dirtyLen = gridLen;
-        if (curGrid + 1 == totalGrid) {
-            dirtyLen = displayLen - curGrid * gridLen;
-        }
-    }
-    return dirtyLen;
-}
-
 void HeifHardwareDecoder::AssembleOutput(uint32_t outputIndex, shared_ptr<ImageCodecBuffer>& buffer)
 {
     HeifPerfTracker tracker(__FUNCTION__);
@@ -557,15 +560,16 @@ void HeifHardwareDecoder::AssembleOutput(uint32_t outputIndex, shared_ptr<ImageC
     src.yOffset = 0;
     src.uvOffset = 0;
 
+    static constexpr uint32_t BIT_DEPTH_FOR_8 = 1;
+    static constexpr uint32_t BIT_DEPTH_FOR_10 = 2;
+    uint32_t bitDepth = is10Bit_ ? BIT_DEPTH_FOR_10 : BIT_DEPTH_FOR_8;
     uint32_t decodedRows = outputIndex / gridInfo_.cols;
     uint32_t decodedCols = outputIndex % gridInfo_.cols;
-    uint32_t dirtyWidth = CalculateDirtyLen(dst.stride, src.stride, gridInfo_.cols, decodedCols);
-    uint32_t dirtyHeight = CalculateDirtyLen(dst.yStride, src.yStride, gridInfo_.rows, decodedRows);
-    dst.yOffset = decodedRows * dst.stride * gridInfo_.tileHeight + decodedCols * src.stride;
+    dst.yOffset = decodedRows * dst.stride * gridInfo_.tileHeight + decodedCols * gridInfo_.tileWidth * bitDepth;
     dst.uvOffset = decodedRows * dst.stride * gridInfo_.tileHeight / SAMPLE_RATIO_FOR_YUV420_SP +
-                   decodedCols * src.stride;
+                   decodedCols * gridInfo_.tileWidth * bitDepth;
 
-    if (!CopyRawYuvData(src, dst, dirtyWidth, dirtyHeight)) {
+    if (!CopyRawYuvData(src, dst, gridInfo_.tileWidth * bitDepth, gridInfo_.tileHeight)) {
         LOGE("failed to assemble output(grid=%{public}d))", outputIndex);
         SignalError();
     }

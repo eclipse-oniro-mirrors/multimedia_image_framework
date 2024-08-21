@@ -275,6 +275,11 @@ bool HeifDecoderImpl::init(HeifStream *stream, HeifFrameInfo *frameInfo)
     return Reinit(frameInfo);
 }
 
+GridInfo HeifDecoderImpl::GetGridInfo()
+{
+    return gridInfo_;
+}
+
 bool HeifDecoderImpl::CheckAuxiliaryMap(AuxiliaryPictureType type)
 {
     if (parser_ == nullptr) {
@@ -576,9 +581,9 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
     }
 
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
-    sptr<SurfaceBuffer> hwBuffer =
-            isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
-            hwDecoder->AllocateOutputBuffer(gridInfo.displayWidth, gridInfo.displayHeight, inPixelFormat);
+    sptr<SurfaceBuffer> hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
+                                   hwDecoder->AllocateOutputBuffer(gridInfo.tileWidth * gridInfo.cols,
+                                                                   gridInfo.tileHeight * gridInfo.rows, inPixelFormat);
     if (hwBuffer == nullptr) {
         IMAGE_LOGE("decode AllocateOutputBuffer return null");
         ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
