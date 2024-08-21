@@ -806,6 +806,7 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(OH_Pixelmap_Initialization
 Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                                      int32_t destPixelFormat);
 
+/**
  * @brief Get metadata.
  *
  * @param pixelmap The Pixelmap pointer to be operated.
