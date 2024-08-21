@@ -686,7 +686,7 @@ Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixel
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelMap_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer)
+Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer)
 {
     if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || nativeBuffer == nullptr) {
         return IMAGE_BAD_PARAMETER;

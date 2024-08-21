@@ -671,10 +671,12 @@ Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
  * @param pixelmap The PixelMap to get the native buffer from.
  * @param nativeBuffer The native buffer to get.
  * @return Returns {@link Image_ErrorCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
- * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if pixelmap or nativeBuffer is invalid.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, pixelmap or nativeBuffer is null.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_OPERATION_FAILED - if operations related to DMA memory has failed.
  * @since 12
  */
-Image_ErrorCode OH_PixelMap_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
+Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
 
 #ifdef __cplusplus
 };
