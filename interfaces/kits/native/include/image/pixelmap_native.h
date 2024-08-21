@@ -38,6 +38,7 @@
 #include "image_common.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#include "native_buffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -624,6 +625,17 @@ Image_ErrorCode OH_PixelmapNative_CreateEmptyPixelmap(OH_Pixelmap_Initialization
  */
 Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixelMap, OH_PixelmapNative **destPixelMap,
                                                      int32_t destPixelFormat);
+
+/**
+ * @brief Get the native buffer from the PixelMap.
+ *
+ * @param pixelmap The PixelMap to get the native buffer from.
+ * @param nativeBuffer The native buffer to get.
+ * @return Returns {@link Image_ErrorCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if pixelmap or nativeBuffer is invalid.
+ * @since 12
+ */
+Image_ErrorCode OH_PixelMap_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
 
 #ifdef __cplusplus
 };

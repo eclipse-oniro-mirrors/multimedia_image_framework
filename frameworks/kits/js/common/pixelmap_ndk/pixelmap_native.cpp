@@ -16,11 +16,12 @@
 #include "pixelmap_native.h"
 
 #include "common_utils.h"
-#include "image_type.h"
+#include "image_format_convert.h"
 #include "image_pixel_map_napi_kits.h"
+#include "image_type.h"
 #include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
-#include "image_format_convert.h"
+#include "surface_buffer.h"
 
 using namespace OHOS::Media;
 #ifdef __cplusplus
@@ -680,6 +681,26 @@ Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixel
         }
     } else {
         return IMAGE_BAD_PARAMETER;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelMap_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || nativeBuffer == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
+    OHOS::SurfaceBuffer *buffer = reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd());
+    *nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
+    int32_t err = OH_NativeBuffer_Reference(*nativeBuffer);
+    if (err != OHOS::SURFACE_ERROR_OK) {
+        return IMAGE_DMA_OPERATION_FAILED;
     }
     return IMAGE_SUCCESS;
 }
