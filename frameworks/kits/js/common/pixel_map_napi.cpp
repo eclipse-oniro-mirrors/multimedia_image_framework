@@ -23,11 +23,15 @@
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#include <cstdint>
 #include <regex>
-#include "js_runtime_utils.h"
+#include <vector>
+#include <memory>
+#include "vpe_utils.h"
 #include "napi_message_sequence.h"
 #include "pixel_map_from_surface.h"
 #include "transaction/rs_interfaces.h"
+#include "color_utils.h"
 #endif
 #include "hitrace_meter.h"
 #include "pixel_map.h"
@@ -69,7 +73,8 @@ thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
-
+napi_ref PixelMapNapi::HdrMetadataKey_ = nullptr;
+napi_ref PixelMapNapi::HdrMetadataType_ = nullptr;
 static std::mutex pixelMapCrossThreadMutex_;
 struct PositionArea {
     void* pixels;
@@ -77,6 +82,26 @@ struct PositionArea {
     uint32_t offset;
     uint32_t stride;
     Rect region;
+};
+
+struct ImageEnum {
+    std::string name;
+    int32_t numVal;
+    std::string strVal;
+};
+
+static std::vector<struct ImageEnum> HdrMetadataKeyMap = {
+    {"HDR_METADATA_TYPE", 0, ""},
+    {"HDR_STATIC_METADATA", 1, ""},
+    {"HDR_DYNAMIC_METADATA", 2, ""},
+    {"HDR_GAINMAP_METADATA", 3, ""},
+};
+
+static std::vector<struct ImageEnum> HdrMetadataTypeMap = {
+    {"NONE", 0, ""},
+    {"BASE", 1, ""},
+    {"GAINMAP", 2, ""},
+    {"ALTERNATE", 3, ""},
 };
 
 struct PixelMapAsyncContext {
@@ -293,6 +318,46 @@ static bool parsePositionArea(napi_env env, napi_value root, PositionArea* area)
     return true;
 }
 
+static napi_value CreateEnumTypeObject(napi_env env,
+    napi_valuetype type, napi_ref* ref, std::vector<struct ImageEnum> imageEnumMap)
+{
+    napi_value result = nullptr;
+    napi_status status;
+    int32_t refCount = 1;
+    std::string propName;
+    status = napi_create_object(env, &result);
+    if (status == napi_ok) {
+        for (auto imgEnum : imageEnumMap) {
+            napi_value enumNapiValue = nullptr;
+            if (type == napi_string) {
+                status = napi_create_string_utf8(env, imgEnum.strVal.c_str(),
+                    NAPI_AUTO_LENGTH, &enumNapiValue);
+            } else if (type == napi_number) {
+                status = napi_create_int32(env, imgEnum.numVal, &enumNapiValue);
+            } else {
+                IMAGE_LOGE("Unsupported type %{public}d!", type);
+            }
+            if (status == napi_ok && enumNapiValue != nullptr) {
+                status = napi_set_named_property(env, result, imgEnum.name.c_str(), enumNapiValue);
+            }
+            if (status != napi_ok) {
+                IMAGE_LOGE("Failed to add named prop!");
+                break;
+            }
+        }
+
+        if (status == napi_ok) {
+            status = napi_create_reference(env, result, refCount, ref);
+            if (status == napi_ok) {
+                return result;
+            }
+        }
+    }
+    IMAGE_LOGE("CreateEnumTypeObject is Failed!");
+    napi_get_undefined(env, &result);
+    return result;
+}
+
 static void CommonCallbackRoutine(napi_env env, PixelMapAsyncContext* &asyncContext, const napi_value &valueParam)
 {
     napi_value result[NUM_2] = {0};
@@ -442,6 +507,9 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("toSdr", ToSdr),
         DECLARE_NAPI_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
         DECLARE_NAPI_FUNCTION("setTransferDetached", SetTransferDetached),
+        DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
+        DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
+        DECLARE_NAPI_FUNCTION("setMetadataSync", SetMetadataSync),
     };
     return props;
 }
@@ -459,6 +527,10 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_PROPERTY("HdrMetadataKey",
+            CreateEnumTypeObject(env, napi_number, &HdrMetadataKey_, HdrMetadataKeyMap)),
+        DECLARE_NAPI_PROPERTY("HdrMetadataType",
+            CreateEnumTypeObject(env, napi_number, &HdrMetadataType_, HdrMetadataTypeMap)),
     };
 
     napi_value constructor = nullptr;
@@ -2434,6 +2506,11 @@ static bool prepareNapiEnv(napi_env env, napi_callback_info info, struct NapiVal
         IMAGE_LOGE("fail to unwrap context");
         return false;
     }
+    if (nVal->context->nConstructor == nullptr ||
+        nVal->context->nConstructor->GetPixelNapiInner() == nullptr) {
+        IMAGE_LOGE("prepareNapiEnv pixelmap is nullptr");
+        return false;
+    }
     nVal->context->status = SUCCESS;
     return true;
 }
@@ -3661,6 +3738,648 @@ napi_value PixelMapNapi::SetTransferDetached(napi_env env, napi_callback_info in
     nVal.context->nConstructor->SetTransferDetach(detach);
     return nVal.result;
 }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+enum HdrMetadataKey : uint32_t {
+    HDR_METADATA_TYPE = 0,
+    HDR_STATIC_METADATA,
+    HDR_DYNAMIC_METADATA,
+    HDR_GAINMAP_METADATA,
+};
+
+enum HdrMetadataType : uint32_t {
+    NONE = 0,
+    BASE,
+    GAINMAP,
+    ALTERNATE,
+    INVALID,
+};
+
+static std::map<HdrMetadataType, CM_HDR_Metadata_Type> EtsMetadataMap = {
+    {NONE, CM_METADATA_NONE},
+    {BASE, CM_IMAGE_HDR_VIVID_DUAL},
+    {GAINMAP, CM_METADATA_NONE},
+    {ALTERNATE, CM_IMAGE_HDR_VIVID_SINGLE},
+};
+
+static std::map<CM_HDR_Metadata_Type, HdrMetadataType> MetadataEtsMap = {
+    {CM_METADATA_NONE, NONE},
+    {CM_IMAGE_HDR_VIVID_DUAL, BASE},
+    {CM_IMAGE_HDR_VIVID_SINGLE, ALTERNATE},
+};
+
+static double FloatToDouble(float val)
+{
+    const double precision = 1000000.0;
+    val *= precision;
+    double result = static_cast<double>(val / precision);
+    return result;
+}
+
+static bool CreateArrayDouble(napi_env env, napi_value &root, float value, int index)
+{
+    napi_value node = nullptr;
+    if (!CREATE_NAPI_DOUBLE(FloatToDouble(value), node)) {
+        return false;
+    }
+    if (napi_set_element(env, root, index, node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+inline napi_value CreateJsNumber(napi_env env, double value)
+{
+    napi_value result = nullptr;
+    napi_create_double(env, value, &result);
+    return result;
+}
+
+static bool CreateNapiDouble(napi_env env, napi_value &root, float value, std::string name)
+{
+    napi_value node = CreateJsNumber(env, FloatToDouble(value));
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+static bool CreateNapiUint32(napi_env env, napi_value &root, int32_t value, std::string name)
+{
+    napi_value node = nullptr;
+    if (!CREATE_NAPI_INT32(value, node)) {
+        return false;
+    }
+
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+
+static bool CreateNapiBool(napi_env env, napi_value &root, bool value, std::string name)
+{
+    napi_value node = nullptr;
+    if (napi_get_boolean(env, value, &node) != napi_ok) {
+        return false;
+    }
+    if (napi_set_named_property(env, root, name.c_str(), node) != napi_ok) {
+        return false;
+    }
+    return true;
+}
+static napi_value BuildStaticMetadataNapi(napi_env env,
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata &staticMetadata)
+{
+    napi_value metadataValue = nullptr;
+    napi_create_object(env, &metadataValue);
+    napi_value displayPrimariesX = nullptr;
+    napi_create_array_with_length(env, NUM_3, &displayPrimariesX);
+    bool status = true;
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryRed.x, NUM_0);
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryGreen.x, NUM_1);
+    status &= CreateArrayDouble(env, displayPrimariesX, staticMetadata.smpte2086.displayPrimaryBlue.x, NUM_2);
+    status &= napi_set_named_property(env, metadataValue, "displayPrimariesX", displayPrimariesX) == napi_ok;
+    napi_value displayPrimariesY = nullptr;
+    napi_create_array_with_length(env, NUM_3, &displayPrimariesY);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryRed.y, NUM_0);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryGreen.y, NUM_1);
+    status &= CreateArrayDouble(env, displayPrimariesY, staticMetadata.smpte2086.displayPrimaryBlue.y, NUM_2);
+    status &= napi_set_named_property(env, metadataValue, "displayPrimariesY", displayPrimariesY) == napi_ok;
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.whitePoint.x, "whitePointX");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.whitePoint.y, "whitePointY");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.maxLuminance, "maxLuminance");
+    status &= CreateNapiDouble(env, metadataValue, staticMetadata.smpte2086.minLuminance, "minLuminance");
+    status &= CreateNapiDouble(env, metadataValue,
+        staticMetadata.cta861.maxContentLightLevel, "maxContentLightLevel");
+    status &= CreateNapiDouble(env, metadataValue,
+        staticMetadata.cta861.maxFrameAverageLightLevel, "maxFrameAverageLightLevel");
+    if (!status) {
+        IMAGE_LOGD("BuildStaticMetadataNapi failed");
+    }
+    return metadataValue;
+}
+
+static bool BuildGainmapChannel(napi_env env, napi_value &root, HDRVividExtendMetadata & gainmapMetadata, int index)
+{
+    bool status = true;
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceClippedThreholdMaxGainmap[index], "gainmapMax");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceClippedThreholdMinGainmap[index], "gainmapMin");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingGamma[index], "gamma");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingBaselineOffset[index], "baseOffset");
+    status &= CreateNapiDouble(env, root,
+        gainmapMetadata.metaISO.enhanceMappingAlternateOffset[index], "alternateOffset");
+    return status;
+}
+
+static napi_value BuildDynamicMetadataNapi(napi_env env, HDRVividExtendMetadata &gainmapMetadata)
+{
+    napi_value metadataValue = nullptr;
+    napi_create_object(env, &metadataValue);
+    bool status = true;
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.writeVersion), "writerVersion");
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.miniVersion), "miniVersion");
+    status &= CreateNapiUint32(env, metadataValue, static_cast<int32_t>(
+        gainmapMetadata.metaISO.gainmapChannelNum), "gainmapChannelCount");
+    status &= CreateNapiBool(env, metadataValue, static_cast<bool>(
+        gainmapMetadata.metaISO.useBaseColorFlag), "useBaseColorFlag");
+    status &= CreateNapiDouble(env, metadataValue, gainmapMetadata.metaISO.baseHeadroom, "baseHeadroom");
+    status &= CreateNapiDouble(env, metadataValue, gainmapMetadata.metaISO.alternateHeadroom, "alternateHeadroom");
+    napi_value array = nullptr;
+    napi_create_object(env, &array);
+    for (uint32_t i = 0; i < NUM_3; i++) {
+        napi_value gainmapChannel = nullptr;
+        napi_create_object(env, &gainmapChannel);
+        status &= BuildGainmapChannel(env, gainmapChannel, gainmapMetadata, i);
+        napi_set_element(env, array, i, gainmapChannel);
+    }
+    napi_set_named_property(env, metadataValue, "channels", array);
+    if (!status) {
+        IMAGE_LOGD("BuildDynamicMetadataNapi failed");
+    }
+    return metadataValue;
+}
+
+static napi_status GetStaticMetadata(napi_env env, OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer,
+    napi_value &metadataValue)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata;
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> staticData;
+    if (!VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticData) ||
+        (staticData.size() != vecSize)) {
+        IMAGE_LOGE("GetSbStaticMetadata failed");
+        return napi_invalid_arg;
+    }
+    if (memcpy_s(&staticMetadata, vecSize, staticData.data(), staticData.size()) != EOK) {
+        return napi_invalid_arg;
+    }
+    metadataValue = BuildStaticMetadataNapi(env, staticMetadata);
+    return napi_ok;
+}
+
+static napi_status GetDynamicMetadata(napi_env env,
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer, napi_value &metadataValue)
+{
+    std::vector<uint8_t> dynamicData;
+    if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, dynamicData) && (dynamicData.size() > 0)) {
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        ImageNapiUtils::CreateArrayBuffer(env, dynamicData.data(), dynamicData.size(), &result);
+        metadataValue = result;
+        if (metadataValue == nullptr) {
+            return napi_invalid_arg;
+        }
+        return napi_ok;
+    }
+    IMAGE_LOGE("GetSbDynamicMetadata failed");
+    return napi_invalid_arg;
+}
+
+static napi_status GetMetadataType(napi_env env,
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer, napi_value &metadataValue)
+{
+    CM_HDR_Metadata_Type type;
+    VpeUtils::GetSbMetadataType(surfaceBuffer, type);
+    if (MetadataEtsMap.find(type) != MetadataEtsMap.end()) {
+        int32_t value = static_cast<int32_t>(MetadataEtsMap[type]);
+        std::vector<uint8_t> gainmapData;
+        if (type == CM_HDR_Metadata_Type::CM_METADATA_NONE &&
+            VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
+            gainmapData.size() > 0) {
+            value = static_cast<int32_t>(HdrMetadataType::GAINMAP);
+        }
+        if (!CREATE_NAPI_INT32(value, metadataValue)) {
+            return napi_invalid_arg;
+        }
+        return napi_ok;
+    }
+    IMAGE_LOGE("GetMetadataType failed");
+    return napi_invalid_arg;
+}
+
+static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
+    std::shared_ptr<PixelMap> pixelMap, napi_value &metadataValue)
+{
+    uint32_t metadataKey = 0;
+    napi_get_value_uint32(env, argv[NUM_0], &metadataKey);
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(
+        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    switch (HdrMetadataKey(metadataKey)) {
+        case HDR_METADATA_TYPE:
+            return GetMetadataType(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_STATIC_METADATA:
+            return GetStaticMetadata(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_DYNAMIC_METADATA:
+            return GetDynamicMetadata(env, surfaceBuffer, metadataValue);
+            break;
+        case HDR_GAINMAP_METADATA:
+            {
+                std::vector<uint8_t> gainmapData;
+                if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
+                    (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
+                    HDRVividExtendMetadata &gainmapMetadata =
+                        *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
+                    metadataValue = BuildDynamicMetadataNapi(env, gainmapMetadata);
+                }
+                IMAGE_LOGE("GetSbDynamicMetadata failed");
+            }
+            break;
+        default:
+            break;
+    }
+    return napi_invalid_arg;
+}
+
+napi_value PixelMapNapi::GetMetadata(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_value argValue[NUM_1];
+    nVal.argc = NUM_1;
+    nVal.argv = argValue;
+    nVal.status = napi_invalid_arg;
+    if (!prepareNapiEnv(env, info, &nVal) || !nVal.context || !nVal.context->nConstructor ||
+        !nVal.context->nConstructor->nativePixelMap_) {
+        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Fail to unwrap context");
+    }
+    std::shared_ptr<PixelMap> pixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(env, ERR_DMA_NOT_EXIST, "Not DMA memory");
+    }
+
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . GetMetadata failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . GetMetadata failed"));
+    nVal.status = BuildHdrMetadataValue(env, nVal.argv, pixelMap, nVal.result);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEMORY_COPY_FAILED,
+        "BuildHdrMetadataValue failed"),
+        IMAGE_LOGE("BuildHdrMetadataValue failed"));
+    return nVal.result;
+}
+
+static HdrMetadataType ParseHdrMetadataType(napi_env env, napi_value &hdrMetadataType)
+{
+    uint32_t type = 0;
+    napi_get_value_uint32(env, hdrMetadataType, &type);
+    if (type < static_cast<int32_t>(HdrMetadataType::INVALID) && type >= HdrMetadataType::NONE) {
+        return HdrMetadataType(type);
+    }
+    return HdrMetadataType::INVALID;
+}
+
+static bool ParseArrayDoubleNode(napi_env env, napi_value &root, std::vector<float> &vec)
+{
+    uint32_t vecSize = 0;
+    napi_get_array_length(env, root, &vecSize);
+    if (vecSize > 0) {
+        for (uint32_t i = 0; i < NUM_3; i++) {
+            napi_value tempDiv = nullptr;
+            napi_get_element(env, root, i, &tempDiv);
+            double gamma = 0.0f;
+            if (napi_get_value_double(env, tempDiv, &gamma) != napi_ok) {
+                IMAGE_LOGD("ParseArrayDoubleNode get value failed");
+                return false;
+            }
+            vec.emplace_back((float)gamma);
+        }
+        return true;
+    }
+    return false;
+}
+
+static bool ParseDoubleMetadataNode(napi_env env, napi_value &root,
+    std::string name, float &value)
+{
+    double ret = 0.0;
+    if (!GET_DOUBLE_BY_NAME(root, name.c_str(), ret)) {
+        IMAGE_LOGI("parse %{public}s failed", name.c_str());
+        return false;
+    }
+    value = static_cast<float>(ret);
+    return true;
+}
+
+static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std::vector<uint8_t> &staticMetadataVec)
+{
+    HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
+    napi_value displayX = nullptr;
+    std::vector<float> displayPrimariesX;
+    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesX", displayX)) {
+        IMAGE_LOGI("parse displayPrimariesX failed");
+    }
+    if (!ParseArrayDoubleNode(env, displayX, displayPrimariesX)) {
+        IMAGE_LOGI("parse array y failed");
+    }
+    std::vector<float> displayPrimariesY;
+    napi_value displayY = nullptr;
+    if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesY", displayY)) {
+        IMAGE_LOGI("parse displayPrimariesY failed");
+    }
+    if (!ParseArrayDoubleNode(env, displayY, displayPrimariesY)) {
+        IMAGE_LOGI("parse array y failed");
+    }
+    staticMetadata.smpte2086.displayPrimaryRed.x = displayPrimariesX[NUM_0];
+    staticMetadata.smpte2086.displayPrimaryRed.y = displayPrimariesY[NUM_0];
+    staticMetadata.smpte2086.displayPrimaryGreen.x = displayPrimariesX[NUM_1];
+    staticMetadata.smpte2086.displayPrimaryGreen.y = displayPrimariesY[NUM_1];
+    staticMetadata.smpte2086.displayPrimaryBlue.x = displayPrimariesX[NUM_2];
+    staticMetadata.smpte2086.displayPrimaryBlue.y = displayPrimariesY[NUM_2];
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "whitePointX", staticMetadata.smpte2086.whitePoint.x);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "whitePointY", staticMetadata.smpte2086.whitePoint.y);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxLuminance", staticMetadata.smpte2086.maxLuminance);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "minLuminance", staticMetadata.smpte2086.minLuminance);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxContentLightLevel",
+        staticMetadata.cta861.maxContentLightLevel);
+    ParseDoubleMetadataNode(env, hdrStaticMetadata, "maxFrameAverageLightLevel",
+        staticMetadata.cta861.maxFrameAverageLightLevel);
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    if (memcpy_s(staticMetadataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
+        IMAGE_LOGI("staticMetadataVec memcpy failed");
+        return false;
+    }
+    return true;
+}
+
+static bool ParseDynamicMetadata(napi_env env, napi_value &root, std::vector<uint8_t> &dynamicMetadataVec)
+{
+    void *buffer = nullptr;
+    size_t size;
+    if (napi_get_arraybuffer_info(env, root, &buffer, &size) != napi_ok) {
+        return false;
+    }
+    dynamicMetadataVec.resize(size);
+    if (memcpy_s(dynamicMetadataVec.data(), size, buffer, size) != EOK) {
+        return false;
+    }
+    return true;
+}
+
+static bool ParseGainmapChannel(napi_env env, napi_value &root, HDRVividExtendMetadata &extendMetadata, int index)
+{
+    if (!ParseDoubleMetadataNode(env, root, "gainmapMax",
+        extendMetadata.metaISO.enhanceClippedThreholdMaxGainmap[index])) {
+        return false;
+    }
+    if (!ParseDoubleMetadataNode(env, root, "gainmapMin",
+        extendMetadata.metaISO.enhanceClippedThreholdMinGainmap[index])) {
+        return false;
+    }
+    if (!ParseDoubleMetadataNode(env, root, "gamma", extendMetadata.metaISO.enhanceMappingGamma[index])) {
+        return false;
+    }
+    if (!ParseDoubleMetadataNode(env, root, "baseOffset", extendMetadata.metaISO.enhanceMappingBaselineOffset[index])) {
+        return false;
+    }
+    if (!ParseDoubleMetadataNode(env, root, "alternateOffset",
+        extendMetadata.metaISO.enhanceMappingAlternateOffset[index])) {
+        return false;
+    }
+    return true;
+}
+
+static void ParseGainmapNode(napi_env env, napi_value &root, HDRVividExtendMetadata &extendMetadata)
+{
+    uint32_t isoMetadata = 0;
+    if (!GET_UINT32_BY_NAME(root, "writerVersion", isoMetadata)) {
+        IMAGE_LOGI("ParseGainmapNode parse writerVersion failed");
+    }
+    extendMetadata.metaISO.writeVersion = static_cast<unsigned short>(isoMetadata);
+    if (!GET_UINT32_BY_NAME(root, "miniVersion", isoMetadata)) {
+        IMAGE_LOGI("ParseGainmapNode parse miniVersion failed");
+    }
+    extendMetadata.metaISO.miniVersion = static_cast<unsigned short>(isoMetadata);
+    if (!GET_UINT32_BY_NAME(root, "gainmapChannelCount", isoMetadata)) {
+        IMAGE_LOGI("ParseGainmapNode parse gainmapChannelCount failed");
+    }
+    extendMetadata.metaISO.gainmapChannelNum = static_cast<unsigned char>(isoMetadata);
+    bool colorflag = false;
+    if (!GET_BOOL_BY_NAME(root, "useBaseColorFlag", colorflag)) {
+        IMAGE_LOGI("ParseGainmapNode parse useBaseColorFlag failed");
+    }
+    extendMetadata.metaISO.useBaseColorFlag = static_cast<unsigned char>(colorflag);
+    if (!ParseDoubleMetadataNode(env, root, "baseHeadroom", extendMetadata.metaISO.baseHeadroom)) {
+        return;
+    }
+    if (!ParseDoubleMetadataNode(env, root, "alternateHeadroom", extendMetadata.metaISO.alternateHeadroom)) {
+        return;
+    }
+    napi_value gainmap = nullptr;
+    if (!GET_NODE_BY_NAME(root, "channels", gainmap)) {
+        return;
+    }
+    bool isArray = false;
+    napi_is_array(env, gainmap, &isArray);
+    if (gainmap == nullptr || !isArray) {
+        return;
+    }
+    uint32_t vecSize = 0;
+    napi_get_array_length(env, gainmap, &vecSize);
+    if (vecSize <= 0) {
+        return;
+    }
+    for (uint32_t i = 0; i < NUM_3; i++) {
+        napi_value tempDiv = nullptr;
+        napi_get_element(env, gainmap, i, &tempDiv);
+        ParseGainmapChannel(env, tempDiv, extendMetadata, i);
+    }
+    return;
+}
+
+static bool ParseGainmapMetedata(napi_env env, OHOS::Media::PixelMap &pixelmap,
+    napi_value &root, std::vector<uint8_t> &gainmapMetadataVec)
+{
+    HDRVividExtendMetadata extendMetadata;
+    #ifdef IMAGE_COLORSPACE_FLAG
+    OHOS::ColorManager::ColorSpace colorSpace = pixelmap.InnerGetGrColorSpace();
+    uint16_t SS = ColorUtils::GetPrimaries(colorSpace.GetColorSpaceName());
+    #else
+    uint16_t SS = 0;
+    #endif
+    extendMetadata.baseColorMeta.baseColorPrimary = SS;
+    bool colorflag = false;
+    if (GET_BOOL_BY_NAME(root, "useBaseColorFlag", colorflag)) {
+        extendMetadata.gainmapColorMeta.combineColorPrimary = colorflag ? SS : (uint8_t)CM_BT2020_HLG_FULL;
+        extendMetadata.gainmapColorMeta.enhanceDataColorModel = colorflag ? SS : (uint8_t)CM_BT2020_HLG_FULL;
+        extendMetadata.gainmapColorMeta.alternateColorPrimary = (uint8_t)CM_BT2020_HLG_FULL;
+    }
+    ParseGainmapNode(env, root, extendMetadata);
+    uint32_t vecSize = sizeof(HDRVividExtendMetadata);
+    if (memcpy_s(gainmapMetadataVec.data(), vecSize, &extendMetadata, vecSize) != EOK) {
+        IMAGE_LOGE("ParseGainmapMetedata memcpy failed");
+        return false;
+    }
+    return true;
+}
+
+static napi_status SetStaticMetadata(napi_env env, napi_value hdrMetadataValue,
+    OHOS::sptr<OHOS::SurfaceBuffer> &surfaceBuffer)
+{
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    std::vector<uint8_t> metadataVec(vecSize);
+    if (!ParseStaticMetadata(env, hdrMetadataValue, metadataVec)) {
+        return napi_invalid_arg;
+    }
+    if (!VpeUtils::SetSbStaticMetadata(surfaceBuffer, metadataVec)) {
+        IMAGE_LOGE("SetSbStaticMetadata failed");
+        return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+static napi_status ParseHdrMetadataValue(napi_env env, napi_value argv[],
+    std::shared_ptr<PixelMap> pixelMap)
+{
+    uint32_t metadataKey = 0;
+    napi_get_value_uint32(env, argv[0], &metadataKey);
+    napi_value &hdrMetadataValue = argv[NUM_1];
+    OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer(
+        reinterpret_cast<OHOS::SurfaceBuffer*>(pixelMap->GetFd()));
+    switch (HdrMetadataKey(metadataKey)) {
+        case HDR_METADATA_TYPE:
+            {
+                HdrMetadataType type = ParseHdrMetadataType(env, hdrMetadataValue);
+                if (EtsMetadataMap.find(type) != EtsMetadataMap.end()) {
+                    VpeUtils::SetSbMetadataType(surfaceBuffer, EtsMetadataMap[type]);
+                } else {
+                    IMAGE_LOGE("SetSbMetadataType failed");
+                    return napi_invalid_arg;
+                }
+            }
+            break;
+        case HDR_STATIC_METADATA:
+            return SetStaticMetadata(env, hdrMetadataValue, surfaceBuffer);
+            break;
+        case HDR_DYNAMIC_METADATA:
+            {
+                std::vector<uint8_t> dynamicMetadataVec;
+                if (!ParseDynamicMetadata(env, hdrMetadataValue, dynamicMetadataVec)) {
+                    return napi_invalid_arg;
+                }
+                if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, dynamicMetadataVec)) {
+                    return napi_invalid_arg;
+                }
+            }
+            break;
+        case HDR_GAINMAP_METADATA:
+            {
+                std::vector<uint8_t> gainmapMetadataVec(sizeof(HDRVividExtendMetadata));
+                if (!ParseGainmapMetedata(env, *(pixelMap.get()), hdrMetadataValue, gainmapMetadataVec)) {
+                    return napi_invalid_arg;
+                }
+                if (!VpeUtils::SetSbDynamicMetadata(surfaceBuffer, gainmapMetadataVec)) {
+                    return napi_invalid_arg;
+                }
+            }
+            break;
+        default:
+            return napi_invalid_arg;
+    }
+    return napi_ok;
+}
+
+napi_value PixelMapNapi::SetMetadataSync(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("SetMetadataSync IN");
+    NapiValues nVal;
+    nVal.argc = NUM_2;
+    napi_value argValue[NUM_2] = {0};
+    nVal.argv = argValue;
+    nVal.status = napi_invalid_arg;
+    napi_get_undefined(env, &nVal.result);
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
+    }
+    if (nVal.argc != NUM_2) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
+    }
+    std::shared_ptr<PixelMap> pixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_DMA_NOT_EXIST, "Not DMA memory");
+    }
+
+    IMG_NAPI_CHECK_RET_D(nVal.context->nConstructor->GetPixelNapiEditable(),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE,
+        "Pixelmap has crossed threads . SetColorSpace failed"),
+        IMAGE_LOGE("Pixelmap has crossed threads . SetColorSpace failed"));
+    nVal.status = ParseHdrMetadataValue(env, nVal.argv, pixelMap);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status),
+        ImageNapiUtils::ThrowExceptionError(env, ERR_MEMORY_COPY_FAILED,
+        "ParseHdrMetadataValue failed"),
+        IMAGE_LOGE("ParseHdrMetadataValue failed"));
+    return nVal.result;
+}
+
+napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
+{
+    IMAGE_LOGD("SetMetadataSync IN");
+    NapiValues nVal;
+    nVal.argc = NUM_2;
+    napi_value argValue[NUM_2] = {0};
+    nVal.argv = argValue;
+    nVal.status = napi_invalid_arg;
+    napi_status status;
+    napi_get_undefined(env, &nVal.result);
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (nVal.argc != NUM_2) {
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    if (nVal.context->rPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        nVal.context->status = ERR_DMA_NOT_EXIST;
+    }
+    nVal.status = ParseHdrMetadataValue(env, nVal.argv, nVal.context->rPixelMap);
+    if (nVal.status != napi_ok) {
+        nVal.context->status = ERR_MEMORY_COPY_FAILED;
+    }
+    napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
+    if (!nVal.context->nConstructor->GetPixelNapiEditable()) {
+        nVal.context->status = ERR_RESOURCE_UNAVAILABLE;
+        IMAGE_LOGE("Pixelmap has crossed threads . SetColorSpace failed");
+    }
+    IMG_CREATE_CREATE_ASYNC_WORK(env, status, "SetMetadata",
+        [](napi_env env, void *data) {
+            auto context = static_cast<PixelMapAsyncContext*>(data);
+            context->status = SUCCESS;
+        }, EmptyResultComplete, nVal.context, nVal.context->work);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return nVal.result;
+}
+#else
+napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_get_undefined(env, &nVal.result);
+    return nVal.result;
+}
+napi_value PixelMapNapi::SetMetadataSync(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_get_undefined(env, &nVal.result);
+    return nVal.result;
+}
+napi_value PixelMapNapi::GetMetadata(napi_env env, napi_callback_info info)
+{
+    NapiValues nVal;
+    napi_get_undefined(env, &nVal.result);
+    return nVal.result;
+}
+#endif
 
 void PixelMapNapi::release()
 {
