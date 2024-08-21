@@ -62,9 +62,24 @@ static bool CheckClBinIsExist(const std::string &name)
 #endif
 
 #ifdef SUT_ENCODE_ENABLE
-static const std::string g_textureSuperEncSo = "/system/lib64/module/hms/graphic/libtextureSuperCompress.z.so";
-using SuperCompressTexture = bool (*)(uint8_t*, int32_t, uint8_t*, int32_t&, uint32_t);
+constexpr uint8_t EXPAND_ASTC_INFO_MAX_ENC = 16;
+constexpr int32_t EXPAND_SIZE_BYTES_ENC = 4;
 
+struct AstcInInfo {
+    const uint8_t* astcBuf;
+    int32_t astcBytes;
+    uint8_t expandNums;
+    uint8_t expandInfoType[EXPAND_ASTC_INFO_MAX_ENC];
+    int32_t expandInfoBytes[EXPAND_ASTC_INFO_MAX_ENC];
+    uint8_t* expandInfoBuf[EXPAND_ASTC_INFO_MAX_ENC];
+};
+struct SutOutInfo {
+    uint8_t* sutBuf;
+    int32_t sutCapacity;
+    int32_t sutBytes;
+};
+static const std::string g_textureSuperEncSo = "/system/lib64/module/hms/graphic/libtextureSuperCompress.z.so";
+using SuperCompressTexture = bool (*)(const AstcInInfo&, SutOutInfo&, uint32_t);
 class SutEncSoManager {
 public:
     SutEncSoManager();
@@ -104,7 +119,7 @@ void SutEncSoManager::LoadSutEncSo()
         return;
     }
     sutEncSoEncFunc_ =
-        reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTexture"));
+        reinterpret_cast<SuperCompressTexture>(dlsym(textureEncSoHandle_, "SuperCompressTextureTlv"));
     if (sutEncSoEncFunc_ == nullptr) {
         IMAGE_LOGE("sut libtextureSuperCompress dlsym failed!");
         dlclose(textureEncSoHandle_);
@@ -398,6 +413,27 @@ bool AstcCodec::TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData
 #endif
 
 #ifdef SUT_ENCODE_ENABLE
+static bool FillAstcSutInfo(AstcInInfo &astcInfo, SutOutInfo &sutInfo, TextureEncodeOptions &param,
+    uint8_t *astcBuffer)
+{
+    astcInfo.astcBuf = astcBuffer;
+    astcInfo.astcBytes = param.astcBytes;
+    astcInfo.expandNums = param.expandNums;
+    int32_t expandTotalBytes = 0;
+    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+        astcInfo.expandInfoType[idx] = idx;
+        astcInfo.expandInfoBytes[idx] = param.extInfoBytes;
+        astcInfo.expandInfoBuf[idx] = param.extInfoBuf;
+        expandTotalBytes += sizeof(uint8_t) + sizeof(int32_t) + param.extInfoBytes;
+    }
+    sutInfo.sutCapacity = astcInfo.astcBytes + EXPAND_SIZE_BYTES_ENC + expandTotalBytes;
+    sutInfo.sutBuf = static_cast<uint8_t *>(sutInfo.sutCapacity);
+    if (sutInfo.sutBuf == nullptr) {
+        IMAGE_LOGD("astcenc sutInfo.sutBuf malloc failed!");
+        return false;
+    }
+    return true;
+}
 bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
     bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
@@ -413,26 +449,38 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
-    param.sutBytes = param.astcBytes;
-    uint8_t *sutBuffer = static_cast<uint8_t *>(malloc(param.sutBytes));
-    if (sutBuffer == nullptr) {
-        IMAGE_LOGE("astc sutBuffer malloc failed!");
+    AstcInInfo astcInfo = {0};
+    SutOutInfo sutInfo = {0};
+    int32_t ret = memset_s(&astcInfo, sizeof(AstcInInfo), 0, sizeof(AstcInInfo));
+    if (ret != 0) {
+        IMAGE_LOGE("AstcInInfo memset failed!");
         return false;
     }
-    if (!g_sutEncSoManager.sutEncSoEncFunc_(astcBuffer,
-        param.astcBytes, sutBuffer, param.sutBytes, static_cast<uint32_t>(param.sutProfile))) {
+    ret = memset_s(&sutInfo, sizeof(SutOutInfo), 0, sizeof(SutOutInfo));
+    if (ret != 0) {
+        IMAGE_LOGE("SutOutInfo memset failed!");
+        return false;
+    }
+    
+    if (!FillAstcSutInfo(astcInfo, sutInfo, param, astcBuffer)) {
+        IMAGE_LOGE("FillAstcSutInfo fail");
+        return false;
+    }
+    if (!g_sutEncSoManager.sutEncSoEncFunc_(astcInfo, sutInfo,
+        static_cast<uint32_t>(param.sutProfile))) {
         IMAGE_LOGE("astc g_sutEncSoEncFunc failed!");
-        free(sutBuffer);
+        free(sutInfo.sutBuf);
         return false;
     }
-    if (memcpy_s(astcBuffer, param.astcBytes, sutBuffer, param.sutBytes) < 0) {
+    if (memcpy_s(astcBuffer, param.astcBytes, sutInfo.sutBuf, sutInfo.sutBytes) < 0) {
         IMAGE_LOGE("sut sutbuffer is failed to be copied to astcBuffer!");
-        free(sutBuffer);
+        free(sutInfo.sutBuf);
         return false;
     }
-    free(sutBuffer);
-    param.astcBytes = param.sutBytes;
+    free(sutInfo.sutBuf);
     param.outIsSut = true;
+    param.astcBytes = sutInfo.sutBytes;
+    param.sutBytes = param.astcBytes;
     return true;
 }
 #endif
@@ -503,11 +551,38 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     return true;
 }
 
+void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param)
+{
+    param.expandNums = 1;
+    param.extInfoBytes = 1;
+#ifdef IMAGE_COLORSPACE_FLAG
+    uint8_t colorData = static_cast<uint8_t>(astcPixelMap_->InnerGetGrColorSpace().GetColorSpaceName());
+#else
+    uint8_t colorData = 0;
+#endif
+    param.extInfoBuf = &colorData;
+}
+
+uint32_t AstcCodec::TrySUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+{
+#ifdef SUT_ENCODE_ENABLE
+    if (!TryTextureSuperCompress(param, astcBuffer)) {
+        IMAGE_LOGE("astc TryTextureSuperCompress failed!");
+        ReleaseExtendInfoMemory(extendInfo);
+        free(astcBuffer);
+        return ERROR;
+    }
+    return SUCCESS;
+#else
+    return SUCCESS;
+#endif
+}
 uint32_t AstcCodec::ASTCEncode()
 {
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
     TextureEncodeOptions param;
+    InitTextureEncodeOptions(param);
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
     int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
     if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
@@ -533,14 +608,9 @@ uint32_t AstcCodec::ASTCEncode()
         free(astcBuffer);
         return ERROR;
     }
-#ifdef SUT_ENCODE_ENABLE
-    if (!TryTextureSuperCompress(param, astcBuffer)) {
-        IMAGE_LOGE("astc TryTextureSuperCompress failed!");
-        ReleaseExtendInfoMemory(extendInfo);
-        free(astcBuffer);
+    if (!TrySUT(param, astcBuffer, extendInfo)) {
         return ERROR;
     }
-#endif
     if (!param.outIsSut) { // only support astc for color space
         WriteAstcExtendInfo(astcBuffer, static_cast<uint32_t>(param.astcBytes), extendInfo);
     } else {

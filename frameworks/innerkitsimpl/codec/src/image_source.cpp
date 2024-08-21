@@ -214,11 +214,30 @@ constexpr uint8_t SUT_HEAD_BYTES = 16
 constexpr uint32_t SUT_FILE_SIGNATURE = 0x53555401;
 static const std::string g_textureSuperDecSo = "/system/lib64/module/hms/graphic/libtextureSuperDecompress.z.so";
 
+constexpr uint8_t EXPAND_ASTC_INFO_MAX_DEC = 16; // reserve max 16 groups TLV info
+
+struct AstcOutInfo {
+    uint8_t *astcBuf;
+    int32_t astcBytes;
+    uint8_t expandNums; // groupNum of TLV extInfo
+    uint8_t expandInfoType[EXPAND_ASTC_INFO_MAX_DEC];
+    int32_t expandInfoBytes[EXPAND_ASTC_INFO_MAX_DEC];
+    uint8_t *expandInfoBuf[EXPAND_ASTC_INFO_MAX_DEC];
+    int32_t expandInfoCapacity[EXPAND_ASTC_INFO_MAX_DEC];
+    int32_t expandTotalBytes;
+    int32_t pureSutBytes;
+};
+
+struct SutInInfo {
+    const uint8_t *sutBuf;
+    int32_t sutBytes;
+};
+
 using GetSuperCompressAstcSize = size_t (*)(const uint8_t *, size_t);
-using SuperDecompressTexture = bool (*)(const uint8_t *, size_t, uint8_t *, size_t &);
+using SuperDecompressTexture = bool (*)(const SutInInfo &, AstcOutInfo &);
 using IsSut = bool (*)(const uint8_t *, size_t);
 using GetTextureInfoFromSut = bool (*)(const uint8_t *, size_t, uint32_t &, uint32_t &, uint32_t &);
-
+using GetExpandInfoFromSut = bool (*)(const SutInInfo &, AstcOutInfo &, bool);
 class SutDecSoManager {
 public:
     SutDecSoManager();
@@ -227,9 +246,11 @@ public:
     SuperDecompressTexture sutDecSoDecFunc_;
     IsSut isSutFunc_;
     GetTextureInfoFromSut getTextureInfoFunc_;
+    GetExpandInfoFromSut getExpandInfoFromSutFunc_;
 private:
     void *textureDecSoHandle_;
     bool LoadSutDecSo();
+    void DlcloseHandle();
 };
 
 static SutDecSoManager g_sutDecSoManager;
@@ -266,6 +287,14 @@ static bool CheckClBinIsExist(const std::string &name)
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 
+void SutDecSoManager::DlcloseHandle()
+{
+    if (textureDecSoHandle_ != nullptr) {
+        dlclose(textureDecSoHandle_);
+        textureDecSoHandle_ = nullptr;
+    }
+}
+
 bool SutDecSoManager::LoadSutDecSo()
 {
     if (!CheckClBinIsExist(g_textureSuperDecSo)) {
@@ -281,31 +310,34 @@ bool SutDecSoManager::LoadSutDecSo()
         reinterpret_cast<GetSuperCompressAstcSize>(dlsym(textureDecSoHandle_, "GetSuperCompressAstcSize"));
     if (sutDecSoGetSizeFunc_ == nullptr) {
         IMAGE_LOGE("[ImageSource] astc GetSuperCompressAstcSize dlsym failed!");
-        dlclose(textureDecSoHandle_);
-        textureDecSoHandle_ = nullptr;
+        DlcloseHandle();
         return false;
     }
     sutDecSoDecFunc_ =
-        reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTexture"));
+        reinterpret_cast<SuperDecompressTexture>(dlsym(textureDecSoHandle_, "SuperDecompressTextureTlv"));
     if (sutDecSoDecFunc_ == nullptr) {
-        IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture dlsym failed!");
-        dlclose(textureDecSoHandle_);
-        textureDecSoHandle_ = nullptr;
+        IMAGE_LOGE("[ImageSource] astc SuperDecompressTextureTlv dlsym failed!");
+        DlcloseHandle();
         return false;
     }
     isSutFunc_ = reinterpret_cast<IsSut>(dlsym(textureDecSoHandle_, "IsSut"));
     if (isSutFunc_ == nullptr) {
         IMAGE_LOGE("[ImageSource] astc IsSut dlsym failed!");
-        dlclose(textureDecSoHandle_);
-        textureDecSoHandle_ = nullptr;
+        DlcloseHandle();
         return false;
     }
     getTextureInfoFunc_ =
         reinterpret_cast<GetTextureInfoFromSut>(dlsym(textureDecSoHandle_, "GetTextureInfoFromSut"));
     if (getTextureInfoFunc_ == nullptr) {
         IMAGE_LOGE("[ImageSource] astc GetTextureInfoFromSut dlsym failed!");
-        dlclose(textureDecSoHandle_);
-        textureDecSoHandle_ = nullptr;
+        DlcloseHandle();
+        return false;
+    }
+    getExpandInfoFromSutFunc_ =
+        reinterpret_cast<GetExpandInfoFromSut>(dlsym(textureDecSoHandle_, "GetExpandInfoFromSut"));
+    if (getExpandInfoFromSutFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] astc GetExpandInfoFromSut dlsym failed!");
+        DlcloseHandle();
         return false;
     }
     return true;
@@ -2926,6 +2958,10 @@ bool ImageSource::GetImageInfoForASTC(ImageInfo &imageInfo, const uint8_t *sourc
     return true;
 }
 
+enum class AstcExtendInfoType : uint8_t {
+    COLOR_SPACE = 0
+};
+
 #ifdef SUT_DECODE_ENABLE
 static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
 {
@@ -2941,10 +2977,60 @@ static size_t GetAstcSizeBytes(const uint8_t *fileBuf, size_t fileSize)
     }
 }
 
-static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes)
+static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
+{
+    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+        if (astcInfo.expandInfoBuf[idx] != nullptr) {
+            free(astcInfo.expandInfoBuf[idx]);
+        }
+    }
+}
+
+static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
+{
+    if (!g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false)) {
+        IMAGE_LOGE("[ImageSource] GetExpandInfoFromSut failed!");
+        return false;
+    }
+    int32_t expandTotalBytes = 0;
+    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+        astcInfo.expandInfoCapacity[idx] = astcInfo.expandInfoBytes[idx];
+        astcInfo.expandInfoBuf[idx] = static_cast<uint8_t *>(malloc(astcInfo.expandInfoCapacity[idx]));
+        if (astcInfo.expandInfoBuf[idx] == nullptr) {
+            IMAGE_LOGE("[ImageSource] astcInfo.expandInfoBuf malloc failed!");
+            FreeBeforeMem(astcInfo, idx);
+            return false;
+        }
+        expandTotalBytes += sizeof(uint8_t) + sizeof(int32_t) + astcInfo.expandInfoBytes[idx];
+    }
+    return astcInfo.expandTotalBytes == expandTotalBytes;
+}
+
+static bool CheckExtInfoForPixelmap(AstcOutInfo &astcInfo, unique_ptr<PixelAstc> &pixelAstc)
+{
+    uint8_t colorSpace = 0;
+    for (uint8_t idx = 0; idx < astcInfo.expandNums; idx++) {
+        if (astcInfo.expandInfoBuf[idx] != nullptr) {
+            switch (static_cast<AstcExtendInfoType>(astcInfo.expandInfoType[idx])) {
+                case AstcExtendInfoType::COLOR_SPACE:
+                    colorSpace = *astcInfo.expandInfoBuf[idx];
+                    break;
+                default:
+                    return false;
+            }
+        }
+    }
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelAstc->InnerSetColorSpace(static_cast<ColorManager::ColorSpaceName>(colorSpace), true);
+#endif
+    return true;
+}
+
+static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes,
+    unique_ptr<PixelAstc> &pixelAstc)
 {
     size_t preOutBytes = outBytes;
-    if ((inData == nullptr) || (outData == nullptr) || (inBytes >= outBytes)) {
+    if ((inData == nullptr) || (outData == nullptr)) {
         IMAGE_LOGE("astc TextureSuperCompressDecode input check failed!");
         return false;
     }
@@ -2952,10 +3038,34 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         IMAGE_LOGE("[ImageSource] SUT dec sutDecSoDecFunc_ is nullptr!");
         return false;
     }
-    if (!g_sutDecSoManager.sutDecSoDecFunc_(inData, inBytes, outData, outBytes)) {
-        IMAGE_LOGE("astc SuperDecompressTexture process failed!");
+    AstcOutInfo astcInfo = {0};
+    SutInInfo sutInfo = {0};
+    if (memset_s(&astcInfo, sizeof(AstcOutInfo), 0, sizeof(AstcOutInfo)) != 0 ||
+        memset_s(&sutInfo, sizeof(SutInInfo), 0, sizeof(SutInInfo)) != 0) {
+        IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
         return false;
     }
+    sutInfo.sutBytes = inBytes;
+    sutInfo.sutBuf = inData;
+    astcInfo.astcBuf = outData;
+    astcInfo.astcBytes = outBytes;
+    if (!FillAstcSutExtInfo(astcInfo, sutInfo)) {
+        FreeAllExtMemSut(astcInfo);
+        IMAGE_LOGE("[ImageSource] SUT dec FillAstcSutExtInfo failed!");
+        return false;
+    }
+    if (!g_sutDecSoManager.sutDecSoDecFunc_(sutInfo, astcInfo)) {
+        IMAGE_LOGE("astc SuperDecompressTexture process failed!");
+        FreeAllExtMemSut(astcInfo);
+        return false;
+    }
+    if (!CheckExtInfoForPixelmap(astcInfo, pixelAstc)) {
+        IMAGE_LOGE("astc SuperDecompressTexture could not get ext info!");
+        FreeAllExtMemSut(astcInfo);
+        return false;
+    }
+    FreeAllExtMemSut(astcInfo);
+    outBytes = astcInfo.astcBytes;
     if (outBytes != preOutBytes) {
         IMAGE_LOGE("astc SuperDecompressTexture Dec size is predicted failed!");
         return false;
@@ -2981,10 +3091,6 @@ void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo)
         }
     }
 }
-
-enum class AstcExtendInfoType : uint8_t {
-    COLOR_SPACE = 0
-};
 
 static bool GetExtInfoForPixelAstc(AstcExtendInfo &extInfo, unique_ptr<PixelAstc> &pixelAstc)
 {
@@ -3089,13 +3195,11 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
         nullptr);
     bool successMemCpyOrDec = true;
 #ifdef SUT_DECODE_ENABLE
-    bool isSutFormat = FormatIsSUT(sourceFilePtr, fileSize);
-    if (isSutFormat) {
-        if (TextureSuperCompressDecode(sourceFilePtr, fileSize,
-            static_cast<uint8_t*>(dstMemory->data.data), astcSize) != true) {
-            IMAGE_LOGE("[ImageSource] astc SuperDecompressTexture failed!");
-            successMemCpyOrDec = false;
-        }
+    if (FormatIsSUT(sourceFilePtr, fileSize)) {
+        successMemCpyOrDec = TextureSuperCompressDecode(sourceFilePtr, fileSize,
+            static_cast<uint8_t *>(dstMemory->data.data), astcSize, pixelAstc);
+        IMAGE_LOGD("ReadFileAndResoveAstc colorspace %{public}d",
+            pixelAstc->InnerGetGrColorSpace().GetColorSpaceName());
     } else {
 #endif
         if (memcpy_s(dstMemory->data.data, astcSize, sourceFilePtr, astcSize) != 0) {
