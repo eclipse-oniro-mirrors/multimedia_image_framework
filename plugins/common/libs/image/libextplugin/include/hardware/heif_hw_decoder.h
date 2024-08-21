@@ -52,6 +52,7 @@ private:
         uint32_t uvOffset = 0;
     };
 private:
+    static bool CheckOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output);
     static bool GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, uint64_t& offset);
     bool IsHardwareDecodeSupported(const GridInfo& gridInfo);
     bool SetCallbackForDecoder();
@@ -63,7 +64,6 @@ private:
     void SendInputBufferLoop(const std::vector<std::vector<uint8_t>>& inputs);
     bool WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
     void AssembleOutput(uint32_t outputIndex, std::shared_ptr<ImageCodecBuffer>& buffer);
-    static uint32_t CalculateDirtyLen(uint32_t displayLen, uint32_t gridLen, uint32_t totalGrid, uint32_t curGrid);
     static bool CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuvCopyInfo& dst,
                                uint32_t dirtyWidth, uint32_t dirtyHeight);
     void ReceiveOutputBufferLoop();
@@ -91,6 +91,7 @@ private:
     sptr<SurfaceBuffer> output_;
     uint64_t uvOffsetForOutput_;
     GridInfo gridInfo_;
+    bool is10Bit_ = false;
 
     std::mutex errMtx_;
     bool hasErr_ = false;
