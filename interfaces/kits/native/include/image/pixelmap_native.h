@@ -627,6 +627,38 @@ Image_ErrorCode OH_PixelMapNative_ConvertPixelFormat(OH_PixelmapNative *srcPixel
                                                      int32_t destPixelFormat);
 
 /**
+ * @brief Get metadata.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param key Type of metadata.
+ * @param value Value of metadata.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, key and value are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_COPY_FAILED - if memory copy failed.
+ * @see OH_PixelMapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue **value);
+
+/**
+ * @brief Set metadata.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param key Type of metadata.
+ * @param value Value of metadata.
+ * @return Returns {@link Image_ErrorCode} IMAGE_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, key and value are incorrect.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_COPY_FAILED - if memory copy failed.
+ * @see OH_PixelMapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
+    OH_Pixelmap_HdrMetadataValue *value);
+
+/**
  * @brief Get the native buffer from the PixelMap.
  *
  * @param pixelmap The PixelMap to get the native buffer from.
