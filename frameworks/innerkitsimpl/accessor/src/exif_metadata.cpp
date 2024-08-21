@@ -130,7 +130,11 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         exif_entry_get_value(entry, tagValueChar, sizeof(tagValueChar));
         value = tagValueChar;
     }
-    IMAGE_LOGD("Retrieved value for key: %{public}s is: %{public}s", key.c_str(), value.c_str());
+    if (ExifMetadatFormatter::IsSensitiveInfo(key)) {
+        IMAGE_LOGD("Retrieved value for key: %{public}s success", key.c_str());
+    } else {
+        IMAGE_LOGD("Retrieved value for key: %{public}s is: %{public}s", key.c_str(), value.c_str());
+    }
     return SUCCESS;
 }
 
@@ -529,7 +533,6 @@ bool ExifMetadata::SetMem(ExifEntry *ptrEntry, const std::string &value, const s
     if (UndefinedByte.find(ptrEntry->tag) != UndefinedByte.end()) {
         return SetByte(ptrEntry, value);
     }
-    IMAGE_LOGD("memcpy_s value string %{public}s", value.c_str());
     if (memcpy_s((ptrEntry)->data, valueLen, value.c_str(), valueLen) != 0) {
         IMAGE_LOGE("Failed to copy memory for ExifEntry. Requested size: %{public}zu", valueLen);
         return false;
