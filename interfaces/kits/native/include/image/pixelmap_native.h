@@ -38,7 +38,6 @@
 #include "image_common.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
-#include "native_buffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +50,14 @@ extern "C" {
  */
 struct OH_PixelmapNative;
 typedef struct OH_PixelmapNative OH_PixelmapNative;
+
+/**
+ * @brief Define a native buffer type, used for retrieving a native buffer.
+ *
+ * @since 12
+ */
+struct OH_NativeBuffer;
+typedef struct OH_NativeBuffer OH_NativeBuffer;
 
 /**
  * @brief Define a pixelmap alpha type.
