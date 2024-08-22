@@ -1012,7 +1012,8 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
             if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * strides.yStride + newX) = *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+                *(dstY + newY * static_cast<int32_t>(strides.yStride) + newX) =
+                    *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
         }
     }
@@ -1022,9 +1023,10 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
             if (newX >= 0 && newX < GetUVStride(strides.yStride) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
-                *(dstUV + newY * strides.yStride + newX) = *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
-                *(dstUV + newY * strides.yStride + newX + 1) =
-                *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
+                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
+                *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
+                    *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x + 1);
             }
         }
     }
