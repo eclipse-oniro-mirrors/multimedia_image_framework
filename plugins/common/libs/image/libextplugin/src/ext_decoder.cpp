@@ -1754,8 +1754,7 @@ uint32_t ExtDecoder::GetMakerImagePropertyString(const std::string &key, std::st
 uint32_t ExtDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, const std::string &path)
 {
-    IMAGE_LOGD("[ModifyImageProperty] with path:%{public}s, key:%{public}s, value:%{public}s",
-        path.c_str(), key.c_str(), value.c_str());
+    IMAGE_LOGD("[ModifyImageProperty] with key:%{public}s", key.c_str());
     return exifInfo_.ModifyExifData(key, value, path);
 }
 

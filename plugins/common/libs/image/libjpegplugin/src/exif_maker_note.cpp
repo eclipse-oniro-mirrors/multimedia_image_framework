@@ -40,7 +40,6 @@ constexpr unsigned char JPEG_MARKER_APP0 = 0xe0;
 constexpr unsigned char JPEG_MARKER_APP1 = 0xe1;
 constexpr unsigned char JPEG_MARKER_APP15 = 0xef;
 constexpr uint16_t TAG_MOCK = 0xffff;
-constexpr uint32_t ENTRY_SIZE = 12;
 constexpr uint32_t BUFFER_SIZE = 16;
 constexpr uint32_t TEMP_BUFFER_SIZE = 1024;
 constexpr uint32_t BACK_TO_EXIF_BEFORE = 6;
@@ -212,10 +211,8 @@ void ExifMakerNote::ExifItem::Dump(const std::string &info, const ExifMakerNote:
 
     IMAGE_LOGD("%{public}s, "
         "ifd=0x%{public}x, tag=0x%{public}04x, fmt=%{public}u, cnt=%{public}u, "
-        "dataOrOffset=%{public}u(0x%{public}08x), data=[%{public}s]",
-        info.c_str(),
-        item.ifd, item.tag, item.format, item.count, dataOrOffset, dataOrOffset,
-        ExifMakerNote::Dump(item.data).c_str());
+        "dataOrOffset=%{public}u(0x%{public}08x)",
+        info.c_str(), item.ifd, item.tag, item.format, item.count, dataOrOffset, dataOrOffset);
 }
 
 ExifMakerNote::ExifMakerNote()
@@ -525,8 +522,7 @@ bool ExifMakerNote::ParserIFD(uint32_t offset, uint32_t ifd, uint32_t deep)
 
 bool ExifMakerNote::ParserItem(uint32_t offset, uint32_t ifd, uint32_t deep)
 {
-    IMAGE_LOGD("ParserItem enter, offset=%{public}u, deep=%{public}u, data=[%{public}s]",
-        offset, deep, ExifMakerNote::Dump(makerNote_, offset, ENTRY_SIZE).c_str());
+    IMAGE_LOGD("ParserItem enter, offset=%{public}u, deep=%{public}u", offset, deep);
 
     uint16_t tag = 0;
     uint16_t format = 0;

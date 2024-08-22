@@ -37,6 +37,7 @@ public:
     static bool IsKeySupported(const std::string &keyName);
     static const std::set<std::string> &GetRWKeys();
     static const std::set<std::string> &GetROKeys();
+    static bool IsSensitiveInfo(const std::string &keyName);
 
 private:
     static int32_t ValidateValueRange(const std::string &keyName, const std::string &value);
