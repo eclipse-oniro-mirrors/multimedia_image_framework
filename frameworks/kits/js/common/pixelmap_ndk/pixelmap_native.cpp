@@ -21,6 +21,7 @@
 #include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
+#include "surface_buffer.h"
 
 #include "vpe_utils.h"
 #include "refbase.h"
@@ -973,6 +974,29 @@ Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
         reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd()));
     if (!GetHdrMetadata(sourceSurfaceBuffer, key, *value)) {
         return IMAGE_COPY_FAILED;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || nativeBuffer == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
+    OHOS::SurfaceBuffer *buffer = reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd());
+    if (buffer == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
+    int32_t err = OH_NativeBuffer_Reference(*nativeBuffer);
+    if (err != OHOS::SURFACE_ERROR_OK) {
+        return IMAGE_DMA_OPERATION_FAILED;
     }
     return IMAGE_SUCCESS;
 }
