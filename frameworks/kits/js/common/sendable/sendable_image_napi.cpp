@@ -683,12 +683,11 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Send
     if (context->isTestContext) {
         const int32_t TEST_FORMAT = 12;
         format = TEST_FORMAT;
-    } else {
-        if (native == nullptr) {
-            IMAGE_ERR("GetFormat: native is nullptr");
-            return false;
-        }
+    } else if (native != nullptr) {
         native->GetFormat(format);
+    } else {
+        IMAGE_ERR("GetFormat: native is nullptr");
+        return false;
     }
 
     if (!CheckComponentType(context->componentType, format)) {
