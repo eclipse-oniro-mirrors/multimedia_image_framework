@@ -1005,13 +1005,14 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
     const uint16_t *srcY = srcPixels + yuvInfo.yOffset;
     const uint16_t *srcUV = srcPixels + yuvInfo.uvOffset;
     uint16_t *dstY = dstPixels;
-    uint16_t *dstUV = dstPixels + GetYSize(strides.yStride, info.size.height);
+    uint16_t *dstUV = dstPixels + strides.uvOffset;
 
     for (int32_t y = 0; y < info.size.height; y++) {
         for (int32_t x = 0; x < info.size.width; x++) {
             int32_t newX = x + xyAxis.xAxis;
             int32_t newY = y + xyAxis.yAxis;
-            if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
+            if (newX >= 0 && newY >= 0 && newX < static_cast<int32_t>(info.size.width + xyAxis.xAxis) &&
+                newY < static_cast<int32_t>(info.size.height + xyAxis.yAxis)) {
                 *(dstY + newY * static_cast<int32_t>(strides.yStride) + newX) =
                     *(srcY + y * static_cast<int32_t>(yuvInfo.yStride) + x);
             }
@@ -1022,7 +1023,8 @@ static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
         for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(strides.yStride) && newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight)) {
+            if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) && newY >= 0 &&
+                newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
                 *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
                     *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
                 *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
