@@ -685,8 +685,8 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Send
         format = TEST_FORMAT;
     } else {
         if (native == nullptr) {
-        IMAGE_ERR("GetFormat: native is nullptr");
-        return false;
+            IMAGE_ERR("GetFormat: native is nullptr");
+            return false;
     }
         native->GetFormat(format);
     }
