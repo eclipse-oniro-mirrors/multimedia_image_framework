@@ -25,6 +25,11 @@ std::shared_ptr<PixelMap> PixelMapImpl::GetRealPixelMap()
 
 std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptions &opts)
 {
+    if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+        opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+        opts.pixelFormat == PixelFormat::YCRCB_P010) {
+        return nullptr;
+    }
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(opts);
     if (ptr_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] instance init failed!");
@@ -35,6 +40,11 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(const InitializationOptio
 std::unique_ptr<PixelMap> PixelMapImpl::CreatePixelMap(uint32_t *colors, uint32_t colorLength,
     InitializationOptions &opts)
 {
+    if (opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+        opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+        opts.pixelFormat == PixelFormat::YCRCB_P010) {
+        return nullptr;
+    }
     std::unique_ptr<PixelMap> ptr_ = PixelMap::Create(colors, colorLength, opts);
     if (ptr_ == nullptr) {
         IMAGE_LOGE("[PixelMapImpl] instance init failed!");
