@@ -3541,7 +3541,7 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
     HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType;
     VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
-    if ((colorspaceType & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
+    if ((static_cast<uint32_t>(colorspaceType) & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
         HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020) {
 #ifdef IMAGE_COLORSPACE_FLAG
         colorspaceType = ColorUtils::ConvertToCMColor(InnerGetGrColorSpace().GetColorSpaceName());
