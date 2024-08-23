@@ -4035,7 +4035,8 @@ static napi_status GetStaticMetadata(napi_env env, OHOS::sptr<OHOS::SurfaceBuffe
     HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata;
     uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
     std::vector<uint8_t> staticData;
-    if (!VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticData) || (staticData.size() <= 0)) {
+    if (!VpeUtils::GetSbStaticMetadata(surfaceBuffer, staticData) ||
+        (staticData.size() != vecSize)) {
         IMAGE_LOGE("GetSbStaticMetadata failed");
         return napi_invalid_arg;
     }
@@ -4106,7 +4107,8 @@ static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
         case HDR_GAINMAP_METADATA:
             {
                 std::vector<uint8_t> gainmapData;
-                if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) && gainmapData.size() > 0) {
+                if (VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
+                    (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
                     HDRVividExtendMetadata &gainmapMetadata =
                         *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
                     metadataValue = BuildDynamicMetadataNapi(env, gainmapMetadata);
