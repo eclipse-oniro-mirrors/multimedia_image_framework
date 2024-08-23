@@ -30,6 +30,7 @@ public:
         uint16_t matrix, uint8_t range);
     static void ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& primaries, uint16_t& transfer,
         uint16_t& matrix, uint8_t& range);
+    static uint16_t GetPrimaries(ColorManager::ColorSpaceName name);
 };
 } // namespace Media
 } // namespace OHOS

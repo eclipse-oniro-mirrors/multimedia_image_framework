@@ -545,6 +545,10 @@ static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
                                                             int32_t width, int32_t height, YUVStrideInfo &strides)
 {
+    if (width == 0 || height == 0 || pixelFormat == PixelFormat::UNKNOWN) {
+        IMAGE_LOGE("CreateMemory err ERR_IMAGE_INVALID_PARAMETER!");
+        return nullptr;
+    }
     uint32_t pictureSize = GetBufferSizeByFormat(pixelFormat, {width, height});
     if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::NV21) {
         strides = {width, (width + 1) / NUM_2 * NUM_2, 0, width * height};
@@ -559,6 +563,7 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
         IMAGE_LOGE("CreateMemory failed");
         return m;
     }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType != AllocatorType::DMA_ALLOC) {
         return m;
     }
@@ -574,23 +579,17 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
         IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
     } else if (planes->planeCount >= NUM_2) {
-        if (pixelFormat == PixelFormat::NV12) {
-            auto yStride = planes->planes[PLANE_Y].columnStride;
-            auto uvStride = planes->planes[PLANE_U].columnStride;
-            auto yOffset = planes->planes[PLANE_Y].offset;
-            auto uvOffset = planes->planes[PLANE_U].offset;
-            strides = {yStride, uvStride, yOffset, uvOffset};
-        } else if (pixelFormat == PixelFormat::NV21) {
-            auto yStride = planes->planes[PLANE_Y].columnStride;
-            auto uvStride = planes->planes[PLANE_V].columnStride;
-            auto yOffset = planes->planes[PLANE_Y].offset;
-            auto uvOffset = planes->planes[PLANE_V].offset;
-            strides = {yStride, uvStride, yOffset, uvOffset};
+        if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::YCBCR_P010) {
+            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_U].columnStride,
+                planes->planes[PLANE_Y].offset, planes->planes[PLANE_U].offset};
+        } else if (pixelFormat == PixelFormat::NV21 || pixelFormat == PixelFormat::YCRCB_P010) {
+            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_V].columnStride,
+                planes->planes[PLANE_Y].offset, planes->planes[PLANE_V].offset};
         } else {
-            auto yOffset = planes->planes[0].offset;
-            strides = {stride, 0, yOffset, 0};
+            strides = {stride, 0, planes->planes[0].offset, 0};
         }
     }
+#endif
     return m;
 }
 
