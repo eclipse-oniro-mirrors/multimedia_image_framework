@@ -171,11 +171,11 @@ bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &in
     return true;
 }
 
-static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, OpenSourceLibyuv::RotationMode& rotateNum,
-                           uint8_t* dst, YUVStrideInfo& dstStrides)
+static bool NV12P010Rotate(YuvPixels yuvPixels, PixelSize& size, YUVDataInfo& info,
+    OpenSourceLibyuv::RotationMode& rotateNum, YUVStrideInfo& dstStrides)
 {
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(info.yStride, size.srcH));
-    uint16_t* srcbuffer = reinterpret_cast<uint16_t *>(src);
+    uint16_t* srcbuffer = reinterpret_cast<uint16_t *>(yuvPixels.srcPixels);
     uint16_t* srcY = srcbuffer + info.yOffset;
     uint16_t* srcUV = srcbuffer + info.uvOffset;
 
@@ -202,7 +202,7 @@ static bool NV12P010Rotate(uint8_t* src, PixelSize& size, YUVDataInfo& info, Ope
         return false;
     }
 
-    uint16_t* dstbuffer = reinterpret_cast<uint16_t *>(dst);
+    uint16_t* dstbuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
     int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
     int32_t dstUVStride = static_cast<int32_t>(dstStrides.uvStride);
     uint16_t* dstbufferY = dstbuffer + dstStrides.yOffset;
@@ -223,7 +223,8 @@ bool PixelYuvExtUtils::YuvRotate(uint8_t* srcPixels, const PixelFormat& format, 
     PixelSize pixelSize = {info.imageSize.width, info.imageSize.height, dstWidth, dstHeight};
     if (format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010) {
         IMAGE_LOGD("YuvRotate P010Rotate enter");
-        if (!NV12P010Rotate(srcPixels, pixelSize, info, rotateNum, dstPixels, dstStrides)) {
+        YuvPixels yuvPixels = {srcPixels, dstPixels, 0, 0};
+        if (!NV12P010Rotate(yuvPixels, pixelSize, info, rotateNum, dstStrides)) {
             IMAGE_LOGE("YuvRotate P010Rotate fail");
             return false;
         }
@@ -316,20 +317,19 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
     tempUData = tempVData = nullptr;
 }
 
-static void ScaleP010(uint8_t *src, uint8_t *dst, OpenSourceLibyuv::ImageYuvConverter &converter,
-    OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides,
-    float xAxis, float yAxis)
+static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &converter,
+    OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides)
 {
-    uint16_t *srcBuffer = reinterpret_cast<uint16_t *>(src);
+    uint16_t *srcBuffer = reinterpret_cast<uint16_t *>(yuvPixels.srcPixels);
     uint16_t* srcY = srcBuffer + yuvInfo.yuvDataInfo.yOffset;
     int32_t srcYStride = static_cast<int32_t>(yuvInfo.yuvDataInfo.yStride);
     uint16_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
     int32_t srcUVStride = static_cast<int32_t>(yuvInfo.yuvDataInfo.uvStride);
     int32_t srcWidth = yuvInfo.width;
     int32_t srcHeight = yuvInfo.height;
-    uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(dst);
-    int32_t dst_width = yuvInfo.width * xAxis;
-    int32_t dst_height = yuvInfo.height * yAxis;
+    uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
+    int32_t dst_width = yuvInfo.width * yuvPixels.xAxis;
+    int32_t dst_height = yuvInfo.height * yuvPixels.yAxis;
     uint16_t* dstBufferY = dstBuffer + dstStrides.yOffset;
     int32_t dstYStride = static_cast<int32_t>(dstStrides.yStride);
     uint16_t* dstBufferUV = dstBuffer + dstStrides.uvOffset;
@@ -383,8 +383,9 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     uint8_t* dstUV = dst + dstStrides.uvOffset;
     int dstUVStride = static_cast<int>(dstStrides.uvStride);
     auto converter = ConverterHandle::GetInstance().GetHandle();
+    YuvPixels yuvPixels = {src, dst, xAxis, yAxis};
     if (yuvInfo.yuvFormat == PixelFormat::YCBCR_P010 || yuvInfo.yuvFormat == PixelFormat::YCRCB_P010) {
-        ScaleP010(src, dst, converter, filterMode, yuvInfo, dstStrides, xAxis, yAxis);
+        ScaleP010(yuvPixels, converter, filterMode, yuvInfo, dstStrides);
     } else {
         converter.NV12Scale(srcY, srcYStride, srcUV, srcUVStride, srcWidth, srcHeight,
             dstY, dstYStride, dstUV, dstUVStride, dst_width, dst_height, filterMode);

@@ -28,6 +28,13 @@
 
 namespace OHOS {
 namespace Media {
+struct YuvPixels {
+    uint8_t *srcPixels;
+    uint8_t *dstPixels;
+    float xAxis;
+    float yAxis;
+};
+
 class PixelYuvExtUtils {
 public:
     static bool BGRAToYuv420(const uint8_t *src, uint8_t *dst, int srcW, int srcH,
