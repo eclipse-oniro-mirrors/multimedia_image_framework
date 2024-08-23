@@ -894,6 +894,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return res;
         }
     }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (context.allocatorType == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
         if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
@@ -903,6 +904,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             }
         }
     }
+#endif
     return SUCCESS;
 }
 
@@ -1148,12 +1150,14 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (sbuffer && (sbuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = sbuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
         }
     }
+#endif
     return SUCCESS;
 }
 #endif
