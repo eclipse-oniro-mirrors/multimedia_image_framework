@@ -157,6 +157,7 @@ private:
     bool isPixelNapiEditable = true;
     uint32_t uniqueId_ = 0;
     bool transferDetach_ = false;
+    static napi_ref AntiAliasingLevel_;
     static napi_ref HdrMetadataKey_;
     static napi_ref HdrMetadataType_;
 };
