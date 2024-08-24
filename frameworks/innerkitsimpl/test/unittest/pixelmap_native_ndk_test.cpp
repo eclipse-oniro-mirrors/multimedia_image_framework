@@ -17,6 +17,9 @@
 #include "pixelmap_native.h"
 #include "pixelmap_native_impl.h"
 #include "common_utils.h"
+#include "image_source_native.h"
+#include "securec.h"
+#include "image_utils.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -28,6 +31,15 @@ public:
     ~PixelMapNdk2Test() {}
 };
 
+const int32_t ZERO = 0;
+const int32_t ONE = 1;
+const int32_t TWO = 2;
+const int32_t THREE = 3;
+const float PRIMARIES = 0.1;
+const int32_t VERSION_VALUE = 50;
+constexpr int32_t bufferSize = 256;
+static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_jpeg_writeexifblob001.jpg";
+static const std::string IMAGE_JPEG_PATH_TEST = "/data/local/tmp/image/test.jpg";
 /**
  * @tc.name: OH_PixelmapInitializationOptions_Create
  * @tc.desc: OH_PixelmapInitializationOptions_Create
@@ -490,6 +502,166 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_ConvertAlphaFormat, TestSize.Level3
     Image_ErrorCode ret = OH_PixelmapNative_ConvertAlphaFormat(srcpixelmap, dstpixelmap, isPremul);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_ConvertAlphaFormat end";
+}
+
+static void CreateMetadataValue(OH_Pixelmap_HdrMetadataValue &value)
+{
+    OH_Pixelmap_HdrMetadataType &type = value.type;
+    type = OH_Pixelmap_HdrMetadataType(THREE);
+    float base = PRIMARIES;
+    uint32_t version = VERSION_VALUE;
+
+    OH_Pixelmap_HdrStaticMetadata &staticMetadata = value.staticMetadata;
+    staticMetadata.displayPrimariesX[ZERO] = base++;
+    staticMetadata.displayPrimariesX[ONE] = base++;
+    staticMetadata.displayPrimariesX[TWO] = base++;
+    staticMetadata.displayPrimariesY[ZERO] = base++;
+    staticMetadata.displayPrimariesY[ONE] = base++;
+    staticMetadata.displayPrimariesY[TWO] = base++;
+    staticMetadata.whitePointX = base++;
+    staticMetadata.whitePointY = base++;
+    staticMetadata.maxLuminance = base++;
+    staticMetadata.minLuminance = base++;
+    staticMetadata.maxContentLightLevel = base++;
+    staticMetadata.maxFrameAverageLightLevel = base++;
+
+    OH_Pixelmap_HdrGainmapMetadata &gainmapMetadata = value.gainmapMetadata;
+    gainmapMetadata.writerVersion = version++;
+    gainmapMetadata.minVersion = version++;
+    gainmapMetadata.gainmapChannelNum = version++;
+    gainmapMetadata.useBaseColorFlag = true;
+    gainmapMetadata.baseHdrHeadroom = base++;
+    gainmapMetadata.alternateHdrHeadroom = base++;
+    gainmapMetadata.gainmapMax[ZERO] = base++;
+    gainmapMetadata.gainmapMax[ONE] = base++;
+    gainmapMetadata.gainmapMax[TWO] = base++;
+    gainmapMetadata.gainmapMax[ZERO] = base++;
+    gainmapMetadata.gainmapMax[ONE] = base++;
+    gainmapMetadata.gainmapMax[TWO] = base++;
+    gainmapMetadata.gamma[ZERO] = base++;
+    gainmapMetadata.gamma[ONE] = base++;
+    gainmapMetadata.gamma[TWO] = base++;
+    gainmapMetadata.baselineOffset[ZERO] = base++;
+    gainmapMetadata.baselineOffset[ONE] = base++;
+    gainmapMetadata.baselineOffset[TWO] = base++;
+    gainmapMetadata.alternateOffset[ZERO] = base++;
+    gainmapMetadata.alternateOffset[ONE] = base++;
+    gainmapMetadata.alternateOffset[TWO] = base++;
+}
+
+static void DumpMetadata(OH_Pixelmap_HdrMetadataValue value)
+{
+    GTEST_LOG_(INFO) << "DumpMetadata Dump IN";
+    OH_Pixelmap_HdrMetadataType &type = value.type;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << type;
+    OH_Pixelmap_HdrStaticMetadata &staticMetadata = value.staticMetadata;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesX[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesX[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesX[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesY[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesY[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.displayPrimariesY[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.whitePointX;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.whitePointY;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.maxLuminance;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.minLuminance;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.maxContentLightLevel;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << staticMetadata.maxFrameAverageLightLevel;
+    OH_Pixelmap_HdrGainmapMetadata &gainmapMetadata = value.gainmapMetadata;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.writerVersion;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.minVersion;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapChannelNum;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.useBaseColorFlag;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.baseHdrHeadroom;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.alternateHdrHeadroom;
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gainmapMax[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gamma[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gamma[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.gamma[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.baselineOffset[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.baselineOffset[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.baselineOffset[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.alternateOffset[ZERO];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.alternateOffset[ONE];
+    GTEST_LOG_(INFO) << "DumpMetadata : " << gainmapMetadata.alternateOffset[TWO];
+    GTEST_LOG_(INFO) << "DumpMetadata Dump OUT";
+}
+
+Image_ErrorCode SetMetadata(OH_Pixelmap_HdrMetadataValue &value, OH_PixelmapNative *pixelmapNative)
+{
+    GTEST_LOG_(INFO) << "SetMetadata IN";
+    Image_ErrorCode errorCode = IMAGE_SUCCESS;
+    errorCode = OH_PixelmapNative_SetMetadata(pixelmapNative, OH_Pixelmap_HdrMetadataKey(ZERO), &value);
+    errorCode = OH_PixelmapNative_SetMetadata(pixelmapNative, OH_Pixelmap_HdrMetadataKey(ONE), &value);
+    errorCode = OH_PixelmapNative_SetMetadata(pixelmapNative, OH_Pixelmap_HdrMetadataKey(THREE), &value);
+    GTEST_LOG_(INFO) << "SetMetadata OUT";
+    return errorCode;
+}
+
+Image_ErrorCode GetMetadata(OH_Pixelmap_HdrMetadataValue &value,
+    OH_PixelmapNative *pixelmapNative)
+{
+    GTEST_LOG_(INFO) << "SetMetadata IN";
+    Image_ErrorCode errorCode = IMAGE_SUCCESS;
+    OH_Pixelmap_HdrMetadataValue* vv = &value;
+    errorCode = OH_PixelmapNative_GetMetadata(pixelmapNative,
+        OH_Pixelmap_HdrMetadataKey(ZERO), &vv);
+    errorCode = OH_PixelmapNative_GetMetadata(pixelmapNative,
+        OH_Pixelmap_HdrMetadataKey(ONE), &vv);
+    errorCode = OH_PixelmapNative_GetMetadata(pixelmapNative,
+        OH_Pixelmap_HdrMetadataKey(THREE), &vv);
+    GTEST_LOG_(INFO) << "SetMetadata OUT";
+    return errorCode;
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_SetMetadata
+ * @tc.desc: OH_PixelmapNative_SetMetadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata start";
+    Image_ErrorCode errorCode = IMAGE_SUCCESS;
+    std::string realPath;
+    if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH.c_str(), realPath)) {
+        if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH_TEST.c_str(), realPath)) {
+            return;
+        }
+    }
+    char filePath[bufferSize];
+    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
+        return;
+    }
+    size_t length = realPath.size();
+    OH_ImageSourceNative *source = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_DecodingOptions *opts = nullptr;
+    OH_PixelmapNative *pixelmap = nullptr;
+    OH_DecodingOptions_Create(&opts);
+
+    ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_Pixelmap_HdrMetadataValue setValue;
+    CreateMetadataValue(setValue);
+    DumpMetadata(setValue);
+    errorCode = SetMetadata(setValue, pixelmap);
+    if (errorCode == IMAGE_DMA_NOT_EXIST) {
+        GTEST_LOG_(INFO) << "PixelMapNdk2Test pixelmap is not DMA";
+        return;
+    }
+    OH_Pixelmap_HdrMetadataValue getValue;
+    GetMetadata(getValue, pixelmap);
+    DumpMetadata(getValue);
+    EXPECT_EQ(errorCode, IMAGE_SUCCESS);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata end";
 }
 }
 }

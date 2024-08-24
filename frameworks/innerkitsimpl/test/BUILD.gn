@@ -1138,6 +1138,7 @@ ohos_unittest("ndktest2") {
   ]
 
   deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_packer",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
