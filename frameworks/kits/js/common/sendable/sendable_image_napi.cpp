@@ -674,11 +674,6 @@ static bool JsGetComponentArgs(napi_env env, size_t argc, napi_value* argv, Send
     }
 
     auto native = context->napi->GetNative();
-    if (native == nullptr && !context->isTestContext) {
-        IMAGE_ERR("native is nullptr");
-        return false;
-    }
-
     int32_t format = NUM0;
     if (context->isTestContext) {
         const int32_t TEST_FORMAT = 12;
