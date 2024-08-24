@@ -400,7 +400,7 @@ void PixelYuvExtUtils::ScaleYuv420(int32_t dst_width, int32_t dst_height, const 
     uint8_t* srcY = src + yuvInfo.yuvDataInfo.yOffset;
     int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride);
     uint8_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
-    int srcUVStride = yuvInfo.yuvDataInfo.uvStride;
+    int srcUVStride = static_cast<int>(yuvInfo.yuvDataInfo.uvStride);
     int srcWidth = yuvInfo.width;
     int srcHeight = yuvInfo.height;
 
