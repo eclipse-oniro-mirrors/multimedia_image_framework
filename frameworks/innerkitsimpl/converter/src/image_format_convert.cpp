@@ -424,6 +424,35 @@ bool ImageFormatConvert::IsSupport(PixelFormat format)
     }
 }
 
+static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+{
+    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_U].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_U].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_V].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_U].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_V].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    }
+}
+
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
                                                             int32_t width, int32_t height, YUVStrideInfo &strides)
 {
@@ -461,21 +490,8 @@ std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFor
     if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
         IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
     } else if (planes->planeCount >= NUM_2) {
-        if (pixelFormat == PixelFormat::NV12) {
-            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_U].columnStride,
-                planes->planes[PLANE_Y].offset, planes->planes[PLANE_U].offset};
-        } else if (pixelFormat == PixelFormat::NV21) {
-            strides = {planes->planes[PLANE_Y].columnStride, planes->planes[PLANE_V].columnStride,
-                planes->planes[PLANE_Y].offset, planes->planes[PLANE_V].offset};
-        } else if (pixelFormat == PixelFormat::YCBCR_P010) {
-            strides = {planes->planes[PLANE_Y].columnStride / 2, planes->planes[PLANE_U].columnStride / 2,
-                planes->planes[PLANE_Y].offset / 2, planes->planes[PLANE_U].offset / 2};
-        } else if (pixelFormat == PixelFormat::YCRCB_P010) {
-            strides = {planes->planes[PLANE_Y].columnStride / 2, planes->planes[PLANE_V].columnStride / 2,
-                planes->planes[PLANE_Y].offset / 2, planes->planes[PLANE_V].offset / 2};
-        } else {
-            strides = {stride, 0, planes->planes[0].offset, 0};
-        }
+        int32_t pixelFmt = sb->GetFormat();
+        GetYUVStrideInfo(pixelFmt, planes, strides);
     }
 #endif
     return m;

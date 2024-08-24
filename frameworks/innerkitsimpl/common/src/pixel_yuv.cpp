@@ -210,6 +210,35 @@ bool PixelYuv::YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, 
     }
 }
 
+static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+{
+    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_U].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_U].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_V].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_U].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_V].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    }
+}
+
 std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
     int32_t dstHeight, YUVStrideInfo &dstStrides)
 {
@@ -240,31 +269,7 @@ std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::
             IMAGE_LOGE("CreateMemory Get planesInfo failed, retVal:%{public}d", retVal);
         } else if (planes->planeCount >= NUM_2) {
             int32_t pixelFmt = sb->GetFormat();
-            if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
-                auto yStride = planes->planes[PLANE_Y].columnStride;
-                auto uvStride = planes->planes[PLANE_U].columnStride;
-                auto yOffset = planes->planes[PLANE_Y].offset;
-                auto uvOffset = planes->planes[PLANE_U].offset;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
-                auto yStride = planes->planes[PLANE_Y].columnStride;
-                auto uvStride = planes->planes[PLANE_V].columnStride;
-                auto yOffset = planes->planes[PLANE_Y].offset;
-                auto uvOffset = planes->planes[PLANE_V].offset;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-                auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-                auto uvStride = planes->planes[PLANE_U].columnStride / 2;
-                auto yOffset = planes->planes[PLANE_Y].offset / 2;
-                auto uvOffset = planes->planes[PLANE_U].offset / 2;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-                auto yStride = planes->planes[PLANE_Y].columnStride / 2;
-                auto uvStride = planes->planes[PLANE_V].columnStride / 2;
-                auto yOffset = planes->planes[PLANE_Y].offset / 2;
-                auto uvOffset = planes->planes[PLANE_V].offset / 2;
-                dstStrides = {yStride, uvStride, yOffset, uvOffset};
-            }
+            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
         }
         sptr<SurfaceBuffer> sourceSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sb));
@@ -550,8 +555,8 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     }
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
-    uint32_t yWidth = imageInfo_.size.width;
-    uint32_t yHeight = imageInfo_.size.height;
+    uint32_t yWidth = static_cast<uint32_t>(imageInfo_.size.width);
+    uint32_t yHeight = static_cast<uint32_t>(imageInfo_.size.height);
     uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
     uint32_t uvHeight = yuvDataInfo.uvHeight;
     auto srcY = source;
@@ -628,8 +633,8 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     YUVDataInfo yuvDataInfo;
     GetImageYUVInfo(yuvDataInfo);
 
-    uint32_t yWidth = imageInfo_.size.width;
-    uint32_t yHeight = imageInfo_.size.height;
+    uint32_t yWidth = static_cast<uint32_t>(imageInfo_.size.width);
+    uint32_t yHeight = static_cast<uint32_t>(imageInfo_.size.height);
     uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
     uint32_t uvHeight = yuvDataInfo.uvHeight;
     uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;

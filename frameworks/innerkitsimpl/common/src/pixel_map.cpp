@@ -2266,31 +2266,31 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
         yDataInfo.imageSize.height = parcel.ReadInt32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel height:%{public}d", yDataInfo.imageSize.height);
 
-        yDataInfo.yWidth = parcel.ReadInt32();
+        yDataInfo.yWidth = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yWidth:%{public}d", yDataInfo.yWidth);
-        yDataInfo.yHeight = parcel.ReadInt32();
+        yDataInfo.yHeight = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yHeight:%{public}d", yDataInfo.yHeight);
-        yDataInfo.uvWidth = parcel.ReadInt32();
+        yDataInfo.uvWidth = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvWidth:%{public}d", yDataInfo.uvWidth);
-        yDataInfo.uvHeight = parcel.ReadInt32();
+        yDataInfo.uvHeight = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvHeight:%{public}d", yDataInfo.uvHeight);
 
-        yDataInfo.yStride = parcel.ReadInt32();
+        yDataInfo.yStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yStride:%{public}d", yDataInfo.yStride);
-        yDataInfo.uStride = parcel.ReadInt32();
+        yDataInfo.uStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uStride:%{public}d", yDataInfo.uStride);
-        yDataInfo.vStride = parcel.ReadInt32();
+        yDataInfo.vStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vStride:%{public}d", yDataInfo.vStride);
-        yDataInfo.uvStride = parcel.ReadInt32();
+        yDataInfo.uvStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvStride:%{public}d", yDataInfo.uvStride);
 
-        yDataInfo.yOffset = parcel.ReadInt32();
+        yDataInfo.yOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yOffset:%{public}d", yDataInfo.yOffset);
-        yDataInfo.uOffset = parcel.ReadInt32();
+        yDataInfo.uOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uOffset:%{public}d", yDataInfo.uOffset);
-        yDataInfo.vOffset = parcel.ReadInt32();
+        yDataInfo.vOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vOffset:%{public}d", yDataInfo.vOffset);
-        yDataInfo.uvOffset = parcel.ReadInt32();
+        yDataInfo.uvOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
 
         SetImageYUVInfo(yDataInfo);
