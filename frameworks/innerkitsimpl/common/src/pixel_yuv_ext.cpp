@@ -87,6 +87,12 @@ bool  PixelYuvExt::resize(float xAxis, float yAxis)
     return true;
 }
 
+bool PixelYuvExt::resize(int32_t dstW, int32_t dstH)
+{
+    scale(dstW, dstH);
+    return true;
+}
+
 constexpr int32_t ANTIALIASING_SIZE = 350;
 
 static bool IsSupportAntiAliasing(const ImageInfo &imageInfo, const AntiAliasingOption &option)
@@ -94,6 +100,23 @@ static bool IsSupportAntiAliasing(const ImageInfo &imageInfo, const AntiAliasing
     return option != AntiAliasingOption::NONE &&
            imageInfo.size.width <= ANTIALIASING_SIZE &&
            imageInfo.size.height <= ANTIALIASING_SIZE;
+}
+
+void PixelYuvExt::scale(int32_t dstW, int32_t dstH)
+{
+    if (!IsYuvFormat()) {
+        return;
+    }
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    AntiAliasingOption operation = AntiAliasingOption::NONE;
+    AntiAliasingOption option = AntiAliasingOption::NONE;
+    if (ImageSystemProperties::GetAntiAliasingEnabled() && IsSupportAntiAliasing(imageInfo, option)) {
+        operation = AntiAliasingOption::MEDIUM;
+    } else {
+        operation = option;
+    }
+    scale(dstW, dstH, operation);
 }
 
 PixelYuvExt::~PixelYuvExt()
@@ -138,6 +161,33 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
                             imageInfo.pixelFormat, yuvDataInfo};
 
     PixelYuvExtUtils::ScaleYuv420(xAxis, yAxis, option, yuvInfo, data_, dst, dstStrides);
+    SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
+    imageInfo.size.width = dstW;
+    imageInfo.size.height = dstH;
+    SetImageInfo(imageInfo, true);
+    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+}
+
+void PixelYuvExt::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
+{
+    ImageTrace imageTrace("PixelMap scale");
+    IMAGE_LOGI("%{public}s (%{public}d, %{public}d)", __func__, dstW, dstH);
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+
+    YUVStrideInfo dstStrides;
+    auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
+    if (m == nullptr) {
+        IMAGE_LOGE("scale CreateMemory failed");
+        return;
+    }
+    uint8_t *dst = reinterpret_cast<uint8_t *>(m->data.data);
+    YUVDataInfo yuvDataInfo;
+    GetImageYUVInfo(yuvDataInfo);
+    YuvImageInfo yuvInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
+                            imageInfo.size.width, imageInfo.size.height,
+                            imageInfo.pixelFormat, yuvDataInfo};
+    PixelYuvExtUtils::ScaleYuv420(dstW, dstH, option, yuvInfo, data_, dst, dstStrides);
     SetPixelsAddr(reinterpret_cast<void *>(dst), m->extend.data, m->data.size, m->GetType(), nullptr);
     imageInfo.size.width = dstW;
     imageInfo.size.height = dstH;
