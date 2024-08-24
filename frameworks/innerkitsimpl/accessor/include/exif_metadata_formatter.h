@@ -35,6 +35,7 @@ public:
     static int32_t Validate(const std::string &keyName, const std::string &value);
     static bool IsModifyAllowed(const std::string &keyName);
     static bool IsKeySupported(const std::string &keyName);
+    static bool IsSensitiveInfo(const std::string &keyName);
 
 private:
     static int32_t ValidateValueRange(const std::string &keyName, const std::string &value);

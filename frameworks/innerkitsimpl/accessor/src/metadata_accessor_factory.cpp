@@ -68,7 +68,7 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const std::str
 {
     std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
     if (!stream->Open(OpenMode::ReadWrite)) {
-        IMAGE_LOGE("Failed to open the stream with file path: %{public}s", path.c_str());
+        IMAGE_LOGE("Failed to open the stream with file");
         return nullptr;
     }
     return Create(stream);

@@ -1015,8 +1015,7 @@ ExifTag JpegDecoder::getExifTagFromKey(const std::string &key)
 uint32_t JpegDecoder::ModifyImageProperty(uint32_t index, const std::string &key,
     const std::string &value, const std::string &path)
 {
-    IMAGE_LOGD("[ModifyImageProperty] with path:%{public}s, key:%{public}s, value:%{public}s",
-        path.c_str(), key.c_str(), value.c_str());
+    IMAGE_LOGD("[ModifyImageProperty] with key:%{public}s", key.c_str());
     ExifTag tag = getExifTagFromKey(key);
     if (tag == EXIF_TAG_PRINT_IMAGE_MATCHING) {
         return Media::ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
