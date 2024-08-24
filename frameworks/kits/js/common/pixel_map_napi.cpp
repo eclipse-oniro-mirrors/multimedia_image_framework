@@ -73,6 +73,7 @@ thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
+napi_ref PixelMapNapi::AntiAliasingLevel_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataKey_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataType_ = nullptr;
 static std::mutex pixelMapCrossThreadMutex_;
@@ -88,6 +89,13 @@ struct ImageEnum {
     std::string name;
     int32_t numVal;
     std::string strVal;
+};
+
+static std::vector<struct ImageEnum> AntiAliasingLevelMap = {
+    {"NONE", 0, ""},
+    {"LOW", 1, ""},
+    {"MEDIUM", 2, ""},
+    {"HIGH", 3, ""},
 };
 
 static std::vector<struct ImageEnum> HdrMetadataKeyMap = {
@@ -545,6 +553,8 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
+            CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataKey",
             CreateEnumTypeObject(env, napi_number, &HdrMetadataKey_, HdrMetadataKeyMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataType",
