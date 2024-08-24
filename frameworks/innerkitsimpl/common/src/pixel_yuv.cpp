@@ -353,6 +353,19 @@ void PixelYuv::scale(float xAxis, float yAxis)
     return scale(xAxis, yAxis, AntiAliasingOption::NONE);
 }
 
+void PixelYuv::scale(int32_t dstW, int32_t dstH)
+{
+    ImageTrace imageTrace("PixelMap scale");
+    return scale(dstW, dstH, AntiAliasingOption::NONE);
+}
+
+bool PixelYuv::resize(int32_t dstW, int32_t dstH)
+{
+    ImageTrace imageTrace("PixelMap resize");
+    scale(dstW, dstH, AntiAliasingOption::NONE);
+    return true;
+}
+
 bool PixelYuv::resize(float xAxis, float yAxis)
 {
     ImageTrace imageTrace("PixelMap resize");
@@ -394,6 +407,42 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     imageInfo.size.height = dstH;
     imageInfo.size.width = dstW;
 
+    SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
+    SetImageInfo(imageInfo, true);
+    UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+}
+
+void PixelYuv::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
+{
+    if (!IsYuvFormat()) {
+        return;
+    }
+    ImageInfo imageInfo;
+    GetImageInfo(imageInfo);
+    ImageTrace imageTrace("PixelMap scale");
+    if (imageInfo.size.width == dstW && imageInfo.size.height == dstH && option == AntiAliasingOption::NONE) {
+        return;
+    }
+    YUVStrideInfo dstStrides;
+    auto dstMemory = CreateMemory(imageInfo.pixelFormat, "scale ImageData", dstW, dstH, dstStrides);
+    if (dstMemory == nullptr) {
+        IMAGE_LOGE("scale CreateMemory failed");
+        return;
+    }
+    uint8_t *yuvData = reinterpret_cast<uint8_t *>(dstMemory->data.data);
+    YUVDataInfo yuvDataInfo;
+    GetImageYUVInfo(yuvDataInfo);
+    YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
+        imageInfo.size.width, imageInfo.size.height, imageInfo_.pixelFormat, yuvDataInfo};
+    YuvImageInfo dstInfo = {PixelYuvUtils::ConvertFormat(imageInfo.pixelFormat),
+        dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
+    if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
+        IMAGE_LOGE("ScaleYuv failed");
+        dstMemory->Release();
+        return;
+    }
+    imageInfo.size.height = dstH;
+    imageInfo.size.width = dstW;
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
@@ -479,7 +528,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
 uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
 {
     if (!IsYuvFormat()) {
-        IMAGE_LOGE("PixelYuv ReadPixels Not YUV format");
+        IMAGE_LOGE("PixelYuv WritePixels Not YUV format");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (source == nullptr || data_ == nullptr) {
@@ -559,7 +608,7 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         IMAGE_LOGE("PixelYuv ReadPixels Not YUV format");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-    IMAGE_LOGD("PixelYuvReadPixels by bufferSize");
+    IMAGE_LOGD("PixelYuv ReadPixels by bufferSize");
     if (dst == nullptr) {
         IMAGE_LOGE("PixelYuv read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;

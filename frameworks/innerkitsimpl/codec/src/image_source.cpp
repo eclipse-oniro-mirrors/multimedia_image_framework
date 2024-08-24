@@ -908,10 +908,24 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
         opts.desiredSize.width != pixelMap->GetWidth()) {
-        float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
-        float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
-        if (!pixelMap->resize(xScale, yScale)) {
-            return false;
+        if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
+#ifdef EXT_PIXEL
+            auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#else
+            auto pixelYuv = reinterpret_cast<PixelYuv *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#endif
+        } else {
+            float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
+            float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
+            if (!pixelMap->resize(xScale, yScale)) {
+                return false;
+            }
         }
         // dump pixelMap after resize
         ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
