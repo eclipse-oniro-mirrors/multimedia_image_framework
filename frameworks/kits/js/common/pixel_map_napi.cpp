@@ -73,6 +73,7 @@ thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
+napi_ref PixelMapNapi::AntiAliasingLevel_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataKey_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataType_ = nullptr;
 static std::mutex pixelMapCrossThreadMutex_;
@@ -88,6 +89,13 @@ struct ImageEnum {
     std::string name;
     int32_t numVal;
     std::string strVal;
+};
+
+static std::vector<struct ImageEnum> AntiAliasingLevelMap = {
+    {"NONE", 0, ""},
+    {"LOW", 1, ""},
+    {"MEDIUM", 2, ""},
+    {"HIGH", 3, ""},
 };
 
 static std::vector<struct ImageEnum> HdrMetadataKeyMap = {
@@ -537,6 +545,8 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
+            CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataKey",
             CreateEnumTypeObject(env, napi_number, &HdrMetadataKey_, HdrMetadataKeyMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataType",
@@ -3997,7 +4007,7 @@ static napi_status GetMetadataType(napi_env env,
         std::vector<uint8_t> gainmapData;
         if (type == CM_HDR_Metadata_Type::CM_METADATA_NONE &&
             VpeUtils::GetSbDynamicMetadata(surfaceBuffer, gainmapData) &&
-            gainmapData.size() > 0) {
+            gainmapData.size() == sizeof(HDRVividExtendMetadata)) {
             value = static_cast<int32_t>(HdrMetadataType::GAINMAP);
         }
         if (!CREATE_NAPI_INT32(value, metadataValue)) {
@@ -4349,6 +4359,12 @@ napi_value PixelMapNapi::SetMetadataSync(napi_env env, napi_callback_info info)
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
     }
+    uint32_t metadataKey = 0;
+    napi_get_value_uint32(env, argValue[NUM_0], &metadataKey);
+    if (metadataKey != 0 && ImageNapiUtils::getType(env, argValue[NUM_1]) != napi_object) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid parameter");
+    }
     std::shared_ptr<PixelMap> pixelMap = nVal.context->nConstructor->nativePixelMap_;
     if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return ImageNapiUtils::ThrowExceptionError(
@@ -4374,22 +4390,31 @@ napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
     nVal.argc = NUM_2;
     napi_value argValue[NUM_2] = {0};
     nVal.argv = argValue;
-    nVal.status = napi_invalid_arg;
+    nVal.status = napi_ok;
     napi_status status;
     napi_get_undefined(env, &nVal.result);
     if (!prepareNapiEnv(env, info, &nVal)) {
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
     if (nVal.argc != NUM_2) {
+        IMAGE_LOGE("Invalid args count");
+        nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t metadataKey = 0;
+    napi_get_value_uint32(env, argValue[NUM_0], &metadataKey);
+    if (metadataKey != 0 && ImageNapiUtils::getType(env, argValue[NUM_1]) != napi_object) {
+        IMAGE_LOGE("Invalid parameter");
         nVal.context->status = ERR_IMAGE_INVALID_PARAMETER;
     }
     nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
     if (nVal.context->rPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         nVal.context->status = ERR_DMA_NOT_EXIST;
     }
-    nVal.status = ParseHdrMetadataValue(env, nVal.argv, nVal.context->rPixelMap);
-    if (nVal.status != napi_ok) {
-        nVal.context->status = ERR_MEMORY_COPY_FAILED;
+    if (nVal.context->status == napi_ok) {
+        nVal.status = ParseHdrMetadataValue(env, nVal.argv, nVal.context->rPixelMap);
+        if (nVal.status != napi_ok) {
+            nVal.context->status = ERR_MEMORY_COPY_FAILED;
+        }
     }
     napi_create_promise(env, &(nVal.context->deferred), &(nVal.result));
     if (!nVal.context->nConstructor->GetPixelNapiEditable()) {
@@ -4398,8 +4423,6 @@ napi_value PixelMapNapi::SetMetadata(napi_env env, napi_callback_info info)
     }
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "SetMetadata",
         [](napi_env env, void *data) {
-            auto context = static_cast<PixelMapAsyncContext*>(data);
-            context->status = SUCCESS;
         }, EmptyResultComplete, nVal.context, nVal.context->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
