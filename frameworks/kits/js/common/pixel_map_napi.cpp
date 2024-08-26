@@ -435,6 +435,11 @@ STATIC_COMPLETE_FUNC(EmptyResult)
 
 STATIC_COMPLETE_FUNC(GeneralError)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("GeneralErrorComplete invalid parameter: data is null");
+        return;
+    }
+
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -896,6 +901,11 @@ static void BuildContextError(napi_env env, napi_ref &error, const std::string e
 
 STATIC_EXEC_FUNC(CreatePixelMap)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapExec invalid parameter: data is null");
+        return;
+    }
+
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
     if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
@@ -921,6 +931,11 @@ STATIC_EXEC_FUNC(CreatePixelMap)
 
 void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void *data)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapComplete invalid parameter: data is null");
+        return;
+    }
+
     napi_value constructor = nullptr;
     napi_value result = nullptr;
 
@@ -944,6 +959,11 @@ void PixelMapNapi::CreatePixelMapComplete(napi_env env, napi_status status, void
 
 STATIC_EXEC_FUNC(CreatePremultipliedPixelMap)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePremultipliedPixelMapExec invalid parameter: data is null");
+        return;
+    }
+
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (IMG_NOT_NULL(context->rPixelMap) && IMG_NOT_NULL(context->wPixelMap)) {
         bool isPremul = true;
@@ -959,6 +979,11 @@ STATIC_EXEC_FUNC(CreatePremultipliedPixelMap)
 
 STATIC_EXEC_FUNC(CreateUnpremultipliedPixelMap)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreateUnpremultipliedPixelMapExec invalid parameter: data is null");
+        return;
+    }
+
     auto context = static_cast<PixelMapAsyncContext*>(data);
     if (IMG_NOT_NULL(context->rPixelMap) && IMG_NOT_NULL(context->wPixelMap)) {
         bool isPremul = false;
@@ -1179,6 +1204,11 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurfaceExec invalid parameter: data is null");
+        return;
+    }
+
     auto context = static_cast<PixelMapAsyncContext*>(data);
     IMAGE_LOGD("CreatePixelMapFromSurface id:%{public}s,area:%{public}d,%{public}d,%{public}d,%{public}d",
         context->surfaceId.c_str(), context->area.region.left, context->area.region.top,
@@ -1210,6 +1240,11 @@ STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 
 void PixelMapNapi::CreatePixelMapFromSurfaceComplete(napi_env env, napi_status status, void *data)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreatePixelMapFromSurfaceComplete invalid parameter: data is null");
+        return;
+    }
+
     napi_value constructor = nullptr;
     napi_value result = nullptr;
 
@@ -1391,6 +1426,10 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
 STATIC_EXEC_FUNC(Unmarshalling)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (data == nullptr) {
+        IMAGE_LOGE("UnmarshallingExec invalid parameter: data is null");
+        return;
+    }
     auto context = static_cast<PixelMapAsyncContext*>(data);
 
     auto messageParcel = napi_messageSequence->GetMessageParcel();
@@ -1409,6 +1448,11 @@ STATIC_EXEC_FUNC(Unmarshalling)
 
 void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void *data)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("UnmarshallingComplete invalid parameter: data is null");
+        return;
+    }
+
     napi_value constructor = nullptr;
     napi_value result = nullptr;
 
@@ -2009,6 +2053,11 @@ napi_value PixelMapNapi::WriteBufferToPixelsSync(napi_env env, napi_callback_inf
 
 STATIC_NAPI_VALUE_FUNC(GetImageInfo)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("GetImageInfoNapiValue invalid parameter: data is null");
+        return nullptr;
+    }
+
     IMAGE_LOGD("[PixelMap]GetImageInfoNapiValue IN");
     napi_value result = nullptr;
     napi_create_object(env, &result);
@@ -2288,6 +2337,11 @@ napi_value PixelMapNapi::SetAlphaAble(napi_env env, napi_callback_info info)
 
 static void CreateAlphaPixelmapComplete(napi_env env, napi_status status, void *data)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("CreateAlphaPixelmapComplete invalid parameter: data is null");
+        return;
+    }
+
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
     auto context = static_cast<PixelMapAsyncContext*>(data);
@@ -2521,6 +2575,11 @@ struct NapiValues {
 
 static bool prepareNapiEnv(napi_env env, napi_callback_info info, struct NapiValues* nVal)
 {
+    if (nVal == nullptr) {
+        IMAGE_LOGE("prepareNapiEnv invalid parameter: nVal is null");
+        return false;
+    }
+
     napi_get_undefined(env, &(nVal->result));
     nVal->status = napi_get_cb_info(env, info, &(nVal->argc), nVal->argv, &(nVal->thisVar), nullptr);
     if (nVal->status != napi_ok) {
@@ -3306,7 +3365,6 @@ static void ToSdrExec(napi_env env, PixelMapAsyncContext* context)
 {
     if (context == nullptr) {
         IMAGE_LOGE("ToSdrExec null context");
-        context->status = ERR_IMAGE_INIT_ABNORMAL;
         return;
     }
     if (!context->nConstructor->GetPixelNapiEditable()) {
@@ -3584,6 +3642,10 @@ static bool IsMatchFormatType(FormatType type, PixelFormat format)
 
 STATIC_EXEC_FUNC(GeneralError)
 {
+    if (data == nullptr) {
+        IMAGE_LOGE("GeneralErrorExec invalid parameter: data is null");
+        return;
+    }
     auto context = static_cast<PixelMapAsyncContext*>(data);
     context->status = IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED;
 }
@@ -3613,6 +3675,11 @@ static FormatType TypeFormat(PixelFormat &pixelForamt)
 
 static uint32_t GetNativePixelMapInfo(napi_env &env, PixelMapAsyncContext* context)
 {
+    if (context == nullptr) {
+        IMAGE_LOGE("GetNativePixelMapInfo invalid parameter: context is null");
+        return ERROR;
+    }
+
     PixelFormat destPixelFormat = context->destFormat;
     std::shared_ptr<PixelMap> pixelMap = nullptr;
     IMG_NAPI_CHECK_BUILD_ERROR(IsMatchFormatType(context->dstFormatType, destPixelFormat),
@@ -3626,6 +3693,11 @@ static uint32_t GetNativePixelMapInfo(napi_env &env, PixelMapAsyncContext* conte
 
 static uint32_t GetNativeConvertInfo(napi_env &env, napi_callback_info &info, PixelMapAsyncContext* context)
 {
+    if (context == nullptr) {
+        IMAGE_LOGE("GetNativeConvertInfo invalid parameter: context is null");
+        return ERROR;
+    }
+
     napi_status status = napi_invalid_arg;
     napi_value thisVar = nullptr;
     size_t argc = NUM_1;
@@ -3705,6 +3777,11 @@ static napi_value RGBToYUV(napi_env env, napi_callback_info &info,  PixelMapAsyn
 
 static napi_value PixelFormatConvert(napi_env env, napi_callback_info &info, PixelMapAsyncContext* context)
 {
+    if (context == nullptr) {
+        IMAGE_LOGE("PixelFormatConvert invalid parameter: context is null");
+        return nullptr;
+    }
+
     napi_value result = nullptr;
     napi_create_promise(env, &(context->deferred), &result);
     PixelFormat dstFormat = context->destFormat;
