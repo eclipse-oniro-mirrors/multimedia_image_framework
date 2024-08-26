@@ -364,7 +364,9 @@ private:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
-    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+                              uint32_t &errorCode);
+    void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
 #endif
     uint32_t SetColorSpaceForAstc(PixelAstc& pixelAstc, size_t fileSize);
