@@ -1982,6 +1982,10 @@ bool PixelMap::WriteImageInfo(Parcel &parcel) const
         IMAGE_LOGE("write image info base density:[%{public}d] to parcel failed.", imageInfo_.baseDensity);
         return false;
     }
+    if (!parcel.WriteString(imageInfo_.encodedFormat)) {
+        IMAGE_LOGE("write image info encoded format:[%{public}s] to parcel failed.", imageInfo_.encodedFormat.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -2229,6 +2233,7 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     imgInfo.alphaType = static_cast<AlphaType>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map alphaType:[%{public}d] to parcel.", imgInfo.alphaType);
     imgInfo.baseDensity = parcel.ReadInt32();
+    imgInfo.encodedFormat = parcel.ReadString();
     return true;
 }
 
