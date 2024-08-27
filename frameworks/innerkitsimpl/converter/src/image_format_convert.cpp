@@ -424,6 +424,7 @@ bool ImageFormatConvert::IsSupport(PixelFormat format)
     }
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
 {
     if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
@@ -452,6 +453,7 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
 }
+#endif
 
 std::unique_ptr<AbsMemory> ImageFormatConvert::CreateMemory(PixelFormat pixelFormat, AllocatorType allocatorType,
                                                             int32_t width, int32_t height, YUVStrideInfo &strides)
