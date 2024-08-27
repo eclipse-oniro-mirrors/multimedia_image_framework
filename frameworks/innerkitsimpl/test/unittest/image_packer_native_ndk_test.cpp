@@ -17,6 +17,8 @@
 #include "image_packer_native.h"
 #include "image_packer_native_impl.h"
 #include "file_packer_stream.h"
+#include <fcntl.h>
+#include "securec.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -112,7 +114,7 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromImageSource, Te
     OH_PackingOptions* option = nullptr;
     OH_ImageSourceNative* imageSource = nullptr;
     uint8_t* outData = nullptr;
-    size_t *size = 0;
+    size_t *size = nullptr;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromImageSource(imagePacker, option, imageSource,
         outData, size);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
@@ -131,29 +133,29 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmap, TestS
     OH_PackingOptions* option = nullptr;
     OH_PixelmapNative* pixelMap = nullptr;
     uint8_t* outData = nullptr;
-    size_t *size = 0;
+    size_t *size = nullptr;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmap(imagePacker, option, pixelMap, outData, size);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmap end";
 }
 
 /**
- * @tc.name: OH_ImagePacker_PackToDataMultiFrames
- * @tc.desc: test OH_ImagePacker_PackToDataMultiFrames
+ * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence
+ * @tc.desc: test OH_ImagePackerNative_PackToDataFromPixelmapSequence
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerNdk2Test, OH_ImagePacker_PackToDataMultiFrames, TestSize.Level3)
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToDataMultiFrames start";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence start";
     OH_ImagePackerNative *imagePacker = nullptr;
-    OH_PackingOptions* option = nullptr;
+    OH_PackingOptionsForSequence* option = nullptr;
     OH_PixelmapNative **pixelMaps = nullptr;
     uint8_t* outData = nullptr;
-    size_t *outDataSize = 0;
-    Image_ErrorCode ret = OH_ImagePacker_PackToDataMultiFrames(imagePacker, option,
+    size_t *outDataSize = nullptr;
+    Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
         pixelMaps, 0, outData, outDataSize);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToDataMultiFrames end";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence end";
 }
 
 /**
@@ -191,20 +193,20 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmap, TestS
 }
 
 /**
- * @tc.name: OH_ImagePacker_PackToFileMultiFrames
- * @tc.desc: test OH_ImagePacker_PackToFileMultiFrames
+ * @tc.name: OH_ImagePackerNative_PackToFileFromPixelmapSequence
+ * @tc.desc: test OH_ImagePackerNative_PackToFileFromPixelmapSequence
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerNdk2Test, OH_ImagePacker_PackToFileMultiFrames, TestSize.Level3)
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmapSequence, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToFileMultiFrames start";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence start";
     OH_ImagePackerNative *imagePacker = nullptr;
-    OH_PackingOptions* option = nullptr;
+    OH_PackingOptionsForSequence* option = nullptr;
     OH_PixelmapNative **pixelMaps = nullptr;
     int32_t fd = 0;
-    Image_ErrorCode ret = OH_ImagePacker_PackToFileMultiFrames(imagePacker, option, pixelMaps, 0, fd);
+    Image_ErrorCode ret = OH_ImagePackerNative_PackToFileFromPixelmapSequence(imagePacker, option, pixelMaps, 0, fd);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePacker_PackToFileMultiFrames end";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence end";
 }
 
 /**
@@ -220,6 +222,5 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_Release, TestSize.Level3)
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_Release end";
 }
-
 }
 }

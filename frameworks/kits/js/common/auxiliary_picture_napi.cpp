@@ -284,8 +284,8 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     }
     status = napi_get_value_uint32(env, argValue[NUM_2], &auxiType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
-    if (auxiType < static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
-        || auxiType > static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+    if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
+        || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
         IMAGE_LOGE("AuxiliaryFigureType is invalid");
         return result;
     }
@@ -412,8 +412,8 @@ napi_value AuxiliaryPictureNapi::GetMetadata(napi_env env, napi_callback_info in
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType >= static_cast<int32_t>(MetadataType::EXIF)
-        && metadataType <= static_cast<int32_t>(MetadataType::FRAGMENT)) {
+    if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
+        && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
@@ -472,8 +472,8 @@ napi_value AuxiliaryPictureNapi::SetMetadata(napi_env env, napi_callback_info in
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType >= static_cast<int32_t>(MetadataType::EXIF)
-        && metadataType <= static_cast<int32_t>(MetadataType::FRAGMENT)) {
+    if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
+        && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
@@ -621,7 +621,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
     if (!GET_UINT32_BY_NAME(root, "rowStride", tmpNumber)) {
         IMAGE_LOGI("No rowStride in auxiliaryPictureInfo");
     }
-    context->auxiliaryPictureInfo.rowStride = tmpNumber;
+    context->auxiliaryPictureInfo.rowStride = static_cast<int32_t>(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {

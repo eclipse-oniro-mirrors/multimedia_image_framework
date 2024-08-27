@@ -52,6 +52,14 @@ struct OH_PixelmapNative;
 typedef struct OH_PixelmapNative OH_PixelmapNative;
 
 /**
+ * @brief Define a native buffer type, used for retrieving a native buffer.
+ *
+ * @since 12
+ */
+struct OH_NativeBuffer;
+typedef struct OH_NativeBuffer OH_NativeBuffer;
+
+/**
  * @brief Define a pixelmap alpha type.
  *
  * @since 12
@@ -836,6 +844,20 @@ Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
  */
 Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pixelmap_HdrMetadataKey key,
     OH_Pixelmap_HdrMetadataValue *value);
+
+/**
+ * @brief Get the native buffer from the PixelMap.
+ *
+ * @param pixelmap The PixelMap to get the native buffer from.
+ * @param nativeBuffer The native buffer to retrieve.
+ * @return Returns {@link Image_ErrorCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, pixelmap or nativeBuffer is null.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_NOT_EXIST - if DMA memory dose not exist.
+ * returns {@link Image_ErrorCode} IMAGE_DMA_OPERATION_FAILED - if operations related to DMA memory has failed.
+ * @see OH_PixelmapNative
+ * @since 12
+ */
+Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
 
 #ifdef __cplusplus
 };

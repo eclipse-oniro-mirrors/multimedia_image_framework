@@ -248,9 +248,9 @@ static bool P010ToRGBA10101012SoftDecode(const YUVDataInfo &yDInfo, SrcConvertPa
     rgbInfo.height = yDInfo.yHeight;
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGBA_U16;
-    convertInfo.srcBytes = midParam.stride[0];
+    convertInfo.srcBytes = static_cast<uint32_t>(midParam.stride[0]);
     convertInfo.dstPixelFormat = PixelFormat::RGBA_1010102;
-    convertInfo.dstBytes = destParam.stride[0];
+    convertInfo.dstBytes = static_cast<uint32_t>(destParam.stride[0]);
     if (!RGBAConvert(rgbInfo, midParam.slice[0], destParam.slice[0], convertInfo)) {
         IMAGE_LOGE("RGB888ToRGBA1010102: pixel convert in adapter failed.");
         delete[] midBuffer;
@@ -269,7 +269,7 @@ static bool YuvP010ToRGBParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride * TWO_SLICES);
     int dstStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstStride = destInfo.yStride;
+        dstStride = static_cast<int>(destInfo.yStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
     } else {
         auto bRet = CalcRGBStride(destParam.format, destParam.width, dstStride);
@@ -346,7 +346,8 @@ static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
-        int uvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        int uvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.stride[0] = static_cast<int>(destParam.width) * TWO_SLICES;
         destParam.stride[1] = static_cast<int>(uvStride) * TWO_SLICES;
         destParam.slice[0] = destInfo.buffer;
@@ -357,8 +358,8 @@ static bool RGBToYuvP010Param(const RGBDataInfo &rgbInfo, SrcConvertParam &srcPa
 
 static bool SwapNV21P010(DestConvertInfo &destInfo)
 {
-    int32_t frameSize = destInfo.width * destInfo.height;
-    size_t midBufferSize = (frameSize +
+    int32_t frameSize = static_cast<int32_t>(destInfo.width) * static_cast<int32_t>(destInfo.height);
+    size_t midBufferSize = (static_cast<uint32_t>(frameSize) +
         (((destInfo.width + 1) / TWO_SLICES) * ((destInfo.height + 1) / TWO_SLICES) * TWO_SLICES)) * TWO_SLICES;
     if (midBufferSize == 0 || midBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("Invalid destination buffer size calculation!");
@@ -448,7 +449,7 @@ static bool RGB10ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, Pix
     }
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGBA_1010102;
-    convertInfo.srcBytes = srcParam.stride[0];
+    convertInfo.srcBytes = static_cast<uint32_t>(srcParam.stride[0]);
     convertInfo.dstPixelFormat = PixelFormat::RGB_888;
     convertInfo.dstBytes = rgbInfo.width * BYTES_PER_PIXEL_RGB;
     if (!RGBAConvert(rgbInfo, srcParam.slice[0], midBuffer, convertInfo)) {
@@ -486,7 +487,7 @@ static bool RGBA1010102ToP010SoftDecode(const RGBDataInfo &rgbInfo, SrcConvertPa
     }
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGBA_1010102;
-    convertInfo.srcBytes = srcParam.stride[0];
+    convertInfo.srcBytes = static_cast<uint32_t>(srcParam.stride[0]);
     convertInfo.dstPixelFormat = PixelFormat::RGBA_U16;
     convertInfo.dstBytes = rgbInfo.width * STRIDES_PER_PLANE;
     if (!RGBAConvert(rgbInfo, srcParam.slice[0], midBuffer, convertInfo)) {
@@ -566,9 +567,9 @@ static bool YUVToRGBA1010102SoftDecode(const YUVDataInfo &yDInfo, SrcConvertPara
     rgbInfo.height = yDInfo.yHeight;
     Convert10bitInfo convertInfo;
     convertInfo.srcPixelFormat = PixelFormat::RGB_888;
-    convertInfo.srcBytes = midParam.stride[0];
+    convertInfo.srcBytes = static_cast<uint32_t>(midParam.stride[0]);
     convertInfo.dstPixelFormat = PixelFormat::RGBA_1010102;
-    convertInfo.dstBytes = destParam.stride[0];
+    convertInfo.dstBytes = static_cast<uint32_t>(destParam.stride[0]);
     if (!RGBAConvert(rgbInfo, midParam.slice[0], destParam.slice[0], convertInfo)) {
         IMAGE_LOGE("RGB888ToRGBA1010102: pixel convert in adapter failed.");
         delete[] midBuffer;
@@ -614,15 +615,16 @@ static bool YuvToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     int dstyStride = 0;
     int dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = destInfo.yStride;
-        dstuvStride = destInfo.uvStride;
+        dstyStride = static_cast<int>(destInfo.yStride);
+        dstuvStride = static_cast<int>(destInfo.uvStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
         dstyStride = static_cast<int>(destParam.width);
-        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
 
     destParam.stride[0] = dstyStride * TWO_SLICES;
@@ -671,15 +673,16 @@ static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     int dstyStride = 0;
     int dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = destInfo.yStride;
-        dstuvStride = destInfo.uvStride;
+        dstyStride = static_cast<int>(destInfo.yStride);
+        dstuvStride = static_cast<int>(destInfo.uvStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset;
     } else {
         dstyStride = static_cast<int>(destParam.width);
-        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
+        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height;
     }
 
     destParam.stride[0] = dstyStride;
@@ -751,15 +754,16 @@ static bool YuvP010ToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &sr
     int dstyStride = 0;
     int dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = destInfo.yStride;
-        dstuvStride = destInfo.uvStride;
+        dstyStride = static_cast<int>(destInfo.yStride);
+        dstuvStride = static_cast<int>(destInfo.uvStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
         dstyStride = static_cast<int>(destParam.width);
-        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ? (destParam.width) : (destParam.width + 1);
+        dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer +  static_cast<uint32_t>(dstyStride) * destParam.height * TWO_SLICES;
     }
 
     destParam.stride[0] = dstyStride * TWO_SLICES;

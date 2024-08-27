@@ -31,6 +31,7 @@ public:
     HeifHardwareDecoder();
     ~HeifHardwareDecoder();
     sptr<SurfaceBuffer> AllocateOutputBuffer(uint32_t width, uint32_t height, int32_t pixelFmt);
+    bool IsPackedInputSupported();
     uint32_t DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs, sptr<SurfaceBuffer>& output);
 private:
     class HeifDecoderCallback : public ImageCodecCallback {
@@ -52,9 +53,11 @@ private:
         uint32_t uvOffset = 0;
     };
 private:
+    static bool CheckOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output);
     static bool GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, uint64_t& offset);
     bool IsHardwareDecodeSupported(const GridInfo& gridInfo);
     bool SetCallbackForDecoder();
+    void GetPackedInputFlag();
     bool ConfigureDecoder(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output);
     bool SetOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer> output);
     bool WaitForOmxToReturnInputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
@@ -63,7 +66,6 @@ private:
     void SendInputBufferLoop(const std::vector<std::vector<uint8_t>>& inputs);
     bool WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
     void AssembleOutput(uint32_t outputIndex, std::shared_ptr<ImageCodecBuffer>& buffer);
-    static uint32_t CalculateDirtyLen(uint32_t displayLen, uint32_t gridLen, uint32_t totalGrid, uint32_t curGrid);
     static bool CopyRawYuvData(const RawYuvCopyInfo& src, const RawYuvCopyInfo& dst,
                                uint32_t dirtyWidth, uint32_t dirtyHeight);
     void ReceiveOutputBufferLoop();
@@ -86,11 +88,14 @@ private:
     static constexpr size_t MIN_SIZE_OF_INPUT = 2;
     static constexpr int MAX_PATH_LEN = 256;
 
+    bool packedInputFlag_ = false;
+
     std::shared_ptr<ImageCodec> heifDecoderImpl_;
 
     sptr<SurfaceBuffer> output_;
     uint64_t uvOffsetForOutput_;
     GridInfo gridInfo_;
+    bool is10Bit_ = false;
 
     std::mutex errMtx_;
     bool hasErr_ = false;

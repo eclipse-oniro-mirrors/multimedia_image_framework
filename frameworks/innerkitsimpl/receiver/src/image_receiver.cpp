@@ -33,12 +33,12 @@ namespace Media {
 ImageReceiver::~ImageReceiver()
 {
     std::lock_guard<std::mutex> guard(imageReceiverMutex_);
-    SurfaceUtils* utils = SurfaceUtils::GetInstance();
     if (receiverConsumerSurface_ != nullptr) {
-        if (utils != nullptr) {
-            utils->Remove(receiverConsumerSurface_->GetUniqueId());
-        }
         receiverConsumerSurface_->UnregisterConsumerListener();
+    }
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
+    if (receiverProducerSurface_ != nullptr && utils != nullptr) {
+        utils->Remove(receiverProducerSurface_->GetUniqueId());
     }
     receiverConsumerSurface_ = nullptr;
     receiverProducerSurface_ = nullptr;
@@ -197,10 +197,6 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
         return iva;
     }
 
-    SurfaceUtils* utils = SurfaceUtils::GetInstance();
-    if (utils != nullptr) {
-        utils->Add(iva->receiverConsumerSurface_->GetUniqueId(), iva->receiverConsumerSurface_);
-    }
     iva->receiverConsumerSurface_->SetDefaultWidthAndHeight(width, height);
     iva->receiverConsumerSurface_->SetQueueSize(capicity);
     iva->receiverConsumerSurface_->SetDefaultUsage(BUFFER_USAGE_CPU_READ);
@@ -211,7 +207,10 @@ std::shared_ptr<ImageReceiver> ImageReceiver::CreateImageReceiver(int32_t width,
         IMAGE_LOGD("SurfaceAsProducer == nullptr");
         return iva;
     }
-
+    SurfaceUtils* utils = SurfaceUtils::GetInstance();
+    if (utils != nullptr) {
+        utils->Add(iva->receiverProducerSurface_->GetUniqueId(), iva->receiverProducerSurface_);
+    }
     iva->iraContext_->SetReceiverBufferConsumer(iva->receiverConsumerSurface_);
     iva->iraContext_->SetReceiverBufferProducer(iva->receiverProducerSurface_);
     iva->iraContext_->SetWidth(width);

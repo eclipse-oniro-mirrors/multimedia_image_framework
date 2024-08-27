@@ -21,6 +21,7 @@
 #include "pixel_map_napi.h"
 #include "pixelmap_native_impl.h"
 #include "image_format_convert.h"
+#include "surface_buffer.h"
 
 #include "vpe_utils.h"
 #include "refbase.h"
@@ -868,13 +869,13 @@ static void ConvertToOHGainmapMetadata(HDRVividExtendMetadata &src, OH_Pixelmap_
     dst.baseHdrHeadroom = src.metaISO.baseHeadroom;
     dst.alternateHdrHeadroom = src.metaISO.alternateHeadroom;
 
-    dst.gainmapMax[INDEX_ZERO] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO];
-    dst.gainmapMax[INDEX_ONE] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE];
-    dst.gainmapMax[INDEX_TWO] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO];
+    dst.gainmapMax[INDEX_ZERO] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO];
+    dst.gainmapMax[INDEX_ONE] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE];
+    dst.gainmapMax[INDEX_TWO] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO];
 
-    dst.gainmapMin[INDEX_ZERO] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ZERO];
-    dst.gainmapMin[INDEX_ONE] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_ONE];
-    dst.gainmapMin[INDEX_TWO] = src.metaISO.enhanceClippedThreholdMaxGainmap[INDEX_TWO];
+    dst.gainmapMin[INDEX_ZERO] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ZERO];
+    dst.gainmapMin[INDEX_ONE] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_ONE];
+    dst.gainmapMin[INDEX_TWO] = src.metaISO.enhanceClippedThreholdMinGainmap[INDEX_TWO];
 
     dst.gamma[INDEX_ZERO] = src.metaISO.enhanceMappingGamma[INDEX_ZERO];
     dst.gamma[INDEX_ONE] = src.metaISO.enhanceMappingGamma[INDEX_ONE];
@@ -889,17 +890,34 @@ static void ConvertToOHGainmapMetadata(HDRVividExtendMetadata &src, OH_Pixelmap_
     dst.alternateOffset[INDEX_TWO] = src.metaISO.enhanceMappingAlternateOffset[INDEX_TWO];
 }
 
+static bool ConvertTONdkStaticMetadata(HdrStaticMetadata &src,
+    OH_Pixelmap_HdrStaticMetadata &dst)
+{
+    dst.displayPrimariesX[INDEX_ZERO] = src.smpte2086.displayPrimaryRed.x;
+    dst.displayPrimariesY[INDEX_ZERO] = src.smpte2086.displayPrimaryRed.y;
+    dst.displayPrimariesX[INDEX_ONE] = src.smpte2086.displayPrimaryGreen.x;
+    dst.displayPrimariesY[INDEX_ONE] = src.smpte2086.displayPrimaryGreen.y;
+    dst.displayPrimariesX[INDEX_TWO] = src.smpte2086.displayPrimaryBlue.x;
+    dst.displayPrimariesY[INDEX_TWO] = src.smpte2086.displayPrimaryBlue.y;
+    dst.whitePointX = src.smpte2086.whitePoint.x;
+    dst.whitePointY = src.smpte2086.whitePoint.y;
+    dst.maxLuminance = src.smpte2086.maxLuminance;
+    dst.minLuminance = src.smpte2086.minLuminance;
+    dst.maxContentLightLevel = src.cta861.maxContentLightLevel;
+    dst.maxFrameAverageLightLevel = src.cta861.maxFrameAverageLightLevel;
+    return true;
+}
+
 static bool GetStaticMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
     OH_Pixelmap_HdrMetadataValue *metadataValue)
 {
     std::vector<uint8_t> staticData;
-    if (VpeUtils::GetSbStaticMetadata(buffer, staticData) && (staticData.size() > 0)) {
+    uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
+    if (VpeUtils::GetSbStaticMetadata(buffer, staticData) &&
+        (staticData.size() == vecSize)) {
         OH_Pixelmap_HdrStaticMetadata &dst = metadataValue->staticMetadata;
-        if (memcpy_s(&dst, sizeof(OH_Pixelmap_HdrStaticMetadata),
-            staticData.data(), staticData.size()) != EOK) {
-            return false;
-        }
-        return true;
+        HdrStaticMetadata &src = *(reinterpret_cast<HdrStaticMetadata*>(staticData.data()));
+        return ConvertTONdkStaticMetadata(src, dst);
     }
     return false;
 }
@@ -942,7 +960,8 @@ static bool GetHdrMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
         case OH_Pixelmap_HdrMetadataKey::HDR_GAINMAP_METADATA:
             {
                 std::vector<uint8_t> gainmapData;
-                if (VpeUtils::GetSbDynamicMetadata(buffer, gainmapData) && (gainmapData.size() > 0)) {
+                if (VpeUtils::GetSbDynamicMetadata(buffer, gainmapData) &&
+                    (gainmapData.size() == sizeof(HDRVividExtendMetadata))) {
                     OH_Pixelmap_HdrGainmapMetadata &dst = metadataValue->gainmapMetadata;
                     HDRVividExtendMetadata &src = *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
                     ConvertToOHGainmapMetadata(src, dst);
@@ -973,6 +992,29 @@ Image_ErrorCode OH_PixelmapNative_GetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
         reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd()));
     if (!GetHdrMetadata(sourceSurfaceBuffer, key, *value)) {
         return IMAGE_COPY_FAILED;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || nativeBuffer == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return IMAGE_DMA_NOT_EXIST;
+    }
+
+    OHOS::SurfaceBuffer *buffer = reinterpret_cast<OHOS::SurfaceBuffer*>(pixelmap->GetInnerPixelmap()->GetFd());
+    if (buffer == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    *nativeBuffer = buffer->SurfaceBufferToNativeBuffer();
+    int32_t err = OH_NativeBuffer_Reference(*nativeBuffer);
+    if (err != OHOS::SURFACE_ERROR_OK) {
+        return IMAGE_DMA_OPERATION_FAILED;
     }
     return IMAGE_SUCCESS;
 }

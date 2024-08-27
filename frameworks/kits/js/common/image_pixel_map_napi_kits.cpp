@@ -120,6 +120,12 @@ static int32_t PixelMapNapiCreate(napi_env env, PixelMapNapiArgs* args)
     pam.width_ = info.size.width;
     pam.flag_ = false;
     int32_t error = IMAGE_RESULT_SUCCESS;
+    if (info.pixelFormat == PixelFormat::RGBA_1010102 ||
+        info.pixelFormat == PixelFormat::YCBCR_P010 ||
+        info.pixelFormat == PixelFormat::YCRCB_P010) {
+        error = IMAGE_RESULT_BAD_PARAMETER;
+        return error;
+    }
     auto pixelmap = PixelMap::Create(static_cast<uint32_t*>(args->inBuffer), args->bufferLen, pam, info, error);
     if (pixelmap == nullptr) {
         return error;

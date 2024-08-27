@@ -507,7 +507,7 @@ static void GetPropertiesExecute(napi_env env, void *data)
     uint32_t status = SUCCESS;
     for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
         std::string valueStr = "";
-        status = context->rMetadata->GetValue(*keyStrIt, valueStr);
+        status = static_cast<uint32_t>(context->rMetadata->GetValue(*keyStrIt, valueStr));
         if (status == SUCCESS) {
             context->KVSArray.emplace_back(std::make_pair(*keyStrIt, valueStr));
         } else {
@@ -633,7 +633,8 @@ napi_value MetadataNapi::GetAllProperties(napi_env env, napi_callback_info info)
                 IMAGE_LOGE("Empty context");
                 return;
             }
-            for (const auto &entry : *context->rMetadata->GetAllProperties()) {
+            ImageMetadata::PropertyMapPtr allKey = context->rMetadata->GetAllProperties();
+            for (const auto &entry : *allKey) {
                 context->KVSArray.emplace_back(std::make_pair(entry.first, entry.second));
             }
             context->status = SUCCESS;

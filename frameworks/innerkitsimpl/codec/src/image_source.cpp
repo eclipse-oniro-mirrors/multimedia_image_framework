@@ -725,7 +725,8 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
     if (opts.allocatorType != AllocatorType::DEFAULT) {
         context.allocatorType = opts.allocatorType;
     } else {
-        if (preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) {
+        if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
+            info.encodedFormat == IMAGE_HEIF_FORMAT) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else {
@@ -848,7 +849,6 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
     }
-    ImageUtils::FlushSurfaceBuffer(pixelMap.get());
     return pixelMap;
 }
 
@@ -908,10 +908,24 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
         opts.desiredSize.width != pixelMap->GetWidth()) {
-        float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
-        float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
-        if (!pixelMap->resize(xScale, yScale)) {
-            return false;
+        if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
+#ifdef EXT_PIXEL
+            auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#else
+            auto pixelYuv = reinterpret_cast<PixelYuv *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#endif
+        } else {
+            float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
+            float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
+            if (!pixelMap->resize(xScale, yScale)) {
+                return false;
+            }
         }
         // dump pixelMap after resize
         ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
@@ -3976,8 +3990,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 {
     VpeUtils::SetSbMetadataType(input, CM_METADATA_NONE);
     VpeUtils::SetSurfaceBufferInfo(input, cmColorSpaceType);
-    hdrCtx.info.size.width = static_cast<uint32_t>(input->GetWidth());
-    hdrCtx.info.size.height = static_cast<uint32_t>(input->GetHeight());
+    hdrCtx.info.size.width = input->GetWidth();
+    hdrCtx.info.size.height = input->GetHeight();
     uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     if (res != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);
@@ -4253,12 +4267,16 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
+    uint32_t auxErrorCode = SUCCESS;
     if (format == IMAGE_HEIF_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, auxErrorCode);
     } else if (format == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, auxErrorCode);
     }
 
+    if (auxErrorCode != SUCCESS) {
+        IMAGE_LOGI("Decode auxiliary pictures failed, error code: %{public}u", auxErrorCode);
+    }
     return picture;
 }
 
@@ -4281,16 +4299,66 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
         } else {
+            auxiliaryPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxiliaryPicture);
         }
     }
 }
 
+bool ImageSource::TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+    uint32_t &errorCode)
+{
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: streamBuffer or streamSize is null");
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return false;
+    }
+    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
+    if (gainMapOffset == 0 || gainMapOffset > streamSize) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: Gain map offset is invalid! offset: %{public}u, streamSize: %{public}u",
+                   gainMapOffset, streamSize);
+        return false;
+    }
+
+    std::unique_ptr<InputDataStream> gainMapStream =
+        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
+    if (gainMapStream == nullptr) {
+        IMAGE_LOGE("Create auxiliary stream fail, gainMapOffset is %{public}u", gainMapOffset);
+        return false;
+    }
+    auto jpegGainMapDecoder = std::unique_ptr<AbsImageDecoder>(
+        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
+    if (jpegGainMapDecoder == nullptr) {
+        IMAGE_LOGE("TryDecodeJpegGainMap create gainmap decoder fail, gainmap offset is %{public}d", gainMapOffset);
+        return false;
+    }
+
+    auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+        sourceHdrType_, AuxiliaryPictureType::GAINMAP, IMAGE_JPEG_FORMAT, jpegGainMapDecoder, errorCode);
+    if (auxPicture == nullptr) {
+        IMAGE_LOGE("Generate jpeg auxiliary picture failed!, errorCode: %{public}d", errorCode);
+        return false;
+    }
+    auxPicture->GetContentPixel()->SetEditable(true);
+    picture->SetAuxiliaryPicture(auxPicture);
+    return true;
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
-    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
     uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        if (auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end()) {
+            if (TryDecodeJpegGainMap(picture, streamBuffer, streamSize, errorCode)) {
+                IMAGE_LOGI("TryDecodeJpegGainMap success!");
+                auxTypes.erase(AuxiliaryPictureType::GAINMAP);
+            } else {
+                IMAGE_LOGI("TryDecodeJpegGainMap failed!");
+            }
+        }
+    }
     uint32_t mpfOffset = 0;
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
     if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
@@ -4321,6 +4389,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
             if (auxPicture == nullptr) {
                 IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
             } else {
+                auxPicture->GetContentPixel()->SetEditable(true);
                 picture->SetAuxiliaryPicture(auxPicture);
             }
         }

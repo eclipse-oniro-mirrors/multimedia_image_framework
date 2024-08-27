@@ -577,12 +577,18 @@ STATIC_EXEC_FUNC(CreateSendablePixelMap)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
-    if (colors == nullptr) {
-        auto pixelmap = PixelMap::Create(context->opts);
-        context->rPixelMap = std::move(pixelmap);
+    if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+        context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+        context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
+        context->rPixelMap = nullptr;
     } else {
-        auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
-        context->rPixelMap = std::move(pixelmap);
+        if (colors == nullptr) {
+            auto pixelmap = PixelMap::Create(context->opts);
+            context->rPixelMap = std::move(pixelmap);
+        } else {
+            auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
+            context->rPixelMap = std::move(pixelmap);
+        }
     }
 
     if (IMG_NOT_NULL(context->rPixelMap)) {

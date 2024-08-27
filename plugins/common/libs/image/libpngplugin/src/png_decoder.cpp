@@ -92,8 +92,8 @@ uint32_t PngDecoder::GetImageSize(uint32_t index, Size &size)
         return ERR_MEDIA_INVALID_OPERATION;
     }
     if (state_ >= PngDecodingState::BASE_INFO_PARSED) {
-        size.width = png_get_image_width(pngStructPtr_, pngInfoPtr_);
-        size.height = png_get_image_height(pngStructPtr_, pngInfoPtr_);
+        size.width = static_cast<int32_t>(png_get_image_width(pngStructPtr_, pngInfoPtr_));
+        size.height = static_cast<int32_t>(png_get_image_height(pngStructPtr_, pngInfoPtr_));
         return SUCCESS;
     }
     // only state PngDecodingState::SOURCE_INITED and PngDecodingState::BASE_INFO_PARSING can go here.
