@@ -1092,11 +1092,11 @@ HWTEST_F(ExtDecoderTest, EncodeDualVividTest001, TestSize.Level3)
     extEncoder.encodeFormat_ = SkEncodedImageFormat::kJPEG;
     extEncoder.pixelmap_->allocatorType_ = AllocatorType::DEFAULT;
     ret = extEncoder.EncodeDualVivid(outputStream);
-    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     extEncoder.pixelmap_->allocatorType_ = AllocatorType::DMA_ALLOC;
     extEncoder.encodeFormat_ = SkEncodedImageFormat::kHEIF;
     ret = extEncoder.EncodeDualVivid(outputStream);
-    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeDualVividTest001 end";
 }
 
@@ -1116,7 +1116,7 @@ HWTEST_F(ExtDecoderTest, EncodeSdrImageTest001, TestSize.Level3)
     uint32_t ret = extEncoder.EncodeSdrImage(outputStream);
     extEncoder.pixelmap_->imageInfo_.pixelFormat = Media::PixelFormat::RGBA_1010102;
     ret = extEncoder.EncodeSdrImage(outputStream);
-    ASSERT_EQ(ret, IMAGE_RESULT_CREATE_SURFAC_FAILED);
+    ASSERT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "ExtDecoderTest: EncodeSdrImageTest001 end";
 }
 }
