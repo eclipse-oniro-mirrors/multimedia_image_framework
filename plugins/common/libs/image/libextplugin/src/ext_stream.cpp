@@ -74,7 +74,7 @@ size_t ExtStream::read(void *buffer, size_t size)
         desiredSize = stream_->GetStreamSize();
     }
     if (!stream_->Read(desiredSize, buf.buf, buf.size, buf.resSize)) {
-        IMAGE_LOGE("read failed, desire read size=%{public}u", buf.resSize);
+        IMAGE_LOGD("read failed, desire read size=%{public}u", buf.resSize);
         return 0;
     }
     return static_cast<size_t>(buf.resSize);

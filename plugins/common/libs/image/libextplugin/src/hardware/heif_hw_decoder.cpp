@@ -142,7 +142,7 @@ bool HeifHardwareDecoder::IsHardwareDecodeSupported(const GridInfo& gridInfo)
     };
     bool isValidSize = false;
     if (it->canSwapWidthHeight) {
-        LOGI("decoder support swap width and height");
+        LOGD("decoder support swap width and height");
         isValidSize = (IsValueInRange(widthToCheck, widthRange) && IsValueInRange(heightToCheck, heightRange)) ||
                       (IsValueInRange(heightToCheck, widthRange) && IsValueInRange(widthToCheck, heightRange));
     } else {
@@ -468,7 +468,7 @@ bool HeifHardwareDecoder::WaitForOmxToReturnInputBuffer(uint32_t& bufferId, shar
 
 void HeifHardwareDecoder::SendInputBufferLoop(const vector<vector<uint8_t>>& inputs)
 {
-    LOGI("in");
+    LOGD("in");
     size_t inputIndex = 0;
     bool eos = false;
     while (!eos && !HasError()) {
@@ -493,7 +493,7 @@ void HeifHardwareDecoder::SendInputBufferLoop(const vector<vector<uint8_t>>& inp
         ++inputIndex;
         eos = (size == 0);
     }
-    LOGI("out");
+    LOGD("out");
 }
 
 bool HeifHardwareDecoder::WaitForOmxToReturnOutputBuffer(uint32_t& bufferId, shared_ptr<ImageCodecBuffer>& buffer)
@@ -577,7 +577,7 @@ void HeifHardwareDecoder::AssembleOutput(uint32_t outputIndex, shared_ptr<ImageC
 
 void HeifHardwareDecoder::ReceiveOutputBufferLoop()
 {
-    LOGI("in");
+    LOGD("in");
     uint32_t outputIndex = 0;
     while (!HasError()) {
         uint32_t bufferId;
@@ -592,7 +592,7 @@ void HeifHardwareDecoder::ReceiveOutputBufferLoop()
         }
         uint32_t flag = buffer->GetBufferFlag();
         if (flag & OMX_BUFFERFLAG_EOS) {
-            LOGI("output eos, quit loop");
+            LOGD("output eos, quit loop");
             break;
         }
         if (gridInfo_.enableGrid) {
@@ -609,7 +609,7 @@ void HeifHardwareDecoder::ReceiveOutputBufferLoop()
         LOGE("expect %{public}u output, got %{public}u", expectedOutputCnt, outputIndex);
         SignalError();
     }
-    LOGI("received %{public}u output in total", outputIndex);
+    LOGD("received %{public}u output in total", outputIndex);
 }
 
 void HeifHardwareDecoder::SignalError()

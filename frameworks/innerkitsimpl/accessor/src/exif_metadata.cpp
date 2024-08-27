@@ -111,7 +111,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (!ExifMetadatFormatter::IsKeySupported(key)) {
-        IMAGE_LOGE("Key is not supported.");
+        IMAGE_LOGD("Key is not supported.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (key == "MakerNote") {

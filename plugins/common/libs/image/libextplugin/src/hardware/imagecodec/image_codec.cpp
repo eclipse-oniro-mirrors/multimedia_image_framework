@@ -151,7 +151,7 @@ ImageCodec::ImageCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
 {
     debugMode_ = OHOS::system::GetBoolParameter("image.codec.debug", false);
     dumpMode_ = OHOS::system::GetBoolParameter("image.codec.dump", false);
-    LOGI(">> debug mode = %{public}d, dump mode = %{public}d", debugMode_, dumpMode_);
+    LOGD(">> debug mode = %{public}d, dump mode = %{public}d", debugMode_, dumpMode_);
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -255,7 +255,7 @@ optional<double> ImageCodec::GetFrameRateFromUser(const Format &format)
 {
     double frameRate;
     if (format.GetValue(ImageCodecDescriptionKey::FRAME_RATE, frameRate) && frameRate > 0) {
-        LOGI("user set frame rate %{public}.2f", frameRate);
+        LOGD("user set frame rate %{public}.2f", frameRate);
         return frameRate;
     }
     return nullopt;
@@ -931,7 +931,7 @@ bool ImageCodec::GetFirstSyncMsgToReply(MsgInfo& msg)
 /**************************** HdiCallback functions begin ****************************/
 int32_t ImageCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
 {
-    LOGI("event = %{public}d, data1 = %{public}u, data2 = %{public}u", event, info.data1, info.data2);
+    LOGD("event = %{public}d, data1 = %{public}u, data2 = %{public}u", event, info.data1, info.data2);
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);
