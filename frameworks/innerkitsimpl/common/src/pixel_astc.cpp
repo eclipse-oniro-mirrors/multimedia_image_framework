@@ -39,7 +39,7 @@ using namespace std;
 
 PixelAstc::~PixelAstc()
 {
-    IMAGE_LOGI("PixelAstc destory");
+    IMAGE_LOGD("PixelAstc destory");
     FreePixelMap();
 }
 

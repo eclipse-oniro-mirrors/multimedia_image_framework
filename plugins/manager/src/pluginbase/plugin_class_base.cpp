@@ -33,7 +33,7 @@ PluginClassBase::~PluginClassBase()
     // the process context can guarantee that this will not happen.
     // the judgment statement here is for protection and positioning purposes only.
     if (implClassKey_ == nullptr) {
-        IMAGE_LOGE("release class base, null implClassKey.");
+        IMAGE_LOGD("release class base, null implClassKey.");
         return;
     }
 

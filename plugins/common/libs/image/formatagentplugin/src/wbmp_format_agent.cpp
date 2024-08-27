@@ -117,7 +117,7 @@ bool WbmpFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     if (!read_header(headerData, dataSize)) {
-        IMAGE_LOGI("not wbmp image format.");
+        IMAGE_LOGD("not wbmp image format.");
         return false;
     }
 

@@ -112,7 +112,7 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
 static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
 {
     ImageTrace trace("ConvertPixelFormat %d %d", srcParam.format, dstParam.format);
-    IMAGE_LOGI("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
+    IMAGE_LOGD("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
     bool res = false;
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();

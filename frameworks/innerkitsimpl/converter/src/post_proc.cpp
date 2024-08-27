@@ -754,7 +754,7 @@ int GetInterpolation(const AntiAliasingOption &option)
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
-    IMAGE_LOGI("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
+    IMAGE_LOGD("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
         "allocatorType = %{public}d; desiredSize: width = %{public}d, height = %{public}d",
         pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(),
         pixelMap.GetAllocatorType(), desiredSize.width, desiredSize.height);
