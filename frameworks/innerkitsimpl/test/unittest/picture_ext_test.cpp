@@ -17,6 +17,7 @@
 #include <fstream>
 #include <cstring>
 #include "picture.h"
+#include "picture_native_impl.h"
 #include "image_source.h"
 #include "image_packer.h"
 #include "image_packer_native.h"
@@ -655,6 +656,24 @@ HWTEST_F(PictureExtTest, OH_PictureNative_GetHdrComposedPixelmap002, TestSize.Le
 {
     Image_ErrorCode ret = OH_PictureNative_GetHdrComposedPixelmap(nullptr, nullptr);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_AuxiliaryPictureNative_GetMetadataTest001
+ * @tc.desc: Pass in normal parameters to obtain Metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PictureExtTest, OH_AuxiliaryPictureNative_GetMetadataTest001, TestSize.Level1)
+{
+    OH_AuxiliaryPictureNative *picture = CreateAuxiliaryPictureNative();
+    OH_PictureMetadata *metadataptr = nullptr;
+    Image_MetadataType type = Image_MetadataType::EXIF_METADATA;
+
+    Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetMetadata(picture, type, &metadataptr);
+    EXPECT_EQ(ret, IMAGE_UNSUPPORTED_METADATA);
+
+    OH_PictureMetadata_Release(metadataptr);
+    OH_AuxiliaryPictureNative_Release(picture);
 }
 } // namespace Multimedia
 } // namespace OHOS

@@ -41,7 +41,7 @@ constexpr int32_t sizeHeightExceed = 50;
 constexpr int32_t bufferLengthExceed = 8;
 constexpr int32_t sizeBuffer = 2017220;
 constexpr int32_t bufferSize = 256;
-static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test.jpg";
+static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_picture.jpg";
 constexpr int8_t NUM_0 = 0;
 constexpr int32_t errorAuxiliaryPictureType = 20;
 constexpr uint32_t rowStride = 10;
@@ -390,28 +390,10 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_SetInfoTest002, TestSize.Leve
 
 /**
  * @tc.name: OH_AuxiliaryPictureNative_GetMetadataTest001
- * @tc.desc: Pass in normal parameters to obtain Metadata.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest001, TestSize.Level1)
-{
-    OH_AuxiliaryPictureNative *picture = CreateAuxiliaryPictureNative();
-    OH_PictureMetadata *metadataptr = nullptr;
-    Image_MetadataType type = Image_MetadataType::EXIF_METADATA;
-
-    Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetMetadata(picture, type, &metadataptr);
-    EXPECT_EQ(ret, IMAGE_UNSUPPORTED_METADATA);
-
-    OH_PictureMetadata_Release(metadataptr);
-    OH_AuxiliaryPictureNative_Release(picture);
-}
-
-/**
- * @tc.name: OH_AuxiliaryPictureNative_GetMetadataTest002
  * @tc.desc: Pass in a non-existent Metadata Type and return an exception.
  * @tc.type: FUNC
  */
-HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest002, TestSize.Level2)
+HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest001, TestSize.Level2)
 {
     OH_AuxiliaryPictureNative *picture = CreateAuxiliaryPictureNative();
     OH_PictureMetadata *metadataptr = nullptr;
@@ -424,11 +406,11 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest002, TestSize.
 }
 
 /**
- * @tc.name: OH_AuxiliaryPictureNative_GetMetadataTest003
+ * @tc.name: OH_AuxiliaryPictureNative_GetMetadataTest002
  * @tc.desc: Pass in an empty parameter and return a null pointer.
  * @tc.type: FUNC
  */
-HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest003, TestSize.Level2)
+HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest002, TestSize.Level2)
 {
     OH_AuxiliaryPictureNative *picture = nullptr;
     OH_PictureMetadata *metadataptr = nullptr;
