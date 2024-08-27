@@ -96,6 +96,10 @@ DataBuf PngImageChunkUtils::GetKeywordFromChunk(const DataBuf &chunkData)
 DataBuf PngImageChunkUtils::GetRawTextFromZtxtChunk(const DataBuf &chunkData, size_t keySize,
     DataBuf &rawText, bool &isCompressed)
 {
+    if (chunkData.Empty() || chunkData.CData() == nullptr) {
+        IMAGE_LOGE("Failed to get raw text from ztxt: chunkData is null. ");
+        return {};
+    }
     if (*(chunkData.CData(keySize + 1)) != CHUNK_COMPRESS_METHOD_VALID) {
         IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
             "Expected: %{public}d, Found: %{public}d",
@@ -128,6 +132,10 @@ DataBuf PngImageChunkUtils::GetRawTextFromTextChunk(const DataBuf &chunkData, si
 
 std::string FetchString(const char *chunkData, size_t dataLength)
 {
+    if (chunkData == nullptr) {
+        IMAGE_LOGE("ChunkData is null. Cannot fetch string.");
+        return {};
+    }
     if (dataLength == 0) {
         IMAGE_LOGE("Data length is zero. Cannot fetch string.");
         return {};
