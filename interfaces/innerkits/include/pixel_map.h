@@ -296,6 +296,12 @@ public:
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
+    // format support rgba8888, nv12, nv21. The default value is rgba8888
+    // If toSRGB is false, pixelmap will be converted to display_p3
+    NATIVEEXPORT uint32_t ToSdr(PixelFormat format, bool toSRGB);
+    // use for hdr pixelmap, If isSRGB is false, the colorspace is p3 when converting to SDR.
+    NATIVEEXPORT void SetToSdrColorSpaceIsSRGB(bool isSRGB);
+    NATIVEEXPORT bool GetToSdrColorSpaceIsSRGB();
 
     NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
     {
@@ -448,6 +454,7 @@ protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
+    bool toSdrColorIsSRGB_ = false;
 };
 } // namespace Media
 } // namespace OHOS

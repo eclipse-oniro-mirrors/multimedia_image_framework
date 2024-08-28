@@ -17,7 +17,7 @@
 #define JPEG_HARDWARE_DECODER_H
 
 #include <cinttypes>
-#include "v1_0/icodec_image.h"
+#include "v2_0/icodec_image.h"
 #include "v1_0/include/idisplay_buffer.h"
 #include "image/image_plugin_type.h"
 #include "image/input_data_stream.h"
@@ -56,7 +56,7 @@ public:
 
     bool IsHardwareDecodeSupported(const std::string& srcImgFormat, OHOS::Media::Size srcImgSize);
     uint32_t Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream, OHOS::Media::Size srcImgSize, uint32_t sampleSize,
-                    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer);
+                    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
 private:
     class LifeSpanTimer {
     public:
@@ -77,7 +77,7 @@ private:
     }
     bool InitDecoder();
     bool AssembleComponentInfo(jpeg_decompress_struct* jpegCompressInfo);
-    bool HuffmanTblTransform(JHUFF_TBL* huffTbl, OHOS::HDI::Codec::Image::V1_0::CodecJpegHuffTable& tbl);
+    bool HuffmanTblTransform(JHUFF_TBL* huffTbl, OHOS::HDI::Codec::Image::V2_0::CodecJpegHuffTable& tbl);
     void AssembleHuffmanTable(jpeg_decompress_struct* jpegCompressInfo);
     void AssembleQuantizationTable(jpeg_decompress_struct* jpegCompressInfo);
     bool AssembleJpegImgHeader(jpeg_decompress_struct* jpegCompressInfo);
@@ -86,16 +86,16 @@ private:
     bool JumpOverCurrentJpegMarker(const uint8_t* data, unsigned int& curPos, unsigned int totalLen, uint16_t marker);
     bool GetCompressedDataStart();
     bool PrepareInputData(SkCodec *codec, ImagePlugin::InputDataStream *srcStream);
-    bool DoDecode(OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBufferHandle);
+    bool DoDecode(OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBufferHandle);
     void RecycleAllocatedResource();
     static OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* GetBufferMgr();
     bool CheckInputColorFmt(SkCodec *codec);
 private:
     static constexpr char JPEG_FORMAT_DESC[] = "image/jpeg";
-    OHOS::sptr<OHOS::HDI::Codec::Image::V1_0::ICodecImage> hwDecoder_;
+    OHOS::sptr<OHOS::HDI::Codec::Image::V2_0::ICodecImage> hwDecoder_;
     OHOS::HDI::Display::Buffer::V1_0::IDisplayBuffer* bufferMgr_;
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer inputBuffer_;
-    OHOS::HDI::Codec::Image::V1_0::CodecJpegDecInfo decodeInfo_;
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer inputBuffer_;
+    OHOS::HDI::Codec::Image::V2_0::CodecJpegDecInfo decodeInfo_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

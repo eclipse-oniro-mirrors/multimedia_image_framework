@@ -1021,7 +1021,7 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 }
 #ifdef JPEG_HW_DECODE_ENABLE
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer& outputBuffer)
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
 {
     uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
@@ -1079,7 +1079,7 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     }
 
     Media::AllocatorType tmpAllocatorType = context.allocatorType;
-    OHOS::HDI::Codec::Image::V1_0::CodecImageBuffer outputBuffer;
+    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer outputBuffer;
     uint32_t ret = AllocOutputBuffer(context, outputBuffer);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Decode failed, Alloc OutputBuffer failed, ret=%{public}d", ret);
