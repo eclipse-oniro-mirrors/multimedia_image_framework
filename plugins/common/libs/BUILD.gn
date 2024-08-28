@@ -39,8 +39,9 @@ group("multimediaplugin") {
     deps = [
       "image/formatagentplugin:formatagentmetadata",
       "image/formatagentplugin:imageformatagent",
-      "image/libgifplugin:gifplugin",
-      "image/libgifplugin:gifpluginmetadata",
+
+      #"image/libgifplugin:gifplugin",
+      #"image/libgifplugin:gifpluginmetadata",
 
       #      "image/libheifplugin:heifplugin",
       #      "image/libheifplugin:heifpluginmetadata",
