@@ -317,6 +317,23 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
     uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(info_.width(), info_.height());
     SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
                            static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = hwBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+        IMAGE_LOGE("heif yuv decode, Get planesInfo failed, retVal:%{public}d", retVal);
+    } else {
+        uint32_t uvPlaneOffset = (context.info.pixelFormat == PixelFormat::NV12 ||
+                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_ONE : NUM_2;
+        context.yuvInfo.imageSize = { info_.width(), info_.height() };
+        context.yuvInfo.yWidth = info_.width();
+        context.yuvInfo.yHeight = info_.height();
+        context.yuvInfo.uvWidth = static_cast<uint32_t>((info_.width() + 1) / NUM_2);
+        context.yuvInfo.uvHeight = static_cast<uint32_t>((info_.height() + 1) / NUM_2);
+        context.yuvInfo.yStride = planes->planes[0].columnStride;
+        context.yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+        context.yuvInfo.yOffset = planes->planes[0].offset;
+        context.yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    }
     return SUCCESS;
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
