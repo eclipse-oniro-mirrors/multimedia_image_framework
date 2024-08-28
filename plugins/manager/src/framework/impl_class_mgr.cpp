@@ -433,10 +433,9 @@ uint32_t ImplClassMgr::CompareStringPriority(const AttrData &lhs, const AttrData
 
     if ((lhs.GetMaxValue(lhsValue) != SUCCESS) || (rhs.GetMaxValue(rhsValue) != SUCCESS)) {
         IMAGE_LOGE("CompareStringPriority: failed to get attribute max value.");
-
         return ERR_COMP_ERROR;
     }
-    
+
     if (lhsValue == nullptr || rhsValue == nullptr) {
         IMAGE_LOGE("CompareStringPriority: value is null.");
         return ERR_COMP_ERROR;
