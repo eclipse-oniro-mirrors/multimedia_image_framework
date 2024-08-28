@@ -25,6 +25,11 @@
 #include <dlfcn.h>
 #include <filesystem>
 #include <vector>
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#include <fcntl.h>
+#include <csetjmp>
+#include <csignal>
+#endif
 
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
@@ -154,11 +159,46 @@ static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
-static const int IMAGE_HEADER_SIZE = 12;
+static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
-static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+thread_local volatile bool isSignalJmpSetted = false;
+thread_local sigjmp_buf signalJmpBuf = {};
+
+static void HandleSigbus(int c)
+{
+    if (isSignalJmpSetted) {
+        isSignalJmpSetted = false;
+        siglongjmp(signalJmpBuf, c);
+    }
+}
+
+static void HandleSigsegv(int c)
+{
+    if (isSignalJmpSetted) {
+        isSignalJmpSetted = false;
+        siglongjmp(signalJmpBuf, c);
+    }
+}
+
+void InstallSignalHandlers()
+{
+    struct sigaction actSigbus;
+    actSigbus.sa_handler = &HandleSigbus;
+    struct sigaction actSigsegv;
+    actSigsegv.sa_handler = &HandleSigsegv;
+
+    actSigbus.sa_flags = SA_NODEFER;
+    sigemptyset(&actSigbus.sa_mask);
+    actSigsegv.sa_flags = SA_NODEFER;
+    sigemptyset(&actSigsegv.sa_mask);
+
+    sigaction(SIGBUS, &actSigbus, nullptr);
+    sigaction(SIGSEGV, &actSigsegv, nullptr);
+}
+#endif
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -1528,25 +1568,35 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     return ERR_MEDIA_WRITE_PARCEL_FAIL;
 }
 
-bool ImageSource::PrereadSourceStream()
+uint32_t ImageSource::ReadSourceData(uint32_t bufferSize, bool addFlag)
 {
-    uint8_t* prereadBuffer = new (std::nothrow) uint8_t[IMAGE_HEADER_SIZE];
-    if (prereadBuffer == nullptr) {
-        return false;
+    if (bufferSize == 0) {
+        IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
     }
-    uint32_t prereadSize = 0;
+
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
+    uint8_t* tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("Allocate buffer failed, tmpBuffer is nullptr.");
+        return ERR_IMAGE_SOURCE_DATA;
+    }
     uint32_t savedPosition = sourceStreamPtr_->Tell();
     sourceStreamPtr_->Seek(0);
-    bool retRead = sourceStreamPtr_->Read(IMAGE_HEADER_SIZE, prereadBuffer,
-                                          IMAGE_HEADER_SIZE, prereadSize);
+    uint32_t readSize = 0;
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
     sourceStreamPtr_->Seek(savedPosition);
     if (!retRead) {
-        IMAGE_LOGE("Preread source stream failed.");
-        delete[] prereadBuffer; // Don't forget to delete tmpBuffer if read failed
-        return false;
+        IMAGE_LOGE("sourceStream read failed.");
+        delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
+        return ERR_IMAGE_SOURCE_DATA;
     }
-    delete[] prereadBuffer;
-    return true;
+    uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
+    delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
+    return result;
 }
 
 uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
@@ -1563,44 +1613,29 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     }
 
     IMAGE_LOGD("sourceStreamPtr create metadataAccessor");
-    if (!PrereadSourceStream()) {
-        return ERR_IMAGE_SOURCE_DATA;
-    }
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
+#if !defined(_WIN32) && !defined(_APPLE) &&!defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+        InstallSignalHandlers();
+        uint32_t errorCode = SUCCESS;
+        if (!isSignalJmpSetted) {
+            isSignalJmpSetted = true;
+            if (sigsetjmp(signalJmpBuf, 0) == 0) {
+                errorCode = CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+                isSignalJmpSetted = false;
+                return errorCode;
+            } else {
+                IMAGE_LOGE("CreateExifMetadata use mmap read failed.");
+                isSignalJmpSetted = false;
+            }
+        }
+#else
+        IMAGE_LOGD("CreateExifMetadata does not use mmap.");
         return CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+#endif
     }
-
-    uint32_t readSize = 0;
-    if (bufferSize == 0) {
-        IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    if (bufferSize > MAX_BUFFER_SIZE) {
-        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    uint8_t* tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
-    if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("Allocate buffer failed, tmpBuffer is nullptr.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    sourceStreamPtr_->Seek(0);
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
-    sourceStreamPtr_->Seek(savedPosition);
-    if (!retRead) {
-        IMAGE_LOGE("sourceStream read failed.");
-        delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-    uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
-    delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
-    return result;
+    return ReadSourceData(bufferSize, addFlag);
 }
 
 uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
