@@ -149,6 +149,7 @@ static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
 static const int IMAGE_HEADER_SIZE = 12;
+static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 #ifdef SUT_DECODE_ENABLE
 constexpr uint8_t ASTC_HEAD_BYTES = 16;
 constexpr uint8_t ASTC_MAGIC_0 = 0x13;
@@ -401,6 +402,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, c
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint32_t size, const SourceOptions &opts,
     uint32_t &errorCode)
 {
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
+        errorCode = ERR_IMAGE_TOO_LARGE;
+        return nullptr;
+    }
     IMAGE_LOGD("[ImageSource]create Imagesource with buffer.");
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with buffer.");
     if (data == nullptr || size == 0) {
@@ -1354,6 +1360,10 @@ void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 
 uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
+        return ERR_IMAGE_TOO_LARGE;
+    }
     ImageDataStatistics imageDataStatistics("[ImageSource]UpdateData");
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]image source update data, source stream is null.");
@@ -2652,6 +2662,10 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     if (size < IMAGE_URL_PREFIX.size() ||
         ::memcmp(data, IMAGE_URL_PREFIX.c_str(), IMAGE_URL_PREFIX.size()) != INT_ZERO) {
         IMAGE_LOGD("[ImageSource]Base64 image header mismatch.");
+        return nullptr;
+    }
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
         return nullptr;
     }
     const char *data1 = reinterpret_cast<const char *>(data);
