@@ -161,7 +161,7 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     const uint32_t size = GetULong(chunkSize, littleEndian);
 
     DataBuf chunkData(size);
-    if (size == 0 || chunkData.Empty()) {
+    if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
         IMAGE_LOGE("Image stream does not find vp8x data.");
         return false;
     }

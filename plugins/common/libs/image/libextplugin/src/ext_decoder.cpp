@@ -1029,6 +1029,10 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
         IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
+    if (context.pixelsBuffer.context == nullptr) {
+        IMAGE_LOGE("Alloc OutputBuffer failed, context is null");
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
     BufferHandle *handle = (static_cast<SurfaceBuffer*>(context.pixelsBuffer.context))->GetBufferHandle();
     if (outputColorFmt_ == PIXEL_FMT_RGBA_8888) {
         outputBufferSize_.width = static_cast<uint32_t>(handle->stride) / NUM_4;
