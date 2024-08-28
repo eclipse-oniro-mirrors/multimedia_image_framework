@@ -153,6 +153,7 @@ void BasicTransformer::ReleaseBuffer(AllocatorType allocatorType, int fd, int da
     if (allocatorType == AllocatorType::HEAP_ALLOC) {
         if (buffer != nullptr) {
             free(buffer);
+            buffer = nullptr;
         }
         return;
     }
