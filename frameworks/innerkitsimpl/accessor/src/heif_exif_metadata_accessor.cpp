@@ -51,7 +51,7 @@ uint32_t HeifExifMetadataAccessor::Read()
 
     DataBuf dataBuf;
     if (!GetExifItemData(parser, dataBuf)) {
-        IMAGE_LOGE("The EXIF value is invalid.");
+        IMAGE_LOGD("The EXIF value is invalid.");
         return ERR_IMAGE_SOURCE_DATA;
     }
 

@@ -156,7 +156,7 @@ bool FileSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
         return false;
     }
     if (!GetData(desiredSize, outData)) {
-        IMAGE_LOGI("[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}u", desiredSize);
+        IMAGE_LOGD("[FileSourceStream]peek dataStreamBuffer fail, desiredSize:%{public}u", desiredSize);
         return false;
     }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
@@ -175,7 +175,7 @@ bool FileSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t b
         return false;
     }
     if (!GetData(desiredSize, outBuffer, bufferSize, readSize)) {
-        IMAGE_LOGI("[FileSourceStream]read outBuffer fail.");
+        IMAGE_LOGD("[FileSourceStream]read outBuffer fail.");
         return false;
     }
     fileOffset_ += readSize;
@@ -226,7 +226,7 @@ uint32_t FileSourceStream::Tell()
 bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
 {
     if (fileSize_ == fileOffset_) {
-        IMAGE_LOGE("[FileSourceStream]read finish, offset:%{public}zu ,dataSize%{public}zu.",
+        IMAGE_LOGE("[FileSourceStream]read data finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
         return false;
     }
@@ -239,7 +239,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
-            IMAGE_LOGE("fread failed, ferror:%{public}d", fRes);
+            IMAGE_LOGD("fread failed, ferror:%{public}d", fRes);
             return false;
         }
     }
@@ -276,7 +276,7 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
             "fileOffset_:%{public}zu", bytesRead, desiredSize, fileSize_, fileOffset_);
         int fRes = ferror(filePtr_);
         if (fRes) {
-            IMAGE_LOGE("fread failed, ferror:%{public}d", fRes);
+            IMAGE_LOGD("fread failed, ferror:%{public}d", fRes);
             free(readBuffer_);
             readBuffer_ = nullptr;
             return false;

@@ -178,7 +178,7 @@ uint32_t RawDecoder::GetImageSize(uint32_t index, Size &size)
     // only state RawDecodingState::SOURCE_INITED and RawDecodingState::BASE_INFO_PARSING can go here.
     uint32_t ret = DoDecodeHeader();
     if (ret != Media::SUCCESS) {
-        IMAGE_LOGE("[GetImageSize]decode header error on get image size, ret:%{public}u.", ret);
+        IMAGE_LOGD("[GetImageSize]decode header error on get image size, ret:%{public}u.", ret);
         state_ = RawDecodingState::BASE_INFO_PARSING;
         return ret;
     }
@@ -244,7 +244,7 @@ uint32_t RawDecoder::DoDecodeHeader()
     }
 
     uint32_t ret = Media::ERR_IMAGE_DATA_UNSUPPORT;
-    IMAGE_LOGE("DoDecodeHeader header decode fail, ret=[%{public}u]", ret);
+    IMAGE_LOGD("DoDecodeHeader header decode fail, ret=[%{public}u]", ret);
 
     IMAGE_LOGD("DoDecodeHeader OUT");
     return ret;

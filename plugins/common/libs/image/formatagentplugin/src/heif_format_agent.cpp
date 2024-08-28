@@ -74,7 +74,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     uint64_t chunkSize = EndianSwap32(ptr[0]);  // first item
     uint32_t chunkType = EndianSwap32(ptr[1]);  // second item
     if (chunkType != Fourcc('f', 't', 'y', 'p')) {
-        IMAGE_LOGE("head type is not ftyp.");
+        IMAGE_LOGD("head type is not ftyp.");
         return false;
     }
 

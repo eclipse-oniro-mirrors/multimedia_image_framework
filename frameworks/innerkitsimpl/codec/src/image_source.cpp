@@ -452,7 +452,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
                 streamPtr = FileSourceStream::CreateSourceStream(pathName);
             }
             if (streamPtr == nullptr) {
-                IMAGE_LOGE("[ImageSource]failed to create file path source stream");
+                IMAGE_LOGD("[ImageSource]failed to create file path source stream");
             }
             return streamPtr;
         },
@@ -1411,7 +1411,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     auto iter = GetValidImageStatus(index, ret);
     if (iter == imageStatusMap_.end()) {
         guard.unlock();
-        IMAGE_LOGE("[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
+        IMAGE_LOGD("[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
         return ret;
     }
     ImageInfo &info = (iter->second).imageInfo;
@@ -1926,7 +1926,7 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
         return res;
     }
     if (!agent.CheckFormat(outData.inputStreamBuffer, size)) {
-        IMAGE_LOGE("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
+        IMAGE_LOGD("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     return SUCCESS;
@@ -1939,7 +1939,8 @@ uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t siz
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!sourceStreamPtr_->Peek(size, outData)) {
-        IMAGE_LOGE("[ImageSource]stream peek the data fail, desiredSize:%{public}zu", size);
+        IMAGE_LOGE("[ImageSource]stream peek the data fail, imageId %{public}" PRIu64 ", desiredSize:%{public}zu",
+            imageId_, size);
         return ERR_IMAGE_SOURCE_DATA;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
@@ -2023,7 +2024,7 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
         if (decoderPtr->GetHeifParseErr() != 0) {
             heifParseErr_ = decoderPtr->GetHeifParseErr();
         }
-        IMAGE_LOGE("Failed to get extended format. Error code: %{public}d.", errorCode);
+        IMAGE_LOGD("Failed to get extended format. Error code: %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
 
@@ -2072,7 +2073,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             format = iter->first;
             return SUCCESS;
         } else {
-            IMAGE_LOGE("[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
+            IMAGE_LOGD("[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
             return ret;
         }
     }
@@ -2112,7 +2113,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum) __attribute__(
             }
             sourceInfo_.state = SourceInfoState::FILE_INFO_ERROR;
             decodeState_ = SourceDecodingState::FILE_INFO_ERROR;
-            IMAGE_LOGE("[ImageSource]image source error.");
+            IMAGE_LOGD("[ImageSource]OnSourceRecognized image source error.");
             return ret;
         }
     }
@@ -2148,7 +2149,7 @@ uint32_t ImageSource::OnSourceUnresolved()
             }
             sourceInfo_.state = SourceInfoState::SOURCE_ERROR;
             decodeState_ = SourceDecodingState::SOURCE_ERROR;
-            IMAGE_LOGE("[ImageSource]image source error.");
+            IMAGE_LOGD("[ImageSource]OnSourceUnresolved image source error.");
             return ret;
         }
     }
@@ -2199,7 +2200,7 @@ uint32_t ImageSource::DecodeSourceInfo(bool isAcquiredImageNum)
     if (decodeState_ == SourceDecodingState::UNRESOLVED) {
         ret = OnSourceUnresolved();
         if (ret != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
+            IMAGE_LOGD("[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
             return ret;
         }
     }
@@ -2225,7 +2226,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
 {
     uint32_t ret = DecodeSourceInfo(false);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]decode the image fail, ret:%{public}d.", ret);
+        IMAGE_LOGD("[ImageSource]decode the image fail, ret:%{public}d.", ret);
         return ret;
     }
     if (sourceInfo_.encodedFormat == InnerFormat::ASTC_FORMAT) {
@@ -2415,7 +2416,7 @@ ImageSource::ImageStatusMap::iterator ImageSource::GetValidImageStatus(uint32_t 
     if (iter == imageStatusMap_.end()) {
         errorCode = DecodeImageInfo(index, iter);
         if (errorCode != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
+            IMAGE_LOGD("[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
             return imageStatusMap_.end();
         }
     } else if (iter->second.imageState < ImageDecodingState::BASE_INFO_PARSED) {
