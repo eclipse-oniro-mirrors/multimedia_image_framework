@@ -58,7 +58,7 @@ bool GifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     if (memcmp(GIF87_STAMP, headerData, GIF_STAMP_LEN) != 0 && memcmp(GIF89_STAMP, headerData, GIF_STAMP_LEN) != 0) {
-        IMAGE_LOGI("header stamp mismatch.");
+        IMAGE_LOGD("header stamp mismatch.");
         return false;
     }
     return true;

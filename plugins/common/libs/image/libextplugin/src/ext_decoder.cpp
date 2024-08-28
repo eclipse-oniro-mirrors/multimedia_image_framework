@@ -894,6 +894,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             return res;
         }
     }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (context.allocatorType == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
         if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
@@ -903,6 +904,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
             }
         }
     }
+#endif
     return SUCCESS;
 }
 
@@ -1148,12 +1150,14 @@ uint32_t ExtDecoder::HardWareDecode(DecodeContext &context)
     if (outputColorFmt_ == PIXEL_FMT_YCRCB_420_SP) {
         context.yuvInfo.imageSize = {hwDstInfo_.width(), hwDstInfo_.height()};
     }
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (sbuffer && (sbuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = sbuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
         }
     }
+#endif
     return SUCCESS;
 }
 #endif
@@ -1284,14 +1288,14 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGE("create codec: input stream is nullptr.");
         return false;
     } else if (stream_->GetStreamSize() == SIZE_ZERO) {
-        IMAGE_LOGE("create codec: input stream size is zero.");
+        IMAGE_LOGD("create codec: input stream size is zero.");
         return false;
     }
     uint32_t src_offset = stream_->Tell();
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
-        IMAGE_LOGE("create codec from stream failed");
+        IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
     }
@@ -1301,7 +1305,7 @@ bool ExtDecoder::CheckCodec()
 bool ExtDecoder::DecodeHeader()
 {
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("DecodeHeader Check codec failed");
         return false;
     }
     info_ = codec_->getInfo();
@@ -1778,7 +1782,7 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
 {
     IMAGE_LOGD("[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("[GetFilterArea] Check codec failed");
         return NO_EXIF_TAG;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();

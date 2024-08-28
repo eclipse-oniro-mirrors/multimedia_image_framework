@@ -247,7 +247,7 @@ NativeComponent* NativeImage::CreateCombineComponent(int32_t type)
 {
     uint64_t size = NUM_0;
     GetDataSize(size);
-    return CreateComponent(type, static_cast<size_t>(size), buffer_->GetStride(), NUM_1, GetSurfaceBufferAddr());
+    return CreateComponent(type, static_cast<size_t>(size), buffer_->GetWidth(), NUM_1, GetSurfaceBufferAddr());
 }
 int32_t NativeImage::GetSize(int32_t &width, int32_t &height)
 {
@@ -282,7 +282,7 @@ int32_t NativeImage::GetDataSize(uint64_t &size)
         IMAGE_LOGI("S ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
             extraDataSize, size);
     } else {
-        IMAGE_LOGI("S ExtraGet dataSize %{public}d", extraDataSize);
+        IMAGE_LOGD("S ExtraGet dataSize %{public}d", extraDataSize);
         size = extraDataSize;
     }
     return SUCCESS;
@@ -341,7 +341,7 @@ void NativeImage::release()
     if (buffer_ == nullptr) {
         return;
     }
-    IMAGE_LOGI("NativeImage release");
+    IMAGE_LOGD("NativeImage release");
     if (components_.size() > 0) {
         components_.clear();
     }

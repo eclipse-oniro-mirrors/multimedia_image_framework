@@ -73,6 +73,7 @@ thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
+napi_ref PixelMapNapi::AntiAliasingLevel_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataKey_ = nullptr;
 napi_ref PixelMapNapi::HdrMetadataType_ = nullptr;
 static std::mutex pixelMapCrossThreadMutex_;
@@ -88,6 +89,13 @@ struct ImageEnum {
     std::string name;
     int32_t numVal;
     std::string strVal;
+};
+
+static std::vector<struct ImageEnum> AntiAliasingLevelMap = {
+    {"NONE", 0, ""},
+    {"LOW", 1, ""},
+    {"MEDIUM", 2, ""},
+    {"HIGH", 3, ""},
 };
 
 static std::vector<struct ImageEnum> HdrMetadataKeyMap = {
@@ -214,25 +222,25 @@ static bool parseInitializationOptions(napi_env env, napi_value root, Initializa
     }
 
     if (!GET_UINT32_BY_NAME(root, "alphaType", tmpNumber)) {
-        IMAGE_LOGI("no alphaType in initialization options");
+        IMAGE_LOGD("no alphaType in initialization options");
     }
     opts->alphaType = ParseAlphaType(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {
-        IMAGE_LOGI("no pixelFormat in initialization options");
+        IMAGE_LOGD("no pixelFormat in initialization options");
     }
     opts->pixelFormat = ParsePixlForamt(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "srcPixelFormat", tmpNumber)) {
-        IMAGE_LOGI("no srcPixelFormat in initialization options");
+        IMAGE_LOGD("no srcPixelFormat in initialization options");
     }
     opts->srcPixelFormat = ParsePixlForamt(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "scaleMode", tmpNumber)) {
-        IMAGE_LOGI("no scaleMode in initialization options");
+        IMAGE_LOGD("no scaleMode in initialization options");
     }
     opts->scaleMode = ParseScaleMode(tmpNumber);
 
@@ -545,6 +553,8 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+        DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
+            CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataKey",
             CreateEnumTypeObject(env, napi_number, &HdrMetadataKey_, HdrMetadataKeyMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataType",
@@ -691,7 +701,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
 extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixels(napi_env env, napi_value value,
     uint8_t** addrPtr)
 {
-    IMAGE_LOGI("AccessPixels IN");
+    IMAGE_LOGD("AccessPixels IN");
 
     PixelMapNapi *pixmapNapi = nullptr;
     napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));

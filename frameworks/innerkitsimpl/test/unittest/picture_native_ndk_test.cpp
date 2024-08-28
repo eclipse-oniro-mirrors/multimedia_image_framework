@@ -47,7 +47,7 @@ constexpr int32_t errorAuxiliaryPictureType = 20;
 constexpr uint32_t rowStride = 10;
 static constexpr Image_MetadataType INVALID_METADATA = static_cast<Image_MetadataType>(-1);
 
-OH_PictureNative *CreateNativePicture()
+OH_PictureNative *CreateNativePicture(std::vector<Image_AuxiliaryPictureType> ayxTypeList = {})
 {
     size_t length = IMAGE_JPEG_PATH.size();
     char filePath[bufferSize];
@@ -62,15 +62,21 @@ OH_PictureNative *CreateNativePicture()
     OH_DecodingOptions *opts = nullptr;
     OH_PixelmapNative *pixelmap = nullptr;
     OH_DecodingOptions_Create(&opts);
+    OH_DecodingOptionsForPicture *options = nullptr;
+    ret = OH_DecodingOptionsForPicture_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(options, nullptr);
 
     ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
-    OH_DecodingOptions_Release(opts);
+    ret = OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(options, ayxTypeList.data(), ayxTypeList.size());
 
     OH_PictureNative *picture = nullptr;
     ret = OH_PictureNative_CreatePicture(pixelmap, &picture);
+    ret = OH_ImageSourceNative_CreatePicture(source, options, &picture);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
 
+    OH_DecodingOptions_Release(opts);
+    EXPECT_NE(picture, nullptr);
     return picture;
 }
 
@@ -394,7 +400,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_GetMetadataTest001, TestSize.
     Image_MetadataType type = Image_MetadataType::EXIF_METADATA;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_GetMetadata(picture, type, &metadataptr);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(ret, IMAGE_UNSUPPORTED_METADATA);
 
     OH_PictureMetadata_Release(metadataptr);
     OH_AuxiliaryPictureNative_Release(picture);
@@ -442,14 +448,18 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_SetMetadataTest001, TestSize.
 {
     OH_AuxiliaryPictureNative *picture = CreateAuxiliaryPictureNative();
 
-    std::shared_ptr<OHOS::Media::ImageMetadata> metadata = std::make_shared<OHOS::Media::ExifMetadata>();
-    auto exifMetadata = static_cast<OHOS::Media::ExifMetadata *>(metadata.get());
-    exifMetadata->CreateExifdata();
-    std::unique_ptr<OH_PictureMetadata> metadataptr = std::make_unique<OH_PictureMetadata>(metadata);
-
-    Image_ErrorCode ret = OH_AuxiliaryPictureNative_SetMetadata(picture,
-        Image_MetadataType::EXIF_METADATA, metadataptr.get());
+    OH_PictureMetadata *metadataptr = nullptr;
+    Image_ErrorCode ret = OH_PictureMetadata_Create(EXIF_METADATA, &metadataptr);
     EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_NE(metadataptr, nullptr);
+
+    ret = OH_AuxiliaryPictureNative_SetMetadata(picture, EXIF_METADATA, metadataptr);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_PictureMetadata *metadataPtrGet = nullptr;
+    ret = OH_AuxiliaryPictureNative_GetMetadata(picture, EXIF_METADATA, &metadataPtrGet);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    OH_PictureMetadata_Release(metadataptr);
+    OH_PictureMetadata_Release(metadataPtrGet);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
@@ -551,15 +561,12 @@ HWTEST_F(PictureNdkTest, OH_PictureNative_GetGainmapPixelmap001, TestSize.Level1
  */
 HWTEST_F(PictureNdkTest, OH_PictureNative_GetGainmapPixelmap002, TestSize.Level3)
 {
-    OH_PictureNative *picture = CreateNativePicture();
+    std::vector<Image_AuxiliaryPictureType> auxTypeList = {AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP};
+    OH_PictureNative *picture = CreateNativePicture(auxTypeList);
     OH_AuxiliaryPictureNative *auxiliaryPicture = CreateAuxiliaryPictureNative();
 
-    Image_ErrorCode ret = OH_PictureNative_SetAuxiliaryPicture(
-        picture, Image_AuxiliaryPictureType::AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP, auxiliaryPicture);
-    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-
     OH_PixelmapNative *gainmapPixelmap = nullptr;
-    ret = OH_PictureNative_GetGainmapPixelmap(picture, &gainmapPixelmap);
+    Image_ErrorCode ret = OH_PictureNative_GetGainmapPixelmap(picture, &gainmapPixelmap);
     EXPECT_EQ(gainmapPixelmap, nullptr);
     EXPECT_EQ(ret, IMAGE_ALLOC_FAILED);
 

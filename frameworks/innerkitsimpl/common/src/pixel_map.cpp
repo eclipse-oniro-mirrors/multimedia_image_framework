@@ -1782,7 +1782,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     }
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    IMAGE_LOGI("AshmemSetProt:[%{public}d].", result);
+    IMAGE_LOGD("AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
         ::close(fd);
         return false;
@@ -1793,7 +1793,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
         IMAGE_LOGE("WriteAshmemData map failed, errno:%{public}d", errno);
         return false;
     }
-    IMAGE_LOGI("mmap success");
+    IMAGE_LOGD("mmap success");
 
     if (memcpy_s(ptr, size, data, size) != EOK) {
         ::munmap(ptr, size);
@@ -1982,6 +1982,10 @@ bool PixelMap::WriteImageInfo(Parcel &parcel) const
         IMAGE_LOGE("write image info base density:[%{public}d] to parcel failed.", imageInfo_.baseDensity);
         return false;
     }
+    if (!parcel.WriteString(imageInfo_.encodedFormat)) {
+        IMAGE_LOGE("write image info encoded format:[%{public}s] to parcel failed.", imageInfo_.encodedFormat.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -2030,7 +2034,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd <= 0) {
-            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
+            IMAGE_LOGD("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
@@ -2196,7 +2200,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (!WriteMemInfoToParcel(parcel, bufferSize)) {
-        IMAGE_LOGE("write memory info to parcel failed.");
+        IMAGE_LOGD("write memory info to parcel failed.");
         return false;
     }
 
@@ -2229,6 +2233,7 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     imgInfo.alphaType = static_cast<AlphaType>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map alphaType:[%{public}d] to parcel.", imgInfo.alphaType);
     imgInfo.baseDensity = parcel.ReadInt32();
+    imgInfo.encodedFormat = parcel.ReadString();
     return true;
 }
 
@@ -2266,31 +2271,31 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
         yDataInfo.imageSize.height = parcel.ReadInt32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel height:%{public}d", yDataInfo.imageSize.height);
 
-        yDataInfo.yWidth = parcel.ReadInt32();
+        yDataInfo.yWidth = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yWidth:%{public}d", yDataInfo.yWidth);
-        yDataInfo.yHeight = parcel.ReadInt32();
+        yDataInfo.yHeight = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yHeight:%{public}d", yDataInfo.yHeight);
-        yDataInfo.uvWidth = parcel.ReadInt32();
+        yDataInfo.uvWidth = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvWidth:%{public}d", yDataInfo.uvWidth);
-        yDataInfo.uvHeight = parcel.ReadInt32();
+        yDataInfo.uvHeight = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvHeight:%{public}d", yDataInfo.uvHeight);
 
-        yDataInfo.yStride = parcel.ReadInt32();
+        yDataInfo.yStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yStride:%{public}d", yDataInfo.yStride);
-        yDataInfo.uStride = parcel.ReadInt32();
+        yDataInfo.uStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uStride:%{public}d", yDataInfo.uStride);
-        yDataInfo.vStride = parcel.ReadInt32();
+        yDataInfo.vStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vStride:%{public}d", yDataInfo.vStride);
-        yDataInfo.uvStride = parcel.ReadInt32();
+        yDataInfo.uvStride = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvStride:%{public}d", yDataInfo.uvStride);
 
-        yDataInfo.yOffset = parcel.ReadInt32();
+        yDataInfo.yOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yOffset:%{public}d", yDataInfo.yOffset);
-        yDataInfo.uOffset = parcel.ReadInt32();
+        yDataInfo.uOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uOffset:%{public}d", yDataInfo.uOffset);
-        yDataInfo.vOffset = parcel.ReadInt32();
+        yDataInfo.vOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vOffset:%{public}d", yDataInfo.vOffset);
-        yDataInfo.uvOffset = parcel.ReadInt32();
+        yDataInfo.uvOffset = parcel.ReadUint32();
         IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
 
         SetImageYUVInfo(yDataInfo);
@@ -3284,7 +3289,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
+    IMAGE_LOGD("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
         "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
@@ -3541,7 +3546,7 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
     HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType;
     VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
-    if ((colorspaceType & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
+    if ((static_cast<uint32_t>(colorspaceType) & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
         HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020) {
 #ifdef IMAGE_COLORSPACE_FLAG
         colorspaceType = ColorUtils::ConvertToCMColor(InnerGetGrColorSpace().GetColorSpaceName());

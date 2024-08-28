@@ -28,7 +28,6 @@
 #include "image_type.h"
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
-#include "pixel_astc.h"
 #include "pixel_map.h"
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "picture.h"
@@ -364,10 +363,11 @@ private:
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
-    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+                              uint32_t &errorCode);
+    void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
 #endif
-    uint32_t SetColorSpaceForAstc(PixelAstc& pixelAstc, size_t fileSize);
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";

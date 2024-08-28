@@ -144,6 +144,19 @@ int32_t ImageCodec::SetOutputBuffer(sptr<SurfaceBuffer> output)
     };
     return DoSyncCall(MsgWhat::SET_OUTPUT_BUFFER, proc);
 }
+
+int32_t ImageCodec::GetPackedInputFlag(bool& flag)
+{
+    ParamSP reply;
+    int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_PACKED_INPUT_FLAG, nullptr, reply);
+    if (ret != IC_ERR_OK) {
+        HLOGE("failed to get packed input flag");
+        return ret;
+    }
+    IF_TRUE_RETURN_VAL_WITH_MSG(!reply->GetValue("packedInputFlag", flag),
+        IC_ERR_UNKNOWN, "packed input flag not replied");
+    return IC_ERR_OK;
+}
 /**************************** public functions end ****************************/
 
 ImageCodec::ImageCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
@@ -151,7 +164,7 @@ ImageCodec::ImageCodec(OMX_VIDEO_CODINGTYPE codingType, bool isEncoder)
 {
     debugMode_ = OHOS::system::GetBoolParameter("image.codec.debug", false);
     dumpMode_ = OHOS::system::GetBoolParameter("image.codec.dump", false);
-    LOGI(">> debug mode = %{public}d, dump mode = %{public}d", debugMode_, dumpMode_);
+    LOGD(">> debug mode = %{public}d, dump mode = %{public}d", debugMode_, dumpMode_);
 
     uninitializedState_ = make_shared<UninitializedState>(this);
     initializedState_ = make_shared<InitializedState>(this);
@@ -205,6 +218,7 @@ const char* ImageCodec::ToString(MsgWhat what)
         { RELEASE,                 "RELEASE"                 },
         { GET_OUTPUT_BUFFER_USAGE, "GET_OUTPUT_BUFFER_USAGE" },
         { SET_OUTPUT_BUFFER,       "SET_OUTPUT_BUFFER"       },
+        { GET_PACKED_INPUT_FLAG,   "GET_PACKED_INPUT_FLAG"   },
         { CODEC_EVENT,             "CODEC_EVENT"             },
         { OMX_EMPTY_BUFFER_DONE,   "OMX_EMPTY_BUFFER_DONE"   },
         { OMX_FILL_BUFFER_DONE,    "OMX_FILL_BUFFER_DONE"    },
@@ -234,12 +248,14 @@ bool ImageCodec::GetPixelFmtFromUser(const Format &format)
     optional<PixelFmt> fmt;
     int32_t graphicFmt;
     if (format.GetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, graphicFmt)) {
-        if (graphicFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
-            is10Bit_ = true;
-            graphicFmt = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
-        } else if (graphicFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
-            is10Bit_ = true;
-            graphicFmt = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+        if (!isPackedInputSupported_) {
+            if (graphicFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+                is10Bit_ = true;
+                graphicFmt = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+            } else if (graphicFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+                is10Bit_ = true;
+                graphicFmt = GRAPHIC_PIXEL_FMT_YCRCB_420_SP;
+            }
         }
         fmt = TypeConverter::GraphicFmtToFmt(static_cast<GraphicPixelFormat>(graphicFmt));
     } else {
@@ -255,7 +271,7 @@ optional<double> ImageCodec::GetFrameRateFromUser(const Format &format)
 {
     double frameRate;
     if (format.GetValue(ImageCodecDescriptionKey::FRAME_RATE, frameRate) && frameRate > 0) {
-        LOGI("user set frame rate %{public}.2f", frameRate);
+        LOGD("user set frame rate %{public}.2f", frameRate);
         return frameRate;
     }
     return nullopt;
@@ -435,7 +451,12 @@ int32_t ImageCodec::AllocateSurfaceBuffers(OMX_DIRTYPE portIndex, bool isOutputP
     }
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     pool.clear();
-    bool canReuseOutputBuffer = (output != nullptr) && (!is10Bit_ || isOutputPortSettingChanged);
+    bool canReuseOutputBuffer = false;
+    if (isPackedInputSupported_) {
+        canReuseOutputBuffer = (output != nullptr);
+    } else {
+        canReuseOutputBuffer = (output != nullptr) && (!is10Bit_ || isOutputPortSettingChanged);
+    }
     for (uint32_t i = 0; i < def.nBufferCountActual; ++i) {
         shared_ptr<ImageCodecBuffer> imgCodecBuffer = canReuseOutputBuffer ?
             ImageCodecBuffer::CreateSurfaceBuffer(output) : ImageCodecBuffer::CreateSurfaceBuffer(requestCfg_);
@@ -636,7 +657,7 @@ void ImageCodec::OnOMXFillBufferDone(BufferOperationMode mode, BufferInfo& info,
             }
             bool eos = (info.omxBuffer->flag & OMX_BUFFERFLAG_EOS);
             if (!eos && info.omxBuffer->filledLen == 0) {
-                HLOGI("it's not a eos buffer but not filled, ask omx to re-fill it");
+                HLOGD("it's not a eos buffer but not filled, ask omx to re-fill it");
                 NotifyOmxToFillThisOutBuffer(info);
                 return;
             }
@@ -931,7 +952,7 @@ bool ImageCodec::GetFirstSyncMsgToReply(MsgInfo& msg)
 /**************************** HdiCallback functions begin ****************************/
 int32_t ImageCodec::HdiCallback::EventHandler(CodecEventType event, const EventInfo &info)
 {
-    LOGI("event = %{public}d, data1 = %{public}u, data2 = %{public}u", event, info.data1, info.data2);
+    LOGD("event = %{public}d, data1 = %{public}u, data2 = %{public}u", event, info.data1, info.data2);
     ParamSP msg = make_shared<ParamBundle>();
     msg->SetValue("event", event);
     msg->SetValue("data1", info.data1);

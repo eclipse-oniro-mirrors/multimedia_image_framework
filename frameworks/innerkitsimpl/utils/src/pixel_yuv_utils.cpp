@@ -999,13 +999,13 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     }
 }
 
-static void P010Translate(const uint16_t *srcPixels, YUVDataInfo &yuvInfo,
-    uint16_t *dstPixels, XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides)
+static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo,
+    XYaxis &xyAxis, ImageInfo &info, YUVStrideInfo &strides)
 {
-    const uint16_t *srcY = srcPixels + yuvInfo.yOffset;
-    const uint16_t *srcUV = srcPixels + yuvInfo.uvOffset;
-    uint16_t *dstY = dstPixels;
-    uint16_t *dstUV = dstPixels + strides.uvOffset;
+    const uint16_t *srcY = yuvPixels.srcPixels + yuvInfo.yOffset;
+    const uint16_t *srcUV = yuvPixels.srcPixels + yuvInfo.uvOffset;
+    uint16_t *dstY = yuvPixels.dstPixels;
+    uint16_t *dstUV = yuvPixels.dstPixels + strides.uvOffset;
 
     for (int32_t y = 0; y < info.size.height; y++) {
         for (int32_t x = 0; x < info.size.width; x++) {
@@ -1045,7 +1045,8 @@ bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
         }
         case PixelFormat::YCBCR_P010:
         case PixelFormat::YCRCB_P010: {
-            P010Translate((uint16_t *)srcPixels, yuvInfo, (uint16_t *)dstPixels, xyAxis, info, dstStrides);
+            YuvPixelsP010Translate yuvPixels = {(uint16_t *)srcPixels, (uint16_t *)dstPixels};
+            P010Translate(yuvPixels, yuvInfo, xyAxis, info, dstStrides);
             return true;
         }
         default:

@@ -56,7 +56,7 @@ bool JpegFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     }
 
     if (memcmp(headerData, JPEG_HEADER, headerSize) != 0) {
-        IMAGE_LOGI("header stamp mismatch.");
+        IMAGE_LOGD("header stamp mismatch.");
         return false;
     }
     return true;

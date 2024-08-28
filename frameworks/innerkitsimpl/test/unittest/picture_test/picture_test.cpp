@@ -632,88 +632,6 @@ HWTEST_F(PictureTest, GetGainmapPixelmapTest002, TestSize.Level2)
 }
 
 /**
- * @tc.name: SetExifMetadataTest001
- * @tc.desc: Set exif metadata successfully.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetExifMetadataTest001, TestSize.Level1)
-{
-    auto exifData = exif_data_new_from_file(IMAGE_INPUT_EXIF_JPEG_PATH.c_str());
-    ASSERT_NE(exifData, nullptr);
-    std::string imageLength, iamgeWith;
-    std::shared_ptr<ExifMetadata> exifMetadata = std::make_shared<ExifMetadata>(exifData);
-    ASSERT_EQ(exifMetadata->GetValue("ImageLength", imageLength), SUCCESS);
-    ASSERT_EQ(exifMetadata->GetValue("ImageWidth", iamgeWith), SUCCESS);
-    unsigned char *dataBlob = nullptr;
-    uint32_t size = 0;
-    TiffParser::Encode(&dataBlob, size, exifData);
-    ASSERT_NE(dataBlob, nullptr);
-    ASSERT_NE(size, 0);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    sptr<SurfaceBuffer> exifbuffer = SurfaceBuffer::Create();
-    ASSERT_NE(exifbuffer, nullptr);
-    BufferRequestConfig requestConfig = {
-        .width = std::stoi(imageLength),
-        .height = std::stoi(iamgeWith),
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-    };
-    GSError ret = exifbuffer->Alloc(requestConfig);
-    ASSERT_EQ(ret, GSERROR_OK);
-    ret = exifbuffer->GetExtraData()->ExtraSet("exifDataSize", static_cast<int32_t>(size));
-    ASSERT_EQ(ret, GSERROR_OK);
-    bool result = memcpy_s(exifbuffer->GetVirAddr(), size, dataBlob, size);
-    EXPECT_EQ(result, EOK);
-    result = picture->SetExifMetadata(exifbuffer);
-    EXPECT_EQ(result, SUCCESS);
-}
-
-/**
- * @tc.name: GetExifMetadataTest001
- * @tc.desc: Get exif metadata successfully.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetExifMetadataTest001, TestSize.Level1)
-{
-    auto exifData = exif_data_new_from_file(IMAGE_INPUT_EXIF_JPEG_PATH.c_str());
-    ASSERT_NE(exifData, nullptr);
-    std::string imageLength, iamgeWith;
-    std::shared_ptr<ExifMetadata> exifMetadata = std::make_shared<ExifMetadata>(exifData);
-    ASSERT_EQ(exifMetadata->GetValue("ImageLength", imageLength), SUCCESS);
-    ASSERT_EQ(exifMetadata->GetValue("ImageWidth", iamgeWith), SUCCESS);
-    unsigned char *dataBlob = nullptr;
-    uint32_t size = 0;
-    TiffParser::Encode(&dataBlob, size, exifData);
-    ASSERT_NE(dataBlob, nullptr);
-    ASSERT_NE(size, 0);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    sptr<SurfaceBuffer> exifbuffer = SurfaceBuffer::Create();
-    ASSERT_NE(exifbuffer, nullptr);
-    BufferRequestConfig requestConfig = {
-        .width = std::stoi(imageLength),
-        .height = std::stoi(iamgeWith),
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-    };
-    GSError ret = exifbuffer->Alloc(requestConfig);
-    ASSERT_EQ(ret, GSERROR_OK);
-    ret = exifbuffer->GetExtraData()->ExtraSet("exifDataSize", static_cast<int32_t>(size));
-    ASSERT_EQ(ret, GSERROR_OK);
-    bool result = memcpy_s(exifbuffer->GetVirAddr(), size, dataBlob, size);
-    EXPECT_EQ(result, EOK);
-    result = picture->SetExifMetadata(exifbuffer);
-    EXPECT_EQ(result, SUCCESS);
-    std::shared_ptr<ExifMetadata> newExifMetadata = picture->GetExifMetadata();
-    EXPECT_NE(newExifMetadata, nullptr);
-}
-
-/**
  * @tc.name: SetMaintenanceDataTest001
  * @tc.desc: Set maintenance data successfully.
  * @tc.type: FUNC
@@ -781,27 +699,10 @@ HWTEST_F(PictureTest, GetMaintenanceDataTest001, TestSize.Level1)
 
 /**
  * @tc.name: SetExifMetadataByExifMetadataTest001
- * @tc.desc: Set exif metadata by ExifMetadata successfully.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest001, TestSize.Level1)
-{
-    auto exifData = exif_data_new_from_file(IMAGE_INPUT_EXIF_JPEG_PATH.c_str());
-    ASSERT_NE(exifData, nullptr);
-    std::shared_ptr<ExifMetadata> exifMetadata = std::make_shared<ExifMetadata>(exifData);
-    ASSERT_NE(exifMetadata, nullptr);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    int32_t result = picture->SetExifMetadata(exifMetadata);
-    EXPECT_EQ(result, SUCCESS);
-}
-
-/**
- * @tc.name: SetExifMetadataByExifMetadataTest002
  * @tc.desc: Set nullptr to picture exifMetadata_.
  * @tc.type: FUNC
  */
-HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest002, TestSize.Level2)
+HWTEST_F(PictureTest, SetExifMetadataByExifMetadataTest001, TestSize.Level2)
 {
     std::shared_ptr<ExifMetadata> exifMetadata = nullptr;
     std::unique_ptr<Picture> picture = CreatePicture();

@@ -113,7 +113,7 @@ MsgId MsgHandleLoop::GenerateMsgId()
 
 void MsgHandleLoop::MainLoop()
 {
-    LOGI("increase thread priority");
+    LOGD("increase thread priority");
     pthread_setname_np(pthread_self(), "OS_ImageCodecLoop");
     OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     while (true) {
@@ -124,7 +124,7 @@ void MsgHandleLoop::MainLoop()
                 return m_threadNeedStop || !m_msgQueue.empty();
             });
             if (m_threadNeedStop) {
-                LOGI("stopped, remain %{public}zu msg unprocessed", m_msgQueue.size());
+                LOGD("stopped, remain %{public}zu msg unprocessed", m_msgQueue.size());
                 break;
             }
             TimeUs processUs = m_msgQueue.begin()->first;

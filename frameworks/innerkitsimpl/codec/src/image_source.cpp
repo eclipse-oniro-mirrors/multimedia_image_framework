@@ -159,6 +159,7 @@ static const uint8_t ASTC_HEADER_BLOCK_X = 4;
 static const uint8_t ASTC_HEADER_BLOCK_Y = 5;
 static const uint8_t ASTC_HEADER_DIM_X = 7;
 static const uint8_t ASTC_HEADER_DIM_Y = 10;
+static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
@@ -449,6 +450,11 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(unique_ptr<istream> is, c
 unique_ptr<ImageSource> ImageSource::CreateImageSource(const uint8_t *data, uint32_t size, const SourceOptions &opts,
     uint32_t &errorCode)
 {
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
+        errorCode = ERR_IMAGE_TOO_LARGE;
+        return nullptr;
+    }
     IMAGE_LOGD("[ImageSource]create Imagesource with buffer.");
     ImageDataStatistics imageDataStatistics("[ImageSource]CreateImageSource with buffer.");
     if (data == nullptr || size == 0) {
@@ -486,7 +492,7 @@ unique_ptr<ImageSource> ImageSource::CreateImageSource(const std::string &pathNa
                 streamPtr = FileSourceStream::CreateSourceStream(pathName);
             }
             if (streamPtr == nullptr) {
-                IMAGE_LOGE("[ImageSource]failed to create file path source stream");
+                IMAGE_LOGD("[ImageSource]failed to create file path source stream");
             }
             return streamPtr;
         },
@@ -948,10 +954,24 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
         opts.desiredSize.width != pixelMap->GetWidth()) {
-        float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
-        float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
-        if (!pixelMap->resize(xScale, yScale)) {
-            return false;
+        if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
+#ifdef EXT_PIXEL
+            auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#else
+            auto pixelYuv = reinterpret_cast<PixelYuv *>(pixelMap.get());
+            if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
+                return false;
+            }
+#endif
+        } else {
+            float xScale = static_cast<float>(opts.desiredSize.width) / pixelMap->GetWidth();
+            float yScale = static_cast<float>(opts.desiredSize.height) / pixelMap->GetHeight();
+            if (!pixelMap->resize(xScale, yScale)) {
+                return false;
+            }
         }
         // dump pixelMap after resize
         ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
@@ -1386,6 +1406,10 @@ void ImageSource::DetachIncrementalDecoding(PixelMap &pixelMap)
 
 uint32_t ImageSource::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
+        return ERR_IMAGE_TOO_LARGE;
+    }
     ImageDataStatistics imageDataStatistics("[ImageSource]UpdateData");
     if (sourceStreamPtr_ == nullptr) {
         IMAGE_LOGE("[ImageSource]image source update data, source stream is null.");
@@ -1427,7 +1451,7 @@ uint32_t ImageSource::GetImageInfo(uint32_t index, ImageInfo &imageInfo)
     auto iter = GetValidImageStatus(index, ret);
     if (iter == imageStatusMap_.end()) {
         guard.unlock();
-        IMAGE_LOGE("[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
+        IMAGE_LOGD("[ImageSource]get valid image status fail on get image info, ret:%{public}u.", ret);
         return ret;
     }
     ImageInfo &info = (iter->second).imageInfo;
@@ -1937,7 +1961,7 @@ uint32_t ImageSource::CheckEncodedFormat(AbsImageFormatAgent &agent)
         return res;
     }
     if (!agent.CheckFormat(outData.inputStreamBuffer, size)) {
-        IMAGE_LOGE("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
+        IMAGE_LOGD("[ImageSource]check mismatched format :%{public}s.", agent.GetFormatType().c_str());
         return ERR_IMAGE_MISMATCHED_FORMAT;
     }
     return SUCCESS;
@@ -1950,7 +1974,8 @@ uint32_t ImageSource::GetData(ImagePlugin::DataStreamBuffer &outData, size_t siz
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (!sourceStreamPtr_->Peek(size, outData)) {
-        IMAGE_LOGE("[ImageSource]stream peek the data fail, desiredSize:%{public}zu", size);
+        IMAGE_LOGE("[ImageSource]stream peek the data fail, imageId %{public}" PRIu64 ", desiredSize:%{public}zu",
+            imageId_, size);
         return ERR_IMAGE_SOURCE_DATA;
     }
     if (outData.inputStreamBuffer == nullptr || outData.dataSize < size) {
@@ -2034,7 +2059,7 @@ uint32_t ImageSource::GetFormatExtended(string &format) __attribute__((no_saniti
         if (decoderPtr->GetHeifParseErr() != 0) {
             heifParseErr_ = decoderPtr->GetHeifParseErr();
         }
-        IMAGE_LOGE("Failed to get extended format. Error code: %{public}d.", errorCode);
+        IMAGE_LOGD("Failed to get extended format. Error code: %{public}d.", errorCode);
         return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
     }
 
@@ -2083,7 +2108,7 @@ uint32_t ImageSource::GetEncodedFormat(const string &formatHint, string &format)
             format = iter->first;
             return SUCCESS;
         } else {
-            IMAGE_LOGE("[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
+            IMAGE_LOGD("[ImageSource]checkEncodedFormat error, type: %{public}d", ret);
             return ret;
         }
     }
@@ -2123,7 +2148,7 @@ uint32_t ImageSource::OnSourceRecognized(bool isAcquiredImageNum) __attribute__(
             }
             sourceInfo_.state = SourceInfoState::FILE_INFO_ERROR;
             decodeState_ = SourceDecodingState::FILE_INFO_ERROR;
-            IMAGE_LOGE("[ImageSource]image source error.");
+            IMAGE_LOGD("[ImageSource]OnSourceRecognized image source error.");
             return ret;
         }
     }
@@ -2159,7 +2184,7 @@ uint32_t ImageSource::OnSourceUnresolved()
             }
             sourceInfo_.state = SourceInfoState::SOURCE_ERROR;
             decodeState_ = SourceDecodingState::SOURCE_ERROR;
-            IMAGE_LOGE("[ImageSource]image source error.");
+            IMAGE_LOGD("[ImageSource]OnSourceUnresolved image source error.");
             return ret;
         }
     }
@@ -2210,7 +2235,7 @@ uint32_t ImageSource::DecodeSourceInfo(bool isAcquiredImageNum)
     if (decodeState_ == SourceDecodingState::UNRESOLVED) {
         ret = OnSourceUnresolved();
         if (ret != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
+            IMAGE_LOGD("[ImageSource]unresolved source: check format failed, ret:[%{public}d].", ret);
             return ret;
         }
     }
@@ -2236,7 +2261,7 @@ uint32_t ImageSource::DecodeImageInfo(uint32_t index, ImageStatusMap::iterator &
 {
     uint32_t ret = DecodeSourceInfo(false);
     if (ret != SUCCESS) {
-        IMAGE_LOGE("[ImageSource]decode the image fail, ret:%{public}d.", ret);
+        IMAGE_LOGD("[ImageSource]decode the image fail, ret:%{public}d.", ret);
         return ret;
     }
     if (sourceInfo_.encodedFormat == InnerFormat::ASTC_FORMAT) {
@@ -2426,7 +2451,7 @@ ImageSource::ImageStatusMap::iterator ImageSource::GetValidImageStatus(uint32_t 
     if (iter == imageStatusMap_.end()) {
         errorCode = DecodeImageInfo(index, iter);
         if (errorCode != SUCCESS) {
-            IMAGE_LOGE("[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
+            IMAGE_LOGD("[ImageSource]image info decode fail, ret:%{public}u.", errorCode);
             return imageStatusMap_.end();
         }
     } else if (iter->second.imageState < ImageDecodingState::BASE_INFO_PARSED) {
@@ -2661,6 +2686,10 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     if (size < IMAGE_URL_PREFIX.size() ||
         ::memcmp(data, IMAGE_URL_PREFIX.c_str(), IMAGE_URL_PREFIX.size()) != INT_ZERO) {
         IMAGE_LOGD("[ImageSource]Base64 image header mismatch.");
+        return nullptr;
+    }
+    if (size > MAX_SOURCE_SIZE) {
+        IMAGE_LOGE("%{public}s input size %{public}u is too large.", __func__, size);
         return nullptr;
     }
     const char *data1 = reinterpret_cast<const char *>(data);
@@ -3014,7 +3043,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
                 ReleaseExtendInfoMemory(extInfo);
                 return false;
             }
-            leftBytes -= extInfo.extendInfoLength[extInfo.extendNums];
+            leftBytes -= static_cast<int32_t>(extInfo.extendInfoLength[extInfo.extendNums]);
             extInfoBuf += extInfo.extendInfoLength[extInfo.extendNums];
         }
         extInfo.extendNums++;
@@ -4011,8 +4040,8 @@ static uint32_t DoAiHdrProcess(sptr<SurfaceBuffer> &input, DecodeContext &hdrCtx
 {
     VpeUtils::SetSbMetadataType(input, CM_METADATA_NONE);
     VpeUtils::SetSurfaceBufferInfo(input, cmColorSpaceType);
-    hdrCtx.info.size.width = static_cast<uint32_t>(input->GetWidth());
-    hdrCtx.info.size.height = static_cast<uint32_t>(input->GetHeight());
+    hdrCtx.info.size.width = input->GetWidth();
+    hdrCtx.info.size.height = input->GetHeight();
     uint32_t res = AllocSurfaceBuffer(hdrCtx, GRAPHIC_PIXEL_FMT_RGBA_1010102);
     if (res != SUCCESS) {
         IMAGE_LOGE("HDR SurfaceBuffer Alloc failed, %{public}d", res);
@@ -4326,11 +4355,60 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     }
 }
 
+bool ImageSource::TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+    uint32_t &errorCode)
+{
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: streamBuffer or streamSize is null");
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return false;
+    }
+    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
+    if (gainMapOffset == 0 || gainMapOffset > streamSize) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: Gain map offset is invalid! offset: %{public}u, streamSize: %{public}u",
+                   gainMapOffset, streamSize);
+        return false;
+    }
+
+    std::unique_ptr<InputDataStream> gainMapStream =
+        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
+    if (gainMapStream == nullptr) {
+        IMAGE_LOGE("Create auxiliary stream fail, gainMapOffset is %{public}u", gainMapOffset);
+        return false;
+    }
+    auto jpegGainMapDecoder = std::unique_ptr<AbsImageDecoder>(
+        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
+    if (jpegGainMapDecoder == nullptr) {
+        IMAGE_LOGE("TryDecodeJpegGainMap create gainmap decoder fail, gainmap offset is %{public}d", gainMapOffset);
+        return false;
+    }
+
+    auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+        sourceHdrType_, AuxiliaryPictureType::GAINMAP, IMAGE_JPEG_FORMAT, jpegGainMapDecoder, errorCode);
+    if (auxPicture == nullptr) {
+        IMAGE_LOGE("Generate jpeg auxiliary picture failed!, errorCode: %{public}d", errorCode);
+        return false;
+    }
+    auxPicture->GetContentPixel()->SetEditable(true);
+    picture->SetAuxiliaryPicture(auxPicture);
+    return true;
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
-    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
     uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        if (auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end()) {
+            if (TryDecodeJpegGainMap(picture, streamBuffer, streamSize, errorCode)) {
+                IMAGE_LOGI("TryDecodeJpegGainMap success!");
+                auxTypes.erase(AuxiliaryPictureType::GAINMAP);
+            } else {
+                IMAGE_LOGI("TryDecodeJpegGainMap failed!");
+            }
+        }
+    }
     uint32_t mpfOffset = 0;
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
     if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
