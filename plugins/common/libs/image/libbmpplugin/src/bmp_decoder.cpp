@@ -322,6 +322,7 @@ uint32_t BmpDecoder::Decode(uint32_t index, DecodeContext &context)
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     state_ = BmpDecodingState::IMAGE_DECODED;
+    ImageUtils::FlushContextSurfaceBuffer(context);
     return SUCCESS;
 }
 
