@@ -1393,6 +1393,10 @@ void YuvToRgbFuzzTest001()
     NV21ToNV12P010FuzzTest003();
     NV12ToNV12P010FuzzTest001();
     NV12ToNV12P010FuzzTest002();
+    NV21ToRGBAF16FuzzTest001();
+    NV21ToRGBAF16FuzzTest002();
+    NV12ToRGBAF16FuzzTest001();
+    NV12ToRGBAF16FuzzTest002();
     IMAGE_LOGI("YuvToRgbFuzzTest001: end");
 }
 
@@ -1405,5 +1409,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     /* Run your code on data */
     OHOS::Media::RgbToYuvFuzzTest001();
     OHOS::Media::YuvToRgbFuzzTest001();
+    OHOS::Media::YuvToRgbFuzzTest002();
+    OHOS::Media::YuvP010ToRgbFuzzTest001();
+    OHOS::Media::RgbToYuvP010FuzzTest001();
+    OHOS::Media::RgbToYuvP010ByPixelMapFuzzTest001();
+    OHOS::Media::PixelMapFormattotalFuzzTest001();
     return 0;
 }
