@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace Media {
 
-const static uint64_t  MaxMetadataType = 64;
+const static uint64_t MAX_META_TYPE = 64;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
@@ -191,11 +191,13 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     auxiliaryPictureInfo.size.width = parcel.ReadInt32();
     auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
-    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas; 
+    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
+
     uint64_t size = parcel.ReadUint64();
-    if (size > MaxMetadataType) {
+    
+    if (size > MAX_META_TYPE) {
         return nullptr;
-    }  
+    }
     for (size_t i = 0; i < size; ++i) {
         MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
