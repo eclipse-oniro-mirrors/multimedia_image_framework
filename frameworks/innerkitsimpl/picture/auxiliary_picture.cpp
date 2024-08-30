@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace Media {
 
-const static int  MaxMetadataType = 64;
+const static uint64_t  MaxMetadataType = 64;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,

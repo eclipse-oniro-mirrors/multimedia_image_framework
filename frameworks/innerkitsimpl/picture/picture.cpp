@@ -114,7 +114,7 @@ namespace {
     };
 #endif
 }
-const static int MaxnumAuxiliaryPictures = 32;
+const static uint64_t MaxnumAuxiliaryPictures = 32;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;

@@ -26,7 +26,7 @@
 
 namespace OHOS {
 namespace Media {
-const static int MaxFragmentMetadata = 10;
+const static uint64_t MaxFragmentMetadata = 10;
 FragmentMetadata::FragmentMetadata() {}
 
 FragmentMetadata::FragmentMetadata(const FragmentMetadata& fragmentMetadata)
