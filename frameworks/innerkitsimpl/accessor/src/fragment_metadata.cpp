@@ -124,6 +124,9 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     if (!parcel.ReadUint64(size)) {
         return nullptr;
     }
+    if (size > 32) {
+        return nullptr;
+    }
     for (uint64_t i = 0; i < size; ++i) {
         std::string key;
         std::string value;
