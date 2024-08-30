@@ -923,7 +923,14 @@ napi_value ImageCreatorNapi::JsOffOneArg(napi_env env, napi_callback_info info)
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         IMAGE_LINE_IN();
         napi_get_undefined(args.env, &ic.result);
-        ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+
+        if (g_creatorTest && g_listener) {
+            g_listener.reset();
+        } else {
+            if (ic.context->constructor_->imageCreator_) {
+                ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+            }
+        }
         ic.context->status = SUCCESS;
         napi_create_uint32(args.env, ic.context->status, &ic.result);
         IMAGE_LINE_OUT();
