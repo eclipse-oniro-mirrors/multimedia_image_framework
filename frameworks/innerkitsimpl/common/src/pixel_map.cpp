@@ -1604,6 +1604,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1639,6 +1640,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1687,6 +1689,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1710,6 +1713,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
+    AddVersionId();
     return true;
 }
 
@@ -2019,6 +2023,10 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
 
     if (!parcel.WriteInt32(static_cast<int32_t>(rowDataSize_))) {
         IMAGE_LOGE("write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
+        return false;
+    }
+    if (!parcel.WriteUint32(versionId_)) {
+        IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
         return false;
     }
     return true;
@@ -2337,6 +2345,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     }
 
     int32_t rowDataSize = parcel.ReadInt32();
+    uint32_t versionId = parcel.ReadUint32();
+    SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     if (bytesPerPixel == 0) {
@@ -3117,6 +3127,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         }
         i += static_cast<uint32_t>(pixelBytes_);
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -3289,8 +3300,6 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    IMAGE_LOGD("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
-        "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
@@ -3334,6 +3343,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
+    AddVersionId();
     return true;
 }
 
@@ -3472,6 +3482,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -3656,5 +3667,24 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
+
+uint32_t PixelMap::GetVersionId()
+{
+    std::shared_lock<std::shared_mutex> lock(*versionMutex_);
+    return versionId_;
+}
+
+void PixelMap::AddVersionId()
+{
+    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
+    versionId_++;
+}
+
+void PixelMap::SetVersionId(uint32_t versionId)
+{
+    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
+    versionId_ = versionId;
+}
+
 } // namespace Media
 } // namespace OHOS
