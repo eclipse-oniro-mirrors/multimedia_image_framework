@@ -195,8 +195,7 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     
     uint64_t size = parcel.ReadUint64();
     if (size > MaxMetadataType) {
-        return nullptr;
-    }  
+        return nullptr; }  
     for (size_t i = 0; i < size; ++i) {
         MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());
         std::shared_ptr<ImageMetadata> imagedataPtr(nullptr);
