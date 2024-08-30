@@ -26,6 +26,7 @@
 
 namespace OHOS {
 namespace Media {
+const static uint64_t MAX_FRAG_DATA = 10;
 FragmentMetadata::FragmentMetadata() {}
 
 FragmentMetadata::FragmentMetadata(const FragmentMetadata& fragmentMetadata)
@@ -122,6 +123,9 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     std::unique_ptr<FragmentMetadata> fragmentMetadataPtr = std::make_unique<FragmentMetadata>();
     uint64_t size;
     if (!parcel.ReadUint64(size)) {
+        return nullptr;
+    }
+    if (size > MAX_FRAG_DATA) {
         return nullptr;
     }
     for (uint64_t i = 0; i < size; ++i) {
