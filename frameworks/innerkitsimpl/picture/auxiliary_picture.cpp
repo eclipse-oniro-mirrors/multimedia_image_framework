@@ -191,10 +191,8 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     auxiliaryPictureInfo.size.width = parcel.ReadInt32();
     auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
-    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
-    
+    std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas; 
     uint64_t size = parcel.ReadUint64();
-
     if (size > MaxMetadataType) {
         return nullptr;
     }  
