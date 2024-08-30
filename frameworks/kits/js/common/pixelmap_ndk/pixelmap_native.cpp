@@ -949,8 +949,8 @@ static bool GetHdrMetadata(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer,
                 std::vector<uint8_t> dynamicData;
                 if (VpeUtils::GetSbDynamicMetadata(buffer, dynamicData) && (dynamicData.size() > 0)) {
                     metadataValue->dynamicMetadata.data = (uint8_t*)malloc(dynamicData.size());
-                    if (memcpy_s(metadataValue->dynamicMetadata.data, dynamicData.size(),
-                        dynamicData.data(), dynamicData.size()) != EOK) {
+                    if (metadataValue->dynamicMetadata.data == nullptr || memcpy_s(metadataValue->dynamicMetadata.data,
+                        dynamicData.size(), dynamicData.data(), dynamicData.size()) != EOK) {
                         return false;
                     }
                     metadataValue->dynamicMetadata.length = dynamicData.size();
