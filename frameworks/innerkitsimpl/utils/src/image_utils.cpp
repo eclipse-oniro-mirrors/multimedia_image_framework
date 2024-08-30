@@ -683,7 +683,7 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
     if (!pixelMap || pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return;
     }
-    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(pixelMap->GetFd());
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
@@ -703,10 +703,10 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.pixelsBuffer.context != nullptr && context.allocatorType != AllocatorType::DMA_ALLOC) {
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
         return;
     }
-    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
@@ -726,10 +726,10 @@ void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (context.pixelsBuffer.context != nullptr && context.allocatorType != AllocatorType::DMA_ALLOC) {
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
         return;
     }
-    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
