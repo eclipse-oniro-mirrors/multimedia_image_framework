@@ -210,6 +210,7 @@ bool PixelYuv::YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, 
     }
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
 {
     if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
@@ -238,6 +239,7 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
 }
+#endif
 
 std::unique_ptr<AbsMemory> PixelYuv::CreateMemory(PixelFormat pixelFormat, std::string memoryTag, int32_t dstWidth,
     int32_t dstHeight, YUVStrideInfo &dstStrides)
