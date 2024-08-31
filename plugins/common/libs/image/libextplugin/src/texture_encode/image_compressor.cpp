@@ -1426,7 +1426,7 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
             return CL_ASTC_ENC_FAILED;
         }
         if (BuildProgramAndCreateKernel(program, clAstcHandle) != CL_ASTC_ENC_SUCCESS) {
-            IMAGE_LOGE("astc clCreateProgramWithSource failed ret %{public}d!", clRet);
+            IMAGE_LOGE("astc BuildProgramAndCreateKernel failed ret %{public}d!", clRet);
             clReleaseProgram(program);
             return CL_ASTC_ENC_FAILED;
         }
