@@ -427,7 +427,7 @@ static bool FillAstcSutInfo(AstcInInfo &astcInfo, SutOutInfo &sutInfo, TextureEn
         expandTotalBytes += sizeof(uint8_t) + sizeof(int32_t) + param.extInfoBytes;
     }
     sutInfo.sutCapacity = astcInfo.astcBytes + EXPAND_SIZE_BYTES_ENC + expandTotalBytes;
-    sutInfo.sutBuf = static_cast<uint8_t *>(sutInfo.sutCapacity);
+    sutInfo.sutBuf = static_cast<uint8_t *>(malloc(sutInfo.sutCapacity));
     if (sutInfo.sutBuf == nullptr) {
         IMAGE_LOGD("astcenc sutInfo.sutBuf malloc failed!");
         return false;
