@@ -320,6 +320,7 @@ void PixelYuv::rotate(float degrees)
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo_, true);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, imageInfo_.size.width, imageInfo_.size.height, dstStrides);
+    AddVersionId();
 }
 
 uint32_t PixelYuv::crop(const Rect &rect)
@@ -351,6 +352,7 @@ uint32_t PixelYuv::crop(const Rect &rect)
     imageInfo_.size.width = rect.width;
     SetImageInfo(imageInfo_, true);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, rect.width, rect.height, dstStrides);
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -417,6 +419,7 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    AddVersionId();
 }
 
 void PixelYuv::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &option)
@@ -453,6 +456,7 @@ void PixelYuv::scale(int32_t dstW, int32_t dstH, const AntiAliasingOption &optio
     SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     UpdateYUVDataInfo(imageInfo.pixelFormat, imageInfo.size.width, imageInfo.size.height, dstStrides);
+    AddVersionId();
 }
 
 void PixelYuv::flip(bool xAxis, bool yAxis)
@@ -494,6 +498,7 @@ void PixelYuv::flip(bool xAxis, bool yAxis)
     }
     SetPixelsAddr(dst, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(), nullptr);
     UpdateYUVDataInfo(format, srcW, srcH, dstStrides);
+    AddVersionId();
 }
 
 uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
@@ -529,6 +534,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect call WriteYuvConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -577,6 +583,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         dstUV += yuvDataInfo.uvStride;
         srcUV += uvWidth;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -688,6 +695,7 @@ void PixelYuv::translate(float xAxis, float yAxis)
     uint32_t dstSize = GetImageSize(width, height, format);
     SetPixelsAddr(dst, dstMemory->extend.data, dstSize, dstMemory->GetType(), nullptr);
     UpdateYUVDataInfo(imageInfo_.pixelFormat, width, height, dstStrides);
+    AddVersionId();
 }
 
 uint32_t PixelYuv::ReadPixel(const Position &pos, uint32_t &dst)
@@ -926,6 +934,7 @@ int32_t PixelYuv::ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, Im
     grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace(), grName);
     SetPixelsAddr(reinterpret_cast<void *>(yuvMemory->data.data), yuvMemory->extend.data, pictureSize,
         yuvMemory->GetType(), nullptr);
+    AddVersionId();
     return SUCCESS;
 }
 
