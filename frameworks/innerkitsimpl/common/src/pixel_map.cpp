@@ -2451,14 +2451,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     }
     if (IsYUV(imgInfo.pixelFormat)) {
 #ifdef EXT_PIXEL
-        IMAGE_LOGE("creat PixelYuvExt.");
         pixelMap = new(std::nothrow) PixelYuvExt();
 #else
-        IMAGE_LOGE("creat PixelYuv.");
         pixelMap = new(std::nothrow) PixelYuv();
 #endif
     } else {
-        IMAGE_LOGE("creat PixelMap.");
         pixelMap = new(std::nothrow) PixelMap();
     }
 
