@@ -181,5 +181,10 @@ bool ImageSystemProperties::IsCamera()
 #endif
 }
 
+bool ImageSystemProperties::GetSLRParallelEnabled()
+{
+    return system::GetBoolParameter("persist.multimedia.image.Parallel.endabled", true);
+}
+
 } // namespace Media
 } // namespace OHOS
