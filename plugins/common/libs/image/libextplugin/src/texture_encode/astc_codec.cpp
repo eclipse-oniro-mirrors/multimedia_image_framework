@@ -563,18 +563,18 @@ void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param)
     param.extInfoBuf = &colorData;
 }
 
-uint32_t AstcCodec::TrySUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+bool AstcCodec::DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
     if (!TryTextureSuperCompress(param, astcBuffer)) {
         IMAGE_LOGE("astc TryTextureSuperCompress failed!");
         ReleaseExtendInfoMemory(extendInfo);
         free(astcBuffer);
-        return ERROR;
+        return false;
     }
-    return SUCCESS;
+    return true;
 #else
-    return SUCCESS;
+    return true;
 #endif
 }
 uint32_t AstcCodec::ASTCEncode()
@@ -608,7 +608,7 @@ uint32_t AstcCodec::ASTCEncode()
         free(astcBuffer);
         return ERROR;
     }
-    if (!TrySUT(param, astcBuffer, extendInfo)) {
+    if (!DoSUT(param, astcBuffer, extendInfo)) {
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space
