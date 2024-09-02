@@ -18,6 +18,7 @@
 #include "pixel_yuv_ext.h"
 #endif
 #include <charconv>
+#include <chrono>
 #include <iostream>
 #include <unistd.h>
 
@@ -3360,18 +3361,42 @@ void PixelMap::scale(float xAxis, float yAxis)
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap scale with option");
-    TransInfos infos;
-    infos.matrix.setScale(xAxis, yAxis);
-    bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
-    if (fixPixelFormat) {
-        // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
-        imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
-    }
-    if (!DoTranslation(infos, option)) {
-        IMAGE_LOGE("scale falied");
-    }
-    if (fixPixelFormat) {
-        imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
+    if (option == AntiAliasingOption::SLR) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        auto start = std::chrono::high_resolution_clock::now();
+        ImageInfo tmpInfo;
+        GetImageInfo(tmpInfo);
+        Size desiredSize;
+        desiredSize.width = static_cast<int32_t>(imageInfo_.size.width * xAxis);
+        desiredSize.height = static_cast<int32_t>(imageInfo_.size.height * yAxis);
+
+        PostProc postProc;
+        if (!postProc.ScalePixelMapWithSLR(desiredSize, *this)) {
+            IMAGE_LOGE("PixelMap::scale SLR failed");
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        IMAGE_LOGI("PixelMap::scale SLR %{public}d, srcSize: [%{public}d, %{public}d], "
+            "dstSize: [%{public}d, %{public}d], cost: %{public}llu",
+            uniqueId_, tmpInfo.size.width, tmpInfo.size.height,
+            desiredSize.width, desiredSize.height, duration.count());
+#else
+        IMAGE_LOGE("Scale SLR no support this platform");
+#endif
+    } else {
+        TransInfos infos;
+        infos.matrix.setScale(xAxis, yAxis);
+        bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
+        if (fixPixelFormat) {
+            // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
+            imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
+        }
+        if (!DoTranslation(infos, option)) {
+            IMAGE_LOGE("scale falied");
+        }
+        if (fixPixelFormat) {
+            imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
+        }
     }
 }
 

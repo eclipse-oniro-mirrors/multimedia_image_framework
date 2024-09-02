@@ -21,6 +21,7 @@
 #include "image_type.h"
 #include "pixel_map.h"
 #include "scan_line_filter.h"
+#include "post_proc_slr.h"
 
 namespace OHOS {
 namespace Media {
@@ -40,6 +41,7 @@ public:
     bool CenterScale(const Size &size, PixelMap &pixelMap);
     static CropValue GetCropValue(const Rect &rect, const Size &size);
     static CropValue ValidCropValue(Rect &rect, const Size &size);
+    bool ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap);
     bool ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap,
         const AntiAliasingOption &option = AntiAliasingOption::NONE);
 private:
@@ -67,7 +69,11 @@ private:
                     int srcRowStride = 0, int targetRowStride = 0);
     bool ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect &cropRect, PixelMap &pixelMap,
                                uint8_t *resultData, uint32_t rowBytes);
+    bool initSLRFactor(Size srcSize, Size dstSize);
+private:
     DecodeOptions decodeOpts_;
+    static thread_local SLRWeightMat slrWeightX;
+    static thread_local SLRWeightMat slrWeightY;
 };
 } // namespace Media
 } // namespace OHOS
