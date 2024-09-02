@@ -144,13 +144,13 @@ const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
     ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
     std::string value;
     auto rwKeys = ExifMetadatFormatter::GetRWKeys();
-    for (const auto key : rwKeys) {
+    for (const auto& key : rwKeys) {
         if (GetValue(key, value) == SUCCESS) {
             result->insert(std::make_pair(key, value));
         }
     }
     auto roKeys = ExifMetadatFormatter::GetROKeys();
-    for (const auto key : roKeys) {
+    for (const auto& key : roKeys) {
         if (GetValue(key, value) == SUCCESS) {
             result->insert(std::make_pair(key, value));
         }
