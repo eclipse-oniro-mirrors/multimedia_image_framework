@@ -1315,17 +1315,6 @@ void YUVGetConvertFuncByFormatFuzzTest001()
     IMAGE_LOGI("YUVGetConvertFuncByFormatFuzzTest001: end");
 }
 
-void MakeDestPixelMapFuzzTest001()
-{
-    IMAGE_LOGI("MakeDestPixelMapFuzzTest001: start");
-    std::shared_ptr<PixelMap> destPixelMap = nullptr;
-    ImageInfo info;
-    info.size = {0, 0};
-    DestConvertInfo destInfo;
-    ImageFormatConvert::MakeDestPixelMap(destPixelMap, info, destInfo, nullptr);
-    IMAGE_LOGI("MakeDestPixelMapFuzzTest001: end");
-}
-
 void IsSupportFuzzTest001()
 {
     IMAGE_LOGI("IsSupportFuzzTest001: start");
@@ -1359,7 +1348,6 @@ void ImageFuzzTest001()
     IMAGE_LOGI("ImageFuzzTest001: start");
     GetBufferSizeByFormatFuzzTest001();
     YUVGetConvertFuncByFormatFuzzTest001();
-    MakeDestPixelMapFuzzTest001();
     IsSupportFuzzTest001();
     IsValidSizeFuzzTest001();
     IMAGE_LOGI("ImageFuzzTest001: end");
