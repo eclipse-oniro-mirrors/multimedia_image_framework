@@ -470,7 +470,7 @@ protected:
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
     Size astcrealSize_;
     std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
-    ImageHdrType hdrType_;
+    ImageHdrType hdrType_ = static_cast<ImageHdrType>(0);
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
