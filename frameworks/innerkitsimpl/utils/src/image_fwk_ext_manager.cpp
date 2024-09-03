@@ -34,6 +34,7 @@ ImageFwkExtManager::ImageFwkExtManager()
 {
 #if !defined(_WIN32) && !defined(_APPLE)
     doHardWareEncodeFunc_ = nullptr;
+    doHardwareEncodePictureFunc_ = nullptr;
     hevcSoftwareDecodeFunc_ = nullptr;
     isImageFwkExtNativeSoOpened_ = false;
     extNativeSoHandle_ = nullptr;
