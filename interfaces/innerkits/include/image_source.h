@@ -337,12 +337,6 @@ private:
     bool ParseHdrType();
     bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                     uint32_t &errorCode);
-    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
-                                    uint32_t &errorCode);
-#endif
     uint32_t SetColorSpaceForAstc(PixelAstc& pixelAstc, size_t fileSize);
 
     const std::string NINE_PATCH = "ninepatch";
