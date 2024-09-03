@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#define private public
 #include "image_yuv_convert_fuzzer.h"
 
 #include <cstdint>
@@ -1289,6 +1290,81 @@ void PixelMapFormatFuzzTest004()
     IMAGE_LOGI("PixelMapFormatFuzzTest004: end");
 }
 
+void GetBufferSizeByFormatFuzzTest001()
+{
+    IMAGE_LOGI("GetBufferSizeByFormatFuzzTest001: start");
+    Size size = {1, 1};
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGB_565, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGB_888, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::ARGB_8888, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_8888, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::BGRA_8888, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::RGBA_F16, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV21, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::NV12, size);
+    ImageFormatConvert::GetBufferSizeByFormat(PixelFormat::UNKNOWN, size);
+    IMAGE_LOGI("GetBufferSizeByFormatFuzzTest001: end");
+}
+
+void YUVGetConvertFuncByFormatFuzzTest001()
+{
+    IMAGE_LOGI("YUVGetConvertFuncByFormatFuzzTest001: start");
+    PixelFormat srcFormat = PixelFormat::UNKNOWN;
+    PixelFormat destFormat = PixelFormat::ARGB_8888;
+    ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat);
+    IMAGE_LOGI("YUVGetConvertFuncByFormatFuzzTest001: end");
+}
+
+void MakeDestPixelMapFuzzTest001()
+{
+    IMAGE_LOGI("MakeDestPixelMapFuzzTest001: start");
+    std::shared_ptr<PixelMap> destPixelMap = nullptr;
+    ImageInfo info;
+    info.size = {0, 0};
+    DestConvertInfo destInfo;
+    ImageFormatConvert::MakeDestPixelMap(destPixelMap, info, destInfo, nullptr);
+    IMAGE_LOGI("MakeDestPixelMapFuzzTest001: end");
+}
+
+void IsSupportFuzzTest001()
+{
+    IMAGE_LOGI("IsSupportFuzzTest001: start");
+    ImageFormatConvert::IsSupport(PixelFormat::ARGB_8888);
+    ImageFormatConvert::IsSupport(PixelFormat::RGB_565);
+    ImageFormatConvert::IsSupport(PixelFormat::RGBA_8888);
+    ImageFormatConvert::IsSupport(PixelFormat::BGRA_8888);
+    ImageFormatConvert::IsSupport(PixelFormat::RGB_888);
+    ImageFormatConvert::IsSupport(PixelFormat::RGBA_F16);
+    ImageFormatConvert::IsSupport(PixelFormat::RGBA_1010102);
+    ImageFormatConvert::IsSupport(PixelFormat::YCBCR_P010);
+    ImageFormatConvert::IsSupport(PixelFormat::YCRCB_P010);
+    ImageFormatConvert::IsSupport(PixelFormat::NV21);
+    ImageFormatConvert::IsSupport(PixelFormat::NV12);
+    ImageFormatConvert::IsSupport(PixelFormat::UNKNOWN);
+    IMAGE_LOGI("IsSupportFuzzTest001: end");
+}
+
+void IsValidSizeFuzzTest001()
+{
+    IMAGE_LOGI("IsValidSizeFuzzTest001: start");
+    const Size size1 = {1, 1};
+    const Size size2 = {0, 0};
+    ImageFormatConvert::IsValidSize(size1);
+    ImageFormatConvert::IsValidSize(size2);
+    IMAGE_LOGI("IsValidSizeFuzzTest001: end");
+}
+
+void ImageFuzzTest001()
+{
+    IMAGE_LOGI("ImageFuzzTest001: start");
+    GetBufferSizeByFormatFuzzTest001();
+    YUVGetConvertFuncByFormatFuzzTest001();
+    MakeDestPixelMapFuzzTest001();
+    IsSupportFuzzTest001();
+    IsValidSizeFuzzTest001();
+    IMAGE_LOGI("ImageFuzzTest001: end");
+}
+
 void PixelMapFormattotalFuzzTest001()
 {
     IMAGE_LOGI("PixelMapFormatTest001: start");
@@ -1414,5 +1490,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     OHOS::Media::RgbToYuvP010FuzzTest001();
     OHOS::Media::RgbToYuvP010ByPixelMapFuzzTest001();
     OHOS::Media::PixelMapFormattotalFuzzTest001();
+    OHOS::Media::ImageFuzzTest001();
     return 0;
 }
