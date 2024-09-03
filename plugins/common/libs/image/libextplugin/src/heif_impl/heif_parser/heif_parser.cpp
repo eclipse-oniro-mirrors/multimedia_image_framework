@@ -790,7 +790,7 @@ uint32_t HeifParser::GetExifHeaderOffset(const uint8_t *data, uint32_t size)
 {
     uint32_t offset = 0;
     const int endianSize = 4;
-    while (offset + endianSize < (unsigned int) size) {
+    while (offset + endianSize < static_cast<unsigned int>(size)) {
         if (!memcmp(data + offset, "MM\0*", endianSize) || !memcmp(data + offset, "II*\0", endianSize)) {
             return offset;
         }
@@ -820,7 +820,7 @@ heif_error HeifParser::UpdateExifMetadata(const std::shared_ptr<HeifImage> &mast
                                           uint32_t size, heif_item_id itemId)
 {
     uint32_t offset = GetExifHeaderOffset(data, size);
-    if (offset >= (unsigned int) size) {
+    if (offset >= static_cast<unsigned int>(size)) {
         return heif_invalid_exif_data;
     }
 
