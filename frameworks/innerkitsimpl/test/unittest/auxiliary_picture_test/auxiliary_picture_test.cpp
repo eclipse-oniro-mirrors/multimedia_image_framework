@@ -39,7 +39,7 @@ public:
 };
 
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
-constexpr int32_t infoRowstride = 1;
+constexpr uint32_t infoRowstride = 1;
 constexpr int32_t sizeWidth = 2;
 constexpr int32_t sizeHeight = 3;
 constexpr int32_t bufferLength = 8;
