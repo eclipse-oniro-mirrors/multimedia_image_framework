@@ -3035,7 +3035,7 @@ static bool ResolveExtInfo(const uint8_t *sourceFilePtr, size_t astcSize, size_t
                 ReleaseExtendInfoMemory(extInfo);
                 return false;
             }
-            leftBytes -= extInfo.extendInfoLength[extInfo.extendNums];
+            leftBytes -= static_cast<int32_t>(extInfo.extendInfoLength[extInfo.extendNums]);
             extInfoBuf += extInfo.extendInfoLength[extInfo.extendNums];
         }
         extInfo.extendNums++;

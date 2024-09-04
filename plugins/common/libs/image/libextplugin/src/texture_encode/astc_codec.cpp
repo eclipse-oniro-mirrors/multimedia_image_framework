@@ -567,7 +567,7 @@ uint32_t AstcCodec::ASTCEncode()
     if (!param.outIsSut) { // only support astc for color space
         WriteAstcExtendInfo(astcBuffer, static_cast<uint32_t>(param.astcBytes), extendInfo);
     } else {
-        packSize = param.sutBytes;
+        packSize = static_cast<uint32_t>(param.sutBytes);
     }
     ReleaseExtendInfoMemory(extendInfo);
     astcOutput_->Write(astcBuffer, packSize);
