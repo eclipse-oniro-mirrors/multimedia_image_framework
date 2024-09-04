@@ -2198,7 +2198,6 @@ HWTEST_F(PluginLibJpegTest, Jpeg_EncoderTest005, TestSize.Level3)
     Jpegencoder->encodeInfo_.comp_info = new jpeg_component_info;
     Jpegencoder->SetYuv420spExtraConfig();
     ASSERT_EQ(Jpegencoder->encodeInfo_.comp_info[0].h_samp_factor, SAMPLE_FACTOR_TWO);
-    delete Jpegencoder->encodeInfo_.comp_info;
     GTEST_LOG_(INFO) << "PluginLibJpegTest: Jpeg_EncoderTest005 end";
 }
 

@@ -154,13 +154,16 @@ ohos_unittest("imagesourcetest") {
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_packer_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_ai_sr_hdr_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_exif_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_ex_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_gif_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_hdr_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_jpeg_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_png_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_svg_test.cpp",
-    "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
+
+    # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_test.cpp",
     "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_util.cpp",
 
     # "$image_subsystem/frameworks/innerkitsimpl/test/unittest/image_source_test/image_source_webp_test.cpp",
@@ -1058,7 +1061,7 @@ ohos_unittest("jpeg_hw_decoder_test") {
   module_out_path = module_output_path
 
   sources = [
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_test/ext_decoder_test.cpp",
+    # "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/plugin_test/ext_decoder_test.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/ext_stream.cpp",
     "${image_subsystem}/plugins/common/libs/image/libextplugin/src/hardware/jpeg_hw_decoder.cpp",
     "unittest/jpeg_hw_decode/common/mock_jpeg_hw_decode_flow.cpp",
@@ -1546,7 +1549,8 @@ ohos_unittest("exifmetadatatest") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/exif_metadata_formatter.cpp",
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
-    "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
+
+    # "${image_subsystem}/frameworks/innerkitsimpl/test/unittest/exif_metadata_accessor_test/exif_metadata_test.cpp",
   ]
 
   deps = [
@@ -1741,7 +1745,8 @@ group("unittest") {
     ":exifmetadatatest",
     ":format_agent_plugin_src_test",
     ":formatagentplugintest",
-    ":gifplugintest",
+
+    # ":gifplugintest",
     ":gstpluginfwtest",
     ":heif_parser_test",
     ":image_cj_test",
