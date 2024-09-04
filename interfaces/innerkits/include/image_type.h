@@ -347,7 +347,7 @@ enum class AuxiliaryPictureType {
 struct AuxiliaryPictureInfo {
     AuxiliaryPictureType auxiliaryPictureType = AuxiliaryPictureType::NONE;
     Size size;
-    int32_t rowStride = 0;
+    uint32_t rowStride = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
 };
