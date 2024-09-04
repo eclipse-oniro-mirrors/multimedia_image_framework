@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2024 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,23 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGEPICTURE_FUZZER_H
+#define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGEPICTURE_FUZZER_H
 
-#ifndef HWE_SOURCE_RECORD_H
-#define HWE_SOURCE_RECORD_H
-
-namespace OHOS {
-namespace ImagePlugin {
-void RecordMallocMemCount(void);
-void RecordFreeMemCount(void);
-void RecordInitMutexCount(void);
-void RecordDestoryMutexCount(void);
-void RecordInitCondCount(void);
-void RecordDestoryCondCount(void);
-void RecordInitThreadCount(void);
-void RecordDestoryThreadCount(void);
-
-void InitResourceInfo(void);
-void DestroyResourceInfo(void);
-} // namespace ImagePlugin
-} // namespace OHOS
+#define FUZZ_PROJECT_NAME "image_picture_fuzzer"
 #endif

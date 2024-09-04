@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
+
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
@@ -339,6 +341,8 @@ public:
         allocatorType_ = allocatorType;
     }
 
+    NATIVEEXPORT uint32_t GetVersionId();
+    NATIVEEXPORT void AddVersionId();
 protected:
     static constexpr uint8_t TLV_VARINT_BITS = 7;
     static constexpr uint8_t TLV_VARINT_MASK = 0x7F;
@@ -441,6 +445,8 @@ protected:
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     void CopySurfaceBufferInfo(void *data);
+    void SetVersionId(uint32_t versionId);
+
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info
     ImageInfo imageInfo_;
@@ -464,7 +470,7 @@ protected:
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
     Size astcrealSize_;
     std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
-    ImageHdrType hdrType_;
+    ImageHdrType hdrType_ = static_cast<ImageHdrType>(0);
 
 #ifdef IMAGE_COLORSPACE_FLAG
     std::shared_ptr<OHOS::ColorManager::ColorSpace> grColorSpace_ = nullptr;
@@ -482,6 +488,8 @@ protected:
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
     bool toSdrColorIsSRGB_ = false;
+    uint32_t versionId_ = 1;
+    std::shared_ptr<std::shared_mutex> versionMutex_ = std::make_shared<std::shared_mutex>();
 };
 } // namespace Media
 } // namespace OHOS

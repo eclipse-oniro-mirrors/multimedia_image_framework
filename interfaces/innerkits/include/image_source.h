@@ -358,8 +358,8 @@ private:
     ImagePlugin::DecodeContext InitDecodeContext(const DecodeOptions &opts, const ImageInfo &info,
         const MemoryUsagePreference &preference, bool hasDesiredSizeOptions, ImagePlugin::PlImageInfo& plInfo);
     bool ParseHdrType();
+    bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
-    uint32_t ReadSourceData(uint32_t bufferSize, bool addFlag);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
@@ -391,6 +391,7 @@ private:
     std::set<DecodeListener *> decodeListeners_;
     std::mutex listenerMutex_;
     std::mutex decodingMutex_;
+    std::mutex fileMutex_;
     bool isIncrementalSource_ = false;
     bool isIncrementalCompleted_ = false;
     bool hasDesiredSizeOptions = false;
