@@ -1954,5 +1954,55 @@ HWTEST_F(ImagePixelMapTest, ModifyImageProperty001, TestSize.Level3)
     EXPECT_EQ(getValue, imagesource_org_value);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ModifyImageProperty001 end";
 }
+
+/**
+* @tc.name: ImagePixelMapSLR001
+* @tc.desc: test GetPixelBytes
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = 1.5f;
+    float yAxis = 1.8f;
+    pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH * xAxis;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT * yAxis;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    if (data != nullptr) {
+        delete[] data;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale end";
+}
+
+/**
+* @tc.name: ImagePixelMapSLR002
+* @tc.desc: test GetPixelBytes
+* @tc.type: FUNC
+* @tc.require: AR000FTAMO
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR002 scale start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructBigPixmap();
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = 0.7;
+    float yAxis = 0.9;
+    pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_BIG_TEST_WIDTH * xAxis;
+    int32_t height = PIXEL_MAP_BIG_TEST_HEIGHT * yAxis;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR002 scale end";
+}
 } // namespace Multimedia
 } // namespace OHOS
