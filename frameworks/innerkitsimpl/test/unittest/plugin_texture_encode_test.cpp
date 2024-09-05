@@ -51,6 +51,10 @@ constexpr int32_t OUTPUT_SIZE_MAX = 200000;
 constexpr int32_t BYTES_PER_PIXEL = 4;
 constexpr int64_t SECOND_TO_MICROS = 1000000;
 constexpr size_t FILE_NAME_LENGTH = 512;
+constexpr uint32_t EXTEND_BUFFER_SUM_BYTES = 6;
+constexpr uint32_t EXTEND_INFO_DEFINITION = 6;
+constexpr uint8_t COLOR_SPACE_NAME = 4;
+constexpr uint8_t COLOR_SPACE_OFFSET = 9;
 struct AstcEncTestPara {
     TextureEncodeOptions param;
     int32_t width;
@@ -958,5 +962,50 @@ HWTEST_F(PluginTextureEncodeTest, SutEncoderBoundCheck_012, TestSize.Level3)
     ASSERT_EQ(AstcCodec::TryTextureSuperCompress(testPara.param, &astcBuf), false);
 }
 #endif
+
+/**
+ * @tc.name: AstcExtendInfoTest
+ * @tc.desc: BoundCheck for AstcExtendInfoTest function
+ * @tc.type: branch coverage
+ */
+HWTEST_F(PluginTextureEncodeTest, AstcExtendInfoTest, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PluginTextureEncodeTest: AstcExtendInfoTest start";
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixmap(RGBA_TEST0001_WIDTH, RGBA_TEST0001_HEIGHT);
+    ASSERT_NE(pixelMap, nullptr);
+    Media::PixelMap *pixelMapPtr = pixelMap.get();
+    ASSERT_NE(pixelMapPtr, nullptr);
+
+    uint8_t *output = static_cast<uint8_t *>(malloc(OUTPUT_SIZE_MAX));
+    ASSERT_NE(output, nullptr);
+    BufferPackerStream *stream = new (std::nothrow) BufferPackerStream(output, OUTPUT_SIZE_MAX);
+    ASSERT_NE(stream, nullptr);
+
+    struct PlEncodeOptions option = { "image/astc/4*4", 100, 1 }; // quality set to 100
+    AstcCodec astcEncoder;
+    uint32_t setRet = astcEncoder.SetAstcEncode(stream, option, pixelMapPtr);
+    ASSERT_EQ(setRet, SUCCESS);
+    AstcExtendInfo extendInfo = {0};
+    bool ret = astcEncoder.InitAstcExtendInfo(extendInfo);
+    ASSERT_EQ(ret, true);
+    ASSERT_EQ(extendInfo.extendBufferSumBytes, EXTEND_BUFFER_SUM_BYTES);
+    uint8_t* extendBuffer = static_cast<uint8_t *>(malloc(extendInfo.extendBufferSumBytes + EXTEND_INFO_DEFINITION));
+    astcEncoder.WriteAstcExtendInfo(extendBuffer, 0, extendInfo);
+    uint8_t csName = *(extendBuffer + COLOR_SPACE_OFFSET);
+    ASSERT_EQ(csName, COLOR_SPACE_NAME);
+    astcEncoder.ReleaseExtendInfoMemory(extendInfo);
+    if (output != nullptr) {
+        free(output);
+        output = nullptr;
+    }
+    if (stream != nullptr) {
+        delete stream;
+        stream = nullptr;
+    }
+    if (extendBuffer != nullptr) {
+        free(extendBuffer);
+        extendBuffer = nullptr;
+    }
+}
 } // namespace Multimedia
 } // namespace OHOS

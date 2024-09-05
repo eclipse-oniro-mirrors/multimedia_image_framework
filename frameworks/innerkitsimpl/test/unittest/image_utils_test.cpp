@@ -534,5 +534,36 @@ HWTEST_F(ImageUtilsTest, ImageUtilsTest001, TestSize.Level3)
     ImageUtils::Uint32ToBytes(0, byte, offset, isBigEndian);
     GTEST_LOG_(INFO) << "ImageUtilsTest: ImageUtilsTest001 end";
 }
+
+/**
+ * @tc.name: GetAstcBytesCount001
+ * @tc.desc: test ImageUtils GetAstcBytesCount001
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageUtilsTest, GetAstcBytesCount001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount001 start";
+    ImageInfo imgInfo;
+    // 16 used to set imageInfo size
+    imgInfo.size.width = 16;
+    imgInfo.size.height = 16;
+    imgInfo.pixelFormat = PixelFormat::ASTC_4x4;
+    uint32_t ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    // 272 is the bytescount for astc_4x4 with width and height of 16
+    ASSERT_EQ(ret, 272);
+    imgInfo.pixelFormat = PixelFormat::ASTC_6x6;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    // 160 is the bytescount for astc_6x6 with width and height of 16
+    ASSERT_EQ(ret, 160);
+    imgInfo.pixelFormat = PixelFormat::ASTC_8x8;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    // 80 is the bytescount for astc_8x8 with width and height of 16
+    ASSERT_EQ(ret, 80);
+    imgInfo.pixelFormat = PixelFormat::RGBA_8888;
+    ret = ImageUtils::GetAstcBytesCount(imgInfo);
+    // 0 is the bytescount for non-astc format with width and height of 16
+    ASSERT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "ImageUtilsTest: GetAstcBytesCount001 end";
+}
 }
 }
