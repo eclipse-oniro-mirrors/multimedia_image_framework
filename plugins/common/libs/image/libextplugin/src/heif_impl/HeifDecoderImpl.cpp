@@ -71,7 +71,7 @@ const static int GRID_NUM_2 = 2;
 const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
-const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 1280;
+const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
 
 const static uint16_t BT2020_PRIMARIES = 9;
 
