@@ -327,6 +327,11 @@ public:
         hdrType_ = hdrType;
     }
 
+    NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
+    {
+        allocatorType_ = allocatorType;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
