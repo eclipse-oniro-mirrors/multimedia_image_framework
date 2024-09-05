@@ -219,5 +219,131 @@ HWTEST_F(ImageFormatConvertFailTest, GetConvertFuncByFormat_Test_InvalidSize, Te
     EXPECT_EQ(cvtFunc(srcBuffer, rgbInfo, destInfo, colorspace), false);
     GTEST_LOG_(INFO) << "ImageFormatConvertFailTest: GetConvertFuncByFormat_Test_DMA_ALLOC end";
 }
+
+/**
+ * @tc.name: YUVP010ConvertToRGB
+ * @tc.desc: Test YUVP010ConvertToRGB with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, YUVP010ConvertToRGB, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
+    PixelFormat destFormat = PixelFormat::RGB_888;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    YUVDataInfo yDInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    YUVConvertFunction yuvCvtFunc = ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(yuvCvtFunc(srcBuffer, yDInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: RGBConvertToYUVP010
+ * @tc.desc: Test RGBConvertToYUVP010 with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, RGBConvertToYUVP010, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::RGB_888;
+    PixelFormat destFormat = PixelFormat::YCBCR_P010;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    RGBDataInfo rgbInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    ConvertFunction cvtFunc = ImageFormatConvert::GetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(cvtFunc(srcBuffer, rgbInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: YUVConvertToYUVP010
+ * @tc.desc: Test YUVConvertToYUVP010 with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, YUVConvertToYUVP010, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::NV12;
+    PixelFormat destFormat = PixelFormat::YCBCR_P010;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    YUVDataInfo yDInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    YUVConvertFunction yuvCvtFunc = ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(yuvCvtFunc(srcBuffer, yDInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: YUVP010ConvertToYUV
+ * @tc.desc: Test YUVP010ConvertToYUV with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, YUVP010ConvertToYUV, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::YCBCR_P010;
+    PixelFormat destFormat = PixelFormat::NV12;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    YUVDataInfo yDInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    YUVConvertFunction yuvCvtFunc = ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(yuvCvtFunc(srcBuffer, yDInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: YUVConvertToRGB1010102
+ * @tc.desc: Test YUVConvertToRGB1010102 with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, YUVConvertToRGB1010102, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::NV12;
+    PixelFormat destFormat = PixelFormat::RGBA_1010102;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    YUVDataInfo yDInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    YUVConvertFunction yuvCvtFunc = ImageFormatConvert::YUVGetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(yuvCvtFunc(srcBuffer, yDInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: RGB1010102ConvertToYUV
+ * @tc.desc: Test RGB1010102ConvertToYUV with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, RGB1010102ConvertToYUV, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::RGBA_1010102;
+    PixelFormat destFormat = PixelFormat::NV12;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    RGBDataInfo rgbInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    ConvertFunction cvtFunc = ImageFormatConvert::GetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(cvtFunc(srcBuffer, rgbInfo, destInfo, colorspace), false);
+}
+
+/**
+ * @tc.name: RGB1010102ConvertToYUVP010
+ * @tc.desc: Test RGB1010102ConvertToYUVP010 with invalid info.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageFormatConvertFailTest, RGB1010102ConvertToYUVP010, TestSize.Level1)
+{
+    PixelFormat srcFormat = PixelFormat::RGBA_1010102;
+    PixelFormat destFormat = PixelFormat::YCBCR_P010;
+    uint8_t srcBuffer[LENGTH] = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+    RGBDataInfo rgbInfo;
+    ColorSpace colorspace = ColorSpace::UNKNOWN;
+    DestConvertInfo destInfo = { 0, 0 };
+
+    ConvertFunction cvtFunc = ImageFormatConvert::GetConvertFuncByFormat(srcFormat, destFormat);
+    EXPECT_EQ(cvtFunc(srcBuffer, rgbInfo, destInfo, colorspace), false);
+}
 } // namespace Media
 } // namespace OHOS
