@@ -823,6 +823,13 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
     }
 }
 
+bool NeedConvert(const DecodeOptions &opts, PlImageInfo& plInfo) {
+    return (opts_.desiredPixelFormat == PixelFormat::NV12 || opts_.desiredPixelFormat == PixelFormat::NV21) &&
+           (plInfo.pixelFormat == PixelFormat::RGBA_8888 || plInfo.pixelFormat == PixelFormat::ARGB_8888 ||
+            plInfo.pixelFormat == PixelFormat::RGB_565 || plInfo.pixelFormat == PixelFormat::BGRA_8888 ||
+            plInfo.pixelFormat == PixelFormat::RGB_888);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -888,14 +895,12 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
     }
-    if ((opts_.desiredPixelFormat == PixelFormat::NV12 || opts_.desiredPixelFormat == PixelFormat::NV21) &&
-        (plInfo.pixelFormat == PixelFormat::RGBA_8888 || plInfo.pixelFormat == PixelFormat::ARGB_8888 ||
-         plInfo.pixelFormat == PixelFormat::RGB_565 || plInfo.pixelFormat == PixelFormat::BGRA_8888 || 
-         plInfo.pixelFormat == PixelFormat::RGB_888)) {
-            uint32_t ConvertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
-            if (ConvertRes != SUCCESS) {
-                IMAGE_LOGE("convert rgb format failed!");
-            }
+    if (NeedConvert(opts, plInfo)) {
+        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(pixelMap, 
+                                                                                    plInfo.pixelFormat, opts_.desiredPixelFormat);
+        if (convertRes != SUCCESS) {
+            IMAGE_LOGE("convert rgb format failed!");
+        }
     }
     return pixelMap;
 }
