@@ -825,7 +825,7 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
 
 bool NeedConvert(const DecodeOptions &opts, PlImageInfo& plInfo)
 {
-    return (opts_.desiredPixelFormat == PixelFormat::NV12 || opts_.desiredPixelFormat == PixelFormat::NV21) &&
+    return (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) &&
            (plInfo.pixelFormat == PixelFormat::RGBA_8888 || plInfo.pixelFormat == PixelFormat::ARGB_8888 ||
             plInfo.pixelFormat == PixelFormat::RGB_565 || plInfo.pixelFormat == PixelFormat::BGRA_8888 ||
             plInfo.pixelFormat == PixelFormat::RGB_888);
