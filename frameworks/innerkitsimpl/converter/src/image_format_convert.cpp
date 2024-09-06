@@ -594,7 +594,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(std::unique_ptr<P
         m->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMap(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    auto ret = MakeDestPixelMapUnique(srcPiexlMap, imageInfo, destInfo, m->extend.data);
     if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
         m->Release();
     }
