@@ -19,7 +19,9 @@
 #include <memory>
 #include <unistd.h>
 #include <vector>
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "ffrt.h"
+#endif
 #include "image_log.h"
 #include "image_trace.h"
 #include "image_utils.h"
@@ -75,6 +77,9 @@ SLRWeightMat SLRProc::GetWeights(float coeff, int n)
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < 2 * a; j++) { // 2 max SLR box size
             rowSum[i] += (*weights)[i][j];
+        }
+        if (std::fabs(rowSum[i]) < EPSILON) {
+            rowSum[i] = 1.0f; // 1.0f default weight
         }
         for (int j = 0; j < 2 * a; j++) { // 2 max SLR box size
             (*weights)[i][j] /= rowSum[i];
@@ -190,6 +195,7 @@ inline void SLRSubtask(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst,
 
 void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!SLRCheck(src, dst, x, y)) {
         IMAGE_LOGE("SLRProc::Parallel param error");
         return;
@@ -218,6 +224,9 @@ void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, co
     }
 
     ffrt::wait(ffrtHandles);
+#else
+    SLRProc::Serial(src, dst, x, y);
+#endif
 }
 } // namespace Media
 } // namespace OHOS

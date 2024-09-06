@@ -1978,6 +1978,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
     EXPECT_EQ(height, outInfo.size.height);
     if (data != nullptr) {
         delete[] data;
+        data = nullptr;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale end";
 }

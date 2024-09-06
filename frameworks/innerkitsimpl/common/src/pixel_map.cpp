@@ -3362,6 +3362,7 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap scale with option");
     if (option == AntiAliasingOption::SLR) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         auto start = std::chrono::high_resolution_clock::now();
         ImageInfo tmpInfo;
         GetImageInfo(tmpInfo);
@@ -3379,6 +3380,9 @@ void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
             "dstSize: [%{public}d, %{public}d], cost: %{public}llu",
             uniqueId_, tmpInfo.size.width, tmpInfo.size.height,
             desiredSize.width, desiredSize.height, duration.count());
+#else
+        IMAGE_LOGE("Scale SLR no support this platform");
+#endif
     } else {
         TransInfos infos;
         infos.matrix.setScale(xAxis, yAxis);

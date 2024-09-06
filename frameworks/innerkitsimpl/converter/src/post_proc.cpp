@@ -18,7 +18,6 @@
 #include <unistd.h>
 
 #include "basic_transformer.h"
-#include "ffrt.h"
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
@@ -755,12 +754,11 @@ int GetInterpolation(const AntiAliasingOption &option)
 
 thread_local SLRWeightMat PostProc::slrWeightX = nullptr;
 thread_local SLRWeightMat PostProc::slrWeightY = nullptr;
-static SkSLRCacheMgr& GetSLRCacheInst()
+static SkSLRCacheMgr GetSLRCacheInst()
 {
     static SkMutex slrMutex;
     static SLRLRUCache slrCache(64); // 64 max value
-    static SkSLRCacheMgr inst(slrCache, slrMutex);
-    return inst;
+    return SkSLRCacheMgr(slrCache, slrMutex);
 }
 
 bool PostProc::initSLRFactor(Size srcSize, Size dstSize)
@@ -773,9 +771,9 @@ bool PostProc::initSLRFactor(Size srcSize, Size dstSize)
     SLRWeightKey key(srcSize, dstSize);
     std::shared_ptr<SLRWeightTuple> weightTuplePtr = GetSLRCacheInst().find(key.fKey);
     if (weightTuplePtr == nullptr) {
-        slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width / srcSize.width),
+        slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width) / srcSize.width,
             static_cast<int>(dstSize.width));
-        slrWeightY = SLRProc::GetWeights(static_cast<float>(dstSize.height / srcSize.height),
+        slrWeightY = SLRProc::GetWeights(static_cast<float>(dstSize.height) / srcSize.height,
             static_cast<int>(dstSize.height));
         SLRWeightTuple value = {slrWeightX, slrWeightY, key};
         GetSLRCacheInst().insert(key.fKey, std::make_shared<SLRWeightTuple>(value));
@@ -791,6 +789,10 @@ bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
+    if (imgInfo.pixelFormat != PixelFormat::RGBA_8888) {
+        IMAGE_LOGE("CheckPixelMapSLR only support RGBA_8888 format");
+        return false;
+    }
     int32_t srcWidth = pixelMap.GetWidth();
     int32_t srcHeight = pixelMap.GetHeight();
     if (srcWidth <= 0 || srcHeight <= 0 || !pixelMap.GetWritablePixels()) {
@@ -826,7 +828,6 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
 {
     ImageInfo imgInfo;
     pixelMap.GetImageInfo(imgInfo);
-    int32_t srcWidth = pixelMap.GetWidth(), srcHeight = pixelMap.GetHeight();
     if (!CheckPixelMapSLR(desiredSize, pixelMap)) {
         return false;
     }
