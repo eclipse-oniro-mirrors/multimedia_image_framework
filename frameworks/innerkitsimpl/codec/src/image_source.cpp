@@ -897,8 +897,8 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         pixelMap->SetExifMetadata(metadataPtr);
     }
     if (NeedConvert(opts, plInfo)) {
-        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(pixelMap,
-                                                plInfo.pixelFormat, opts_.desiredPixelFormat);
+        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
+            pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
         if (convertRes != SUCCESS) {
             IMAGE_LOGE("convert rgb format failed!");
         }
