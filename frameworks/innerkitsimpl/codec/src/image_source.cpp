@@ -42,6 +42,7 @@
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
+#include "image_format_convert.h"
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
@@ -886,6 +887,15 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     if (CreatExifMetadataByImageSource() == SUCCESS) {
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
+    }
+    if ((opts_.desiredPixelFormat == PixelFormat::NV12 || opts_.desiredPixelFormat == PixelFormat::NV21) &&
+        (plInfo.pixelFormat == PixelFormat::RGBA_8888 || plInfo.pixelFormat == PixelFormat::ARGB_8888 ||
+         plInfo.pixelFormat == PixelFormat::RGB_565 || plInfo.pixelFormat == PixelFormat::BGRA_8888 || 
+         plInfo.pixelFormat == PixelFormat::RGB_888)) {
+            uint32_t ConvertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
+            if (ConvertRes != SUCCESS) {
+                IMAGE_LOGE("convert rgb format failed!");
+            }
     }
     return pixelMap;
 }
