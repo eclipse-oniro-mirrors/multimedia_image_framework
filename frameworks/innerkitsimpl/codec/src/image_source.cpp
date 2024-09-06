@@ -823,7 +823,7 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
     }
 }
 
-bool NeedConvert(const DecodeOptions &opts, PlImageInfo& plInfo) 
+bool NeedConvert(const DecodeOptions &opts, PlImageInfo& plInfo)
 {
     return (opts_.desiredPixelFormat == PixelFormat::NV12 || opts_.desiredPixelFormat == PixelFormat::NV21) &&
            (plInfo.pixelFormat == PixelFormat::RGBA_8888 || plInfo.pixelFormat == PixelFormat::ARGB_8888 ||
@@ -898,7 +898,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     }
     if (NeedConvert(opts, plInfo)) {
         uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(pixelMap,
-                                                                                    plInfo.pixelFormat, opts_.desiredPixelFormat);
+                                                plInfo.pixelFormat, opts_.desiredPixelFormat);
         if (convertRes != SUCCESS) {
             IMAGE_LOGE("convert rgb format failed!");
         }
