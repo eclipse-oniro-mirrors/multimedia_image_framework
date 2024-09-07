@@ -827,8 +827,8 @@ bool NeedConvertToYuv(PixelFormat optsPixelFormat, PixelFormat curPixelFormat)
 {
     return (optsPixelFormat == PixelFormat::NV12 || optsPixelFormat == PixelFormat::NV21) && (
         curPixelFormat == PixelFormat::RGBA_8888 || curPixelFormat == PixelFormat::ARGB_8888 ||
-            curPixelFormat == PixelFormat::RGB_565 || curPixelFormat == PixelFormat::BGRA_8888 ||
-                curPixelFormat == PixelFormat::RGB_888);
+        curPixelFormat == PixelFormat::RGB_565 || curPixelFormat == PixelFormat::BGRA_8888 ||
+        curPixelFormat == PixelFormat::RGB_888);
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
