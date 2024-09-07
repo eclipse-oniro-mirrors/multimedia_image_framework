@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 struct NativePixelMap_ {
-    OHOS::Media::PixelMapNapi* napi = nullptr;
+    PixelMapNapi* napi = nullptr;
 };
 
 MIDK_EXPORT
@@ -271,6 +271,7 @@ int32_t OH_PixelMap_UnAccessPixels(const NativePixelMap* native)
     PixelMapNapiArgs args;
     return PixelMapNapiNativeCtxCall(CTX_FUNC_UNACCESS_PIXELS, native->napi, &args);
 }
+
 #ifdef __cplusplus
 };
 #endif
