@@ -566,8 +566,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(std::unique_ptr<P
     int32_t height = imageInfo.size.height;
     YUVStrideInfo dstStrides;
     auto allocType = srcPiexlMap->GetAllocatorType();
-    auto m = CreateMemory(destFormat, allocType, width, height, dstStrides);
-    if (m == nullptr) {
+    auto memory = CreateMemory(destFormat, allocType, width, height, dstStrides);
+    if (memory == nullptr) {
         IMAGE_LOGE("CreateMemory failed");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -577,13 +577,13 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(std::unique_ptr<P
         auto sb = reinterpret_cast<SurfaceBuffer*>(srcPiexlMap->GetFd());
         stride = sb->GetStride();
         sptr<SurfaceBuffer> sourceSurfaceBuffer(sb);
-        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(m->extend.data));
+        sptr<SurfaceBuffer> dstSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(memory->extend.data));
         VpeUtils::CopySurfaceBufferInfo(sourceSurfaceBuffer, dstSurfaceBuffer);
     }
     #endif
     RGBDataInfo rgbDataInfo = {width, height, static_cast<uint32_t>(stride)};
     DestConvertInfo destInfo = {width, height, destFormat, allocType};
-    destInfo.buffer = reinterpret_cast<uint8_t *>(m->data.data);
+    destInfo.buffer = reinterpret_cast<uint8_t *>(memory->data.data);
     destInfo.bufferSize = GetBufferSizeByFormat(destFormat, {destInfo.width, destInfo.height});
     destInfo.yStride = dstStrides.yStride;
     destInfo.uvStride = dstStrides.uvStride;
@@ -591,12 +591,12 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(std::unique_ptr<P
     destInfo.uvOffset = dstStrides.uvOffset;
     if (!cvtFunc(srcBuffer, rgbDataInfo, destInfo, srcPiexlMap->GetColorSpace())) {
         IMAGE_LOGE("format convert failed!");
-        m->Release();
+        memory->Release();
         return IMAGE_RESULT_FORMAT_CONVERT_FAILED;
     }
-    auto ret = MakeDestPixelMapUnique(srcPiexlMap, imageInfo, destInfo, m->extend.data);
+    auto ret = MakeDestPixelMapUnique(srcPiexlMap, imageInfo, destInfo, memory->extend.data);
     if (ret == ERR_IMAGE_PIXELMAP_CREATE_FAILED) {
-        m->Release();
+        memory->Release();
     }
     return ret;
 }
