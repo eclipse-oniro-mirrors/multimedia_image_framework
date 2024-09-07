@@ -1752,6 +1752,7 @@ uint32_t ImageSource::GetImagePropertyString(uint32_t index, const std::string &
     }
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
+    std::unique_lock<std::mutex> guardFile(fileMutex_);
     return GetImagePropertyCommon(index, key, value);
 }
 
