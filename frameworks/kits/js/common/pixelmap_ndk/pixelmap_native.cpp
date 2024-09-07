@@ -712,6 +712,9 @@ static std::map<CM_HDR_Metadata_Type, OH_Pixelmap_HdrMetadataType> MetadataNdkTy
 static bool ConvertStaticMetadata(const OH_Pixelmap_HdrStaticMetadata &metadata,
     std::vector<uint8_t> &staticMetadataVec)
 {
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return {};
+#else
     HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata staticMetadata{};
     staticMetadata.smpte2086.displayPrimaryRed.x = metadata.displayPrimariesX[INDEX_ZERO];
     staticMetadata.smpte2086.displayPrimaryRed.y = metadata.displayPrimariesY[INDEX_ZERO];
@@ -730,6 +733,7 @@ static bool ConvertStaticMetadata(const OH_Pixelmap_HdrStaticMetadata &metadata,
         return false;
     }
     return true;
+#endif
 }
 
 static void ConvertGainmapMetadata(OH_Pixelmap_HdrGainmapMetadata &metadata, HDRVividExtendMetadata &extendMetadata)
