@@ -42,6 +42,7 @@
 #include "image/abs_image_decoder.h"
 #include "image/abs_image_format_agent.h"
 #include "image/image_plugin_type.h"
+#include "image_format_convert.h"
 #include "image_log.h"
 #include "image_system_properties.h"
 #include "image_utils.h"
@@ -822,6 +823,14 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
     }
 }
 
+bool NeedConvertToYuv(PixelFormat optsPixelFormat, PixelFormat curPixelFormat)
+{
+    return (optsPixelFormat == PixelFormat::NV12 || optsPixelFormat == PixelFormat::NV21) && (
+        curPixelFormat == PixelFormat::RGBA_8888 || curPixelFormat == PixelFormat::ARGB_8888 ||
+        curPixelFormat == PixelFormat::RGB_565 || curPixelFormat == PixelFormat::BGRA_8888 ||
+        curPixelFormat == PixelFormat::RGB_888);
+}
+
 unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const DecodeOptions &opts, uint32_t &errorCode)
 {
     ImageEvent imageEvent;
@@ -887,6 +896,13 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
         auto metadataPtr = exifMetadata_->Clone();
         pixelMap->SetExifMetadata(metadataPtr);
     }
+    if (NeedConvertToYuv(opts.desiredPixelFormat, pixelMap->GetPixelFormat())) {
+        uint32_t convertRes = ImageFormatConvert::RGBConvertImageFormatOptionUnique(
+            pixelMap, plInfo.pixelFormat, opts_.desiredPixelFormat);
+        if (convertRes != SUCCESS) {
+            IMAGE_LOGE("convert rgb to yuv failed, return origin rgb!");
+        }
+    }
     return pixelMap;
 }
 
@@ -946,7 +962,7 @@ static bool ResizePixelMap(std::unique_ptr<PixelMap>& pixelMap, uint64_t imageId
     ImageUtils::DumpPixelMapIfDumpEnabled(pixelMap, imageId);
     if (opts.desiredSize.height != pixelMap->GetHeight() ||
         opts.desiredSize.width != pixelMap->GetWidth()) {
-        if (opts.desiredPixelFormat == PixelFormat::NV12 || opts.desiredPixelFormat == PixelFormat::NV21) {
+        if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
 #ifdef EXT_PIXEL
             auto pixelYuv = reinterpret_cast<PixelYuvExt *>(pixelMap.get());
             if (!pixelYuv->resize(opts.desiredSize.width, opts.desiredSize.height)) {
