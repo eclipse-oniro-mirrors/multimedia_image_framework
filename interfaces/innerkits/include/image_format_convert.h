@@ -47,9 +47,9 @@ public:
     static uint32_t ConvertImageFormat(const ConvertDataInfo &srcDataInfo, DestConvertInfo &destInfo);
     static uint32_t ConvertImageFormat(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat);
     static uint32_t MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
-                                           DestConvertInfo &destInfo, void *context);
+        DestConvertInfo &destInfo, void *context);
     static uint32_t RGBConvertImageFormatOptionUnique(std::unique_ptr<PixelMap> &srcPiexlMap,
-                                                      const PixelFormat &srcFormat, PixelFormat destFormat);
+        const PixelFormat &srcFormat, PixelFormat destFormat);
 private:
     static bool IsValidSize(const Size &size);
     static bool CheckConvertDataInfo(const ConvertDataInfo &convertDataInfo);

@@ -825,9 +825,9 @@ static void UpdatePlImageInfo(DecodeContext context, ImagePlugin::PlImageInfo &p
 
 bool NeedConvertToYuv(PixelFormat optsPixelFormat, PixelFormat curPixelFormat)
 {
-    return (optsPixelFormat == PixelFormat::NV12 || optsPixelFormat == PixelFormat::NV21) &&
-               (curPixelFormat == PixelFormat::RGBA_8888 || curPixelFormat == PixelFormat::ARGB_8888 ||
-                curPixelFormat == PixelFormat::RGB_565 || curPixelFormat == PixelFormat::BGRA_8888 ||
+    return (optsPixelFormat == PixelFormat::NV12 || optsPixelFormat == PixelFormat::NV21) && (
+        curPixelFormat == PixelFormat::RGBA_8888 || curPixelFormat == PixelFormat::ARGB_8888 ||
+            curPixelFormat == PixelFormat::RGB_565 || curPixelFormat == PixelFormat::BGRA_8888 ||
                 curPixelFormat == PixelFormat::RGB_888);
 }
 

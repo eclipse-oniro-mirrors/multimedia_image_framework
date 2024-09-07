@@ -550,8 +550,8 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOption(std::shared_ptr<PixelMa
     return ret;
 }
 
-uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(std::unique_ptr<PixelMap> &srcPiexlMap,
-                                                               const PixelFormat &srcFormat, PixelFormat destFormat)
+uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
+    std::unique_ptr<PixelMap> &srcPiexlMap, const PixelFormat &srcFormat, PixelFormat destFormat)
 {
     ConvertFunction cvtFunc = GetConvertFuncByFormat(srcFormat, destFormat);
     if (cvtFunc == nullptr) {
@@ -717,11 +717,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
 }
 
 uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
-                                                    DestConvertInfo &destInfo, void *context)
+    DestConvertInfo &destInfo, void *context)
 {
-    if (srcImageinfo.size.width == 0 || srcImageinfo.size.height == 0 || destInfo.width == 0
-        || destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
-        return ERR_IMAGE_INVALID_PARAMETER;
+    if (srcImageinfo.size.width == 0 || srcImageinfo.size.height == 0 || destInfo.width == 0 ||
+        destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
+            return ERR_IMAGE_INVALID_PARAMETER;
     }
     ImageInfo info;
     info.alphaType = srcImageinfo.alphaType;
