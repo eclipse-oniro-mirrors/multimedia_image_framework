@@ -60,9 +60,7 @@ constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
 constexpr int FFMPEG_NUM = 8;
-std::mutex gSlrMutex;
-static SLRLRUCache gSLRCache(64); // 64 max value
-static SkSLRCacheMgr gSLRCacheMgr(gSLRCache, gSlrMutex);
+constexpr int SLR_CACHE_CAPACITY = 256;
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
@@ -755,6 +753,13 @@ int GetInterpolation(const AntiAliasingOption &option)
     }
 }
 
+static SkSLRCacheMgr GetSLRCacheInst()
+{
+    static SkMutex slrMutex;
+    static SLRLRUCache slrCache(SLR_CACHE_CAPACITY);
+    return SkSLRCacheMgr(slrCache, slrMutex);
+}
+
 std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSize)
 {
     if (srcSize.width == 0 || srcSize.height == 0 || dstSize.width == 0 || dstSize.height == 0) {
@@ -762,8 +767,9 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
             srcSize.width, srcSize.height, dstSize.width, dstSize.height);
         return nullptr;
     }
+    SkSLRCacheMgr cacheMgr = GetSLRCacheInst();
     SLRWeightKey key(srcSize, dstSize);
-    std::shared_ptr<SLRWeightTuple> weightTuplePtr = gSLRCacheMgr.find(key.fKey);
+    std::shared_ptr<SLRWeightTuple> weightTuplePtr = cacheMgr.find(key.fKey);
     if (weightTuplePtr == nullptr) {
         SLRWeightMat slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width) / srcSize.width,
             static_cast<int>(dstSize.width));
@@ -771,7 +777,7 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
             static_cast<int>(dstSize.height));
         SLRWeightTuple value = {slrWeightX, slrWeightY, key};
         std::shared_ptr<SLRWeightTuple> weightPtr = std::make_shared<SLRWeightTuple>(value);
-        gSLRCacheMgr.insert(key.fKey, weightPtr);
+        cacheMgr.insert(key.fKey, weightPtr);
         IMAGE_LOGI("initSLRFactor insert:%{public}d", key.fKey);
         return weightPtr;
     }
