@@ -763,7 +763,7 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
         return nullptr;
     }
     SLRWeightKey key(srcSize, dstSize);
-    std::shared_ptr<SLRWeightTuple> weightTuplePtr = GetSLRCacheInst().find(key.fKey);
+    std::shared_ptr<SLRWeightTuple> weightTuplePtr = gSLRCacheMgr.find(key.fKey);
     if (weightTuplePtr == nullptr) {
         SLRWeightMat slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width) / srcSize.width,
             static_cast<int>(dstSize.width));
@@ -771,7 +771,7 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
             static_cast<int>(dstSize.height));
         SLRWeightTuple value = {slrWeightX, slrWeightY, key};
         std::shared_ptr<SLRWeightTuple> weightPtr = std::make_shared<SLRWeightTuple>(value);
-        GetSLRCacheInst().insert(key.fKey, weightPtr);
+        gSLRCacheMgr.insert(key.fKey, weightPtr);
         IMAGE_LOGI("initSLRFactor insert:%{public}d", key.fKey);
         return weightPtr;
     }
