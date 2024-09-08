@@ -33,6 +33,7 @@ using namespace std;
 constexpr float PI = 3.14159265;
 constexpr float EPSILON = 1e-6;
 
+
 float GetSLRFactor(float x, int a)
 {
     if (a <= 0) {
