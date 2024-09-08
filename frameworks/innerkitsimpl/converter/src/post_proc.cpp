@@ -60,6 +60,9 @@ constexpr float EPSILON = 1e-6;
 constexpr uint8_t HALF = 2;
 constexpr float HALF_F = 2;
 constexpr int FFMPEG_NUM = 8;
+std::mutex gSlrMutex;
+static SLRLRUCache gSLRCache(64); // 64 max value
+static SkSLRCacheMgr gSLRCacheMgr(gSLRCache, gSlrMutex);
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static const map<PixelFormat, AVPixelFormat> PIXEL_FORMAT_MAP = {
@@ -752,37 +755,27 @@ int GetInterpolation(const AntiAliasingOption &option)
     }
 }
 
-thread_local SLRWeightMat PostProc::slrWeightX = nullptr;
-thread_local SLRWeightMat PostProc::slrWeightY = nullptr;
-static SkSLRCacheMgr GetSLRCacheInst()
-{
-    static SkMutex slrMutex;
-    static SLRLRUCache slrCache(64); // 64 max value
-    return SkSLRCacheMgr(slrCache, slrMutex);
-}
-
-bool PostProc::initSLRFactor(Size srcSize, Size dstSize)
+std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSize)
 {
     if (srcSize.width == 0 || srcSize.height == 0 || dstSize.width == 0 || dstSize.height == 0) {
         IMAGE_LOGE("initSLRFactor invalid size, %{public}d, %{public}d, %{public}d, %{public}d",
             srcSize.width, srcSize.height, dstSize.width, dstSize.height);
-        return false;
+        return nullptr;
     }
     SLRWeightKey key(srcSize, dstSize);
     std::shared_ptr<SLRWeightTuple> weightTuplePtr = GetSLRCacheInst().find(key.fKey);
     if (weightTuplePtr == nullptr) {
-        slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width) / srcSize.width,
+        SLRWeightMat slrWeightX = SLRProc::GetWeights(static_cast<float>(dstSize.width) / srcSize.width,
             static_cast<int>(dstSize.width));
-        slrWeightY = SLRProc::GetWeights(static_cast<float>(dstSize.height) / srcSize.height,
+        SLRWeightMat slrWeightY = SLRProc::GetWeights(static_cast<float>(dstSize.height) / srcSize.height,
             static_cast<int>(dstSize.height));
         SLRWeightTuple value = {slrWeightX, slrWeightY, key};
-        GetSLRCacheInst().insert(key.fKey, std::make_shared<SLRWeightTuple>(value));
+        std::shared_ptr<SLRWeightTuple> weightPtr = std::make_shared<SLRWeightTuple>(value);
+        GetSLRCacheInst().insert(key.fKey, weightPtr);
         IMAGE_LOGI("initSLRFactor insert:%{public}d", key.fKey);
-        return true;
+        return weightPtr;
     }
-    slrWeightX = std::get<0>(*weightTuplePtr);
-    slrWeightY = std::get<1>(*weightTuplePtr);
-    return true;
+    return weightTuplePtr;
 }
 
 bool CheckPixelMapSLR(const Size &desiredSize, PixelMap &pixelMap)
@@ -832,7 +825,8 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
         return false;
     }
     ImageTrace imageTrace("ScalePixelMapWithSLR");
-    if (!initSLRFactor(imgInfo.size, desiredSize)) {
+    std::shared_ptr<SLRWeightTuple> weightTuplePtr = initSLRFactor(imgInfo.size, desiredSize);
+    if (weightTuplePtr == nullptr) {
         IMAGE_LOGE("ScalePixelMapWithSLR init failed");
         return false;
     }
@@ -855,10 +849,12 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
         rowStride = desiredSize.width * pixelBytes;
     }
     SLRMat dst({desiredSize.width, desiredSize.height}, imgInfo.pixelFormat, m->data.data, rowStride / pixelBytes);
+    SLRWeightMat slrWeightX = std::get<0>(*weightTuplePtr);
+    SLRWeightMat slrWeightY = std::get<1>(*weightTuplePtr);
     if (ImageSystemProperties::GetSLRParallelEnabled()) {
-        SLRProc::Parallel(src, dst, PostProc::slrWeightX, PostProc::slrWeightY);
+        SLRProc::Parallel(src, dst, slrWeightX, slrWeightY);
     } else {
-        SLRProc::Serial(src, dst, PostProc::slrWeightX, PostProc::slrWeightY);
+        SLRProc::Serial(src, dst, slrWeightX, slrWeightY);
     }
     pixelMap.SetPixelsAddr(m->data.data, m->extend.data, dstBufferSize, m->GetType(), nullptr);
     imgInfo.size = desiredSize;

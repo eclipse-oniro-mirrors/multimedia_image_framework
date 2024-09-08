@@ -16,6 +16,7 @@
 #ifndef FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_POST_PROC_SLR_H
 #define FRAMEWORKS_INNERKITSIMPL_CONVERTER_INCLUDE_POST_PROC_SLR_H
 
+#include <mutex>
 #include "image_type.h"
 #include "include/private/SkMutex.h"
 #include "src/core/SkLRUCache.h"
@@ -73,13 +74,27 @@ public:
     uint32_t fKey;
 };
 
+class SLRAutoLocker {
+public:
+    SLRAutoLocker(std::mutex& lock): mutex_(lock)
+    {
+        mutex_.lock();
+    }
+    ~SLRAutoLocker()
+    {
+        mutex_.unlock();
+    }
+private:
+    std::mutex& mutex_;
+};
+
 using SLRWeightVec = std::vector<std::vector<float>>;
 using SLRWeightMat = std::shared_ptr<SLRWeightVec>;
 using SLRWeightTuple = std::tuple<SLRWeightMat, SLRWeightMat, SLRWeightKey>;
 using SLRLRUCache = SkLRUCache<uint32_t, std::shared_ptr<SLRWeightTuple>>;
 class SkSLRCacheMgr {
 public:
-    SkSLRCacheMgr(SLRLRUCache& slrCache, SkMutex& mutex)
+    SkSLRCacheMgr(SLRLRUCache& slrCache, std::mutex& mutex)
         :fSLRCache(slrCache), fMutex(mutex)
     {
         fMutex.acquire();
@@ -88,37 +103,38 @@ public:
     SkSLRCacheMgr(const SkSLRCacheMgr&) = delete;
     SkSLRCacheMgr& operator=(const SkSLRCacheMgr&) = delete;
     SkSLRCacheMgr& operator=(SkSLRCacheMgr&&) = delete;
-
     ~SkSLRCacheMgr()
     {
-        fMutex.release();
     }
-
     std::shared_ptr<SLRWeightTuple> find(uint32_t key)
     {
+        SLRAutoLocker lock(fMutex);
         auto weight = fSLRCache.find(key);
         return weight == nullptr ? nullptr : *weight;
     }
 
     std::shared_ptr<SLRWeightTuple> insert(uint32_t key, std::shared_ptr<SLRWeightTuple> weightTuple)
     {
+        SLRAutoLocker lock(fMutex);
         auto weight = fSLRCache.insert(key, std::move(weightTuple));
         return weight == nullptr ? nullptr : *weight;
     }
 
     int Count()
     {
+        SLRAutoLocker lock(fMutex);
         return fSLRCache.count();
     }
 
     void Reset()
     {
+        SLRAutoLocker lock(fMutex);
         fSLRCache.reset();
     }
 
 private:
     SLRLRUCache& fSLRCache;
-    SkMutex& fMutex;
+    std::mutex& fMutex;
 };
 
 class SLRProc {
