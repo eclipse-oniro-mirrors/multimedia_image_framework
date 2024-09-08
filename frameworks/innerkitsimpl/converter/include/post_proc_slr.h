@@ -97,7 +97,6 @@ public:
     SkSLRCacheMgr(SLRLRUCache& slrCache, std::mutex& mutex)
         :fSLRCache(slrCache), fMutex(mutex)
     {
-        fMutex.acquire();
     }
     SkSLRCacheMgr(SkSLRCacheMgr&&) = delete;
     SkSLRCacheMgr(const SkSLRCacheMgr&) = delete;
