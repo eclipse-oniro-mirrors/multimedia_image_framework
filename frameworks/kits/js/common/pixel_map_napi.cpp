@@ -910,14 +910,19 @@ STATIC_EXEC_FUNC(CreatePixelMap)
 
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
-    if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
-        context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
-        context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
-        context->rPixelMap = nullptr;
+    if (colors == nullptr) {
+        if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+            context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+            context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
+            context->opts.useDMA = true;
+        }
+        auto pixelmap = PixelMap::Create(context->opts);
+        context->rPixelMap = std::move(pixelmap);
     } else {
-        if (colors == nullptr) {
-            auto pixelmap = PixelMap::Create(context->opts);
-            context->rPixelMap = std::move(pixelmap);
+        if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+            context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+            context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
+            context->rPixelMap = nullptr;
         } else {
             auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
             context->rPixelMap = std::move(pixelmap);
