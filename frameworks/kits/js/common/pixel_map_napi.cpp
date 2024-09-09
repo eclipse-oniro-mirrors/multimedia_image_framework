@@ -548,9 +548,11 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+#endif
         DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
             CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataKey",
@@ -4127,6 +4129,7 @@ static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
                     HDRVividExtendMetadata &gainmapMetadata =
                         *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
                     metadataValue = BuildDynamicMetadataNapi(env, gainmapMetadata);
+                    return napi_ok;
                 }
                 IMAGE_LOGE("GetSbDynamicMetadata failed");
             }
@@ -4169,7 +4172,7 @@ static HdrMetadataType ParseHdrMetadataType(napi_env env, napi_value &hdrMetadat
 {
     uint32_t type = 0;
     napi_get_value_uint32(env, hdrMetadataType, &type);
-    if (type < static_cast<int32_t>(HdrMetadataType::INVALID) && type >= HdrMetadataType::NONE) {
+    if (type < HdrMetadataType::INVALID && type >= HdrMetadataType::NONE) {
         return HdrMetadataType(type);
     }
     return HdrMetadataType::INVALID;

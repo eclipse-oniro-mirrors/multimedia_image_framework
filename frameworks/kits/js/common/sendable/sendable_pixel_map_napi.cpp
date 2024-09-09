@@ -31,7 +31,7 @@
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
 #undef LOG_TAG
-#define LOG_TAG "SendablePixelMapNapi yzp"
+#define LOG_TAG "SendablePixelMapNapi"
 
 namespace {
     constexpr uint32_t NUM_0 = 0;
