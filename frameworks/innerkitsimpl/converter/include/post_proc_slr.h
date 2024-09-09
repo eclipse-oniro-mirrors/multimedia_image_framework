@@ -88,6 +88,7 @@ public:
     SkSLRCacheMgr(const SkSLRCacheMgr&) = delete;
     SkSLRCacheMgr& operator=(const SkSLRCacheMgr&) = delete;
     SkSLRCacheMgr& operator=(SkSLRCacheMgr&&) = delete;
+
     ~SkSLRCacheMgr()
     {
         fMutex.release();
