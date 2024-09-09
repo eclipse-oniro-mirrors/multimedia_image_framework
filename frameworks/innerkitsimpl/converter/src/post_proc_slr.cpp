@@ -66,7 +66,7 @@ SLRWeightMat SLRProc::GetWeights(float coeff, int n)
     float scale = coeff > 1.0f ? 1.0f : coeff;
 
     for (int i = 0; i < n; i++) {
-        int etaf = (i + 0.5) / coeff - 0.5;
+        float etaf = (i + 0.5) / coeff - 0.5;
         int eta = std::floor(etaf);
         for (int k = eta - a + 1; k < eta + a + 1; k++) {
             float factor = GetSLRFactor(scale / beta * (etaf - k), a);
