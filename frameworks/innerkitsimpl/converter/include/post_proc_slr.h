@@ -93,6 +93,7 @@ public:
     {
         fMutex.release();
     }
+
     std::shared_ptr<SLRWeightTuple> find(uint32_t key)
     {
         auto weight = fSLRCache.find(key);
