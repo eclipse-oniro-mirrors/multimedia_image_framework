@@ -243,7 +243,7 @@ public:
     }
 #ifdef IMAGE_COLORSPACE_FLAG
     // -------[inner api for ImageSource/ImagePacker codec] it will get a colorspace object pointer----begin----
-    NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace);
+    NATIVEEXPORT void InnerSetColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace, bool direct = false);
     NATIVEEXPORT OHOS::ColorManager::ColorSpace InnerGetGrColorSpace();
     NATIVEEXPORT std::shared_ptr<OHOS::ColorManager::ColorSpace> InnerGetGrColorSpacePtr()
     {

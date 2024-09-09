@@ -29,6 +29,9 @@ public:
     uint32_t AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
         int32_t blocksNum, uint8_t *outBuffer, int32_t outSize);
     static bool AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer);
+    bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
+    void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
+    void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;
