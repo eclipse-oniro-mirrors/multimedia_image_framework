@@ -35,6 +35,8 @@
 namespace OHOS {
 namespace Media {
 
+static const uint8_t ODD = 1;
+static const uint8_t EVEN = 2;
 static const uint8_t NUM_2 = 2;
 
 static const int32_t degrees360 = 360;
@@ -45,7 +47,7 @@ constexpr uint8_t Y_SHIFT = 16;
 constexpr uint8_t U_SHIFT = 8;
 constexpr uint8_t V_SHIFT = 0;
 constexpr uint8_t YUV_MASK = 0xFF;
-constexpr uint8_t Y_DEFAULT = 0x10;
+constexpr uint8_t Y_DEFAULT = 0xFF;
 constexpr uint8_t UV_DEFAULT = 0x80;
 constexpr uint8_t TRANSPOSE_CLOCK = 1;
 constexpr uint8_t TRANSPOSE_CCLOCK = 2;
@@ -217,8 +219,8 @@ static void FillRectFrameInfo(AVFrame *frame, uint8_t *pixels, const Rect &rect,
 {
     frame->data[0] = pixels + info.yOffset;
     frame->data[1] = pixels + info.uvOffset;
-    frame->linesize[0] = info.yStride;
-    frame->linesize[1] = info.uvStride;
+    frame->linesize[0] = static_cast<int32_t>(info.yStride);
+    frame->linesize[1] = static_cast<int32_t>(info.uvStride);
 }
 
 static void FillDstFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info)
@@ -353,7 +355,7 @@ static bool CreateCropFilter(AVFilterGraph **filterGraph, AVFilterContext **crop
 
 static bool CropUpDataDstdata(uint8_t *dstData, AVFrame *dstFrame, const Rect &rect, YUVStrideInfo &strides)
 {
-    dstFrame->width = strides.yStride;
+    dstFrame->width = static_cast<int32_t>(strides.yStride);
     dstFrame->height = rect.height;
 
     int32_t dstSize = av_image_get_buffer_size(static_cast<AVPixelFormat>(dstFrame->format),
@@ -428,9 +430,6 @@ bool PixelYuvUtils::YuvCrop(uint8_t *srcData, YuvImageInfo &srcInfo, uint8_t *ds
 int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
     uint8_t *dstPixels, YuvImageInfo &dstInfo, int32_t module)
 {
-    int ret = 0;
-    AVFrame *srcFrame = nullptr;
-    AVFrame *dstFrame = nullptr;
     struct SwsContext *ctx = nullptr;
 
     if (srcInfo.format == AVPixelFormat::AV_PIX_FMT_NONE || dstInfo.format == AVPixelFormat::AV_PIX_FMT_NONE) {
@@ -441,32 +440,32 @@ int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
         IMAGE_LOGE("src/dst width/height error!");
         return -1;
     }
-
-    srcFrame = av_frame_alloc();
-    dstFrame = av_frame_alloc();
-    if (srcFrame != nullptr && dstFrame != nullptr) {
-        ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
-                             dstInfo.width, dstInfo.height, dstInfo.format,
-                             module, nullptr, nullptr, nullptr);
-        if (ctx != nullptr) {
-            FillSrcFrameInfo(srcFrame, srcPixels, srcInfo);
-            FillDstFrameInfo(dstFrame, dstPixels, dstInfo);
-            sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0, srcInfo.height,
-                dstFrame->data, dstFrame->linesize);
-        } else {
-            IMAGE_LOGE("FFMpeg: sws_getContext failed!");
-            ret = -1;
-        }
-    } else {
-        IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
-        ret = -1;
+    ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
+                         dstInfo.width, dstInfo.height, dstInfo.format,
+                         module, nullptr, nullptr, nullptr);
+    if (ctx == nullptr) {
+        IMAGE_LOGE("FFMpeg: sws_getContext failed!");
+        return -1;
     }
-
+    AVFrame *srcFrame = av_frame_alloc();
+    AVFrame *dstFrame = av_frame_alloc();
+    if (srcFrame == nullptr && dstFrame == nullptr) {
+        IMAGE_LOGE("FFMpeg: av_frame_alloc failed!");
+        sws_freeContext(ctx);
+        return  -1;
+    }
+    FillSrcFrameInfo(srcFrame, srcPixels, srcInfo);
+    FillDstFrameInfo(dstFrame, dstPixels, dstInfo);
+    auto ret = sws_scale(ctx, srcFrame->data, srcFrame->linesize, 0, srcInfo.height,
+        dstFrame->data, dstFrame->linesize);
     av_frame_free(&srcFrame);
     av_frame_free(&dstFrame);
     sws_freeContext(ctx);
-
-    return ret;
+    if (ret <= 0) {
+        IMAGE_LOGE("FFMpeg: sws_scale failed!");
+        return -1;
+    }
+    return EXPR_SUCCESS;
 }
 
 static bool CreateRotateFilter(AVFilterGraph **filterGraph, AVFilterContext **transposeCtx,
@@ -736,16 +735,17 @@ bool PixelYuvUtils::ReadYuvConvert(const void *srcPixels, const Position &srcPos
 }
 
 
-void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format)
+void PixelYuvUtils::SetTranslateDataDefault(uint8_t *srcPixels, int32_t width, int32_t height, PixelFormat format,
+    YUVStrideInfo &dstStrides)
 {
-    int32_t ySize = GetYSize(width, height);
-    int32_t uvSize = GetUStride(width) * GetUVHeight(height) * NUM_2;
+    auto ySizeNormal = static_cast<int32_t>(dstStrides.yStride) * height;
+    auto uvSizeNormal = static_cast<int32_t>(dstStrides.uvStride) * GetUVHeight(height);
     if (IsYUVP010Format(format)) {
-        ySize *= NUM_2;
-        uvSize *= NUM_2;
+        ySizeNormal *= NUM_2;
+        uvSizeNormal *= NUM_2;
     }
-    if (memset_s(srcPixels, ySize, Y_DEFAULT, ySize) != EOK ||
-        memset_s(srcPixels + ySize, uvSize, UV_DEFAULT, uvSize) != EOK) {
+    if (memset_s(srcPixels, ySizeNormal, Y_DEFAULT, ySizeNormal) != EOK ||
+        memset_s(srcPixels + ySizeNormal, uvSizeNormal, UV_DEFAULT, uvSizeNormal) != EOK) {
         IMAGE_LOGW("set translate default color failed");
     }
 }
@@ -971,29 +971,29 @@ void PixelYuvUtils::Yuv420SPTranslate(const uint8_t *srcPixels, YUVDataInfo &yuv
     const uint8_t *srcY = srcPixels + yuvInfo.yOffset;
     const uint8_t *srcUV = srcPixels + yuvInfo.uvOffset;
     uint8_t *dstY = dstPixels;
-    uint8_t *dstUV = dstPixels + GetYSize(strides.yStride, info.size.height);
+    uint8_t *dstUV = dstPixels + strides.uvOffset;
 
-    for (int32_t y = 0; y < info.size.height; y++) {
-        for (int32_t x = 0; x < info.size.width; x++) {
-            int32_t newX = x + xyAxis.xAxis;
-            int32_t newY = y + xyAxis.yAxis;
-            if (newX >= 0 && newY >= 0 && newX < info.size.width && newY < info.size.height) {
-                *(dstY + newY * strides.yStride + newX) = *(srcY + static_cast<uint32_t>(y) * yuvInfo.yStride + x);
-            }
-        }
+    int32_t yCopySize = info.size.width;
+    int32_t yCopyLine = info.size.height;
+    uint8_t *dst = nullptr;
+    const uint8_t *src = nullptr;
+    for (int32_t y = 0; y<yCopyLine ; y++) {
+        int32_t newY = y + xyAxis.yAxis;
+        dst = dstY + newY * static_cast<int32_t>(strides.yStride) + static_cast<int32_t>(xyAxis.xAxis);
+        src = srcY + y * static_cast<int32_t>(yuvInfo.yStride);
+        memcpy_s(dst, yCopySize,  src, yCopySize);
     }
-
-    for (int32_t y = 0; y < GetUVHeight(info.size.height); y++) {
-        for (int32_t x = 0; x < GetUVStride(info.size.width); x += NUM_2) {
-            int32_t newX = x + GetUVStride(xyAxis.xAxis);
-            int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < info.size.width && newY >= 0 && newY < GetUVHeight(info.size.height)) {
-                *(dstUV + newY * strides.uvStride + newX) =
-                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x);
-                *(dstUV + newY * strides.uvStride + newX + 1) =
-                    *(srcUV + static_cast<uint32_t>(y) * yuvInfo.uvStride + x + 1);
-            }
-        }
+    int32_t xOffset = ((int32_t)xyAxis.xAxis % EVEN == 0) ?  xyAxis.xAxis : xyAxis.xAxis - 1;
+    int32_t uvWidth = (info.size.width + ODD) / EVEN * EVEN;
+    int32_t uvHeight = (static_cast<int32_t>(yuvInfo.uvHeight) != 0) ? static_cast<int32_t>(yuvInfo.uvHeight)
+        : ((info.size.height + ODD) / EVEN);
+    int32_t uvCopySize = uvWidth;
+    int32_t uvCopyLine = uvHeight;
+    for (int32_t y = 0; y<uvCopyLine ; y++) {
+        int32_t newY = (y + xyAxis.yAxis / EVEN);
+        dst = dstUV+ newY * static_cast<int32_t>(strides.uvStride) + xOffset;
+        src = srcUV + y * static_cast<int32_t>(yuvInfo.uvStride);
+        memcpy_s(dst, uvCopySize,  src, uvCopySize);
     }
 }
 

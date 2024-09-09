@@ -104,7 +104,7 @@ bool JpegExifMetadataAccessor::ReadBlob(DataBuf &blob)
                 return false;
             }
             if (blob.CmpBytes(0, EXIF_ID, EXIF_ID_SIZE) == 0) {
-                tiffOffset_ = imageStream_->Tell() - blob.Size() + EXIF_ID_SIZE;
+                tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size()) + EXIF_ID_SIZE;
                 return true;
             }
         }

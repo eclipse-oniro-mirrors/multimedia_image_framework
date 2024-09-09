@@ -128,7 +128,7 @@ bool WebpExifMetadataAccessor::ReadBlob(DataBuf &blob)
 
         blob.Resize(size);
         imageStream_->Read(blob.Data(), size);
-        tiffOffset_ = imageStream_->Tell() - blob.Size();
+        tiffOffset_ = imageStream_->Tell() - static_cast<long>(blob.Size());
         return true;
     }
 

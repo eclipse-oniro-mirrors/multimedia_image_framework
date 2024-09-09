@@ -327,7 +327,7 @@ void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
     yuvInfo.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
     yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
-    yuvInfo.uvStride = static_cast<uint32_t>(width + 1);
+    yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
     yuvInfo.uvOffset = static_cast<uint32_t>(width * height);
 }
 
@@ -2122,6 +2122,55 @@ bool PixelMap::WriteTransformDataToParcel(Parcel &parcel) const
     return true;
 }
 
+bool PixelMap::WriteYuvDataInfoToParcel(Parcel &parcel) const
+{
+    if (IsYuvFormat()) {
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.imageSize.width))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.imageSize.height))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.yWidth))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.yHeight))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uvWidth))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uvHeight))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.yStride))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uStride))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.vStride))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uvStride))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.yOffset))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uOffset))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.vOffset))) {
+            return false;
+        }
+        if (!parcel.WriteInt32(static_cast<int32_t>(yuvDataInfo_.uvOffset))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
@@ -2141,7 +2190,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
-    if (isAstc_ || IsYUV(imageInfo_.pixelFormat)) {
+    if (isAstc_ || IsYUV(imageInfo_.pixelFormat) || imageInfo_.pixelFormat == PixelFormat::RGBA_F16) {
         bufferSize = pixelsSize_;
     }
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
@@ -2155,7 +2204,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (!WriteMemInfoToParcel(parcel, bufferSize)) {
-        IMAGE_LOGE("write memory info to parcel failed.");
+        IMAGE_LOGD("write memory info to parcel failed.");
         return false;
     }
 
@@ -2165,6 +2214,11 @@ bool PixelMap::Marshalling(Parcel &parcel) const
     }
     if (!WriteAstcRealSizeToParcel(parcel)) {
         IMAGE_LOGE("write astcrealSize to parcel failed.");
+        return false;
+    }
+
+    if (!WriteYuvDataInfoToParcel(parcel)) {
+        IMAGE_LOGE("write WriteYuvDataInfoToParcel to parcel failed.");
         return false;
     }
     return true;
@@ -2211,6 +2265,47 @@ bool PixelMap::ReadTransformData(Parcel &parcel, PixelMap *pixelMap)
     return true;
 }
 
+bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
+{
+    if (IsYuvFormat()) {
+        YUVDataInfo yDataInfo;
+        yDataInfo.imageSize.width = parcel.ReadInt32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel width:%{public}d", yDataInfo.imageSize.width);
+        yDataInfo.imageSize.height = parcel.ReadInt32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel height:%{public}d", yDataInfo.imageSize.height);
+
+        yDataInfo.yWidth = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yWidth:%{public}d", yDataInfo.yWidth);
+        yDataInfo.yHeight = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yHeight:%{public}d", yDataInfo.yHeight);
+        yDataInfo.uvWidth = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvWidth:%{public}d", yDataInfo.uvWidth);
+        yDataInfo.uvHeight = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvHeight:%{public}d", yDataInfo.uvHeight);
+
+        yDataInfo.yStride = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yStride:%{public}d", yDataInfo.yStride);
+        yDataInfo.uStride = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uStride:%{public}d", yDataInfo.uStride);
+        yDataInfo.vStride = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vStride:%{public}d", yDataInfo.vStride);
+        yDataInfo.uvStride = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvStride:%{public}d", yDataInfo.uvStride);
+
+        yDataInfo.yOffset = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.yOffset:%{public}d", yDataInfo.yOffset);
+        yDataInfo.uOffset = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uOffset:%{public}d", yDataInfo.uOffset);
+        yDataInfo.vOffset = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.vOffset:%{public}d", yDataInfo.vOffset);
+        yDataInfo.uvOffset = parcel.ReadUint32();
+        IMAGE_LOGD("ReadYuvDataInfoFromParcel yDataInfo.uvOffset:%{public}d", yDataInfo.uvOffset);
+
+        SetImageYUVInfo(yDataInfo);
+    }
+    return true;
+}
+
 bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 {
     if (pixelMap == nullptr) {
@@ -2230,11 +2325,6 @@ bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     AllocatorType &allocatorType, int32_t &bufferSize, PIXEL_MAP_ERR &error)
 {
-    if (!ReadImageInfo(parcel, imgInfo)) {
-        IMAGE_LOGE("read imageInfo fail");
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "read imageInfo fail");
-        return false;
-    }
     bool isEditable = parcel.ReadBool();
     SetEditable(isEditable);
     bool isAstc = parcel.ReadBool();
@@ -2256,7 +2346,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail");
         return false;
     }
-    if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height) {
+    if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height
+        && imgInfo.pixelFormat != PixelFormat::RGBA_F16) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         return false;
@@ -2354,13 +2445,31 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 {
-    PixelMap *pixelMap = new(std::nothrow) PixelMap();
+    ImageInfo imgInfo;
+    PixelMap *pixelMap = nullptr;
+    if (!ReadImageInfo(parcel, imgInfo)) {
+        IMAGE_LOGE("read imageInfo fail");
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "read imageInfo fail");
+        return nullptr;
+    }
+    if (IsYUV(imgInfo.pixelFormat)) {
+#ifdef EXT_PIXEL
+        IMAGE_LOGE("creat PixelYuvExt.");
+        pixelMap = new(std::nothrow) PixelYuvExt();
+#else
+        IMAGE_LOGE("creat PixelYuv.");
+        pixelMap = new(std::nothrow) PixelYuv();
+#endif
+    } else {
+        IMAGE_LOGE("creat PixelMap.");
+        pixelMap = new(std::nothrow) PixelMap();
+    }
+
     if (pixelMap == nullptr) {
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelmap create failed");
         return nullptr;
     }
 
-    ImageInfo imgInfo;
     PixelMemInfo pixelMemInfo;
     if (!pixelMap->ReadPropertiesFromParcel(parcel, imgInfo, pixelMemInfo.allocatorType,
         pixelMemInfo.bufferSize, error)) {
@@ -2386,6 +2495,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     }
     if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
         IMAGE_LOGE("read astcrealSize fail");
+        delete pixelMap;
+        return nullptr;
+    }
+    if (!pixelMap->ReadYuvDataInfoFromParcel(parcel, pixelMap)) {
+        IMAGE_LOGE("ReadYuvDataInfoFromParcel fail");
         delete pixelMap;
         return nullptr;
     }
@@ -2613,7 +2727,7 @@ bool PixelMap::IsYuvFormat(PixelFormat format)
         format == PixelFormat::YCBCR_P010 || format == PixelFormat::YCRCB_P010;
 }
 
-bool PixelMap::IsYuvFormat()
+bool PixelMap::IsYuvFormat() const
 {
     return IsYuvFormat(imageInfo_.pixelFormat);
 }
@@ -2624,7 +2738,7 @@ void PixelMap::AssignYuvDataOnType(PixelFormat format, int32_t width, int32_t he
         yuvDataInfo_.yWidth = static_cast<uint32_t>(width);
         yuvDataInfo_.yHeight = static_cast<uint32_t>(height);
         yuvDataInfo_.yStride = static_cast<uint32_t>(width);
-        yuvDataInfo_.uvWidth = (width % NUM_2 == 0) ? static_cast<uint32_t>(width) : static_cast<uint32_t>(width + 1);
+        yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
         yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
         yuvDataInfo_.yOffset = 0;
         yuvDataInfo_.uvOffset =  yuvDataInfo_.yHeight * yuvDataInfo_.yStride;
@@ -2645,7 +2759,7 @@ void PixelMap::UpdateYUVDataInfo(PixelFormat format, int32_t width, int32_t heig
         yuvDataInfo_.yOffset = strides.yOffset;
         yuvDataInfo_.uvStride = strides.uvStride;
         yuvDataInfo_.uvOffset = strides.uvOffset;
-        yuvDataInfo_.uvWidth = (width + 1) / NUM_2 * NUM_2;
+        yuvDataInfo_.uvWidth = static_cast<uint32_t>((width + 1) / NUM_2);
         yuvDataInfo_.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     }
 }
@@ -3179,8 +3293,6 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
-        "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
