@@ -2358,9 +2358,24 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+{
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    if (surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+        return false;
+    }
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    pixelMemInfo.context = nativeBuffer;
+    return true;
+}
+#endif
+
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
@@ -2387,15 +2402,10 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        if (surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
-        void* nativeBuffer = surfaceBuffer.GetRefPtr();
-        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-        pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-        pixelMemInfo.context = nativeBuffer;
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
