@@ -2055,7 +2055,10 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+            IMAGE_LOGE("write pixel map to message parcel failed.");
+            return false;
+        }
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             IMAGE_LOGE("write pixel map buffer to parcel failed.");
@@ -2375,7 +2378,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
                 return false;
             }
         }
-        pixelMemInfo.context = new int32_t();
+        pixelMemInfo.context = new(std::nothrow) int32_t();
         if (pixelMemInfo.context == nullptr) {
             ::munmap(ptr, pixelMemInfo.bufferSize);
             ::close(fd);
@@ -2385,7 +2388,10 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
+            return false;
+        }
         void* nativeBuffer = surfaceBuffer.GetRefPtr();
         ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
         pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
