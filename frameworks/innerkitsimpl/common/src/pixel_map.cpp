@@ -2111,8 +2111,9 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        if (sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
-            IMAGE_LOGE("write pixel map to message parcel failed.");
+        GSError ret = sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (ret != GSError::GSERROR_OK) {
+            IMAGE_LOGE("write pixel map to message parcel failed: %{public}s.", GSErrorStr(ret).c_str());
             return false;
         }
     } else {
@@ -2421,7 +2422,9 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
 bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
 {
     sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-    if (surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    if (ret != GSError::GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
         return false;
     }
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
