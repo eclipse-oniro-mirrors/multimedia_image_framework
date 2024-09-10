@@ -769,7 +769,8 @@ void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
         IMAGE_LOGD("Exif data is null");
         return ;
     }
-    for (int keySize = 0; keySize < static_cast<int>(exifKeys.size()); keySize++) {
+    auto size = exifKeys.size();
+    for (unsigned long keySize = 0; keySize < size; keySize++) {
         ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
         FindRanges(tag, ranges);
     }
