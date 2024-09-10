@@ -219,11 +219,23 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
         auto yOffset = planes->planes[PLANE_Y].offset;
         auto uvOffset = planes->planes[PLANE_U].offset;
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
-    } else {
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
         auto yStride = planes->planes[PLANE_Y].columnStride;
         auto uvStride = planes->planes[PLANE_V].columnStride;
         auto yOffset = planes->planes[PLANE_Y].offset;
         auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_U].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_V].offset / 2;
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
 }
@@ -396,6 +408,7 @@ void PixelYuv::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
         dstW, dstH, imageInfo_.pixelFormat, yuvDataInfo};
     if (PixelYuvUtils::YuvScale(data_, srcInfo, yuvData, dstInfo, PixelYuvUtils::YuvConvertOption(option)) != SUCCESS) {
         IMAGE_LOGE("ScaleYuv failed");
+        dstMemory->Release();
         return;
     }
     imageInfo.size.height = dstH;
@@ -468,12 +481,14 @@ void PixelYuv::flip(bool xAxis, bool yAxis)
     if (xAxis && yAxis) {
         if (!PixelYuvUtils::YuvReversal(const_cast<uint8_t *>(src), srcInfo, dst, dstInfo)) {
             IMAGE_LOGE("flip yuv xAxis and yAxis failed");
+            dstMemory->Release();
             return;
         }
     } else {
         bool isXaxis = ((xAxis | yAxis) && xAxis) ? true : false;
         if (!PixelYuvUtils::YuvFlip(const_cast<uint8_t *>(src), srcInfo, dst, isXaxis)) {
             IMAGE_LOGE("flip yuv xAxis or yAxis failed");
+            dstMemory->Release();
             return;
         }
     }
@@ -517,6 +532,22 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     return SUCCESS;
 }
 
+void PixelYuv::GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo)
+{
+    GetImageYUVInfo(yuvDataInfo);
+    yuvDataInfo.yWidth = static_cast<uint32_t>(imageInfo_.size.width);
+    yuvDataInfo.yHeight = static_cast<uint32_t>(imageInfo_.size.height);
+    yuvDataInfo.uvWidth = yuvDataInfo.uvWidth * NUM_2;
+    if (IsP010Yuv()) {
+        yuvDataInfo.yWidth = static_cast<uint32_t>(imageInfo_.size.width) * NUM_2;
+        yuvDataInfo.uvWidth = yuvDataInfo.yWidth;
+        yuvDataInfo.yOffset = yuvDataInfo.yOffset * NUM_2;
+        yuvDataInfo.yStride = yuvDataInfo.yStride * NUM_2;
+        yuvDataInfo.uvOffset = yuvDataInfo.uvOffset * NUM_2;
+        yuvDataInfo.uvStride = yuvDataInfo.uvStride * NUM_2;
+    }
+}
+
 uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
 {
     if (!IsYuvFormat()) {
@@ -541,26 +572,22 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     YUVDataInfo yuvDataInfo;
-    GetImageYUVInfo(yuvDataInfo);
-    uint32_t yWidth = imageInfo_.size.width;
-    uint32_t yHeight = imageInfo_.size.height;
-    uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
-    uint32_t uvHeight = yuvDataInfo.uvHeight;
+    GetYUVInfoForCopyPixels(yuvDataInfo);
     auto srcY = source;
-    auto srcUV = source + yWidth * yHeight;
+    auto srcUV = source + yuvDataInfo.yWidth * yuvDataInfo.yHeight;
     auto dstY = data_ + yuvDataInfo.yOffset;
-    /* copy Y plane*/
-    for (int32_t y = 0; y < static_cast<int32_t>(yHeight); y++) {
-        memcpy_s(dstY, yWidth, srcY, yWidth);
-        dstY += yuvDataInfo.yStride;
-        srcY += yWidth;
-    }
     auto dstUV = data_ + yuvDataInfo.uvOffset;
+    /* copy Y plane*/
+    for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
+        memcpy_s(dstY, yuvDataInfo.yWidth, srcY, yuvDataInfo.yWidth);
+        dstY += yuvDataInfo.yStride;
+        srcY += yuvDataInfo.yWidth;
+    }
     /* copy UV plane*/
-    for (int32_t y = 0; y < static_cast<int32_t>(uvHeight); y++) {
-        memcpy_s(dstUV, uvWidth, srcUV, uvWidth);
+    for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
+        memcpy_s(dstUV, yuvDataInfo.uvWidth, srcUV, yuvDataInfo.uvWidth);
         dstUV += yuvDataInfo.uvStride;
-        srcUV += uvWidth;
+        srcUV += yuvDataInfo.uvWidth;
     }
     return SUCCESS;
 }
@@ -594,6 +621,14 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     return SUCCESS;
 }
 
+bool PixelYuv::IsP010Yuv()
+{
+    if (imageInfo_.pixelFormat == PixelFormat::YCBCR_P010 || imageInfo_.pixelFormat == PixelFormat::YCRCB_P010) {
+        return true;
+    }
+    return false;
+}
+
 uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     if (!IsYuvFormat()) {
@@ -618,25 +653,19 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     YUVDataInfo yuvDataInfo;
-    GetImageYUVInfo(yuvDataInfo);
-
-    uint32_t yWidth = imageInfo_.size.width;
-    uint32_t yHeight = imageInfo_.size.height;
-    uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
-    uint32_t uvHeight = yuvDataInfo.uvHeight;
-    uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;
+    GetYUVInfoForCopyPixels(yuvDataInfo);
     uint8_t *srcUVPixels = data_ + yuvDataInfo.uvOffset;
+    uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;
     /* copy Y plane*/
-    for (int32_t y = 0; y<static_cast<int32_t>(yHeight); y++) {
-        memcpy_s(dst, yWidth, srcYPixels, yWidth);
-        dst += yWidth;
+    for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
+        memcpy_s(dst, yuvDataInfo.yWidth, srcYPixels, yuvDataInfo.yWidth);
+        dst += yuvDataInfo.yWidth;
         srcYPixels += yuvDataInfo.yStride;
     }
-
     /* copy UV plane*/
-    for (int32_t y = 0; y<static_cast<int32_t>(uvHeight); y++) {
-        memcpy_s(dst, uvWidth, srcUVPixels, uvWidth);
-        dst += uvWidth;
+    for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
+        memcpy_s(dst, yuvDataInfo.uvWidth, srcUVPixels, yuvDataInfo.uvWidth);
+        dst += yuvDataInfo.uvWidth;
         srcUVPixels += yuvDataInfo.uvStride;
     }
     return SUCCESS;
@@ -647,8 +676,8 @@ void PixelYuv::translate(float xAxis, float yAxis)
     if (!IsYuvFormat() || (xAxis == 0 && yAxis == 0)) {
         return;
     }
-    int32_t width = imageInfo_.size.width;
-    int32_t height = imageInfo_.size.height;
+    int32_t width = imageInfo_.size.width + xAxis;
+    int32_t height = imageInfo_.size.height + yAxis;
     PixelFormat format = imageInfo_.pixelFormat;
 
     YUVStrideInfo dstStrides;
@@ -661,7 +690,7 @@ void PixelYuv::translate(float xAxis, float yAxis)
     GetImageYUVInfo(yuvDataInfo);
     XYaxis xyAxis = {xAxis, yAxis};
     uint8_t *dst = reinterpret_cast<uint8_t *>(dstMemory->data.data);
-    PixelYuvUtils::SetTranslateDataDefault(dst, width, height, format);
+    PixelYuvUtils::SetTranslateDataDefault(dst, width, height, format, dstStrides);
 
     if (!PixelYuvUtils::YuvTranslate(data_, yuvDataInfo, dst, xyAxis, imageInfo_, dstStrides)) {
         dstMemory->Release();
@@ -902,14 +931,16 @@ int32_t PixelYuv::ColorSpaceBGRAToYuv(uint8_t *bgraData, SkTransYuvInfo &dst, Im
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo_};
     if (!PixelYuvUtils::BGRAToYuv420(bgraData, srcInfo, reinterpret_cast<uint8_t *>(yuvMemory->data.data), dstInfo)) {
         IMAGE_LOGE("applyColorSpace BGRAToYuv420 failed");
-            return ERR_IMAGE_COLOR_CONVERT;
-        }
+        yuvMemory->Release();
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     imageInfo.pixelFormat = format;
     dst.info = ToSkImageInfo(imageInfo, grColorSpace.ToSkColorSpace());
     ToImageInfo(imageInfo, dst.info);
     auto grName = grColorSpace.GetColorSpaceName();
     grColorSpace_ = std::make_shared<OHOS::ColorManager::ColorSpace>(dst.info.refColorSpace(), grName);
-    SetPixelsAddr(reinterpret_cast<void *>(yuvMemory->data.data), nullptr, pictureSize, yuvMemory->GetType(), nullptr);
+    SetPixelsAddr(reinterpret_cast<void *>(yuvMemory->data.data), yuvMemory->extend.data, pictureSize,
+        yuvMemory->GetType(), nullptr);
     return SUCCESS;
 }
 

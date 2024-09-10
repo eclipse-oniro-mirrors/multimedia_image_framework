@@ -370,6 +370,8 @@ protected:
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
     bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
+    bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
+    bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
     void SetEditable(bool editable)
     {
@@ -400,7 +402,7 @@ protected:
     static uint8_t *ReadAshmemDataFromParcel(Parcel &parcel, int32_t bufferSize);
     static int ReadFileDescriptor(Parcel &parcel);
     static bool WriteFileDescriptor(Parcel &parcel, int fd);
-    bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
+    static bool ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo);
     bool WriteImageInfo(Parcel &parcel) const;
     void WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const;
     static uint8_t ReadUint8(std::vector<uint8_t> &buff, int32_t &cursor);
@@ -413,7 +415,7 @@ protected:
     static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
-    bool IsYuvFormat();
+    bool IsYuvFormat() const;
     static int32_t ConvertPixelAlpha(const void *srcPixels, const int32_t srcLength, const ImageInfo &srcInfo,
         void *dstPixels, const ImageInfo &dstInfo);
     uint8_t *data_ = nullptr;
