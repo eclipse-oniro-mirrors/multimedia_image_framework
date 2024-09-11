@@ -30,6 +30,7 @@ class PixelYuvExtUtilsTest : public testing::Test {
 
 #ifdef EXT_PIXEL
 static constexpr int32_t LENGTH = 8;
+static constexpr int32_t NUM_2 = 2;
 
 /**
  * @tc.name: Yuv420ToARGB001
@@ -176,6 +177,89 @@ HWTEST_F(PixelYuvExtUtilsTest, Mirror001, TestSize.Level3)
     bool res = PixelYuvExtUtils::Mirror(src, dst, size, format, info, dstStrides, isReversed);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "PixelYuvExtUtilsTest: Mirror001 end";
+}
+
+/**
+ * @tc.name: YuvRotate002
+ * @tc.desc: Test YuvRotate with invalid size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelYuvExtUtilsTest, YuvRotate002, TestSize.Level3)
+{
+    uint8_t srcPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    uint8_t dstPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    PixelFormat pixelFormat = PixelFormat::YCBCR_P010;
+    Size dstSize;
+    YUVStrideInfo dstStrides;
+    YUVDataInfo info;
+    info.yWidth = 0;
+    info.yHeight = 0;
+    info.imageSize.width = 0;
+    info.imageSize.height = 0;
+    auto rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
+
+    bool res = PixelYuvExtUtils::YuvRotate(srcPixels, pixelFormat, info, dstSize, dstPixels, dstStrides, rotateNum);
+    ASSERT_EQ(res, false);
+}
+
+/**
+ * @tc.name: YuvRotate003
+ * @tc.desc: Test YuvRotate with invalid dstSize and dstStrides.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelYuvExtUtilsTest, YuvRotate003, TestSize.Level3)
+{
+    uint8_t srcPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    uint8_t dstPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    PixelFormat pixelFormat = PixelFormat::YCBCR_P010;
+    Size dstSize;
+    YUVStrideInfo dstStrides;
+    YUVDataInfo info;
+    info.yWidth = NUM_2;
+    info.yHeight = NUM_2;
+    info.imageSize.width = NUM_2;
+    info.imageSize.height = NUM_2;
+    info.yStride = info.yWidth;
+    info.uvStride = (info.yWidth + 1) / NUM_2 * NUM_2;
+    info.yOffset = 0;
+    info.uvOffset = info.yWidth * info.yHeight;
+    auto rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
+
+    bool res = PixelYuvExtUtils::YuvRotate(srcPixels, pixelFormat, info, dstSize, dstPixels, dstStrides, rotateNum);
+    ASSERT_EQ(res, false);
+}
+
+/**
+ * @tc.name: YuvRotate004
+ * @tc.desc: Verify successful rotation by 90 degrees.
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelYuvExtUtilsTest, YuvRotate004, TestSize.Level3)
+{
+    uint8_t srcPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    uint8_t dstPixels[LENGTH] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07};
+    PixelFormat pixelFormat = PixelFormat::YCBCR_P010;
+    Size dstSize;
+    dstSize.width = NUM_2;
+    dstSize.height = NUM_2;
+    YUVDataInfo info;
+    info.yWidth = NUM_2;
+    info.yHeight = NUM_2;
+    info.imageSize.width = NUM_2;
+    info.imageSize.height = NUM_2;
+    info.yStride = info.yWidth;
+    info.uvStride = (info.yWidth + 1) / NUM_2 * NUM_2;
+    info.yOffset = 0;
+    info.uvOffset = info.yWidth * info.yHeight;
+    YUVStrideInfo dstStrides;
+    dstStrides.yStride = info.yWidth;
+    dstStrides.uvStride = (info.yWidth + 1) / NUM_2 * NUM_2;
+    dstStrides.yOffset = 0;
+    dstStrides.uvOffset = info.yWidth * info.yHeight;
+    auto rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
+
+    bool res = PixelYuvExtUtils::YuvRotate(srcPixels, pixelFormat, info, dstSize, dstPixels, dstStrides, rotateNum);
+    ASSERT_EQ(res, true);
 }
 #endif
 } // namespace Multimedia

@@ -29,6 +29,7 @@ public:
     static bool GetHardWareEncodeEnabled();
     static bool GetHeifHardwareDecodeEnabled();
     static bool GetAstcHardWareEncodeEnabled();
+    static bool GetSLRParallelEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
     static bool IsPhotos();

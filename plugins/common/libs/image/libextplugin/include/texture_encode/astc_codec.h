@@ -37,9 +37,10 @@ public:
     static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer);
 #endif
     bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
-    uint32_t SetColorSpace(uint8_t* astcBuffer);
     void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
     void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
+    void InitTextureEncodeOptions(TextureEncodeOptions &param);
+    bool DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo);
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;

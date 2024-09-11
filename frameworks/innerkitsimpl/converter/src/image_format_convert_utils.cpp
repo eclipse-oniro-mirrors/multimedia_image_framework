@@ -136,6 +136,10 @@ static bool RGBToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam,
 
 static void FillFrameInfo(AVFrame *frame, uint8_t *slice[], int stride[])
 {
+    if (frame == nullptr) {
+        IMAGE_LOGE("frame is null.");
+        return;
+    }
     frame->data[0] = slice[0];
     frame->data[1] = slice[1];
     frame->linesize[0] = stride[0];

@@ -332,6 +332,7 @@ enum class AntiAliasingOption : int32_t {
     SINC = 7, // SWS_SINC
     LANCZOS = 8, // SWS_LANCZOS
     SPLINE = 9, // SWS_SPLINE
+    SLR = 10, // SLR
 };
 
 enum class AuxiliaryPictureType {
@@ -346,7 +347,7 @@ enum class AuxiliaryPictureType {
 struct AuxiliaryPictureInfo {
     AuxiliaryPictureType auxiliaryPictureType = AuxiliaryPictureType::NONE;
     Size size;
-    int32_t rowStride = 0;
+    uint32_t rowStride = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
 };

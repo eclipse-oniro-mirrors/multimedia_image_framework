@@ -103,11 +103,15 @@ declare_args() {
   enable_heif_hw_decode = false
   enable_libexif = true
   enable_heif_hw_encode = false
+  enable_picture = false
+  enable_picture_ndk = false
 
   if (defined(global_parts_info) &&
       !defined(global_parts_info.hdf_drivers_interface_display)) {
     enable_jpeg_hw_decode = false
     enable_heif_hw_decode = false
     enable_heif_hw_encode = false
+    enable_picture = false
+    enable_picture_ndk = false
   }
 }

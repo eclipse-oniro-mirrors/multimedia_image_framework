@@ -327,6 +327,23 @@ uint32_t ExtDecoder::HeifYUVMemAlloc(OHOS::ImagePlugin::DecodeContext &context)
     uint64_t yuvBufferSize = JpegDecoderYuv::GetYuvOutSize(info_.width(), info_.height());
     SetDecodeContextBuffer(context, AllocatorType::DMA_ALLOC,
                            static_cast<uint8_t*>(hwBuffer->GetVirAddr()), yuvBufferSize, nativeBuffer);
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = hwBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+        IMAGE_LOGE("heif yuv decode, Get planesInfo failed, retVal:%{public}d", retVal);
+    } else {
+        uint32_t uvPlaneOffset = (context.info.pixelFormat == PixelFormat::NV12 ||
+                context.info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_ONE : NUM_2;
+        context.yuvInfo.imageSize = { info_.width(), info_.height() };
+        context.yuvInfo.yWidth = info_.width();
+        context.yuvInfo.yHeight = info_.height();
+        context.yuvInfo.uvWidth = static_cast<uint32_t>((info_.width() + 1) / NUM_2);
+        context.yuvInfo.uvHeight = static_cast<uint32_t>((info_.height() + 1) / NUM_2);
+        context.yuvInfo.yStride = planes->planes[0].columnStride;
+        context.yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+        context.yuvInfo.yOffset = planes->planes[0].offset;
+        context.yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    }
     return SUCCESS;
 #else
     return ERR_IMAGE_DATA_UNSUPPORT;
@@ -868,7 +885,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #endif
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
-        return GifDecode(index, context, rowStride);
+        res = GifDecode(index, context, rowStride);
+        ImageUtils::FlushContextSurfaceBuffer(context);
+        return res;
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     if (ret != SkCodec::kSuccess && ResetCodec()) {
@@ -1063,6 +1082,10 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    if (context.pixelsBuffer.context == nullptr) {
+        IMAGE_LOGE("Alloc OutputBuffer failed, context is null");
         return ERR_IMAGE_DECODE_ABNORMAL;
     }
     BufferHandle *handle = (static_cast<SurfaceBuffer*>(context.pixelsBuffer.context))->GetBufferHandle();
@@ -1288,14 +1311,14 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGE("create codec: input stream is nullptr.");
         return false;
     } else if (stream_->GetStreamSize() == SIZE_ZERO) {
-        IMAGE_LOGE("create codec: input stream size is zero.");
+        IMAGE_LOGD("create codec: input stream size is zero.");
         return false;
     }
     uint32_t src_offset = stream_->Tell();
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
-        IMAGE_LOGE("create codec from stream failed");
+        IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
     }
@@ -1305,7 +1328,7 @@ bool ExtDecoder::CheckCodec()
 bool ExtDecoder::DecodeHeader()
 {
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("DecodeHeader Check codec failed");
         return false;
     }
     info_ = codec_->getInfo();
@@ -1782,7 +1805,7 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
 {
     IMAGE_LOGD("[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("[GetFilterArea] Check codec failed");
         return NO_EXIF_TAG;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();

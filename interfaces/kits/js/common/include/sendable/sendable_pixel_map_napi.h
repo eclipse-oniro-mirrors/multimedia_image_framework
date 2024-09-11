@@ -34,6 +34,7 @@ public:
     static std::shared_ptr<PixelMap> GetSendablePixelMap(napi_env env, napi_value pixelmap);
     void ReleasePixelNapiInner()
     {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
         setPixelNapiEditable(false);
         nativePixelMap_ = nullptr;
     }

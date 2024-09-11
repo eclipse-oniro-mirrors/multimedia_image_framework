@@ -200,6 +200,10 @@ bool PixelYuvUtils::WriteYuvConvert(const void *srcPixels, const ImageInfo &srcI
 
 static void FillSrcFrameInfo(AVFrame *frame, uint8_t *pixels, YuvImageInfo &info)
 {
+    if (frame == nullptr) {
+        IMAGE_LOGE("src frame is null.");
+        return;
+    }
     if (info.format == AVPixelFormat::AV_PIX_FMT_NV21 || info.format == AVPixelFormat::AV_PIX_FMT_NV12) {
         frame->data[0] = pixels + info.yuvDataInfo.yOffset;
         frame->data[1] = pixels + info.yuvDataInfo.uvOffset;

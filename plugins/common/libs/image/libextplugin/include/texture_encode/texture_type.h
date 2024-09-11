@@ -47,6 +47,9 @@ struct TextureEncodeOptions {
     SutProfile sutProfile;
     int32_t sutBytes;
     bool outIsSut;
+    uint8_t expandNums;
+    uint8_t *extInfoBuf;
+    int32_t extInfoBytes;
 };
 
 struct AstcEncoder {

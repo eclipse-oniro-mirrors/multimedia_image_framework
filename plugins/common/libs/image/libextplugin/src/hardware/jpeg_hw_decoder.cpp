@@ -79,7 +79,7 @@ JpegHardwareDecoder::LifeSpanTimer::~LifeSpanTimer()
 {
     static constexpr float MILLISEC_TO_MICROSEC = 1000.0f;
     int64_t timeSpanInUs = GetCurrentTimeInUs() - startTimeInUs_;
-    JPEG_HW_LOGI("%{public}s cost: %{public}.2f ms",
+    JPEG_HW_LOGD("%{public}s cost: %{public}.2f ms",
                  desc_.c_str(), static_cast<float>(timeSpanInUs / MILLISEC_TO_MICROSEC));
 }
 
@@ -189,7 +189,7 @@ uint32_t JpegHardwareDecoder::Decode(SkCodec *codec, ImagePlugin::InputDataStrea
     ret = ret && DoDecode(outputBuffer);
     RecycleAllocatedResource();
     if (ret) {
-        JPEG_HW_LOGI("jpeg hardware decode succeed");
+        JPEG_HW_LOGD("jpeg hardware decode succeed");
         return Media::SUCCESS;
     }
     return Media::ERR_IMAGE_DECODE_FAILED;

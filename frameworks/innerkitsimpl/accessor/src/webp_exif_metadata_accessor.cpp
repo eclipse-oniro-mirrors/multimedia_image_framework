@@ -141,14 +141,14 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     DataBuf chunkId(WEBP_CHUNK_ID_SIZE);
     if (static_cast<size_t>(imageStream_->Read(chunkId.Data(), chunkId.Size())) != chunkId.Size() ||
         imageStream_->IsEof()) {
-        IMAGE_LOGE("Image stream does not find vp8x.");
+        IMAGE_LOGD("Image stream does not find vp8x.");
         return false;
     }
 
     std::string strChunkId(reinterpret_cast<const char *>(chunkId.CData()), WEBP_CHUNK_ID_SIZE);
     if (strChunkId != WEBP_CHUNK_HEADER_VP8X) {
         exifFlag = Vp8xAndExifInfo::VP8X_NOT_EXIST;
-        IMAGE_LOGE("Image stream does not find vp8x.");
+        IMAGE_LOGD("Image stream does not find vp8x.");
         return false;
     }
 
@@ -161,7 +161,7 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
     const uint32_t size = GetULong(chunkSize, littleEndian);
 
     DataBuf chunkData(size);
-    if (size == 0 || chunkData.Empty()) {
+    if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
         IMAGE_LOGE("Image stream does not find vp8x data.");
         return false;
     }

@@ -40,6 +40,7 @@
 #include "image_trace.h"
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
+#include "image/abs_image_decoder.h"
 #include "pixel_map.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
@@ -285,6 +286,8 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (format == PixelFormat::RGBA_1010102 || format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::YCBCR_P010) return AllocatorType::DMA_ALLOC;
     return useDMA && format == PixelFormat::RGBA_8888 && size.width * size.height >= DMA_SIZE ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
@@ -682,7 +685,7 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
     if (!pixelMap || pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return;
     }
-    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(pixelMap->GetFd());
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
@@ -690,6 +693,47 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
             return;
         }
         err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+#else
+    return;
+#endif
+}
+
+void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->Map();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils Map failed, GSError=%{public}d", err);
+            return;
+        }
+        err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+#else
+    return;
+#endif
+}
+
+void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
         }

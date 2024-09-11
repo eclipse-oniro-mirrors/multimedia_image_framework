@@ -222,25 +222,25 @@ static bool parseInitializationOptions(napi_env env, napi_value root, Initializa
     }
 
     if (!GET_UINT32_BY_NAME(root, "alphaType", tmpNumber)) {
-        IMAGE_LOGI("no alphaType in initialization options");
+        IMAGE_LOGD("no alphaType in initialization options");
     }
     opts->alphaType = ParseAlphaType(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {
-        IMAGE_LOGI("no pixelFormat in initialization options");
+        IMAGE_LOGD("no pixelFormat in initialization options");
     }
     opts->pixelFormat = ParsePixlForamt(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "srcPixelFormat", tmpNumber)) {
-        IMAGE_LOGI("no srcPixelFormat in initialization options");
+        IMAGE_LOGD("no srcPixelFormat in initialization options");
     }
     opts->srcPixelFormat = ParsePixlForamt(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "scaleMode", tmpNumber)) {
-        IMAGE_LOGI("no scaleMode in initialization options");
+        IMAGE_LOGD("no scaleMode in initialization options");
     }
     opts->scaleMode = ParseScaleMode(tmpNumber);
 
@@ -550,9 +550,11 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
+#endif
         DECLARE_NAPI_PROPERTY("AntiAliasingLevel",
             CreateEnumTypeObject(env, napi_number, &AntiAliasingLevel_, AntiAliasingLevelMap)),
         DECLARE_NAPI_PROPERTY("HdrMetadataKey",
@@ -701,7 +703,7 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
 extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixels(napi_env env, napi_value value,
     uint8_t** addrPtr)
 {
-    IMAGE_LOGI("AccessPixels IN");
+    IMAGE_LOGD("AccessPixels IN");
 
     PixelMapNapi *pixmapNapi = nullptr;
     napi_unwrap(env, value, reinterpret_cast<void**>(&pixmapNapi));
@@ -910,20 +912,19 @@ STATIC_EXEC_FUNC(CreatePixelMap)
 
     auto context = static_cast<PixelMapAsyncContext*>(data);
     auto colors = static_cast<uint32_t*>(context->colorsBuffer);
-    if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
-        context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
-        context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
-        context->rPixelMap = nullptr;
+    if (colors == nullptr) {
+        auto pixelmap = PixelMap::Create(context->opts);
+        context->rPixelMap = std::move(pixelmap);
     } else {
-        if (colors == nullptr) {
-            auto pixelmap = PixelMap::Create(context->opts);
-            context->rPixelMap = std::move(pixelmap);
+        if (context->opts.pixelFormat == PixelFormat::RGBA_1010102 ||
+            context->opts.pixelFormat == PixelFormat::YCBCR_P010 ||
+            context->opts.pixelFormat == PixelFormat::YCRCB_P010) {
+        context->rPixelMap = nullptr;
         } else {
             auto pixelmap = PixelMap::Create(colors, context->colorsBufferSize, context->opts);
             context->rPixelMap = std::move(pixelmap);
         }
     }
-
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
     } else {
@@ -4128,6 +4129,7 @@ static napi_status BuildHdrMetadataValue(napi_env env, napi_value argv[],
                     HDRVividExtendMetadata &gainmapMetadata =
                         *(reinterpret_cast<HDRVividExtendMetadata*>(gainmapData.data()));
                     metadataValue = BuildDynamicMetadataNapi(env, gainmapMetadata);
+                    return napi_ok;
                 }
                 IMAGE_LOGE("GetSbDynamicMetadata failed");
             }
@@ -4170,7 +4172,7 @@ static HdrMetadataType ParseHdrMetadataType(napi_env env, napi_value &hdrMetadat
 {
     uint32_t type = 0;
     napi_get_value_uint32(env, hdrMetadataType, &type);
-    if (type < static_cast<int32_t>(HdrMetadataType::INVALID) && type >= HdrMetadataType::NONE) {
+    if (type < HdrMetadataType::INVALID && type >= HdrMetadataType::NONE) {
         return HdrMetadataType(type);
     }
     return HdrMetadataType::INVALID;

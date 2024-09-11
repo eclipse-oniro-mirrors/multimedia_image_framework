@@ -1135,11 +1135,15 @@ ohos_unittest("ndktest2") {
     "${image_subsystem}/frameworks/innerkitsimpl/accessor/src/tiff_parser.cpp",
     "unittest/image_common_ndk_test.cpp",
     "unittest/image_packer_native_ndk_test.cpp",
-    "unittest/picture_native_ndk_test.cpp",
     "unittest/pixelmap_native_ndk_test.cpp",
   ]
 
+  if (enable_picture_ndk) {
+    sources += [ "unittest/picture_native_ndk_test.cpp" ]
+  }
+
   deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_packer",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
@@ -1974,7 +1978,7 @@ group("unittest") {
     deps += [ ":heif_hw_encoder_test" ]
   }
 
-  if (enable_heif_hw_decode && enable_heif_hw_encode) {
+  if (enable_picture) {
     deps += [ ":picture_ext_test" ]
   }
 }

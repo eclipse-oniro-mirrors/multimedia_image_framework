@@ -282,7 +282,7 @@ int32_t NativeImage::GetDataSize(uint64_t &size)
         IMAGE_LOGI("S ExtraGet dataSize Ok,but dataSize %{public}d is bigger than bufferSize %{public}" PRIu64,
             extraDataSize, size);
     } else {
-        IMAGE_LOGI("S ExtraGet dataSize %{public}d", extraDataSize);
+        IMAGE_LOGD("S ExtraGet dataSize %{public}d", extraDataSize);
         size = extraDataSize;
     }
     return SUCCESS;
@@ -341,7 +341,7 @@ void NativeImage::release()
     if (buffer_ == nullptr) {
         return;
     }
-    IMAGE_LOGI("NativeImage release");
+    IMAGE_LOGD("NativeImage release");
     if (components_.size() > 0) {
         components_.clear();
     }

@@ -199,12 +199,14 @@ uint32_t PngDecoder::Decode(uint32_t index, DecodeContext &context)
     uint32_t ret = DoOneTimeDecode(context);
     if (ret == SUCCESS) {
         state_ = PngDecodingState::IMAGE_DECODED;
+        ImageUtils::FlushContextSurfaceBuffer(context);
         return SUCCESS;
     }
     if (ret == ERR_IMAGE_SOURCE_DATA_INCOMPLETE && opts_.allowPartialImage) {
         state_ = PngDecodingState::IMAGE_PARTIAL;
         context.ifPartialOutput = true;
         IMAGE_LOGE("this is partial image data to decode, ret:%{public}u.", ret);
+        ImageUtils::FlushContextSurfaceBuffer(context);
         return SUCCESS;
     }
     state_ = PngDecodingState::IMAGE_ERROR;

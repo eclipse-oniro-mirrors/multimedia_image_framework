@@ -111,7 +111,7 @@ int ExifMetadata::GetValue(const std::string &key, std::string &value) const
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (!ExifMetadatFormatter::IsKeySupported(key)) {
-        IMAGE_LOGE("Key is not supported.");
+        IMAGE_LOGD("Key is not supported.");
         return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
     if (key == "MakerNote") {
@@ -143,12 +143,14 @@ const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
 {
     ImageMetadata::PropertyMapPtr result = std::make_shared<ImageMetadata::PropertyMap>();
     std::string value;
-    for (const auto key : ExifMetadatFormatter::GetRWKeys()) {
+    auto rwKeys = ExifMetadatFormatter::GetRWKeys();
+    for (const auto& key : rwKeys) {
         if (GetValue(key, value) == SUCCESS) {
             result->insert(std::make_pair(key, value));
         }
     }
-    for (const auto key : ExifMetadatFormatter::GetROKeys()) {
+    auto roKeys = ExifMetadatFormatter::GetROKeys();
+    for (const auto& key : roKeys) {
         if (GetValue(key, value) == SUCCESS) {
             result->insert(std::make_pair(key, value));
         }
@@ -767,7 +769,8 @@ void ExifMetadata::GetFilterArea(const std::vector<std::string> &exifKeys,
         IMAGE_LOGD("Exif data is null");
         return ;
     }
-    for (int keySize = 0; keySize < static_cast<int>(exifKeys.size()); keySize++) {
+    auto size = exifKeys.size();
+    for (unsigned long keySize = 0; keySize < size; keySize++) {
         ExifTag tag = exif_tag_from_name(exifKeys[keySize].c_str());
         FindRanges(tag, ranges);
     }

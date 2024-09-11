@@ -71,7 +71,7 @@ const static int GRID_NUM_2 = 2;
 const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
-const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 1280;
+const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
 const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 
 const static uint16_t BT2020_PRIMARIES = 9;
@@ -121,7 +121,7 @@ static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam
 static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatConvertParam &dstParam)
 {
     ImageTrace trace("ConvertPixelFormat %d %d", srcParam.format, dstParam.format);
-    IMAGE_LOGI("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
+    IMAGE_LOGD("ConvertPixelFormat %{public}d %{public}d", srcParam.format, dstParam.format);
     bool res = false;
     AVFrame *srcFrame = av_frame_alloc();
     AVFrame *dstFrame = av_frame_alloc();
@@ -489,6 +489,12 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
         return false;
     }
     HwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    if (hwBuffer && (hwBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = hwBuffer->InvalidateCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
+        }
+    }
     return true;
 }
 
@@ -504,6 +510,17 @@ bool HeifDecoderImpl::SwDecode()
         return false;
     }
     SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = dstHwBuffer_->Map();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("SurfaceBuffer Map failed, GSError=%{public}d", err);
+            return true;
+        }
+        err = dstHwBuffer_->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+        }
+    }
     return true;
 }
 

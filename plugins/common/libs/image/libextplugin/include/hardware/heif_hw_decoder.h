@@ -83,7 +83,8 @@ private:
                          const std::vector<std::vector<uint8_t>>& inputs);
     void DumpInput(const GridInfo& gridInfo, const std::vector<std::vector<uint8_t>>& inputs);
 private:
-    static constexpr int32_t BUFFER_CIRCULATE_TIMEOUT_IN_MS = 1000;
+    static constexpr int32_t BUFFER_CIRCULATE_TIMEOUT_IN_MS = 500;
+    static constexpr uint32_t MAX_TIMEOUT_CNT = 3;
     static constexpr uint32_t SAMPLE_RATIO_FOR_YUV420_SP = 2;
     static constexpr size_t MIN_SIZE_OF_INPUT = 2;
     static constexpr int MAX_PATH_LEN = 256;

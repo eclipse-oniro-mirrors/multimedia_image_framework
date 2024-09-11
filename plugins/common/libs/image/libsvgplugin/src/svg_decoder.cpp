@@ -318,7 +318,7 @@ uint32_t SvgDecoder::Decode(uint32_t index, DecodeContext &context)
 
     uint32_t ret = DoDecode(index, context);
     if (ret == Media::SUCCESS) {
-        IMAGE_LOGI("[Decode] success.");
+        IMAGE_LOGD("[Decode] success.");
         state_ = SvgDecodingState::IMAGE_DECODED;
     } else {
         IMAGE_LOGE("[Decode] fail, ret=%{public}u", ret);
@@ -626,6 +626,7 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     }
 
     IMAGE_LOGD("[DoDecode] OUT");
+    ImageUtils::FlushContextSurfaceBuffer(context);
     return Media::SUCCESS;
 }
 } // namespace ImagePlugin

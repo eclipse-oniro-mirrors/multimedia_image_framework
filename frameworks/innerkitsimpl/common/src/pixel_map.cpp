@@ -18,6 +18,7 @@
 #include "pixel_yuv_ext.h"
 #endif
 #include <charconv>
+#include <chrono>
 #include <iostream>
 #include <unistd.h>
 
@@ -96,6 +97,7 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
@@ -530,12 +532,54 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
-unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
+bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUVDataInfo &yuvInfo)
 {
-    IMAGE_LOGD("PixelMap::Create3 enter");
-    unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer object is null");
+        return false;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+        IMAGE_LOGE("InitYuvDataOutInfo failed");
+        return false;
+    }
+    uint32_t uvPlaneOffset = (info.pixelFormat == PixelFormat::NV12 ||
+        info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
+    yuvInfo.imageSize = info.size;
+    yuvInfo.yWidth = info.size.width;
+    yuvInfo.yHeight = info.size.height;
+    yuvInfo.uvWidth = static_cast<uint32_t>((info.size.width + NUM_1) / NUM_2);
+    yuvInfo.uvHeight = static_cast<uint32_t>((info.size.height + NUM_1) / NUM_2);
+    yuvInfo.yStride = planes->planes[0].columnStride;
+    yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+    yuvInfo.yOffset = planes->planes[0].offset;
+    yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    return true;
+}
+
+static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
+{
+    if (IsYUV(opts.pixelFormat)) {
+#ifdef EXT_PIXEL
+        dstPixelMap = std::make_unique<PixelYuvExt>();
+#else
+        dstPixelMap = std::make_unique<PixelYuv>();
+#endif
+    } else {
+        dstPixelMap = make_unique<PixelMap>();
+    }
     if (dstPixelMap == nullptr) {
         IMAGE_LOGE("create pixelMap pointer fail");
+        return false;
+    }
+    return true;
+}
+
+unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
+{
+    unique_ptr<PixelMap> dstPixelMap;
+    if (!CheckPixelMap(dstPixelMap, opts)) {
         return nullptr;
     }
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
@@ -552,23 +596,31 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         IMAGE_LOGE("calloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
-    int fd = 0;
-    void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
-    if (dstPixels == nullptr) {
-        IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
+    std::unique_ptr<AbsMemory> dstMemory = nullptr;
+    int32_t dstRowStride = 0;
+    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
+    if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
     // update alpha opaque
     UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
-                      static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
-#else
-    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-#endif
+                      static_cast<uint8_t *>(dstMemory->data.data), *dstPixelMap.get());
     dstPixelMap->SetEditable(opts.editable);
+    dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
+    if (IsYUV(opts.pixelFormat)) {
+        if (dstPixelFormat == PixelFormat::YCRCB_P010 || dstPixelFormat == PixelFormat::YCBCR_P010) {
+            YUVDataInfo yuvDatainfo;
+            if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
+                dstImageInfo, yuvDatainfo)) {
+                return nullptr;
+            }
+            dstPixelMap->SetImageYUVInfo(yuvDatainfo);
+        } else {
+            SetYUVDataInfoToPixelMap(dstPixelMap);
+        }
+    }
     return dstPixelMap;
 }
 
@@ -1604,6 +1656,7 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1639,6 +1692,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect call WritePixelsConvert fail.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1687,6 +1741,7 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
             }
         }
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -1710,6 +1765,7 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color call EraseBitmap fail.");
         return false;
     }
+    AddVersionId();
     return true;
 }
 
@@ -1782,7 +1838,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     }
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    IMAGE_LOGI("AshmemSetProt:[%{public}d].", result);
+    IMAGE_LOGD("AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
         ::close(fd);
         return false;
@@ -1793,7 +1849,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
         IMAGE_LOGE("WriteAshmemData map failed, errno:%{public}d", errno);
         return false;
     }
-    IMAGE_LOGI("mmap success");
+    IMAGE_LOGD("mmap success");
 
     if (memcpy_s(ptr, size, data, size) != EOK) {
         ::munmap(ptr, size);
@@ -2021,6 +2077,10 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         IMAGE_LOGE("write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
         return false;
     }
+    if (!parcel.WriteUint32(versionId_)) {
+        IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
+        return false;
+    }
     return true;
 }
 
@@ -2034,7 +2094,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd <= 0) {
-            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
+            IMAGE_LOGD("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
@@ -2051,7 +2111,11 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        GSError ret = sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (ret != GSError::GSERROR_OK) {
+            IMAGE_LOGE("write pixel map to message parcel failed: %{public}s.", GSErrorStr(ret).c_str());
+            return false;
+        }
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             IMAGE_LOGE("write pixel map buffer to parcel failed.");
@@ -2200,7 +2264,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (!WriteMemInfoToParcel(parcel, bufferSize)) {
-        IMAGE_LOGE("write memory info to parcel failed.");
+        IMAGE_LOGD("write memory info to parcel failed.");
         return false;
     }
 
@@ -2337,6 +2401,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     }
 
     int32_t rowDataSize = parcel.ReadInt32();
+    uint32_t versionId = parcel.ReadUint32();
+    SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
     if (bytesPerPixel == 0) {
@@ -2352,9 +2418,26 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+{
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    if (ret != GSError::GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    pixelMemInfo.context = nativeBuffer;
+    return true;
+}
+#endif
+
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
@@ -2372,7 +2455,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
                 return false;
             }
         }
-        pixelMemInfo.context = new int32_t();
+        pixelMemInfo.context = new(std::nothrow) int32_t();
         if (pixelMemInfo.context == nullptr) {
             ::munmap(ptr, pixelMemInfo.bufferSize);
             ::close(fd);
@@ -2381,12 +2464,10 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
-        void* nativeBuffer = surfaceBuffer.GetRefPtr();
-        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-        pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-        pixelMemInfo.context = nativeBuffer;
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
+            return false;
+        }
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
@@ -3117,6 +3198,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
         }
         i += static_cast<uint32_t>(pixelBytes_);
     }
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -3289,8 +3371,6 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     std::lock_guard<std::mutex> lock(*translationMutex_);
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    IMAGE_LOGI("DoTranslation: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, alphaType = "
-        "%{public}d", imageInfo.size.width, imageInfo.size.height, imageInfo.pixelFormat, imageInfo.alphaType);
     TransMemoryInfo dstMemory;
     // We dont know how custom alloc memory
     dstMemory.allocType = (allocatorType_ == AllocatorType::CUSTOM_ALLOC) ? AllocatorType::DEFAULT : allocatorType_;
@@ -3334,6 +3414,7 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
+    AddVersionId();
     return true;
 }
 
@@ -3350,18 +3431,42 @@ void PixelMap::scale(float xAxis, float yAxis)
 void PixelMap::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap scale with option");
-    TransInfos infos;
-    infos.matrix.setScale(xAxis, yAxis);
-    bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
-    if (fixPixelFormat) {
-        // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
-        imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
-    }
-    if (!DoTranslation(infos, option)) {
-        IMAGE_LOGE("scale falied");
-    }
-    if (fixPixelFormat) {
-        imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
+    if (option == AntiAliasingOption::SLR) {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+        auto start = std::chrono::high_resolution_clock::now();
+        ImageInfo tmpInfo;
+        GetImageInfo(tmpInfo);
+        Size desiredSize;
+        desiredSize.width = static_cast<int32_t>(imageInfo_.size.width * xAxis);
+        desiredSize.height = static_cast<int32_t>(imageInfo_.size.height * yAxis);
+
+        PostProc postProc;
+        if (!postProc.ScalePixelMapWithSLR(desiredSize, *this)) {
+            IMAGE_LOGE("PixelMap::scale SLR failed");
+        }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        IMAGE_LOGI("PixelMap::scale SLR %{public}d, srcSize: [%{public}d, %{public}d], "
+            "dstSize: [%{public}d, %{public}d], cost: %{public}llu",
+            uniqueId_, tmpInfo.size.width, tmpInfo.size.height,
+            desiredSize.width, desiredSize.height, duration.count());
+#else
+        IMAGE_LOGE("Scale SLR no support this platform");
+#endif
+    } else {
+        TransInfos infos;
+        infos.matrix.setScale(xAxis, yAxis);
+        bool fixPixelFormat = imageInfo_.pixelFormat == PixelFormat::BGRA_8888 && option == AntiAliasingOption::LOW;
+        if (fixPixelFormat) {
+            // Workaround to fix a color glitching issue under BGRA with LOW anti-aliasing
+            imageInfo_.pixelFormat = PixelFormat::RGBA_8888;
+        }
+        if (!DoTranslation(infos, option)) {
+            IMAGE_LOGE("scale falied");
+        }
+        if (fixPixelFormat) {
+            imageInfo_.pixelFormat = PixelFormat::BGRA_8888;
+        }
     }
 }
 
@@ -3472,6 +3577,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     SetPixelsAddr(m->data.data, m->extend.data, m->data.size, m->GetType(), nullptr);
     SetImageInfo(imageInfo, true);
     ImageUtils::FlushSurfaceBuffer(this);
+    AddVersionId();
     return SUCCESS;
 }
 
@@ -3656,5 +3762,24 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     return SUCCESS;
 }
 #endif
+
+uint32_t PixelMap::GetVersionId()
+{
+    std::shared_lock<std::shared_mutex> lock(*versionMutex_);
+    return versionId_;
+}
+
+void PixelMap::AddVersionId()
+{
+    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
+    versionId_++;
+}
+
+void PixelMap::SetVersionId(uint32_t versionId)
+{
+    std::unique_lock<std::shared_mutex> lock(*versionMutex_);
+    versionId_ = versionId;
+}
+
 } // namespace Media
 } // namespace OHOS
