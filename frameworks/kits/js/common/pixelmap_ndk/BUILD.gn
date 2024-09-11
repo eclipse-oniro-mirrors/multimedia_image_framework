@@ -15,7 +15,6 @@ import("//build/ohos.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 SUBSYSTEM_DIR = "//foundation/multimedia/image_framework"
-$graphic_2d_root = "//foundation/graphic/graphic_2d"
 
 ohos_shared_library("pixelmap_ndk") {
   sanitize = {
@@ -61,7 +60,6 @@ ohos_shared_library("pixelmap") {
     "${image_subsystem}/frameworks/innerkitsimpl/egl_image/include",
     "$SUBSYSTEM_DIR/frameworks/innerkitsimpl/utils/include",
     "$SUBSYSTEM_DIR/interfaces/kits/native/include/image",
-    "$graphic_2d_root/interfaces/inner_api/color_manager",
   ]
 
   sources = [
@@ -87,10 +85,10 @@ ohos_shared_library("pixelmap") {
     "c_utils:utils",
     "drivers_interface_display:display_commontype_idl_headers",
     "graphic_2d:color_manager",
+    "graphic_2d:color_space_object_convertor",
+    "graphic_2d:libnative_color_space_manager",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "graphic_2d:libnative_color_space_manager",
-    "graphic_2d:color_space_object_convertor",
   ]
 
   innerapi_tags = [ "ndk" ]

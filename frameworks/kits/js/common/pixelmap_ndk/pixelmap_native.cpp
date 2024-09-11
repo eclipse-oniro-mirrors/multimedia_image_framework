@@ -1035,7 +1035,7 @@ Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelma
     }
 
     std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace =
-        pixel->GetInnerPixelmap()->InnerGetGrColorSpacePtr();
+        pixelmap->GetInnerPixelmap()->InnerGetGrColorSpacePtr();
     NativeColorSpaceManager* nativeColorspace = new NativeColorSpaceManager(*(colorSpace.get()));
 
     *colorSpaceNative = reinterpret_cast<OH_NativeColorSpaceManager*>(nativeColorspace);
