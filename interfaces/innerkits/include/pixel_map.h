@@ -297,6 +297,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    NATIVEEXPORT bool SetPixelMapName(const std::string &pixelMapName);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();

@@ -536,6 +536,7 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadataSync", SetMetadataSync),
+        DECLARE_NAPI_FUNCTION("setPixelMapName", SetPixelMapName),
     };
     return props;
 }
@@ -1151,8 +1152,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, napi_callback_info info)
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "CreatePixelMap",
         CreatePixelMapExec, CreatePixelMapComplete, asyncContext, asyncContext->work);
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("fail to create async work"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
 }
 
@@ -2862,6 +2862,38 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         }
     } else {
         IMAGE_LOGE("Null native ref");
+    }
+    return result;
+}
+
+napi_value PixelMapNapi::SetPixelMapName(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    uint32_t status = SUCCESS;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
+
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    std::string pixelMapName = GetStringArgument(env, argValue[0]);
+
+    PixelMapNapi* pixelMapNapi = nullptr;
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        bool success = pixelMapNapi->nativePixelMap_->SetPixelMapName(pixelMapName);
+        napi_get_boolean(env, success, &result);
+    } else {
+        IMAGE_LOGE("Null native pixemap object");
     }
     return result;
 }
