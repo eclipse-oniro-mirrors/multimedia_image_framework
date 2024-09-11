@@ -753,7 +753,7 @@ int GetInterpolation(const AntiAliasingOption &option)
     }
 }
 
-static SkSLRCacheMgr GetSLRCacheInst()
+static SkSLRCacheMgr GetNewSkSLRCacheMgr()
 {
     static SkMutex slrMutex;
     static SLRLRUCache slrCache(SLR_CACHE_CAPACITY);
@@ -767,7 +767,7 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
             srcSize.width, srcSize.height, dstSize.width, dstSize.height);
         return nullptr;
     }
-    SkSLRCacheMgr cacheMgr = GetSLRCacheInst();
+    SkSLRCacheMgr cacheMgr = GetNewSkSLRCacheMgr();
     SLRWeightKey key(srcSize, dstSize);
     std::shared_ptr<SLRWeightTuple> weightTuplePtr = cacheMgr.find(key.fKey);
     if (weightTuplePtr == nullptr) {
@@ -775,7 +775,7 @@ std::shared_ptr<SLRWeightTuple> PostProc::initSLRFactor(Size srcSize, Size dstSi
             static_cast<int>(dstSize.width));
         SLRWeightMat slrWeightY = SLRProc::GetWeights(static_cast<float>(dstSize.height) / srcSize.height,
             static_cast<int>(dstSize.height));
-        SLRWeightTuple value = {slrWeightX, slrWeightY, key};
+        SLRWeightTuple value{slrWeightX, slrWeightY, key};
         std::shared_ptr<SLRWeightTuple> weightPtr = std::make_shared<SLRWeightTuple>(value);
         cacheMgr.insert(key.fKey, weightPtr);
         IMAGE_LOGI("initSLRFactor insert:%{public}d", key.fKey);
