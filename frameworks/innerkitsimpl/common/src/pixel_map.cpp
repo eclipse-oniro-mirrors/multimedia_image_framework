@@ -469,56 +469,55 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     }
 }
 
-bool PixelMap::SetPixelMapName(const std::string& pixelMapName)
+void PixelMap::SetPixelMapName(std::string pixelMapName)
 {
     if (GetFD() == nullptr) {
         IMAGE_LOGE("PixelMap null, set name failed");
-        return false;
+        return ;
     }
     if (pixelMapName.size() <= 0) {
         IMAGE_LOGE("name is null pixelmap set name failed");
-        return false;
+        return ;
     }
     if (GetAllocatorType() == AllocatorType::DMA_ALLOC) {
         if (pixelMapName.size() > DMA_BUF_NAME_LEN) {
             IMAGE_LOGE("name size is out of range");
-            return false;
+            return ;
         }
         SurfaceBuffer *sbBuffer = reinterpret_cast<SurFaceBuffer*>(GetFd());
         char buf[DMA_BUF_NAME_LEN] = {0};
         int ret = strcpy_s(buf, sizeof(buf), pixelMapName.c_str());
         if (ret != 0) {
             IMAGE_LOGE("set name failed");
-            return false;
+            return ;
         }
         ret = TEMP_FAILURE_RETRY(ioctl(sbBuffer->GetFileDescriptor(), DMA_BUF_SET_NAME_A, buf));
         if (ret != 0) {
             IMAGE_LOGE("set dma name failed");
-            return false;
+            return ;
         }
-        return true;
+        return ;
     }
     if (GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
         if (pixelMapName.size() > ASHMEM_NAME_LEN) {
             IMAGE_LOGE("name size is out of range");
-            return false;
+            return ;
         }
         int *fd = static_cast<int*>(GetFd());
         char buf[ASHMEM_NAME_LEN] = {0};
         int ret = strcpy_s(buf, sizeof(buf), pixelMapName.c_str());
         if (ret != 0) {
             IMAGE_LOGE("set name failed");
-            return false;
+            return ;
         }
         ret = TEMP_FAILURE_RETRY(ioctl(*fd, ASHMEM_SET_NAME, buf));
         if (ret != 0) {
             IMAGE_LOGE("set ashmem name failed");
-            return false;
+            return ;
         }
-        return true;
+        return ;
     }
     IMAGE_LOGE("error type");
-    return false;
 }
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
