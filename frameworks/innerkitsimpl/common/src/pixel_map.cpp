@@ -21,6 +21,8 @@
 #include <chrono>
 #include <iostream>
 #include <unistd.h>
+#include <linux/dma-buf.h>
+#include <sys/ioctl.h>
 
 #include "image_log.h"
 #include "image_system_properties.h"
@@ -468,6 +470,51 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
         return;
     }
 }
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+uint32_t PixelMap::SetMemoryNameSync(std::string pixelMapName)
+{
+    if (GetFd() == nullptr) {
+        IMAGE_LOGE("PixelMap null, set name failed");
+        return ERR_MEMORY_NOT_SUPPORT;
+    }
+
+    AllocatorType allocatorType = GetAllocatorType();
+
+    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN + 1) {
+        IMAGE_LOGE("name size not compare");
+        return COMMON_ERR_INVALID_PARAMETER;
+    }
+
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
+        int fd = sbBuffer->GetFileDescriptor();
+        if (fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set dma name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(GetFd());
+        if (*fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(*fd, ASHMEM_SET_NAME, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set ashmem name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+    return ERR_MEMORY_NOT_SUPPORT;
+}
+#endif
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {

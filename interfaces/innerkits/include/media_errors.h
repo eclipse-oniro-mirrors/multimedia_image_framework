@@ -155,6 +155,7 @@ const uint32_t IMAGE_RESULT_CREATE_FORMAT_CONVERT_FAILED = BASE_MEDIA_ERR_OFFSET
 const uint32_t ERR_MEDIA_FORMAT_UNSUPPORT = BASE_MEDIA_ERR_OFFSET + 180;
 const uint32_t ERR_MEDIA_MEMERY_COPY = BASE_MEDIA_ERR_OFFSET + 181;
 const uint32_t IMAGE_RESULT_FORMAT_CONVERT_FAILED = BASE_MEDIA_ERR_OFFSET + 182; // convert format failed
+const uint32_t ERR_MEMORY_NOT_SUPPORT = BASE_MEDIA_ERR_OFFSET + 190; // pixelmap set name format not compare
 const int32_t ERR_MEDIA_UNKNOWN = BASE_MEDIA_ERR_OFFSET + 200;  // media unknown error
 const int32_t ERR_MEMORY_COPY_FAILED = BASE_MEDIA_ERR_OFFSET + 206;  // media unknown error
 const int32_t ERR_RESOURCE_UNAVAILABLE = 501; // Resource Unavailable
