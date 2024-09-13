@@ -647,6 +647,20 @@ Image_ErrorCode OH_PixelmapNative_ConvertPixelmapNativeFromNapi(napi_env env, na
 Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize);
 
 /**
+ * @brief Reads the pixel data of a PixelMap into a buffer. The data read is in ARGB_8888 format.
+ *
+ * @param pixelmap The PixelMap pointer to be operated.
+ * @param destination Buffer to which the image PixelMap data will be written.
+ * @param bufferSize Buffer size to which the image PixelMap data will be written.
+ * @return Returns {@link Image_ErrorCode} IMAGE_RESULT_SUCCESS - if the operation is successful.
+ * returns {@link Image_ErrorCode} IMAGE_BAD_PARAMETER - if invalid parameter, pixelmap, destination, or bufferSize is
+ * null.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_ReadARGBPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize);
+
+/**
  * @brief Reads image data in an Buffer and writes the data to a Pixelmap object.
  *
  * @param pixelmap The Pixelmap pointer will be operated.

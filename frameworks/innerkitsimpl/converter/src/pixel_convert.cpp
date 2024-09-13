@@ -1523,8 +1523,12 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
         return -1;
     }
 
-    ImageInfo srcImageInfo = *(srcInfo.imageInfo);
-    ImageInfo dstImageInfo = *(dstInfo.imageInfo);
+    const ImageInfo srcImageInfo = srcInfo.imageInfo;
+    const ImageInfo dstImageInfo = dstInfo.imageInfo;
+    if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        return ConvertForFFMPEG(srcInfo.pixels, srcImageInfo.pixelFormat, srcImageInfo, dstInfo.pixels,
+            dstImageInfo.pixelFormat) ? PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
+    }
     if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
         (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
         return YUVConvert(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
@@ -1605,8 +1609,7 @@ bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInf
 
 bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
 {
-    return bufferInfo.pixels != nullptr && bufferInfo.imageInfo != nullptr &&
-        IsValidRowStride(bufferInfo.rowStride, *(bufferInfo.imageInfo));
+    return bufferInfo.pixels != nullptr && IsValidRowStride(bufferInfo.rowStride, bufferInfo.imageInfo);
 }
 
 void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum)
