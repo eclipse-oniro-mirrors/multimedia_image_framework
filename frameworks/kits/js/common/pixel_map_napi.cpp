@@ -2904,7 +2904,7 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
         nVal.result);
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        uint32_t ret = pixelMapNapi->nativePixelMap_->SetMemoryNameSync(pixelMapName);
+        uint32_t ret = pixelMapNapi->nativePixelMap_->SetMemoryName(pixelMapName);
         if (ret == SUCCESS) {
             return result;
         } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
