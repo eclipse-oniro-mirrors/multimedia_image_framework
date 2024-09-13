@@ -491,21 +491,21 @@ Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_
 }
 
 MIDK_EXPORT
-Image_ErrorCode OH_PixelmapNative_ReadARGBPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
-{
-    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
-        return IMAGE_BAD_PARAMETER;
-    }
-    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(*bufferSize, destination, PixelFormat::ARGB_8888));
-}
-
-MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8_t *source, size_t bufferSize)
 {
     if (pixelmap == nullptr || source == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
     return ToNewErrorCode(pixelmap->GetInnerPixelmap()->WritePixels(source, bufferSize));
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetArgbPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
+{
+    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(*bufferSize, destination, PixelFormat::ARGB_8888));
 }
 
 MIDK_EXPORT
