@@ -30,6 +30,9 @@
 #include "media_errors.h"
 #include "image_log.h"
 
+#include "native_color_space_manager.h"
+#include "ndk_color_space.h"
+
 using namespace OHOS::Media;
 #ifdef __cplusplus
 extern "C" {
@@ -1016,6 +1019,41 @@ Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, O
     if (err != OHOS::SURFACE_ERROR_OK) {
         return IMAGE_DMA_OPERATION_FAILED;
     }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelmap,
+    OH_NativeColorSpaceManager **colorSpaceNative)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || colorSpaceNative == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    if (pixelmap->GetInnerPixelmap()->InnerGetGrColorSpacePtr() == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    std::shared_ptr<OHOS::ColorManager::ColorSpace> colorSpace =
+        pixelmap->GetInnerPixelmap()->InnerGetGrColorSpacePtr();
+    NativeColorSpaceManager* nativeColorspace = new NativeColorSpaceManager(*(colorSpace.get()));
+
+    *colorSpaceNative = reinterpret_cast<OH_NativeColorSpaceManager*>(nativeColorspace);
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelmap,
+    OH_NativeColorSpaceManager *colorSpaceNative)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || colorSpaceNative == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+
+    ColorManager::ColorSpace nativeColorspace =
+        reinterpret_cast<NativeColorSpaceManager*>(colorSpaceNative)->GetInnerColorSpace();
+
+    pixelmap->GetInnerPixelmap()->InnerSetColorSpace(nativeColorspace, true);
     return IMAGE_SUCCESS;
 }
 
