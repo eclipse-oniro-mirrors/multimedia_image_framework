@@ -427,8 +427,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(reinterpret_cast<const void*>(colors + offset)), opts.srcRowStride,
-        &srcImageInfo};
-    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, &dstImageInfo};
+        srcImageInfo};
+    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
@@ -1387,8 +1387,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
     return true;
 }
 
-// LCOV_EXCL_START
-uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
+uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFormat dstPixelFormat)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
     if (dst == nullptr) {
@@ -1417,6 +1416,16 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
                 return ERR_IMAGE_READ_PIXELMAP_FAILED;
             }
             tmpSize += static_cast<uint64_t>(readSize);
+        }
+    } else if (dstPixelFormat == PixelFormat::ARGB_8888) {
+        ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, dstPixelFormat,
+            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+        BufferInfo srcInfo = {data_, 0, imageInfo_};
+        BufferInfo dstInfo = {dst, 0, dstImageInfo};
+        int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, false);
+        if (dstLength < 0) {
+            IMAGE_LOGE("ReadPixels pixel convert to ARGB failed.");
+            return ERR_IMAGE_READ_PIXELMAP_FAILED;
         }
     } else {
         // Copy the actual pixel data without padding bytes

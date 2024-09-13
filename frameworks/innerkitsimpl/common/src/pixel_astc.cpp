@@ -185,7 +185,7 @@ uint32_t PixelAstc::ReadPixels(const uint64_t &bufferSize, const uint32_t &offse
     return ERR_IMAGE_INVALID_PARAMETER;
 }
 
-uint32_t PixelAstc::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
+uint32_t PixelAstc::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFormat dstPixelFormat)
 {
     IMAGE_LOGE("ReadPixels is not support on pixelastc");
     return ERR_IMAGE_INVALID_PARAMETER;

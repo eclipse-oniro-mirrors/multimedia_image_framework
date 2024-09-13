@@ -74,7 +74,8 @@ public:
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst) override;
     NATIVEEXPORT uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst) override;
-    NATIVEEXPORT uint32_t ReadPixel(const Position &pos, uint32_t &dst) override;
+    NATIVEEXPORT uint32_t ReadPixel(const Position &pos, uint32_t &dst,
+        PixelFormat dstPixelFormat = PixelFormat::ARGB_8888) override;
     NATIVEEXPORT uint32_t ResetConfig(const Size &size, const PixelFormat &format) override;
     NATIVEEXPORT uint32_t WritePixel(const Position &pos, const uint32_t &color) override;
     NATIVEEXPORT uint32_t WritePixels(const uint8_t *source, const uint64_t &bufferSize, const uint32_t &offset,
