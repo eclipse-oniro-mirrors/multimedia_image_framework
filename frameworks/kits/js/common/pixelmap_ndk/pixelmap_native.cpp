@@ -1064,7 +1064,7 @@ Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, cha
         return IMAGE_BAD_PARAMETER;
     }
     uint32_t ret = pixelmap->GetInnerPixelmap()->SetMemoryName(std::string(name, *size));
-    if (ret == SUCESS) {
+    if (ret == SUCCESS) {
         return IMAGE_SUCCESS;
     } else if (ret == COMMON_ERR_INVALID_PARAMETER) {
         return IMAGE_BAD_PARAMETER;
