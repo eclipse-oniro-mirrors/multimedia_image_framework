@@ -1156,15 +1156,30 @@ bool IsYUVP010Format(PixelFormat format)
     return (format == PixelFormat::YCBCR_P010) || (format == PixelFormat::YCRCB_P010);
 }
 
-static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, ImageInfo srcInfo, void *dstPixels,
-    PixelFormat dstpixelmap, bool srcDMA = false)
+static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, ImageInfo srcInfo,
+    void *dstPixels, PixelFormat dstpixelmap)
 {
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcpixelmap),
-        srcInfo.size.width, srcInfo.size.height, srcDMA ? DMA_LINE_SIZE : 1};
+        srcInfo.size.width, srcInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstpixelmap),
         srcInfo.size.width, srcInfo.size.height, 1};
     if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
+        return false;
+    }
+    return true;
+}
+
+// Convert and remove line paddings if any
+static bool ConvertCollapsedByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
+    const ImageInfo &dstInfo, bool useDMA)
+{
+    FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
+        srcInfo.size.width, srcInfo.size.height, useDMA ? DMA_LINE_SIZE : 1};
+    FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
+        dstInfo.size.width, dstInfo.size.height, 1};
+    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
+        IMAGE_LOGE("[PixelMap] ConvertCollapsedByFFMpeg: FFMpeg convert failed!");
         return false;
     }
     return true;
@@ -1527,8 +1542,8 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
     const ImageInfo srcImageInfo = srcInfo.imageInfo;
     const ImageInfo dstImageInfo = dstInfo.imageInfo;
     if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        return ConvertForFFMPEG(srcInfo.pixels, srcImageInfo.pixelFormat, srcImageInfo, dstInfo.pixels,
-            dstImageInfo.pixelFormat, useDMA) ? PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
+        return ConvertCollapsedByFFMpeg(srcInfo.pixels, srcImageInfo, dstInfo.pixels, dstImageInfo, useDMA) ?
+            PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
     }
     if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
         (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
