@@ -1451,9 +1451,9 @@ uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
 
     ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, PixelFormat::ARGB_8888,
         AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    BufferInfo srcInfo = {data_, 0, imageInfo_};
+    BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
     BufferInfo dstInfo = {dst, 0, dstImageInfo};
-    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, false);
+    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, IsStrideAlignment());
     if (dstLength < 0) {
         IMAGE_LOGE("ReadARGBPixels pixel convert to ARGB failed.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
@@ -1754,12 +1754,10 @@ bool PixelMap::WritePixels(const uint32_t &color)
 
 bool PixelMap::IsStrideAlignment()
 {
-    IMAGE_LOGE("IsStrideAlignment error ");
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGE("SetPixelsAddr error allocatorType_ %{public}d ", allocatorType_);
+        IMAGE_LOGD("IsStrideAlignment allocatorType_ is DMA_ALLOC");
         return true;
     }
-    IMAGE_LOGE("IsStrideAlignment error ");
     return false;
 }
 
