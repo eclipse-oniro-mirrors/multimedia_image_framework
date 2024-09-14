@@ -18,6 +18,7 @@
 
 #include "image_source_native.h"
 #include "image_source_native_impl.h"
+#include "securec.h"
 
 using namespace testing::ext;
 namespace OHOS {
@@ -29,6 +30,7 @@ public:
 };
 
 static constexpr int32_t TestLength = 2;
+static const std::string IMAGE_JPEG_PATH = "/data/local/tmp/image/test_picture.jpg";
 /**
  * @tc.name: OH_ImageSourceInfo_Create
  * @tc.desc: test OH_ImageSourceInfo_Create
@@ -470,6 +472,55 @@ HWTEST_F(ImagSourceNdk2Test, OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPic
 {
     Image_ErrorCode ret = OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(nullptr, nullptr, 0);
     EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureTest001
+ * @tc.desc: test OH_ImageSourceNative_CreatePicture with null pointers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureTest001, TestSize.Level3)
+{
+    OH_ImageSourceNative *source = nullptr;
+    OH_DecodingOptionsForPicture *options = nullptr;
+    OH_PictureNative **picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreatePicture(source, options, picture);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+}
+
+/**
+ * @tc.name: OH_ImageSourceNative_CreatePictureTest002
+ * @tc.desc: Tests creating an image from a raw buffer and then extracting a picture from it.
+ *           The test checks if the creation and release of resources are successful
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagSourceNdk2Test, OH_ImageSourceNative_CreatePictureTest002, TestSize.Level1)
+{
+    size_t length = IMAGE_JPEG_PATH.size();
+    char filePath[length + 1];
+    strcpy_s(filePath, sizeof(filePath), IMAGE_JPEG_PATH.c_str());
+
+    OH_ImageSourceNative *source = nullptr;
+    OH_DecodingOptionsForPicture *options = nullptr;
+    OH_PictureNative *picture = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(source, nullptr);
+
+    ret = OH_DecodingOptionsForPicture_Create(&options);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(options, nullptr);
+
+    ret = OH_ImageSourceNative_CreatePicture(source, options, &picture);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ASSERT_NE(picture, nullptr);
+
+    ret = OH_ImageSourceNative_Release(source);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    ret = OH_DecodingOptionsForPicture_Release(options);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
+    OH_PictureNative_Release(picture);
+    ASSERT_EQ(ret, IMAGE_SUCCESS);
 }
 }
 }
