@@ -481,7 +481,7 @@ uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
 
     AllocatorType allocatorType = GetAllocatorType();
 
-    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN + 1) {
+    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
         IMAGE_LOGE("name size not compare");
         return COMMON_ERR_INVALID_PARAMETER;
     }
