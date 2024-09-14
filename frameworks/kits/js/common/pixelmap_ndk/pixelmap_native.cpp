@@ -505,7 +505,7 @@ Image_ErrorCode OH_PixelmapNative_GetArgbPixels(OH_PixelmapNative *pixelmap, uin
     if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
         return IMAGE_BAD_PARAMETER;
     }
-    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadPixels(*bufferSize, destination, PixelFormat::ARGB_8888));
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadARGBPixels(*bufferSize, destination));
 }
 
 MIDK_EXPORT

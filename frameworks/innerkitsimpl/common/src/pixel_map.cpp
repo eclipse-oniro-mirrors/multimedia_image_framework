@@ -1387,7 +1387,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
     return true;
 }
 
-uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFormat dstPixelFormat)
+uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");
     if (dst == nullptr) {
@@ -1417,16 +1417,6 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFor
             }
             tmpSize += static_cast<uint64_t>(readSize);
         }
-    } else if (dstPixelFormat == PixelFormat::ARGB_8888) {
-        ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, dstPixelFormat,
-            AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-        BufferInfo srcInfo = {data_, 0, imageInfo_};
-        BufferInfo dstInfo = {dst, 0, dstImageInfo};
-        int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, false);
-        if (dstLength < 0) {
-            IMAGE_LOGE("ReadPixels pixel convert to ARGB failed.");
-            return ERR_IMAGE_READ_PIXELMAP_FAILED;
-        }
     } else {
         // Copy the actual pixel data without padding bytes
         for (int i = 0; i < imageInfo_.size.height; ++i) {
@@ -1441,6 +1431,36 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFor
     return SUCCESS;
 }
 // LCOV_EXCL_STOP
+
+uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
+{
+    ImageTrace imageTrace("ReadARGBPixels by bufferSize");
+    if (dst == nullptr) {
+        IMAGE_LOGE("Read ARGB pixels by buffer: input dst address is null.");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+    if (data_ == nullptr) {
+        IMAGE_LOGE("Read ARGB pixels by buffer: current PixelMap data is null.");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+    if (bufferSize < static_cast<uint64_t>(pixelsSize_)) {
+        IMAGE_LOGE("Read ARGB pixels by buffer: input dst buffer (%{public}llu) < current pixelmap size (%{public}u).",
+            static_cast<unsigned long long>(bufferSize), pixelsSize_);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, PixelFormat::ARGB_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    BufferInfo srcInfo = {data_, 0, imageInfo_};
+    BufferInfo dstInfo = {dst, 0, dstImageInfo};
+    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, false);
+    if (dstLength < 0) {
+        IMAGE_LOGE("ReadPixels pixel convert to ARGB failed.");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+
+    return SUCCESS;
+}
 
 bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
                                 const uint32_t &stride, const Rect &region)
