@@ -17,8 +17,6 @@
 #include "image_packer_native.h"
 #include "image_packer_native_impl.h"
 #include "file_packer_stream.h"
-#include <fcntl.h>
-#include "securec.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -114,7 +112,7 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromImageSource, Te
     OH_PackingOptions* option = nullptr;
     OH_ImageSourceNative* imageSource = nullptr;
     uint8_t* outData = nullptr;
-    size_t *size = nullptr;
+    size_t *size = 0;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromImageSource(imagePacker, option, imageSource,
         outData, size);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
@@ -133,7 +131,7 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmap, TestS
     OH_PackingOptions* option = nullptr;
     OH_PixelmapNative* pixelMap = nullptr;
     uint8_t* outData = nullptr;
-    size_t *size = nullptr;
+    size_t *size = 0;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmap(imagePacker, option, pixelMap, outData, size);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmap end";
@@ -151,7 +149,7 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequenc
     OH_PackingOptionsForSequence* option = nullptr;
     OH_PixelmapNative **pixelMaps = nullptr;
     uint8_t* outData = nullptr;
-    size_t *outDataSize = nullptr;
+    size_t *outDataSize = 0;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
         pixelMaps, 0, outData, outDataSize);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
@@ -222,5 +220,6 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_Release, TestSize.Level3)
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
     GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_Release end";
 }
+
 }
 }
