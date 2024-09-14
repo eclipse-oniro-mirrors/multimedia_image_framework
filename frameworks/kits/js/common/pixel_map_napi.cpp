@@ -2870,6 +2870,9 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
 napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return result;
+#else
     napi_get_undefined(env, &result);
     napi_status napiStatus;
     napi_value thisVar = nullptr;
@@ -2904,7 +2907,7 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
         nVal.result);
 
     if (pixelMapNapi->nativePixelMap_ != nullptr) {
-        uint32_t ret = pixelMapNapi->nativePixelMap_->SetMemoryNameSync(pixelMapName);
+        uint32_t ret = pixelMapNapi->nativePixelMap_->SetMemoryName(pixelMapName);
         if (ret == SUCCESS) {
             return result;
         } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
@@ -2917,6 +2920,7 @@ napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info
         IMAGE_LOGE("Null native pixemap object");
     }
     return result;
+#endif
 }
 
 static void TranslateExec(napi_env env, PixelMapAsyncContext* context)

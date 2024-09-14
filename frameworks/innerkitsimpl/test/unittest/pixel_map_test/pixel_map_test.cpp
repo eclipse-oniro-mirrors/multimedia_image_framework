@@ -2320,5 +2320,41 @@ HWTEST_F(PixelMapTest, VersionIdTest001, TestSize.Level3)
     ASSERT_EQ(versionId, 10);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 end";
 }
+
+/**
+ * @tc.name: SetMemoryNameTest001
+ * @tc.desc: test pixelmap setname
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
+    EXPECT_TRUE(pixelMap != nullptr);
+
+    uint32_t ret = pixelMap->SetMemoryName("testname");
+    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_TRUE(ret == SUCCESS);
+
+    std::string longName(50, '1');
+    ret = pixelMap->SetMemoryName(longName);
+    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_TRUE(ret == COMMON_ERR_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 end";
+}
 }
 }

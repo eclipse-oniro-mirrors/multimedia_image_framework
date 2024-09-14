@@ -471,9 +471,9 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     }
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-uint32_t PixelMap::SetMemoryNameSync(std::string pixelMapName)
+uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetFd() == nullptr) {
         IMAGE_LOGE("PixelMap null, set name failed");
         return ERR_MEMORY_NOT_SUPPORT;
@@ -481,7 +481,7 @@ uint32_t PixelMap::SetMemoryNameSync(std::string pixelMapName)
 
     AllocatorType allocatorType = GetAllocatorType();
 
-    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN + 1) {
+    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
         IMAGE_LOGE("name size not compare");
         return COMMON_ERR_INVALID_PARAMETER;
     }
@@ -513,8 +513,12 @@ uint32_t PixelMap::SetMemoryNameSync(std::string pixelMapName)
         return SUCCESS;
     }
     return ERR_MEMORY_NOT_SUPPORT;
-}
+#else
+    IMAGE_LOGE("[PixelMap] not support on crossed platform");
+    return ERR_MEMORY_NOT_SUPPORT;
 #endif
+}
+
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {

@@ -894,6 +894,21 @@ Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelma
 Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelmap,
     OH_NativeColorSpaceManager *colorSpaceNative);
 
+/**
+ * @brief Set pixelmap memory name.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param name The pointer of name that needs to be set.
+ * @param size The size of name size that needs to be set.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, name and size are incorrect.
+ *         {@link IMAGE_UNSUPPORTED_MEMORY_FORMAT} If memory format is unsupported.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size);
+
 #ifdef __cplusplus
 };
 #endif
