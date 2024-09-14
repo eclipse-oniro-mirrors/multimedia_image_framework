@@ -22,8 +22,8 @@ if (use_clang_mac) {
 }
 
 ohos_static_library("exifhelper") {
-  branch_protector_ret = "pac_ret"
   if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -101,8 +101,8 @@ config("ext_public_config") {
 }
 
 ohos_shared_library("textureEncoderCL") {
-  branch_protector_ret = "pac_ret"
   if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -135,8 +135,8 @@ ohos_shared_library("textureEncoderCL") {
 }
 
 ohos_shared_library("extplugin") {
-  branch_protector_ret = "pac_ret"
   if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
@@ -352,8 +352,8 @@ if (is_arkui_x) {
   }
 } else {
   ohos_shared_library("heifparser") {
-    branch_protector_ret = "pac_ret"
     if (!use_clang_android && !use_clang_ios) {
+      branch_protector_ret = "pac_ret"
       sanitize = {
         cfi = true
         cfi_cross_dso = true
@@ -403,8 +403,8 @@ config("heif_hw_decoder_cfg") {
 }
 
 ohos_shared_library("heifimpl") {
-  branch_protector_ret = "pac_ret"
   if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
