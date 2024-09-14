@@ -49,7 +49,6 @@ static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test.jpg
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
 static const std::string IMAGE_OUTPUT_JPEG_PATH = "/data/local/tmp/image/test_out.jpg";
 static const std::string IMAGE_INPUT_ICO_PATH = "/data/local/tmp/image/test.ico";
-static const std::string IMAGE_INPUT_HEIF_PATH = "/data/local/tmp/image/test.heic";
 
 class ImageSourceTest : public testing::Test {
 public:
