@@ -27,6 +27,7 @@ config("egl_image_private_config") {
 }
 
 ohos_shared_library("egl_image") {
+  branch_protector_ret = "pac_ret"
   sanitize = {
     cfi = true
     cfi_cross_dso = true

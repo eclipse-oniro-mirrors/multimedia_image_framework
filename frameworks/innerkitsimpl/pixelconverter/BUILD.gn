@@ -106,6 +106,7 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("pixelconvertadapter") {
+    branch_protector_ret = "pac_ret"
     if (!use_clang_android) {
       sanitize = {
         cfi = true
