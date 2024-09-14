@@ -116,8 +116,8 @@ if (use_clang_android) {
   }
 } else {
   ohos_shared_library("image_native") {
-    branch_protector_ret = "pac_ret"
     if (!use_clang_android) {
+      branch_protector_ret = "pac_ret"
       sanitize = {
         cfi = true
         cfi_cross_dso = true

@@ -122,8 +122,8 @@ if (use_clang_ios) {
   }
 } else {
   ohos_shared_library("image_napi") {
-    branch_protector_ret = "pac_ret"
     if (!use_clang_android && !use_clang_ios) {
+      branch_protector_ret = "pac_ret"
       sanitize = {
         cfi = true
         cfi_cross_dso = true
@@ -199,8 +199,8 @@ if (use_clang_ios) {
   }
 
   ohos_shared_library("image") {
-    branch_protector_ret = "pac_ret"
     if (!use_clang_android && !use_clang_ios) {
+      branch_protector_ret = "pac_ret"
       sanitize = {
         cfi = true
         cfi_cross_dso = true
