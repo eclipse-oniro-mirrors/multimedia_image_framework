@@ -53,6 +53,7 @@ constexpr bool IS_LITTLE_ENDIAN = true;
 #else
 constexpr bool IS_LITTLE_ENDIAN = false;
 #endif
+constexpr int32_t DMA_LINE_SIZE = 256;
 static const uint8_t NUM_2 = 2;
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
@@ -1155,11 +1156,11 @@ bool IsYUVP010Format(PixelFormat format)
     return (format == PixelFormat::YCBCR_P010) || (format == PixelFormat::YCRCB_P010);
 }
 
-static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, ImageInfo srcInfo,
-    void *dstPixels, PixelFormat dstpixelmap)
+static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, ImageInfo srcInfo, void *dstPixels,
+    PixelFormat dstpixelmap, bool srcDMA = false)
 {
     FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcpixelmap),
-        srcInfo.size.width, srcInfo.size.height, 1};
+        srcInfo.size.width, srcInfo.size.height, srcDMA ? DMA_LINE_SIZE : 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstpixelmap),
         srcInfo.size.width, srcInfo.size.height, 1};
     if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
@@ -1527,7 +1528,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
     const ImageInfo dstImageInfo = dstInfo.imageInfo;
     if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
         return ConvertForFFMPEG(srcInfo.pixels, srcImageInfo.pixelFormat, srcImageInfo, dstInfo.pixels,
-            dstImageInfo.pixelFormat) ? PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
+            dstImageInfo.pixelFormat, useDMA) ? PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
     }
     if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
         (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
