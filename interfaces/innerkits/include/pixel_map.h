@@ -165,8 +165,8 @@ public:
     NATIVEEXPORT virtual bool IsSameImage(const PixelMap &other);
     NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, const uint32_t &offset, const uint32_t &stride,
                                      const Rect &region, uint8_t *dst);
-    NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst,
-        PixelFormat dstPixelFormat = PixelFormat::ARGB_8888);
+    NATIVEEXPORT virtual uint32_t ReadPixels(const uint64_t &bufferSize, uint8_t *dst);
+    NATIVEEXPORT virtual uint32_t ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst);
     NATIVEEXPORT virtual uint32_t ReadPixel(const Position &pos, uint32_t &dst);
     NATIVEEXPORT virtual uint32_t ResetConfig(const Size &size, const PixelFormat &format);
     NATIVEEXPORT virtual bool SetAlphaType(const AlphaType &alphaType);

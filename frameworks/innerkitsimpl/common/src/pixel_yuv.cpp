@@ -636,7 +636,7 @@ bool PixelYuv::IsP010Yuv()
     return false;
 }
 
-uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst, PixelFormat dstPixelFormat)
+uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     if (!IsYuvFormat()) {
         IMAGE_LOGE("PixelYuv ReadPixels Not YUV format");
