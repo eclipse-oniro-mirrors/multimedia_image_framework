@@ -32,6 +32,7 @@
 #include "file_metadata_stream.h"
 #include "metadata_accessor_factory.h"
 #include "metadata_accessor.h"
+#include "surface_buffer.h"
 
 using namespace OHOS::Media;
 using namespace testing::ext;
