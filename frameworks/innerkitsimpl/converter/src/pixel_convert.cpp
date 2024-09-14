@@ -54,6 +54,7 @@ constexpr bool IS_LITTLE_ENDIAN = true;
 constexpr bool IS_LITTLE_ENDIAN = false;
 #endif
 static const uint8_t NUM_2 = 2;
+constexpr uint8_t YUV420_P010_BYTES = 2;
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
                                   const ProcFuncExtension &extension)
@@ -1600,6 +1601,10 @@ AlphaConvertType PixelConvert::GetAlphaConvertType(const AlphaType &srcType, con
 
 bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInfo)
 {
+    if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
+        imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
+        return rowStride == 0 || rowStride >= imageInfo.size.width * YUV420_P010_BYTES;
+    }
     return rowStride == 0 || rowStride >= imageInfo.size.width * ImageUtils::GetPixelBytes(imageInfo.pixelFormat);
 }
 

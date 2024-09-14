@@ -286,9 +286,10 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    if (format == PixelFormat::RGBA_1010102 || format == PixelFormat::YCRCB_P010 ||
-        format == PixelFormat::YCBCR_P010) return AllocatorType::DMA_ALLOC;
-    return useDMA && format == PixelFormat::RGBA_8888 && size.width * size.height >= DMA_SIZE ?
+    return useDMA && ((format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010)||
+        (format == PixelFormat::RGBA_8888))
+        && size.width * size.height >= DMA_SIZE ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
     return AllocatorType::HEAP_ALLOC;
