@@ -359,6 +359,7 @@ private:
     std::set<DecodeListener *> decodeListeners_;
     std::mutex listenerMutex_;
     std::mutex decodingMutex_;
+    std::mutex fileMutex_;
     bool isIncrementalSource_ = false;
     bool isIncrementalCompleted_ = false;
     bool hasDesiredSizeOptions = false;
