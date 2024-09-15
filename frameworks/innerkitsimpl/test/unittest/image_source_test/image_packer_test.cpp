@@ -862,7 +862,7 @@ HWTEST_F(ImagePackerTest, IsPackOptionValidTest001, TestSize.Level3)
     ImagePacker packer;
     PackOption option;
     option.quality = NUM_128;
-    option.format = ""; 
+    option.format = "";
     bool ret = packer.IsPackOptionValid(option);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest001 end";
@@ -879,7 +879,7 @@ HWTEST_F(ImagePackerTest, IsPackOptionValidTest002, TestSize.Level3)
     ImagePacker packer;
     PackOption option;
     option.quality = NUM_100;
-    option.format = "image/jpeg"; 
+    option.format = "image/jpeg";
     bool ret = packer.IsPackOptionValid(option);
     ASSERT_EQ(ret, true);
     GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest002 end";
