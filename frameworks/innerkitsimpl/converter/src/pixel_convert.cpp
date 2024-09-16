@@ -1171,7 +1171,7 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
 }
 
 // Convert and collapse pixels by removing line paddings if any
-static bool ConvertCollapsedByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
+static bool ConvertAndCollapseByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
     const ImageInfo &dstInfo, bool useDMA)
 {
     FFMPEG_CONVERT_INFO srcFFMpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
@@ -1179,7 +1179,7 @@ static bool ConvertCollapsedByFFMpeg(const void *srcPixels, const ImageInfo &src
     FFMPEG_CONVERT_INFO dstFFMpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
     if (!FFMpegConvert(srcPixels, srcFFMpegInfo, dstPixels, dstFFMpegInfo)) {
-        IMAGE_LOGE("[PixelMap] ConvertCollapsedByFFMpeg: FFMpeg convert failed!");
+        IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: FFMpeg convert failed!");
         return false;
     }
     return true;
@@ -1542,7 +1542,7 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
     const ImageInfo srcImageInfo = srcInfo.imageInfo;
     const ImageInfo dstImageInfo = dstInfo.imageInfo;
     if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
-        return ConvertCollapsedByFFMpeg(srcInfo.pixels, srcImageInfo, dstInfo.pixels, dstImageInfo, useDMA) ?
+        return ConvertAndCollapseByFFMpeg(srcInfo.pixels, srcImageInfo, dstInfo.pixels, dstImageInfo, useDMA) ?
             PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
     }
     if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
