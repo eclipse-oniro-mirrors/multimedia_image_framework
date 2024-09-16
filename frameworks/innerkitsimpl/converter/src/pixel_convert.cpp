@@ -1170,15 +1170,15 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
     return true;
 }
 
-// Convert and remove line paddings if any
+// Convert and collapse pixels by removing line paddings if any
 static bool ConvertCollapsedByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
     const ImageInfo &dstInfo, bool useDMA)
 {
-    FFMPEG_CONVERT_INFO srcFFmpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
+    FFMPEG_CONVERT_INFO srcFFMpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
         srcInfo.size.width, srcInfo.size.height, useDMA ? DMA_LINE_SIZE : 1};
-    FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
+    FFMPEG_CONVERT_INFO dstFFMpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, dstPixels, dstFFmpegInfo)) {
+    if (!FFMpegConvert(srcPixels, srcFFMpegInfo, dstPixels, dstFFMpegInfo)) {
         IMAGE_LOGE("[PixelMap] ConvertCollapsedByFFMpeg: FFMpeg convert failed!");
         return false;
     }
