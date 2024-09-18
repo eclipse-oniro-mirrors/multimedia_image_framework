@@ -156,6 +156,7 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
     }
     return true;
 }
+
 void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
     if (!SLRBoxCheck(key, src, dst, x, y)) {
