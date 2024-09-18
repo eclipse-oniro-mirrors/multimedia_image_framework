@@ -2438,7 +2438,7 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest002, TestSize.Level3)
  * @tc.desc: Test ReadARGBPixels with invalid inputs
  * @tc.type: FUNC
  */
-HWTEST_F(PixelMapTest, ReadARGBPixelsTest002, TestSize.Level3)
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 start";
 
