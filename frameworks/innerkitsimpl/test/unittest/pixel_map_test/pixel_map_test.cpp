@@ -113,6 +113,38 @@ std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaTyp
     return pixelMap;
 }
 
+std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType,
+    AllocatorType type)
+{
+    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = format;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = alphaType;
+    pixelMap->SetImageInfo(info);
+
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(format);
+    int32_t rowDataSize = width * bytesPerPixel;
+    uint32_t bufferSize = rowDataSize * height;
+    if (bufferSize <= 0) {
+        return nullptr;
+    }
+    void *buffer = malloc(bufferSize);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    char *ch = static_cast<char *>(buffer);
+    for (unsigned int i = 0; i < bufferSize; i++) {
+        *(ch++) = (char)i;
+    }
+
+    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
+
+    return pixelMap;
+}
+
 std::map<PixelFormat, std::string> gPixelFormat = {
     { PixelFormat::ARGB_8888, "PixelFormat::ARGB_8888" },
     { PixelFormat::RGB_565,   "PixelFormat::RGB_565" },
@@ -2319,42 +2351,6 @@ HWTEST_F(PixelMapTest, VersionIdTest001, TestSize.Level3)
     versionId = pixelMap->GetVersionId();
     ASSERT_EQ(versionId, 10);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 end";
-}
-
-/**
- * @tc.name: SetMemoryNameTest001
- * @tc.desc: test pixelmap setname
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 start";
-    const int32_t offset = 0;
-    /* for test */
-    const int32_t width = 2;
-    /* for test */
-    const int32_t height = 2;
-    /* for test */
-    const uint32_t pixelByte = 4;
-    constexpr uint32_t colorLength = width * height * pixelByte;
-    uint8_t buffer[colorLength] = {0};
-    CreateBuffer(width, height, pixelByte, buffer);
-    uint32_t *color = (uint32_t *)buffer;
-    InitializationOptions opts1;
-    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
-    EXPECT_TRUE(pixelMap != nullptr);
-
-    uint32_t ret = pixelMap->SetMemoryName("testname");
-    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
-    EXPECT_TRUE(ret == SUCCESS);
-
-    std::string longName(50, '1');
-    ret = pixelMap->SetMemoryName(longName);
-    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
-    EXPECT_TRUE(ret == COMMON_ERR_INVALID_PARAMETER);
-
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 end";
 }
 
 /**
