@@ -80,6 +80,15 @@ bool ImageSystemProperties::GetDmaEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetDecodeDmaEnabled()
+{
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.decodeDma.enabled", false);
+#else
+    return false;
+#endif
+}
+
 bool ImageSystemProperties::GetAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -156,26 +165,6 @@ bool ImageSystemProperties::GetMediaLibraryAstcEnabled()
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     return system::GetBoolParameter("persist.multimedia.image.GenAstc.enabled", true);
-#else
-    return false;
-#endif
-}
-
-bool ImageSystemProperties::IsPhotos()
-{
-#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
-    static std::string processName = getCurrentProcessName();
-    return processName == "com.huawei.hmos.photos";
-#else
-    return false;
-#endif
-}
-
-bool ImageSystemProperties::IsCamera()
-{
-#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
-    static std::string processName = getCurrentProcessName();
-    return processName == "com.huawei.hmos.camera";
 #else
     return false;
 #endif
