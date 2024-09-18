@@ -116,7 +116,8 @@ struct SLRSliceKey {
     int y;
 };
 
-bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
+bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, const SLRWeightMat &x,
+    const SLRWeightMat &y)
 {
     if (key.x < 0 || key.y < 0) {
         IMAGE_LOGE("SLRBoxCheck Key error:%{public}d, %{public}d", key.x, key.y);
