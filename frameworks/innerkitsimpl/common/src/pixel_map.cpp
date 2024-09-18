@@ -1479,20 +1479,33 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     return SUCCESS;
 }
 
+static bool IsSupportConvertToARGB(PixelFormat pixelFormat)
+{
+    return pixelFormat == PixelFormat::RGB_565 || pixelFormat == PixelFormat::RGBA_8888 ||
+        pixelFormat == PixelFormat::BGRA_8888 || pixelFormat == PixelFormat::RGB_888 ||
+        pixelFormat == PixelFormat::NV21 || pixelFormat == PixelFormat::NV12;
+}
+
 uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadARGBPixels by bufferSize");
     if (dst == nullptr) {
-        IMAGE_LOGE("Read ARGB pixels by buffer: input dst address is null.");
-        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+        IMAGE_LOGE("Read ARGB pixels: input dst address is null.");
+        return ERR_IMAGE_INVALID_PARAMETER;
     }
     if (data_ == nullptr) {
-        IMAGE_LOGE("Read ARGB pixels by buffer: current PixelMap data is null.");
+        IMAGE_LOGE("Read ARGB pixels: current PixelMap data is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-    if (bufferSize < static_cast<uint64_t>(pixelsSize_)) {
-        IMAGE_LOGE("Read ARGB pixels by buffer: input dst buffer (%{public}llu) < current pixelmap size (%{public}u).",
-            static_cast<unsigned long long>(bufferSize), pixelsSize_);
+    if (!IsSupportConvertToARGB(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("Read ARGB pixels: does not support PixelMap with pixel format %{public}d.", imageInfo_.pixelFormat);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    uint64_t minBufferSize = static_cast<uint64_t>(ARGB_8888_BYTES) *
+        static_cast<uint64_t>(imageInfo_.size.width) * static_cast<uint64_t>(imageInfo_.size.height);
+    if (bufferSize < minBufferSize) {
+        IMAGE_LOGE("Read ARGB pixels: input dst buffer (%{public}zu) < required buffer size (%{public}zu).",
+            bufferSize, minBufferSize);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
