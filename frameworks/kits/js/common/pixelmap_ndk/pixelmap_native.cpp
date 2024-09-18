@@ -503,6 +503,15 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetArgbPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
+{
+    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadARGBPixels(*bufferSize, destination));
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ToSdr(OH_PixelmapNative *pixelmap)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
