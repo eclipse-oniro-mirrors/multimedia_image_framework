@@ -691,19 +691,6 @@ bool IsWidthAligned(const int32_t &width)
     return ((width * NUM_4) & INT_255) == 0;
 }
 
-bool IsPhotosLcd()
-{
-    static bool isPhotos = ImageSystemProperties::IsPhotos();
-    return isPhotos;
-}
-
-bool IsCameraProcess()
-{
-    static bool isCamera = ImageSystemProperties::IsCamera();
-    return isCamera;
-}
-
-// LCOV_EXCL_START
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
 {
 #if defined(_WIN32) || defined(_APPLE) || defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
@@ -719,7 +706,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
         return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             (IsWidthAligned(opts.desiredSize.width)
-            || opts.preferDma || IsPhotosLcd() || IsCameraProcess());
+            || opts.preferDma);
     }
     return false;
 #endif
@@ -733,7 +720,7 @@ DecodeContext ImageSource::InitDecodeContext(const DecodeOptions &opts, const Im
         context.allocatorType = opts.allocatorType;
     } else {
         if ((preference == MemoryUsagePreference::DEFAULT && IsSupportDma(opts, info, hasDesiredSizeOptions)) ||
-            info.encodedFormat == IMAGE_HEIF_FORMAT) {
+            info.encodedFormat == IMAGE_HEIF_FORMAT || ImageSystemProperties::GetDecodeDmaEnabled()) {
             IMAGE_LOGD("[ImageSource] allocatorType is DMA_ALLOC");
             context.allocatorType = AllocatorType::DMA_ALLOC;
         } else {

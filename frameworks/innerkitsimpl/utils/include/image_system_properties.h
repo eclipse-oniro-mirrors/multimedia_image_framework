@@ -22,6 +22,7 @@ public:
     static bool GetSkiaEnabled();
     static bool GetSurfaceBufferEnabled();
     static bool GetDmaEnabled();
+    static bool GetDecodeDmaEnabled();
     static bool GetAstcEnabled();
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();
@@ -31,8 +32,6 @@ public:
     static bool GetAstcHardWareEncodeEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
-    static bool IsPhotos();
-    static bool IsCamera();
 private:
     ImageSystemProperties() = default;
 };
