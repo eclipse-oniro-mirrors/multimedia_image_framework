@@ -152,7 +152,7 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
     int dstIndex = key.x * dst.rowStride_ + key.y;
     int maxDstSize = dstM * dstN;
     if (dstIndex >= maxDstSize) {
-        IMAGE_LOGE("SLRBoxCheck src index error:%{public}zu, %{public}d", dstIndex, maxDstSize);
+        IMAGE_LOGE("SLRBoxCheck src index error:%{public}d, %{public}d", dstIndex, maxDstSize);
         return false;
     }
     return true;
@@ -161,7 +161,7 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
 void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
 {
     if (!SLRBoxCheck(key, src, dst, x, y)) {
-        return false;
+        return;
     }
     uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
     uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
@@ -184,7 +184,7 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
             w *= (*y)[key.x][r - rStart];
             int srcIndex = nR *  src.rowStride_ + nC;
             if (srcIndex < 0 || srcIndex >= maxSrcSize) {
-                IMAGE_LOGE("SLRBox src index error:%{public}zu, %{public}d", srcIndex, maxSrcSize);
+                IMAGE_LOGE("SLRBox src index error:%{public}d, %{public}d", srcIndex, maxSrcSize);
                 return;
             }
             uint32_t color = *(srcArr + srcIndex);
