@@ -316,6 +316,56 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_WritePixels, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OH_PixelmapNative_GetArgbPixels_Test001
+ * @tc.desc: Test OH_PixelmapNative_GetArgbPixels with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test001 start";
+
+    size_t dataSize = 4;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    OH_PixelmapNative *pixelMap = nullptr;
+    Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+
+    uint8_t result[4];
+    errCode = OH_PixelmapNative_GetArgbPixels(pixelMap, result, &dataSize);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_EQ(result[0], data[3]);
+    ASSERT_EQ(result[1], data[2]);
+    ASSERT_EQ(result[2], data[1]);
+    ASSERT_EQ(result[3], data[0]);
+
+    OH_PixelmapNative_Release(pixelMap);
+    OH_PixelmapInitializationOptions_Release(createOpts);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test001 end";
+}
+
+/**
+ * @tc.name: OH_PixelmapNative_GetArgbPixels_Test002
+ * @tc.desc: Test OH_PixelmapNative_GetArgbPixels with invalid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test002 start";
+    OH_PixelmapNative *pixelMap = nullptr;
+    uint8_t *buffer = nullptr;
+    size_t *bufferSize = nullptr;
+    Image_ErrorCode errCode = OH_PixelmapNative_GetArgbPixels(pixelMap, buffer, bufferSize);
+    ASSERT_EQ(errCode, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test002 end";
+}
+
+/**
  * @tc.name: OH_PixelmapNative_GetImageInfo
  * @tc.desc: OH_PixelmapNative_GetImageInfo
  * @tc.type: FUNC
