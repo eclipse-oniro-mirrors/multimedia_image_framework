@@ -2282,5 +2282,143 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest008, TestSize.Level3)
     ASSERT_NE(ret, SUCCESS);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ConvertAlphaFormatTest008 end";
 }
+
+/**
+ * @tc.name: VersionIdTest001
+ * @tc.desc: test pixelmap verisonId get&set interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, VersionIdTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
+
+    EXPECT_TRUE(pixelMap != nullptr);
+    uint32_t versionId = pixelMap->GetVersionId();
+    // 1 means the pixelmap's initialized versionId
+    ASSERT_EQ(versionId, 1);
+    pixelMap->AddVersionId();
+    versionId = pixelMap->GetVersionId();
+    // 2 used to test add func
+    ASSERT_EQ(versionId, 2);
+    // 10 used to test set func
+    pixelMap->SetVersionId(10);
+    versionId = pixelMap->GetVersionId();
+    ASSERT_EQ(versionId, 10);
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 end";
+}
+
+/**
+ * @tc.name: SetMemoryNameTest001
+ * @tc.desc: test pixelmap setname
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 2;
+    /* for test */
+    const int32_t height = 2;
+    /* for test */
+    const uint32_t pixelByte = 4;
+    constexpr uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    CreateBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
+    EXPECT_TRUE(pixelMap != nullptr);
+
+    uint32_t ret = pixelMap->SetMemoryName("testname");
+    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_TRUE(ret == SUCCESS);
+
+    std::string longName(50, '1');
+    ret = pixelMap->SetMemoryName(longName);
+    EXPECT_TRUE(ret != ERR_MEMORY_NOT_SUPPORT);
+    EXPECT_TRUE(ret == COMMON_ERR_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest001
+ * @tc.desc: Test ReadARGBPixels with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest001 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = 4;
+    uint8_t data[4];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, SUCCESS);
+    ASSERT_EQ(data[0], 3);
+    ASSERT_EQ(data[1], 2);
+    ASSERT_EQ(data[2], 1);
+    ASSERT_EQ(data[3], 0);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest001 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest002
+ * @tc.desc: Test ReadARGBPixels with invalid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest002 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = 4;
+    uint8_t data[4];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, ERR_IMAGE_COLOR_CONVERT);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest002 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest003
+ * @tc.desc: Test ReadARGBPixels with invalid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = 1;
+    uint8_t data[1];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 end";
+}
 }
 }
