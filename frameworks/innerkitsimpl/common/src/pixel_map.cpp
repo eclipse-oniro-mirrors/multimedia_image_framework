@@ -1458,8 +1458,8 @@ uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
         static_cast<uint64_t>(imageInfo_.size.width) * static_cast<uint64_t>(imageInfo_.size.height);
     if (bufferSize < minBufferSize || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE(
-            "Read ARGB pixels: input dst buffer (%{public}zu) < required buffer size (%{public}zu), or too large.",
-            bufferSize, minBufferSize);
+            "Read ARGB pixels: input dst buffer (%{public}llu) < required buffer size (%{public}llu), or too large.",
+            static_cast<unsigned long long>(bufferSize), static_cast<unsigned long long>(minBufferSize));
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
