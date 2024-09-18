@@ -32,8 +32,6 @@ public:
     static bool GetSLRParallelEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
-    static bool IsPhotos();
-    static bool IsCamera();
 private:
     ImageSystemProperties() = default;
 };
