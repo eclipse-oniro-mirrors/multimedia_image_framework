@@ -23,6 +23,7 @@ config("log_mock_config") {
 
 ohos_static_library("log_mock_static") {
   if (!is_arkui_x) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true

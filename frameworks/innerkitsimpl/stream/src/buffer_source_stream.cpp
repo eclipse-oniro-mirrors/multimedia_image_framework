@@ -102,7 +102,8 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
     return true;
 }
 
-bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
+bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize,
+    uint32_t &readSize) __attribute__((no_sanitize("cfi")))
 {
     if (!Peek(desiredSize, outBuffer, bufferSize, readSize)) {
         IMAGE_LOGE("[BufferSourceStream]read fail.");
@@ -112,7 +113,8 @@ bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
     return true;
 }
 
-bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize, uint32_t &readSize)
+bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t bufferSize,
+    uint32_t &readSize) __attribute__((no_sanitize("cfi")))
 {
     if (desiredSize == 0 || outBuffer == nullptr || desiredSize > bufferSize) {
         IMAGE_LOGE("[BufferSourceStream]input the parameter exception, desiredSize:%{public}u,"

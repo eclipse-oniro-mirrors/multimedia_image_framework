@@ -770,7 +770,7 @@ bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftD
 bool HeifDecoderImpl::SwDecodeGrids(ImageFwkExtManager &extManager,
                                     std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
-    if (extManager.doHardWareEncodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
+    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
         return false;
     }
     if (param.dstBuffer == nullptr || param.dstStride == 0) {
@@ -818,7 +818,7 @@ bool HeifDecoderImpl::SwDecodeIdenImage(std::shared_ptr<HeifImage> &image,
 bool HeifDecoderImpl::SwDecodeSingleImage(ImageFwkExtManager &extManager,
                                           std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param)
 {
-    if (extManager.doHardWareEncodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
+    if (extManager.hevcSoftwareDecodeFunc_ == nullptr && !extManager.LoadImageFwkExtNativeSo()) {
         return false;
     }
     if (param.dstBuffer == nullptr || param.dstStride == 0) {

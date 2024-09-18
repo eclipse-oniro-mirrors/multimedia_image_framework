@@ -60,6 +60,13 @@ struct OH_NativeBuffer;
 typedef struct OH_NativeBuffer OH_NativeBuffer;
 
 /**
+ * @brief Define a native ColorSpaceManager type, used for retrieving a native ColorSpaceManager.
+ *
+ * @since 13
+ */
+typedef struct OH_NativeColorSpaceManager OH_NativeColorSpaceManager;
+
+/**
  * @brief Define a pixelmap alpha type.
  *
  * @since 12
@@ -875,6 +882,49 @@ Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
+
+/**
+ * @brief Get the native colorspace from the PixelMap.
+ *
+ * @param pixelmap The native pixelmap to get the native colorspace from.
+ * @param colorSpaceNative The native colorspace to retrieve.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} The param of pixelmap or colorSpaceNative is nullptr or invalid.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelmap,
+    OH_NativeColorSpaceManager **colorSpaceNative);
+
+/**
+ * @brief Set the native colorspace for the PixelMap.
+ *
+ * @param pixelmap The native pixelmap to set the native colorspace for.
+ * @param colorSpaceNative The native colorspace to set.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} The param of pixelmap or colorSpaceNative is nullptr or invalid.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelmap,
+    OH_NativeColorSpaceManager *colorSpaceNative);
+
+/**
+ * @brief Set pixelmap memory name.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param name The pointer of name that needs to be set.
+ * @param size The size of name size that needs to be set.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, name and size are incorrect.
+ *         {@link IMAGE_UNSUPPORTED_MEMORY_FORMAT} If memory format is unsupported.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size);
 
 #ifdef __cplusplus
 };

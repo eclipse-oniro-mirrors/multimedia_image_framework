@@ -20,6 +20,7 @@
 #include "image_source_native.h"
 #include "securec.h"
 #include "image_utils.h"
+#include "native_color_space_manager.h"
 
 using namespace testing::ext;
 using namespace OHOS::Media;
@@ -713,5 +714,51 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetMetadata, TestSize.Level3)
     EXPECT_EQ(errorCode, IMAGE_SUCCESS);
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetMetadata end";
 }
+
+/**
+ * @tc.name: OH_PixelmapNative_SetGetColorSpace
+ * @tc.desc: OH_PixelmapNative_SetGetColorSpace
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_SetGetColorSpace, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace start";
+    std::string realPath;
+    if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH.c_str(), realPath)) {
+        if (!ImageUtils::PathToRealPath(IMAGE_JPEG_PATH_TEST.c_str(), realPath)) {
+            return;
+        }
+    }
+    char filePath[bufferSize];
+    if (strcpy_s(filePath, sizeof(filePath), realPath.c_str()) != EOK) {
+        return;
+    }
+    size_t length = realPath.size();
+    OH_ImageSourceNative *source = nullptr;
+    Image_ErrorCode ret = OH_ImageSourceNative_CreateFromUri(filePath, length, &source);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_DecodingOptions *opts = nullptr;
+    OH_PixelmapNative *pixelmap = nullptr;
+    OH_DecodingOptions_Create(&opts);
+    ret = OH_ImageSourceNative_CreatePixelmap(source, opts, &pixelmap);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_NativeColorSpaceManager *setColorSpaceNative = nullptr;
+    ColorSpaceName setColorSpaceName = SRGB_LIMIT;
+    setColorSpaceNative = OH_NativeColorSpaceManager_CreateFromName(setColorSpaceName);
+    ret = OH_PixelmapNative_SetColorSpaceNative(pixelmap, setColorSpaceNative);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    OH_NativeColorSpaceManager *getColorSpaceNative = nullptr;
+    ret = OH_PixelmapNative_GetColorSpaceNative(pixelmap, &getColorSpaceNative);
+    EXPECT_EQ(ret, IMAGE_SUCCESS);
+
+    int getColorSpaceName = OH_NativeColorSpaceManager_GetColorSpaceName(getColorSpaceNative);
+    EXPECT_EQ(setColorSpaceName, getColorSpaceName);
+
+    GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_SetGetColorSpace end";
+}
+
 }
 }

@@ -21,6 +21,8 @@
 #include <chrono>
 #include <iostream>
 #include <unistd.h>
+#include <linux/dma-buf.h>
+#include <sys/ioctl.h>
 
 #include "image_log.h"
 #include "image_system_properties.h"
@@ -97,7 +99,9 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static const uint8_t NUM_1 = 1;
+#endif
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
@@ -469,6 +473,55 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     }
 }
 
+uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (GetFd() == nullptr) {
+        IMAGE_LOGE("PixelMap null, set name failed");
+        return ERR_MEMORY_NOT_SUPPORT;
+    }
+
+    AllocatorType allocatorType = GetAllocatorType();
+
+    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
+        IMAGE_LOGE("name size not compare");
+        return COMMON_ERR_INVALID_PARAMETER;
+    }
+
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
+        int fd = sbBuffer->GetFileDescriptor();
+        if (fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set dma name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(GetFd());
+        if (*fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(*fd, ASHMEM_SET_NAME, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set ashmem name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+    return ERR_MEMORY_NOT_SUPPORT;
+#else
+    IMAGE_LOGE("[PixelMap] not support on crossed platform");
+    return ERR_MEMORY_NOT_SUPPORT;
+#endif
+}
+
+
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
@@ -532,6 +585,7 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUVDataInfo &yuvInfo)
 {
     if (surfaceBuffer == nullptr) {
@@ -557,6 +611,7 @@ bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUV
     yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
     return true;
 }
+#endif
 
 static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
 {
@@ -612,10 +667,12 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     if (IsYUV(opts.pixelFormat)) {
         if (dstPixelFormat == PixelFormat::YCRCB_P010 || dstPixelFormat == PixelFormat::YCBCR_P010) {
             YUVDataInfo yuvDatainfo;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
             if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
                 dstImageInfo, yuvDatainfo)) {
                 return nullptr;
             }
+#endif
             dstPixelMap->SetImageYUVInfo(yuvDatainfo);
         } else {
             SetYUVDataInfoToPixelMap(dstPixelMap);
@@ -2155,7 +2212,11 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
             return false;
         }
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        GSError ret = sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (ret != GSError::GSERROR_OK) {
+            IMAGE_LOGE("write pixel map to message parcel failed: %{public}s.", GSErrorStr(ret).c_str());
+            return false;
+        }
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             IMAGE_LOGE("write pixel map buffer to parcel failed.");
@@ -2458,9 +2519,26 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+{
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    if (ret != GSError::GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    pixelMemInfo.context = nativeBuffer;
+    return true;
+}
+#endif
+
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
@@ -2478,7 +2556,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
                 return false;
             }
         }
-        pixelMemInfo.context = new int32_t();
+        pixelMemInfo.context = new(std::nothrow) int32_t();
         if (pixelMemInfo.context == nullptr) {
             ::munmap(ptr, pixelMemInfo.bufferSize);
             ::close(fd);
@@ -2487,12 +2565,10 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
-        void* nativeBuffer = surfaceBuffer.GetRefPtr();
-        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-        pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-        pixelMemInfo.context = nativeBuffer;
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
+            return false;
+        }
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
