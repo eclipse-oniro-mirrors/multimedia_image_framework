@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <fstream>
 #include <vector>
+#define private public
 #include "image/abs_image_encoder.h"
 #include "image_packer.h"
 #include "buffer_packer_stream.h"
@@ -42,6 +43,7 @@ namespace OHOS {
 namespace Multimedia {
 constexpr uint32_t NUM_1 = 1;
 constexpr uint32_t NUM_100 = 100;
+constexpr uint32_t NUM_128 = 128;
 constexpr int64_t BUFFER_SIZE = 2 * 1024 * 1024;
 constexpr uint32_t MAX_IMAGE_SIZE = 10 * 1024;
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_packing.jpg";
@@ -802,6 +804,85 @@ HWTEST_F(ImagePackerTest, PackYuv2Jpeg004, TestSize.Level3)
 
     close(fd);
     GTEST_LOG_(INFO) << "ImagePackerTest: PackYuv2Jpeg004 end";
+}
+
+/**
+ * @tc.name: GetSupportedFormatsTest001
+ * @tc.desc: test GetSupportedFormats
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, GetSupportedFormatsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetSupportedFormatsTest001 start";
+    std::set<std::string> formats;
+    uint32_t ret = ImagePacker::GetSupportedFormats(formats);
+    ASSERT_EQ(ret, OHOS::Media::SUCCESS);
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetSupportedFormatsTest001 end";
+}
+
+/**
+ * @tc.name: StartPackingImplTest001
+ * @tc.desc: test StartPackingImpl
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, StartPackingImplTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPackingImplTest001 start";
+    ImagePacker packer;
+    const PackOption option;
+    packer.packerStream_ = nullptr;
+    uint32_t ret = packer.StartPackingImpl(option);
+    ASSERT_EQ(ret, ERR_IMAGE_DATA_ABNORMAL);
+    GTEST_LOG_(INFO) << "ImagePackerTest: StartPackingImplTest001 end";
+}
+
+/**
+ * @tc.name: GetEncoderPluginTest001
+ * @tc.desc: test GetEncoderPlugin
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, GetEncoderPluginTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetEncoderPluginTest001 start";
+    ImagePacker packer;
+    const PackOption option;
+    bool ret = packer.GetEncoderPlugin(option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImagePackerTest: GetEncoderPluginTest001 end";
+}
+
+/**
+ * @tc.name: IsPackOptionValidTest001
+ * @tc.desc: test IsPackOptionValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, IsPackOptionValidTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest001 start";
+    ImagePacker packer;
+    PackOption option;
+    option.quality = NUM_128;
+    option.format = "";
+    bool ret = packer.IsPackOptionValid(option);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest001 end";
+}
+
+/**
+ * @tc.name: IsPackOptionValidTest002
+ * @tc.desc: test IsPackOptionValid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerTest, IsPackOptionValidTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest002 start";
+    ImagePacker packer;
+    PackOption option;
+    option.quality = NUM_100;
+    option.format = "image/jpeg";
+    bool ret = packer.IsPackOptionValid(option);
+    ASSERT_EQ(ret, true);
+    GTEST_LOG_(INFO) << "ImagePackerTest: IsPackOptionValidTest002 end";
 }
 } // namespace Multimedia
 } // namespace OHOS
