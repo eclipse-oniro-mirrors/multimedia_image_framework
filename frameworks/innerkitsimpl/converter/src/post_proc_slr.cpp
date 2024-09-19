@@ -32,6 +32,7 @@ using namespace std;
 
 constexpr float PI = 3.14159265;
 constexpr float EPSILON = 1e-6;
+constexpr int FFRT_THREAD_LIMIT = 8;
 
 float GetSLRFactor(float x, int a)
 {
@@ -115,44 +116,78 @@ struct SLRSliceKey {
     int y;
 };
 
-void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
+bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, const SLRWeightMat &x,
+    const SLRWeightMat &y)
 {
     if (key.x < 0 || key.y < 0) {
+        IMAGE_LOGE("SLRBoxCheck Key error:%{public}d, %{public}d", key.x, key.y);
+        return false;
+    }
+    uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
+    if (srcArr == nullptr) {
+        IMAGE_LOGE("SLRBoxCheck srcArr null");
+        return false;
+    }
+    uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
+    if (dstArr == nullptr) {
+        IMAGE_LOGE("SLRBoxCheck dstArr null");
+        return false;
+    }
+    int srcM = src.size_.height, srcN = src.size_.width;
+    int dstM = dst.size_.height, dstN = dst.size_.width;
+    float coeffX = static_cast<float>(dstM) / srcM;
+    float coeffY = static_cast<float>(dstN) / srcN;
+    float taoX = 1 / coeffX;
+    float taoY = 1 / coeffY;
+    int aX = std::max(2, static_cast<int>(std::floor(taoX)));
+    int aY = std::max(2, static_cast<int>(std::floor(taoY))); // 2 default size
+    if (static_cast<int>((*x).size()) < key.y || static_cast<int>((*x)[0].size()) < 2 * aY) { // 2 max slr box size
+        IMAGE_LOGE("SLRBoxCheck h_y error:%{public}zu, %{public}d", (*x).size(), aY);
+        return false;
+    }
+    if (static_cast<int>((*y).size()) < key.x || static_cast<int>((*y)[0].size()) < 2 * aX) { // 2 max slr box size
+        IMAGE_LOGE("SLRBoxCheck h_x error:%{public}zu, %{public}d", (*y).size(), aX);
+        return false;
+    }
+    int dstIndex = key.x * dst.rowStride_ + key.y;
+    int maxDstSize = dstM * dstN;
+    if (dstIndex >= maxDstSize) {
+        IMAGE_LOGE("SLRBoxCheck dst index error:%{public}d, %{public}d", dstIndex, maxDstSize);
+        return false;
+    }
+    return true;
+}
+
+void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, const SLRWeightMat &y)
+{
+    if (!SLRBoxCheck(key, src, dst, x, y)) {
         return;
     }
-
     uint32_t* srcArr = static_cast<uint32_t*>(src.data_);
     uint32_t* dstArr = static_cast<uint32_t*>(dst.data_);
-    if (srcArr == nullptr || dstArr == nullptr) {
-        return;
-    }
     int srcM = src.size_.height, srcN = src.size_.width, dstM = dst.size_.height, dstN = dst.size_.width;
     float coeffX = static_cast<float>(dstM) / srcM, coeffY = static_cast<float>(dstN) / srcN;
     float taoX = 1 / coeffX, taoY = 1 / coeffY;
     int aX = std::max(2, static_cast<int>(std::floor(taoX)));
     int aY = std::max(2, static_cast<int>(std::floor(taoY))); // 2 default size
-
     int etaI = static_cast<int>((key.x + 0.5) * taoX - 0.5); // 0.5 middle index
     int etaJ = static_cast<int>((key.y + 0.5) * taoY - 0.5); // 0.5 middle index
     int rStart = etaI - aX + 1, rEnd = etaI + aX;
     int cStart = etaJ - aY + 1, cEnd = etaJ + aY;
-    if (static_cast<int>((*x).size()) < key.y || static_cast<int>((*x)[0].size()) < 2 * aY) { // 2 max slr box size
-        IMAGE_LOGE("SLRBox h_y Error:%{public}zu, %{public}d", (*x).size(), aY);
-        return;
-    }
-    if (static_cast<int>((*y).size()) < key.x || static_cast<int>((*y)[0].size()) < 2 * aX) { // 2 max slr box size
-        IMAGE_LOGE("SLRBox h_x Error:%{public}zu, %{public}d", (*y).size(), aX);
-        return;
-    }
-
     float rgba[4]{ .0f, .0f, .0f, .0f };
+    int maxSrcSize = srcM * srcN;
     for (int r = rStart; r <= rEnd; ++r) {
         int nR = min(max(0, r), srcM - 1);
         for (int c = cStart; c <= cEnd; ++c) {
             int nC = min(max(0, c), srcN - 1);
             auto w = (*x)[key.y][c - cStart];
             w *= (*y)[key.x][r - rStart];
-            uint32_t color = *(srcArr + (nR *  src.rowStride_ + nC));
+            int srcIndex = nR *  src.rowStride_ + nC;
+            if (srcIndex < 0 || srcIndex >= maxSrcSize) {
+                IMAGE_LOGE("SLRBox src index error:%{public}d, %{public}d", srcIndex, maxSrcSize);
+                return;
+            }
+            uint32_t color = *(srcArr + srcIndex);
             rgba[0] += ((color >> 24) & 0xFF) * w; // 24 rgba r
             rgba[1] += ((color >> 16) & 0xFF) * w; // 16 rgba g
             rgba[2] += ((color >> 8) & 0xFF) * w;  // 2 8 rgba b
@@ -205,6 +240,7 @@ void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, co
     int step = m / maxThread;
     int stepMod = (m % maxThread == 0) ? 1 : 0;
     std::vector<ffrt::dependence> ffrtHandles;
+    std::vector<ffrt::dependence> ffrtHandles1;
     for (int k = 0; k < maxThread - stepMod; k++) {
         int start = k * step;
         int end = (k + 1) * step;
@@ -213,7 +249,11 @@ void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, co
             SLRSubtask(key, src, dst, x, y);
         };
         auto handler = ffrt::submit_h(func, {}, {}, ffrt::task_attr().qos(5)); // 5 max ffrt qos value
-        ffrtHandles.emplace_back(handler);
+        if (ffrtHandles.size() < FFRT_THREAD_LIMIT) {
+            ffrtHandles.emplace_back(handler);
+        } else {
+            ffrtHandles1.emplace_back(handler);
+        }
     }
 
     for (int i = (maxThread - stepMod) * step; i < m; i++) {
@@ -224,6 +264,7 @@ void SLRProc::Parallel(const SLRMat &src, SLRMat &dst, const SLRWeightMat &x, co
     }
 
     ffrt::wait(ffrtHandles);
+    ffrt::wait(ffrtHandles1);
 #else
     SLRProc::Serial(src, dst, x, y);
 #endif
