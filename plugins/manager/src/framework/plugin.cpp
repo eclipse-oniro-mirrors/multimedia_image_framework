@@ -73,14 +73,12 @@ uint32_t Plugin::Register(istream &metadata, string &&libraryPath, weak_ptr<Plug
 {
     std::unique_lock<std::recursive_mutex> guard(dynDataLock_);
     if (state_ != PluginState::PLUGIN_STATE_UNREGISTER) {
-        guard.unlock();
         IMAGE_LOGI("repeat registration.");
         return ERR_INTERNAL;
     }
 
     auto ret = RegisterMetadata(metadata, plugin);
     if (ret != SUCCESS) {
-        guard.unlock();
         IMAGE_LOGE("failed to register metadata, ERRNO: %{public}u.", ret);
         return ret;
     }
