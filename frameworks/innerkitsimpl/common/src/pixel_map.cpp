@@ -2538,6 +2538,11 @@ bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
     }
 
     void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    if (nativeBuffer == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer reference pointer is null");
+        return false;
+    }
+
     ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
     pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
     pixelMemInfo.context = nativeBuffer;
