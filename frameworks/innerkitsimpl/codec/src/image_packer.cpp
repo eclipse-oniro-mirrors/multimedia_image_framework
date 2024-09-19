@@ -29,6 +29,10 @@
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_encoder.h"
 #endif
+#ifdef HEIF_HW_ENCODE_ENABLE
+#include "v3_0/codec_types.h"
+#include "v3_0/icodec_component_manager.h"
+#endif
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -45,6 +49,45 @@ const static std::string EXTENDED_ENCODER = "image/jpeg,image/png,image/webp";
 static constexpr size_t SIZE_ZERO = 0;
 
 PluginServer &ImagePacker::pluginServer_ = ImageUtils::GetPluginServer();
+
+#ifdef HEIF_HW_ENCODE_ENABLE
+static bool IsEncodeSecureMode(const std::string &name)
+{
+    std::string prefix = ".secure";
+    if (name.length() <= prefix.length()) {
+        return false;
+    }
+    return name.rfind(prefix) == (name.length() - prefix.length());
+}
+#endif
+
+static bool IsSupportHeifEncode()
+{
+#ifdef HEIF_HW_ENCODE_ENABLE
+    sptr<HDI::Codec::V3_0::ICodecComponentManager> manager =
+            HDI::Codec::V3_0::ICodecComponentManager::Get(false);
+    if (manager == nullptr) {
+        return false;
+    }
+    int32_t compCnt = 0;
+    int32_t ret = manager->GetComponentNum(compCnt);
+    if (ret != HDF_SUCCESS || compCnt <= 0) {
+        return false;
+    }
+    std::vector<HDI::Codec::V3_0::CodecCompCapability> capList(compCnt);
+    ret = manager->GetComponentCapabilityList(capList, compCnt);
+    if (ret != HDF_SUCCESS || capList.empty()) {
+        return false;
+    }
+    for (const auto& cap : capList) {
+        if (cap.role == HDI::Codec::V3_0::MEDIA_ROLETYPE_VIDEO_HEVC &&
+            cap.type == HDI::Codec::V3_0::VIDEO_ENCODER && !IsEncodeSecureMode(cap.compName)) {
+            return true;
+        }
+    }
+#endif
+    return false;
+}
 
 uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
 {
@@ -73,6 +116,10 @@ uint32_t ImagePacker::GetSupportedFormats(std::set<std::string> &formats)
         for (std::string item : splitedVector) {
             formats.insert(item);
         }
+    }
+    static bool isSupportHeif = IsSupportHeifEncode();
+    if (isSupportHeif) {
+        formats.insert(IMAGE_HEIF_FORMAT);
     }
     return SUCCESS;
 }
