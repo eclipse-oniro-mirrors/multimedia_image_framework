@@ -16,6 +16,7 @@
 #include "svg_decoder.h"
 
 #include <sstream>
+#include <thread>
 #include "include/core/SkBitmap.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkImageInfo.h"
@@ -54,19 +55,14 @@ static inline uint32_t Float2UInt32(float val)
 }
 
 // LCOV_EXCL_START
-bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
-{
-    IMAGE_LOGD("[AllocShareBuffer] IN byteCount=%{public}llu",
-        static_cast<unsigned long long>(byteCount));
-
-    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
-        IMAGE_LOGE("[AllocShareBuffer] pixelmap buffer size %{public}llu out of max size",
-            static_cast<unsigned long long>(byteCount));
-        return false;
-    }
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+bool AllocShareBufferInner(DecodeContext &context, uint64_t byteCount)
+{
     uint32_t id = context.pixelmapUniqueId_;
-    std::string name = "SVG RawData, uniqueId: " + std::to_string(getpid()) + '_' + std::to_string(id);
+    std::stringstream sstream;
+    sstream << "SVG RawData, uniqueId: " << std::this_thread::get_id() << '_' << std::to_string(getpid()) <<
+        '_' << std::to_string(id);
+    std::string name = sstream.str();
     int fd = AshmemCreate(name.c_str(), byteCount);
     if (fd < 0) {
         IMAGE_LOGE("[AllocShareBuffer] create fail");
@@ -105,6 +101,21 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 
     IMAGE_LOGD("[AllocShareBuffer] OUT");
     return true;
+}
+#endif
+
+bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
+{
+    IMAGE_LOGD("[AllocShareBuffer] IN byteCount=%{public}llu",
+        static_cast<unsigned long long>(byteCount));
+
+    if (byteCount > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE("[AllocShareBuffer] pixelmap buffer size %{public}llu out of max size",
+            static_cast<unsigned long long>(byteCount));
+        return false;
+    }
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
+    return AllocShareBufferInner(context, byteCount);
 #else
     IMAGE_LOGE("[AllocShareBuffer] Not support Ashmem!");
     return false;

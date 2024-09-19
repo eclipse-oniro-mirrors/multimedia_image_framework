@@ -31,13 +31,17 @@ void ImageCodec::BaseState::OnMsgReceived(const MsgInfo &info)
         }
         case MsgWhat::OMX_EMPTY_BUFFER_DONE: {
             uint32_t bufferId;
-            (void)info.param->GetValue(BUFFER_ID, bufferId);
+            if (!info.param->GetValue(BUFFER_ID, bufferId)) {
+                SLOGE("OnMsgReceived param has no BUFFER_ID");
+            }
             codec_->OnOMXEmptyBufferDone(bufferId, inputMode_);
             return;
         }
         case MsgWhat::OMX_FILL_BUFFER_DONE: {
             OmxCodecBuffer omxBuffer;
-            (void)info.param->GetValue("omxBuffer", omxBuffer);
+            if (!info.param->GetValue("omxBuffer", omxBuffer)) {
+                SLOGE("OnMsgReceived param has no omxBuffer");
+            }
             codec_->OnOMXFillBufferDone(omxBuffer, outputMode_);
             return;
         }
