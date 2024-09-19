@@ -3501,7 +3501,7 @@ static uint32_t GetByteCount(const DecodeContext& context, uint32_t surfaceBuffe
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr)
 {
-    ImageTrace iamgeTrace("ImageSource decomposeImage");
+    ImageTrace imageTrace("ImageSource decomposeImage");
     VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
     VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(sdr, HDI::Display::Graphic::Common::V1_0::CM_P3_FULL);
