@@ -134,7 +134,7 @@ std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, Pixel
     if (bufferSize <= 0) {
         return nullptr;
     }
-    void *buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
+    void *buffer = malloc(bufferSize);
     if (buffer == nullptr) {
         return nullptr;
     }
