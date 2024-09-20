@@ -22,6 +22,9 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Media {
+
+constexpr int8_t ARGB_8888_BYTES = 4;
+
 class PixelMapNdk2Test : public testing::Test {
 public:
     PixelMapNdk2Test() {}
@@ -312,7 +315,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
 {
     GTEST_LOG_(INFO) << "PixelMapNdk2Test: OH_PixelmapNative_GetArgbPixels_Test001 start";
 
-    size_t dataSize = 4;
+    size_t dataSize = ARGB_8888_BYTES;
     uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
     OH_Pixelmap_InitializationOptions *createOpts;
     OH_PixelmapInitializationOptions_Create(&createOpts);
@@ -323,7 +326,7 @@ HWTEST_F(PixelMapNdk2Test, OH_PixelmapNative_GetArgbPixels_Test001, TestSize.Lev
     Image_ErrorCode errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
 
-    uint8_t result[4];
+    uint8_t result[ARGB_8888_BYTES];
     errCode = OH_PixelmapNative_GetArgbPixels(pixelMap, result, &dataSize);
     ASSERT_EQ(errCode, IMAGE_SUCCESS);
     ASSERT_EQ(result[0], data[3]);

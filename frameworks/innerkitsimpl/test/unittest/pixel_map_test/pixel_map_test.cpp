@@ -25,10 +25,13 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+
+constexpr int8_t ARGB_8888_BYTES = 4;
 const uint8_t red = 0xFF;
 const uint8_t green = 0x8F;
 const uint8_t blue = 0x7F;
 const uint8_t alpha = 0x7F;
+
 class PixelMapTest : public testing::Test {
 public:
     PixelMapTest() {}
@@ -2327,8 +2330,8 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest001, TestSize.Level3)
     auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
         AllocatorType::HEAP_ALLOC);
     EXPECT_TRUE(pixelMap != nullptr);
-    size_t dataSize = 4;
-    uint8_t data[4];
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[ARGB_8888_BYTES];
     uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
     EXPECT_EQ(ret, SUCCESS);
     ASSERT_EQ(data[0], 3);
@@ -2351,8 +2354,8 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest002, TestSize.Level3)
     auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
         AllocatorType::HEAP_ALLOC);
     EXPECT_TRUE(pixelMap != nullptr);
-    size_t dataSize = 4;
-    uint8_t data[4];
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[ARGB_8888_BYTES];
     uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
     EXPECT_EQ(ret, ERR_IMAGE_COLOR_CONVERT);
 
