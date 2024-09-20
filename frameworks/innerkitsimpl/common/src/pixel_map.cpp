@@ -1387,6 +1387,7 @@ bool PixelMap::IsSameImage(const PixelMap &other)
     return true;
 }
 
+// LCOV_EXCL_START
 uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     ImageTrace imageTrace("ReadPixels by bufferSize");

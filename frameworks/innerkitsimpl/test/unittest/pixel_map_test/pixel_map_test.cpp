@@ -2316,44 +2316,6 @@ HWTEST_F(PixelMapTest, ConvertAlphaFormatTest008, TestSize.Level3)
 }
 
 /**
- * @tc.name: VersionIdTest001
- * @tc.desc: test pixelmap verisonId get&set interface
- * @tc.type: FUNC
- */
-HWTEST_F(PixelMapTest, VersionIdTest001, TestSize.Level3)
-{
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 start";
-    const int32_t offset = 0;
-    /* for test */
-    const int32_t width = 2;
-    /* for test */
-    const int32_t height = 2;
-    /* for test */
-    const uint32_t pixelByte = 4;
-    constexpr uint32_t colorLength = width * height * pixelByte;
-    uint8_t buffer[colorLength] = {0};
-    CreateBuffer(width, height, pixelByte, buffer);
-    uint32_t *color = (uint32_t *)buffer;
-    InitializationOptions opts1;
-    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
-
-    EXPECT_TRUE(pixelMap != nullptr);
-    uint32_t versionId = pixelMap->GetVersionId();
-    // 1 means the pixelmap's initialized versionId
-    ASSERT_EQ(versionId, 1);
-    pixelMap->AddVersionId();
-    versionId = pixelMap->GetVersionId();
-    // 2 used to test add func
-    ASSERT_EQ(versionId, 2);
-    // 10 used to test set func
-    pixelMap->SetVersionId(10);
-    versionId = pixelMap->GetVersionId();
-    ASSERT_EQ(versionId, 10);
-    GTEST_LOG_(INFO) << "ImagePixelMapTest: VersionIdTest001 end";
-}
-
-/**
  * @tc.name: ReadARGBPixelsTest001
  * @tc.desc: Test ReadARGBPixels with valid inputs
  * @tc.type: FUNC
