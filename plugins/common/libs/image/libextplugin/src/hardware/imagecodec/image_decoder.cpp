@@ -407,6 +407,7 @@ void ImageDecoder::EraseBufferFromPool(OMX_DIRTYPE portIndex, size_t i)
 {
     vector<BufferInfo>& pool = (portIndex == OMX_DirInput) ? inputBufferPool_ : outputBufferPool_;
     if (i >= pool.size()) {
+        HLOGE("EraseBufferFromPool invalid params i: %{public}lu, pool size: %{public}lu", i, pool.size());
         return;
     }
     BufferInfo& info = pool[i];

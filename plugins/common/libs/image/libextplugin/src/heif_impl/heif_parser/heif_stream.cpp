@@ -29,7 +29,7 @@ namespace ImagePlugin {
 HeifBufferInputStream::HeifBufferInputStream(const uint8_t *data, size_t size, bool needCopy)
     : length_(size), pos_(0), copied_(needCopy)
 {
-    if (needCopy) {
+    if (copied_) {
         auto *copiedData = new uint8_t[length_];
         memcpy_s(copiedData, length_, data, length_);
         data_ = copiedData;
