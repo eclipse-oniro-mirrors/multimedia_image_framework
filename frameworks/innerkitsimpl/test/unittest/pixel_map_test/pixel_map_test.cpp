@@ -131,7 +131,7 @@ std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, Pixel
     if (bufferSize <= 0) {
         return nullptr;
     }
-    void *buffer = malloc(bufferSize);
+    void *buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
     if (buffer == nullptr) {
         return nullptr;
     }
@@ -402,6 +402,10 @@ HWTEST_F(PixelMapTest, PixelMapCreateTest006, TestSize.Level3)
     // ALPHA_8 to others
     options.srcPixelFormat = PixelFormat::ALPHA_8;
     for (iter = gPixelFormat.begin(); iter != gPixelFormat.end(); ++iter) {
+        if (iter->first == PixelFormat::ARGB_8888) {
+            continue; // PixelMap doesn't support ARGB
+        }
+
         uint32_t colorlength = 6;    // w:2 * h:3 * pixelByte:1
         uint8_t buffer[8] = { 0 };    // w:2 * h:3 * pixelByte:1 and add 2 for uint32_t
         for (int i = 0; i < colorlength; i++) {
