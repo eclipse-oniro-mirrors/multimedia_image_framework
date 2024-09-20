@@ -134,7 +134,7 @@ std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, Pixel
     if (bufferSize <= 0) {
         return nullptr;
     }
-    void *buffer = malloc(bufferSize);
+    void *buffer = malloc(bufferSize); // Buffer's lifecycle will be held by pixelMap
     if (buffer == nullptr) {
         return nullptr;
     }
@@ -948,6 +948,7 @@ HWTEST_F(PixelMapTest, PixelMapTest009, TestSize.Level3)
     EXPECT_TRUE(dst1 != nullptr);
     auto ret = pixelMap1->ReadPixels(bufferSize1, dst1);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst1;
 
     // 200 means width, 300 means height
     auto pixelMap2 = ConstructPixmap(200, 300, PixelFormat::RGBA_F16, AlphaType::IMAGE_ALPHA_TYPE_OPAQUE,
@@ -959,6 +960,7 @@ HWTEST_F(PixelMapTest, PixelMapTest009, TestSize.Level3)
     EXPECT_TRUE(dst2 != nullptr);
     ret = pixelMap2->ReadPixels(bufferSize2, dst2);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst2;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest009 end";
 }
@@ -991,6 +993,7 @@ HWTEST_F(PixelMapTest, PixelMapTest010, TestSize.Level3)
     EXPECT_TRUE(dst1 != nullptr);
     auto ret = pixelMap1->ReadPixels(bufferSize1, offset1, stride1, rect1, dst1);
     EXPECT_TRUE(ret == SUCCESS);
+    delete dst1;
 
     // 0 means buffferSize
     uint64_t bufferSize2 = 0;
@@ -998,6 +1001,7 @@ HWTEST_F(PixelMapTest, PixelMapTest010, TestSize.Level3)
     EXPECT_TRUE(dst2 != nullptr);
     ret = pixelMap1->ReadPixels(bufferSize2, offset1, stride1, rect1, dst2);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst2;
 
     // 96 means buffferSize
     uint64_t bufferSize3 = 96;
@@ -1014,6 +1018,7 @@ HWTEST_F(PixelMapTest, PixelMapTest010, TestSize.Level3)
     rect3.width = 2;
     ret = pixelMap1->ReadPixels(bufferSize3, offset3, stride3, rect3, dst3);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst3;
 
     // 96 means buffferSize
     uint64_t bufferSize4 = 96;
@@ -1026,6 +1031,7 @@ HWTEST_F(PixelMapTest, PixelMapTest010, TestSize.Level3)
     rect4.width = 2;
     ret = pixelMap1->ReadPixels(bufferSize4, offset3, stride3, rect4, dst4);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst4;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest010 end";
 }
@@ -1085,6 +1091,7 @@ HWTEST_F(PixelMapTest, PixelMapTest011, TestSize.Level3)
     rect4.width = (INT32_MAX >> 2) + 1;
     ret = pixelMap1->ReadPixels(bufferSize1, offset1, stride1, rect4, dst1);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst1;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest011 end";
 }
@@ -1141,6 +1148,7 @@ HWTEST_F(PixelMapTest, PixelMapTest012, TestSize.Level3)
     uint64_t bufferSize2 = 6;
     ret = pixelMap1->ReadPixels(bufferSize2, offset1, stride1, rect3, dst1);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst1;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest012 end";
 }
@@ -1172,6 +1180,7 @@ HWTEST_F(PixelMapTest, PixelMapTest013, TestSize.Level3)
     rect1.width = 2;
     auto ret = pixelMap1->ReadPixels(bufferSize1, offset1, stride1, rect1, dst1);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst1;
 
     std::unique_ptr<PixelMap> pixelMap2 = std::make_unique<PixelMap>();
     ImageInfo info;
@@ -1197,6 +1206,7 @@ HWTEST_F(PixelMapTest, PixelMapTest013, TestSize.Level3)
     rect2.width = 2;
     ret = pixelMap2->ReadPixels(bufferSize2, offset2, stride2, rect2, dst2);
     EXPECT_TRUE(ret != SUCCESS);
+    delete dst2;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest013 end";
 }
@@ -1386,6 +1396,7 @@ HWTEST_F(PixelMapTest, PixelMapTest020, TestSize.Level3)
     uint8_t *dst1 = new uint8_t(0);
     auto ret = pixelMap->WritePixels(dst1, bufferSize1);
     EXPECT_TRUE(ret);
+    delete dst1;
 
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapTest020 end";
 }
