@@ -2057,5 +2057,32 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR004 scale end";
 }
+
+/**
+* @tc.name: ImagePixelMapSLR005
+* @tc.desc: test SLR invalid param
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_WIDTH;
+    float yAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_HEIGHT;
+    pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    if (data != nullptr) {
+        delete[] data;
+        data = nullptr;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale end";
+}
 } // namespace Multimedia
 } // namespace OHOS
