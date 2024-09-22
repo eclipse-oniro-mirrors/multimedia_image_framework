@@ -1983,8 +1983,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
 }
 
 /**
-* @tc.name: ImagePixelMapSLR003
-* @tc.desc: test SLR 
+* @tc.name: ImagePixelMapSLR002
+* @tc.desc: test SLR
 * @tc.type: FUNC
 */
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
