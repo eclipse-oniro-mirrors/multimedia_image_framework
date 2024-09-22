@@ -1969,11 +1969,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-<<<<<<< HEAD
-    pixelMap.SetImageInfo(tmpInfo);
-=======
     pixelMap->SetImageInfo(tmpInfo);
->>>>>>> f0d18f12 (PixelMap SLR 增加tdd测试用例)
     float xAxis = 1.5f;
     float yAxis = 1.8f;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2003,11 +1999,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-<<<<<<< HEAD
-    pixelMap.SetImageInfo(tmpInfo);
-=======
     pixelMap->SetImageInfo(tmpInfo);
->>>>>>> f0d18f12 (PixelMap SLR 增加tdd测试用例)
     float xAxis = 0.7;
     float yAxis = 0.9;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2034,11 +2026,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-<<<<<<< HEAD
-    pixelMap.SetImageInfo(tmpInfo);
-=======
     pixelMap->SetImageInfo(tmpInfo);
->>>>>>> f0d18f12 (PixelMap SLR 增加tdd测试用例)
     float xAxis = .0f;
     float yAxis = .0f;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2069,11 +2057,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-<<<<<<< HEAD
-    pixelMap.SetImageInfo(tmpInfo);
-=======
     pixelMap->SetImageInfo(tmpInfo);
->>>>>>> f0d18f12 (PixelMap SLR 增加tdd测试用例)
     float xAxis = -1.0f;
     float yAxis = -2.0f;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
