@@ -2043,7 +2043,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
     std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = -1.0f;
-    float yAxis = -2.0`f;
+    float yAxis = -2.0f;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
