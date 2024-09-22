@@ -1969,9 +1969,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo);
-    float xAxis = 1.5f;
-    float yAxis = 1.8f;
+    pixelMap->SetImageInfo(tmpInfo, true);
+    float xAxis = 1.5f; // 1.5f scale test
+    float yAxis = 1.8f; // 1.8f scale test
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
@@ -1999,9 +1999,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo);
-    float xAxis = 0.7;
-    float yAxis = 0.9;
+    pixelMap->SetImageInfo(tmpInfo, true);
+    float xAxis = 0.7f; // 0.7f scale test
+    float yAxis = 0.9f; // 0.9f scale test
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
@@ -2026,9 +2026,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo);
-    float xAxis = .0f;
-    float yAxis = .0f;
+    pixelMap->SetImageInfo(tmpInfo, true);
+    float xAxis = .0f; // .0f invalid scale size
+    float yAxis = .0f; // .0f invalid scale size
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
@@ -2057,9 +2057,9 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo);
-    float xAxis = -1.0f;
-    float yAxis = -2.0f;
+    pixelMap->SetImageInfo(tmpInfo, true);
+    float xAxis = -1.0f; // -1.0f invalid scale size
+    float yAxis = -2.0f; // -2.0f invalid scale size
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
@@ -2088,7 +2088,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
     ImageInfo tmpInfo;
     pixelMap->GetImageInfo(tmpInfo);
     tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo);
+    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_WIDTH;
     float yAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_HEIGHT;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
