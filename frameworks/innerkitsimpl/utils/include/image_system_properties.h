@@ -22,6 +22,7 @@ public:
     static bool GetSkiaEnabled();
     static bool GetSurfaceBufferEnabled();
     static bool GetDmaEnabled();
+    static bool GetDecodeDmaEnabled();
     static bool GetAstcEnabled();
     static bool GetAntiAliasingEnabled();
     static bool GetDumpImageEnabled();
