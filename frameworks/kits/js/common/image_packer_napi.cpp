@@ -280,7 +280,7 @@ STATIC_EXEC_FUNC(Packing)
         }
         context->rImagePacker->AddImage(*(context->rImageSource));
     } else {
-        IMAGE_LOGI("ImagePacker set pixelmap");
+        IMAGE_LOGD("ImagePacker set pixelmap");
         if (context->rPixelMap == nullptr) {
             BuildMsgOnError(context, context->rImageSource == nullptr, "Pixelmap is nullptr");
             return;

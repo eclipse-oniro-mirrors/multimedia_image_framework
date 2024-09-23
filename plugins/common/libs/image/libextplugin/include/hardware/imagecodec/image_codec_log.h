@@ -127,7 +127,7 @@ public:
 #endif
         static constexpr float MILLISEC_TO_MICROSEC = 1000.0f;
         int64_t timeSpanInUs = GetCurrentTimeInUs() - startTimeInUs_;
-        LOGI("%{public}s cost: %{public}.2f ms",
+        LOGD("%{public}s cost: %{public}.2f ms",
              desc_.c_str(), static_cast<float>(timeSpanInUs / MILLISEC_TO_MICROSEC));
     }
 private:

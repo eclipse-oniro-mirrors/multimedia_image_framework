@@ -393,7 +393,7 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
         pixelMap->GetWidth() <= maxImageSize && pixelMap->GetHeight() <= maxImageSize &&
         pixelMap->GetWidth() >= minImageSize && pixelMap->GetHeight() >= minImageSize;
     if (!isSupport) {
-        IMAGE_LOGI("hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, "
+        IMAGE_LOGD("hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, "
             "pixelHeight:%{public}d, pixelFormat:%{public}d", opts.format.c_str(), pixelMap->GetWidth(),
             pixelMap->GetHeight(), pixelMap->GetPixelFormat());
     }
