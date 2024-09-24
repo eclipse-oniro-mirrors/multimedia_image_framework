@@ -73,13 +73,13 @@ public:
      * @brief Constructs a new FileMetadataStream object from a file descriptor.
      * @param fileDescriptor The file descriptor.
      */
-    FileMetadataStream(int fileDescriptor);
+    FileMetadataStream(int fileDescriptor, int originalFd = METADATA_STREAM_INVALID_FD);
 
     /* *
      * @brief Constructs a new FileMetadataStream object from a file path.
      * @param filePath The file path.
      */
-    FileMetadataStream(const std::string &filePath);
+    FileMetadataStream(const std::string &filePath, const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
 
     /* *
      * @brief Destructs the FileMetadataStream object.
@@ -181,7 +181,7 @@ public:
     bool CopyFrom(MetadataStream &src) override;
 
     /* *
-     * @brief Gets the size of the FileMetadataStream.
+     * @brief Get the size of the FileMetadataStream.
      * @return The size of the FileMetadataStream.
      * @note If this function is called frequently, it is recommended to cache the size to improve performance.
      */

@@ -40,6 +40,14 @@ public:
         return tiffOffset_;
     }
 
+    virtual bool IsFileChanged() override
+    {
+        if (imageStream_ != nullptr) {
+            return imageStream_->IsFileChanged();
+        }
+        return false;
+    }
+
 protected:
     std::shared_ptr<ExifMetadata> exifMetadata_ = nullptr;
     std::shared_ptr<MetadataStream> imageStream_ = nullptr;
