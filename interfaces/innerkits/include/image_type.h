@@ -29,6 +29,11 @@ namespace Media {
 #define NATIVEEXPORT
 #endif
 
+#define FRAGMENT_METADATA_KEY_X "X_IN_ORIGINAL"
+#define FRAGMENT_METADATA_KEY_Y "Y_IN_ORIGINAL"
+#define FRAGMENT_METADATA_KEY_WIDTH "WIDTH"
+#define FRAGMENT_METADATA_KEY_HEIGHT "HEIGHT"
+
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
     DEFAULT = 0,

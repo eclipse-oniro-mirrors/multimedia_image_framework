@@ -203,6 +203,18 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
     pixelMap->SetImageYUVInfo(info);
 }
 
+static void SetMimeTypeToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
+{
+    if (mainPixelMap != nullptr && hdrPixelMap != nullptr) {
+        ImageInfo mainInfo;
+        mainPixelMap->GetImageInfo(mainInfo);
+        ImageInfo hdrInfo;
+        hdrPixelMap->GetImageInfo(hdrInfo);
+        hdrInfo.encodedFormat = mainInfo.encodedFormat;
+        hdrPixelMap->SetImageInfo(hdrInfo, true);
+    }
+}
+
 Picture::~Picture() {}
 
 std::unique_ptr<Picture> Picture::Create(std::shared_ptr<PixelMap> &pixelMap)
@@ -348,7 +360,9 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
     ImageSource::SetVividMetaColor(*metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, *metadata);
 
-    return ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
+    auto hdrPixelMap = ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
+    SetMimeTypeToHdr(mainPixelMap_, hdrPixelMap);
+    return hdrPixelMap;
 }
 
 std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
@@ -493,7 +507,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     if (hasExifData) {
         picture->exifMetadata_ = std::shared_ptr<ExifMetadata>(ExifMetadata::Unmarshalling(parcel));
     }
-    
+
     return picture.release();
 }
 
