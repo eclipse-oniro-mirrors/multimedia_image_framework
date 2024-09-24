@@ -25,10 +25,13 @@ using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
 namespace Multimedia {
+
+constexpr int8_t ARGB_8888_BYTES = 4;
 const uint8_t red = 0xFF;
 const uint8_t green = 0x8F;
 const uint8_t blue = 0x7F;
 const uint8_t alpha = 0x7F;
+
 class PixelMapTest : public testing::Test {
 public:
     PixelMapTest() {}
@@ -109,6 +112,38 @@ std::unique_ptr<PixelMap> ConstructPixmap(PixelFormat format, AlphaType alphaTyp
     opts.pixelFormat = format;
     opts.alphaType = alphaType;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(opts);
+
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ConstructPixelMap(int32_t width, int32_t height, PixelFormat format, AlphaType alphaType,
+    AllocatorType type)
+{
+    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = width;
+    info.size.height = height;
+    info.pixelFormat = format;
+    info.colorSpace = ColorSpace::SRGB;
+    info.alphaType = alphaType;
+    pixelMap->SetImageInfo(info);
+
+    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(format);
+    int32_t rowDataSize = width * bytesPerPixel;
+    uint32_t bufferSize = rowDataSize * height;
+    if (bufferSize <= 0) {
+        return nullptr;
+    }
+    void *buffer = malloc(bufferSize);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    char *ch = static_cast<char *>(buffer);
+    for (unsigned int i = 0; i < bufferSize; i++) {
+        *(ch++) = (char)i;
+    }
+
+    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, type, nullptr);
 
     return pixelMap;
 }
@@ -2317,6 +2352,70 @@ HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
     EXPECT_TRUE(ret == COMMON_ERR_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest001
+ * @tc.desc: Test ReadARGBPixels with valid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest001, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest001 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[ARGB_8888_BYTES];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, SUCCESS);
+    ASSERT_EQ(data[0], 3);
+    ASSERT_EQ(data[1], 2);
+    ASSERT_EQ(data[2], 1);
+    ASSERT_EQ(data[3], 0);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest001 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest002
+ * @tc.desc: Test ReadARGBPixels with invalid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest002 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::ALPHA_8, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[ARGB_8888_BYTES];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, ERR_IMAGE_COLOR_CONVERT);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest002 end";
+}
+
+/**
+ * @tc.name: ReadARGBPixelsTest003
+ * @tc.desc: Test ReadARGBPixels with invalid inputs
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 start";
+
+    auto pixelMap = ConstructPixelMap(1, 1, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN,
+        AllocatorType::HEAP_ALLOC);
+    EXPECT_TRUE(pixelMap != nullptr);
+    size_t dataSize = 1;
+    uint8_t data[1];
+    uint32_t ret = pixelMap->ReadARGBPixels(dataSize, data);
+    EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
+
+    GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 end";
 }
 }
 }
