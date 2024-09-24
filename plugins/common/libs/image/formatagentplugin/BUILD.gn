@@ -16,6 +16,7 @@ import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
 ohos_shared_library("imageformatagent") {
   if (!use_clang_android && !use_clang_ios) {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true
