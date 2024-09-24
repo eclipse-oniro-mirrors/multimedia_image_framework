@@ -1530,7 +1530,6 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     }
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
-
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
     return ModifyImageProperty(metadataAccessor, key, value);
 }
@@ -1582,10 +1581,12 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
-        return CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+        uint32_t ret = CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+        if (ret != ERR_MEDIA_MMAP_FILE_CHANGED) {
+            return ret;
+        }
     }
 
-    uint32_t readSize = 0;
     if (bufferSize == 0) {
         IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
@@ -1595,21 +1596,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
     }
-
-    uint8_t* tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    uint32_t error = SUCCESS;
+    auto tmpBuffer = ReadSourceBuffer(bufferSize, error);
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("Allocate buffer failed, tmpBuffer is nullptr.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    sourceStreamPtr_->Seek(0);
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
-    sourceStreamPtr_->Seek(savedPosition);
-    if (!retRead) {
-        IMAGE_LOGE("sourceStream read failed.");
-        delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
-        return ERR_IMAGE_SOURCE_DATA;
+        return error;
     }
     uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
     delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
@@ -1618,16 +1608,20 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 
 uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
 {
-    auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
+    uint32_t error = SUCCESS;
+    DataInfo dataInfo {buffer, size};
+    auto metadataAccessor = MetadataAccessorFactory::Create(dataInfo, error, BufferMetadataStream::Fix,
+                                                            sourceStreamPtr_->GetOriginalFd(),
+                                                            sourceStreamPtr_->GetOriginalPath());
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
-        return ERR_IMAGE_SOURCE_DATA;
+        return error == ERR_MEDIA_MMAP_FILE_CHANGED ? error : ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
         IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return metadataAccessor->IsFileChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
@@ -2535,6 +2529,35 @@ uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pai
     }
     return SUCCESS;
 }
+
+uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
+{
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    auto tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("New buffer failed, bufferSize:%{public}u.", bufferSize);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    uint32_t readSize = 0;
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("SourceStream read failed.");
+        delete[] tmpBuffer;
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    errorCode = SUCCESS;
+    return tmpBuffer;
+}
+
 uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
@@ -2557,24 +2580,12 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
         }
         return metadataAccessor->GetFilterArea(exifKeys, ranges);
     }
-    if (bufferSize > MAX_BUFFER_SIZE) {
-        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-    auto tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    uint32_t error = SUCCESS;
+    auto tmpBuffer = ReadSourceBuffer(bufferSize, error);
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("New buffer failed, bufferSize:%{public}u.", bufferSize);
-        return ERR_IMAGE_SOURCE_DATA;
+        return error;
     }
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    sourceStreamPtr_->Seek(0);
-    uint32_t readSize = 0;
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
-    sourceStreamPtr_->Seek(savedPosition);
-    if (!retRead) {
-        IMAGE_LOGE("SourceStream read failed.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+
     auto metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer, bufferSize);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("Create metadataAccessor failed.");
