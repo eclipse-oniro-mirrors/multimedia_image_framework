@@ -47,7 +47,9 @@ FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, 
 FileSourceStream::~FileSourceStream()
 {
     IMAGE_LOGD("[FileSourceStream]destructor enter.");
-    fclose(filePtr_);
+    if (filePtr_ != nullptr) {
+        fclose(filePtr_);
+    }
     ResetReadBuffer();
 }
 
@@ -193,6 +195,9 @@ bool FileSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t b
         IMAGE_LOGI("[FileSourceStream]peek outBuffer fail.");
         return false;
     }
+    if (filePtr_ == nullptr) {
+        return false;
+    }
     int ret = fseek(filePtr_, fileOffset_, SEEK_SET);
     if (ret != 0) {
         IMAGE_LOGE("[FileSourceStream]go to original position fail, ret:%{public}d.", ret);
@@ -206,6 +211,9 @@ bool FileSourceStream::Seek(uint32_t position)
     if (position > fileSize_) {
         IMAGE_LOGE("[FileSourceStream]Seek the position greater than the file size, position:%{public}u.",
             position);
+        return false;
+    }
+    if (filePtr_ == nullptr) {
         return false;
     }
     size_t targetPosition = position + fileOriginalOffset_;
@@ -228,6 +236,9 @@ bool FileSourceStream::GetData(uint32_t desiredSize, uint8_t *outBuffer, uint32_
     if (fileSize_ == fileOffset_) {
         IMAGE_LOGE("[FileSourceStream]read data finish, offset:%{public}zu ,dataSize%{public}zu.",
             fileOffset_, fileSize_);
+        return false;
+    }
+    if (filePtr_ == nullptr) {
         return false;
     }
     if (desiredSize > (fileSize_ - fileOffset_)) {
@@ -257,6 +268,9 @@ bool FileSourceStream::GetData(uint32_t desiredSize, DataStreamBuffer &outData)
 
     if (desiredSize == 0 || desiredSize > MALLOC_MAX_LENTH) {
         IMAGE_LOGE("[FileSourceStream]Invalid value, desiredSize out of size.");
+        return false;
+    }
+    if (filePtr_ == nullptr) {
         return false;
     }
 
@@ -318,6 +332,9 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         return fileData_;
     }
 #ifdef SUPPORT_MMAP
+    if (filePtr_ == nullptr) {
+        return nullptr;
+    }
     if (!DupFd(filePtr_, mmapFd_)) {
         return nullptr;
     }
@@ -356,6 +373,9 @@ void FileSourceStream::ResetReadBuffer()
 OutputDataStream* FileSourceStream::ToOutputDataStream()
 {
     int dupFd = -1;
+    if (filePtr_ == nullptr) {
+        return nullptr;
+    }
     if (DupFd(filePtr_, dupFd)) {
         IMAGE_LOGE("[FileSourceStream] ToOutputDataStream fd failed");
         return nullptr;

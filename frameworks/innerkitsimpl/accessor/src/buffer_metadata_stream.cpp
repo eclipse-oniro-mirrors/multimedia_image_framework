@@ -96,6 +96,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
         if (buffer_ != nullptr) {
             if (EOK != memcpy_s(newBuffer, newCapacity, buffer_, bufferSize_)) {
                 IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
+                delete[] newBuffer;
                 return -1;
             }
 
@@ -131,7 +132,7 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
 
 ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 {
-    if (currentOffset_ == bufferSize_) {
+    if (buffer_ == nullptr || currentOffset_ == bufferSize_) {
         return -1;
     }
 
@@ -150,6 +151,9 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
 
 int BufferMetadataStream::ReadByte()
 {
+    if (buffer_ == nullptr) {
+        return -1;
+    }
     if (currentOffset_ >= bufferSize_) {
         IMAGE_LOGE("BufferMetadataStream::ReadByte failed, current offset exceeds buffer size, "
             "currentOffset:%{public}ld, bufferSize:%{public}ld",
