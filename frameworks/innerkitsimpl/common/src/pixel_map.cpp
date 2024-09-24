@@ -665,7 +665,7 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     if (IsYUV(opts.pixelFormat)) {
-        if (dstPixelFormat == PixelFormat::YCRCB_P010 || dstPixelFormat == PixelFormat::YCBCR_P010) {
+        if (dstPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             YUVDataInfo yuvDatainfo;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
             if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
