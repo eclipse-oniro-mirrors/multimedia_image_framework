@@ -1540,8 +1540,8 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
         return -1;
     }
 
-    const ImageInfo srcImageInfo = srcInfo.imageInfo;
-    const ImageInfo dstImageInfo = dstInfo.imageInfo;
+    ImageInfo srcImageInfo = *(srcInfo.imageInfo);
+    ImageInfo dstImageInfo = *(dstInfo.imageInfo);
     if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
         return ConvertAndCollapseByFFMpeg(srcInfo.pixels, srcImageInfo, dstInfo.pixels, dstImageInfo, useDMA) ?
             PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
@@ -1630,7 +1630,8 @@ bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInf
 
 bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
 {
-    return bufferInfo.pixels != nullptr && IsValidRowStride(bufferInfo.rowStride, bufferInfo.imageInfo);
+    return bufferInfo.pixels != nullptr && bufferInfo.imageInfo != nullptr &&
+        IsValidRowStride(bufferInfo.rowStride, *(bufferInfo.imageInfo));
 }
 
 void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum)

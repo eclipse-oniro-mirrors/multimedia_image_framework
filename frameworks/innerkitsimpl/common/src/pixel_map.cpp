@@ -433,8 +433,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(reinterpret_cast<const void*>(colors + offset)), opts.srcRowStride,
-        srcImageInfo};
-    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo};
+        &srcImageInfo};
+    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, &dstImageInfo};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
@@ -1569,8 +1569,8 @@ uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
 
     ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, PixelFormat::ARGB_8888,
         AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
-    BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
-    BufferInfo dstInfo = {dst, 0, dstImageInfo};
+    BufferInfo srcInfo = {data_, GetRowStride(), &imageInfo_};
+    BufferInfo dstInfo = {dst, 0, &dstImageInfo};
     int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, IsStrideAlignment());
     if (dstLength < 0) {
         IMAGE_LOGE("ReadARGBPixels pixel convert to ARGB failed.");
