@@ -39,7 +39,7 @@ struct ProcFuncExtension {
 struct BufferInfo {
     void *pixels;
     int32_t rowStride;
-    ImageInfo *imageInfo;
+    const ImageInfo &imageInfo;
 };
 
 // These values SHOULD be sync with image_type.h PixelFormat

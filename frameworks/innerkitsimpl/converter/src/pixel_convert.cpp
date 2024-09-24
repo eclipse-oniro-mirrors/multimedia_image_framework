@@ -53,6 +53,7 @@ constexpr bool IS_LITTLE_ENDIAN = true;
 #else
 constexpr bool IS_LITTLE_ENDIAN = false;
 #endif
+constexpr int32_t DMA_LINE_SIZE = 256;
 static const uint8_t NUM_2 = 2;
 
 static void AlphaTypeConvertOnRGB(uint32_t &A, uint32_t &R, uint32_t &G, uint32_t &B,
@@ -1169,6 +1170,21 @@ static bool ConvertForFFMPEG(const void *srcPixels, PixelFormat srcpixelmap, Ima
     return true;
 }
 
+// Convert and collapse pixels by removing line paddings if any
+static bool ConvertAndCollapseByFFMpeg(const void *srcPixels, const ImageInfo &srcInfo, void *dstPixels,
+    const ImageInfo &dstInfo, bool useDMA)
+{
+    FFMPEG_CONVERT_INFO srcFFMpegInfo = {PixelFormatToAVPixelFormat(srcInfo.pixelFormat),
+        srcInfo.size.width, srcInfo.size.height, useDMA ? DMA_LINE_SIZE : 1};
+    FFMPEG_CONVERT_INFO dstFFMpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
+        dstInfo.size.width, dstInfo.size.height, 1};
+    if (!FFMpegConvert(srcPixels, srcFFMpegInfo, dstPixels, dstFFMpegInfo)) {
+        IMAGE_LOGE("[PixelMap] ConvertAndCollapseByFFMpeg: FFMpeg convert failed!");
+        return false;
+    }
+    return true;
+}
+
 static bool P010ConvertRGBA1010102(const void *srcPixels, ImageInfo srcInfo,
     void *dstPixels, ImageInfo dstInfo)
 {
@@ -1523,8 +1539,12 @@ int32_t PixelConvert::PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstIn
         return -1;
     }
 
-    ImageInfo srcImageInfo = *(srcInfo.imageInfo);
-    ImageInfo dstImageInfo = *(dstInfo.imageInfo);
+    const ImageInfo srcImageInfo = srcInfo.imageInfo;
+    const ImageInfo dstImageInfo = dstInfo.imageInfo;
+    if (dstImageInfo.pixelFormat == PixelFormat::ARGB_8888) {
+        return ConvertAndCollapseByFFMpeg(srcInfo.pixels, srcImageInfo, dstInfo.pixels, dstImageInfo, useDMA) ?
+            PixelMap::GetRGBxByteCount(dstImageInfo) : -1;
+    }
     if (IsInterYUVConvert(srcImageInfo.pixelFormat, dstImageInfo.pixelFormat) ||
         (IsYUVP010Format(srcImageInfo.pixelFormat) && IsYUVP010Format(dstImageInfo.pixelFormat))) {
         return YUVConvert(srcInfo.pixels, srcLength, srcImageInfo, dstInfo.pixels, dstImageInfo);
@@ -1605,8 +1625,7 @@ bool PixelConvert::IsValidRowStride(int32_t rowStride, const ImageInfo &imageInf
 
 bool PixelConvert::IsValidBufferInfo(const BufferInfo &bufferInfo)
 {
-    return bufferInfo.pixels != nullptr && bufferInfo.imageInfo != nullptr &&
-        IsValidRowStride(bufferInfo.rowStride, *(bufferInfo.imageInfo));
+    return bufferInfo.pixels != nullptr && IsValidRowStride(bufferInfo.rowStride, bufferInfo.imageInfo);
 }
 
 void PixelConvert::Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum)
