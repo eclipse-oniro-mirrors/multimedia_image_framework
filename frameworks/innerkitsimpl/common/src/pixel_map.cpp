@@ -20,6 +20,8 @@
 #include <charconv>
 #include <iostream>
 #include <unistd.h>
+#include <linux/dma-buf.h>
+#include <sys/ioctl.h>
 
 #include "image_log.h"
 #include "image_system_properties.h"
@@ -427,8 +429,8 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
     }
 
     BufferInfo srcInfo = {const_cast<void*>(reinterpret_cast<const void*>(colors + offset)), opts.srcRowStride,
-        &srcImageInfo};
-    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, &dstImageInfo};
+        srcImageInfo};
+    BufferInfo dstInfo = {dstMemory->data.data, dstRowStride, dstImageInfo};
     int32_t dstLength =
         PixelConvert::PixelsConvert(srcInfo, dstInfo, colorLength, dstMemory->GetType() == AllocatorType::DMA_ALLOC);
     if (dstLength < 0) {
@@ -466,6 +468,54 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
         }
         return;
     }
+}
+
+uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (GetFd() == nullptr) {
+        IMAGE_LOGE("PixelMap null, set name failed");
+        return ERR_MEMORY_NOT_SUPPORT;
+    }
+
+    AllocatorType allocatorType = GetAllocatorType();
+
+    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
+        IMAGE_LOGE("name size not compare");
+        return COMMON_ERR_INVALID_PARAMETER;
+    }
+
+    if (allocatorType == AllocatorType::DMA_ALLOC) {
+        SurfaceBuffer *sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
+        int fd = sbBuffer->GetFileDescriptor();
+        if (fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(fd, DMA_BUF_SET_NAME_A, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set dma name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+
+    if (allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
+        int *fd = static_cast<int*>(GetFd());
+        if (*fd < 0) {
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        int ret = TEMP_FAILURE_RETRY(ioctl(*fd, ASHMEM_SET_NAME, pixelMapName.c_str()));
+        if (ret != 0) {
+            IMAGE_LOGE("set ashmem name failed");
+            return ERR_MEMORY_NOT_SUPPORT;
+        }
+        return SUCCESS;
+    }
+    return ERR_MEMORY_NOT_SUPPORT;
+#else
+    IMAGE_LOGE("[PixelMap] not support on crossed platform");
+    return ERR_MEMORY_NOT_SUPPORT;
+#endif
 }
 
 void *PixelMap::AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId)
@@ -1433,6 +1483,52 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 }
 // LCOV_EXCL_STOP
 
+static bool IsSupportConvertToARGB(PixelFormat pixelFormat)
+{
+    return pixelFormat == PixelFormat::RGB_565 || pixelFormat == PixelFormat::RGBA_8888 ||
+        pixelFormat == PixelFormat::BGRA_8888 || pixelFormat == PixelFormat::RGB_888 ||
+        pixelFormat == PixelFormat::NV21 || pixelFormat == PixelFormat::NV12;
+}
+
+uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
+{
+    ImageTrace imageTrace("ReadARGBPixels by bufferSize");
+    if (dst == nullptr) {
+        IMAGE_LOGE("Read ARGB pixels: input dst address is null.");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (data_ == nullptr) {
+        IMAGE_LOGE("Read ARGB pixels: current PixelMap data is null.");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+    if (!IsSupportConvertToARGB(imageInfo_.pixelFormat)) {
+        IMAGE_LOGE("Read ARGB pixels: does not support PixelMap with pixel format %{public}d.", imageInfo_.pixelFormat);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
+    uint64_t minBufferSize = static_cast<uint64_t>(ARGB_8888_BYTES) *
+        static_cast<uint64_t>(imageInfo_.size.width) * static_cast<uint64_t>(imageInfo_.size.height);
+    if (bufferSize < minBufferSize || bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
+        IMAGE_LOGE(
+            "Read ARGB pixels: input dst buffer (%{public}llu) < required buffer size (%{public}llu), or too large.",
+            static_cast<unsigned long long>(bufferSize), static_cast<unsigned long long>(minBufferSize));
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    ImageInfo dstImageInfo = MakeImageInfo(imageInfo_.size.width, imageInfo_.size.height, PixelFormat::ARGB_8888,
+        AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    BufferInfo srcInfo = {data_, GetRowStride(), imageInfo_};
+    BufferInfo dstInfo = {dst, 0, dstImageInfo};
+    int32_t dstLength = PixelConvert::PixelsConvert(srcInfo, dstInfo, bufferSize, IsStrideAlignment());
+    if (dstLength < 0) {
+        IMAGE_LOGE("ReadARGBPixels pixel convert to ARGB failed.");
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+
+    ImageUtils::DumpDataIfDumpEnabled(reinterpret_cast<const char*>(dst), bufferSize, "dat", uniqueId_);
+
+    return SUCCESS;
+}
+
 bool PixelMap::CheckPixelsInput(const uint8_t *dst, const uint64_t &bufferSize, const uint32_t &offset,
                                 const uint32_t &stride, const Rect &region)
 {
@@ -1725,12 +1821,10 @@ bool PixelMap::WritePixels(const uint32_t &color)
 
 bool PixelMap::IsStrideAlignment()
 {
-    IMAGE_LOGE("IsStrideAlignment error ");
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGE("SetPixelsAddr error allocatorType_ %{public}d ", allocatorType_);
+        IMAGE_LOGD("IsStrideAlignment allocatorType_ is DMA_ALLOC");
         return true;
     }
-    IMAGE_LOGE("IsStrideAlignment error ");
     return false;
 }
 

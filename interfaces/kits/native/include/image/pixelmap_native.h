@@ -666,6 +666,23 @@ Image_ErrorCode OH_PixelmapNative_ReadPixels(OH_PixelmapNative *pixelmap, uint8_
 Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8_t *source, size_t bufferSize);
 
 /**
+ * @brief Get argb pixel buffer from pixelmap.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param destination Buffer to which the image pixel map data will be written.
+ * @param bufferSize Buffer size to which the image pixel map data will be written.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, destination and bufferSize are incorrect.
+ *         {@link IMAGE_UNSUPPORTED_CONVERSION} If format does not support conversion to argb or conversion failed.
+ *         {@link IMAGE_ALLOC_FAILED} If device has no memory.
+ *         {@link IMAGE_COPY_FAILED} If memory copy failed.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_GetArgbPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize);
+
+/**
  * @brief Convert {@link OH_PixelmapNative} to standard dynamic range.
  *
  * @param pixelmap The Pixelmap pointer will be operated. Pointer connot be null.
@@ -865,6 +882,21 @@ Image_ErrorCode OH_PixelmapNative_SetMetadata(OH_PixelmapNative *pixelmap, OH_Pi
  * @since 12
  */
 Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, OH_NativeBuffer **nativeBuffer);
+
+/**
+ * @brief Set pixelmap memory name.
+ *
+ * @param pixelmap The Pixelmap pointer to be operated.
+ * @param name The pointer of name that needs to be set.
+ * @param size The size of name size that needs to be set.
+ * @return Function result code:
+ *         {@link IMAGE_SUCCESS} If the operation is successful.
+ *         {@link IMAGE_BAD_PARAMETER} If invalid parameter, name and size are incorrect.
+ *         {@link IMAGE_UNSUPPORTED_MEMORY_FORMAT} If memory format is unsupported.
+ * @see OH_PixelmapNative
+ * @since 13
+ */
+Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size);
 
 /**
  * @brief Get the native colorspace from the PixelMap.

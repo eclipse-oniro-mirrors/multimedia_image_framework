@@ -503,6 +503,15 @@ Image_ErrorCode OH_PixelmapNative_WritePixels(OH_PixelmapNative *pixelmap, uint8
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_GetArgbPixels(OH_PixelmapNative *pixelmap, uint8_t *destination, size_t *bufferSize)
+{
+    if (pixelmap == nullptr || destination == nullptr || bufferSize == nullptr || !pixelmap->GetInnerPixelmap()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    return ToNewErrorCode(pixelmap->GetInnerPixelmap()->ReadARGBPixels(*bufferSize, destination));
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_ToSdr(OH_PixelmapNative *pixelmap)
 {
     if (pixelmap == nullptr || !pixelmap->GetInnerPixelmap()) {
@@ -1024,6 +1033,23 @@ Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, O
 }
 
 MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || name == nullptr || size == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    uint32_t ret = pixelmap->GetInnerPixelmap()->SetMemoryName(std::string(name, *size));
+    if (ret == SUCCESS) {
+        return IMAGE_SUCCESS;
+    } else if (ret == COMMON_ERR_INVALID_PARAMETER) {
+        return IMAGE_BAD_PARAMETER;
+    } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
+        return IMAGE_UNSUPPORTED_MEMORY_FORMAT;
+    }
+    return IMAGE_SUCCESS;
+}
+
+MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelmap,
     OH_NativeColorSpaceManager **colorSpaceNative)
 {
@@ -1042,7 +1068,7 @@ Image_ErrorCode OH_PixelmapNative_GetColorSpaceNative(OH_PixelmapNative *pixelma
     *colorSpaceNative = reinterpret_cast<OH_NativeColorSpaceManager*>(nativeColorspace);
     return IMAGE_SUCCESS;
 }
-
+ 
 MIDK_EXPORT
 Image_ErrorCode OH_PixelmapNative_SetColorSpaceNative(OH_PixelmapNative *pixelmap,
     OH_NativeColorSpaceManager *colorSpaceNative)
