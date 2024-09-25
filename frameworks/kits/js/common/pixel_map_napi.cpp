@@ -534,6 +534,7 @@ std::vector<napi_property_descriptor> PixelMapNapi::RegisterNapi()
         DECLARE_NAPI_FUNCTION("getMetadata", GetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadata", SetMetadata),
         DECLARE_NAPI_FUNCTION("setMetadataSync", SetMetadataSync),
+        DECLARE_NAPI_FUNCTION("setMemoryNameSync", SetMemoryNameSync),
     };
     return props;
 }
@@ -2863,6 +2864,62 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
         IMAGE_LOGE("Null native ref");
     }
     return result;
+}
+
+napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
+    return result;
+#else
+    napi_get_undefined(env, &result);
+    napi_status napiStatus;
+    napi_value thisVar = nullptr;
+    size_t argCount = NUM_1;
+    napi_value argValue[NUM_1] = {0};
+    NapiValues nVal;
+    nVal.argc = NUM_1;
+    nVal.argv = argValue;
+    IMAGE_LOGD("SetName IN");
+    if (!prepareNapiEnv(env, info, &nVal)) {
+        return nVal.result;
+    }
+    nVal.context->rPixelMap = nVal.context->nConstructor->nativePixelMap_;
+    IMG_JS_ARGS(env, info, napiStatus, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(napiStatus), result, IMAGE_LOGE("fail to arg info"));
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_1,
+        ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+        "Invalid args count"),
+        IMAGE_LOGE("Invalid args count %{public}zu", argCount));
+    std::string pixelMapName = GetStringArgument(env, argValue[0]);
+
+    PixelMapNapi* pixelMapNapi = nullptr;
+    napiStatus = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pixelMapNapi));
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(napiStatus, pixelMapNapi), result, IMAGE_LOGE("fail to unwrap context"));
+
+    // corssed threads error
+    IMG_NAPI_CHECK_BUILD_ERROR(nVal.context->nConstructor->GetPixelNapiEditable(),
+        BuildContextError(env, nVal.context->error, "pixelmap has crossed threads . setname failed",
+        ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, nVal.status, "SetNameError",
+        [](napi_env env, void *data) {}, GeneralErrorComplete, nVal.context, nVal.context->work),
+        nVal.result);
+
+    if (pixelMapNapi->nativePixelMap_ != nullptr) {
+        uint32_t ret = pixelMapNapi->nativePixelMap_->SetMemoryName(pixelMapName);
+        if (ret == SUCCESS) {
+            return result;
+        } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
+            ImageNapiUtils::ThrowExceptionError(env, ERR_MEMORY_NOT_SUPPORT, "fail set name");
+        } else if (ret == COMMON_ERR_INVALID_PARAMETER) {
+            ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "name size out of range");
+        }
+    } else {
+        ImageNapiUtils::ThrowExceptionError(env, ERR_RESOURCE_UNAVAILABLE, "Invalid nativePixelMap");
+        IMAGE_LOGE("Null native pixemap object");
+    }
+    return result;
+#endif
 }
 
 static void TranslateExec(napi_env env, PixelMapAsyncContext* context)

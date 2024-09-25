@@ -1029,6 +1029,23 @@ Image_ErrorCode OH_PixelmapNative_GetNativeBuffer(OH_PixelmapNative *pixelmap, O
     return IMAGE_SUCCESS;
 }
 
+MIDK_EXPORT
+Image_ErrorCode OH_PixelmapNative_SetMemoryName(OH_PixelmapNative *pixelmap, char *name, size_t *size)
+{
+    if (pixelmap == nullptr || pixelmap->GetInnerPixelmap() == nullptr || name == nullptr || size == nullptr) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    uint32_t ret = pixelmap->GetInnerPixelmap()->SetMemoryName(std::string(name, *size));
+    if (ret == SUCCESS) {
+        return IMAGE_SUCCESS;
+    } else if (ret == COMMON_ERR_INVALID_PARAMETER) {
+        return IMAGE_BAD_PARAMETER;
+    } else if (ret == ERR_MEMORY_NOT_SUPPORT) {
+        return IMAGE_UNSUPPORTED_MEMORY_FORMAT;
+    }
+    return IMAGE_SUCCESS;
+}
+
 #ifdef __cplusplus
 };
 #endif

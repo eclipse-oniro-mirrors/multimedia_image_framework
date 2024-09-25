@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #ifdef IMAGE_COLORSPACE_FLAG
 #include "color_space.h"
 #endif
@@ -294,6 +295,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
+    NATIVEEXPORT uint32_t SetMemoryName(std::string pixelMapName);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
