@@ -18,7 +18,6 @@
 
 #include "abs_image_decoder.h"
 #include "auxiliary_picture.h"
-#include "auxiliary_picture.h"
 #include "image_type.h"
 #include "image/input_data_stream.h"
 #include "plugin_server.h"
@@ -28,10 +27,18 @@ namespace Media {
 using namespace ImagePlugin;
 using namespace MultimediaPlugin;
 
+struct MainPictureInfo {
+    ImageHdrType hdrType;
+    ImageInfo imageInfo;
+};
+
 class AuxiliaryGenerator {
 public:
-    static std::shared_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType hdrType, AuxiliaryPictureType type,
-        const std::string &format, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
+    static std::shared_ptr<AuxiliaryPicture> GenerateHeifAuxiliaryPicture(ImageHdrType hdrType,
+        AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
+    static std::shared_ptr<AuxiliaryPicture> GenerateJpegAuxiliaryPicture(
+        const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
+        std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
 };
 } // namespace Media
 } // namespace OHOS
