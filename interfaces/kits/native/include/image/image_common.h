@@ -83,6 +83,7 @@ struct Image_Region {
  */
 typedef struct Image_Region Image_Region;
 
+#ifdef __cplusplus
 /**
  * @brief Defines the region of the image source to decode.
  *
@@ -94,18 +95,31 @@ struct Image_String {
     /** data lenth for string type */
     size_t size = 0;
 };
+#else
+/**
+ * @brief Defines the region of the image source to decode.
+ *
+ * @since 12
+ */
+struct Image_String {
+    /** data for string type */
+    char *data;
+    /** data lenth for string type */
+    size_t size;
+};
+#endif
 
 /**
  * @brief Define a PictureMetadata struct type, used for picture metadata.
  *
- * @since 12
+ * @since 13
  */
 struct OH_PictureMetadata;
 
 /**
  * @brief Define a PictureMetadata struct type, used for picture metadata.
  *
- * @since 12
+ * @since 13
  */
 typedef struct OH_PictureMetadata OH_PictureMetadata;
 
@@ -172,7 +186,7 @@ typedef enum {
 /**
  * @brief Define the metadata type.
  *
- * @since 12
+ * @since 13
  */
 typedef enum {
     /*
@@ -193,7 +207,7 @@ typedef enum {
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_PictureMetadata **metadata);
 
@@ -208,7 +222,7 @@ Image_ErrorCode OH_PictureMetadata_Create(Image_MetadataType metadataType, OH_Pi
  *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or key is nullptr, or value is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
 
@@ -223,7 +237,7 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
  *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr, or key is nullptr, or value is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Image_String *key, Image_String *value);
 
@@ -234,7 +248,7 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
 
@@ -248,7 +262,7 @@ Image_ErrorCode OH_PictureMetadata_Release(OH_PictureMetadata *metadata);
  *         {@link IMAGE_BAD_PARAMETER} metadata is nullptr.
  *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
  *         {@link IMAGE_COPY_FAILED} memory copy failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureMetadata_Clone(OH_PictureMetadata *oldMetadata, OH_PictureMetadata **newMetadata);
 

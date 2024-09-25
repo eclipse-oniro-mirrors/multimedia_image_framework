@@ -80,8 +80,11 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
     }
 
     auto pixelPtrTmp = picture->GetInnerPicture()->GetHdrComposedPixelMap();
+    if (pixelPtrTmp == nullptr) {
+        return IMAGE_UNSUPPORTED_OPERATION;
+    }
     auto mainPixelmapNative = std::make_unique<OH_PixelmapNative>(std::move(pixelPtrTmp));
-    if (!mainPixelmapNative || !mainPixelmapNative->GetInnerPixelmap()) {
+    if (mainPixelmapNative == nullptr || !mainPixelmapNative->GetInnerPixelmap()) {
         return IMAGE_ALLOC_FAILED;
     }
     *mainPixelmap = mainPixelmapNative.release();
@@ -226,7 +229,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
     auto pixelMap = OHOS::Media::PixelMap::Create(dataTmp, dataLengthTmp, initializationOptions);
     std::shared_ptr<OHOS::Media::PixelMap> pixelMapPtr = std::move(pixelMap);
     if (!pixelMapPtr) {
-        return IMAGE_UNKNOWN_ERROR;
+        return IMAGE_BAD_PARAMETER;
     }
     auto auxiliaryPictureTmp = std::make_unique<OH_AuxiliaryPictureNative>(pixelMapPtr, auxPicTypeInner,
                                                                            initializationOptions.size);
@@ -250,7 +253,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative 
     }
     uint32_t ret = innerAuxiliaryPicture->WritePixels(source, static_cast<uint64_t>(bufferSize));
     if (ret != OHOS::Media::SUCCESS) {
-        return IMAGE_UNKNOWN_ERROR;
+        return IMAGE_BAD_PARAMETER;
     }
     return IMAGE_SUCCESS;
 }
@@ -268,7 +271,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_ReadPixels(OH_AuxiliaryPictureNative *
     }
     auto size = static_cast<uint64_t>(*bufferSize);
     if (innerAuxiliaryPicture->ReadPixels(size, reinterpret_cast<uint8_t*>(destination)) != IMAGE_SUCCESS) {
-        return IMAGE_UNKNOWN_ERROR;
+        return IMAGE_BAD_PARAMETER;
     }
     *bufferSize = static_cast<size_t>(size);
     return IMAGE_SUCCESS;
@@ -322,12 +325,12 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_UNSUPPORTED_METADATA;
     }
 
     auto metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
     if (!metadataPtr) {
-        return IMAGE_UNSUPPORTED_METADATA;
+        return IMAGE_BAD_PARAMETER;
     }
     *metadata = new OH_PictureMetadata(metadataPtr);
     return IMAGE_SUCCESS;
@@ -343,7 +346,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_UNSUPPORTED_METADATA;
     }
 
     auto metadataPtr = metadata->GetInnerAuxiliaryMetadata();
@@ -446,7 +449,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetRowStride(OH_AuxiliaryPictureInfo *in
     if (info == nullptr || !info->GetInnerAuxiliaryPictureInfo()) {
         return IMAGE_BAD_PARAMETER;
     }
-    info->GetInnerAuxiliaryPictureInfo()->rowStride = static_cast<int32_t>(rowStride);
+    info->GetInnerAuxiliaryPictureInfo()->rowStride = rowStride;
     return  IMAGE_SUCCESS;
 }
 
@@ -465,6 +468,11 @@ MIDK_EXPORT
 Image_ErrorCode OH_AuxiliaryPictureInfo_SetPixelFormat(OH_AuxiliaryPictureInfo *info, PIXEL_FORMAT pixelFormat)
 {
     if (info == nullptr || !info->GetInnerAuxiliaryPictureInfo()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (pixelFormat < PIXEL_FORMAT::PIXEL_FORMAT_UNKNOWN ||
+        pixelFormat > PIXEL_FORMAT::PIXEL_FORMAT_YCRCB_P010 ||
+        pixelFormat == static_cast<int32_t>(OHOS::Media::PixelFormat::ARGB_8888)) {
         return IMAGE_BAD_PARAMETER;
     }
     info->GetInnerAuxiliaryPictureInfo()->pixelFormat = static_cast<OHOS::Media::PixelFormat>(pixelFormat);

@@ -18,6 +18,7 @@
 #include "common_utils.h"
 #include "image_source.h"
 #include "image_source_native_impl.h"
+#include "image_utils.h"
 #include "pixelmap_native_impl.h"
 #include "picture_native.h"
 #include "media_errors.h"
@@ -657,7 +658,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_Deco
     }
     auto innerDecodingSet = options->GetInnerDecodingOptForPicture()->desireAuxiliaryPictures;
     if (innerDecodingSet.size() == 0) {
-        return IMAGE_BAD_SOURCE;
+        return IMAGE_BAD_PARAMETER;
     }
     auto lenTmp = innerDecodingSet.size();
     auto auxTypeArrayUniptr = std::make_unique<Image_AuxiliaryPictureType[]>(lenTmp);
@@ -678,11 +679,20 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
         desiredAuxiliaryPictures == nullptr || length <= 0) {
         return IMAGE_BAD_PARAMETER;
     }
+    std::set<AuxiliaryPictureType> tmpDesireSet;
     auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
     for (size_t index = 0; index < length; index++) {
+        if (desiredAuxiliaryPictures[index] < AUXILIARY_PICTURE_TYPE_GAINMAP ||
+            desiredAuxiliaryPictures[index] > AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP) {
+            return IMAGE_BAD_PARAMETER;
+        }
         auto auxTypeTmp = AuxTypeNativeToInner(desiredAuxiliaryPictures[index]);
-        innerDecodingOptionsForPicture->desireAuxiliaryPictures.insert(auxTypeTmp);
+        if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxTypeTmp)) {
+            return IMAGE_BAD_PARAMETER;
+        }
+        tmpDesireSet.insert(auxTypeTmp);
     }
+    innerDecodingOptionsForPicture->desireAuxiliaryPictures.insert(tmpDesireSet.begin(), tmpDesireSet.end());
     return IMAGE_SUCCESS;
 }
 

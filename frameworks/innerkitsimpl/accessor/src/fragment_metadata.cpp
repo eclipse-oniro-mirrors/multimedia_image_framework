@@ -16,6 +16,7 @@
 #include <iostream>
 #include "fragment_metadata.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "media_errors.h"
 
 #undef LOG_DOMAIN
@@ -60,6 +61,12 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
         IMAGE_LOGE("Key is not supported.");
         return false;
     }
+    uint32_t casted;
+    if (!ImageUtils::StrToUint32(value, casted)) {
+        IMAGE_LOGE("Invalid value: %{public}s.", value.c_str());
+        return false;
+    }
+
     (*properties_)[key] = value;
     return true;
 }
