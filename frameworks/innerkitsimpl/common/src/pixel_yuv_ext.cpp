@@ -144,8 +144,8 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    int32_t dstW = imageInfo.size.width  * xAxis;
-    int32_t dstH = imageInfo.size.height * yAxis;
+    int32_t dstW = (imageInfo.size.width  * xAxis + 0.5);
+    int32_t dstH = (imageInfo.size.height * yAxis + 0.5);
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     if (m == nullptr) {
