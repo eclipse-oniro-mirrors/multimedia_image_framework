@@ -76,7 +76,6 @@ bool JpegDecoderYuv::LoadLibYuv()
 
 void JpegDecoderYuv::UnloadLibYuv()
 {
-    IMAGE_LOGI("JpegDecoderYuv UnloadLibYuv");
     memset_s(&libyuvFuncs_, sizeof(libyuvFuncs_), 0, sizeof(libyuvFuncs_));
     if (dlHandler_) {
         dlclose(dlHandler_);

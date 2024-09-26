@@ -48,7 +48,6 @@ const static char* VPE_SO_NAME = "libvideoprocessingengine.z.so";
 void* VpeUtils::dlHandler_ = nullptr;
 __attribute__((destructor)) void VpeUtilsDeinitLibVpe()
 {
-    IMAGE_LOGD("destructor VpeUtilsDeinitLibVpe");
     VpeUtils::UnloadLibVpe();
 }
 
@@ -89,7 +88,6 @@ bool VpeUtils::LoadLibVpe()
 
 void VpeUtils::UnloadLibVpe()
 {
-    IMAGE_LOGD("VpeUtils UnloadLibVpe");
     if (dlHandler_) {
         dlclose(dlHandler_);
         dlHandler_ = nullptr;
