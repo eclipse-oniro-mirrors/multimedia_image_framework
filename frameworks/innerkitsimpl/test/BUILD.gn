@@ -1027,6 +1027,7 @@ ohos_unittest("ndktest2") {
   ]
 
   deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_ndk",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_packer",
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
@@ -1037,6 +1038,8 @@ ohos_unittest("ndktest2") {
     "googletest:gmock_main",
     "googletest:gtest_main",
     "graphic_2d:color_manager",
+    "graphic_2d:color_manager",
+    "graphic_2d:libnative_color_space_manager",
     "graphic_surface:surface",
     "napi:ace_napi",
     "napi:ark_interop",
