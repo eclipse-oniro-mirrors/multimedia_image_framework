@@ -31,6 +31,7 @@
 #include "surface_buffer_impl.h"
 #include "tiff_parser.h"
 #include "securec.h"
+#include "image_log.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -46,12 +47,12 @@ constexpr int32_t SIZE_WIDTH = 2;
 constexpr int32_t SIZE_HEIGHT = 3;
 constexpr int32_t BUFFER_LENGTH = 8;
 constexpr int32_t STRIDE_ALIGNMENT = 8;
-static const std::string IMAGE_METADATA_SRC = "/data/local/tmp/image/test_metadata.jpg";
-static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
-static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/image/test_jpeg.jpg";
-static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/image/test_jpeg_out.jpg";
-static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/image/test_heif.heic";
-static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/image/test_heif_out.heic";
+static const std::string IMAGE_METADATA_SRC = "/data/local/tmp/test_metadata.jpg";
+static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/test_exif.jpg";
+static const std::string IMAGE_JPEG_SRC = "/data/local/tmp/test_jpeg.jpg";
+static const std::string IMAGE_JPEG_DEST = "/data/local/tmp/test_jpeg_out.jpg";
+static const std::string IMAGE_HEIF_SRC = "/data/local/tmp/test_heif.heic";
+static const std::string IMAGE_HEIF_DEST = "/data/local/tmp/test_heif_out.heic";
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
@@ -83,8 +84,7 @@ static std::shared_ptr<AuxiliaryPicture> CreateAuxiliaryPicture(AuxiliaryPicture
     }
     Size size = {SIZE_WIDTH, SIZE_HEIGHT};
     std::unique_ptr<AuxiliaryPicture> tmpAuxiliaryPicture = AuxiliaryPicture::Create(pixelmap, type, size);
-    std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(tmpAuxiliaryPicture);
-    return auxiliaryPicture;
+    return std::move(tmpAuxiliaryPicture);
 }
 
 static std::shared_ptr<ImageSource> CreateImageSourceByUri(const std::string uri)
@@ -92,8 +92,7 @@ static std::shared_ptr<ImageSource> CreateImageSourceByUri(const std::string uri
     SourceOptions opts;
     uint32_t errorCode = 0;
     std::unique_ptr<ImageSource> tmpImageSource = ImageSource::CreateImageSource(uri, opts, errorCode);
-    std::shared_ptr<ImageSource> imageSource = std::move(tmpImageSource);
-    return imageSource;
+    return std::move(tmpImageSource);
 }
 
 static std::shared_ptr<Picture> CreatePictureByImageSourceUri(std::shared_ptr<ImageSource> imageSource)
@@ -101,8 +100,7 @@ static std::shared_ptr<Picture> CreatePictureByImageSourceUri(std::shared_ptr<Im
     DecodingOptionsForPicture opts;
     uint32_t errorCode = 0;
     std::unique_ptr<Picture> tmpPicture = imageSource->CreatePicture(opts, errorCode);
-    std::shared_ptr<Picture> picture = std::move(tmpPicture);
-    return picture;
+    return std::move(tmpPicture);
 }
 
 void ImagePackingTest001()
@@ -132,6 +130,15 @@ void ImagePackingTest002()
 void CreatefromSurfaceBufferTest()
 {
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = OHOS::SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = SIZE_WIDTH,
+        .height = SIZE_HEIGHT,
+        .strideAlignment = STRIDE_ALIGNMENT,
+        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    surfaceBuffer->Alloc(requestConfig);
     std::unique_ptr<Picture> picture = Picture::Create(surfaceBuffer);
 }
 
@@ -143,39 +150,44 @@ void ExifMetadataTest()
     KValueStr = metadata.GetAllProperties();
     std::shared_ptr<ImageMetadata> newmetadata = metadata.CloneMetadata();
     Parcel data;
-    metadata.Marshalling(data);
-    ExifMetadata::Unmarshalling(data);
+    bool ret = metadata.Marshalling(data);
+    if (ret == true) {
+        if (ExifMetadata::Unmarshalling(data) == nullptr) {
+            IMAGE_LOGE("ExifMetadata Unmarshalling fail.");
+        }
+    }
 }
 
 void PictureTest()
 {
-    std::shared_ptr<PixelMap> pixelmap = CreatePixelMap();
+    std::shared_ptr<PixelMap> pixelmap = nullptr;
+    Picture::Create(pixelmap);
+    pixelmap = CreatePixelMap();
     std::unique_ptr<Picture> picture = CreatePicture();
     picture->SetMainPixel(pixelmap);
-
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     picture->SetAuxiliaryPicture(auxiliaryPicture);
     picture->GetGainmapPixelMap();
-
     picture->SetAuxiliaryPicture(auxiliaryPicture);
     picture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     picture->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
-
     Parcel data;
-    picture->Marshalling(data);
-    Picture::Unmarshalling(data);
-
+    bool ret = picture->Marshalling(data);
+    if (ret == true) {
+        if (Picture::Unmarshalling(data) == nullptr) {
+            IMAGE_LOGE("Picture Unmarshalling fail.");
+        }
+    }
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = OHOS::SurfaceBuffer::Create();
     picture->SetExifMetadata(surfaceBuffer);
-
     const int fd = open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
     uint32_t errorCode = 0;
     SourceOptions opts;
     std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
+    close(fd);
     DecodeOptions decodeOpts;
     std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
     std::shared_ptr<PixelMap> newpixelMap = std::move(pixelMap);
-
     uint8_t dataBlob[] = "Test set maintenance data";
     uint32_t size = sizeof(dataBlob) / sizeof(dataBlob[0]);
     sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
@@ -192,7 +204,6 @@ void PictureTest()
         picture->SetMaintenanceData(maintenanceBuffer);
         picture->GetMaintenanceData();
     }
-
     std::unique_ptr<Picture> pictureByImageSource = Picture::Create(newpixelMap);
     std::shared_ptr<ExifMetadata> exif = pictureByImageSource->GetExifMetadata();
     pictureByImageSource->SetExifMetadata(exif);
@@ -211,10 +222,11 @@ void AuxiliaryPictureTest()
     auxiliaryPicture->SetContentPixel(pixelMap);
 
     uint64_t bufferSize = auxiliaryPicture->GetContentPixel()->GetCapacity();
-    if (bufferSize >= 0) {
+    if (bufferSize > 0) {
         auto buffer = new uint8_t[bufferSize];
         auxiliaryPicture->ReadPixels(bufferSize, buffer);
         auxiliaryPicture->WritePixels(buffer, bufferSize);
+        delete[] buffer;
     }
     const std::string srcValue = "9, 9, 8";
     auto exifData = exif_data_new_from_file(IMAGE_METADATA_SRC.c_str());
@@ -227,8 +239,12 @@ void AuxiliaryPictureTest()
     auxiliaryPicture->SetAuxiliaryPictureInfo(info);
 
     Parcel data;
-    auxiliaryPicture->Marshalling(data);
-    AuxiliaryPicture::Unmarshalling(data);
+    bool ret = auxiliaryPicture->Marshalling(data);
+    if (ret == true) {
+        if (AuxiliaryPicture::Unmarshalling(data) == nullptr) {
+            IMAGE_LOGE("AuxiliaryPicture Unmarshalling fail.");
+        }
+    }
 }
 
 void CreateAuxiliaryPictureTestBySurfaceBuffer()

@@ -444,10 +444,10 @@
     </target>
     <target name="ImagePictureFuzzTest">
         <preparer>
-            <option name="push" value="images/test_jpeg.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_heif.heic -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/image" src="res"/>
-            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/image" src="res"/>
+            <option name="push" value="images/test_jpeg.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_heif.heic -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_metadata.jpg -> /data/local/tmp/" src="res"/>
+            <option name="push" value="images/test_exif.jpg -> /data/local/tmp/" src="res"/>
         </preparer>
     </target>
 </configuration>
