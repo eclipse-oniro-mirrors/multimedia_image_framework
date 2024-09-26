@@ -399,7 +399,7 @@ uint32_t PngExifMetadataAccessor::GetFilterArea(const std::vector<std::string> &
         return E_NO_EXIF_TAG;
     }
     for (auto& range : ranges) {
-        range.first += GetTiffOffset();
+        range.first += static_cast<uint32_t>(GetTiffOffset());
     }
     return SUCCESS;
 }
