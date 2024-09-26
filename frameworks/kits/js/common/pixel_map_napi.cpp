@@ -928,7 +928,6 @@ STATIC_EXEC_FUNC(CreatePixelMap)
             context->rPixelMap = std::move(pixelmap);
         }
     }
-
     if (IMG_NOT_NULL(context->rPixelMap)) {
         context->status = SUCCESS;
     } else {
