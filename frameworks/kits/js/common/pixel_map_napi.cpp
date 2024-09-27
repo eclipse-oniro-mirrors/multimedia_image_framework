@@ -4250,7 +4250,7 @@ static bool ParseArrayDoubleNode(napi_env env, napi_value &root, std::vector<flo
             napi_get_element(env, root, i, &tempDiv);
             double gamma = 0.0f;
             if (napi_get_value_double(env, tempDiv, &gamma) != napi_ok) {
-                IMAGE_LOGD("ParseArrayDoubleNode get value failed");
+                IMAGE_LOGE("ParseArrayDoubleNode get value failed");
                 return false;
             }
             vec.emplace_back((float)gamma);
@@ -4278,18 +4278,22 @@ static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std
     napi_value displayX = nullptr;
     std::vector<float> displayPrimariesX;
     if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesX", displayX)) {
-        IMAGE_LOGI("parse displayPrimariesX failed");
+        IMAGE_LOGE("parse displayPrimariesX failed");
+        return false;
     }
     if (!ParseArrayDoubleNode(env, displayX, displayPrimariesX)) {
-        IMAGE_LOGI("parse array y failed");
+        IMAGE_LOGE("parse array x failed");
+        return false;
     }
     std::vector<float> displayPrimariesY;
     napi_value displayY = nullptr;
     if (!GET_NODE_BY_NAME(hdrStaticMetadata, "displayPrimariesY", displayY)) {
-        IMAGE_LOGI("parse displayPrimariesY failed");
+        IMAGE_LOGE("parse displayPrimariesY failed");
+        return false;
     }
     if (!ParseArrayDoubleNode(env, displayY, displayPrimariesY)) {
-        IMAGE_LOGI("parse array y failed");
+        IMAGE_LOGE("parse array y failed");
+        return false;
     }
     staticMetadata.smpte2086.displayPrimaryRed.x = displayPrimariesX[NUM_0];
     staticMetadata.smpte2086.displayPrimaryRed.y = displayPrimariesY[NUM_0];
@@ -4307,7 +4311,7 @@ static bool ParseStaticMetadata(napi_env env, napi_value &hdrStaticMetadata, std
         staticMetadata.cta861.maxFrameAverageLightLevel);
     uint32_t vecSize = sizeof(HDI::Display::Graphic::Common::V1_0::HdrStaticMetadata);
     if (memcpy_s(staticMetadataVec.data(), vecSize, &staticMetadata, vecSize) != EOK) {
-        IMAGE_LOGI("staticMetadataVec memcpy failed");
+        IMAGE_LOGE("staticMetadataVec memcpy failed");
         return false;
     }
     return true;
