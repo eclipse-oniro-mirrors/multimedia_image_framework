@@ -55,8 +55,12 @@ public:
      * @param originData The original data to be used for the BufferMetadataStream.
      * @param size The size of the original data.
      * @param mode The memory mode to be used for the BufferMetadataStream.
+     * @param originalFd The original file fd of buffer data.
+     * @param originalPath The original file path of buffer data.
      */
-    BufferMetadataStream(byte *originData, size_t size, MemoryMode mode);
+    BufferMetadataStream(byte *originData, size_t size, MemoryMode mode,
+                         int originalFd = METADATA_STREAM_INVALID_FD,
+                         const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
 
     /* *
      * @brief Destructs the BufferMetadataStream object.
@@ -162,7 +166,7 @@ public:
     virtual bool CopyFrom(MetadataStream &src) override;
 
     /* *
-     * Get the size sof the BufferMetadataStream.
+     * Get the size of the BufferMetadataStream.
      *
      * @return Returns the size of the BufferMetadataStream.
      */

@@ -24,6 +24,7 @@
 
 #include "buffer_metadata_stream.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "metadata_stream.h"
 #include "securec.h"
 
@@ -45,7 +46,8 @@ BufferMetadataStream::BufferMetadataStream()
     originData_ = nullptr;
 }
 
-BufferMetadataStream::BufferMetadataStream(byte *originData, size_t size, MemoryMode mode)
+BufferMetadataStream::BufferMetadataStream(byte *originData, size_t size, MemoryMode mode,
+                                           int originalFd, const std::string &originalPath)
 {
     buffer_ = originData;
     this->originData_ = originData;
@@ -53,6 +55,8 @@ BufferMetadataStream::BufferMetadataStream(byte *originData, size_t size, Memory
     bufferSize_ = static_cast<long>(size);
     currentOffset_ = 0;
     memoryMode_ = mode;
+    originalFd_ = originalFd;
+    originalPath_ = originalPath;
 }
 
 BufferMetadataStream::~BufferMetadataStream()
@@ -144,6 +148,9 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
     }
 
     long bytesToRead = std::min(static_cast<long>(size), bufferSize_ - currentOffset_);
+    if (IsFileChanged()) {
+        return -1;
+    }
     memcpy_s(buf, size, buffer_ + currentOffset_, bytesToRead);
     currentOffset_ += bytesToRead;
     return bytesToRead;

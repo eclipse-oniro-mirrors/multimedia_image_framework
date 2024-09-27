@@ -17,17 +17,35 @@
 #define FRAMEWORKS_INNERKITSIMPL_STREAM_INCLUDE_SOURCE_STREAM_H
 
 #include <cinttypes>
+#include <string>
 #include "image/input_data_stream.h"
 #include "media_errors.h"
 
 namespace OHOS {
 namespace Media {
+constexpr int SOURCE_STREAM_INVALID_FD = -1;
+const std::string SOURCE_STREAM_INVALID_PATH = "";
+
 class SourceStream : public ImagePlugin::InputDataStream {
 public:
     virtual uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
     {
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
+
+    virtual int GetOriginalFd()
+    {
+        return originalFd_;
+    }
+
+    virtual std::string GetOriginalPath()
+    {
+        return originalPath_;
+    }
+
+protected:
+    int originalFd_ = SOURCE_STREAM_INVALID_FD;
+    std::string originalPath_ = SOURCE_STREAM_INVALID_PATH;
 };
 } // namespace Media
 } // namespace OHOS
