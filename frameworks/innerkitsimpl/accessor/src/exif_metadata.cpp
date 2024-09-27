@@ -763,7 +763,7 @@ void ExifMetadata::FindRanges(const ExifTag &tag, std::vector<std::pair<uint32_t
         }
 
         int i = 0;
-        while (i < content->count && !hasRange) {
+        while (i < static_cast<int>(content->count) && !hasRange) {
             if (tag == content->entries[i]->tag) {
                 std::pair<uint32_t, uint32_t> range =
                         std::make_pair(content->entries[i]->offset, content->entries[i]->size);
