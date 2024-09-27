@@ -333,13 +333,21 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
         IMAGE_LOGE("Compose HDR image failed");
         return nullptr;
     } else {
-        return Picture::SurfaceBuffer2PixelMap(hdrSptr);
+        std::unique_ptr<PixelMap> hdrPixelMap = Picture::SurfaceBuffer2PixelMap(hdrSptr);
+        if (hdrPixelMap != nullptr) {
+            hdrPixelMap->SetImageInfo(imageInfo);
+        } else {
+            IMAGE_LOGE("Compose HDR image failed");
+            return nullptr;
+        }
+        return hdrPixelMap;
     }
 }
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
+    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) ||
+        mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("Unsupport HDR compose.");
         return nullptr;
     }
