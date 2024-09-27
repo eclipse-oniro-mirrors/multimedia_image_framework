@@ -40,10 +40,10 @@ public:
         return tiffOffset_;
     }
 
-    virtual bool IsFileChanged() override
+    virtual bool IsFileSizeChanged() override
     {
         if (imageStream_ != nullptr) {
-            return imageStream_->IsFileChanged();
+            return imageStream_->IsFileSizeChanged();
         }
         return false;
     }
