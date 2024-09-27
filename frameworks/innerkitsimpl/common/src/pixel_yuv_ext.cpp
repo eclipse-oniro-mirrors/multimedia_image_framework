@@ -46,6 +46,7 @@ using namespace std;
 
 static const uint8_t NUM_4 = 4;
 static const int32_t DEGREES360 = 360;
+static const float ROUND_FLOAT_NUMBER = 0.5f;
 
 static SkImageInfo ToSkImageInfo(ImageInfo &info, sk_sp<SkColorSpace> colorSpace)
 {
@@ -144,8 +145,8 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     ImageTrace imageTrace("PixelMap scale");
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    int32_t dstW = imageInfo.size.width  * xAxis;
-    int32_t dstH = imageInfo.size.height * yAxis;
+    int32_t dstW = (imageInfo.size.width  * xAxis + ROUND_FLOAT_NUMBER);
+    int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);
     if (m == nullptr) {
