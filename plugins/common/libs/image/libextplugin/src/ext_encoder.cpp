@@ -215,7 +215,7 @@ static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
     if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
         return nullptr;
     }
-    if (pixelMap->InnerGetGrColorSpace().GetColorSpaceName() == ColorSpaceName::NONE) {
+    if (pixelmap->InnerGetGrColorSpace().GetColorSpaceName() == ColorSpaceName::NONE) {
         return SkColorSpace::MakeSRGB();
     }
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
