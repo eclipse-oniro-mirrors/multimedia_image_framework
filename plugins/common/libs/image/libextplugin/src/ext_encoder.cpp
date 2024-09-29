@@ -205,6 +205,9 @@ static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
     if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
         return nullptr;
     }
+    if (pixelmap->InnerGetGrColorSpace().GetColorSpaceName() == ColorManager::ColorSpaceName::NONE) {
+        return SkColorSpace::MakeSRGB();
+    }
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
 #else
     return nullptr;
@@ -219,7 +222,8 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
     sk_sp<SkColorSpace> colorSpace = SkColorSpace::MakeSRGB();
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
+    if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
+        pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
         colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
     }
 #endif
@@ -789,7 +793,8 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
         width = width / halfSizeDenominator;
         height = height / halfSizeDenominator;
 #ifdef IMAGE_COLORSPACE_FLAG
-        if (pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
+        if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
+            pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
             colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
         }
         skcms_CICP cicp;
