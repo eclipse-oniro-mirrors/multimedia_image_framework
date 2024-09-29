@@ -1185,12 +1185,14 @@ uint32_t ExtEncoder::EncodePicture()
 uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
 {
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
-    std::string errorMsg = "Encode picture failed";
+    std::string errorMsg = "Load hardware encode library failed";
     static ImageFwkExtManager imageFwkExtManager;
     if (imageFwkExtManager.LoadImageFwkExtNativeSo() && imageFwkExtManager.doHardwareEncodePictureFunc_ != nullptr) {
         retCode = imageFwkExtManager.doHardwareEncodePictureFunc_(&skStream, opts_, picture_);
         errorMsg = "Hardware encode picture failed";
-    } else if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+    }
+    if (retCode != SUCCESS && encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        IMAGE_LOGE("%{public}s, retCode is: %{public}d, try jpeg software encode", errorMsg.c_str(), retCode);
         retCode = EncodeJpegPicture(skStream);
         errorMsg = "Jpeg software encode picture failed";
     }
@@ -1307,9 +1309,16 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     }
     auto mainPixelmap = picture_->GetMainPixel();
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (!mainPixelmap || !gainmapPixelmap || mainPixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (!mainPixelmap || !gainmapPixelmap) {
         IMAGE_LOGE("%{public}s mainPixelmap or gainmapPixelmap is null", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    AllocatorType mainAllocType = mainPixelmap->GetAllocatorType();
+    AllocatorType gainmapAllocType = gainmapPixelmap->GetAllocatorType();
+    if (mainAllocType != AllocatorType::DMA_ALLOC || gainmapAllocType != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s AllocatorType is not DMA, mainAllocType: %{public}d, gainmapAllocType: %{public}d",
+            __func__, mainAllocType, gainmapAllocType);
+        return ERR_IMAGE_ENCODE_FAILED;
     }
     bool mainIsSRGB = mainPixelmap->GetToSdrColorSpaceIsSRGB();
     SkImageInfo baseInfo = GetSkInfo(mainPixelmap.get(), false, mainIsSRGB);
