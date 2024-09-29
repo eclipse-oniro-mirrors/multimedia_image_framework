@@ -67,7 +67,8 @@ static int32_t GetAuxiliaryPictureDenominator(AuxiliaryPictureType type)
     return denominator;
 }
 
-static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo)
+static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo,
+                                         AuxiliaryPictureType type)
 {
     Size size;
     uint32_t errorCode = decoder->GetImageSize(FIRST_FRAME, size);
@@ -76,7 +77,8 @@ static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decod
     }
     PixelDecodeOptions plOptions;
     plOptions.desiredSize = size;
-    plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
+    bool useF16Format = (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP);
+    plOptions.desiredPixelFormat = useF16Format ? PixelFormat::RGBA_F16 : PixelFormat::RGBA_8888;
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
@@ -262,13 +264,17 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType h
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info);
+    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info, type);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
     if (format == IMAGE_HEIF_FORMAT) {
 #ifdef HEIF_HW_DECODE_ENABLE
+        if (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP) {
+            context.pixelFormat = PixelFormat::RGBA_F16;
+            context.info.pixelFormat = PixelFormat::RGBA_F16;
+        }
         if (!extDecoder->DecodeHeifAuxiliaryMap(context, type)) {
             errorCode = ERR_IMAGE_DECODE_FAILED;
         }
