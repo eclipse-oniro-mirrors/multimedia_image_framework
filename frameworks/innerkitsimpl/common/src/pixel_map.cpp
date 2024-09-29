@@ -2356,7 +2356,7 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 bool PixelMap::WriteFenced(Parcel &parcel) const
 {
     if (!parcel.WriteInt32(BASE_MEDIA_ERR_OFFSET)) {
-        IMAGE_LOGE("WriteFenced uniqueId:[%{public}u] to parcel failed.", GetUniqueId());
+        IMAGE_LOGE("WriteFenced fencedId:[%{public}u] to parcel failed.", BASE_MEDIA_ERR_OFFSET);
         return false;
     }
     return true;
@@ -2376,7 +2376,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
     if (!WriteFenced(parcel)) {
-        IMAGE_LOGE("WriteFenced failed.");
+        IMAGE_LOGE("WriteFenced start failed.");
         return false;
     }
 
@@ -2404,7 +2404,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
     }
 
     if (!WriteFenced(parcel)) {
-        IMAGE_LOGE("WriteFenced failed.");
+        IMAGE_LOGE("WriteFenced end failed.");
         return false;
     }
     return true;
@@ -2644,9 +2644,8 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
 bool PixelMap::ReadFenced(Parcel &parcel)
 {
     int32_t fenced = parcel.ReadInt32();
-    if (fenced != BASE_MEDIA_ERR_OFFSET)
-    {
-        IMAGE_LOGE("parcel is Damaged");
+    if (fenced != BASE_MEDIA_ERR_OFFSET) {
+        IMAGE_LOGE("fenced: %{public}d, parcel is Damaged", fenced);
         return false;
     }
     return true;
