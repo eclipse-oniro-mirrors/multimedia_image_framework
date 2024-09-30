@@ -178,6 +178,10 @@ uint32_t DmaMemory::Create()
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    if (sb == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer failed to be created");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
     GraphicPixelFormat format = GetRequestBufferFormatWithPixelFormat(data.format);
     BufferRequestConfig requestConfig = {
         .width = data.desiredSize.width,

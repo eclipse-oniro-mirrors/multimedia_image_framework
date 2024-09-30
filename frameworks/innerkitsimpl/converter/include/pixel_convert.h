@@ -39,7 +39,7 @@ struct ProcFuncExtension {
 struct BufferInfo {
     void *pixels;
     int32_t rowStride;
-    const ImageInfo &imageInfo;
+    ImageInfo imageInfo;
 };
 
 // These values SHOULD be sync with image_type.h PixelFormat
@@ -188,7 +188,7 @@ public:
     static std::unique_ptr<PixelConvert> Create(const ImageInfo &srcInfo, const ImageInfo &dstInfo);
     void Convert(void *destinationPixels, const uint8_t *sourcePixels, uint32_t sourcePixelsNum);
 
-    static int32_t PixelsConvert(const BufferInfo &srcInfo, BufferInfo &dstInfo, int32_t srcLength, bool useDMA);
+    static int32_t PixelsConvert(const BufferInfo &src, BufferInfo &dst, int32_t srcLength, bool useDMA);
 
 private:
     static AlphaConvertType GetAlphaConvertType(const AlphaType &srcType, const AlphaType &dstType);
