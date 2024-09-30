@@ -47,7 +47,7 @@ namespace Media {
 static const std::string CLASS_NAME = "ImageCreator";
 shared_ptr<ImageCreator> ImageCreatorNapi::staticInstance_ = nullptr;
 thread_local napi_ref ImageCreatorNapi::sConstructor_ = nullptr;
-static bool g_creatorTest = false;
+static bool g_isCreatorTest = false;
 static std::shared_ptr<ImageCreatorReleaseListener> g_listener = nullptr;
 
 const int ARGS0 = 0;
@@ -123,6 +123,7 @@ napi_value ImageCreatorNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("dequeueImage", JsDequeueImage),
         DECLARE_NAPI_FUNCTION("queueImage", JsQueueImage),
         DECLARE_NAPI_FUNCTION("on", JsOn),
+        DECLARE_NAPI_FUNCTION("off", JsOff),
         DECLARE_NAPI_FUNCTION("release", JsRelease),
 
 #ifdef IMAGE_DEBUG_FLAG
@@ -184,7 +185,7 @@ napi_value ImageCreatorNapi::Constructor(napi_env env, napi_callback_info info)
         std::unique_ptr<ImageCreatorNapi> reference = std::make_unique<ImageCreatorNapi>();
         if (reference != nullptr) {
             reference->env_ = env;
-            if (!g_creatorTest) {
+            if (!g_isCreatorTest) {
                 reference->imageCreator_ = staticInstance_;
             }
             status = napi_wrap(env, thisVar, reinterpret_cast<void *>(reference.get()),
@@ -241,11 +242,11 @@ napi_value ImageCreatorNapi::JSCreateImageCreator(napi_env env, napi_callback_in
     }
     int32_t len = sizeof(args) / sizeof(args[PARAM0]);
     if (isTest(args, len)) {
-        g_creatorTest = true;
+        g_isCreatorTest = true;
     }
     status = napi_get_reference_value(env, sConstructor_, &constructor);
     if (IMG_IS_OK(status)) {
-        if (!g_creatorTest) {
+        if (!g_isCreatorTest) {
             staticInstance_ = ImageCreator::CreateImageCreator(args[PARAM0],
                 args[PARAM1], args[PARAM2], args[PARAM3]);
         }
@@ -323,7 +324,7 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
         if (ic.context->constructor_ == nullptr) {
             return ic.result;
         }
-        if (!g_creatorTest) {
+        if (!g_isCreatorTest) {
             ic.context->creator_ = ic.context->constructor_->imageCreator_;
 
             IMG_NAPI_CHECK_RET_D(IMG_IS_READY(ic.status, ic.context->creator_),
@@ -344,7 +345,6 @@ napi_value ImageCreatorNapi::JSCommonProcess(ImageCreatorCommonArgs &args)
                                                  (reinterpret_cast<napi_async_complete_callback>(args.callBack)),
                                                  static_cast<void *>((ic.context).get()), &(ic.context->work));
             napi_queue_async_work((args.env), (ic.context->work));
-            IMAGE_ERR("async success");
             ic.context.release();
         }
     } else {
@@ -381,7 +381,7 @@ napi_value ImageCreatorNapi::JsGetSize(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_creatorTest) {
+        if (g_isCreatorTest) {
             ic.result = BuildJsSize(args.env, TEST_WIDTH, TEST_HEIGHT);
             return true;
         }
@@ -416,7 +416,7 @@ napi_value ImageCreatorNapi::JsGetCapacity(napi_env env, napi_callback_info info
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_creatorTest) {
+        if (g_isCreatorTest) {
             napi_create_int32(args.env, TEST_CAPACITY, &(ic.result));
             return true;
         }
@@ -448,7 +448,7 @@ napi_value ImageCreatorNapi::JsGetFormat(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         napi_get_undefined(args.env, &(ic.result));
-        if (g_creatorTest) {
+        if (g_isCreatorTest) {
             napi_create_int32(args.env, TEST_FORMAT, &(ic.result));
             return true;
         }
@@ -523,7 +523,7 @@ napi_value ImageCreatorNapi::JsTest(napi_env env, napi_callback_info info)
 
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         DoTest(ic.context->creator_);
-        if (g_creatorTest && g_listener != nullptr) {
+        if (g_isCreatorTest && g_listener != nullptr) {
             unique_ptr<uv_work_t> work = make_unique<uv_work_t>();
             work->data = reinterpret_cast<void *>(g_listener->context.get());
             DoCallBackAfterWork(work.release(), ARGS0);
@@ -552,7 +552,7 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
         IMAGE_LINE_IN();
         napi_value result = nullptr;
         napi_get_undefined(env, &result);
-        if (g_creatorTest) {
+        if (g_isCreatorTest) {
             result = ImageNapi::Create(env);
             context->status = SUCCESS;
             CommonCallbackRoutine(env, context, result);
@@ -585,7 +585,7 @@ napi_value ImageCreatorNapi::JsDequeueImage(napi_env env, napi_callback_info inf
 
 static bool IsTestImageArgs(napi_env env, napi_value value)
 {
-    if (g_creatorTest) {
+    if (g_isCreatorTest) {
         ImageNapi* image = nullptr;
         napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&image));
         return (status == napi_ok && image != nullptr);
@@ -638,7 +638,7 @@ void ImageCreatorNapi::JsQueueImageCallBack(napi_env env, napi_status status,
     IMAGE_FUNCTION_IN();
     napi_value result = nullptr;
     napi_get_undefined(env, &result);
-    if (g_creatorTest) {
+    if (g_isCreatorTest) {
         context->status = SUCCESS;
         CommonCallbackRoutine(env, context, result);
         return;
@@ -856,7 +856,7 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
     args.queryArgs = JsOnQueryArgs;
     args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
         IMAGE_LINE_IN();
-        if (g_creatorTest) {
+        if (g_isCreatorTest) {
             g_listener = make_shared<ImageCreatorReleaseListener>();
             g_listener->context = std::move(ic.context);
             g_listener->context->env = args.env;
@@ -883,6 +883,107 @@ napi_value ImageCreatorNapi::JsOn(napi_env env, napi_callback_info info)
     };
 
     return JSCommonProcess(args);
+}
+
+napi_value ImageCreatorNapi::JsOffOneArg(napi_env env, napi_callback_info info)
+{
+    ImageCreatorCommonArgs args = {
+        .env = env, .info = info, .async = CreatorCallType::ASYNC,
+        .name = "JsOff", .argc = ARGS1, .asyncLater = true,
+    };
+
+    args.queryArgs = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
+        if (ic.argc != ARGS1) {
+            std::string errMsg = "Invalid argc: ";
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                errMsg.append(std::to_string(ic.argc)));
+            return false;
+        }
+        auto argType = ImageNapiUtils::getType(args.env, ic.argv[PARAM0]);
+        if (argType != napi_string) {
+            std::string errMsg = "Unsupport args type: ";
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                errMsg.append(std::to_string(argType)));
+            return false;
+        }
+        if (!ImageNapiUtils::GetUtf8String(args.env, ic.argv[PARAM0], ic.onType)) {
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                "Could not get On type string");
+            return false;
+        }
+        if (!CheckOnParam0(args.env, ic.argv[PARAM0], "imageRelease")) {
+            ImageNapiUtils::ThrowExceptionError(args.env, static_cast<int32_t>(napi_invalid_arg),
+                "Unsupport PARAM0");
+            return false;
+        }
+        napi_get_undefined(args.env, &ic.result);
+        return true;
+    };
+
+    args.nonAsyncBack = [](ImageCreatorCommonArgs &args, ImageCreatorInnerContext &ic) -> bool {
+        IMAGE_LINE_IN();
+        napi_get_undefined(args.env, &ic.result);
+
+        if (g_isCreatorTest && g_listener != nullptr) {
+            g_listener.reset();
+        } else {
+            if (ic.context != nullptr && ic.context->constructor_ != nullptr
+                && ic.context->constructor_->imageCreator_ != nullptr) {
+                ic.context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+            }
+        }
+        ic.context->status = SUCCESS;
+        napi_create_uint32(args.env, ic.context->status, &ic.result);
+        IMAGE_LINE_OUT();
+        return true;
+    };
+
+    return JSCommonProcess(args);
+}
+
+napi_value ImageCreatorNapi::JsOffTwoArgs(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    ImageCreatorCommonArgs args = {
+        .env = env, .info = info, .async = CreatorCallType::ASYNC,
+        .name = "JsOff", .argc = ARGS2, .queryArgs = JsOnQueryArgs,
+    };
+
+    args.callBack = [](napi_env env, napi_status status, Contextc context) {
+        IMAGE_LINE_IN();
+        napi_value result = nullptr;
+        napi_get_undefined(env, &result);
+        context->constructor_->imageCreator_->UnRegisterBufferReleaseListener();
+        context->status = SUCCESS;
+        CommonCallbackRoutine(env, context, result);
+        IMAGE_LINE_OUT();
+    };
+
+    JSCommonProcess(args);
+    napi_create_uint32(args.env, SUCCESS, &result);
+    return result;
+}
+
+napi_value ImageCreatorNapi::JsOff(napi_env env, napi_callback_info info)
+{
+    IMAGE_FUNCTION_IN();
+    struct ImageCreatorInnerContext ic;
+    ic.argc = ARGS2;
+    ic.argv.resize(ic.argc);
+    napi_get_undefined(env, &ic.result);
+    IMG_JS_ARGS(env, info, ic.status, ic.argc, &(ic.argv[0]), ic.thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(ic.status), ic.result, IMAGE_ERR("fail to napi_get_cb_info"));
+
+    if (ic.argc == ARGS1) {
+        return JsOffOneArg(env, info);
+    } else if (ic.argc == ARGS2) {
+        return JsOffTwoArgs(env, info);
+    } else {
+        IMAGE_ERR("invalid argument count");
+        return ic.result;
+    }
 }
 
 napi_value ImageCreatorNapi::JsRelease(napi_env env, napi_callback_info info)
