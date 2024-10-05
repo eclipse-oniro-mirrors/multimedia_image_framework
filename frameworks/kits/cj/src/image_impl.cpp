@@ -104,6 +104,19 @@ uint32_t ImageImpl::GetFormat(int32_t *ret)
     return retCode;
 }
 
+int64_t ImageImpl::GetTimestamp()
+{
+    if (native_ == nullptr) {
+        IMAGE_LOGE("Image buffer cannot be nullptr");
+        return 0;
+    }
+    int64_t timestamp = 0;
+    if (native_->GetTimestamp(timestamp) != SUCCESS) {
+        IMAGE_LOGE("Image native get timestamp failed");
+    }
+    return timestamp;
+}
+
 uint32_t ImageImpl::GetComponent(int32_t componentType, CRetComponent *ret)
 {
     if (native_ == nullptr) {

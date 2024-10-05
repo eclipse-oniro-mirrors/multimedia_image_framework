@@ -61,6 +61,34 @@ std::unique_ptr<PixelMap> PixelMapImpl::CreateAlphaPixelMap(PixelMap &source, In
     return ptr_;
 }
 
+uint32_t PixelMapImpl::CreatePremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst)
+{
+    if (src == nullptr || dst == nullptr) {
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    } else {
+        bool isPremul = true;
+        if (dst->IsEditable()) {
+            return src->ConvertAlphaFormat(*dst.get(), isPremul);
+        } else {
+            return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+        }
+    }
+}
+
+uint32_t PixelMapImpl::CreateUnpremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst)
+{
+    if (src == nullptr || dst == nullptr) {
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    } else {
+        bool isPremul = false;
+        if (dst->IsEditable()) {
+            return src->ConvertAlphaFormat(*dst.get(), isPremul);
+        } else {
+            return ERR_IMAGE_PIXELMAP_NOT_ALLOW_MODIFY;
+        }
+    }
+}
+
 PixelMapImpl::PixelMapImpl(std::shared_ptr<PixelMap> ptr_)
 {
     real_ = ptr_;
@@ -134,12 +162,33 @@ void PixelMapImpl::Scale(float xAxis, float yAxis)
     real_->scale(xAxis, yAxis);
 }
 
+void PixelMapImpl::Scale(float xAxis, float yAxis, AntiAliasingOption option)
+{
+    if (real_ == nullptr) {
+        IMAGE_LOGE("[PixelMapImpl] get instance!");
+        return;
+    }
+    real_->scale(xAxis, yAxis, option);
+}
+
 uint32_t PixelMapImpl::Crop(Rect &rect)
 {
     if (real_ == nullptr) {
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     return real_->crop(rect);
+}
+
+uint32_t PixelMapImpl::ToSdr()
+{
+    if (real_ == nullptr) {
+        return ERR_IMAGE_READ_PIXELMAP_FAILED;
+    }
+    if (!GetPixelMapImplEditable()) {
+        IMAGE_LOGE("ToSdrExec pixelmap is not editable");
+        return ERR_RESOURCE_UNAVAILABLE;
+    }
+    return real_->ToSdr();
 }
 
 void PixelMapImpl::Flip(bool xAxis, bool yAxis)

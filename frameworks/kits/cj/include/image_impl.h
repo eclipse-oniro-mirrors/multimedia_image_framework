@@ -31,6 +31,7 @@ public:
     uint32_t GetClipRect(CRegion *ret);
     uint32_t GetSize(CSize *ret);
     uint32_t GetFormat(int32_t *ret);
+    int64_t GetTimestamp();
     uint32_t GetComponent(int32_t componentType, CRetComponent *ret);
     void Release();
 

@@ -16,6 +16,7 @@
 #define IMAGE_FFI_H
  
 #include "cj_ffi/cj_common_ffi.h"
+#include "cj_lambda.h"
 #include "pixel_map.h"
 #include "image_type.h"
 #include "image_utils.h"
@@ -25,6 +26,11 @@ extern "C" {
         int32_t height;
         int32_t width;
         int32_t density;
+        int32_t stride;
+        int32_t pixelFormat;
+        int32_t alphaType;
+        char *mimeType;
+        bool isHdr;
     };
 
     struct CSourceOptions {
@@ -37,6 +43,7 @@ extern "C" {
     struct  CInitializationOptions {
         int32_t alphaType;
         bool editable = false;
+        int32_t srcPixelFormat;
         int32_t pixelFormat;
         int32_t scaleMode;
         int32_t width;
@@ -52,12 +59,21 @@ extern "C" {
         int32_t desiredPixelFormat;
         bool editable;
         int64_t desiredColorSpace;
+        int32_t desiredDynamicRange;
     };
 
     struct CPackingOption {
         const char* format;
-        uint8_t quality = 100;
-        uint64_t bufferSize = 10 * 1024 * 1024;
+        uint8_t quality;
+        uint64_t bufferSize;
+        int32_t desiredDynamicRange;
+        bool needsPackProperties;
+    };
+
+    struct CImageProperties {
+        const char *key;
+        char *value;
+        int64_t size;
     };
 
     // ImageSource
@@ -84,9 +100,13 @@ extern "C" {
     FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodingOptions opts,
         uint32_t* errorCode);
     FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode);
+    FFI_EXPORT CArrI32 FfiImageImageSourceImplGetDisposalTypeList(int64_t id, uint32_t* errorCode);
+    FFI_EXPORT uint32_t FfiImageImageSourceImplModifyImageProperties(int64_t id, CArrString key, CArrString value);
+    FFI_EXPORT uint32_t FfiImageImageSourceImplGetImageProperties(int64_t id, CArrString key, char **value);
 
     // PixelMap
     FFI_EXPORT int64_t FfiOHOSCreatePixelMap(uint8_t *colors, uint32_t colorLength, CInitializationOptions opts);
+    FFI_EXPORT int64_t FfiImagePixelMapImplCreatePixelMap(CInitializationOptions opts);
     FFI_EXPORT bool FfiOHOSGetIsEditable(int64_t id, uint32_t* errCode);
     FFI_EXPORT bool FfiOHOSGetIsStrideAlignment(int64_t id, uint32_t* errCode);
     FFI_EXPORT uint32_t FfiOHOSReadPixelsToBuffer(int64_t id, uint64_t bufferSize, uint8_t *dst);
@@ -98,6 +118,7 @@ extern "C" {
     FFI_EXPORT uint32_t FfiOHOSGetBytesNumberPerRow(int64_t id, uint32_t* errCode);
     FFI_EXPORT CImageInfo FfiOHOSGetImageInfo(int64_t id, uint32_t* errCode);
     FFI_EXPORT uint32_t FfiOHOSScale(int64_t id, float xAxis, float yAxis);
+    FFI_EXPORT uint32_t FfiImagePixelMapImplScale(int64_t id, float xAxis, float yAxis, int32_t antiAliasing);
     FFI_EXPORT uint32_t FfiOHOSFlip(int64_t id, bool xAxis, bool yAxis);
     FFI_EXPORT uint32_t FfiOHOSRotate(int64_t id, float degrees);
     FFI_EXPORT uint32_t FfiOHOSTranslate(int64_t id, float xAxis, float yAxis);
@@ -108,12 +129,17 @@ extern "C" {
     FFI_EXPORT uint32_t FfiOHOSPixelMapSetColorSpace(int64_t id, int64_t colorSpaceId);
     FFI_EXPORT int64_t FfiOHOSPixelMapGetColorSpace(int64_t id, int32_t* errCode);
     FFI_EXPORT uint32_t FfiOHOSPixelMapApplyColorSpace(int64_t id, int64_t colorSpaceId);
+    FFI_EXPORT uint32_t FfiImagePixelMapImplCreatePremultipliedPixelMap(int64_t srcId, int64_t dstId);
+    FFI_EXPORT uint32_t FfiImagePixelMapImplCreateUnpremultipliedPixelMap(int64_t srcId, int64_t dstId);
+    FFI_EXPORT uint32_t FfiImagePixelMapImplSetTransferDetached(int64_t id, bool detached);
+    FFI_EXPORT uint32_t FfiImagePixelMapImplToSdr(int64_t id);
 
     // Image
     FFI_EXPORT uint32_t FfiOHOSImageGetClipRect(int64_t id, CRegion *retVal);
     FFI_EXPORT uint32_t FfiOHOSImageGetSize(int64_t id, CSize *retVal);
     FFI_EXPORT uint32_t FfiOHOSImageGetFormat(int64_t id, int32_t *retVal);
     FFI_EXPORT uint32_t FfiOHOSGetComponent(int64_t id, int32_t componentType, CRetComponent *ptr);
+    FFI_EXPORT int64_t FfiImageImageImplGetTimestamp(int64_t id);
     FFI_EXPORT void FfiOHOSImageRelease(int64_t id);
 
     // ImageReceiver
@@ -145,8 +171,8 @@ extern "C" {
     FFI_EXPORT RetDataI32 FFiOHOSImageCreatorGetformat(int64_t id);
     FFI_EXPORT int64_t FFiOHOSImageCreatorDequeueImage(int64_t id, uint32_t* errCode);
     FFI_EXPORT void FFiOHOSImageCreatorQueueImage(int64_t id, int64_t imageId);
-    FFI_EXPORT void FFiOHOSImageCreatorOn(int64_t id);
     FFI_EXPORT void FFiOHOSImageCreatorRelease(int64_t id);
+    FFI_EXPORT uint32_t FfiImageImageCreatorImplOn(int64_t id, char *name, int64_t callbackId);
 }
  
 #endif

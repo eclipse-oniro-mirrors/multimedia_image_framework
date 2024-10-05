@@ -138,6 +138,25 @@ uint32_t ImageSourceImpl::GetImageProperty(std::string key, uint32_t index, std:
     return nativeImgSrc->GetImagePropertyString(index, key, defaultValue);
 }
 
+uint32_t ImageSourceImpl::GetImageProperties(std::vector<std::string> keyStrArray,
+    std::vector<std::string> &valueStrArray)
+{
+    if (nativeImgSrc == nullptr) {
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    for (auto keyStrIt = keyStrArray.begin(); keyStrIt != keyStrArray.end(); ++keyStrIt) {
+        std::string valueStr = "";
+        uint32_t status = nativeImgSrc->GetImagePropertyString(0, *keyStrIt, valueStr);
+        if (status == SUCCESS) {
+            valueStrArray.push_back(valueStr);
+        } else {
+            valueStrArray.push_back(valueStr);
+            IMAGE_LOGE("errCode: %{public}u , exif key: %{public}s", status, keyStrIt->c_str());
+        }
+    }
+    return SUCCESS;
+}
+
 static bool CheckExifDataValue(const std::string &value)
 {
     std::vector<std::string> bitsVec;
@@ -231,6 +250,20 @@ uint32_t ImageSourceImpl::ModifyImageProperty(std::string key, std::string value
     return ret;
 }
 
+uint32_t ImageSourceImpl::ModifyImageProperties(char **keyStrArray, char **valueStrArray, int64_t arraySize)
+{
+    if (nativeImgSrc == nullptr) {
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    for (int64_t i = 0; i < arraySize; i++) {
+        uint32_t ret = ModifyImageProperty(keyStrArray[i], valueStrArray[i]);
+        if (ret != SUCCESS) {
+            return ret;
+        }
+    }
+    return SUCCESS;
+}
+
 uint32_t ImageSourceImpl::GetFrameCount(uint32_t &errorCode)
 {
     if (nativeImgSrc == nullptr) {
@@ -309,6 +342,20 @@ std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDelayTime(uint32_t* er
     delayTimes = nativeImgSrc->GetDelayTime(*errorCode);
     IMAGE_LOGD("[ImageSourceImpl] GetDelayTime success.");
     return delayTimes;
+}
+
+std::unique_ptr<std::vector<int32_t>> ImageSourceImpl::GetDisposalTypeList(uint32_t* errorCode)
+{
+    std::unique_ptr<std::vector<int32_t>> disposalType;
+    if (nativeImgSrc == nullptr) {
+        *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+        return disposalType;
+    }
+    disposalType = nativeImgSrc->GetDisposalType(*errorCode);
+    if ((*errorCode != SUCCESS) || disposalType == nullptr) {
+        *errorCode = ERROR;
+    }
+    return disposalType;
 }
 
 void ImageSourceImpl::SetPathName(std::string pathName)
