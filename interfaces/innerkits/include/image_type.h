@@ -34,6 +34,12 @@ namespace Media {
 #define FRAGMENT_METADATA_KEY_WIDTH "WIDTH"
 #define FRAGMENT_METADATA_KEY_HEIGHT "HEIGHT"
 
+#define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
+#define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
+#define HEIF_AUXTTYPE_ID_UNREFOCUS_MAP "urn:com:huawei:photo:5:0:0:aux:unrefocusmap"
+#define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
+#define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
+
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
     DEFAULT = 0,

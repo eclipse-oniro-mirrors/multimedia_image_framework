@@ -302,7 +302,8 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" && itemType != "iden") {
+        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" &&
+            itemType != "iden" && itemType != "mime") {
             continue;
         }
         auto image = std::make_shared<HeifImage>(itemId);
