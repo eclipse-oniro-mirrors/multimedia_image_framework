@@ -172,6 +172,17 @@ void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pi
     }
 }
 
+static void Create10BitBuffer(const uint32_t width, const uint32_t height, const uint32_t pixelByte,
+    uint8_t buffer[])
+{
+    uint32_t colorLength = width * height * pixelByte;
+    for (int i = 0; i < colorLength; i += pixelByte) {
+        buffer[i] = 125;     // 125: blue index
+        buffer[i + 1] = 70;  // i + 1, 70: green index
+        buffer[i + 2] = 70;  // i + 2, 70: red index
+    }
+}
+
 void InitOption(struct InitializationOptions& opts, const uint32_t width, const uint32_t height,
     PixelFormat format, AlphaType alphaType)
 {
@@ -2469,6 +2480,35 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
     EXPECT_EQ(ret, ERR_IMAGE_INVALID_PARAMETER);
 
     GTEST_LOG_(INFO) << "PixelMapTest: ReadARGBPixelsTest003 end";
+}
+
+/**
+ * @tc.name: PixelMapCreateTest011
+ * @tc.desc: Create PixelMap
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelMapTest, PixelMapCreateTest011, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 start";
+    const int32_t offset = 0;
+    /* for test */
+    const int32_t width = 1920;
+    /* for test */
+    const int32_t height = 1080;
+    /* for test */
+    const uint32_t pixelByte = 3;
+    /* for test */
+    const uint32_t colorLength = width * height * pixelByte;
+    uint8_t buffer[colorLength] = {0};
+    Create10BitBuffer(width, height, pixelByte, buffer);
+    uint32_t *color = (uint32_t *)buffer;
+    InitializationOptions opts1;
+    opts1.srcPixelFormat = PixelFormat::YCBCR_P010;
+    opts1.useDMA = true;
+    InitOption(opts1, width, height, PixelFormat::YCBCR_P010, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
+    EXPECT_TRUE(pixelMap != nullptr);
+    GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 end";
 }
 }
 }
