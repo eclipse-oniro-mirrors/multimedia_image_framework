@@ -97,6 +97,7 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
@@ -581,13 +582,55 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
+bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUVDataInfo &yuvInfo)
+{
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer object is null");
+        return false;
+    }
+    OH_NativeBuffer_Planes *planes = nullptr;
+    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (retVal != OHOS::GSERROR_OK || planes == nullptr || planes->planeCount < NUM_2) {
+        IMAGE_LOGE("InitYuvDataOutInfo failed");
+        return false;
+    }
+    uint32_t uvPlaneOffset = (info.pixelFormat == PixelFormat::NV12 ||
+        info.pixelFormat == PixelFormat::YCBCR_P010) ? NUM_1 : NUM_2;
+    yuvInfo.imageSize = info.size;
+    yuvInfo.yWidth = info.size.width;
+    yuvInfo.yHeight = info.size.height;
+    yuvInfo.uvWidth = static_cast<uint32_t>((info.size.width + NUM_1) / NUM_2);
+    yuvInfo.uvHeight = static_cast<uint32_t>((info.size.height + NUM_1) / NUM_2);
+    yuvInfo.yStride = planes->planes[0].columnStride;
+    yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+    yuvInfo.yOffset = planes->planes[0].offset;
+    yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    return true;
+}
+
+static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
+{
+    if (IsYUV(opts.pixelFormat)) {
+#ifdef EXT_PIXEL
+        dstPixelMap = std::make_unique<PixelYuvExt>();
+#else
+        dstPixelMap = std::make_unique<PixelYuv>();
+#endif
+    } else {
+        dstPixelMap = make_unique<PixelMap>();
+    }
+    if (dstPixelMap == nullptr) {
+        IMAGE_LOGE("create pixelMap pointer fail");
+        return false;
+    }
+    return true;
+}
+
 // LCOV_EXCL_START
 unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
 {
-    IMAGE_LOGD("PixelMap::Create3 enter");
-    unique_ptr<PixelMap> dstPixelMap = make_unique<PixelMap>();
-    if (dstPixelMap == nullptr) {
-        IMAGE_LOGE("create pixelMap pointer fail");
+    unique_ptr<PixelMap> dstPixelMap;
+    if (!CheckPixelMap(dstPixelMap, opts)) {
         return nullptr;
     }
     PixelFormat dstPixelFormat = (opts.pixelFormat == PixelFormat::UNKNOWN ? PixelFormat::RGBA_8888 : opts.pixelFormat);
@@ -604,23 +647,31 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         IMAGE_LOGE("calloc parameter bufferSize:[%{public}d] error.", bufferSize);
         return nullptr;
     }
-    int fd = 0;
-    void *dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap->GetUniqueId());
-    if (dstPixels == nullptr) {
-        IMAGE_LOGE("allocate memory size %{public}u fail", bufferSize);
+    std::unique_ptr<AbsMemory> dstMemory = nullptr;
+    int32_t dstRowStride = 0;
+    int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
+    if (errorCode != IMAGE_RESULT_SUCCESS) {
         return nullptr;
     }
     // update alpha opaque
     UpdatePixelsAlpha(dstImageInfo.alphaType, dstImageInfo.pixelFormat,
-                      static_cast<uint8_t *>(dstPixels), *dstPixelMap.get());
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    void *fdBuffer = new int32_t();
-    *static_cast<int32_t *>(fdBuffer) = fd;
-    dstPixelMap->SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
-#else
-    dstPixelMap->SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
-#endif
+                      static_cast<uint8_t *>(dstMemory->data.data), *dstPixelMap.get());
     dstPixelMap->SetEditable(opts.editable);
+    dstPixelMap->SetPixelsAddr(dstMemory->data.data, dstMemory->extend.data, dstMemory->data.size, dstMemory->GetType(),
+        nullptr);
+    ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
+    if (IsYUV(opts.pixelFormat)) {
+        if (dstPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
+            YUVDataInfo yuvDatainfo;
+            if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
+                dstImageInfo, yuvDatainfo)) {
+                return nullptr;
+            }
+            dstPixelMap->SetImageYUVInfo(yuvDatainfo);
+        } else {
+            SetYUVDataInfoToPixelMap(dstPixelMap);
+        }
+    }
     return dstPixelMap;
 }
 // LCOV_EXCL_STOP
