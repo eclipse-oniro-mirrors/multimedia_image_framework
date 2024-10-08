@@ -34,6 +34,14 @@ namespace Media {
 #define FRAGMENT_METADATA_KEY_WIDTH "WIDTH"
 #define FRAGMENT_METADATA_KEY_HEIGHT "HEIGHT"
 
+// There is no definite tag name for gainmap
+#define AUXILIARY_TAG_GAINMAP ""
+#define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
+#define AUXILIARY_TAG_DEPTH_MAP_FRONT "VShapEn"
+#define AUXILIARY_TAG_UNREFOCUS_MAP "edof"
+#define AUXILIARY_TAG_LINEAR_MAP "HighBit"
+#define AUXILIARY_TAG_FRAGMENT_MAP "Fragmnt"
+
 #define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
 #define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
 #define HEIF_AUXTTYPE_ID_UNREFOCUS_MAP "urn:com:huawei:photo:5:0:0:aux:unrefocusmap"
@@ -361,6 +369,7 @@ struct AuxiliaryPictureInfo {
     uint32_t rowStride = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
+    std::string jpegTagName = "";
 };
 
 enum class MetadataType {

@@ -28,6 +28,7 @@ struct SingleJpegImage {
     uint32_t offset;
     uint32_t size;
     AuxiliaryPictureType auxType;
+    std::string auxTagName;
 };
 
 class JpegMpfParser {
