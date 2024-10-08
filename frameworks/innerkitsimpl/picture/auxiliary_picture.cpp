@@ -148,6 +148,11 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
+    if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
+        IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
+        return false;
+    }
+
     if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
         return false;
     }
@@ -189,6 +194,7 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     auxiliaryPictureInfo.rowStride = parcel.ReadUint32();
     auxiliaryPictureInfo.size.height = parcel.ReadInt32();
     auxiliaryPictureInfo.size.width = parcel.ReadInt32();
+    auxiliaryPictureInfo.jpegTagName = parcel.ReadString();
     auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;

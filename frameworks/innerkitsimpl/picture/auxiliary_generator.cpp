@@ -357,7 +357,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     int32_t denominator = GetAuxiliaryPictureDenominator(type);
     denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
     Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
-    sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_YCBCR_420_SP, errorCode);
+    sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, errorCode);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Alloc surface buffer failed! errorCode: %{public}u", errorCode);
         return nullptr;

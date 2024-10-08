@@ -44,6 +44,7 @@ namespace {
         { GRAPHIC_PIXEL_FMT_BGRA_8888, PixelFormat::BGRA_8888 },
         { GRAPHIC_PIXEL_FMT_RGB_888, PixelFormat::RGB_888 },
         { GRAPHIC_PIXEL_FMT_RGB_565, PixelFormat::RGB_565 },
+        { GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, PixelFormat::RGBA_F16 },
     };
 
     static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
@@ -127,7 +128,8 @@ static bool IsYuvFormat(PixelFormat format)
 
 static bool IsAlphaFormat(PixelFormat format)
 {
-    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_1010102;
+    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 ||
+        format == PixelFormat::RGBA_1010102 || format == PixelFormat::RGBA_F16;
 }
 
 static PixelFormat SbFormat2PixelFormat(int32_t sbFormat)

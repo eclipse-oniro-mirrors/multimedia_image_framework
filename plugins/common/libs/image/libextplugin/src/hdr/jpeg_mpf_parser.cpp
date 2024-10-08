@@ -68,11 +68,12 @@ enum MpfIFDTag : uint16_t {
     TOTAL_FRAMES_TAG = 45060,
 };
 
-static const std::map<AuxiliaryPictureType, std::string> AUXILIARY_TAG_MAP = {
-    {AuxiliaryPictureType::DEPTH_MAP, "DepthP"},
-    {AuxiliaryPictureType::UNREFOCUS_MAP, "edof"},
-    {AuxiliaryPictureType::LINEAR_MAP, "HighBit"},
-    {AuxiliaryPictureType::FRAGMENT_MAP, "Fragmnt"}
+static const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP = {
+    {AUXILIARY_TAG_DEPTH_MAP_BACK, AuxiliaryPictureType::DEPTH_MAP},
+    {AUXILIARY_TAG_DEPTH_MAP_FRONT, AuxiliaryPictureType::DEPTH_MAP},
+    {AUXILIARY_TAG_UNREFOCUS_MAP, AuxiliaryPictureType::UNREFOCUS_MAP},
+    {AUXILIARY_TAG_LINEAR_MAP, AuxiliaryPictureType::LINEAR_MAP},
+    {AUXILIARY_TAG_FRAGMENT_MAP, AuxiliaryPictureType::FRAGMENT_MAP}
 };
 
 bool JpegMpfParser::CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset)
@@ -191,19 +192,20 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
     }
 
     images_.clear();
-    for (const auto& it : AUXILIARY_TAG_MAP) {
+    for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
         for (uint32_t offset = 0; offset < dataSize; offset++) {
-            if (memcmp(data + offset, it.second.c_str(), it.second.size()) == 0) {
+            if (memcmp(data + offset, it.first.c_str(), it.first.size()) == 0) {
                 offset -= UINT32_BYTE_SIZE;
                 uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
                 SingleJpegImage auxImage = {
-                    .auxType = it.first,
+                    .auxType = it.second,
+                    .auxTagName = it.first,
                     .size = imageSize,
                     .offset = offset - UINT32_BYTE_SIZE - imageSize,
                 };
                 images_.push_back(auxImage);
-                IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u",
-                    __func__, static_cast<int>(auxImage.auxType), auxImage.offset, auxImage.size);
+                IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
+                    __func__, auxImage.auxType, auxImage.offset, auxImage.size, auxImage.auxTagName.c_str());
                 break;
             }
         }

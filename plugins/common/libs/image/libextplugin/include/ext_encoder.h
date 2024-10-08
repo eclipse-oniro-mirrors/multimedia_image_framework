@@ -74,6 +74,7 @@ private:
     uint32_t EncodePicture();
     uint32_t EncodeCameraScenePicture(SkWStream& skStream);
     uint32_t EncodeEditScenePicture();
+    void CheckJpegAuxiliaryTagName();
     uint32_t EncodeJpegPicture(SkWStream& skStream);
     uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);

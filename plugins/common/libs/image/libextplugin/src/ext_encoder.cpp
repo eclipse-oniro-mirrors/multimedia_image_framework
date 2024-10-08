@@ -130,6 +130,14 @@ static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kHEIF, IMAGE_HEIF_FORMAT},
 };
 
+static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_MAP = {
+    {AuxiliaryPictureType::GAINMAP, AUXILIARY_TAG_GAINMAP},
+    {AuxiliaryPictureType::DEPTH_MAP, AUXILIARY_TAG_DEPTH_MAP_BACK},
+    {AuxiliaryPictureType::UNREFOCUS_MAP, AUXILIARY_TAG_UNREFOCUS_MAP},
+    {AuxiliaryPictureType::LINEAR_MAP, AUXILIARY_TAG_LINEAR_MAP},
+    {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
+};
+
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
@@ -1183,6 +1191,9 @@ uint32_t ExtEncoder::EncodePicture()
     if (opts_.isEditScene && encodeFormat_ == SkEncodedImageFormat::kHEIF) {
         return EncodeEditScenePicture();
     }
+    if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        CheckJpegAuxiliaryTagName();
+    }
     ExtWStream wStream(output_);
     return EncodeCameraScenePicture(wStream);
 }
@@ -1274,6 +1285,23 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
 #else
     return ERR_IMAGE_INVALID_PARAMETER;
 #endif
+}
+
+void ExtEncoder::CheckJpegAuxiliaryTagName()
+{
+    auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (AuxiliaryPictureType auxType : auxTypes) {
+        if (!picture_->HasAuxiliaryPicture(auxType)) {
+            continue;
+        }
+        auto auxPicture  = picture_->GetAuxiliaryPicture(auxType);
+        AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
+        auto iter = DEFAULT_AUXILIARY_TAG_MAP.find(auxType);
+        if (auxInfo.jpegTagName.size() == 0 && iter != DEFAULT_AUXILIARY_TAG_MAP.end()) {
+            auxInfo.jpegTagName = iter->second;
+            auxPicture->SetAuxiliaryPictureInfo(auxInfo);
+        }
+    }
 }
 
 uint32_t ExtEncoder::EncodeJpegPicture(SkWStream& skStream)
