@@ -2199,8 +2199,16 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         if (!parcel.WriteInt32(bufferSize)) {
             return false;
         }
-        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*> (context_);
-        sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("write pixel map failed, surface buffer is null");
+            return false;
+        }
+        GSError ret = sbBuffer->WriteToMessageParcel(static_cast<MessageParcel&>(parcel));
+        if (ret != GSError::GSERROR_OK) {
+            IMAGE_LOGE("write pixel map to message parcel failed: %{public}s.", GSErrorStr(ret).c_str());
+            return false;
+        }
     } else {
         if (!WriteImageData(parcel, bufferSize)) {
             IMAGE_LOGE("write pixel map buffer to parcel failed.");
@@ -2500,9 +2508,31 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool ReadDmaMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo)
+{
+    sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+    if (surfaceBuffer == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer failed to be created");
+        return false;
+    }
+    GSError ret = surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
+    if (ret != GSError::GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer read from message parcel failed: %{public}s", GSErrorStr(ret).c_str());
+        return false;
+    }
+
+    void* nativeBuffer = surfaceBuffer.GetRefPtr();
+    ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
+    pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
+    pixelMemInfo.context = nativeBuffer;
+    return true;
+}
+#endif
+
 bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
         int fd = ReadFileDescriptor(parcel);
         if (!CheckAshmemSize(fd, pixelMemInfo.bufferSize, pixelMemInfo.isAstc)) {
@@ -2520,7 +2550,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
                 return false;
             }
         }
-        pixelMemInfo.context = new int32_t();
+        pixelMemInfo.context = new(std::nothrow) int32_t();
         if (pixelMemInfo.context == nullptr) {
             ::munmap(ptr, pixelMemInfo.bufferSize);
             ::close(fd);
@@ -2529,12 +2559,10 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
         *static_cast<int32_t *>(pixelMemInfo.context) = fd;
         pixelMemInfo.base = static_cast<uint8_t *>(ptr);
     } else if (pixelMemInfo.allocatorType == AllocatorType::DMA_ALLOC) {
-        sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
-        surfaceBuffer->ReadFromMessageParcel(static_cast<MessageParcel&>(parcel));
-        void* nativeBuffer = surfaceBuffer.GetRefPtr();
-        ImageUtils::SurfaceBuffer_Reference(nativeBuffer);
-        pixelMemInfo.base = static_cast<uint8_t*>(surfaceBuffer->GetVirAddr());
-        pixelMemInfo.context = nativeBuffer;
+        if (!ReadDmaMemInfoFromParcel(parcel, pixelMemInfo)) {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
+            return false;
+        }
     } else {
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
