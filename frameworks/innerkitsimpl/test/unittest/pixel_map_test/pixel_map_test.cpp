@@ -21,6 +21,8 @@
 #include "pixel_map.h"
 #include "pixel_convert_adapter.h"
 
+#define IMAGE_YUV_PATH  "/data/local/tmp/image/P010.yuv"
+
 using namespace testing::ext;
 using namespace OHOS::Media;
 namespace OHOS {
@@ -31,6 +33,15 @@ const uint8_t red = 0xFF;
 const uint8_t green = 0x8F;
 const uint8_t blue = 0x7F;
 const uint8_t alpha = 0x7F;
+
+struct ImageSize {
+    int32_t width = 0;
+    int32_t height = 0;
+    float dstWidth = 0;
+    float dstHeight = 0;
+    const uint32_t color = 0;
+    uint32_t dst = 0;
+};
 
 class PixelMapTest : public testing::Test {
 public:
@@ -172,15 +183,27 @@ void CreateBuffer(const uint32_t width, const uint32_t height, const uint32_t pi
     }
 }
 
-static void Create10BitBuffer(const uint32_t width, const uint32_t height, const uint32_t pixelByte,
-    uint8_t buffer[])
+static bool ReadFile(void *chOrg, std::string path, int32_t totalSize, int32_t srcNum)
 {
-    uint32_t colorLength = width * height * pixelByte;
-    for (int i = 0; i < colorLength; i += pixelByte) {
-        buffer[i] = 125;     // 125: blue index
-        buffer[i + 1] = 70;  // i + 1, 70: green index
-        buffer[i + 2] = 70;  // i + 2, 70: red index
+    FILE* const fileOrg = fopen(path.c_str(), "rb");
+    if (fileOrg == nullptr) {
+        GTEST_LOG_(INFO) << "Can not open" << path.c_str();
+        return false;
     }
+    if (srcNum == 0) {
+        size_t bytesOrg = fread(chOrg, sizeof(uint8_t), static_cast<size_t>(totalSize), fileOrg);
+        if (bytesOrg < static_cast<size_t>(totalSize)) {
+            GTEST_LOG_(INFO) << "Read fail";
+            return false;
+        }
+    } else {
+        size_t bytesOrg = fread(chOrg, sizeof(uint16_t), static_cast<size_t>(totalSize), fileOrg);
+        if (bytesOrg < static_cast<size_t>(totalSize)) {
+            GTEST_LOG_(INFO) << "Read fail" << bytesOrg << "totalsize" << totalSize;
+            return false;
+        }
+    }
+    return true;
 }
 
 void InitOption(struct InitializationOptions& opts, const uint32_t width, const uint32_t height,
@@ -2490,23 +2513,23 @@ HWTEST_F(PixelMapTest, ReadARGBPixelsTest003, TestSize.Level3)
 HWTEST_F(PixelMapTest, PixelMapCreateTest011, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 start";
-    const int32_t offset = 0;
-    /* for test */
-    const int32_t width = 1920;
-    /* for test */
-    const int32_t height = 1080;
-    /* for test */
-    const uint32_t pixelByte = 3;
-    /* for test */
-    const uint32_t colorLength = width * height * pixelByte;
-    uint8_t buffer[colorLength] = {0};
-    Create10BitBuffer(width, height, pixelByte, buffer);
-    uint32_t *color = (uint32_t *)buffer;
-    InitializationOptions opts1;
-    opts1.srcPixelFormat = PixelFormat::YCBCR_P010;
-    opts1.useDMA = true;
-    InitOption(opts1, width, height, PixelFormat::YCBCR_P010, AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN);
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
+    ImageSize imageSize = {1920, 1080, 0, 0, 0, 0}; // 1920: width 1080: height
+    int32_t ySize = imageSize.width * imageSize.height;
+    int32_t uvSize = ((imageSize.width + 1) / 2) * ((imageSize.height + 1) / 2); // 2: Addapting to size
+    const size_t totalSize = (ySize + 2 * uvSize);
+    uint16_t*  const chOrg = new uint16_t[totalSize];
+    bool result = ReadFile(chOrg, IMAGE_YUV_PATH, totalSize, 1);
+    ASSERT_EQ(result, true);
+    const uint32_t dataLength = totalSize * 2; // 2: Addapting to size
+    uint32_t *data = reinterpret_cast<uint32_t *>(chOrg);
+    InitializationOptions opts;
+    opts.srcPixelFormat = PixelFormat::YCBCR_P010;
+    opts.pixelFormat = PixelFormat::YCBCR_P010;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN;
+    opts.size.width = imageSize.width;
+    opts.size.height = imageSize.height;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
     EXPECT_TRUE(pixelMap != nullptr);
     GTEST_LOG_(INFO) << "PixelMapTest: PixelMapCreateTest011 end";
 }
