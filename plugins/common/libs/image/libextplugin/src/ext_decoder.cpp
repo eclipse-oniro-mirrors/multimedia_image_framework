@@ -2020,10 +2020,12 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     auto* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
     int32_t rowStride = sbBuffer->GetStride();
     if (rowStride <= 0) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return false;
     }
     decoder->setGainmapDstBuffer(dstBuffer, static_cast<size_t>(rowStride));
     if (!decoder->decodeGainmap()) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return false;
     }
     return true;
