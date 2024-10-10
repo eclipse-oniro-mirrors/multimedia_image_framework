@@ -1114,7 +1114,6 @@ static bool FFMpegConvert(const void *srcPixels, const FFMPEG_CONVERT_INFO& srcI
     if (inputFrame != nullptr && outputFrame != nullptr) {
         struct SwsContext *ctx = sws_getContext(srcInfo.width, srcInfo.height, srcInfo.format,
             dstInfo.width, dstInfo.height, dstInfo.format, SWS_POINT, nullptr, nullptr, nullptr);
-        IMAGE_LOGE("srcInfo.width:%{public}d, srcInfo.height:%{public}d", srcInfo.width, srcInfo.height);
         if (ctx != nullptr) {
             av_image_fill_arrays(inputFrame->data, inputFrame->linesize, (uint8_t *)srcPixels,
                 srcInfo.format, srcInfo.width, srcInfo.height, srcInfo.alignSize);
@@ -1142,7 +1141,7 @@ static bool NV12P010ToNV21P010(const uint16_t *srcBuffer, const ImageInfo &info,
     const uint16_t *srcUV = srcBuffer + info.size.width * info.size.height;
     uint16_t *dstVU = destBuffer + info.size.width * info.size.height;
     uint32_t sizeUV = info.size.width * info.size.height / NUM_2;
-    for (uint32_t i = 0; i < info.size.width * info.size.height; i++) {
+    for (uint32_t i = 0; i < static_cast<uint32_t>(info.size.width * info.size.height); i++) {
         destBuffer[i] = srcBuffer[i];
     }
     for (uint32_t i = 0; i < sizeUV; i += NUM_2) {
@@ -1287,7 +1286,7 @@ static int32_t YUVConvertRGB(const void *srcPixels, const ImageInfo &srcInfo,
         return -1;
     }
     memset_s(tmpPixels, tmpPixelsLen, 0, tmpPixelsLen);
-    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, (void *)tmpPixels, tmpFFmpegInfo)) {
+    if (!FFMpegConvert(srcPixels, srcFFmpegInfo, reinterpret_cast<void *>(tmpPixels), tmpFFmpegInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
         delete[] tmpPixels;
         tmpPixels = nullptr;
@@ -1412,7 +1411,7 @@ static int32_t RGBConvertYUV(const void *srcPixels, const ImageInfo &srcInfo,
         tmpInfo.size.width, tmpInfo.size.height, 1};
     FFMPEG_CONVERT_INFO dstFFmpegInfo = {PixelFormatToAVPixelFormat(dstInfo.pixelFormat),
         dstInfo.size.width, dstInfo.size.height, 1};
-    if (!FFMpegConvert(tmpPixels, srcFFmpegInfo, (void *)dstPixels, dstFFmpegInfo)) {
+    if (!FFMpegConvert(tmpPixels, srcFFmpegInfo, reinterpret_cast<void *>(dstPixels), dstFFmpegInfo)) {
         IMAGE_LOGE("[PixelMap]Convert: ffmpeg convert failed!");
         delete[] tmpPixels;
         tmpPixels = nullptr;

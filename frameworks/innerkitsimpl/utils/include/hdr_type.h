@@ -19,7 +19,7 @@
 namespace OHOS {
 namespace Media {
 enum class ImageHdrType : int32_t {
-    UNKNOWN,
+    UNKNOWN = 0,
     SDR,
     HDR_ISO_DUAL,
     HDR_CUVA,

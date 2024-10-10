@@ -41,6 +41,7 @@ BufferSourceStream::BufferSourceStream(uint8_t *data, uint32_t size, uint32_t of
 
 BufferSourceStream::~BufferSourceStream()
 {
+    IMAGE_LOGD("[BufferSourceStream]destructor enter");
     if (inputBuffer_ != nullptr) {
         free(inputBuffer_);
         inputBuffer_ = nullptr;
@@ -74,7 +75,7 @@ bool BufferSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
         IMAGE_LOGE("[BufferSourceStream]read fail.");
         return false;
     }
-    dataOffset_ += outData.dataSize;
+    dataOffset_.fetch_add(outData.dataSize);
     return true;
 }
 
@@ -84,19 +85,20 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, DataStreamBuffer &outData)
         IMAGE_LOGE("[BufferSourceStream]input the parameter exception.");
         return false;
     }
-    if (dataSize_ == dataOffset_) {
+    size_t offset = dataOffset_.load();
+    if (dataSize_ == offset) {
         IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
-            dataOffset_, dataSize_);
+            offset, dataSize_);
         return false;
     }
-    outData.bufferSize = dataSize_ - dataOffset_;
-    if (desiredSize > dataSize_ - dataOffset_) {
-        desiredSize = dataSize_ - dataOffset_;
+    outData.bufferSize = dataSize_ - offset;
+    if (desiredSize > dataSize_ - offset) {
+        desiredSize = dataSize_ - offset;
     }
     outData.dataSize = desiredSize;
-    outData.inputStreamBuffer = inputBuffer_ + dataOffset_;
+    outData.inputStreamBuffer = inputBuffer_ + offset;
     IMAGE_LOGD("[BufferSourceStream]Peek end. desiredSize:%{public}d, offset:%{public}zu,"
-        "dataSize%{public}zu.", desiredSize, dataOffset_, dataSize_);
+        "dataSize%{public}zu.", desiredSize, offset, dataSize_);
     return true;
 }
 
@@ -107,7 +109,7 @@ bool BufferSourceStream::Read(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
         IMAGE_LOGE("[BufferSourceStream]read fail.");
         return false;
     }
-    dataOffset_ += readSize;
+    dataOffset_.fetch_add(readSize);
     return true;
 }
 
@@ -119,18 +121,19 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
             "bufferSize:%{public}u.", desiredSize, bufferSize);
         return false;
     }
-    if (dataSize_ == dataOffset_) {
+    size_t offset = dataOffset_.load();
+    if (dataSize_ == offset) {
         IMAGE_LOGE("[BufferSourceStream]buffer read finish, offset:%{public}zu ,dataSize%{public}zu.",
-            dataOffset_, dataSize_);
+            offset, dataSize_);
         return false;
     }
-    if (desiredSize > dataSize_ - dataOffset_) {
-        desiredSize = dataSize_ - dataOffset_;
+    if (desiredSize > dataSize_ - offset) {
+        desiredSize = dataSize_ - offset;
     }
-    errno_t ret = memcpy_s(outBuffer, bufferSize, inputBuffer_ + dataOffset_, desiredSize);
+    errno_t ret = memcpy_s(outBuffer, bufferSize, inputBuffer_ + offset, desiredSize);
     if (ret != EOK) {
         IMAGE_LOGE("[BufferSourceStream]copy data fail, ret:%{public}d, bufferSize:%{public}u,"
-            "offset:%{public}zu, desiredSize:%{public}u.", ret, bufferSize, dataOffset_, desiredSize);
+            "offset:%{public}zu, desiredSize:%{public}u.", ret, bufferSize, offset, desiredSize);
         return false;
     }
     readSize = desiredSize;
@@ -139,7 +142,7 @@ bool BufferSourceStream::Peek(uint32_t desiredSize, uint8_t *outBuffer, uint32_t
 
 uint32_t BufferSourceStream::Tell()
 {
-    return dataOffset_;
+    return dataOffset_.load();
 }
 
 bool BufferSourceStream::Seek(uint32_t position)
@@ -149,7 +152,7 @@ bool BufferSourceStream::Seek(uint32_t position)
             position);
         return false;
     }
-    dataOffset_ = position;
+    dataOffset_.store(position);
     return true;
 }
 
