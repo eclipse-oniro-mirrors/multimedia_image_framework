@@ -66,6 +66,9 @@ public:
     static void Int32ToBytes(int32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
     static void FlushSurfaceBuffer(PixelMap* pixelMap);
+    static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
+    static bool IsMetadataTypeSupported(MetadataType metadataType);
+    static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
 private:
     static uint32_t RegisterPluginServer();

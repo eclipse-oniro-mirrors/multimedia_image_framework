@@ -348,6 +348,40 @@ Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *image
  */
 Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker);
 
+/**
+ * @brief Encoding a <b>Picture</b> into the data with required format.
+ *
+ * @param imagePacker The imagePacker to use for packing.
+ * @param options Indicates the encoding {@link OH_PackingOptions}.
+ * @param picture The picture to be packed.
+ * @param outData The output data buffer to store the packed image.
+ * @param size A pointer to the size of the output data buffer.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} imagePacker is nullptr, or picture is nullptr, or outData is nullptr,
+ *         or size is invalid.
+ *         {@link IMAGE_ENCODE_FAILED} encode failed.
+ * @since 12
+ */
+Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PictureNative *picture, uint8_t *outData, size_t *size);
+
+/**
+ * @brief Encoding a <b>Picture</b> into the a file with fd with required format.
+ *
+ * @param imagePacker The imagePacker to use for packing.
+ * @param options Indicates the encoding {@link OH_PackingOptions}.
+ * @param picture The picture to be packed.
+ * @param fd Indicates a writable file descriptor.
+ * @return Image functions result code.
+ *         {@link IMAGE_SUCCESS} if the execution is successful.
+ *         {@link IMAGE_BAD_PARAMETER} imagePacker is nullptr, or picture is nullptr, or fd is invalid.
+ *         {@link IMAGE_ENCODE_FAILED} encode failed.
+ * @since 12
+ */
+Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative *imagePacker,
+    OH_PackingOptions *options, OH_PictureNative *picture, int32_t fd);
+
 #ifdef __cplusplus
 };
 #endif

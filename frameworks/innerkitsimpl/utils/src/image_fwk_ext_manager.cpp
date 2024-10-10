@@ -74,6 +74,14 @@ bool ImageFwkExtManager::LoadImageFwkExtNativeSo()
             extNativeSoHandle_ = nullptr;
             return false;
         }
+        doHardwareEncodePictureFunc_ = reinterpret_cast<DoHardwareEncodePictureFunc>(dlsym(extNativeSoHandle_,
+            "DoHardwareEncodePicture"));
+        if (doHardwareEncodePictureFunc_ == nullptr) {
+            IMAGE_LOGE("DoHardwareEncodePicture dlsym falied");
+            dlclose(extNativeSoHandle_);
+            extNativeSoHandle_ = nullptr;
+            return false;
+        }
         isImageFwkExtNativeSoOpened_ = true;
     }
     return true;

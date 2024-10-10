@@ -13,22 +13,27 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_METADATA_H
-#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_METADATA_H
+#ifndef INTERFACE_INNERKITS_INCLUDE_AUXILIARY_GENERATOR_H
+#define INTERFACE_INNERKITS_INCLUDE_AUXILIARY_GENERATOR_H
 
-#include <string>
-
-#include <libexif/exif-data.h>
+#include "abs_image_decoder.h"
+#include "auxiliary_picture.h"
+#include "auxiliary_picture.h"
+#include "image_type.h"
+#include "image/input_data_stream.h"
+#include "plugin_server.h"
 
 namespace OHOS {
 namespace Media {
-class Metadata {
+using namespace ImagePlugin;
+using namespace MultimediaPlugin;
+
+class AuxiliaryGenerator {
 public:
-    virtual int GetValue(const std::string &key, std::string &value) const = 0;
-    virtual bool SetValue(const std::string &key, const std::string &value) = 0;
-    virtual bool RemoveEntry(const std::string &key) = 0;
+    static std::shared_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType hdrType, AuxiliaryPictureType type,
+        const std::string &format, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode);
 };
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_METADATA_H
+#endif //INTERFACE_INNERKITS_INCLUDE_AUXILIARY_GENERATOR_H
