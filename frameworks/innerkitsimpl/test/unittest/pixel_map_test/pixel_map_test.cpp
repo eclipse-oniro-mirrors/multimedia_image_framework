@@ -2381,9 +2381,9 @@ HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: SetMemoryNameTest001 start";
     const int32_t offset = 0;
     /* for test */
-    const int32_t width = 2;
+    const int32_t width = 512;
     /* for test */
-    const int32_t height = 2;
+    const int32_t height = 512;
     /* for test */
     const uint32_t pixelByte = 4;
     constexpr uint32_t colorLength = width * height * pixelByte;
@@ -2391,7 +2391,8 @@ HWTEST_F(PixelMapTest, SetMemoryNameTest001, TestSize.Level3)
     CreateBuffer(width, height, pixelByte, buffer);
     uint32_t *color = (uint32_t *)buffer;
     InitializationOptions opts1;
-    InitOption(opts1, width, height, PixelFormat::BGRA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    InitOption(opts1, width, height, PixelFormat::RGBA_8888, AlphaType::IMAGE_ALPHA_TYPE_UNPREMUL);
+    opts1.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(color, colorLength, offset, width, opts1);
     EXPECT_TRUE(pixelMap != nullptr);
 
