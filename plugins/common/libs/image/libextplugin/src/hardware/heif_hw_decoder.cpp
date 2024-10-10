@@ -466,17 +466,23 @@ void HeifHardwareDecoder::SendInputBufferLoop(const vector<vector<uint8_t>>& inp
     LOGI("in");
     size_t inputIndex = 0;
     bool eos = false;
+    uint32_t inputTimeoutCnt = 0;
     while (!eos && !HasError()) {
         uint32_t bufferId;
         shared_ptr<ImageCodecBuffer> buffer;
         if (!WaitForOmxToReturnInputBuffer(bufferId, buffer)) {
             LOGE("input time out");
+            ++inputTimeoutCnt;
+            if (inputTimeoutCnt >= MAX_TIMEOUT_CNT) {
+                SignalError();
+            }
             continue;
         }
         if (buffer == nullptr) {
             LOGE("got null input buffer");
             break;
         }
+        inputTimeoutCnt = 0;
         int32_t size = PrepareInputCodecBuffer(inputs, inputIndex, buffer);
         if (size >= 0) {
             int32_t ret = heifDecoderImpl_->QueueInputBuffer(bufferId);
@@ -589,17 +595,20 @@ void HeifHardwareDecoder::ReceiveOutputBufferLoop()
 {
     LOGI("in");
     uint32_t outputIndex = 0;
-    while (!HasError()) {
+    uint32_t outputTimeoutCnt = 0;
+    while (!HasError() && (outputTimeoutCnt < MAX_TIMEOUT_CNT)) {
         uint32_t bufferId;
         shared_ptr<ImageCodecBuffer> buffer;
         if (!WaitForOmxToReturnOutputBuffer(bufferId, buffer)) {
             LOGE("output time out");
+            ++outputTimeoutCnt;
             continue;
         }
         if (buffer == nullptr) {
             LOGE("null output buffer");
             break;
         }
+        outputTimeoutCnt = 0;
         uint32_t flag = buffer->GetBufferFlag();
         if (flag & OMX_BUFFERFLAG_EOS) {
             LOGI("output eos, quit loop");
