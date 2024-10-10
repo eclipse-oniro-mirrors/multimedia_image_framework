@@ -20,7 +20,9 @@
 #include <charconv>
 #include <iostream>
 #include <unistd.h>
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <linux/dma-buf.h>
+#endif
 #include <sys/ioctl.h>
 
 #include "image_log.h"
