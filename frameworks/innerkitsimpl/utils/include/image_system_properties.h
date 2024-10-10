@@ -32,6 +32,7 @@ public:
     static bool GetAstcHardWareEncodeEnabled();
     static bool GetSutEncodeEnabled();
     static bool GetMediaLibraryAstcEnabled();
+    static bool GetSLRParallelEnabled();
 private:
     ImageSystemProperties() = default;
 };
