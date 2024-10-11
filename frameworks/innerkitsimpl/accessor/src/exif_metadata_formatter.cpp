@@ -1507,14 +1507,14 @@ static bool StrToDouble(const std::string &value, double &output)
     std::string denominatorStr = value.substr(slashPos + 1);
     int numerator = 0;
     std::from_chars_result res1 = std::from_chars(
-         numeratorStr.data(), numeratorStr.data() + numeratorStr.size(), numerator);
+        numeratorStr.data(), numeratorStr.data() + numeratorStr.size(), numerator);
     if (res1.ec != std::errc()) {
         IMAGE_LOGD("numeratorStr convert string to int failed");
         return false;
     }
     int denominator = 0;
     std::from_chars_result res2 = std::from_chars(
-         denominatorStr.data(), denominatorStr.data() + denominatorStr.size(), denominator);
+        denominatorStr.data(), denominatorStr.data() + denominatorStr.size(), denominator);
     if (res2.ec != std::errc()) {
         IMAGE_LOGD("denominatorStr convert string to int failed");
         return false;
