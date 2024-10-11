@@ -100,7 +100,9 @@ constexpr uint32_t MAX_READ_COUNT = 2048;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 static const uint8_t NUM_1 = 1;
+#endif
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
@@ -585,6 +587,7 @@ bool PixelMap::CheckParams(const uint32_t *colors, uint32_t colorLength, int32_t
     return true;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUVDataInfo &yuvInfo)
 {
     if (surfaceBuffer == nullptr) {
@@ -610,6 +613,7 @@ bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUV
     yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
     return true;
 }
+#endif
 
 static bool CheckPixelMap(unique_ptr<PixelMap>& dstPixelMap, const InitializationOptions &opts)
 {
@@ -666,10 +670,12 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     if (IsYUV(opts.pixelFormat)) {
         if (dstPixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             YUVDataInfo yuvDatainfo;
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
             if (!InitYuvDataOutInfo(reinterpret_cast<SurfaceBuffer*>(dstMemory->extend.data),
                 dstImageInfo, yuvDatainfo)) {
                 return nullptr;
             }
+#endif
             dstPixelMap->SetImageYUVInfo(yuvDatainfo);
         } else {
             SetYUVDataInfoToPixelMap(dstPixelMap);
