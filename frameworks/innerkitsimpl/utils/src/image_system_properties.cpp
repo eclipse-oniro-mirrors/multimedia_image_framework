@@ -170,5 +170,14 @@ bool ImageSystemProperties::GetMediaLibraryAstcEnabled()
 #endif
 }
 
+bool ImageSystemProperties::GetSLRParallelEnabled()
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    return system::GetBoolParameter("persist.multimedia.image.Parallel.endabled", true);
+#else
+    return true;
+#endif
+}
+
 } // namespace Media
 } // namespace OHOS
