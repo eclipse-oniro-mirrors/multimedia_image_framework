@@ -3011,6 +3011,27 @@ static bool CheckExtInfoForPixelmap(AstcOutInfo &astcInfo, unique_ptr<PixelAstc>
     return true;
 }
 
+static bool TextureSuperCompressDecodeInit(AstcOutInfo *astcInfo, SutInInfo *sutInfo, size_t inBytes, size_t outBytes)
+{
+    bool ret = (memset_s(astcInfo, sizeof(AstcOutInfo), 0, sizeof(AstcOutInfo)) == 0) &&
+               (memset_s(sutInfo, sizeof(SutInInfo), 0, sizeof(SutInInfo)) == 0);
+    if (!ret) {
+        IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
+        return false;
+    }
+    if (inBytes > std::numeric_limits<int32_t>::max()) {
+        IMAGE_LOGE("astc SuperDecompressTexture inBytes overflow!");
+        return false;
+    }
+    sutInfo->sutBytes = static_cast<int32_t>(inBytes);
+    if (outBytes > std::numeric_limits<int32_t>::max()) {
+        IMAGE_LOGE("astc SuperDecompressTexture outBytes overflow!");
+        return false;
+    }
+    astcInfo->astcBytes = static_cast<int32_t>(outBytes);
+    return true;
+}
+
 static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes,
     unique_ptr<PixelAstc> &pixelAstc)
 {
@@ -3025,15 +3046,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     }
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
-    if (memset_s(&astcInfo, sizeof(AstcOutInfo), 0, sizeof(AstcOutInfo)) != 0 ||
-        memset_s(&sutInfo, sizeof(SutInInfo), 0, sizeof(SutInInfo)) != 0) {
-        IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
+    if (!TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes)) {
         return false;
     }
-    sutInfo.sutBytes = inBytes;
     sutInfo.sutBuf = inData;
     astcInfo.astcBuf = outData;
-    astcInfo.astcBytes = outBytes;
     if (!FillAstcSutExtInfo(astcInfo, sutInfo)) {
         FreeAllExtMemSut(astcInfo);
         IMAGE_LOGE("[ImageSource] SUT dec FillAstcSutExtInfo failed!");
@@ -3050,7 +3067,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         return false;
     }
     FreeAllExtMemSut(astcInfo);
-    outBytes = astcInfo.astcBytes;
+    if (astcInfo.astcBytes < 0) {
+        IMAGE_LOGE("astc SuperDecompressTexture astcInfo.astcBytes sub overflow!");
+        return false;
+    }
+    outBytes = static_cast<size_t>(astcInfo.astcBytes);
     if (outBytes != preOutBytes) {
         IMAGE_LOGE("astc SuperDecompressTexture Dec size is predicted failed!");
         return false;
