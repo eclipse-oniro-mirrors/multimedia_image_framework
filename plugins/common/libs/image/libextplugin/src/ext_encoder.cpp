@@ -947,7 +947,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<ImageItem>& inputImgs)
 {
     auto gainPixelMap = picture_->GetGainmapPixelMap();
-    if (!gainPixelMap) {
+    if (gainPixelMap == nullptr) {
         IMAGE_LOGE("%{public}s, the gainPixelMap is nullptr", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -957,20 +957,20 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     ColorManager::ColorSpaceName colorspaceName =
         sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
     std::shared_ptr<ImageItem> primaryItem = AssembleHdrBaseImageItem(mainSptr, colorspaceName, metadata, opts_);
-    if (!primaryItem) {
+    if (primaryItem == nullptr) {
         IMAGE_LOGE("%{public}s, get primary image failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem = AssembleGainmapImageItem(gainMapSptr, colorspaceName, opts_);
-    if (!gainmapItem) {
+    if (gainmapItem == nullptr) {
         IMAGE_LOGE("%{public}s, get gainmap image item failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*gainmapItem);
     ColorManager::ColorSpaceName tmapColor = picture_->GetMainPixel()->InnerGetGrColorSpace().GetColorSpaceName();
     std::shared_ptr<ImageItem> tmapItem = AssembleTmapImageItem(tmapColor, metadata, opts_);
-    if (!tmapItem) {
+    if (tmapItem == nullptr) {
         IMAGE_LOGE("%{public}s, get tmap image item failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -981,7 +981,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
 uint32_t ExtEncoder::AssembleSdrImageItem(
     sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo, std::vector<ImageItem>& inputImgs)
 {
-    if (!surfaceBuffer) {
+    if (surfaceBuffer == nullptr) {
         IMAGE_LOGI("%{public}s surfaceBuffer is nullptr", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1768,11 +1768,11 @@ void ExtEncoder::AssembleExifRefItem(std::vector<ItemRef>& refs)
     refs.push_back(*item);
 }
 
-void inline FreeExifBlob (uint8_t* exifBlob)
+void inline FreeExifBlob(uint8_t** exifBlob)
 {
-    if (exifBlob != nullptr) {
-        free(exifBlob);
-        exifBlob = nullptr;
+    if (exifBlob != nullptr && *exifBlob != nullptr) {
+        free(*exifBlob);
+        *exifBlob = nullptr;
     }
 }
 
@@ -1806,7 +1806,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
     item->data.fd = -1;
     std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(exifSize + EXIF_PRE_SIZE, EXIF_ASHMEM_TAG);
     if (propertyAshmem == nullptr) {
-        FreeExifBlob(exifBlob);
+        FreeExifBlob(&exifBlob);
         IMAGE_LOGE("AssembleExifMetaItem alloc propertyAshmem failed");
         return false;
     }
@@ -1821,7 +1821,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
         item->data.filledLen = propertyAshmem->data.size;
         metaItems.push_back(*item);
     }
-    FreeExifBlob(exifBlob);
+    FreeExifBlob(&exifBlob);
     return fillRes;
 }
 #endif

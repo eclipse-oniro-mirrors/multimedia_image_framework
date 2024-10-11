@@ -545,7 +545,8 @@ bool HeifDecoderImpl::decodeGainmap()
 bool HeifDecoderImpl::decodeAuxiliaryMap()
 {
     ImageTrace trace("HeifDecoderImpl::decodeAuxiliaryMap");
-    if (auxiliaryImage_ && parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
+    if (auxiliaryImage_ != nullptr && parser_ != nullptr &&
+        parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
         return HwDecodeMimeImage(auxiliaryImage_);
     }
     sptr<SurfaceBuffer> hwBuffer;
@@ -751,6 +752,11 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
     parser_->GetItemData(image->GetItemId(), &inputs, heif_only_header);
     ProcessChunkHead(inputs.data(), inputs.size());
 
+    if (auxiliaryDstMemory_ == nullptr || auxiliaryDstMemorySize_ == 0 || inputs.size() == 0) {
+        IMAGE_LOGE("%{public}s: params fail auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
+            __func__, auxiliaryDstMemorySize_, inputs.size());
+        return false;
+    }
     if (memcpy_s(auxiliaryDstMemory_, auxiliaryDstMemorySize_, inputs.data(), inputs.size()) != EOK) {
         IMAGE_LOGE("%{public}s: memcpy failed, auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}ld",
             __func__, auxiliaryDstMemorySize_, inputs.size());
