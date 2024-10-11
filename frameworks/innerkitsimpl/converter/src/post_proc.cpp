@@ -874,7 +874,7 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
 bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, const AntiAliasingOption &option)
 {
     ImageTrace imageTrace("PixelMap ScalePixelMapEx");
-    IMAGE_LOGE("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
+    IMAGE_LOGD("ScalePixelMapEx pixelMap: width = %{public}d, height = %{public}d, pixelFormat = %{public}d, "
         "allocatorType = %{public}d; desiredSize: width = %{public}d, height = %{public}d",
         pixelMap.GetWidth(), pixelMap.GetHeight(), pixelMap.GetPixelFormat(),
         pixelMap.GetAllocatorType(), desiredSize.width, desiredSize.height);

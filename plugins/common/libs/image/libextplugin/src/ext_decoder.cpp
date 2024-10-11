@@ -1298,14 +1298,14 @@ bool ExtDecoder::CheckCodec()
         IMAGE_LOGE("create codec: input stream is nullptr.");
         return false;
     } else if (stream_->GetStreamSize() == SIZE_ZERO) {
-        IMAGE_LOGE("create codec: input stream size is zero.");
+        IMAGE_LOGD("create codec: input stream size is zero.");
         return false;
     }
     uint32_t src_offset = stream_->Tell();
     codec_ = SkCodec::MakeFromStream(make_unique<ExtStream>(stream_));
     if (codec_ == nullptr) {
         stream_->Seek(src_offset);
-        IMAGE_LOGE("create codec from stream failed");
+        IMAGE_LOGD("create codec from stream failed");
         SetHeifParseError();
         return false;
     }
@@ -1316,7 +1316,7 @@ bool ExtDecoder::CheckCodec()
 bool ExtDecoder::DecodeHeader()
 {
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("DecodeHeader Check codec failed");
         return false;
     }
     info_ = codec_->getInfo();
@@ -1799,7 +1799,7 @@ uint32_t ExtDecoder::GetFilterArea(const int &privacyType, std::vector<std::pair
 {
     IMAGE_LOGD("[GetFilterArea] with privacyType:%{public}d ", privacyType);
     if (!CheckCodec()) {
-        IMAGE_LOGE("Check codec failed");
+        IMAGE_LOGD("[GetFilterArea] Check codec failed");
         return NO_EXIF_TAG;
     }
     SkEncodedImageFormat format = codec_->getEncodedFormat();
