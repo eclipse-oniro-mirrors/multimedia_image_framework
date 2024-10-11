@@ -129,7 +129,7 @@ EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStre
     stream->Seek(0, SeekPos::BEGIN);
     if (ret == STREAM_READ_ERROR) {
         IMAGE_LOGE("Failed to read image type from stream.");
-        if (stream->IsFileChanged()) {
+        if (stream->IsFileSizeChanged()) {
             error = ERR_MEDIA_MMAP_FILE_CHANGED;
         }
         return EncodedFormat::UNKNOWN;

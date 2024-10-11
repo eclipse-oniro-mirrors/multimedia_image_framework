@@ -32,9 +32,9 @@ public:
         const int fd, int32_t offset, int32_t size);
     static bool ShouldUseMmap(int fd);
     FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
-                     bool useMmap = true, int originalFd = SOURCE_STREAM_INVALID_FD);
+                     bool useMmap = false, int originalFd = SOURCE_STREAM_INVALID_FD);
     FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
-                     bool useMmap = true, const std::string &originalPath = SOURCE_STREAM_INVALID_PATH);
+                     bool useMmap = false, const std::string &originalPath = SOURCE_STREAM_INVALID_PATH);
     ~FileSourceStream() override;
 
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;

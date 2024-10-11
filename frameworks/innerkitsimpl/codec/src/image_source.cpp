@@ -1644,7 +1644,7 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
         IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
-        return metadataAccessor->IsFileChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return metadataAccessor->IsFileSizeChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
