@@ -1941,7 +1941,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
     }
 
     int result = AshmemSetProt(fd, PROT_READ | PROT_WRITE);
-    IMAGE_LOGI("AshmemSetProt:[%{public}d].", result);
+    IMAGE_LOGD("AshmemSetProt:[%{public}d].", result);
     if (result < 0) {
         ::close(fd);
         return false;
@@ -1952,7 +1952,7 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
         IMAGE_LOGE("WriteAshmemData map failed, errno:%{public}d", errno);
         return false;
     }
-    IMAGE_LOGI("mmap success");
+    IMAGE_LOGD("mmap success");
 
     if (memcpy_s(ptr, size, data, size) != EOK) {
         ::munmap(ptr, size);
@@ -2186,7 +2186,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
 
         int *fd = static_cast<int *>(context_);
         if (fd == nullptr || *fd <= 0) {
-            IMAGE_LOGE("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
+            IMAGE_LOGD("write pixel map failed, fd is [%{public}d] or fd <= 0.", fd == nullptr ? 1 : 0);
             return false;
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
