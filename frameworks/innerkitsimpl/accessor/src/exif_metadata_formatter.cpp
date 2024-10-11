@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <charconv>
 
 #include "exif_metadata_formatter.h"
 #include "hilog/log_cpp.h"
@@ -1504,8 +1505,20 @@ static bool StrToDouble(const std::string &value, double &output)
     }
     std::string numeratorStr = value.substr(0, slashPos);
     std::string denominatorStr = value.substr(slashPos + 1);
-    int numerator = stoi(numeratorStr);
-    int denominator = stoi(denominatorStr);
+    int numerator = 0;
+    std::from_chars_result res1 = std::from_chars(
+        numeratorStr.data(), numeratorStr.data() + numeratorStr.size(), numerator);
+    if (res1.ec != std::errc()) {
+        IMAGE_LOGD("numeratorStr convert string to int failed");
+        return false;
+    }
+    int denominator = 0;
+    std::from_chars_result res2 = std::from_chars(
+        denominatorStr.data(), denominatorStr.data() + denominatorStr.size(), denominator);
+    if (res2.ec != std::errc()) {
+        IMAGE_LOGD("denominatorStr convert string to int failed");
+        return false;
+    }
     if (denominator == 0) {
         return false;
     }
