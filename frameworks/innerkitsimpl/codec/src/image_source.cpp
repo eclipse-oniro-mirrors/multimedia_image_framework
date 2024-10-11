@@ -136,7 +136,6 @@ static const std::string KEY_IMAGE_HEIGHT = "ImageLength";
 static const std::string IMAGE_FORMAT_RAW = "image/raw";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
-static const int INT_255 = 255;
 static const size_t SIZE_ZERO = 0;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -147,7 +146,6 @@ static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
 static const uint8_t NUM_24 = 24;
-static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const int ASTC_SIZE = 512 * 512;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -705,23 +703,9 @@ bool IsSupportFormat(const PixelFormat &format)
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
 }
 
-bool IsSupportSize(const Size &size)
-{
-    // Check for overflow risk
-    if (size.width > 0 && size.height > INT_MAX / size.width) {
-        return false;
-    }
-    return size.width * size.height >= DMA_SIZE;
-}
-
 bool IsSupportAstcZeroCopy(const Size &size)
 {
     return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
-}
-
-bool IsWidthAligned(const int32_t &width)
-{
-    return ((width * NUM_4) & INT_255) == 0;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
@@ -732,13 +716,13 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #else
     // used for test surfacebuffer
     if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
-        IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
+        ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
         return true;
     }
 
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
-        return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
-            (IsWidthAligned(opts.desiredSize.width)
+        return ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
+            (ImageUtils::IsWidthAligned(opts.desiredSize.width)
             || opts.preferDma);
     }
     return false;
@@ -829,7 +813,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     errorCode = GetImageInfo(FIRST_FRAME, info);
     ParseHdrType();
 #ifdef IMAGE_QOS_ENABLE
-    if (IsSupportSize(info.size) && getpid() != gettid()) {
+    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
