@@ -253,6 +253,11 @@ public:
         return false;
     }
 
+    virtual bool GetHeifFragmentMetadata(Media::Rect& metadata)
+    {
+        return false;
+    }
+
     // define multiple subservices for this interface
     static constexpr uint16_t SERVICE_DEFAULT = 0;
 };

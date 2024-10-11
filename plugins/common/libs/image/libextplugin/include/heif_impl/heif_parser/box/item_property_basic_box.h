@@ -65,6 +65,30 @@ protected:
 private:
     std::vector<uint8_t> bitNums_;
 };
+
+class HeifRlocBox : public HeifFullBox {
+public:
+    HeifRlocBox() : HeifFullBox(BOX_TYPE_RLOC) {}
+
+    uint32_t GetX() const { return horizontalOffset_; }
+
+    uint32_t GetY() const { return verticalOffset_; }
+
+    void SetLocation(const uint32_t horizontalOffset, const uint32_t verticalOffset)
+    {
+        horizontalOffset_ = horizontalOffset;
+        verticalOffset_ = verticalOffset;
+    }
+
+    heif_error Write(HeifStreamWriter &writer) const override;
+
+protected:
+    heif_error ParseContent(HeifStreamReader &reader) override;
+
+private:
+    uint32_t horizontalOffset_ = 0;
+    uint32_t verticalOffset_ = 0;
+};
 } // namespace ImagePlugin
 } // namespace OHOS
 

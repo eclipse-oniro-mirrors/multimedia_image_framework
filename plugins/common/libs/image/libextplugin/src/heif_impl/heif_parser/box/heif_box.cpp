@@ -161,18 +161,10 @@ heif_error HeifFullBox::ParseFullHeader(HeifStreamReader &reader)
     return reader.GetError();
 }
 
-heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<HeifBox> *result)
+std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
 {
-    HeifBox headerBox;
-    heif_error err = headerBox.ParseHeader(reader);
-    if (err) {
-        return err;
-    }
-    if (reader.HasError()) {
-        return reader.GetError();
-    }
     std::shared_ptr<HeifBox> box;
-    switch (headerBox.GetBoxType()) {
+    switch (boxType) {
         MAKE_BOX_CASE("ftyp", HeifFtypBox);
         MAKE_BOX_CASE("meta", HeifMetaBox);
         MAKE_BOX_CASE("hdlr", HeifHdlrBox);
@@ -192,10 +184,25 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<Hei
         MAKE_BOX_CASE("auxC", HeifAuxcBox);
         MAKE_BOX_CASE("idat", HeifIdatBox);
         MAKE_BOX_CASE("iloc", HeifIlocBox);
+        MAKE_BOX_CASE("rloc", HeifRlocBox);
         default:
             box = std::make_shared<HeifBox>();
             break;
     }
+    return box;
+}
+
+heif_error HeifBox::MakeFromReader(HeifStreamReader &reader, std::shared_ptr<HeifBox> *result)
+{
+    HeifBox headerBox;
+    heif_error err = headerBox.ParseHeader(reader);
+    if (err) {
+        return err;
+    }
+    if (reader.HasError()) {
+        return reader.GetError();
+    }
+    std::shared_ptr<HeifBox> box = HeifBox::MakeBox(headerBox.GetBoxType());
     box->SetHeaderInfo(headerBox);
     if (box->GetBoxSize() < box->GetHeaderSize()) {
         return heif_error_invalid_box_size;

@@ -29,10 +29,10 @@ namespace Media {
 #define NATIVEEXPORT
 #endif
 
-#define FRAGMENT_METADATA_KEY_X "X_IN_ORIGINAL"
-#define FRAGMENT_METADATA_KEY_Y "Y_IN_ORIGINAL"
-#define FRAGMENT_METADATA_KEY_WIDTH "WIDTH"
-#define FRAGMENT_METADATA_KEY_HEIGHT "HEIGHT"
+#define FRAGMENT_METADATA_KEY_X "XInOriginal"
+#define FRAGMENT_METADATA_KEY_Y "YInOriginal"
+#define FRAGMENT_METADATA_KEY_WIDTH "FragmentImageWidth"
+#define FRAGMENT_METADATA_KEY_HEIGHT "FragmentImageHeight"
 
 // There is no definite tag name for gainmap
 #define AUXILIARY_TAG_GAINMAP ""

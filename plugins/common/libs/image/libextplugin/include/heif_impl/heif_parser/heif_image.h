@@ -106,10 +106,12 @@ public:
     void SetStaticMetadata(std::vector<uint8_t>& display, std::vector<uint8_t>& lightInfo);
     void SetUWAInfo(std::vector<uint8_t>& uwaInfo);
     void SetISOMetadata(std::vector<uint8_t>& isoMetadata);
+    void SetFragmentMetadata(HeifFragmentMetadata fragmentMetadata);
     std::vector<uint8_t> GetDisplayInfo();
     std::vector<uint8_t> GetLightInfo();
     std::vector<uint8_t> GetUWAInfo();
     std::vector<uint8_t> GetISOMetadata();
+    HeifFragmentMetadata GetFragmentMetadata();
 
 private:
     heif_item_id itemId_ = 0;
@@ -145,6 +147,7 @@ private:
     std::vector<uint8_t> displayInfo_;
     std::vector<uint8_t> uwaInfo_;
     std::vector<uint8_t> isoMetadata_;
+    HeifFragmentMetadata fragmentMetadata_;
 };
 } // namespace ImagePlugin
 } // namespace OHOS

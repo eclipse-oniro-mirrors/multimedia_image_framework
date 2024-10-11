@@ -263,6 +263,11 @@ void HeifImage::SetISOMetadata(std::vector<uint8_t>& isoMetadata)
     isoMetadata_ = isoMetadata;
 }
 
+void HeifImage::SetFragmentMetadata(HeifFragmentMetadata fragmentMetadata)
+{
+    fragmentMetadata_ = fragmentMetadata;
+}
+
 std::vector<uint8_t> HeifImage::GetDisplayInfo()
 {
     return displayInfo_;
@@ -282,5 +287,11 @@ std::vector<uint8_t> HeifImage::GetISOMetadata()
 {
     return isoMetadata_;
 }
+
+HeifFragmentMetadata HeifImage::GetFragmentMetadata()
+{
+    return fragmentMetadata_;
+}
+
 } // namespace ImagePlugin
 } // namespace OHOS

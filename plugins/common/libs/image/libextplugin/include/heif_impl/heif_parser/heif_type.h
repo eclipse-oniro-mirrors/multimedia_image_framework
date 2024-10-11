@@ -53,6 +53,8 @@ static const uint32_t BOX_TYPE_CLLI = fourcc_to_code("clli");
 static const uint32_t BOX_TYPE_MDCV = fourcc_to_code("mdcv");
 static const uint32_t BOX_TYPE_IT35 = fourcc_to_code("it35");
 
+static const uint32_t BOX_TYPE_RLOC = fourcc_to_code("rloc");
+
 static const uint32_t HANDLER_TYPE_PICT = fourcc_to_code("pict");
 
 static const uint32_t ITEM_TYPE_MIME = fourcc_to_code("mime");
@@ -101,6 +103,13 @@ struct HeifMetadata {
     std::string contentType;
     std::string itemUriType;
     std::vector<uint8_t> mData;
+};
+
+struct HeifFragmentMetadata {
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint32_t horizontalOffset = 0;
+    uint32_t verticalOffset = 0;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
