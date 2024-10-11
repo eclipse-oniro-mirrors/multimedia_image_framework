@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <charconv>
+#include <dlfcn.h>
+
 #include "astc_codec.h"
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
@@ -21,8 +24,6 @@
 #include "image_system_properties.h"
 #include "securec.h"
 #include "media_errors.h"
-
-#include <dlfcn.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -207,8 +208,11 @@ void extractDimensions(std::string &format, TextureEncodeOptions &param)
             std::string widthStr = dimensions.substr(0, starPos);
             std::string heightStr = dimensions.substr(starPos + 1);
 
-            param.blockX_ = static_cast<uint8_t>(std::stoi(widthStr));
-            param.blockY_ = static_cast<uint8_t>(std::stoi(heightStr));
+            auto ret_x = std::from_chars(widthStr.data(), widthStr.data() + widthStr.size(), param.blockX_);
+            auto ret_y = std::from_chars(heightStr.data(), heightStr.data() + heightStr.size(), param.blockY_);
+            if (!(ret_x.ec == std::errc() || ret_y.ec == std::errc())) {
+                IMAGE_LOGE("Failed to convert string to number");
+            }
         }
     }
 }
