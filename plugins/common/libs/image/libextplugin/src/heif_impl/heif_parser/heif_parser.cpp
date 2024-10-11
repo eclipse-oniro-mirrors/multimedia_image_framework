@@ -22,11 +22,15 @@
 
 #include <limits>
 #include <cstring>
+#include <set>
 
 namespace OHOS {
 namespace ImagePlugin {
 
 const auto EXIF_ID = "Exif\0\0";
+const std::set<std::string> INFE_ITEM_TYPE = {
+    "hvc1", "grid", "tmap", "iden", "mime"
+};
 
 HeifParser::HeifParser() = default;
 
@@ -302,8 +306,7 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" &&
-            itemType != "iden" && itemType != "mime") {
+        if (INFE_ITEM_TYPE.find(itemType) == INFE_ITEM_TYPE.end()) {
             continue;
         }
         auto image = std::make_shared<HeifImage>(itemId);

@@ -4482,14 +4482,14 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         uint32_t auxErrorCode = ERROR;
         auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
             mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
-        if (auxPicture == nullptr) {
-            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
-        } else {
+        if (auxPicture != nullptr) {
             AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
             auxPictureInfo.jpegTagName = auxInfo.auxTagName;
             auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
             auxPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxPicture);
+        } else {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
 }
