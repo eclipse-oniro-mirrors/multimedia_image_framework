@@ -133,7 +133,7 @@ static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
     }
 
     ImageInfo imageinfo = MakeImageInfo(context.outInfo.size.width, context.outInfo.size.height,
-                                        context.pixelFormat, context.outInfo.alphaType, context.colorSpace);
+                                        context.pixelFormat, context.info.alphaType, context.colorSpace);
     pixelMap->SetImageInfo(imageinfo, true);
 
     PixelMapAddrInfos addrInfos;
