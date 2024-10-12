@@ -2534,7 +2534,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    if (bytesPerPixel == 0 || rowDataSize != GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
+    if (bytesPerPixel == 0 ||
+        rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail or rowDataSize (%{public}d) invalid", rowDataSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
             "bytesPerPixel fail or rowDataSize invalid");
