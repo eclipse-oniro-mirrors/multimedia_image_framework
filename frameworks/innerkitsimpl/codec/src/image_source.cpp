@@ -4356,11 +4356,60 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     }
 }
 
+bool ImageSource::TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+    uint32_t &errorCode)
+{
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: streamBuffer or streamSize is null");
+        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+        return false;
+    }
+    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
+    if (gainMapOffset == 0 || gainMapOffset > streamSize) {
+        IMAGE_LOGE("TryDecodeJpegGainMap: Gain map offset is invalid! offset: %{public}u, streamSize: %{public}u",
+                   gainMapOffset, streamSize);
+        return false;
+    }
+
+    std::unique_ptr<InputDataStream> gainMapStream =
+        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
+    if (gainMapStream == nullptr) {
+        IMAGE_LOGE("Create auxiliary stream fail, gainMapOffset is %{public}u", gainMapOffset);
+        return false;
+    }
+    auto jpegGainMapDecoder = std::unique_ptr<AbsImageDecoder>(
+        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
+    if (jpegGainMapDecoder == nullptr) {
+        IMAGE_LOGE("TryDecodeJpegGainMap create gainmap decoder fail, gainmap offset is %{public}d", gainMapOffset);
+        return false;
+    }
+
+    auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
+        sourceHdrType_, AuxiliaryPictureType::GAINMAP, IMAGE_JPEG_FORMAT, jpegGainMapDecoder, errorCode);
+    if (auxPicture == nullptr) {
+        IMAGE_LOGE("Generate jpeg auxiliary picture failed!, errorCode: %{public}d", errorCode);
+        return false;
+    }
+    auxPicture->GetContentPixel()->SetEditable(true);
+    picture->SetAuxiliaryPicture(auxPicture);
+    return true;
+}
+
 void ImageSource::DecodeJpegAuxiliaryPicture(
-    const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
     uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        if (auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end()) {
+            if (TryDecodeJpegGainMap(picture, streamBuffer, streamSize, errorCode)) {
+                IMAGE_LOGI("TryDecodeJpegGainMap success!");
+                auxTypes.erase(AuxiliaryPictureType::GAINMAP);
+            } else {
+                IMAGE_LOGI("TryDecodeJpegGainMap failed!");
+            }
+        }
+    }
     uint32_t mpfOffset = 0;
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
     if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
