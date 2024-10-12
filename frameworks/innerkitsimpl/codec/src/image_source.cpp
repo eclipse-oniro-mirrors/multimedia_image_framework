@@ -698,11 +698,6 @@ void ImageSource::ContextToAddrInfos(DecodeContext &context, PixelMapAddrInfos &
     addrInfos.func = context.freeFunc;
 }
 
-bool IsSupportFormat(const PixelFormat &format)
-{
-    return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
-}
-
 bool IsSupportAstcZeroCopy(const Size &size)
 {
     return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
@@ -720,7 +715,7 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
         return true;
     }
 
-    if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
+    if (ImageSystemProperties::GetDmaEnabled() && ImageUtils::IsFormatSupportDma(opts.desiredPixelFormat)) {
         return ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
             (ImageUtils::IsWidthAligned(opts.desiredSize.width)
             || opts.preferDma);

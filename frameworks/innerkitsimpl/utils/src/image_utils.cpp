@@ -287,9 +287,8 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return IsSizeSupportDma(size) && (preferDma || IsWidthAligned(size.width)) &&
-        (format == PixelFormat::RGBA_8888 || format == PixelFormat::RGBA_1010102 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010) ?
+    return IsSizeSupportDma(size) && (preferDma || (IsWidthAligned(size.width) && IsFormatSupportDma(format))) &&
+        (format == PixelFormat::RGBA_8888 || Is10Bit(format)) ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
     return AllocatorType::HEAP_ALLOC;
@@ -322,6 +321,17 @@ bool ImageUtils::IsSizeSupportDma(const Size &size)
         return false;
     }
     return size.width * size.height >= DMA_SIZE;
+}
+
+bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
+{
+    return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
+}
+
+bool ImageUtils::Is10Bit(const PixelFormat &format)
+{
+    return format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
 }
 
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
