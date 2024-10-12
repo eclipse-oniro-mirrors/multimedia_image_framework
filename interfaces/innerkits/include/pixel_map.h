@@ -376,6 +376,7 @@ protected:
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
+    int32_t GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format);
     void SetEditable(bool editable)
     {
         editable_ = editable;
