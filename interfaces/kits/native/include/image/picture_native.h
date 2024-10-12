@@ -96,23 +96,23 @@ typedef enum {
     /*
     * Gainmap
     */
-    GAINMAP = 1,
+    AUXILIARY_PICTURE_TYPE_GAINMAP = 1,
     /*
     * Depth map
     */
-    DEPTH_MAP = 2,
+    AUXILIARY_PICTURE_TYPE_DEPTH_MAP = 2,
     /*
     * Unrefocus map
     */
-    UNREFOCUS_MAP = 3,
+    AUXILIARY_PICTURE_TYPE_UNREFOCUS_MAP = 3,
     /*
     * Linear map
     */
-    LINEAR_MAP = 4,
+    AUXILIARY_PICTURE_TYPE_LINEAR_MAP = 4,
     /*
     * Fragment map
     */
-    FRAGMENT_MAP = 5,
+    AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP = 5,
 } Image_AuxiliaryPictureType;
 
 /**

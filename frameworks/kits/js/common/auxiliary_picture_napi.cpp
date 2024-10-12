@@ -380,13 +380,15 @@ static void CommonCallbackRoutine(napi_env env, AuxiliaryPictureNapiAsyncContext
 static void GetMetadataComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("[AuxiliaryPicture]GetMetadata IN");
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
     auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(data);
-    napi_value result = MetadataNapi::CreateMetadata(env, context->imageMetadata);
-
+    if (context->imageMetadata != nullptr) {
+        result = MetadataNapi::CreateMetadata(env, context->imageMetadata);
+    }
     if (!IMG_IS_OK(status)) {
         context->status = ERROR;
         IMAGE_LOGE("Get Metadata failed!");
-        napi_get_undefined(env, &result);
     } else {
         context->status = SUCCESS;
     }
@@ -430,7 +432,6 @@ napi_value AuxiliaryPictureNapi::GetMetadata(napi_env env, napi_callback_info in
         [](napi_env env, void* data) {
             auto context = static_cast<AuxiliaryPictureNapiAsyncContext*>(data);
             context->imageMetadata = context->rAuxiliaryPicture->GetMetadata(context->metadataType);
-            context->status = SUCCESS;
         }, GetMetadataComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("Fail to create async work"));

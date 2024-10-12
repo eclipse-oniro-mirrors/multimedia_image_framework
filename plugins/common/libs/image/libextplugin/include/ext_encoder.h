@@ -27,7 +27,6 @@
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "surface_buffer.h"
 #endif
-#include "v2_0/icodec_image.h"
 #include "hdr_type.h"
 
 #ifdef HEIF_HW_ENCODE_ENABLE
@@ -73,8 +72,8 @@ private:
     uint32_t EncodeDualVivid(ExtWStream& outputStream);
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);
     uint32_t EncodePicture();
-    uint32_t EncodeCameraSencePicture(SkWStream& skStream);
-    uint32_t EncodeEditSencePicture(ExtWStream& outputStream);
+    uint32_t EncodeCameraScenePicture(SkWStream& skStream);
+    uint32_t EncodeEditScenePicture(ExtWStream& outputStream);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
         bool needExif, SkWStream& outputStream);
@@ -124,7 +123,6 @@ private:
     PlEncodeOptions opts_;
     Media::PixelMap* pixelmap_ = nullptr;
     Media::Picture* picture_ = nullptr;
-    sptr<HDI::Codec::Image::V2_0::ICodecImage> hwEncoder_;
     std::vector<std::shared_ptr<Media::AbsMemory>> tmpMemoryList_;
 };
 } // namespace ImagePlugin
