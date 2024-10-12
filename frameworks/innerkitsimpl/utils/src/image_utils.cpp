@@ -78,6 +78,8 @@ constexpr int32_t ASTC_6X6_BLOCK = 6;
 constexpr int32_t ASTC_8X8_BLOCK = 8;
 constexpr int32_t ASTC_BLOCK_SIZE = 16;
 constexpr int32_t ASTC_HEADER_SIZE = 16;
+constexpr uint8_t FILL_NUMBER = 3;
+constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
@@ -87,6 +89,9 @@ static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const uint8_t NUM_5 = 5;
+static const uint8_t NUM_6 = 6;
+static const uint8_t NUM_7 = 7;
 static const uint8_t INT_255 = 255;
 static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
 
@@ -179,6 +184,23 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
             break;
     }
     return pixelBytes;
+}
+
+int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
+{
+    int32_t pixelBytes = GetPixelBytes(format);
+    switch (format) {
+        case PixelFormat::ALPHA_8:
+            return pixelBytes * ((width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        case PixelFormat::ASTC_4x4:
+            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_3) >> NUM_2) << NUM_2);
+        case PixelFormat::ASTC_6x6:
+            return pixelBytes * (((width + NUM_5) / NUM_6) * NUM_6);
+        case PixelFormat::ASTC_8x8:
+            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_7) >> NUM_3) << NUM_3);
+        default:
+            return pixelBytes * width;
+    }
 }
 
 uint32_t ImageUtils::RegisterPluginServer()
