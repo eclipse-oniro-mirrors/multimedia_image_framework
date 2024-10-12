@@ -424,20 +424,6 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_Write005, TestSize.Level3)
 }
 
 /**
- * @tc.name: FileMetadataStream_Write006
- * @tc.desc: Test the Write function of FileMetadataStream when the amount of data
- * written exceeds the remaining space in the file system
- * @tc.type: FUNC
- */
-HWTEST_F(MetadataStreamTest, FileMetadataStream_Write006, TestSize.Level3)
-{
-    // This test case requires a nearly full file system, so it may be difficult
-    // to implement in actual testing
-    auto mockFileWrapper = std::make_unique<MockFileWrapper>();
-    FileMetadataStream stream(filePath, std::move(mockFileWrapper));
-}
-
-/**
  * @tc.name: FileMetadataStream_Write001
  * @tc.desc: Test the Write function of FileMetadataStream, whether it can write
  * normally and verify the written data
@@ -1417,16 +1403,6 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write009, TestSize.Level3)
 }
 
 /**
- * @tc.name: BufferMetadataStream_Close001
- * @tc.desc: Test the Close function of BufferMetadataStream with an empty stream
- * @tc.type: FUNC
- */
-HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close001, TestSize.Level3)
-{
-    BufferMetadataStream stream;
-}
-
-/**
  * @tc.name: BufferMetadataStream_Close002
  * @tc.desc: Test the Close function of BufferMetadataStream after writing to the
  * stream
@@ -1462,18 +1438,6 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Close004, TestSize.Level3)
     BufferMetadataStream stream;
     stream.Write((byte *)"Hello, world!", 13);
     stream.Close();
-}
-
-/**
- * @tc.name: BufferImageStream_Close005
- * @tc.desc: Test the Close function of BufferImageStream with a fixed size
- * buffer
- * @tc.type: FUNC
- */
-HWTEST_F(MetadataStreamTest, BufferImageStream_Close005, TestSize.Level3)
-{
-    char text[] = "Hello, world!";
-    BufferMetadataStream stream((byte *)text, sizeof(text), BufferMetadataStream::Fix);
 }
 
 /**
