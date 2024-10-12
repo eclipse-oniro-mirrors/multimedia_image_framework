@@ -29,7 +29,9 @@
 #include "incremental_pixel_map.h"
 #include "peer_listener.h"
 #include "pixel_map.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "picture.h"
+#endif
 
 namespace OHOS {
 namespace MultimediaPlugin {
@@ -51,13 +53,19 @@ struct DecodeContext;
 } // namespace ImagePlugin
 } // namespace OHOS
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 namespace OHOS::HDI::Display::Graphic::Common::V1_0 {
 enum CM_ColorSpaceType : int32_t;
 }
+#else
+enum CM_ColorSpaceType : int32_t;
+#endif
 
 namespace OHOS {
 namespace Media {
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 using namespace HDI::Display::Graphic::Common::V1_0;
+#endif
 class ImageEvent;
 struct SourceOptions {
     std::string formatHint;
@@ -189,7 +197,9 @@ public:
     NATIVEEXPORT std::unique_ptr<IncrementalPixelMap> CreateIncrementalPixelMap(uint32_t index,
                                                                                 const DecodeOptions &opts,
                                                                                 uint32_t &errorCode);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NATIVEEXPORT std::unique_ptr<Picture> CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode);
+#endif
     // for incremental source.
     NATIVEEXPORT uint32_t UpdateData(const uint8_t *data, uint32_t size, bool isCompleted);
     // for obtaining basic image information without decoding image data.
@@ -350,12 +360,14 @@ private:
     bool ParseHdrType();
     bool PrereadSourceStream();
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
+    #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
-    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
-                              uint32_t &errorCode);
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
+    #endif
+    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+                              uint32_t &errorCode);
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";

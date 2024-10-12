@@ -73,7 +73,9 @@ const uint8_t BYTE_FULL = 0xFF;
 const int32_t SIZE = 100;
 const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 const int32_t TYPE_PICTURE = 3;
+#endif
 const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
 const int MASK_3 = 0x3;
 const int MASK_16 = 0xffff;
@@ -95,7 +97,9 @@ struct ImagePackerAsyncContext {
     PackOption packOption;
     std::shared_ptr<ImagePacker> rImagePacker;
     std::shared_ptr<PixelMap> rPixelMap;
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     std::shared_ptr<Picture> rPicture;
+#endif
     std::shared_ptr<std::vector<std::shared_ptr<PixelMap>>> rPixelMaps;
     std::unique_ptr<uint8_t[]> resultBuffer;
     int32_t packType = TYPE_IMAGE_SOURCE;
@@ -288,6 +292,7 @@ STATIC_EXEC_FUNC(Packing)
             return;
         }
         context->rImagePacker->AddImage(*(context->rPixelMap));
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         IMAGE_LOGI("ImagePacker set picture");
         if (context->rPicture == nullptr) {
@@ -295,6 +300,7 @@ STATIC_EXEC_FUNC(Packing)
             return;
         }
         context->rImagePacker->AddPicture(*(context->rPicture));
+#endif
     }
     context->rImagePacker->FinalizePacking(packedSize);
     IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
@@ -680,6 +686,7 @@ static int32_t ParserPackingArgumentType(napi_env env, napi_value argv)
         return TYPE_PIXEL_MAP;
     }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     ret = napi_get_named_property(env, global, "Picture", &constructor);
     if (ret != napi_ok) {
         IMAGE_LOGE("Get PictureNapi property failed!");
@@ -690,6 +697,7 @@ static int32_t ParserPackingArgumentType(napi_env env, napi_value argv)
         IMAGE_LOGD("This is PictureNapi type!");
         return TYPE_PICTURE;
     }
+#endif
 
     IMAGE_LOGE("Invalid type!");
     return TYPE_IMAGE_SOURCE;
@@ -727,9 +735,11 @@ static void ParserPackingArguments(napi_env env,
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMap != nullptr, "PixelMap mismatch");
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPicture != nullptr, "Picture mismatch");
+#endif
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
         BuildMsgOnError(context,
@@ -1108,10 +1118,12 @@ static void ParserPackToFileArguments(napi_env env,
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMap != nullptr,
             "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPicture != nullptr,
             "Picture mismatch", ERR_IMAGE_INVALID_PARAMETER);
+#endif
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
         BuildMsgOnError(context, (napi_get_value_int32(env, argv[PARAM1], &(context->fd)) == napi_ok &&
@@ -1126,6 +1138,20 @@ static void ParserPackToFileArguments(napi_env env,
         napi_create_reference(env, argv[PARAM3], refCount, &(context->callbackRef));
     }
 }
+
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+bool SetPicture(ImagePackerAsyncContext *context)
+{
+    IMAGE_LOGD("ImagePacker set picture");
+    if (context->rPicture == nullptr) {
+        BuildMsgOnError(context, context->rImageSource == nullptr,
+            "Picture is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+        return true;
+    }
+    context->rImagePacker->AddPicture(*(context->rPicture));
+    return false;
+}
+#endif
 
 STATIC_EXEC_FUNC(PackToFile)
 {
@@ -1159,14 +1185,12 @@ STATIC_EXEC_FUNC(PackToFile)
             return;
         }
         context->rImagePacker->AddImage(*(context->rPixelMap));
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
-        IMAGE_LOGD("ImagePacker set picture");
-        if (context->rPicture == nullptr) {
-            BuildMsgOnError(context, context->rImageSource == nullptr,
-                "Picture is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+        if (SetPicture(context)) {
             return;
         }
-        context->rImagePacker->AddPicture(*(context->rPicture));
+#endif
     }
     auto packRes = context->rImagePacker->FinalizePacking(packedSize);
     IMAGE_LOGD("packRes=%{public}d packedSize=%{public}" PRId64, packRes, packedSize);
