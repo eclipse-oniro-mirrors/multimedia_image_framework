@@ -35,6 +35,7 @@ public:
     static bool GetFileSize(const int fd, size_t &size);
     static bool GetInputStreamSize(std::istream &inputStream, size_t &size);
     static int32_t GetPixelBytes(const PixelFormat &pixelFormat);
+    static int32_t GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format);
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
