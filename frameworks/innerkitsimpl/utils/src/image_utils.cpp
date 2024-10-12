@@ -78,15 +78,16 @@ constexpr int32_t ASTC_6X6_BLOCK = 6;
 constexpr int32_t ASTC_8X8_BLOCK = 8;
 constexpr int32_t ASTC_BLOCK_SIZE = 16;
 constexpr int32_t ASTC_HEADER_SIZE = 16;
+constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
-constexpr int32_t DMA_SIZE = 512 * 512;
 static bool g_pluginRegistered = false;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
+static const uint8_t INT_255 = 255;
 static const string FILE_DIR_IN_THE_SANDBOX = "/data/storage/el2/base/files/";
 
 bool ImageUtils::GetFileSize(const string &pathName, size_t &size)
@@ -283,13 +284,12 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
     return dstType;
 }
 
-AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
+AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return useDMA && ((format == PixelFormat::RGBA_1010102 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010)||
-        (format == PixelFormat::RGBA_8888))
-        && size.width * size.height >= DMA_SIZE ?
+    return IsSizeSupportDma(size) && (preferDma || IsWidthAligned(size.width)) &&
+        (format == PixelFormat::RGBA_8888 || format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010) ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
     return AllocatorType::HEAP_ALLOC;
@@ -308,6 +308,20 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
+}
+
+bool ImageUtils::IsWidthAligned(const int32_t &width)
+{
+    return ((static_cast<uint32_t>(width) * NUM_4) & INT_255) == 0;
+}
+
+bool ImageUtils::IsSizeSupportDma(const Size &size)
+{
+    // Check for overflow risk
+    if (size.width > 0 && size.height > INT_MAX / size.width) {
+        return false;
+    }
+    return size.width * size.height >= DMA_SIZE;
 }
 
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
