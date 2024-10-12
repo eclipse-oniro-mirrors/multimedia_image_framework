@@ -352,7 +352,9 @@ private:
     void SetDmaContextYuvInfo(ImagePlugin::DecodeContext& context);
     void DecodeHeifAuxiliaryPictures(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                      uint32_t &errorCode);
-    void DecodeJpegAuxiliaryPicture(const std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
+    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
+                              uint32_t &errorCode);
+    void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
 
     const std::string NINE_PATCH = "ninepatch";
