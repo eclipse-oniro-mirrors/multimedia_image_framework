@@ -24,6 +24,8 @@
 #include "pixel_map_napi.h"
 #include "incremental_pixel_map.h"
 #include "image_resource_utils.h"
+#include "picture.h"
+#include "picture_napi.h"
 
 namespace OHOS {
 namespace Media {
@@ -74,6 +76,7 @@ private:
     static napi_value GetDelayTime(napi_env env, napi_callback_info info);
     static napi_value GetDisposalType(napi_env env, napi_callback_info info);
     static napi_value GetFrameCount(napi_env env, napi_callback_info info);
+    static napi_value CreatePicture(napi_env env, napi_callback_info info);
 
     void release();
     static thread_local napi_ref sConstructor_;

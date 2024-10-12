@@ -69,6 +69,8 @@ public:
     bool DecodeHeifGainMap(DecodeContext &context) override;
     bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr) override;
     uint32_t GetHeifParseErr() override;
+    bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type) override;
+    bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
 #ifdef IMAGE_COLORSPACE_FLAG
     OHOS::ColorManager::ColorSpace getGrColorSpace() override;
     bool IsSupportICCProfile() override;

@@ -64,6 +64,11 @@ public:
         std::vector<uint8_t>& lightInfo) override;
     void getISOMetadata(std::vector<uint8_t>& isoMetadata) override;
     void getErrMsg(std::string& errMsg) override;
+    bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type);
+    bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
+    bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);
+    bool decodeAuxiliaryMap();
+    void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t rowStride);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -135,6 +140,12 @@ private:
     HeifFrameInfo gainmapImageInfo_{};
     uint8_t* gainmapDstMemory_;
     size_t gainmapDstRowStride_;
+
+    std::shared_ptr<HeifImage> auxiliaryImage_ = nullptr;
+    HeifFrameInfo auxiliaryImageInfo_{};
+    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0};
+    uint8_t* auxiliaryDstMemory_;
+    size_t auxiliaryDstRowStride_;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

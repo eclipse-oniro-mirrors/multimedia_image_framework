@@ -39,6 +39,15 @@ constexpr uint16_t TAG_TYPE_UNDEFINED = 0x07;
 constexpr uint16_t TAG_TYPE_LONG = 0x04;
 constexpr uint16_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
 
+constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
+constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
+
+constexpr uint8_t MP_TYPE_UNDEFINED = 0x00;
+constexpr uint8_t MP_TYPE_LARGE_THUMBNAIL = 0x01;
+constexpr uint8_t MP_TYPE_MULTI_VIEW = 0x02;
+constexpr uint8_t MP_TYPE_BASELINE_MP_PRIMARY = 0x03;
+constexpr uint8_t MP_TYPE_GAINMAP = 0x05;
+
 static constexpr uint8_t MULTI_PICTURE_HEADER_FLAG[] = {
     'M', 'P', 'F', '\0'
 };
@@ -60,6 +69,28 @@ enum MpfIFDTag : uint16_t {
     IMAGE_UID_LIST_TAG = 45059,
     TOTAL_FRAMES_TAG = 45060,
 };
+
+static const std::map<uint8_t, AuxiliaryPictureType> MP_AUXILIARY_TYPE_MAP = {
+    {MP_TYPE_UNDEFINED, AuxiliaryPictureType::NONE},
+    {MP_TYPE_LARGE_THUMBNAIL, AuxiliaryPictureType::NONE},
+    {MP_TYPE_MULTI_VIEW, AuxiliaryPictureType::NONE},
+    {MP_TYPE_BASELINE_MP_PRIMARY, AuxiliaryPictureType::NONE},
+    {MP_TYPE_GAINMAP, AuxiliaryPictureType::GAINMAP},
+};
+
+bool JpegMpfParser::CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset)
+{
+    if (data == nullptr) {
+        return false;
+    }
+    for (offset = 0; offset < size; offset++) {
+        if (data[offset] == JPEG_MARKER_PREFIX && (data[offset + 1] == JPEG_MARKER_APP2)) {
+            offset += UINT32_BYTE_SIZE;
+            return true;
+        }
+    }
+    return false;
+}
 
 bool JpegMpfParser::Parsing(uint8_t* data, uint32_t size)
 {
@@ -146,6 +177,7 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
     images_.resize(imageNums);
     for (uint32_t i = 0; i < imageNums; i++) {
         uint32_t imageAttr = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
+        images_[i].auxType = ParsingImageAttribute(imageAttr, isBigEndian);
         images_[i].size = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
@@ -154,6 +186,19 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
             i, imageAttr, image1EntryNum, image2EntryNum);
     }
     return true;
+}
+
+AuxiliaryPictureType JpegMpfParser::ParsingImageAttribute(uint32_t imageAttr, bool isBigEndian)
+{
+    vector<uint8_t> bytes(UINT32_BYTE_SIZE);
+    uint32_t offset = 0;
+    ImageUtils::Uint32ToBytes(imageAttr, bytes, offset, isBigEndian);
+    uint8_t mpType = isBigEndian ? bytes[1] : bytes[UINT16_BYTE_SIZE];
+    auto iter = MP_AUXILIARY_TYPE_MAP.find(mpType);
+    if (iter == MP_AUXILIARY_TYPE_MAP.end()) {
+        return AuxiliaryPictureType::NONE;
+    }
+    return iter->second;
 }
 
 static void WriteMPEntryToBytes(vector<uint8_t>& bytes, uint32_t& offset, std::vector<SingleJpegImage> images)

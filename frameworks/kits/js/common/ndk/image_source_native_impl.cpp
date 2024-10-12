@@ -86,6 +86,19 @@ OH_ImageSourceNative::OH_ImageSourceNative(RawFileDescriptor rawFile, SourceOpti
     innerImageSource_ = std::move(nativeImageSource);
 }
 
+OH_DecodingOptionsForPicture::OH_DecodingOptionsForPicture(
+    std::shared_ptr<OHOS::Media::DecodingOptionsForPicture> decodingOptionsForPicture)
+{
+    decodingOptionsForPicture_ = decodingOptionsForPicture;
+}
+
+OH_DecodingOptionsForPicture::~OH_DecodingOptionsForPicture() {}
+
+std::shared_ptr<OHOS::Media::DecodingOptionsForPicture> OH_DecodingOptionsForPicture::GetInnerDecodingOptForPicture()
+{
+    return decodingOptionsForPicture_;
+}
+
 #ifdef __cplusplus
 };
 #endif

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_EXIF_METADATA_H
-#define FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_EXIF_METADATA_H
+#ifndef INTERFACES_INNERKITS_INCLUDE_EXIF_METADATA_H
+#define INTERFACES_INNERKITS_INCLUDE_EXIF_METADATA_H
 
 #include <libexif/exif-entry.h>
 #include <libexif/exif-tag.h>
@@ -22,10 +22,11 @@
 
 #include "image_type.h"
 #include "metadata.h"
+#include "parcel.h"
 
 namespace OHOS {
 namespace Media {
-class ExifMetadata : public Metadata {
+class ExifMetadata : public ImageMetadata {
 public:
     ExifMetadata();
     ExifMetadata(ExifData *exifData);
@@ -33,10 +34,15 @@ public:
     virtual int GetValue(const std::string &key, std::string &value) const override;
     virtual bool SetValue(const std::string &key, const std::string &value) override;
     virtual bool RemoveEntry(const std::string &key) override;
+    virtual const ImageMetadata::PropertyMapPtr GetAllProperties() override;
+    virtual std::shared_ptr<ImageMetadata> CloneMetadata() override;
     ExifData* GetExifData();
     bool CreateExifdata();
     NATIVEEXPORT std::shared_ptr<ExifMetadata> Clone();
     void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
+    bool Marshalling(Parcel &parcel) const override;
+    static ExifMetadata *Unmarshalling(Parcel &parcel);
+    static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
@@ -65,4 +71,4 @@ private:
 } // namespace Media
 } // namespace OHOS
 
-#endif // FRAMEWORKS_INNERKITSIMPL_ACCESSOR_INCLUDE_EXIF_METADATA_H
+#endif // INTERFACES_INNERKITS_INCLUDE_EXIF_METADATA_H

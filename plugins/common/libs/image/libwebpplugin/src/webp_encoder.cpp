@@ -90,6 +90,12 @@ uint32_t WebpEncoder::AddImage(Media::PixelMap &pixelMap)
     return SUCCESS;
 }
 
+uint32_t WebpEncoder::AddPicture(Media::Picture &picture)
+{
+    ImageTrace imageTrace("WebpEncoder::AddPicture");
+    return ERR_IMAGE_ENCODE_FAILED;
+}
+
 uint32_t WebpEncoder::FinalizeEncode()
 {
     ImageTrace imageTrace("WebpEncoder::FinalizeEncode");

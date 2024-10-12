@@ -24,6 +24,7 @@ config("native_public_config") {
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/picture_ndk",
   ]
 }
 
@@ -140,9 +141,11 @@ ohos_shared_library("image_source") {
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/picture_ndk/include",
   ]
 
   deps = [
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/interfaces/kits/js/common:image",
@@ -179,10 +182,12 @@ ohos_shared_library("image_packer") {
     "$BASE_DIR/multimedia/image_framework/interfaces/kits/native/include/image",
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
+    "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/picture_ndk/include",
   ]
 
   deps = [
     "$image_subsystem/frameworks/kits/js/common/ndk:image_source",
+    "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "$image_subsystem/interfaces/innerkits:image_native",
     "$image_subsystem/interfaces/kits/js/common:image",

@@ -56,6 +56,8 @@ public:
 
     std::shared_ptr<HeifImage> GetGainmapImage();
 
+    std::shared_ptr<HeifImage> GetAuxiliaryMapImage(const std::string type);
+
     std::shared_ptr<HeifImage> GetTmapImage();
 
     std::string GetItemType(heif_item_id itemId) const;

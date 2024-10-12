@@ -109,6 +109,8 @@ struct ImageSourceAsyncContext {
     std::unique_ptr<std::vector<int32_t>> disposalType;
     uint32_t frameCount = 0;
     struct RawFileDescriptorInfo rawFileInfo;
+    DecodingOptionsForPicture decodingOptsForPicture;
+    std::shared_ptr<Picture> rPicture;
 };
 
 struct ImageSourceSyncContext {
@@ -768,6 +770,7 @@ napi_value ImageSourceNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("updateData", UpdateData),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_GETTER("supportedFormats", GetSupportedFormats),
+        DECLARE_NAPI_FUNCTION("createPicture", CreatePicture),
     };
 
     napi_property_descriptor static_prop[] = {
@@ -2769,6 +2772,141 @@ void ImageSourceNapi::SetImageResource(ImageResource resource)
 ImageResource ImageSourceNapi::GetImageResource()
 {
     return resource_;
+}
+
+static void CreatePictureExecute(napi_env env, void *data)
+{
+    IMAGE_LOGD("CreatePictureExecute IN");
+    if (data == nullptr) {
+        IMAGE_LOGE("data is nullptr");
+        return;
+    }
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+    if (context == nullptr) {
+        IMAGE_LOGE("empty context");
+        return;
+    }
+
+    if (context->errMsg.size() > 0) {
+        IMAGE_LOGE("mismatch args");
+        context->status = ERROR;
+        return;
+    }
+
+    uint32_t errorCode;
+    context->rPicture = context->rImageSource->CreatePicture(context->decodingOptsForPicture, errorCode);
+    if (context->rPicture != nullptr) {
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+    }
+
+    if (context->status != SUCCESS) {
+        context->errMsg = "Create Picture error";
+        IMAGE_LOGE("Create Picture error");
+    }
+    IMAGE_LOGD("CreatePictureExecute OUT");
+}
+
+static void CreatePictureComplete(napi_env env, napi_status status, void *data)
+{
+    IMAGE_LOGD("CreatePictureComplete IN");
+    napi_value result = nullptr;
+    auto context = static_cast<ImageSourceAsyncContext*>(data);
+
+    if (context->status == SUCCESS) {
+        result = PictureNapi::CreatePicture(env, context->rPicture);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    IMAGE_LOGD("CreatePictureComplete OUT");
+    ImageSourceCallbackRoutine(env, context, result);
+}
+
+static bool ParseDecodingOptionsForPicture(napi_env env, napi_value root, DecodingOptionsForPicture* opts)
+{
+    napi_value tmpValue = nullptr;
+    if (napi_get_named_property(env, root, "desiredAuxiliaryPictures", &tmpValue) != napi_ok) {
+        IMAGE_LOGE("fail to named property desiredAuxiliaryPictures");
+        return false;
+    }
+
+    uint32_t arrayLen = 0;
+    napi_status status = napi_get_array_length(env, tmpValue, &arrayLen);
+    if (status != napi_ok) {
+        IMAGE_LOGE("Get array length failed: %{public}d", status);
+        return false;
+    }
+
+    napi_value element;
+    uint32_t type;
+    for (uint32_t i = 0; i < arrayLen; i++) {
+        if (napi_get_element(env, tmpValue, i, &element) != napi_ok) {
+            IMAGE_LOGE("get array element failed");
+            return false;
+        }
+        if (napi_get_value_uint32(env, element, &type) != napi_ok) {
+            IMAGE_LOGE("get type from element failed");
+            return false;
+        }
+        if (type <= static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+            opts->desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
+            IMAGE_LOGD("desireAuxiliaryPictures[%{public}d]: %{public}d", i, type);
+        } else {
+            IMAGE_LOGE("unknown auxiliary picture type");
+            return false;
+        }
+    }
+    return true;
+}
+
+napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
+{
+    napi_value result = nullptr;
+    napi_get_undefined(env, &result);
+
+    napi_status status;
+    napi_value thisVar = nullptr;
+    napi_value argValue[NUM_1] = {0};
+    size_t argCount = NUM_1;
+    IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, thisVar), nullptr, IMAGE_LOGE("fail to get thisVar"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("fail to napi_get_cb_info"));
+
+    std::unique_ptr<ImageSourceAsyncContext> asyncContext = std::make_unique<ImageSourceAsyncContext>();
+
+    status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_),
+        nullptr, IMAGE_LOGE("fail to unwrap context"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->constructor_->nativeImgSrc),
+        nullptr, IMAGE_LOGE("fail to unwrap nativeImgSrc"));
+    asyncContext->rImageSource = asyncContext->constructor_->nativeImgSrc;
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rImageSource),
+        nullptr, IMAGE_LOGE("empty native rImageSource"));
+
+    if (argCount == NUM_0) {
+        for (int32_t type = static_cast<int32_t>(AuxiliaryPictureType::GAINMAP);
+            type <= static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP); type++) {
+                asyncContext->decodingOptsForPicture.desireAuxiliaryPictures.insert(AuxiliaryPictureType(type));
+        }
+    } else if (argCount == NUM_1) {
+        if (!ParseDecodingOptionsForPicture(env, argValue[NUM_0], &(asyncContext->decodingOptsForPicture))) {
+            IMAGE_LOGE("DecodingOptionsForPicture mismatch");
+        }
+    } else {
+        IMAGE_LOGE("argCount mismatch");
+        return result;
+    }
+
+    napi_create_promise(env, &(asyncContext->deferred), &result);
+
+    ImageNapiUtils::HicheckerReport();
+    IMG_CREATE_CREATE_ASYNC_WORK_WITH_QOS(env, status, "CreatePicture", CreatePictureExecute,
+        CreatePictureComplete, asyncContext, asyncContext->work, napi_qos_user_initiated);
+
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        nullptr, IMAGE_LOGE("fail to create async work"));
+    return result;
 }
 }  // namespace Media
 }  // namespace OHOS

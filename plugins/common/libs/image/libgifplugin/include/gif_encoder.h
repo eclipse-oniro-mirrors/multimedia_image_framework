@@ -50,6 +50,7 @@ public:
     ~GifEncoder() override;
     uint32_t StartEncode(OutputDataStream &outputStream, PlEncodeOptions &option) override;
     uint32_t AddImage(Media::PixelMap &pixelMap) override;
+    uint32_t AddPicture(Media::Picture &picture) override;
     uint32_t FinalizeEncode() override;
     bool Write(const uint8_t* data, size_t data_size);
 
