@@ -148,7 +148,7 @@ ssize_t BufferMetadataStream::Read(uint8_t *buf, ssize_t size)
     }
 
     long bytesToRead = std::min(static_cast<long>(size), bufferSize_ - currentOffset_);
-    if (IsFileChanged()) {
+    if (IsFileSizeChanged()) {
         return -1;
     }
     memcpy_s(buf, size, buffer_ + currentOffset_, bytesToRead);

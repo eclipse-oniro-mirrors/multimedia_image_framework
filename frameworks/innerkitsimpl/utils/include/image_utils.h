@@ -40,8 +40,10 @@ public:
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
-    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA);
+    static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
     static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsWidthAligned(const int32_t &width);
+    static bool IsSizeSupportDma(const Size &size);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
@@ -67,6 +69,7 @@ public:
     static void FloatToBytes(float data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void Int32ToBytes(int32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
+    static int KMPFind(const uint8_t* target, uint32_t targetLen, const uint8_t* pattern, uint32_t patternLen);
     static void FlushSurfaceBuffer(PixelMap* pixelMap);
     static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);

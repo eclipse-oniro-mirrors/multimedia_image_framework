@@ -3790,9 +3790,6 @@ static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, Y
         dstStrides = {yStride, uvStride, yOffset, uvOffset};
     }
 }
-#else
-static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
-{}
 #endif
 
 static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
@@ -3827,6 +3824,7 @@ static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstSt
 std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
                                                      AllocatorType dstType, uint32_t errorCode, bool toSRGB)
 {
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
     MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
     PixelFormat outFormat = format;
@@ -3859,6 +3857,10 @@ std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, Pixel
     }
     errorCode = SUCCESS;
     return sdrMemory;
+#else
+    errorCode = ERR_MEDIA_INVALID_OPERATION;
+    return nullptr;
+#endif
 }
 
 uint32_t PixelMap::ToSdr()
