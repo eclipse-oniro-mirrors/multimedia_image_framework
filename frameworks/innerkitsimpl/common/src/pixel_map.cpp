@@ -1099,23 +1099,6 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     return SUCCESS;
 }
 
-int32_t PixelMap::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
-{
-    int32_t pixelBytes = ImageUtils::GetPixelBytes(format);
-    switch (format) {
-        case PixelFormat::ALPHA_8:
-            return pixelBytes * ((width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        case PixelFormat::ASTC_4x4:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_3) >> NUM_2) << NUM_2);
-        case PixelFormat::ASTC_6x6:
-            return pixelBytes * (((width + NUM_5) / NUM_6) * NUM_6);
-        case PixelFormat::ASTC_8x8:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_7) >> NUM_3) << NUM_3);
-        default:
-            return pixelBytes * width;
-    }
-}
-
 uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
 {
     if (info.size.width <= 0 || info.size.height <= 0) {
