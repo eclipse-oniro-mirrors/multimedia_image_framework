@@ -883,5 +883,28 @@ size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
     }
     return astcBytesCount;
 }
+
+bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
+{
+    if (str.empty() || !isdigit(str.front())) {
+        return false;
+    }
+
+    char* end = nullptr;
+    errno = 0;
+    auto addr = str.c_str();
+    auto result = strtoul(addr, &end, 10); /* 10 means decimal */
+    if ((end == addr) || (end[0] != '\0') || (errno == ERANGE) ||
+        (result > UINT32_MAX)) {
+        return false;
+    }
+    value = static_cast<uint32_t>(result);
+    return true;
+}
+
+bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
+{
+    return (value >= minValue) && (value <= maxValue);
+}
 } // namespace Media
 } // namespace OHOS

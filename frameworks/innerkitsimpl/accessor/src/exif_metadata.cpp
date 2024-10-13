@@ -854,7 +854,9 @@ ExifMetadata *ExifMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
         if (!data) {
             return nullptr;
         }
-        ExifData *ptrData = exif_data_new_from_data(data, static_cast<unsigned int>(size));
+        ExifData *ptrData = exif_data_new();
+        exif_data_unset_option(ptrData, EXIF_DATA_OPTION_IGNORE_UNKNOWN_TAGS);
+        exif_data_load_data(ptrData, static_cast<const unsigned char *>(data), static_cast<unsigned int>(size));
         ExifMetadata *exifMetadata = new(std::nothrow) ExifMetadata(ptrData);
         return exifMetadata;
     }

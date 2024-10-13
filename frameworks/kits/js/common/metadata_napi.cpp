@@ -18,7 +18,9 @@
 #include "media_errors.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
+#include "image_common.h"
 #include "napi_message_sequence.h"
+#include "exif_metadata_formatter.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -456,8 +458,11 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContext(napi_env env, nap
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStrArrayArgument(env, argValue[NUM_0]);
-        if (context->keyStrArray.size() == 0) {
-            return nullptr;
+        for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
+            // Return nullptr when any key is not supported.
+            if (!ExifMetadatFormatter::IsKeySupported(*keyStrIt)) {
+                return nullptr;
+            }
         }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
@@ -488,8 +493,11 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContextForModify(napi_env
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->KVSArray = GetArrayArgument(env, argValue[NUM_0]);
-        if (context->KVSArray.size() == 0) {
-            return nullptr;
+        for (auto keyStrIt = context->KVSArray.begin(); keyStrIt != context->KVSArray.end(); ++keyStrIt) {
+            // Return nullptr when any key is not supported.
+            if (!ExifMetadatFormatter::IsKeySupported(keyStrIt->first)) {
+                return nullptr;
+            }
         }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
@@ -565,7 +573,7 @@ napi_value MetadataNapi::GetProperties(napi_env env, napi_callback_info info)
     napi_status status;
     std::unique_ptr<MetadataNapiAsyncContext> asyncContext = UnwrapContext(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Async context unwrap failed");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -587,7 +595,7 @@ napi_value MetadataNapi::SetProperties(napi_env env, napi_callback_info info)
     napi_status status;
     std::unique_ptr<MetadataNapiAsyncContext> asyncContext = UnwrapContextForModify(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Async context unwrap failed");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
