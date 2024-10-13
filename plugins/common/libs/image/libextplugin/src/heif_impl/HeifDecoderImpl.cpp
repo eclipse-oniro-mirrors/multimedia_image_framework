@@ -1144,6 +1144,15 @@ void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
     isoMetadata = primaryImage_->GetISOMetadata();
 }
 
+void HeifDecoderImpl::getFragmentMetadata(Media::Rect& fragmentMetadata)
+{
+    HeifFragmentMetadata metadata = primaryImage_->GetFragmentMetadata();
+    fragmentMetadata.width = static_cast<int32_t>(metadata.width);
+    fragmentMetadata.height = static_cast<int32_t>(metadata.height);
+    fragmentMetadata.left = static_cast<int32_t>(metadata.horizontalOffset);
+    fragmentMetadata.top = static_cast<int32_t>(metadata.verticalOffset);
+}
+
 void HeifDecoderImpl::getErrMsg(std::string& errMsg)
 {
     errMsg = errMsg_;

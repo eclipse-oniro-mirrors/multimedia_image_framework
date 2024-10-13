@@ -204,6 +204,8 @@ private:
 
     void ExtractGainmapImage(const heif_item_id& tmapId);
 
+    void ExtractFragmentMetadata(const heif_item_id& itemId);
+
     void SetTiffOffset();
 };
 } // namespace ImagePlugin
