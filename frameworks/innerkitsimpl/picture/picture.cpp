@@ -375,8 +375,10 @@ void Picture::SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture)
     auxiliaryPictures_[picture->GetType()] = picture;
     if (picture != nullptr && picture->GetType() == AuxiliaryPictureType::GAINMAP) {
         std::shared_ptr<PixelMap> gainmapPixel = GetGainmapPixelMap();
-        mainPixelMap_->SetHdrMetadata(gainmapPixel->GetHdrMetadata());
-        mainPixelMap_->SetHdrType(gainmapPixel->GetHdrType());
+        if (gainmapPixel != nullptr && mainPixelMap_ != nullptr) {
+            mainPixelMap_->SetHdrMetadata(gainmapPixel->GetHdrMetadata());
+            mainPixelMap_->SetHdrType(gainmapPixel->GetHdrType());
+        }
     }
 }
 

@@ -596,6 +596,7 @@ static void ParseColorSpace(napi_env env, napi_value val, AuxiliaryPictureNapiAs
     if (context->AuxColorSpace == nullptr) {
         ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
+            return;
     }
     context->rPixelmap->InnerSetColorSpace(*(context->AuxColorSpace));
 #else
