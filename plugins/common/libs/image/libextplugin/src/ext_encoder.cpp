@@ -38,6 +38,7 @@
 #include "image_system_properties.h"
 #include "image_type_converter.h"
 #include "image_utils.h"
+#include "jpeg_mpf_parser.h"
 #include "media_errors.h"
 #include "metadata_accessor.h"
 #include "metadata_accessor_factory.h"
@@ -109,6 +110,9 @@ namespace {
     constexpr uint8_t GAINMAP_CHANNEL_MULTI = 3;
     constexpr uint8_t GAINMAP_CHANNEL_SINGLE = 1;
     constexpr uint8_t EXIF_PRE_SIZE = 6;
+    constexpr uint32_t JPEG_MARKER_TAG_SIZE = 2;
+    constexpr uint32_t DEPTH_MAP_BYTES = sizeof(float); // float16
+    constexpr uint32_t LINEAR_MAP_BYTES = sizeof(short) * 3 / 2; // 16bit yuv420
 
     // exif/0/0
     constexpr uint8_t EXIF_PRE_TAG[EXIF_PRE_SIZE] = {
@@ -1311,9 +1315,9 @@ uint32_t ExtEncoder::EncodeJpegPicture(SkWStream& skStream)
     uint32_t error = ERR_IMAGE_ENCODE_FAILED;
     switch (opts_.desiredDynamicRange) {
         case EncodeDynamicRange::AUTO:
-            if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-                error = EncodeJpegPictureDualVivid(skStream);
-            } else {
+            error = EncodeJpegPictureDualVivid(skStream);
+            if (error != SUCCESS) {
+                IMAGE_LOGI("%{public}s jpeg picture encode dual vivid failed, try encode sdr", __func__);
                 error = EncodeJpegPictureSdr(skStream);
             }
             break;
@@ -1373,8 +1377,14 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
 
     HdrMetadata hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
-    uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, skStream, hdrMetadata);
+    SkDynamicMemoryWStream hdrStream;
+    uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, hdrStream, hdrMetadata);
     IMAGE_LOGD("%{public}s splice hdr stream result is: %{public}u", __func__, error);
+    if (error == SUCCESS) {
+        sk_sp<SkData> hdrSkData = hdrStream.detachAsData();
+        skStream.write(hdrSkData->data(), hdrSkData->size());
+        EncodeJpegAuxiliaryPictures(skStream);
+    }
     return error;
 }
 
@@ -1404,7 +1414,163 @@ uint32_t ExtEncoder::EncodeJpegPictureSdr(SkWStream& skStream)
         error = EncodeImageBySurfaceBuffer(baseSptr, baseInfo, opts_.needsPackProperties, skStream);
         IMAGE_LOGD("%{public}s encode hdr picture result is: %{public}u", __func__, error);
     }
+    if (error == SUCCESS) {
+        EncodeJpegAuxiliaryPictures(skStream);
+    }
     return error;
+}
+
+static bool GetMetadataValueInt32(const std::shared_ptr<ImageMetadata>& metadata, const std::string& key,
+    int32_t& outVal)
+{
+    std::string strVal("");
+    uint32_t u32Val = 0;
+    if (metadata == nullptr) {
+        IMAGE_LOGE("%{public}s: metadata is nullptr!", __func__);
+        return false;
+    }
+    if (metadata->GetValue(key, strVal) != SUCCESS || !ImageUtils::StrToUint32(strVal, u32Val)) {
+        IMAGE_LOGE("%{public}s: get metadata key[%{public}s]'s value failed!", __func__, key.c_str());
+        return false;
+    }
+    outVal = static_cast<int32_t>(u32Val);
+    return true;
+}
+
+static bool CheckFragmentMetadata(Picture* picture, Media::Rect& outData)
+{
+    if (!picture || !picture->GetMainPixel() || !picture->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        IMAGE_LOGE("%{public}s: picture or mainPixelMap or fragment picture does not exist!", __func__);
+        return false;
+    }
+    int32_t mainW = picture->GetMainPixel()->GetWidth();
+    int32_t mainH = picture->GetMainPixel()->GetHeight();
+
+    auto fragmentPicture = picture->GetAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    auto fragmentMetadata = fragmentPicture->GetMetadata(MetadataType::FRAGMENT);
+    if (fragmentMetadata == nullptr) {
+        IMAGE_LOGE("%{public}s: fragmentMetadata is nullptr!", __func__);
+        return false;
+    }
+
+    if (!GetMetadataValueInt32(fragmentMetadata, FRAGMENT_METADATA_KEY_X, outData.left) ||
+        !GetMetadataValueInt32(fragmentMetadata, FRAGMENT_METADATA_KEY_Y, outData.top) ||
+        !GetMetadataValueInt32(fragmentMetadata, FRAGMENT_METADATA_KEY_WIDTH, outData.width) ||
+        !GetMetadataValueInt32(fragmentMetadata, FRAGMENT_METADATA_KEY_HEIGHT, outData.height)) {
+        IMAGE_LOGE("%{public}s: GetMetadataValueInt32 failed!", __func__);
+        return false;
+    }
+    if (!ImageUtils::IsInRange(outData.left, 0, mainW) || !ImageUtils::IsInRange(outData.top, 0, mainH) ||
+        !ImageUtils::IsInRange(outData.width, 0, mainW) || !ImageUtils::IsInRange(outData.height, 0, mainH) ||
+        !ImageUtils::IsInRange(outData.left + outData.width, 0, mainW) ||
+        !ImageUtils::IsInRange(outData.top + outData.height, 0, mainH)) {
+        IMAGE_LOGW("%{public}s: Fragment Rect is not in main Rect!", __func__);
+        return false;
+    }
+    return true;
+}
+
+void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
+{
+    ImageFuncTimer imageFuncTimer("%s enter", __func__);
+    auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (AuxiliaryPictureType auxType : auxTypes) {
+        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
+        // Gainmap has been encoded before
+        if (auxPicture == nullptr || auxType == AuxiliaryPictureType::GAINMAP) {
+            continue;
+        }
+        IMAGE_LOGI("%{public}s try to encode auxiliary picture type: %{public}d", __func__, auxType);
+        uint32_t error = ERR_IMAGE_ENCODE_FAILED;
+        size_t writtenSize = skStream.bytesWritten();
+        if (ImageUtils::IsAuxiliaryPictureEncoded(auxType)) {
+            error = WriteJpegCodedData(auxPicture, skStream);
+        } else {
+            error = WriteJpegUncodedData(auxPicture, skStream);
+        }
+        if (error != SUCCESS) {
+            IMAGE_LOGE("%{public}s encode auxiliary picture type [%{public}d] failed, error: %{public}u",
+                __func__, auxType, error);
+        } else {
+            uint32_t currentDataSize = static_cast<uint32_t>(skStream.bytesWritten() - writtenSize);
+            WriteJpegAuxiliarySizeAndTag(currentDataSize, auxPicture, skStream);
+        }
+    }
+}
+
+uint32_t ExtEncoder::WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream)
+{
+    auto pixelMap = auxPicture->GetContentPixel();
+    if (pixelMap == nullptr || pixelMap->GetFd() == nullptr) {
+        return ERR_DMA_NOT_EXIST;
+    }
+    sptr<SurfaceBuffer> auxSptr(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
+    pixelmap_ = pixelMap.get();
+    bool isSRGB = pixelMap->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo skInfo = GetSkInfo(pixelmap_, false, isSRGB);
+    sk_sp<SkData> skData = GetImageEncodeData(auxSptr, skInfo, false);
+    if (skData == nullptr) {
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    if (auxPicture->GetType() == AuxiliaryPictureType::FRAGMENT_MAP) {
+        return SpliceFragmentStream(skStream, skData);
+    }
+    skStream.write(skData->data(), skData->size());
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& skData)
+{
+    Media::Rect fragmentMetadata;
+    if (!CheckFragmentMetadata(picture_, fragmentMetadata)) {
+        IMAGE_LOGE("%{public}s: CheckFragmentMetadata failed!", __func__);
+        return ERR_IMAGE_PROPERTY_NOT_EXIST;
+    }
+    const uint8_t* dataBytes = reinterpret_cast<const uint8_t*>(skData->data());
+    // write JPEG SOI(0xFFD8)
+    skStream.write(dataBytes, JPEG_MARKER_TAG_SIZE);
+    std::vector<uint8_t> packedFragmentMetadata = JpegMpfPacker::PackFragmentMetadata(fragmentMetadata);
+    // write fragment metadata
+    skStream.write(packedFragmentMetadata.data(), packedFragmentMetadata.size());
+    // write fragment auxiliary image data
+    skStream.write(dataBytes + JPEG_MARKER_TAG_SIZE, skData->size() - JPEG_MARKER_TAG_SIZE);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream)
+{
+    auto pixelMap = auxPicture->GetContentPixel();
+    if (pixelMap == nullptr || pixelMap->GetFd() == nullptr) {
+        return ERR_DMA_NOT_EXIST;
+    }
+    auto surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+    void* bytes = surfaceBuffer->GetVirAddr();
+    uint32_t size = surfaceBuffer->GetWidth() * surfaceBuffer->GetHeight();
+    AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
+    if (auxInfo.auxiliaryPictureType == AuxiliaryPictureType::DEPTH_MAP) {
+        size *= DEPTH_MAP_BYTES;
+    } else if (auxInfo.auxiliaryPictureType == AuxiliaryPictureType::LINEAR_MAP) {
+        size *= LINEAR_MAP_BYTES;
+    }
+    IMAGE_LOGD("%{public}s auxType: %{public}d, width: %{public}d, hight: %{public}d, buffer size: %{public}u,"
+        " actual size: %{public}u", __func__, auxInfo.auxiliaryPictureType, surfaceBuffer->GetWidth(),
+        surfaceBuffer->GetHeight(), surfaceBuffer->GetSize(), size);
+    size = std::min(size, surfaceBuffer->GetSize());
+    skStream.write(bytes, size);
+    return SUCCESS;
+}
+
+void ExtEncoder::WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,
+    SkWStream& skStream)
+{
+    // Write auxiliary image size(little endian)
+    std::vector<uint8_t> auxSize = JpegMpfPacker::PackDataSize(size, false);
+    skStream.write(auxSize.data(), auxSize.size());
+
+    // Write auxiliary tag name
+    AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
+    std::vector<uint8_t> tagName = JpegMpfPacker::PackAuxiliaryTagName(auxInfo.jpegTagName);
+    skStream.write(tagName.data(), tagName.size());
 }
 #endif
 

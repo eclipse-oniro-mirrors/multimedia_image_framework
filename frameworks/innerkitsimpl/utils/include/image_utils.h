@@ -74,6 +74,7 @@ public:
     static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
+    static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
