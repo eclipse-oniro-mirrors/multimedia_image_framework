@@ -1955,6 +1955,52 @@ HWTEST_F(ImagePixelMapTest, ModifyImageProperty001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ModifyImageProperty001 end";
 }
 
+std::unique_ptr<PixelMap> ConstructSLRPixelMap(uint32_t** dataIn)
+{
+    const uint32_t dataLength = PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_TEST_HEIGHT;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = PIXEL_MAP_TEST_WIDTH;
+    opts.size.height = PIXEL_MAP_TEST_HEIGHT;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    *dataIn = data;
+    return pixelMap;
+}
+
+std::unique_ptr<PixelMap> ConstructSLRBigPixmap()
+{
+    int32_t pixelMapWidth = PIXEL_MAP_BIG_TEST_WIDTH;
+    int32_t pixelMapHeight = PIXEL_MAP_BIG_TEST_HEIGHT;
+    std::unique_ptr<PixelMap> pixelMap = std::make_unique<PixelMap>();
+    ImageInfo info;
+    info.size.width = pixelMapWidth;
+    info.size.height = pixelMapHeight;
+    info.pixelFormat = PixelFormat::RGBA_8888;
+    info.colorSpace = ColorSpace::SRGB;
+    pixelMap->SetImageInfo(info);
+
+    int32_t bufferSize = pixelMap->GetByteCount();
+    if (bufferSize <= 0) {
+        return nullptr;
+    }
+    void *buffer = malloc(bufferSize);
+    if (buffer == nullptr) {
+        return nullptr;
+    }
+    char *ch = reinterpret_cast<char *>(buffer);
+    for (int32_t i = 0; i < bufferSize; i++) {
+        *(ch++) = 'a';
+    }
+
+    pixelMap->SetPixelsAddr(buffer, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    return pixelMap;
+}
+
 /**
 * @tc.name: ImagePixelMapSLR001
 * @tc.desc: test SLR
@@ -1964,12 +2010,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale start";
     uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
     EXPECT_NE(pixelMap, nullptr);
-    ImageInfo tmpInfo;
-    pixelMap->GetImageInfo(tmpInfo);
-    tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = 1.5f; // 1.5f scale test
     float yAxis = 1.8f; // 1.8f scale test
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -1994,12 +2036,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR002 scale start";
-    std::unique_ptr<PixelMap> pixelMap = ConstructBigPixmap();
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRBigPixmap();
     EXPECT_NE(pixelMap, nullptr);
-    ImageInfo tmpInfo;
-    pixelMap->GetImageInfo(tmpInfo);
-    tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = 0.7f; // 0.7f scale test
     float yAxis = 0.9f; // 0.9f scale test
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2021,12 +2059,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR003 scale start";
     uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
     EXPECT_NE(pixelMap, nullptr);
-    ImageInfo tmpInfo;
-    pixelMap->GetImageInfo(tmpInfo);
-    tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = .0f; // .0f invalid scale size
     float yAxis = .0f; // .0f invalid scale size
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2052,12 +2086,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR004 scale start";
     uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
     EXPECT_NE(pixelMap, nullptr);
-    ImageInfo tmpInfo;
-    pixelMap->GetImageInfo(tmpInfo);
-    tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = -1.0f; // -1.0f invalid scale size
     float yAxis = -2.0f; // -2.0f invalid scale size
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
@@ -2083,12 +2113,8 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale start";
     uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
     EXPECT_NE(pixelMap, nullptr);
-    ImageInfo tmpInfo;
-    pixelMap->GetImageInfo(tmpInfo);
-    tmpInfo.pixelFormat = PixelFormat::RGBA_8888;
-    pixelMap->SetImageInfo(tmpInfo, true);
     float xAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_WIDTH;
     float yAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_HEIGHT;
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
