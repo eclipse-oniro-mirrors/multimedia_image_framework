@@ -833,6 +833,12 @@ bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
     return (auxTypes.find(type) != auxTypes.end());
 }
 
+bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
+{
+    return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||
+        AuxiliaryPictureType::FRAGMENT_MAP == type;
+}
+
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
 {
     if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {

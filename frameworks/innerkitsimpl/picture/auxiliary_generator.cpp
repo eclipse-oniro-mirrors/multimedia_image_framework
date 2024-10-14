@@ -45,12 +45,6 @@ static inline bool IsSizeVailed(const Size &size)
     return (size.width != 0 && size.height != 0);
 }
 
-static inline bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
-{
-    return (type == AuxiliaryPictureType::GAINMAP || type == AuxiliaryPictureType::UNREFOCUS_MAP ||
-            type == AuxiliaryPictureType::FRAGMENT_MAP);
-}
-
 static int32_t GetAuxiliaryPictureDenominator(AuxiliaryPictureType type)
 {
     int32_t denominator = DEFAULT_SCALE_DENOMINATOR;
@@ -328,7 +322,7 @@ static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType h
         return nullptr;
     }
 
-    std::string encodedFormat = IsAuxiliaryPictureEncoded(type) ? format : "";
+    std::string encodedFormat = ImageUtils::IsAuxiliaryPictureEncoded(type) ? format : "";
     std::shared_ptr<PixelMap> pixelMap = CreatePixelMapByContext(context, extDecoder, encodedFormat, errorCode);
     auto auxPicture = AuxiliaryPicture::Create(pixelMap, type, context.outInfo.size);
     auxPicture->SetAuxiliaryPictureInfo(
@@ -373,7 +367,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
         return nullptr;
     }
 
-    if (IsAuxiliaryPictureEncoded(type)) {
+    if (ImageUtils::IsAuxiliaryPictureEncoded(type)) {
         auto auxPicture = GenerateAuxiliaryPicture(mainInfo.hdrType, type, IMAGE_JPEG_FORMAT, extDecoder, errorCode);
         if (errorCode != SUCCESS) {
             IMAGE_LOGE("Generate jpeg auxiliary picture failed! errorCode: %{public}u", errorCode);
