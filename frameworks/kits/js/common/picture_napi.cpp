@@ -677,7 +677,11 @@ napi_value PictureNapi::Marshalling(napi_env env, napi_callback_info info)
     NAPI_MessageSequence *napiSequence = nullptr;
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
-        auto messageParcel = napiSequence->GetMessageParcel();
+    if (napiSequence == nullptr) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, IMAGE_BAD_PARAMETER, "Marshalling picture napi_unwrap failed.");
+    }
+    auto messageParcel = napiSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IPC, "Marshalling picture to parcel failed.");
