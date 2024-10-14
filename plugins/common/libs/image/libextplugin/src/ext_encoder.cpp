@@ -130,6 +130,14 @@ static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kHEIF, IMAGE_HEIF_FORMAT},
 };
 
+static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_MAP = {
+    {AuxiliaryPictureType::GAINMAP, AUXILIARY_TAG_GAINMAP},
+    {AuxiliaryPictureType::DEPTH_MAP, AUXILIARY_TAG_DEPTH_MAP_BACK},
+    {AuxiliaryPictureType::UNREFOCUS_MAP, AUXILIARY_TAG_UNREFOCUS_MAP},
+    {AuxiliaryPictureType::LINEAR_MAP, AUXILIARY_TAG_LINEAR_MAP},
+    {AuxiliaryPictureType::FRAGMENT_MAP, AUXILIARY_TAG_FRAGMENT_MAP},
+};
+
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
@@ -215,6 +223,9 @@ static sk_sp<SkColorSpace> ToSkColorSpace(PixelMap *pixelmap)
     if (pixelmap->InnerGetGrColorSpacePtr() == nullptr) {
         return nullptr;
     }
+    if (pixelmap->InnerGetGrColorSpace().GetColorSpaceName() == ColorManager::ColorSpaceName::NONE) {
+        return SkColorSpace::MakeSRGB();
+    }
     return pixelmap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
 #else
     return nullptr;
@@ -229,7 +240,8 @@ static SkImageInfo ToSkInfo(Media::PixelMap *pixelMap)
     SkAlphaType alphaType = ImageTypeConverter::ToSkAlphaType(info.alphaType);
     sk_sp<SkColorSpace> colorSpace = SkColorSpace::MakeSRGB();
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
+    if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
+        pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
         colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
     }
 #endif
@@ -826,7 +838,8 @@ static SkImageInfo GetSkInfo(PixelMap* pixelMap, bool isGainmap, bool isSRGB = f
         width = width / halfSizeDenominator;
         height = height / halfSizeDenominator;
 #ifdef IMAGE_COLORSPACE_FLAG
-        if (pixelMap->InnerGetGrColorSpacePtr() != nullptr) {
+        if (pixelMap->InnerGetGrColorSpacePtr() != nullptr &&
+            pixelMap->InnerGetGrColorSpace().GetColorSpaceName() != ColorManager::ColorSpaceName::NONE) {
             colorSpace = pixelMap->InnerGetGrColorSpacePtr()->ToSkColorSpace();
         }
         skcms_CICP cicp;
@@ -934,7 +947,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<ImageItem>& inputImgs)
 {
     auto gainPixelMap = picture_->GetGainmapPixelMap();
-    if (!gainPixelMap) {
+    if (gainPixelMap == nullptr) {
         IMAGE_LOGE("%{public}s, the gainPixelMap is nullptr", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -944,20 +957,20 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     ColorManager::ColorSpaceName colorspaceName =
         sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
     std::shared_ptr<ImageItem> primaryItem = AssembleHdrBaseImageItem(mainSptr, colorspaceName, metadata, opts_);
-    if (!primaryItem) {
+    if (primaryItem == nullptr) {
         IMAGE_LOGE("%{public}s, get primary image failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*primaryItem);
     std::shared_ptr<ImageItem> gainmapItem = AssembleGainmapImageItem(gainMapSptr, colorspaceName, opts_);
-    if (!gainmapItem) {
+    if (gainmapItem == nullptr) {
         IMAGE_LOGE("%{public}s, get gainmap image item failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(*gainmapItem);
     ColorManager::ColorSpaceName tmapColor = picture_->GetMainPixel()->InnerGetGrColorSpace().GetColorSpaceName();
     std::shared_ptr<ImageItem> tmapItem = AssembleTmapImageItem(tmapColor, metadata, opts_);
-    if (!tmapItem) {
+    if (tmapItem == nullptr) {
         IMAGE_LOGE("%{public}s, get tmap image item failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -968,7 +981,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
 uint32_t ExtEncoder::AssembleSdrImageItem(
     sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo, std::vector<ImageItem>& inputImgs)
 {
-    if (!surfaceBuffer) {
+    if (surfaceBuffer == nullptr) {
         IMAGE_LOGI("%{public}s surfaceBuffer is nullptr", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
@@ -1178,6 +1191,9 @@ uint32_t ExtEncoder::EncodePicture()
     if (opts_.isEditScene && encodeFormat_ == SkEncodedImageFormat::kHEIF) {
         return EncodeEditScenePicture();
     }
+    if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        CheckJpegAuxiliaryTagName();
+    }
     ExtWStream wStream(output_);
     return EncodeCameraScenePicture(wStream);
 }
@@ -1185,12 +1201,14 @@ uint32_t ExtEncoder::EncodePicture()
 uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
 {
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
-    std::string errorMsg = "Encode picture failed";
+    std::string errorMsg = "Load hardware encode library failed";
     static ImageFwkExtManager imageFwkExtManager;
     if (imageFwkExtManager.LoadImageFwkExtNativeSo() && imageFwkExtManager.doHardwareEncodePictureFunc_ != nullptr) {
         retCode = imageFwkExtManager.doHardwareEncodePictureFunc_(&skStream, opts_, picture_);
         errorMsg = "Hardware encode picture failed";
-    } else if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+    }
+    if (retCode != SUCCESS && encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        IMAGE_LOGE("%{public}s, retCode is: %{public}d, try jpeg software encode", errorMsg.c_str(), retCode);
         retCode = EncodeJpegPicture(skStream);
         errorMsg = "Jpeg software encode picture failed";
     }
@@ -1271,6 +1289,23 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
 #endif
 }
 
+void ExtEncoder::CheckJpegAuxiliaryTagName()
+{
+    auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (AuxiliaryPictureType auxType : auxTypes) {
+        if (!picture_->HasAuxiliaryPicture(auxType)) {
+            continue;
+        }
+        auto auxPicture  = picture_->GetAuxiliaryPicture(auxType);
+        AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
+        auto iter = DEFAULT_AUXILIARY_TAG_MAP.find(auxType);
+        if (auxInfo.jpegTagName.size() == 0 && iter != DEFAULT_AUXILIARY_TAG_MAP.end()) {
+            auxInfo.jpegTagName = iter->second;
+            auxPicture->SetAuxiliaryPictureInfo(auxInfo);
+        }
+    }
+}
+
 uint32_t ExtEncoder::EncodeJpegPicture(SkWStream& skStream)
 {
     uint32_t error = ERR_IMAGE_ENCODE_FAILED;
@@ -1307,9 +1342,16 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     }
     auto mainPixelmap = picture_->GetMainPixel();
     auto gainmapPixelmap = picture_->GetGainmapPixelMap();
-    if (!mainPixelmap || !gainmapPixelmap || mainPixelmap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+    if (!mainPixelmap || !gainmapPixelmap) {
         IMAGE_LOGE("%{public}s mainPixelmap or gainmapPixelmap is null", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    AllocatorType mainAllocType = mainPixelmap->GetAllocatorType();
+    AllocatorType gainmapAllocType = gainmapPixelmap->GetAllocatorType();
+    if (mainAllocType != AllocatorType::DMA_ALLOC || gainmapAllocType != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s AllocatorType is not DMA, mainAllocType: %{public}d, gainmapAllocType: %{public}d",
+            __func__, mainAllocType, gainmapAllocType);
+        return ERR_IMAGE_ENCODE_FAILED;
     }
     bool mainIsSRGB = mainPixelmap->GetToSdrColorSpaceIsSRGB();
     SkImageInfo baseInfo = GetSkInfo(mainPixelmap.get(), false, mainIsSRGB);
@@ -1726,11 +1768,11 @@ void ExtEncoder::AssembleExifRefItem(std::vector<ItemRef>& refs)
     refs.push_back(*item);
 }
 
-void inline FreeExifBlob (uint8_t* exifBlob)
+void inline FreeExifBlob(uint8_t** exifBlob)
 {
-    if (exifBlob != nullptr) {
-        free(exifBlob);
-        exifBlob = nullptr;
+    if (exifBlob != nullptr && *exifBlob != nullptr) {
+        free(*exifBlob);
+        *exifBlob = nullptr;
     }
 }
 
@@ -1764,7 +1806,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
     item->data.fd = -1;
     std::shared_ptr<AbsMemory> propertyAshmem = AllocateNewSharedMem(exifSize + EXIF_PRE_SIZE, EXIF_ASHMEM_TAG);
     if (propertyAshmem == nullptr) {
-        FreeExifBlob(exifBlob);
+        FreeExifBlob(&exifBlob);
         IMAGE_LOGE("AssembleExifMetaItem alloc propertyAshmem failed");
         return false;
     }
@@ -1779,7 +1821,7 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
         item->data.filledLen = propertyAshmem->data.size;
         metaItems.push_back(*item);
     }
-    FreeExifBlob(exifBlob);
+    FreeExifBlob(&exifBlob);
     return fillRes;
 }
 #endif

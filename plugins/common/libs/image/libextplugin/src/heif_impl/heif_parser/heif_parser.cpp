@@ -22,11 +22,16 @@
 
 #include <limits>
 #include <cstring>
+#include <set>
 
 namespace OHOS {
 namespace ImagePlugin {
 
 const auto EXIF_ID = "Exif\0\0";
+const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragmentmap";
+const std::set<std::string> INFE_ITEM_TYPE = {
+    "hvc1", "grid", "tmap", "iden", "mime"
+};
 
 HeifParser::HeifParser() = default;
 
@@ -302,7 +307,7 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" && itemType != "iden") {
+        if (INFE_ITEM_TYPE.find(itemType) == INFE_ITEM_TYPE.end()) {
             continue;
         }
         auto image = std::make_shared<HeifImage>(itemId);
@@ -355,6 +360,22 @@ void HeifParser::ExtractISOMetadata(const heif_item_id& itemId)
         return ;
     }
     primaryImage_->SetISOMetadata(extendInfo);
+}
+
+void HeifParser::ExtractFragmentMetadata(const heif_item_id& itemId)
+{
+    HeifFragmentMetadata extendInfo;
+    auto ispe = GetProperty<HeifIspeBox>(itemId);
+    if (ispe) {
+        extendInfo.width = ispe->GetWidth();
+        extendInfo.height = ispe->GetHeight();
+    }
+    auto rloc = GetProperty<HeifRlocBox>(itemId);
+    if (rloc) {
+        extendInfo.horizontalOffset = rloc->GetX();
+        extendInfo.verticalOffset = rloc->GetY();
+    }
+    primaryImage_->SetFragmentMetadata(extendInfo);
 }
 
 void HeifParser::ExtractDisplayData(std::shared_ptr<HeifImage>& image, heif_item_id& itemId)
@@ -523,6 +544,9 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
         return;
     }
 
+    if (auxc->GetAuxType() == HEIF_AUXTTYPE_ID_FRAGMENT_MAP) {
+        ExtractFragmentMetadata(auxItemId);
+    }
     auxImage->SetAuxImage(masterItemId, auxc->GetAuxType());
     masterImage->AddAuxImage(auxImage);
 }

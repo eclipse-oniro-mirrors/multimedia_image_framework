@@ -29,10 +29,24 @@ namespace Media {
 #define NATIVEEXPORT
 #endif
 
-#define FRAGMENT_METADATA_KEY_X "X_IN_ORIGINAL"
-#define FRAGMENT_METADATA_KEY_Y "Y_IN_ORIGINAL"
-#define FRAGMENT_METADATA_KEY_WIDTH "WIDTH"
-#define FRAGMENT_METADATA_KEY_HEIGHT "HEIGHT"
+#define FRAGMENT_METADATA_KEY_X "XInOriginal"
+#define FRAGMENT_METADATA_KEY_Y "YInOriginal"
+#define FRAGMENT_METADATA_KEY_WIDTH "FragmentImageWidth"
+#define FRAGMENT_METADATA_KEY_HEIGHT "FragmentImageHeight"
+
+// There is no definite tag name for gainmap
+#define AUXILIARY_TAG_GAINMAP ""
+#define AUXILIARY_TAG_DEPTH_MAP_BACK "DepthP"
+#define AUXILIARY_TAG_DEPTH_MAP_FRONT "VShapEn"
+#define AUXILIARY_TAG_UNREFOCUS_MAP "edof"
+#define AUXILIARY_TAG_LINEAR_MAP "HighBit"
+#define AUXILIARY_TAG_FRAGMENT_MAP "Fragmnt"
+
+#define HEIF_AUXTTYPE_ID_GAINMAP "urn:iso:std:iso:ts:21496:-1"
+#define HEIF_AUXTTYPE_ID_DEPTH_MAP "urn:com:huawei:photo:5:0:0:aux:depthmap"
+#define HEIF_AUXTTYPE_ID_UNREFOCUS_MAP "urn:com:huawei:photo:5:0:0:aux:unrefocusmap"
+#define HEIF_AUXTTYPE_ID_LINEAR_MAP "urn:com:huawei:photo:5:0:0:aux:linearhmap"
+#define HEIF_AUXTTYPE_ID_FRAGMENT_MAP "urn:com:huawei:photo:5:0:0:aux:fragmentmap"
 
 enum class AllocatorType : int32_t {
     // keep same with java AllocatorType
@@ -355,6 +369,7 @@ struct AuxiliaryPictureInfo {
     uint32_t rowStride = 0;
     PixelFormat pixelFormat = PixelFormat::UNKNOWN;
     ColorSpace colorSpace = ColorSpace::SRGB;
+    std::string jpegTagName = "";
 };
 
 enum class MetadataType {

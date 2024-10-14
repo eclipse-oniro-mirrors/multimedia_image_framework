@@ -97,6 +97,9 @@ constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint32_t MAX_READ_COUNT = 2048;
+static const int32_t PLANE_Y = 0;
+static const int32_t PLANE_U = 1;
+static const int32_t PLANE_V = 2;
 
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
@@ -2353,6 +2356,15 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
     return true;
 }
 
+bool PixelMap::WriteFenced(Parcel &parcel) const
+{
+    if (!parcel.WriteInt32(BASE_MEDIA_ERR_OFFSET)) {
+        IMAGE_LOGE("WriteFenced fencedId:[%{public}u] to parcel failed.", BASE_MEDIA_ERR_OFFSET);
+        return false;
+    }
+    return true;
+}
+
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
@@ -2366,6 +2378,11 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
         return false;
     }
+    if (!WriteFenced(parcel)) {
+        IMAGE_LOGE("WriteFenced start failed.");
+        return false;
+    }
+
     if (!WritePropertiesToParcel(parcel)) {
         IMAGE_LOGE("write info to parcel failed.");
         return false;
@@ -2386,6 +2403,11 @@ bool PixelMap::Marshalling(Parcel &parcel) const
 
     if (!WriteYuvDataInfoToParcel(parcel)) {
         IMAGE_LOGE("write WriteYuvDataInfoToParcel to parcel failed.");
+        return false;
+    }
+
+    if (!WriteFenced(parcel)) {
+        IMAGE_LOGE("WriteFenced end failed.");
         return false;
     }
     return true;
@@ -2512,8 +2534,11 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    if (bytesPerPixel == 0) {
-        IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail");
+    if (bytesPerPixel == 0 ||
+        rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
+        IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail or rowDataSize (%{public}d) invalid", rowDataSize);
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
+            "bytesPerPixel fail or rowDataSize invalid");
         return false;
     }
     if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height
@@ -2622,6 +2647,16 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
+bool PixelMap::ReadFenced(Parcel &parcel)
+{
+    int32_t fenced = parcel.ReadInt32();
+    if (fenced != BASE_MEDIA_ERR_OFFSET) {
+        IMAGE_LOGE("fenced: %{public}d, parcel is Damaged", fenced);
+        return false;
+    }
+    return true;
+}
+
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 {
     PIXEL_MAP_ERR error;
@@ -2635,6 +2670,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 {
+    if (!ReadFenced(parcel)) {
+        IMAGE_LOGE("ReadFenced start failed.");
+        return nullptr;
+    }
+
     ImageInfo imgInfo;
     PixelMap *pixelMap = nullptr;
     if (!ReadImageInfo(parcel, imgInfo)) {
@@ -2688,6 +2728,11 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
     if (!pixelMap->ReadYuvDataInfoFromParcel(parcel, pixelMap)) {
         IMAGE_LOGE("ReadYuvDataInfoFromParcel fail");
         delete pixelMap;
+        return nullptr;
+    }
+
+    if (!ReadFenced(parcel)) {
+        IMAGE_LOGE("ReadFenced end failed.");
         return nullptr;
     }
     return pixelMap;
@@ -3717,6 +3762,108 @@ bool PixelMap::GetToSdrColorSpaceIsSRGB()
     return toSdrColorIsSRGB_;
 }
 
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
+{
+    if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_U].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_U].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_420_SP) {
+        auto yStride = planes->planes[PLANE_Y].columnStride;
+        auto uvStride = planes->planes[PLANE_V].columnStride;
+        auto yOffset = planes->planes[PLANE_Y].offset;
+        auto uvOffset = planes->planes[PLANE_V].offset;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_U].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_U].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    } else if (pixelFmt == GRAPHIC_PIXEL_FMT_YCRCB_P010) {
+        auto yStride = planes->planes[PLANE_Y].columnStride / 2;
+        auto uvStride = planes->planes[PLANE_V].columnStride / 2;
+        auto yOffset = planes->planes[PLANE_Y].offset / 2;
+        auto uvOffset = planes->planes[PLANE_V].offset / 2;
+        dstStrides = {yStride, uvStride, yOffset, uvOffset};
+    }
+}
+#endif
+
+static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstStrides,
+                                void *context, AllocatorType dstType)
+{
+    int32_t dstWidth = imageInfo.size.width;
+    int32_t dstHeight = imageInfo.size.height;
+    int32_t dstYStride = dstWidth;
+    int32_t dstUvStride = (dstWidth + 1) / NUM_2 * NUM_2;
+    int32_t dstYOffset = 0;
+    int32_t dstUvOffset = dstYStride * dstHeight;
+    dstStrides = {dstYStride, dstUvStride, dstYOffset, dstUvOffset};
+
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context == nullptr) {
+        return;
+    }
+    if (dstType == AllocatorType::DMA_ALLOC) {
+        auto sb = reinterpret_cast<SurfaceBuffer*>(context);
+        OH_NativeBuffer_Planes *planes = nullptr;
+        GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+        if (retVal != OHOS::GSERROR_OK || planes == nullptr) {
+            IMAGE_LOGE("UpdateSdrYuvStrides Get planesInfo failed, retVal:%{public}d", retVal);
+        } else if (planes->planeCount >= NUM_2) {
+            int32_t pixelFmt = sb->GetFormat();
+            GetYUVStrideInfo(pixelFmt, planes, dstStrides);
+        }
+    }
+#endif
+}
+
+std::unique_ptr<AbsMemory> PixelMap::CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
+                                                     AllocatorType dstType, uint32_t errorCode, bool toSRGB)
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
+    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
+    PixelFormat outFormat = format;
+    if (format != PixelFormat::NV12 && format != PixelFormat::NV21 && format != PixelFormat::RGBA_8888) {
+        outFormat = PixelFormat::RGBA_8888;
+    }
+    sdrData.format = outFormat;
+    auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
+    if (sdrMemory == nullptr) {
+        IMAGE_LOGI("sdr memory alloc failed.");
+        errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
+        return nullptr;
+    }
+    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
+    sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
+    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType;
+    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+    if ((static_cast<uint32_t>(colorspaceType) & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
+        HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020) {
+#ifdef IMAGE_COLORSPACE_FLAG
+        colorspaceType = ColorUtils::ConvertToCMColor(InnerGetGrColorSpace().GetColorSpaceName());
+        VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
+#endif
+    }
+    if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
+        sdrMemory->Release();
+        IMAGE_LOGI("ToSdr decompose failed");
+        errorCode = IMAGE_RESULT_GET_SURFAC_FAILED;
+        return nullptr;
+    }
+    errorCode = SUCCESS;
+    return sdrMemory;
+#else
+    errorCode = ERR_MEDIA_INVALID_OPERATION;
+    return nullptr;
+#endif
+}
+
 uint32_t PixelMap::ToSdr()
 {
     ImageInfo imageInfo;
@@ -3745,37 +3892,17 @@ uint32_t PixelMap::ToSdr(PixelFormat format, bool toSRGB)
     AllocatorType dstType = AllocatorType::DMA_ALLOC;
     ImageInfo imageInfo;
     GetImageInfo(imageInfo);
-    SkImageInfo skInfo = ToSkImageInfo(imageInfo, ToSkColorSpace(this));
-    MemoryData sdrData = {nullptr, skInfo.computeMinByteSize(), "Trans ImageData", imageInfo.size};
-    PixelFormat outFormat = format;
-    if (format != PixelFormat::NV12 && format != PixelFormat::NV21 && format != PixelFormat::RGBA_8888) {
-        outFormat = PixelFormat::RGBA_8888;
-    }
-    sdrData.format = outFormat;
-    auto sdrMemory = MemoryManager::CreateMemory(dstType, sdrData);
-    if (sdrMemory == nullptr) {
-        IMAGE_LOGI("sdr memory alloc failed.");
-        return IMAGE_RESULT_GET_SURFAC_FAILED;
-    }
-    sptr<SurfaceBuffer> hdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*> (GetFd()));
-    sptr<SurfaceBuffer> sdrSurfaceBuffer(reinterpret_cast<SurfaceBuffer*>(sdrMemory->extend.data));
-    HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType colorspaceType;
-    VpeUtils::GetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
-    if ((static_cast<uint32_t>(colorspaceType) & HDI::Display::Graphic::Common::V1_0::CM_PRIMARIES_MASK) !=
-        HDI::Display::Graphic::Common::V1_0::COLORPRIMARIES_BT2020) {
-#ifdef IMAGE_COLORSPACE_FLAG
-        colorspaceType = ColorUtils::ConvertToCMColor(InnerGetGrColorSpace().GetColorSpaceName());
-        VpeUtils::SetSbColorSpaceType(hdrSurfaceBuffer, colorspaceType);
-#endif
-    }
-    if (!DecomposeImage(hdrSurfaceBuffer, sdrSurfaceBuffer, toSRGB)) {
-        sdrMemory->Release();
-        IMAGE_LOGI("ToSdr decompose failed");
-        return IMAGE_RESULT_GET_SURFAC_FAILED;
+    uint32_t ret = SUCCESS;
+    auto sdrMemory = CreateSdrMemory(imageInfo, format, dstType, ret, toSRGB);
+    if (ret != SUCCESS) {
+        return ret;
     }
     SetPixelsAddr(sdrMemory->data.data, sdrMemory->extend.data, sdrMemory->data.size, dstType, nullptr);
-    imageInfo.pixelFormat = outFormat;
+    imageInfo.pixelFormat = sdrMemory->data.format;
     SetImageInfo(imageInfo, true);
+    YUVStrideInfo dstStrides;
+    UpdateSdrYuvStrides(imageInfo, dstStrides, sdrMemory->extend.data, dstType);
+    UpdateYUVDataInfo(sdrMemory->data.format, imageInfo.size.width, imageInfo.size.height, dstStrides);
 #ifdef IMAGE_COLORSPACE_FLAG
     InnerSetColorSpace(OHOS::ColorManager::ColorSpace(toSRGB ? ColorManager::SRGB : ColorManager::DISPLAY_P3));
 #endif

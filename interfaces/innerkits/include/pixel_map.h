@@ -94,6 +94,7 @@ struct PixelMemInfo {
 };
 
 class ExifMetadata;
+class AbsMemory;
 
 class PixelMap : public Parcelable, public PIXEL_MAP_ERR {
 public:
@@ -388,6 +389,8 @@ protected:
     void ReleaseSharedMemory(void *addr, void *context, uint32_t size);
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
+    bool WriteFenced(Parcel &parcel) const;
+    static bool ReadFenced(Parcel &parcel);
     bool WritePropertiesToParcel(Parcel &parcel) const;
     bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
                                   int32_t &bufferSize, PIXEL_MAP_ERR &error);
@@ -447,6 +450,8 @@ protected:
         void *dstPixels, const ImageInfo &dstInfo);
     void CopySurfaceBufferInfo(void *data);
     void SetVersionId(uint32_t versionId);
+    std::unique_ptr<AbsMemory> CreateSdrMemory(ImageInfo &imageInfo, PixelFormat format,
+                                               AllocatorType dstType, uint32_t errorCode, bool toSRGB);
 
     uint8_t *data_ = nullptr;
     // this info SHOULD be the final info for decoded pixelmap, not the original image info

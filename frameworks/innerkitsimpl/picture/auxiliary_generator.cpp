@@ -67,7 +67,8 @@ static int32_t GetAuxiliaryPictureDenominator(AuxiliaryPictureType type)
     return denominator;
 }
 
-static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo)
+static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo,
+                                         AuxiliaryPictureType type)
 {
     Size size;
     uint32_t errorCode = decoder->GetImageSize(FIRST_FRAME, size);
@@ -76,7 +77,8 @@ static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decod
     }
     PixelDecodeOptions plOptions;
     plOptions.desiredSize = size;
-    plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
+    bool useF16Format = (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP);
+    plOptions.desiredPixelFormat = useF16Format ? PixelFormat::RGBA_F16 : PixelFormat::RGBA_8888;
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
@@ -193,6 +195,23 @@ static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImage
     return SUCCESS;
 }
 
+static uint32_t DecodeHeifFragmentMetadata(std::unique_ptr<AbsImageDecoder> &extDecoder,
+    std::unique_ptr<AuxiliaryPicture> &auxPicture)
+{
+    Rect fragmentRect;
+    if (!extDecoder->GetHeifFragmentMetadata(fragmentRect)) {
+        IMAGE_LOGE("Heif parsing fragment metadata failed");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
+    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
+    return SUCCESS;
+}
+
 static uint32_t DecodeJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream,
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
@@ -247,6 +266,10 @@ static uint32_t CopyToSurfaceBuffer(std::unique_ptr<InputDataStream> &stream, sp
     uint32_t srcSize = stream->GetStreamSize();
     uint8_t *dst = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
     uint32_t dstSize = surfaceBuffer->GetSize();
+    if (src == nullptr || dst == nullptr || srcSize == 0 || dstSize == 0) {
+        IMAGE_LOGE("%{public}s: invalid input data", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     IMAGE_LOGD("SurfaceBuffer size: %{public}u, stream size: %{public}u", dstSize, srcSize);
     if (memcpy_s(dst, dstSize, src, srcSize) != EOK) {
         IMAGE_LOGE("%{public}s: memcpy failed", __func__);
@@ -256,19 +279,37 @@ static uint32_t CopyToSurfaceBuffer(std::unique_ptr<InputDataStream> &stream, sp
     return SUCCESS;
 }
 
+static void SetUncodedAuxilaryPictureInfo(std::unique_ptr<AuxiliaryPicture> &auxPicture)
+{
+    if (auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr) {
+        IMAGE_LOGE("%{public}s auxPicture or auxPixelMap is nullptr", __func__);
+        return;
+    }
+    auto auxPixelMap = auxPicture->GetContentPixel();
+    ImageInfo imageInfo;
+    auxPixelMap->GetImageInfo(imageInfo);
+    auto auxInfo = MakeAuxiliaryPictureInfo(auxPicture->GetType(), imageInfo.size, auxPixelMap->GetRowStride(),
+        imageInfo.pixelFormat, imageInfo.colorSpace);
+    auxPicture->SetAuxiliaryPictureInfo(auxInfo);
+}
+
 static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType hdrType, AuxiliaryPictureType type,
     const std::string &format, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
 {
     IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info);
+    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info, type);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
     if (format == IMAGE_HEIF_FORMAT) {
 #ifdef HEIF_HW_DECODE_ENABLE
+        if (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP) {
+            context.pixelFormat = PixelFormat::RGBA_F16;
+            context.info.pixelFormat = PixelFormat::RGBA_F16;
+        }
         if (!extDecoder->DecodeHeifAuxiliaryMap(context, type)) {
             errorCode = ERR_IMAGE_DECODE_FAILED;
         }
@@ -312,6 +353,8 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
     }
     if (type == AuxiliaryPictureType::GAINMAP) {
         errorCode = DecodeHdrMetadata(hdrType, extDecoder, auxPicture);
+    } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
     }
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode heif metadata failed! errorCode: %{public}u", errorCode);
@@ -351,8 +394,8 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
     int32_t denominator = GetAuxiliaryPictureDenominator(type);
     denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
     Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
-    sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_YCBCR_420_SP, errorCode);
-    if (errorCode != SUCCESS) {
+    sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, errorCode);
+    if (errorCode != SUCCESS || surfaceBuffer == nullptr) {
         IMAGE_LOGE("Alloc surface buffer failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
@@ -362,7 +405,8 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
         return nullptr;
     }
     auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, type, size);
-    return std::move(auxPicture);
+    SetUncodedAuxilaryPictureInfo(auxPicture);
+    return auxPicture;
 }
 
 } // namespace Media

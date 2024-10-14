@@ -65,7 +65,7 @@ typedef struct OH_ImageSource_Info OH_ImageSource_Info;
  * @brief Defines decoding options for picture
  * {@link OH_DecodingOptionsForPicture_Create}.
  *
- * @since 12
+ * @since 13
  */
 struct OH_DecodingOptionsForPicture;
 
@@ -73,7 +73,7 @@ struct OH_DecodingOptionsForPicture;
  * @brief Defines decoding options for picture
  * {@link OH_DecodingOptionsForPicture_Create}.
  *
- * @since 12
+ * @since 13
  */
 typedef struct OH_DecodingOptionsForPicture OH_DecodingOptionsForPicture;
 
@@ -385,7 +385,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePixelmapList(OH_ImageSourceNative *so
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} source is nullptr, or picture is nullptr.
  *         {@link IMAGE_DECODE_FAILED} decode failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source, OH_DecodingOptionsForPicture *options,
     OH_PictureNative **picture);
@@ -467,7 +467,7 @@ Image_ErrorCode OH_ImageSourceNative_Release(OH_ImageSourceNative *source);
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture **options);
 
@@ -481,7 +481,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_Create(OH_DecodingOptionsForPicture
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} options is nullptr, desiredAuxiliaryPictures is nullptr,
  *         or length is invalid.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
     Image_AuxiliaryPictureType **desiredAuxiliaryPictures, size_t *length);
@@ -496,7 +496,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_GetDesiredAuxiliaryPictures(OH_Deco
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} options is nullptr, desiredAuxiliaryPictures is nullptr,
  *         or length is invalid.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_DecodingOptionsForPicture *options,
     Image_AuxiliaryPictureType *desiredAuxiliaryPictures, size_t length);
@@ -508,7 +508,7 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} options is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_DecodingOptionsForPicture_Release(OH_DecodingOptionsForPicture *options);
 #ifdef __cplusplus

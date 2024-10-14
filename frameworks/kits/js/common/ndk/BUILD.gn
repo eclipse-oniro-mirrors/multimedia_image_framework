@@ -142,9 +142,11 @@ ohos_shared_library("image_source") {
     "$BASE_DIR/multimedia/image_framework/interfaces/innerkits/include",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/pixelmap_ndk",
     "$BASE_DIR/multimedia/image_framework/frameworks/kits/js/common/picture_ndk/include",
+    "$BASE_DIR/multimedia/image_framework/frameworks/innerkitsimpl/utils/include",
   ]
 
   deps = [
+    "$image_subsystem/frameworks/innerkitsimpl/utils:image_utils",
     "$image_subsystem/frameworks/kits/js/common/picture_ndk:picture",
     "$image_subsystem/frameworks/kits/js/common/pixelmap_ndk:pixelmap",
     "$image_subsystem/interfaces/innerkits:image_native",

@@ -36,6 +36,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
     "${image_subsystem}/interfaces/kits/js/common/include/sendable",
+    "${image_subsystem}/interfaces/kits/native/include/image",
   ]
 
   include_dirs += [

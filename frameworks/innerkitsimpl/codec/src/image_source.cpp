@@ -136,7 +136,6 @@ static const std::string KEY_IMAGE_HEIGHT = "ImageLength";
 static const std::string IMAGE_FORMAT_RAW = "image/raw";
 static const uint32_t FIRST_FRAME = 0;
 static const int INT_ZERO = 0;
-static const int INT_255 = 255;
 static const size_t SIZE_ZERO = 0;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
@@ -147,7 +146,6 @@ static const uint8_t NUM_6 = 6;
 static const uint8_t NUM_8 = 8;
 static const uint8_t NUM_16 = 16;
 static const uint8_t NUM_24 = 24;
-static const int DMA_SIZE = 512 * 512 * 4; // DMA limit size
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 static const int ASTC_SIZE = 512 * 512;
 static const size_t ASTC_HEADER_SIZE = 16;
@@ -705,23 +703,9 @@ bool IsSupportFormat(const PixelFormat &format)
     return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
 }
 
-bool IsSupportSize(const Size &size)
-{
-    // Check for overflow risk
-    if (size.width > 0 && size.height > INT_MAX / size.width) {
-        return false;
-    }
-    return size.width * size.height >= DMA_SIZE;
-}
-
 bool IsSupportAstcZeroCopy(const Size &size)
 {
     return ImageSystemProperties::GetAstcEnabled() && size.width * size.height >= ASTC_SIZE;
-}
-
-bool IsWidthAligned(const int32_t &width)
-{
-    return ((width * NUM_4) & INT_255) == 0;
 }
 
 bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesiredSizeOptions)
@@ -732,13 +716,13 @@ bool IsSupportDma(const DecodeOptions &opts, const ImageInfo &info, bool hasDesi
 #else
     // used for test surfacebuffer
     if (ImageSystemProperties::GetSurfaceBufferEnabled() &&
-        IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
+        ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size)) {
         return true;
     }
 
     if (ImageSystemProperties::GetDmaEnabled() && IsSupportFormat(opts.desiredPixelFormat)) {
-        return IsSupportSize(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
-            (IsWidthAligned(opts.desiredSize.width)
+        return ImageUtils::IsSizeSupportDma(hasDesiredSizeOptions ? opts.desiredSize : info.size) &&
+            (ImageUtils::IsWidthAligned(opts.desiredSize.width)
             || opts.preferDma);
     }
     return false;
@@ -829,7 +813,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapExtended(uint32_t index, const D
     errorCode = GetImageInfo(FIRST_FRAME, info);
     ParseHdrType();
 #ifdef IMAGE_QOS_ENABLE
-    if (IsSupportSize(info.size) && getpid() != gettid()) {
+    if (ImageUtils::IsSizeSupportDma(info.size) && getpid() != gettid()) {
         OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
     }
 #endif
@@ -1644,7 +1628,7 @@ uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, b
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
         IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
-        return metadataAccessor->IsFileChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return metadataAccessor->IsFileSizeChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
@@ -3011,6 +2995,27 @@ static bool CheckExtInfoForPixelmap(AstcOutInfo &astcInfo, unique_ptr<PixelAstc>
     return true;
 }
 
+static bool TextureSuperCompressDecodeInit(AstcOutInfo *astcInfo, SutInInfo *sutInfo, size_t inBytes, size_t outBytes)
+{
+    bool ret = (memset_s(astcInfo, sizeof(AstcOutInfo), 0, sizeof(AstcOutInfo)) == 0) &&
+               (memset_s(sutInfo, sizeof(SutInInfo), 0, sizeof(SutInInfo)) == 0);
+    if (!ret) {
+        IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
+        return false;
+    }
+    if (inBytes > std::numeric_limits<int32_t>::max()) {
+        IMAGE_LOGE("astc SuperDecompressTexture inBytes overflow!");
+        return false;
+    }
+    sutInfo->sutBytes = static_cast<int32_t>(inBytes);
+    if (outBytes > std::numeric_limits<int32_t>::max()) {
+        IMAGE_LOGE("astc SuperDecompressTexture outBytes overflow!");
+        return false;
+    }
+    astcInfo->astcBytes = static_cast<int32_t>(outBytes);
+    return true;
+}
+
 static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, uint8_t *outData, size_t outBytes,
     unique_ptr<PixelAstc> &pixelAstc)
 {
@@ -3025,15 +3030,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
     }
     AstcOutInfo astcInfo = {0};
     SutInInfo sutInfo = {0};
-    if (memset_s(&astcInfo, sizeof(AstcOutInfo), 0, sizeof(AstcOutInfo)) != 0 ||
-        memset_s(&sutInfo, sizeof(SutInInfo), 0, sizeof(SutInInfo)) != 0) {
-        IMAGE_LOGE("astc SuperDecompressTexture memset failed!");
+    if (!TextureSuperCompressDecodeInit(&astcInfo, &sutInfo, inBytes, outBytes)) {
         return false;
     }
-    sutInfo.sutBytes = inBytes;
     sutInfo.sutBuf = inData;
     astcInfo.astcBuf = outData;
-    astcInfo.astcBytes = outBytes;
     if (!FillAstcSutExtInfo(astcInfo, sutInfo)) {
         FreeAllExtMemSut(astcInfo);
         IMAGE_LOGE("[ImageSource] SUT dec FillAstcSutExtInfo failed!");
@@ -3050,7 +3051,11 @@ static bool TextureSuperCompressDecode(const uint8_t *inData, size_t inBytes, ui
         return false;
     }
     FreeAllExtMemSut(astcInfo);
-    outBytes = astcInfo.astcBytes;
+    if (astcInfo.astcBytes < 0) {
+        IMAGE_LOGE("astc SuperDecompressTexture astcInfo.astcBytes sub overflow!");
+        return false;
+    }
+    outBytes = static_cast<size_t>(astcInfo.astcBytes);
     if (outBytes != preOutBytes) {
         IMAGE_LOGE("astc SuperDecompressTexture Dec size is predicted failed!");
         return false;
@@ -4456,6 +4461,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
     if (sourceHdrType_ > ImageHdrType::SDR) {
         SingleJpegImage gainmapImage = {
             .auxType = AuxiliaryPictureType::GAINMAP,
+            .auxTagName = AUXILIARY_TAG_GAINMAP,
             .offset = mainDecoder_->GetGainMapOffset(),
             .size = streamSize - mainDecoder_->GetGainMapOffset(),
         };
@@ -4481,11 +4487,14 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         uint32_t auxErrorCode = ERROR;
         auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
             mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
-        if (auxPicture == nullptr) {
-            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
-        } else {
+        if (auxPicture != nullptr) {
+            AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+            auxPictureInfo.jpegTagName = auxInfo.auxTagName;
+            auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
             auxPicture->GetContentPixel()->SetEditable(true);
             picture->SetAuxiliaryPicture(auxPicture);
+        } else {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
 }

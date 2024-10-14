@@ -165,6 +165,8 @@ GraphicPixelFormat GetRequestBufferFormatWithPixelFormat(const PixelFormat forma
             return GRAPHIC_PIXEL_FMT_YCRCB_P010;
         case PixelFormat::YCBCR_P010:
             return GRAPHIC_PIXEL_FMT_YCBCR_P010;
+        case PixelFormat::RGBA_F16:
+            return GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
         default:
             return GRAPHIC_PIXEL_FMT_RGBA_8888;
     }
@@ -178,6 +180,10 @@ uint32_t DmaMemory::Create()
     return ERR_IMAGE_DATA_UNSUPPORT;
 #else
     sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    if (sb == nullptr) {
+        IMAGE_LOGE("SurfaceBuffer failed to be created");
+        return ERR_DMA_DATA_ABNORMAL;
+    }
     GraphicPixelFormat format = GetRequestBufferFormatWithPixelFormat(data.format);
     BufferRequestConfig requestConfig = {
         .width = data.desiredSize.width,

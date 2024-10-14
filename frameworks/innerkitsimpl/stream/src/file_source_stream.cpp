@@ -47,7 +47,7 @@ using namespace ImagePlugin;
 
 constexpr int INVALID_POSITION = -1;
 constexpr int IOCTL_SUCCESS = 0;
-constexpr int NETWORK_POSITION = 2;
+constexpr int LOCAL_FILE_POSITION = 1;
 
 FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
                                    bool useMmap, int originalFd)
@@ -82,7 +82,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
         return nullptr;
     }
     int fd = open(realPath.c_str(), O_RDONLY);
-    bool useMmap = true;
+    bool useMmap = false;
     if (fd >= 0) {
         useMmap = ShouldUseMmap(fd);
         close(fd);
@@ -369,6 +369,7 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
         }
         uint32_t readSize = 0;
         if (!GetData(size, buffer, size, readSize)) {
+            delete [] buffer;
             return nullptr;
         }
         IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
@@ -440,16 +441,17 @@ int FileSourceStream::GetMMapFd()
 bool FileSourceStream::ShouldUseMmap(int fd)
 {
     int location = INVALID_POSITION;
-    bool useMmap = true;
+    bool useMmap = false;
     int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &location);
     if (err == IOCTL_SUCCESS) {
-        if (location == NETWORK_POSITION) {
-            IMAGE_LOGD("[FileSourceStream] Network file can not use mmap.");
-            useMmap = false;
+        if (location == LOCAL_FILE_POSITION) {
+            useMmap = true;
+            return useMmap;
         }
-    } else {
-        IMAGE_LOGE("[FileSourceStream] ioctl failed, error:%{public}d", err);
+        IMAGE_LOGI("[FileSourceStream] File position: %{public}d.", location);
+        return useMmap;
     }
+    IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
     return useMmap;
 }
 

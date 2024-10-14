@@ -69,7 +69,8 @@ public:
     bool setAuxiliaryMap(Media::AuxiliaryPictureType type);
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);
     bool decodeAuxiliaryMap();
-    void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t rowStride);
+    void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride);
+    void getFragmentMetadata(Media::Rect& fragmentMetadata);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 
@@ -102,6 +103,8 @@ private:
 
     bool HwDecodeSingleImage(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                              GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
+
+    bool HwDecodeMimeImage(std::shared_ptr<HeifImage> &image);
 
     bool SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                        GridInfo &gridInfo, bool isPrimary);
@@ -149,6 +152,7 @@ private:
     GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0};
     uint8_t* auxiliaryDstMemory_;
     size_t auxiliaryDstRowStride_;
+    size_t auxiliaryDstMemorySize_;
 
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;

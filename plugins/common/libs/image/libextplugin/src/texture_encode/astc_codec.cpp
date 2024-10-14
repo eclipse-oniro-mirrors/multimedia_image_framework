@@ -577,7 +577,7 @@ bool AstcCodec::DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExte
     return true;
 #endif
 }
-uint32_t AstcCodec::ASTCEncode()
+uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
 {
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
