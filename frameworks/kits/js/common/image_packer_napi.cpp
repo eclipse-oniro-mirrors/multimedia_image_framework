@@ -73,9 +73,7 @@ const uint8_t BYTE_FULL = 0xFF;
 const int32_t SIZE = 100;
 const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 const int32_t TYPE_PICTURE = 3;
-#endif
 const int32_t TYPE_ARRAY = 4;
 const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
 const int MASK_3 = 0x3;
