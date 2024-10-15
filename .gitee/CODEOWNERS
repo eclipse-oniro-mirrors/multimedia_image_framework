@@ -1,0 +1,5 @@
+# Code owners for graphic_2d
+[pixelmap]
+frameworks/innerkitsimpl/common/src/pixel_map.cpp @yaozhupeng
+frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp @yaozhupeng
+frameworks/innerkitsimpl/common/src/memory_manager.cpp @yaozhupeng
