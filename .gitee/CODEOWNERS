@@ -1,5 +1,26 @@
 # Code owners for graphic_2d
-[pixelmap]
+[pixelmap innerkits]
 frameworks/innerkitsimpl/common/src/pixel_map.cpp @yaozhupeng
 frameworks/innerkitsimpl/common/src/pixel_map_parcel.cpp @yaozhupeng
 frameworks/innerkitsimpl/common/src/memory_manager.cpp @yaozhupeng
+frameworks/innerkitsimpl/common/include/pixel_map_utils.h @yaozhupeng
+interfaces/innerkits/include/pixel_map.h @yaozhupeng
+interfaces/innerkits/include/pixel_astc.h @yaozhupeng
+plugins/common/libs/image/libextplugin/include/texture_encode/astc_codec.h @yaozhupeng
+plugins/common/libs/image/libextplugin/include/texture_encode/common.h @yaozhupeng
+plugins/common/libs/image/libextplugin/include/texture_encode/image_compressor.h @yaozhupeng
+plugins/common/libs/image/libextplugin/include/texture_encode/texture_type.h @yaozhupeng
+plugins/common/libs/image/libextplugin/src/texture_encode/astc_codec.cpp @yaozhupeng
+plugins/common/libs/image/libextplugin/src/texture_encode/image_compressor.cpp @yaozhupeng
+
+[pixelmap api kits]
+interfaces/kits/js/common/include/pixel_map_napi.h @yaozhupeng
+frameworks/kits/js/common/pixel_map_napi.cpp @yaozhupeng
+frameworks/kits/js/common/image_pixel_map_napi_kits.cpp @yaozhupeng
+interfaces/kits/native/include/image/pixelmap_native.h @yaozhupeng
+frameworks/kits/js/common/pixelmap_ndk/pixelmap_native.cpp @yaozhupeng
+frameworks/kits/js/common/pixelmap_ndk/pixelmap_native_impl.cpp @yaozhupeng
+interfaces/kits/native/include/image_pixel_map_mdk.h @yaozhupeng
+interfaces/kits/native/include/image_pixel_map_napi.h @yaozhupeng
+frameworks/kits/js/common/pixelmap_ndk/image_pixel_map_ndk.cpp @yaozhupeng
+frameworks/kits/js/common/pixelmap_ndk/image_pixel_map_napi.cpp @yaozhupeng
