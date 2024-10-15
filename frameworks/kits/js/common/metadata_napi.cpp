@@ -129,6 +129,7 @@ static void CommonCallbackRoutine(napi_env env, MetadataNapiAsyncContext* &async
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
