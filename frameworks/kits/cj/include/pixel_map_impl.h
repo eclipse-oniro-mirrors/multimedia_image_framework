@@ -32,6 +32,7 @@ public:
     int32_t GetDensity();
     uint32_t Opacity(float percent);
     uint32_t Crop(Rect &rect);
+    uint32_t ToSdr();
     uint32_t GetPixelBytesNumber();
     uint32_t GetBytesNumberPerRow();
     uint32_t ReadPixels(uint64_t &bufferSize, uint32_t &offset, uint32_t &stride,
@@ -44,6 +45,7 @@ public:
 
     void GetImageInfo(ImageInfo &imageInfo);
     void Scale(float xAxis, float yAxis);
+    void Scale(float xAxis, float yAxis, AntiAliasingOption option);
     void Flip(bool xAxis, bool yAxis);
     void Rotate(float degrees);
     void Translate(float xAxis, float yAxis);
@@ -51,12 +53,26 @@ public:
     bool GetIsEditable();
     bool GetIsStrideAlignment();
 
+    void SetTransferDetach(bool detach)
+    {
+        transferDetach_ = detach;
+    }
+
+    bool GetPixelMapImplEditable()
+    {
+        return isPixelMapImplEditable;
+    }
+
     static std::unique_ptr<PixelMap> CreatePixelMap(const InitializationOptions &opts);
     static std::unique_ptr<PixelMap> CreatePixelMap(uint32_t *colors, uint32_t colorLength,
         InitializationOptions &opts);
     static std::unique_ptr<PixelMap> CreateAlphaPixelMap(PixelMap &source, InitializationOptions &opts);
+    static uint32_t CreatePremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
+    static uint32_t CreateUnpremultipliedPixelMap(std::shared_ptr<PixelMap> src, std::shared_ptr<PixelMap> dst);
 private:
     std::shared_ptr<PixelMap> real_;
+    bool isPixelMapImplEditable = true;
+    bool transferDetach_ = false;
 };
 }
 }
