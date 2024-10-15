@@ -98,7 +98,9 @@ public:
     uint32_t AddImage(PixelMap &pixelMap);
     uint32_t AddImage(ImageSource &source);
     uint32_t AddImage(ImageSource &source, uint32_t index);
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     uint32_t AddPicture(Picture &picture);
+#endif
     uint32_t FinalizePacking();
     uint32_t FinalizePacking(int64_t &packedSize);
 

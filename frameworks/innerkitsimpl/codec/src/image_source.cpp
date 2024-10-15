@@ -26,8 +26,11 @@
 #include <filesystem>
 #include <vector>
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
 #include "auxiliary_picture.h"
+#endif
+
 #include "buffer_source_stream.h"
 #if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
@@ -4300,6 +4303,7 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
     return context;
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     DecodeOptions dopts;
@@ -4451,6 +4455,7 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         }
     }
 }
+#endif
 
 } // namespace Media
 } // namespace OHOS

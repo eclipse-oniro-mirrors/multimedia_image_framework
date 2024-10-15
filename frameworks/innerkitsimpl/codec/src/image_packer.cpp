@@ -288,12 +288,14 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     return AddImage(*pixelMap_.get());
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 uint32_t ImagePacker::AddPicture(Picture &picture)
 {
     return DoEncodingFunc([this, &picture](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddPicture(picture);
     });
 }
+#endif
 
 uint32_t ImagePacker::FinalizePacking()
 {
