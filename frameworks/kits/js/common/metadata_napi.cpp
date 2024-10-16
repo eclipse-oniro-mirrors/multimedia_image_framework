@@ -353,27 +353,15 @@ std::vector<std::pair<std::string, std::string>> GetArrayArgument(napi_env env, 
 napi_value CreateErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
 {
     napi_value result = nullptr;
-    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
-    if (status != napi_ok) {
-        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
-        return result;
+    std::string errkey = "";
+    for (const auto &entry : errMsgArray) {
+        errkey += entry.second + " ";
     }
 
-    uint32_t index = 0;
-    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
-        napi_value errMsgVal;
-        napi_get_undefined(env, &errMsgVal);
-        ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-            "The image source data is incorrect! exif key: " + it->second);
-        status = napi_set_element(env, result, index, errMsgVal);
-        if (status != napi_ok) {
-            IMAGE_LOGE("Add error message to array failed %{public}d", status);
-            continue;
-        }
-        ++index;
+    if (errMsgArray.size() != 0) {
+        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_BAD_PARAMETER,
+            "The input data is incorrect! error key: " + errkey);
     }
-
-    IMAGE_LOGD("Create obtain error array success.");
     return result;
 }
 
@@ -458,12 +446,6 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContext(napi_env env, nap
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStrArrayArgument(env, argValue[NUM_0]);
-        for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
-            // Return nullptr when any key is not supported.
-            if (!ExifMetadatFormatter::IsKeySupported(*keyStrIt)) {
-                return nullptr;
-            }
-        }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
         return nullptr;
@@ -493,12 +475,6 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContextForModify(napi_env
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->KVSArray = GetArrayArgument(env, argValue[NUM_0]);
-        for (auto keyStrIt = context->KVSArray.begin(); keyStrIt != context->KVSArray.end(); ++keyStrIt) {
-            // Return nullptr when any key is not supported.
-            if (!ExifMetadatFormatter::IsKeySupported(keyStrIt->first)) {
-                return nullptr;
-            }
-        }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
         return nullptr;

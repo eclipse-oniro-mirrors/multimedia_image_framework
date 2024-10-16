@@ -15,6 +15,7 @@
 
 #include "image_source_napi.h"
 #include <fcntl.h>
+#include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "media_errors.h"
@@ -2814,7 +2815,7 @@ static void CreatePictureExecute(napi_env env, void *data)
 
     if (context->status != SUCCESS) {
         context->errMsg = "Create Picture error";
-        IMAGE_LOGE("Create Picture error");
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "Create Picture error.");
     }
     IMAGE_LOGD("CreatePictureExecute OUT");
 }
@@ -2907,7 +2908,7 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         }
     } else {
         IMAGE_LOGE("argCount mismatch");
-        return result;
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Create Picture argCount mismatch.");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

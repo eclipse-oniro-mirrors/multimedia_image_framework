@@ -37,7 +37,10 @@ ohos_shared_library("image_common") {
   public_configs =
       [ "${image_subsystem}/interfaces/innerkits:image_external_config" ]
 
-  deps = [ "${image_subsystem}/interfaces/innerkits:image_native" ]
+  deps = [
+    "${image_subsystem}/frameworks/innerkitsimpl/utils:image_utils",
+    "${image_subsystem}/interfaces/innerkits:image_native",
+  ]
 
   if (enable_libexif) {
     external_deps = [ "libexif:libexif" ]

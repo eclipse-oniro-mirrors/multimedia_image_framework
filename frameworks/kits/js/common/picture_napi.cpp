@@ -736,6 +736,9 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
     if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
     }
+    if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operations");
+    }
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetHdrComposedPixelMap",
