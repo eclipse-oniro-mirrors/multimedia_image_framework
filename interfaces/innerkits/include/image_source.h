@@ -366,8 +366,6 @@ private:
     void DecodeJpegAuxiliaryPicture(std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture,
                                     uint32_t &errorCode);
     #endif
-    bool TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
-                              uint32_t &errorCode);
 
     const std::string NINE_PATCH = "ninepatch";
     const std::string SKIA_DECODER = "SKIA_DECODER";
