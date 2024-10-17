@@ -41,6 +41,7 @@ constexpr uint32_t TIMES_SEVEN = 7;
 constexpr uint32_t TIMES_FIVE = 5;
 constexpr uint32_t TIMES_THREE = 3;
 constexpr uint32_t TIMES_TWO = 2;
+constexpr uint32_t MAX_LOOP_SIZE = 5;
 
 std::string HeifFormatAgent::GetFormatType()
 {
@@ -52,7 +53,7 @@ uint32_t HeifFormatAgent::GetHeaderSize()
     return HEADER_SIZE;
 }
 
-bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
+bool CheckFormatHead(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
         IMAGE_LOGE("check format failed: header data is null.");
@@ -63,7 +64,14 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         IMAGE_LOGE("data size[%{public}u] less than eight.", dataSize);
         return false;
     }
+    return true;
+}
 
+bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
+{
+    if (!CheckFormatHead(headerData, dataSize)) {
+        return false;
+    }
     uint32_t tmpBuff[HEADER_SIZE];
     if (memcpy_s(tmpBuff, HEADER_SIZE, headerData, dataSize) != 0) {
         IMAGE_LOGE("memcpy headerData data size:[%{public}d] error.", dataSize);
@@ -95,6 +103,11 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
             if (i == 1) {
                 // Skip this index, it refers to the minorVersion, not a brand.
                 continue;
+            }
+            if (i == MAX_LOOP_SIZE) {
+                // Prevent stack out of bounds reads.
+                IMAGE_LOGI("check heif format failed.");
+                return false;
             }
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
             uint32_t brand = EndianSwap32(*brandPtr);
