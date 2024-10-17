@@ -723,6 +723,19 @@ static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>&
     return metadata;
 }
 
+static HdrMetadata GetHdrMetadata(std::shared_ptr<PixelMap>& mainPixelmap, std::shared_ptr<PixelMap>& gainmapPixelmap)
+{
+    HdrMetadata hdrMetadata;
+    if (mainPixelmap != nullptr && mainPixelmap->GetHdrMetadata() != nullptr) {
+        hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    } else if (gainmapPixelmap != nullptr && gainmapPixelmap->GetHdrMetadata() != nullptr) {
+        hdrMetadata = *(gainmapPixelmap->GetHdrMetadata().get());
+    } else {
+        IMAGE_LOGW("%{public}s no hdrMetadata in pixelmap", __func__);
+    }
+    return hdrMetadata;
+}
+
 uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
     bool needExif, SkWStream& outputStream)
 {
@@ -1376,7 +1389,7 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     pixelmap_ = gainmapPixelmap.get();
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
 
-    HdrMetadata hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    HdrMetadata hdrMetadata = GetHdrMetadata(mainPixelmap, gainmapPixelmap);
     SkDynamicMemoryWStream hdrStream;
     uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, hdrStream, hdrMetadata);
     IMAGE_LOGD("%{public}s splice hdr stream result is: %{public}u", __func__, error);
