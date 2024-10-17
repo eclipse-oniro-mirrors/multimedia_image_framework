@@ -578,6 +578,8 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
                                     std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                                     sptr<SurfaceBuffer> *outBuffer, bool isPrimary)
 {
+    ImageTrace trace("HeifDecoderImpl::HwDecodeImage");
+    IMAGE_LOGI("HeifDecoderImpl::HwDecodeImage, desiredpixelformat: %{public}d", outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;
@@ -768,6 +770,8 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                                     GridInfo &gridInfo, bool isPrimary)
 {
+    ImageTrace trace("HeifDecoderImpl::SwDecodeImage");
+    IMAGE_LOGI("HeifDecoderImpl::SwDecodeImage, desiredpixelformat: %{public}d", outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;

@@ -96,6 +96,11 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
                 // Skip this index, it refers to the minorVersion, not a brand.
                 continue;
             }
+            if (i == 5) {
+                // Prevent stack out of bounds reads.
+                IMAGE_LOGI("check heif format failed.");
+                return false;
+            }
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
             uint32_t brand = EndianSwap32(*brandPtr);
             if (brand == Fourcc('m', 'i', 'f', '1') || brand == Fourcc('h', 'e', 'i', 'c') ||
