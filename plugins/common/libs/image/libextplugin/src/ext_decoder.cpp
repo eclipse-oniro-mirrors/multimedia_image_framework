@@ -1987,6 +1987,26 @@ HdrMetadata ExtDecoder::GetHdrMetadata(Media::ImageHdrType type)
 #endif
 }
 
+bool ExtDecoder::GetHeifFragmentMetadata(Media::Rect &metadata)
+{
+#ifdef HEIF_HW_DECODE_ENABLE
+    if (codec_ == nullptr || codec_->getEncodedFormat() != SkEncodedImageFormat::kHEIF) {
+        IMAGE_LOGE("Check codec_ failed!");
+        return false;
+    }
+
+    auto decoder = reinterpret_cast<HeifDecoderImpl*>(codec_->getHeifContext());
+    if (decoder == nullptr) {
+        IMAGE_LOGE("Get heif decoder failed.");
+        return false;
+    }
+
+    decoder->getFragmentMetadata(metadata);
+    return true;
+#endif
+    return false;
+}
+
 bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
 {
 #ifdef HEIF_HW_DECODE_ENABLE

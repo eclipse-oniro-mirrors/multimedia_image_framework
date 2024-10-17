@@ -196,16 +196,16 @@ public:
      * Check if the original file has been changed
      * @return true if the original file has been changed, false otherwise
      */
-    virtual bool IsFileChanged()
+    virtual bool IsFileSizeChanged()
     {
-        if (isFileChanged_) {
-            return isFileChanged_;
+        if (isFileSizeChanged_) {
+            return isFileSizeChanged_;
         }
         if (GetOriginalSize() < static_cast<size_t>(GetSize())) {
             IMAGE_LOGE("MetadataStream:: Original file has been changed");
-            isFileChanged_ = true;
+            isFileSizeChanged_ = true;
         }
-        return isFileChanged_;
+        return isFileSizeChanged_;
     }
 
 protected:
@@ -222,7 +222,7 @@ protected:
     /* *
      * Whether original file is changed
      */
-    bool isFileChanged_ = false;
+    bool isFileSizeChanged_ = false;
 
 private:
     /* *

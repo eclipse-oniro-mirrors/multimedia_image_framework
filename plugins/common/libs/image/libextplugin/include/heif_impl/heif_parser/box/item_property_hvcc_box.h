@@ -41,33 +41,33 @@ struct HvccConfig {
 };
 
 struct HvccSpsConfig {
-    uint8_t forbidden_zero_bit;
-    uint8_t nal_unit_type;
-    uint8_t nuh_layer_id;
-    uint8_t nuh_temporal_id_plus1;
-    uint8_t sps_video_parameter_set_id;
-    uint8_t sps_max_sub_layers_minus1;
-    uint8_t sps_temporal_id_nesting_flag;
-    uint32_t sps_seq_parameter_set_id;
-    uint32_t chroma_format_idc;
-    uint8_t separate_colour_plane_flag;
-    uint32_t pic_width_in_luma_samples;
-    uint32_t pic_height_in_luma_samples;
-    uint8_t conformance_window_flag;
-    uint32_t conf_win_lef_offset;
-    uint32_t conf_win_right_offset;
-    uint32_t conf_win_top_offset;
-    uint32_t conf_win_bottom_offset;
-    uint32_t bit_depth_luma_minus8;
-    uint32_t bit_depth_chroma_minus8;
-    uint32_t log2_max_pic_order_cnt_lsb_minus4;
-    uint8_t sps_sub_layer_ordering_info_present_flag;
-    uint8_t scaling_list_enabeld_flag;
-    uint8_t pcm_enabled_flag;
-    uint32_t num_short_term_ref_pic_sets;
-    uint8_t long_term_ref_pics_present_flag;
-    uint8_t vui_parameter_present_flag;
-    uint8_t video_range_flag;
+    uint8_t forbiddenZeroBit;
+    uint8_t nalUnitType;
+    uint8_t nuhLayerId;
+    uint8_t nuhTemporalIdPlus1;
+    uint8_t spsVideoParameterSetId;
+    uint8_t spsMaxSubLayersMinus1;
+    uint8_t spsTemporalIdNestingFlag;
+    uint32_t spsSeqParameterSetId;
+    uint32_t chromaFormatIdc;
+    uint8_t separateColourPlaneFlag;
+    uint32_t picWidthInLumaSamples;
+    uint32_t picHeightInLumaSamples;
+    uint8_t conformanceWindowFlag;
+    uint32_t confWinLefOffset;
+    uint32_t confWinRightOffset;
+    uint32_t confWinTopOffset;
+    uint32_t confWinBottomOffset;
+    uint32_t bitDepthLumaMinus8;
+    uint32_t bitDepthChromaMinus8;
+    uint32_t log2MaxPicOrderCntLsbMinus4;
+    uint8_t spsSubLayerOrderingInfoPresentFlag;
+    uint8_t scalingListEnabeldFlag;
+    uint8_t pcmEnabledFlag;
+    uint32_t numShortTermRefPicSets;
+    uint8_t longTermRefPicsPresentFlag;
+    uint8_t vuiParameterPresentFlag;
+    uint8_t videoRangeFlag;
 };
 
 struct HvccNalArray {
@@ -92,7 +92,7 @@ public:
 
     const HvccSpsConfig& GetSpsConfig() const { return spsConfig_; }
 
-    int32_t GetWord(const std::vector<uint8_t>& nalu, int m_len);
+    int32_t GetWord(const std::vector<uint8_t>& nalu, int length);
 
     int32_t GetGolombCode(const std::vector<uint8_t> &nalu);
 
@@ -102,7 +102,7 @@ public:
 
     std::vector<HvccNalArray> GetNalArrays() const { return nalArrays_; };
 
-    std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, int8_t NaluId);
+    std::vector<uint8_t> GetNaluData(const std::vector<HvccNalArray>& nalArrays, int8_t naluId);
 
     void ProcessBoxData(std::vector<uint8_t>& nalu);
 

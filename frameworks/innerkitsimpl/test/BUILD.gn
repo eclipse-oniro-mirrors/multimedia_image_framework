@@ -1116,7 +1116,6 @@ ohos_unittest("ndktest") {
   external_deps = [
     "googletest:gmock_main",
     "googletest:gtest_main",
-    "node:node_header_notice",
   ]
 }
 
@@ -1168,7 +1167,6 @@ ohos_unittest("ndktest2") {
     "hilog:libhilog",
     "napi:ace_napi",
     "napi:ark_interop",
-    "node:node_header_notice",
     "resource_management:librawfile",
   ]
   resource_config_file = "${image_subsystem}/test/resource/image/ohos_test.xml"
@@ -1191,7 +1189,6 @@ ohos_unittest("napitest") {
     "googletest:gtest_main",
     "graphic_2d:color_manager",
     "napi:ace_napi",
-    "node:node_header_notice",
   ]
 }
 

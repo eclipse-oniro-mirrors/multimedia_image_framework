@@ -26,14 +26,34 @@ class ImageCreatorImpl : public OHOS::FFI::FFIData {
     DECL_TYPE(ImageCreatorImpl, OHOS::FFI::FFIData)
 public:
     ImageCreatorImpl(int32_t width, int32_t height, int32_t format, int32_t capacity);
+    ~ImageCreatorImpl();
     std::shared_ptr<ImageCreator> GetImageCreator();
-    void Release()
-    {
-        real_.reset();
-    }
+    void Release();
+    uint32_t CjOn(std::string name, std::function<void()> callBack);
+#ifdef IMAGE_DEBUG_FLAG
+    bool isCallBackTest = false;
+#endif
 
 private:
-    std::shared_ptr<ImageCreator> real_ = nullptr;
+    void release();
+    bool isRelease = false;
+    std::shared_ptr<ImageCreator> imageCreator_ = nullptr;
+};
+
+class CJImageCreatorReleaseListener : public SurfaceBufferReleaseListener {
+public:
+    ~CJImageCreatorReleaseListener() override
+    {
+        callBack = nullptr;
+    }
+    void OnSurfaceBufferRelease() override
+    {
+        if (callBack != nullptr) {
+            callBack();
+        }
+    }
+    std::string name;
+    std::function<void()> callBack = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

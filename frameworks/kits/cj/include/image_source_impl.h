@@ -41,12 +41,15 @@ public:
     uint32_t GetSupportedFormats(std::set<std::string> &formats);
 
     uint32_t GetImageProperty(std::string key, uint32_t index, std::string &defaultValue);
+    uint32_t GetImageProperties(std::vector<std::string> keyStrArray, std::vector<std::string> &valueStrArray);
     uint32_t ModifyImageProperty(std::string key, std::string value);
+    uint32_t ModifyImageProperties(char **keyStrArray, char **valueStrArray, int64_t arraySize);
     uint32_t GetFrameCount(uint32_t &errorCode);
     uint32_t UpdateData(uint8_t *data, uint32_t size, bool isCompleted);
     int64_t CreatePixelMap(uint32_t index, DecodeOptions &opts, uint32_t &errorCode);
     std::vector<int64_t> CreatePixelMapList(uint32_t index, DecodeOptions opts, uint32_t* errorCode);
     std::unique_ptr<std::vector<int32_t>> GetDelayTime(uint32_t* errorCode);
+    std::unique_ptr<std::vector<int32_t>> GetDisposalTypeList(uint32_t* errorCode);
 
     void SetPathName(std::string pathName);
     void SetFd(int fd);

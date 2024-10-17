@@ -18,6 +18,7 @@
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "ffrt.h"
 #include "image_fwk_ext_manager.h"
+#include "image_func_timer.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_utils.h"
@@ -556,7 +557,8 @@ bool HeifDecoderImpl::decodeGainmap()
 bool HeifDecoderImpl::decodeAuxiliaryMap()
 {
     ImageTrace trace("HeifDecoderImpl::decodeAuxiliaryMap");
-    if (auxiliaryImage_ && parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
+    if (auxiliaryImage_ != nullptr && parser_ != nullptr &&
+        parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
         return HwDecodeMimeImage(auxiliaryImage_);
     }
     sptr<SurfaceBuffer> hwBuffer;
@@ -762,6 +764,11 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
     parser_->GetItemData(image->GetItemId(), &inputs, heif_only_header);
     ProcessChunkHead(inputs.data(), inputs.size());
 
+    if (auxiliaryDstMemory_ == nullptr || auxiliaryDstMemorySize_ == 0 || inputs.size() == 0) {
+        IMAGE_LOGE("%{public}s: params fail auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
+            __func__, auxiliaryDstMemorySize_, inputs.size());
+        return false;
+    }
     if (memcpy_s(auxiliaryDstMemory_, auxiliaryDstMemorySize_, inputs.data(), inputs.size()) != EOK) {
         IMAGE_LOGE("%{public}s: memcpy failed, auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}ld",
             __func__, auxiliaryDstMemorySize_, inputs.size());
@@ -773,6 +780,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                                     GridInfo &gridInfo, bool isPrimary)
 {
+    ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;
@@ -1149,6 +1157,15 @@ void HeifDecoderImpl::getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vecto
 void HeifDecoderImpl::getISOMetadata(std::vector<uint8_t>& isoMetadata)
 {
     isoMetadata = primaryImage_->GetISOMetadata();
+}
+
+void HeifDecoderImpl::getFragmentMetadata(Media::Rect& fragmentMetadata)
+{
+    HeifFragmentMetadata metadata = primaryImage_->GetFragmentMetadata();
+    fragmentMetadata.width = static_cast<int32_t>(metadata.width);
+    fragmentMetadata.height = static_cast<int32_t>(metadata.height);
+    fragmentMetadata.left = static_cast<int32_t>(metadata.horizontalOffset);
+    fragmentMetadata.top = static_cast<int32_t>(metadata.verticalOffset);
 }
 
 void HeifDecoderImpl::getErrMsg(std::string& errMsg)

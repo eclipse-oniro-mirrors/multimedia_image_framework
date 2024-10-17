@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <string>
+#include <charconv>
 
 #include "common_utils.h"
 #include "image_log.h"
@@ -184,7 +185,11 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
     }
     IMAGE_LOGI("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
 
-    *surfaceId = std::stoull(strKey);
+    std::from_chars_result res = std::from_chars(strKey.data(), strKey.data() + strKey.size(), *surfaceId);
+    if (res.ec != std::errc()) {
+        IMAGE_LOGD("strKey convert string to longlong failed");
+        return IMAGE_BAD_SOURCE;
+    }
     return IMAGE_SUCCESS;
 }
 

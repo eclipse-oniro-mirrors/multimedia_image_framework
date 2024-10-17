@@ -18,7 +18,9 @@
 #include "media_errors.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
+#include "image_common.h"
 #include "napi_message_sequence.h"
+#include "exif_metadata_formatter.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -129,6 +131,7 @@ static void CommonCallbackRoutine(napi_env env, MetadataNapiAsyncContext* &async
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
@@ -350,27 +353,15 @@ std::vector<std::pair<std::string, std::string>> GetArrayArgument(napi_env env, 
 napi_value CreateErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
 {
     napi_value result = nullptr;
-    napi_status status = napi_create_array_with_length(env, errMsgArray.size(), &result);
-    if (status != napi_ok) {
-        IMAGE_LOGE("Malloc array buffer failed %{public}d", status);
-        return result;
+    std::string errkey = "";
+    for (const auto &entry : errMsgArray) {
+        errkey += entry.second + " ";
     }
 
-    uint32_t index = 0;
-    for (auto it = errMsgArray.begin(); it != errMsgArray.end(); ++it) {
-        napi_value errMsgVal;
-        napi_get_undefined(env, &errMsgVal);
-        ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-            "The image source data is incorrect! exif key: " + it->second);
-        status = napi_set_element(env, result, index, errMsgVal);
-        if (status != napi_ok) {
-            IMAGE_LOGE("Add error message to array failed %{public}d", status);
-            continue;
-        }
-        ++index;
+    if (errMsgArray.size() != 0) {
+        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_BAD_PARAMETER,
+            "The input data is incorrect! error key: " + errkey);
     }
-
-    IMAGE_LOGD("Create obtain error array success.");
     return result;
 }
 
@@ -455,9 +446,6 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContext(napi_env env, nap
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStrArrayArgument(env, argValue[NUM_0]);
-        if (context->keyStrArray.size() == 0) {
-            return nullptr;
-        }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
         return nullptr;
@@ -487,9 +475,6 @@ static std::unique_ptr<MetadataNapiAsyncContext> UnwrapContextForModify(napi_env
     }
     if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->KVSArray = GetArrayArgument(env, argValue[NUM_0]);
-        if (context->KVSArray.size() == 0) {
-            return nullptr;
-        }
     } else {
         IMAGE_LOGE("Arg 0 type mismatch");
         return nullptr;
@@ -564,7 +549,7 @@ napi_value MetadataNapi::GetProperties(napi_env env, napi_callback_info info)
     napi_status status;
     std::unique_ptr<MetadataNapiAsyncContext> asyncContext = UnwrapContext(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Async context unwrap failed");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -586,7 +571,7 @@ napi_value MetadataNapi::SetProperties(napi_env env, napi_callback_info info)
     napi_status status;
     std::unique_ptr<MetadataNapiAsyncContext> asyncContext = UnwrapContextForModify(env, info);
     if (asyncContext == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER, "Async context unwrap failed");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Async context unwrap failed");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

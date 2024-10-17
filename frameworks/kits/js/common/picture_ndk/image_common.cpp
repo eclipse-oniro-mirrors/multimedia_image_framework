@@ -14,6 +14,7 @@
 */
 #include "image_common.h"
 #include "image_common_impl.h"
+#include "image_utils.h"
 #include "exif_metadata.h"
 #include "fragment_metadata.h"
 #include "securec.h"
@@ -89,6 +90,10 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
     std::string keyString(key->data, key->size);
     std::string valueString(value->data, value->size);
     if (keyString.empty() || valueString.empty()) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    uint32_t casted;
+    if (!OHOS::Media::ImageUtils::StrToUint32(valueString, casted)) {
         return IMAGE_BAD_PARAMETER;
     }
     bool isSucc = metadata->GetInnerAuxiliaryMetadata()->SetValue(keyString, valueString);

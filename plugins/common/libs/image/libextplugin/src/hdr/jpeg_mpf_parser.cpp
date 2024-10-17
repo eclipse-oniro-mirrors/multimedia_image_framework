@@ -19,6 +19,7 @@
 #include "hilog/log_cpp.h"
 #include "image_log.h"
 #include "image_utils.h"
+#include "media_errors.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -38,6 +39,8 @@ constexpr uint8_t UINT32_BYTE_SIZE = 4;
 constexpr uint16_t TAG_TYPE_UNDEFINED = 0x07;
 constexpr uint16_t TAG_TYPE_LONG = 0x04;
 constexpr uint16_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
+constexpr uint16_t FRAGMENT_METADATA_LENGTH = 20;
+constexpr uint16_t AUXILIARY_TAG_NAME_LENGTH = 8;
 
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
@@ -187,40 +190,47 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
 
 bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian)
 {
-    if (data == nullptr || dataSize <= 0) {
+    if (data == nullptr || dataSize == 0) {
         return false;
     }
 
     images_.clear();
     for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
-        for (uint32_t offset = 0; offset < dataSize; offset++) {
-            if (memcmp(data + offset, it.first.c_str(), it.first.size()) == 0) {
-                offset -= UINT32_BYTE_SIZE;
-                uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
-                SingleJpegImage auxImage = {
-                    .auxType = it.second,
-                    .auxTagName = it.first,
-                    .size = imageSize,
-                    .offset = offset - UINT32_BYTE_SIZE - imageSize,
-                };
-                images_.push_back(auxImage);
-                IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
-                    __func__, auxImage.auxType, auxImage.offset, auxImage.size, auxImage.auxTagName.c_str());
-                break;
-            }
+        int32_t matchedPos = ImageUtils::KMPFind(data, dataSize,
+            reinterpret_cast<const uint8_t*>(it.first.c_str()), it.first.size());
+        if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
+            continue;
         }
+        uint32_t offset = static_cast<uint32_t>(matchedPos);
+        if (offset > dataSize) {
+            continue;
+        }
+        offset -= UINT32_BYTE_SIZE;
+        uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
+        SingleJpegImage auxImage = {
+            .offset = offset - UINT32_BYTE_SIZE - imageSize,
+            .size = imageSize,
+            .auxType = it.second,
+            .auxTagName = it.first,
+        };
+        images_.push_back(auxImage);
+        IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
+            __func__, auxImage.auxType, auxImage.offset, auxImage.size, auxImage.auxTagName.c_str());
     }
     return true;
 }
 
 bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& fragmentRect, bool isBigEndian)
 {
-    if (data == nullptr || size <= 0) {
+    if (data == nullptr || size == 0) {
         return false;
     }
 
     for (uint32_t offset = 0; offset < size; offset++) {
         if (memcmp(data + offset, FRAGMENT_META_FLAG, sizeof(FRAGMENT_META_FLAG)) == 0) {
+            if (offset + FRAGMENT_METADATA_LENGTH > size) {
+                return false;
+            }
             offset += UINT32_BYTE_SIZE;
             fragmentRect.left = ImageUtils::BytesToInt32(data, offset, isBigEndian);
             fragmentRect.top = ImageUtils::BytesToInt32(data, offset, isBigEndian);
@@ -304,6 +314,33 @@ std::vector<uint8_t> JpegMpfPacker::PackHdrJpegMpfMarker(SingleJpegImage base, S
     const uint32_t attributeIfdOffset = 0;
     ImageUtils::Uint32ToBytes(attributeIfdOffset, bytes, index);
     WriteMPEntryToBytes(bytes, index, images);
+    return bytes;
+}
+
+std::vector<uint8_t> JpegMpfPacker::PackFragmentMetadata(Rect& fragmentRect, bool isBigEndian)
+{
+    std::vector<uint8_t> bytes(FRAGMENT_METADATA_LENGTH);
+    uint32_t offset = 0;
+    ImageUtils::ArrayToBytes(FRAGMENT_META_FLAG, UINT32_BYTE_SIZE, bytes, offset);
+    ImageUtils::Int32ToBytes(fragmentRect.left, bytes, offset, isBigEndian);
+    ImageUtils::Int32ToBytes(fragmentRect.top, bytes, offset, isBigEndian);
+    ImageUtils::Int32ToBytes(fragmentRect.width, bytes, offset, isBigEndian);
+    ImageUtils::Int32ToBytes(fragmentRect.height, bytes, offset, isBigEndian);
+    return bytes;
+}
+
+std::vector<uint8_t> JpegMpfPacker::PackDataSize(uint32_t size, bool isBigEndian)
+{
+    std::vector<uint8_t> bytes(UINT32_BYTE_SIZE);
+    uint32_t offset = 0;
+    ImageUtils::Uint32ToBytes(size, bytes, offset, isBigEndian);
+    return bytes;
+}
+
+std::vector<uint8_t> JpegMpfPacker::PackAuxiliaryTagName(std::string& tagName)
+{
+    std::vector<uint8_t> bytes(AUXILIARY_TAG_NAME_LENGTH, 0x00);
+    std::copy(tagName.begin(), tagName.end(), bytes.begin());
     return bytes;
 }
 }

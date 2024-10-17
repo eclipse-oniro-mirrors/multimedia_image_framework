@@ -213,7 +213,7 @@ std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &n
             return HvccNalunit.nalUnits[0];
         }
     }
-    return {};
+    return std::vector<uint8_t>();
 }
 
 void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
@@ -221,7 +221,7 @@ void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
     int naluSize = nalu.size();
     for (int i = UINT16_BYTES_NUM; i < naluSize; ++i) {
         if (nalu[i - UINT8_BYTES_NUM] == 0x00 &&
-             nalu[i - SKIP_DOUBLE_DATA_PROCESS_BYTE] == 0x00 && nalu[i] == 0x03) {
+            nalu[i - SKIP_DOUBLE_DATA_PROCESS_BYTE] == 0x00 && nalu[i] == 0x03) {
             nalu.erase(nalu.begin() + i);
         }
     }
@@ -237,27 +237,27 @@ void HeifHvccBox::ParserHvccColorRangeFlag(const std::vector<HvccNalArray> &nalA
 void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, int32_t profilePresentFlag,
                                    int32_t maxNumSubLayerMinus1)
 {
-    std::vector<int32_t> general_profile_compatibility_flags;
-    std::vector<int32_t> sub_layer_profile_present_flag;
-    std::vector<int32_t> sub_layer_level_present_flags;
-    std::vector<int32_t> sub_layer_profile_idcs;
-    std::vector<std::vector<int32_t>> sub_layer_profile_compatibility_flags;
+    std::vector<int32_t> generalProfileCompatibilityFlags;
+    std::vector<int32_t> subLayerProfilePresentFlag;
+    std::vector<int32_t> subLayerLevelPresentFlags;
+    std::vector<int32_t> subLayerProfileIdcs;
+    std::vector<std::vector<int32_t>> subLayerProfileCompatibilityFlags;
     if (profilePresentFlag) {
         GetWord(nalUnits, READ_BIT_NUM_FLAG); // general_profile_idc
 
         for (int j = 0; j < READ_GENERAL_PROFILE_IDC_NUM; ++j) {
             int32_t flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-            general_profile_compatibility_flags.push_back(flag);
+            generalProfileCompatibilityFlags.push_back(flag);
         }
         GetWord(nalUnits, READ_BYTE_NUM_FLAG);
         GetWord(nalUnits, READ_BYTE_NUM_FLAG);
         GetWord(nalUnits, READ_GENERAL_PROFILE_IDC_NUM);
     }
     GetWord(nalUnits, READ_BYTE_NUM_FLAG);
-    sub_layer_profile_present_flag.resize(maxNumSubLayerMinus1);
+    subLayerProfilePresentFlag.resize(maxNumSubLayerMinus1);
     for (int i = 0; i < maxNumSubLayerMinus1; ++i) {
-        sub_layer_profile_present_flag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-        sub_layer_level_present_flags.push_back(GetWord(nalUnits, READ_BIT_NUM_FLAG));
+        subLayerProfilePresentFlag[i] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        subLayerLevelPresentFlags.push_back(GetWord(nalUnits, READ_BIT_NUM_FLAG));
     }
 
     if (maxNumSubLayerMinus1 > 0) {
@@ -267,21 +267,21 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, int32_t profi
         }
     }
 
-    sub_layer_profile_idcs.resize(maxNumSubLayerMinus1);
-    sub_layer_profile_compatibility_flags.resize(maxNumSubLayerMinus1,
-                                                 std::vector<int32_t>(GENERAL_PROFILE_SIZE));
+    subLayerProfileIdcs.resize(maxNumSubLayerMinus1);
+    subLayerProfileCompatibilityFlags.resize(maxNumSubLayerMinus1,
+                                             std::vector<int32_t>(GENERAL_PROFILE_SIZE));
     for (int i = 0; i < maxNumSubLayerMinus1; i++) {
-        if (sub_layer_profile_present_flag[i]) {
+        if (subLayerProfilePresentFlag[i]) {
             GetWord(nalUnits, SUB_LAYER_PRESENT_PROFILE_SIZE);
-            sub_layer_profile_idcs[i] = GetWord(nalUnits, SUB_LAYER_PROFILE_IDC_SIZE);
+            subLayerProfileIdcs[i] = GetWord(nalUnits, SUB_LAYER_PROFILE_IDC_SIZE);
             for (int j = 0; j < GENERAL_PROFILE_SIZE; ++j) {
-                sub_layer_profile_compatibility_flags[i][j] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+                subLayerProfileCompatibilityFlags[i][j] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
             }
 
             // skip sub_layer_profile_idcs judge;
             GetWord(nalUnits, READ_SUB_LAYER_PROFILE_IDCS);
         }
-        if (sub_layer_level_present_flags[i]) {
+        if (subLayerLevelPresentFlags[i]) {
             GetWord(nalUnits, READ_BYTE_NUM_FLAG);
         }
     }
@@ -290,8 +290,8 @@ void HeifHvccBox::ProfileTierLevel(std::vector<uint8_t> &nalUnits, int32_t profi
 bool HeifHvccBox::ParseNalUnitAnalysisSps(std::vector<uint8_t> &nalUnits)
 {
     boxBitLength_ = nalUnits.size() * BIT_DEPTH_DIFF;
-    spsConfig_.forbidden_zero_bit = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    spsConfig_.nuh_temporal_id_plus1 = GetWord(nalUnits, NUM_TEMPORAL_ID_SIZE);
+    spsConfig_.forbiddenZeroBit = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    spsConfig_.nuhTemporalIdPlus1 = GetWord(nalUnits, NUM_TEMPORAL_ID_SIZE);
     spsConfig_.nalUnitType = GetWord(nalUnits, NALU_TYPE_ID_SIZE);
     GetWord(nalUnits, SUB_LAYER_MINUS);
     return ParseSpsSyntax(nalUnits);
@@ -300,35 +300,35 @@ bool HeifHvccBox::ParseNalUnitAnalysisSps(std::vector<uint8_t> &nalUnits)
 bool HeifHvccBox::ParseSpsSyntax(std::vector<uint8_t> &nalUnits)
 {
     //General sequence parameter set RBSP syntax
-    spsConfig_.sps_video_parameter_set_id = GetWord(nalUnits, GENERAL_PROFILE_SIZE);
-    spsConfig_.sps_max_sub_layers_minus1 = GetWord(nalUnits, SUB_LAYER_MINUS);
-    spsConfig_.sps_temporal_id_nesting_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    spsConfig_.spsVideoParameterSetId = GetWord(nalUnits, GENERAL_PROFILE_SIZE);
+    spsConfig_.spsMaxSubLayersMinus1 = GetWord(nalUnits, SUB_LAYER_MINUS);
+    spsConfig_.spsTemporalIdNestingFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
 
     //go to profile_tier_level parser
     ProfileTierLevel(nalUnits,
-                     spsConfig_.sps_temporal_id_nesting_flag,
-                     spsConfig_.sps_max_sub_layers_minus1);
+                     spsConfig_.spsTemporalIdNestingFlag,
+                     spsConfig_.spsMaxSubLayersMinus1);
 
-    spsConfig_.sps_video_parameter_set_id = GetGolombCode(nalUnits);
-    spsConfig_.chroma_format_idc = GetGolombCode(nalUnits);
-    if (static_cast<int>(spsConfig_.chroma_format_idc) == SUB_LAYER_MINUS) {
-        spsConfig_.separate_colour_plane_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    spsConfig_.spsVideoParameterSetId = GetGolombCode(nalUnits);
+    spsConfig_.chromaFormatIdc = GetGolombCode(nalUnits);
+    if (static_cast<int>(spsConfig_.chromaFormatIdc) == SUB_LAYER_MINUS) {
+        spsConfig_.separateColourPlaneFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     }
-    spsConfig_.pic_width_in_luma_samples = GetGolombCode(nalUnits);
-    spsConfig_.pic_height_in_luma_samples = GetGolombCode(nalUnits);
-    spsConfig_.conformance_window_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (static_cast<int>(spsConfig_.conformance_window_flag) == READ_BIT_NUM_FLAG) {
-        spsConfig_.conf_win_lef_offset = GetGolombCode(nalUnits);
-        spsConfig_.conf_win_right_offset = GetGolombCode(nalUnits);
-        spsConfig_.conf_win_top_offset = GetGolombCode(nalUnits);
-        spsConfig_.conf_win_bottom_offset = GetGolombCode(nalUnits);
+    spsConfig_.picWidthInLumaSamples = GetGolombCode(nalUnits);
+    spsConfig_.picHeightInLumaSamples = GetGolombCode(nalUnits);
+    spsConfig_.conformanceWindowFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (static_cast<int>(spsConfig_.conformanceWindowFlag) == READ_BIT_NUM_FLAG) {
+        spsConfig_.confWinLefOffset = GetGolombCode(nalUnits);
+        spsConfig_.confWinRightOffset = GetGolombCode(nalUnits);
+        spsConfig_.confWinTopOffset = GetGolombCode(nalUnits);
+        spsConfig_.confWinBottomOffset = GetGolombCode(nalUnits);
     }
-    spsConfig_.bit_depth_luma_minus8 = GetGolombCode(nalUnits);
-    spsConfig_.bit_depth_chroma_minus8 = GetGolombCode(nalUnits);
-    spsConfig_.log2_max_pic_order_cnt_lsb_minus4 = GetGolombCode(nalUnits);
-    spsConfig_.sps_sub_layer_ordering_info_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    int i = spsConfig_.sps_sub_layer_ordering_info_present_flag ? 0 : spsConfig_.sps_max_sub_layers_minus1;
-    for (; i <= spsConfig_.sps_max_sub_layers_minus1; i++) {
+    spsConfig_.bitDepthLumaMinus8 = GetGolombCode(nalUnits);
+    spsConfig_.bitDepthChromaMinus8 = GetGolombCode(nalUnits);
+    spsConfig_.log2MaxPicOrderCntLsbMinus4 = GetGolombCode(nalUnits);
+    spsConfig_.spsSubLayerOrderingInfoPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    int i = spsConfig_.spsSubLayerOrderingInfoPresentFlag ? 0 : spsConfig_.spsMaxSubLayersMinus1;
+    for (; i <= spsConfig_.spsMaxSubLayersMinus1; i++) {
         GetGolombCode(nalUnits);
         GetGolombCode(nalUnits);
         GetGolombCode(nalUnits);
@@ -356,13 +356,13 @@ void HeifHvccBox::ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, int s
 
 void HeifHvccBox::ParseSpsScallListData(std::vector<uint8_t> &nalUnits)
 {
-    std::vector<std::vector<int>> scaling_list_pred_mode_flag;
+    std::vector<std::vector<int>> scalingListPredModeFlag;
     for (int sizeId = 0; sizeId < GENERAL_PROFILE_SIZE; ++sizeId) {
         for (int matrixId = 0; matrixId < NUM_TEMPORAL_ID_SIZE;
              matrixId += ((sizeId == SUB_LAYER_MINUS) ? SUB_LAYER_MINUS : READ_BIT_NUM_FLAG)) {
-            scaling_list_pred_mode_flag[sizeId][matrixId] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-            if (!scaling_list_pred_mode_flag[sizeId][matrixId]) {
-                scaling_list_pred_mode_flag[sizeId][matrixId] = GetGolombCode(nalUnits);
+            scalingListPredModeFlag[sizeId][matrixId] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+            if (!scalingListPredModeFlag[sizeId][matrixId]) {
+                scalingListPredModeFlag[sizeId][matrixId] = GetGolombCode(nalUnits);
             } else {
                 ReadGolombCodesForSizeId(nalUnits, sizeId);
             }
@@ -372,64 +372,61 @@ void HeifHvccBox::ParseSpsScallListData(std::vector<uint8_t> &nalUnits)
 
 bool HeifHvccBox::ParseSpsVuiParameter(std::vector<uint8_t> &nalUnits)
 {
-    int8_t aspect_ratio_info_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (aspect_ratio_info_present_flag) {
-        int32_t aspect_ratio_idc = GetWord(nalUnits, READ_BYTE_NUM_FLAG);
-        if (static_cast<int>(aspect_ratio_idc) == EXTENDED_SAR) {
+    int8_t aspectRatioInfoPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (aspectRatioInfoPresentFlag) {
+        int32_t aspectRatioIdc = GetWord(nalUnits, READ_BYTE_NUM_FLAG);
+        if (static_cast<int>(aspectRatioIdc) == EXTENDED_SAR) {
             GetWord(nalUnits, READ_BIT_NUM_FLAG);
         }
     }
-    int8_t overscan_info_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (overscan_info_present_flag) {
+    int8_t overscanInfoPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (overscanInfoPresentFlag) {
         GetWord(nalUnits, GENERAL_PROFILE_SIZE);
     }
-    int8_t video_signal_type_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (video_signal_type_present_flag) {
+    int8_t videoSignalTypePresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (videoSignalTypePresentFlag) {
         GetWord(nalUnits, SUB_LAYER_MINUS);
-        spsConfig_.video_range_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-        return true;
+        spsConfig_.videoRangeFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
     }
-    return false;
+    return true;
 }
 
 bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
 {
-    spsConfig_.scaling_list_enabeld_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (static_cast<int>(spsConfig_.scaling_list_enabeld_flag) == READ_BIT_NUM_FLAG) {
-        spsConfig_.scaling_list_enabeld_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-        if (spsConfig_.scaling_list_enabeld_flag) {
+    spsConfig_.scalingListEnabeldFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (static_cast<int>(spsConfig_.scalingListEnabeldFlag) == READ_BIT_NUM_FLAG) {
+        spsConfig_.scalingListEnabeldFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+        if (spsConfig_.scalingListEnabeldFlag) {
             ParseSpsScallListData(nalUnits);
         }
     }
     GetWord(nalUnits, READ_BIT_NUM_FLAG);
     GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    spsConfig_.pcm_enabled_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (static_cast<int>(spsConfig_.pcm_enabled_flag) == READ_BIT_NUM_FLAG) {
+    spsConfig_.pcmEnabledFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (static_cast<int>(spsConfig_.pcmEnabledFlag) == READ_BIT_NUM_FLAG) {
         GetWord(nalUnits, PCM_ENABLED_FLAG);
         GetWord(nalUnits, PCM_ENABLED_FLAG);
         GetGolombCode(nalUnits);
         GetGolombCode(nalUnits);
         GetWord(nalUnits, READ_BIT_NUM_FLAG);
     }
-    spsConfig_.num_short_term_ref_pic_sets = GetGolombCode(nalUnits);
-
-    // st_ref_pic_set
-    spsConfig_.long_term_ref_pics_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (spsConfig_.long_term_ref_pics_present_flag == READ_BIT_NUM_FLAG) {
-        int32_t num_long_term_ref_pic_sps = GetGolombCode(nalUnits);
-        for (int i = 0; i < num_long_term_ref_pic_sps; i++) {
-            // it_ref_pic_poc_lsb_sps[i] == log2_max_pic_order_cnt_lsb_minus4 + 4
-            GetWord(nalUnits, spsConfig_.log2_max_pic_order_cnt_lsb_minus4 + GENERAL_PROFILE_SIZE);
+    spsConfig_.numShortTermRefPicSets = GetGolombCode(nalUnits);
+    spsConfig_.longTermRefPicsPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (spsConfig_.longTermRefPicsPresentFlag == READ_BIT_NUM_FLAG) {
+        int32_t numLongTermRefPicSps = GetGolombCode(nalUnits);
+        for (int i = 0; i < numLongTermRefPicSps; i++) {
+            // itRefPicPocLsbSps[i] == log2MaxPicOrderCntLsbMinus4 + 4
+            GetWord(nalUnits, spsConfig_.log2MaxPicOrderCntLsbMinus4 + GENERAL_PROFILE_SIZE);
             GetWord(nalUnits, READ_BIT_NUM_FLAG);
         }
     }
     GetWord(nalUnits, READ_BIT_NUM_FLAG);
     GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    spsConfig_.vui_parameter_present_flag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-    if (static_cast<int>(spsConfig_.vui_parameter_present_flag) == READ_BIT_NUM_FLAG) {
-        ParseSpsVuiParameter(nalUnits);
+    spsConfig_.vuiParameterPresentFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+    if (static_cast<int>(spsConfig_.vuiParameterPresentFlag) == READ_BIT_NUM_FLAG) {
+        return ParseSpsVuiParameter(nalUnits);
     }
-    return false;
+    return false; // Skip parsing subsequent content
 }
 } // namespace ImagePlugin
 } // namespace OHOS

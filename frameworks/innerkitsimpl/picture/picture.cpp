@@ -205,13 +205,14 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
     pixelMap->SetImageYUVInfo(info);
 }
 
-static void SetMimeTypeToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
+static void SetImageInfoToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
 {
     if (mainPixelMap != nullptr && hdrPixelMap != nullptr) {
         ImageInfo mainInfo;
         mainPixelMap->GetImageInfo(mainInfo);
         ImageInfo hdrInfo;
         hdrPixelMap->GetImageInfo(hdrInfo);
+        hdrInfo.size = mainInfo.size;
         hdrInfo.encodedFormat = mainInfo.encodedFormat;
         hdrPixelMap->SetImageInfo(hdrInfo, true);
     }
@@ -341,7 +342,8 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
+    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) ||
+        mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("Unsupport HDR compose.");
         return nullptr;
     }
@@ -363,7 +365,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, *metadata);
 
     auto hdrPixelMap = ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
-    SetMimeTypeToHdr(mainPixelMap_, hdrPixelMap);
+    SetImageInfoToHdr(mainPixelMap_, hdrPixelMap);
     return hdrPixelMap;
 }
 
@@ -391,8 +393,10 @@ void Picture::SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture)
     auxiliaryPictures_[picture->GetType()] = picture;
     if (picture != nullptr && picture->GetType() == AuxiliaryPictureType::GAINMAP) {
         std::shared_ptr<PixelMap> gainmapPixel = GetGainmapPixelMap();
-        mainPixelMap_->SetHdrMetadata(gainmapPixel->GetHdrMetadata());
-        mainPixelMap_->SetHdrType(gainmapPixel->GetHdrType());
+        if (gainmapPixel != nullptr && mainPixelMap_ != nullptr) {
+            mainPixelMap_->SetHdrMetadata(gainmapPixel->GetHdrMetadata());
+            mainPixelMap_->SetHdrType(gainmapPixel->GetHdrType());
+        }
     }
 }
 

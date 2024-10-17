@@ -15,17 +15,48 @@
 #include "image_creator_impl.h"
 
 namespace OHOS {
-    namespace Media {
-        extern "C" {
-            ImageCreatorImpl::ImageCreatorImpl(int32_t width, int32_t height, int32_t format, int32_t capacity)
-            {
-                real_ = ImageCreator::CreateImageCreator(width, height, format, capacity);
-            }
+namespace Media {
+ImageCreatorImpl::ImageCreatorImpl(int32_t width, int32_t height, int32_t format, int32_t capacity)
+{
+    imageCreator_ = ImageCreator::CreateImageCreator(width, height, format, capacity);
+}
 
-            std::shared_ptr<ImageCreator> ImageCreatorImpl::GetImageCreator()
-            {
-                return real_;
-            }
-        }
-    }  // namespace Media
+std::shared_ptr<ImageCreator> ImageCreatorImpl::GetImageCreator()
+{
+    return imageCreator_;
+}
+
+ImageCreatorImpl::~ImageCreatorImpl()
+{
+    release();
+}
+
+void ImageCreatorImpl::Release()
+{
+    if (imageCreator_ != nullptr) {
+        imageCreator_->~ImageCreator();
+        imageCreator_ = nullptr;
+    }
+}
+
+void ImageCreatorImpl::release()
+{
+    if (!isRelease) {
+        Release();
+        isRelease = true;
+    }
+}
+
+uint32_t ImageCreatorImpl::CjOn(std::string name, std::function<void()> callBack)
+{
+    if (imageCreator_ == nullptr) {
+        return ERR_IMAGE_INIT_ABNORMAL;
+    }
+    std::shared_ptr<CJImageCreatorReleaseListener> listener = std::make_shared<CJImageCreatorReleaseListener>();
+    listener->name = name;
+    listener->callBack = callBack;
+    imageCreator_->RegisterBufferReleaseListener((std::shared_ptr<SurfaceBufferReleaseListener> &)listener);
+    return SUCCESS;
+}
+}  // namespace Media
 }  // namespace OHOS
