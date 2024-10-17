@@ -53,7 +53,7 @@ uint32_t HeifFormatAgent::GetHeaderSize()
     return HEADER_SIZE;
 }
 
-bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
+bool CheckFormatHead(const void *headerData, uint32_t dataSize)
 {
     if (headerData == nullptr) {
         IMAGE_LOGE("check format failed: header data is null.");
@@ -62,6 +62,14 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
     // Any valid ftyp box should have at least 8 bytes.
     if (dataSize < HEADER_LEAST_SIZE) {
         IMAGE_LOGE("data size[%{public}u] less than eight.", dataSize);
+        return false;
+    }
+    return true;
+}
+
+bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
+{
+    if (!CheckFormatHead(headerData, dataSize)) {
         return false;
     }
     uint32_t tmpBuff[HEADER_SIZE];
