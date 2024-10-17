@@ -18,6 +18,7 @@
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "ffrt.h"
 #include "image_fwk_ext_manager.h"
+#include "image_func_timer.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_utils.h"
@@ -768,6 +769,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                                     GridInfo &gridInfo, bool isPrimary)
 {
+    ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;

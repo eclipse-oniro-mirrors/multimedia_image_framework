@@ -18,6 +18,7 @@
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
     const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
+    const uint32_t MAX_HEIF_IMAGE_SIZE = 134217728;
 }
 
 namespace OHOS {
@@ -100,6 +101,9 @@ heif_error HeifIlocBox::ReadData(const Item &item, const std::shared_ptr<HeifInp
             stream->Seek(extent.offset + item.baseOffset);
 
             size_t oldSize = dest->size();
+            if (extent.length > MAX_HEIF_IMAGE_SIZE) {
+                return heif_error_big_length;
+            }
             dest->resize(static_cast<size_t>(oldSize + extent.length));
             stream->Read(reinterpret_cast<char*>(dest->data()) + oldSize, static_cast<size_t>(extent.length));
         } else if (item.constructionMethod == CONSTRUCTION_METHOD_IDAT_OFFSET) {
