@@ -44,6 +44,8 @@ public:
     static bool IsValidImageInfo(const ImageInfo &info);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
+    static bool IsFormatSupportDma(const PixelFormat &format);
+    static bool Is10Bit(const PixelFormat &format);
     static MultimediaPlugin::PluginServer& GetPluginServer();
     static bool CheckMulOverflow(int32_t width, int32_t bytesPerPixel);
     static bool CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPerPixel);
