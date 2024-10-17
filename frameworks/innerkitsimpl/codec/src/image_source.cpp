@@ -4460,10 +4460,10 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
     }
     if (sourceHdrType_ > ImageHdrType::SDR) {
         SingleJpegImage gainmapImage = {
-            .auxType = AuxiliaryPictureType::GAINMAP,
-            .auxTagName = AUXILIARY_TAG_GAINMAP,
             .offset = mainDecoder_->GetGainMapOffset(),
             .size = streamSize - mainDecoder_->GetGainMapOffset(),
+            .auxType = AuxiliaryPictureType::GAINMAP,
+            .auxTagName = AUXILIARY_TAG_GAINMAP,
         };
         jpegMpfParser->images_.push_back(gainmapImage);
     }
