@@ -2044,6 +2044,7 @@ bool ExtDecoder::DecodeHeifGainMap(DecodeContext& context)
     }
     decoder->setGainmapDstBuffer(dstBuffer, static_cast<size_t>(rowStride));
     if (!decoder->decodeGainmap()) {
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return false;
     }
     return true;
