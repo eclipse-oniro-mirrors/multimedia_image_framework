@@ -18,7 +18,7 @@
 namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
     const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
-    const uint32_t MAX_HEIF_IMAGE_SIZE = 67108864;
+    const uint32_t MAX_HEIF_IMAGE_SIZE = 134217728;
 }
 
 namespace OHOS {
