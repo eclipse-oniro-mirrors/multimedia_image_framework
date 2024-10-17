@@ -77,6 +77,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         IMAGE_LOGE("memcpy headerData data size:[%{public}d] error.", dataSize);
         return false;
     }
+
     const uint32_t *ptr = reinterpret_cast<const uint32_t *>(tmpBuff);
     uint64_t chunkSize = EndianSwap32(ptr[0]);  // first item
     uint32_t chunkType = EndianSwap32(ptr[1]);  // second item
@@ -84,6 +85,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         IMAGE_LOGD("head type is not ftyp.");
         return false;
     }
+    
     int64_t offset = OFFSET_SIZE;
     if (!IsHeif64(tmpBuff, dataSize, offset, chunkSize)) {
         return false;

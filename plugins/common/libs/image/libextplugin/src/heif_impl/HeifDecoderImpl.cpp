@@ -602,7 +602,7 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
         ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
         return res;
     }
-    
+
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
     sptr<SurfaceBuffer> hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
                                    hwDecoder->AllocateOutputBuffer(gridInfo.tileWidth * gridInfo.cols,
