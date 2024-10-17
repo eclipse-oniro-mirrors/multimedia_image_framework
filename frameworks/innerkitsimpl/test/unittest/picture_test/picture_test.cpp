@@ -479,7 +479,7 @@ HWTEST_F(PictureTest, MarshallingTest006, TestSize.Level1)
     ASSERT_NE(srcPicture, nullptr);
     std::shared_ptr<AuxiliaryPicture> gainmap = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(gainmap, nullptr);
-    ASSERT_TRUE(srcFragmentMetadata->SetValue("WIDTH", srcValue));
+    ASSERT_TRUE(srcFragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, srcValue));
     gainmap->SetMetadata(MetadataType::FRAGMENT, srcFragmentMetadata);
     srcPicture->SetAuxiliaryPicture(gainmap);
     Parcel data;
@@ -493,7 +493,7 @@ HWTEST_F(PictureTest, MarshallingTest006, TestSize.Level1)
     std::shared_ptr<ImageMetadata> dstFragmentMetadata = auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT);
     ASSERT_NE(dstFragmentMetadata, nullptr);
     std::string dstValue;
-    EXPECT_EQ(dstFragmentMetadata->GetValue("WIDTH", dstValue), SUCCESS);
+    EXPECT_EQ(dstFragmentMetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, dstValue), SUCCESS);
     EXPECT_EQ(dstValue, srcValue);
 }
 

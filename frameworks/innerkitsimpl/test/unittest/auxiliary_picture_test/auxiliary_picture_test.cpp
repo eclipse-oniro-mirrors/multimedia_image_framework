@@ -597,14 +597,14 @@ HWTEST_F(AuxiliaryPictureTest, SetMetadata002, TestSize.Level1)
     std::string srcValue = "2";
     std::shared_ptr<FragmentMetadata> srcFragmentMetadata = std::make_shared<FragmentMetadata>();
     ASSERT_NE(srcFragmentMetadata, nullptr);
-    ASSERT_TRUE(srcFragmentMetadata->SetValue("WIDTH", srcValue));
+    ASSERT_TRUE(srcFragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, srcValue));
     std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(auxiliaryPicture, nullptr);
     auxiliaryPicture->SetMetadata(MetadataType::FRAGMENT, srcFragmentMetadata);
     std::shared_ptr<ImageMetadata> dstFragmentMetadata = auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT);
     ASSERT_NE(dstFragmentMetadata, nullptr);
     std::string dstValue;
-    EXPECT_EQ(dstFragmentMetadata->GetValue("WIDTH", dstValue), SUCCESS);
+    EXPECT_EQ(dstFragmentMetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, dstValue), SUCCESS);
     EXPECT_EQ(dstValue, srcValue);
 }
 
@@ -662,14 +662,14 @@ HWTEST_F(AuxiliaryPictureTest, GetMetadata002, TestSize.Level1)
     std::string srcValue = "2";
     std::shared_ptr<FragmentMetadata> srcFragmentMetadata = std::make_shared<FragmentMetadata>();
     ASSERT_NE(srcFragmentMetadata, nullptr);
-    ASSERT_TRUE(srcFragmentMetadata->SetValue("WIDTH", srcValue));
+    ASSERT_TRUE(srcFragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, srcValue));
     std::unique_ptr<AuxiliaryPicture> auxiliaryPicture = CreateAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
     ASSERT_NE(auxiliaryPicture, nullptr);
     auxiliaryPicture->SetMetadata(MetadataType::FRAGMENT, srcFragmentMetadata);
     std::shared_ptr<ImageMetadata> dstFragmentMetadata = auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT);
     ASSERT_NE(dstFragmentMetadata, nullptr);
     std::string dstValue;
-    EXPECT_EQ(dstFragmentMetadata->GetValue("WIDTH", dstValue), SUCCESS);
+    EXPECT_EQ(dstFragmentMetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, dstValue), SUCCESS);
     EXPECT_EQ(dstValue, srcValue);
 }
 

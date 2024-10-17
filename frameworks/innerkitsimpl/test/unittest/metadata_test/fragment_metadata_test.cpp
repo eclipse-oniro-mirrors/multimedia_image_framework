@@ -39,10 +39,10 @@ public:
 HWTEST_F(FragmentMetadataTest, SetValueTest001, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    EXPECT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    EXPECT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
-    EXPECT_TRUE(fragmentMetadata.SetValue("WIDTH", "1000"));
-    EXPECT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
+    EXPECT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    EXPECT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
+    EXPECT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_WIDTH, "1000"));
+    EXPECT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
 }
 
 /**
@@ -64,21 +64,21 @@ HWTEST_F(FragmentMetadataTest, SetValueTest002, TestSize.Level2)
 HWTEST_F(FragmentMetadataTest, GetValueTest001, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("WIDTH", "1000"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_WIDTH, "1000"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     std::string value;
-    uint32_t state = fragmentMetadata.GetValue("X_IN_ORIGINAL", value);
+    uint32_t state = fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_X, value);
     EXPECT_EQ(state, SUCCESS);
     EXPECT_EQ(value, "300");
-    state = fragmentMetadata.GetValue("Y_IN_ORIGINAL", value);
+    state = fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_Y, value);
     EXPECT_EQ(state, SUCCESS);
     EXPECT_EQ(value, "256");
-    state = fragmentMetadata.GetValue("WIDTH", value);
+    state = fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_WIDTH, value);
     EXPECT_EQ(state, SUCCESS);
     EXPECT_EQ(value, "1000");
-    state = fragmentMetadata.GetValue("HEIGHT", value);
+    state = fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_HEIGHT, value);
     EXPECT_EQ(state, SUCCESS);
     EXPECT_EQ(value, "1001");
 }
@@ -91,7 +91,7 @@ HWTEST_F(FragmentMetadataTest, GetValueTest001, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, GetValueTest002, TestSize.Level2)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     std::string value;
     uint32_t state = fragmentMetadata.GetValue("ERRORCODE", value);
     EXPECT_EQ(state, ERR_IMAGE_INVALID_PARAMETER);
@@ -106,7 +106,7 @@ HWTEST_F(FragmentMetadataTest, GetValueTest002, TestSize.Level2)
 HWTEST_F(FragmentMetadataTest, GetValueTest003, TestSize.Level2)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     std::string value;
     uint32_t state = fragmentMetadata.GetValue("WIDTH", value);
     EXPECT_EQ(state, ERR_IMAGE_INVALID_PARAMETER);
@@ -121,10 +121,10 @@ HWTEST_F(FragmentMetadataTest, GetValueTest003, TestSize.Level2)
 HWTEST_F(FragmentMetadataTest, GetValueTest004, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1000"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1000"));
     std::string value;
-    uint32_t state = fragmentMetadata.GetValue("HEIGHT", value);
+    uint32_t state = fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_HEIGHT, value);
     EXPECT_EQ(state, SUCCESS);
     EXPECT_EQ(value, "1000");
 }
@@ -137,12 +137,12 @@ HWTEST_F(FragmentMetadataTest, GetValueTest004, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest001, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("WIDTH", "1000"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_WIDTH, "1000"));
     std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 2);
-    EXPECT_EQ(KValueStr.find("HEIGHT")->second, "1001");
-    EXPECT_EQ(KValueStr.find("WIDTH")->second, "1000");
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1001");
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_WIDTH)->second, "1000");
 }
 
 /**
@@ -153,11 +153,11 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest001, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest002, TestSize.Level2)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     ASSERT_FALSE(fragmentMetadata.SetValue("ERRORCODE", "1000"));
     std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 1);
-    EXPECT_EQ(KValueStr.find("HEIGHT")->second, "1001");
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1001");
     EXPECT_EQ(KValueStr.find("ERRORCODE"), KValueStr.end());
 }
 
@@ -169,10 +169,10 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest002, TestSize.Level2)
 HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest003, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1001"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("HEIGHT", "1000"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1000"));
     std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
-    ASSERT_EQ(KValueStr.find("HEIGHT")->second, "1000");
+    ASSERT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1000");
 }
 
 /**
@@ -183,11 +183,11 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest003, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, CloneMetadataTest001, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("WIDTH", "1000"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_WIDTH, "1000"));
     std::shared_ptr<ImageMetadata> newmetadata = fragmentMetadata.CloneMetadata();
     std::string oldValue, newValue;
-    newmetadata->GetValue("WIDTH", newValue);
-    fragmentMetadata.GetValue("WIDTH", oldValue);
+    newmetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, newValue);
+    fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_WIDTH, oldValue);
     EXPECT_EQ(newValue, oldValue);
     std::map<std::string, std::string> oldKValueStr = *(fragmentMetadata.GetAllProperties());
     std::map<std::string, std::string> newKValueStr = *(newmetadata->GetAllProperties());
@@ -202,14 +202,14 @@ HWTEST_F(FragmentMetadataTest, CloneMetadataTest001, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, RemoveEntryTest001, TestSize.Level1)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
     std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
     ASSERT_EQ(KValueStr.size(), 2);
-    fragmentMetadata.RemoveEntry("X_IN_ORIGINAL");
+    fragmentMetadata.RemoveEntry(FRAGMENT_METADATA_KEY_X);
     KValueStr = *(fragmentMetadata.GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 1);
-    EXPECT_EQ(KValueStr.find("X_IN_ORIGINAL"), KValueStr.end());
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_X), KValueStr.end());
 }
 
 /**
@@ -220,14 +220,14 @@ HWTEST_F(FragmentMetadataTest, RemoveEntryTest001, TestSize.Level1)
 HWTEST_F(FragmentMetadataTest, RemoveEntryTest002, TestSize.Level2)
 {
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
     std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
     ASSERT_EQ(KValueStr.size(), 2);
     fragmentMetadata.RemoveEntry("ERRORCODE");
     KValueStr = *(fragmentMetadata.GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 2);
-    fragmentMetadata.RemoveEntry("WIDTH");
+    fragmentMetadata.RemoveEntry(FRAGMENT_METADATA_KEY_WIDTH);
     KValueStr = *(fragmentMetadata.GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 2);
 }
@@ -253,15 +253,15 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest001, TestSize.Level1)
 {
     Parcel parcel;
     FragmentMetadata fragmentMetadata;
-    ASSERT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
     ASSERT_TRUE(fragmentMetadata.Marshalling(parcel));
     FragmentMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
     ASSERT_NE(newfragmentMetadata, nullptr);
     std::map<std::string, std::string> KValueStr = *(newfragmentMetadata->GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 2);
-    EXPECT_EQ(KValueStr.find("X_IN_ORIGINAL")->second, "300");
-    EXPECT_EQ(KValueStr.find("Y_IN_ORIGINAL")->second, "256");
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_X)->second, "300");
+    EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_Y)->second, "256");
 }
 
 /**
@@ -274,8 +274,8 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest002, TestSize.Level2)
     Parcel parcel;
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.Marshalling(parcel));
-    ASSERT_TRUE(fragmentMetadata.SetValue("X_IN_ORIGINAL", "300"));
-    ASSERT_TRUE(fragmentMetadata.SetValue("Y_IN_ORIGINAL", "256"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
+    ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
     FragmentMetadata* newfragmentMetadata = fragmentMetadata.Unmarshalling(parcel);
     ASSERT_NE(newfragmentMetadata, nullptr);
     std::map<std::string, std::string> KValueStr = *(newfragmentMetadata->GetAllProperties());
