@@ -584,11 +584,9 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;
     }
-
     if (image == nullptr || outBuffer == nullptr) {
         return false;
     }
-
     bool isReuseHwDecoder = hwDecoder != nullptr;
     if (!isReuseHwDecoder) {
         hwDecoder = new (std::nothrow) HeifHardwareDecoder();
@@ -597,14 +595,12 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
             return false;
         }
     }
-
     std::string imageType = parser_->GetItemType(image->GetItemId());
     if (imageType == "iden") {
         bool res = HwDecodeIdenImage(hwDecoder, image, gridInfo, outBuffer, isPrimary);
         ReleaseHwDecoder(hwDecoder, isReuseHwDecoder);
         return res;
     }
-
     GraphicPixelFormat inPixelFormat = GetInPixelFormat(image);
     sptr<SurfaceBuffer> hwBuffer = isPrimary && IsDirectYUVDecode() ? sptr<SurfaceBuffer>(dstHwBuffer_) :
                                    hwDecoder->AllocateOutputBuffer(gridInfo.tileWidth * gridInfo.cols,
