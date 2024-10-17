@@ -208,10 +208,10 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
         offset -= UINT32_BYTE_SIZE;
         uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
         SingleJpegImage auxImage = {
+            .offset = offset - UINT32_BYTE_SIZE - imageSize,
+            .size = imageSize,
             .auxType = it.second,
             .auxTagName = it.first,
-            .size = imageSize,
-            .offset = offset - UINT32_BYTE_SIZE - imageSize,
         };
         images_.push_back(auxImage);
         IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
