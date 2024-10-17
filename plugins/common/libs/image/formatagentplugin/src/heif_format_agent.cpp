@@ -85,7 +85,7 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         IMAGE_LOGD("head type is not ftyp.");
         return false;
     }
-    
+
     int64_t offset = OFFSET_SIZE;
     if (!IsHeif64(tmpBuff, dataSize, offset, chunkSize)) {
         return false;
