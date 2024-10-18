@@ -2906,9 +2906,6 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
                 "DecodingOptionsForPicture mismatch");
         }
-    } else {
-        IMAGE_LOGE("argCount mismatch");
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Create Picture argCount mismatch.");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
