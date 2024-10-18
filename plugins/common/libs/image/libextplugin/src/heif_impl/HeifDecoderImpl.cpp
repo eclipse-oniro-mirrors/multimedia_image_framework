@@ -85,11 +85,11 @@ struct PixelFormatConvertParam {
 };
 
 const std::map<AuxiliaryPictureType, std::string> HEIF_AUXTTYPE_ID_MAP = {
-    {AuxiliaryPictureType::GAINMAP, "gainmap"},
-    {AuxiliaryPictureType::DEPTH_MAP, "depthmap"},
-    {AuxiliaryPictureType::UNREFOCUS_MAP, "unrefocusmap"},
-    {AuxiliaryPictureType::LINEAR_MAP, "linearmap"},
-    {AuxiliaryPictureType::FRAGMENT_MAP, "fragmentmap"}
+    {AuxiliaryPictureType::GAINMAP, HEIF_AUXTTYPE_ID_GAINMAP},
+    {AuxiliaryPictureType::DEPTH_MAP, HEIF_AUXTTYPE_ID_DEPTH_MAP},
+    {AuxiliaryPictureType::UNREFOCUS_MAP, HEIF_AUXTTYPE_ID_UNREFOCUS_MAP},
+    {AuxiliaryPictureType::LINEAR_MAP, HEIF_AUXTTYPE_ID_LINEAR_MAP},
+    {AuxiliaryPictureType::FRAGMENT_MAP, HEIF_AUXTTYPE_ID_FRAGMENT_MAP}
 };
 
 static bool FillFrameInfoForPixelConvert(AVFrame *frame, PixelFormatConvertParam &param)
@@ -230,7 +230,8 @@ HeifDecoderImpl::HeifDecoderImpl()
     : outPixelFormat_(PixelFormat::RGBA_8888),
     dstMemory_(nullptr), dstRowStride_(0), dstHwBuffer_(nullptr),
     gainmapDstMemory_(nullptr), gainmapDstRowStride_(0),
-    auxiliaryDstMemory_(nullptr), auxiliaryDstRowStride_(0) {}
+    auxiliaryDstMemory_(nullptr), auxiliaryDstRowStride_(0),
+    auxiliaryDstMemorySize_(0) {}
 
 HeifDecoderImpl::~HeifDecoderImpl()
 {
@@ -520,6 +521,10 @@ bool HeifDecoderImpl::decodeGainmap()
 bool HeifDecoderImpl::decodeAuxiliaryMap()
 {
     ImageTrace trace("HeifDecoderImpl::decodeAuxiliaryMap");
+    if (auxiliaryImage_ != nullptr && parser_ != nullptr &&
+        parser_->GetItemType(auxiliaryImage_->GetItemId()) == "mime") {
+        return HwDecodeMimeImage(auxiliaryImage_);
+    }
     sptr<SurfaceBuffer> hwBuffer;
     bool decodeRes = HwDecodeImage(nullptr, auxiliaryImage_, auxiliaryGridInfo_, &hwBuffer, false);
     if (!decodeRes) {
@@ -686,6 +691,29 @@ bool HeifDecoderImpl::HwDecodeSingleImage(HeifHardwareDecoder *hwDecoder,
                    hwBuffer->GetFormat(), gridInfo.cols, gridInfo.rows,
                    gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size(), inputs[1].size());
         SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
+        return false;
+    }
+    return true;
+}
+
+bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
+{
+    if (image == nullptr) {
+        IMAGE_LOGE("HeifDecoderImpl::DecodeSingleImage image is nullptr");
+        return false;
+    }
+    std::vector<uint8_t> inputs;
+    parser_->GetItemData(image->GetItemId(), &inputs, heif_only_header);
+    ProcessChunkHead(inputs.data(), inputs.size());
+
+    if (auxiliaryDstMemory_ == nullptr || auxiliaryDstMemorySize_ == 0 || inputs.size() == 0) {
+        IMAGE_LOGE("%{public}s: params fail auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}zu",
+            __func__, auxiliaryDstMemorySize_, inputs.size());
+        return false;
+    }
+    if (memcpy_s(auxiliaryDstMemory_, auxiliaryDstMemorySize_, inputs.data(), inputs.size()) != EOK) {
+        IMAGE_LOGE("%{public}s: memcpy failed, auxiliaryDstMemorySize_ is %{public}zu, input size is %{public}ld",
+            __func__, auxiliaryDstMemorySize_, inputs.size());
         return false;
     }
     return true;
@@ -997,12 +1025,11 @@ void HeifDecoderImpl::setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride)
     }
 }
 
-void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t rowStride)
+void HeifDecoderImpl::setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride)
 {
-    if (auxiliaryDstMemory_ == nullptr) {
-        auxiliaryDstMemory_ = dstBuffer;
-        auxiliaryDstRowStride_ = rowStride;
-    }
+    auxiliaryDstMemory_ = dstBuffer;
+    auxiliaryDstMemorySize_ = dstSize;
+    auxiliaryDstRowStride_ = rowStride;
 }
 
 bool HeifDecoderImpl::getScanline(uint8_t *dst)

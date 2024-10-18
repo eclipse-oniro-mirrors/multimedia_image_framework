@@ -23,10 +23,10 @@
 namespace OHOS {
 namespace Media {
 const static std::set<std::string> FRAGMENT_METADATA_KEYS = {
-    "X_IN_ORIGINAL",
-    "Y_IN_ORIGINAL",
-    "WIDTH",
-    "HEIGHT",
+    FRAGMENT_METADATA_KEY_X,
+    FRAGMENT_METADATA_KEY_Y,
+    FRAGMENT_METADATA_KEY_WIDTH,
+    FRAGMENT_METADATA_KEY_HEIGHT,
 };
 class FragmentMetadata : public ImageMetadata {
 public:

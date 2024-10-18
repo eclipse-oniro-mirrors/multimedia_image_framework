@@ -355,6 +355,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.disposalTypes = opts.disposalTypes;
     plOpts.needsPackProperties = opts.needsPackProperties;
     plOpts.desiredDynamicRange = opts.desiredDynamicRange;
+    plOpts.isEditScene = opts.isEditScene;
 }
 
 void ImagePacker::FreeOldPackerStream()

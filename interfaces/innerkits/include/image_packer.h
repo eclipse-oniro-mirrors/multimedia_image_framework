@@ -82,6 +82,11 @@ struct PackOption {
      * Hint to pack image with properties.
     */
     bool needsPackProperties = false;
+
+    /**
+     * Paking for edit scene.
+     */
+    bool isEditScene = true;
 };
 
 class PackerStream;
