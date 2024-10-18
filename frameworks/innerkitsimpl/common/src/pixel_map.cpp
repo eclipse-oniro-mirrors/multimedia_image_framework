@@ -2547,7 +2547,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         (allocatorType == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) ||
         rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel or rowDataSize (%{public}d) or totalSize (%{public}llu) "
-            "invalid", rowDataSize, totalSize);
+            "invalid", rowDataSize, static_cast<unsigned long long>(totalSize));
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
             "bytesPerPixel or rowDataSize or totalSize invalid");
         return false;
