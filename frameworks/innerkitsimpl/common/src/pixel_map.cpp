@@ -1115,8 +1115,9 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    if (allocatorType_ == AllocatorType::HEAP_ALLOC &&
-        ((static_cast<uint64_t>(pixelBytes_) * info.size.width * info.size.height) > PIXEL_MAP_MAX_RAM_SIZE)) {
+    uint64_t totalSize = static_cast<uint64_t>(info.size.width) * static_cast<uint64_t>(info.size.height) *
+        static_cast<uint64_t>(pixelBytes_);
+    if ((allocatorType_ == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) || totalSize > INT_MAX) {
         ResetPixelMap();
         IMAGE_LOGE("image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
@@ -2419,6 +2420,10 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     IMAGE_LOGD("read pixel map width:[%{public}d] to parcel.", imgInfo.size.width);
     imgInfo.size.height = parcel.ReadInt32();
     IMAGE_LOGD("read pixel map height:[%{public}d] to parcel.", imgInfo.size.height);
+    if (imgInfo.size.width <= 0 || imgInfo.size.height <= 0) {
+        IMAGE_LOGE("invalid width:[%{public}d] or height:[%{public}d]", imgInfo.size.width, imgInfo.size.height);
+        return false;
+    }
     imgInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
     imgInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
@@ -2534,15 +2539,24 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    if (bytesPerPixel == 0 ||
+    uint64_t totalSize = static_cast<uint64_t>(imgInfo.size.width) * static_cast<uint64_t>(imgInfo.size.height) *
+        static_cast<uint64_t>(bytesPerPixel);
+    if (bytesPerPixel == 0 || rowDataSize == 0 || totalSize > INT_MAX ||
+        (allocatorType == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) ||
         rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
-        IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel fail or rowDataSize (%{public}d) invalid", rowDataSize);
+        IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel or rowDataSize (%{public}d) or totalSize (%{public}llu) "
+            "invalid", rowDataSize, totalSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
-            "bytesPerPixel fail or rowDataSize invalid");
+            "bytesPerPixel or rowDataSize or totalSize invalid");
         return false;
     }
-    if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && bufferSize != rowDataSize * imgInfo.size.height
-        && imgInfo.pixelFormat != PixelFormat::RGBA_F16) {
+
+    int32_t expectedBufferSize = rowDataSize * imgInfo.size.height;
+    if (isAstc) {
+        expectedBufferSize = ImageUtils::GetAstcBytesCount(imgInfo);
+    }
+    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
+        bufferSize != expectedBufferSize) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         return false;
