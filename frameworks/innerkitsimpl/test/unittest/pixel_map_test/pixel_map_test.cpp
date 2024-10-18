@@ -2002,11 +2002,24 @@ HWTEST_F(PixelMapTest, GetNamedPixelFormat002, TestSize.Level3)
 HWTEST_F(PixelMapTest, ReadImageInfo, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  start";
-    PixelMap pixeimap;
+    PixelMap pixelMap;
+    ImageInfo inInfo;
+    inInfo.size.width = 1;
+    inInfo.size.height = 2;
+    inInfo.pixelFormat = PixelFormat::RGBA_8888;
+    inInfo.colorSpace = ColorSpace::SRGB;
+    inInfo.alphaType = AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+    pixelMap.SetImageInfo(inInfo);
     Parcel parcel;
-    ImageInfo imgInfo;
-    bool ret = pixeimap.ReadImageInfo(parcel, imgInfo);
+    pixelMap.WriteImageInfo(parcel);
+    ImageInfo outInfo;
+    bool ret = pixelMap.ReadImageInfo(parcel, outInfo);
     ASSERT_EQ(ret, true);
+    ASSERT_EQ(outInfo.size.width, 1);
+    ASSERT_EQ(outInfo.size.height, 2);
+    ASSERT_EQ(outInfo.pixelFormat, PixelFormat::RGBA_8888);
+    ASSERT_EQ(outInfo.colorSpace, ColorSpace::SRGB);
+    ASSERT_EQ(outInfo.alphaType, AlphaType::IMAGE_ALPHA_TYPE_PREMUL);
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ReadImageInfo  end";
 }
 
