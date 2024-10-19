@@ -253,7 +253,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative 
     }
     uint32_t ret = innerAuxiliaryPicture->WritePixels(source, static_cast<uint64_t>(bufferSize));
     if (ret != OHOS::Media::SUCCESS) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_COPY_FAILED;
     }
     return IMAGE_SUCCESS;
 }
@@ -325,11 +325,21 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    std::shared_ptr<OHOS::Media::ImageMetadata> metadataPtr = nullptr;
+    
+    if (metadataTypeInner == OHOS::Media::MetadataType::EXIF) {
         return IMAGE_UNSUPPORTED_METADATA;
+    } else if (auxiliaryPicture->GetInnerAuxiliaryPicture()->GetType() !=
+        OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP &&
+        metadataTypeInner == OHOS::Media::MetadataType::FRAGMENT) {
+        return IMAGE_UNSUPPORTED_METADATA;
+    } else {
+        metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
     }
 
-    auto metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
-    if (!metadataPtr) {
+    if (metadataPtr == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
     *metadata = new OH_PictureMetadata(metadataPtr);
@@ -346,14 +356,20 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
-        return IMAGE_UNSUPPORTED_METADATA;
+        return IMAGE_BAD_PARAMETER;
     }
 
     auto metadataPtr = metadata->GetInnerAuxiliaryMetadata();
     if (!metadataPtr) {
         return IMAGE_BAD_PARAMETER;
     }
-    auxiliaryPicture->GetInnerAuxiliaryPicture()->SetMetadata(metadataTypeInner, metadataPtr);
+    if (auxiliaryPicture->GetInnerAuxiliaryPicture()->GetType() != OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP
+        && metadataTypeInner == OHOS::Media::MetadataType::FRAGMENT) {
+        return IMAGE_UNSUPPORTED_METADATA;
+    } else {
+        auxiliaryPicture->GetInnerAuxiliaryPicture()->SetMetadata(metadataTypeInner, metadataPtr);
+    }
+
     return IMAGE_SUCCESS;
 }
 

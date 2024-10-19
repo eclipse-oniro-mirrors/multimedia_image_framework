@@ -43,6 +43,10 @@ public:
     bool Marshalling(Parcel &parcel) const override;
     static ExifMetadata *Unmarshalling(Parcel &parcel);
     static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
+    MetadataType GetType() const override
+    {
+        return MetadataType::EXIF;
+    }
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);

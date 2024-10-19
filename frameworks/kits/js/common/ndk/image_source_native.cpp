@@ -490,7 +490,7 @@ Image_ErrorCode OH_ImageSourceNative_CreatePicture(OH_ImageSourceNative *source,
     uint32_t errorCode;
     auto pictureTemp = source->GetInnerImageSource()->CreatePicture(*innerDecodingOptionsForPicture, errorCode);
     if (errorCode != SUCCESS) {
-        return IMAGE_ALLOC_FAILED;
+        return IMAGE_DECODE_FAILED;
     }
     
     auto pictureNative  = new OH_PictureNative(std::move(pictureTemp));
