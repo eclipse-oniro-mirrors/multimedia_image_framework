@@ -2845,8 +2845,8 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     int32_t dataSize = rowDataSize_ * imageInfo_.size.height;
-    if (data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0 ||
-        imageInfo_.size.height > dataSize / rowDataSize_) {
+    if (isUnMap_ || data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0 ||
+        (rowDataSize != 0 && imageInfo_.size.height > dataSize / rowDataSize_)) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
         IMAGE_LOGE("pixel map tlv encode fail: no data or invalid dataSize");
