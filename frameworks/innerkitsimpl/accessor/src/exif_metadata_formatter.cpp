@@ -1495,7 +1495,7 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
 static bool ConvertToInt(const std::string& str, int& value)
 {
     auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
-    bool ret = errCode == std::err{} && (ptr == str.data() + str.size());
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
     return ret;
 }
 

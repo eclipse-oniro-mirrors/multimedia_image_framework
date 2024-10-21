@@ -149,7 +149,7 @@ const ImageMetadata::PropertyMapPtr ExifMetadata::GetAllProperties()
             result->insert(std::make_pair(key, value));
         }
     }
-    auto roKeys = ExifMetadatFormatter::GetRWKeys();
+    auto roKeys = ExifMetadatFormatter::GetROKeys();
     for (const auto& key : roKeys) {
         if (GetValue(key, value) == SUCCESS) {
             result->insert(std::make_pair(key, value));

@@ -169,7 +169,7 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
 static bool ConvertToUint64(const std::string& str, uint64_t& value)
 {
     auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
-    bool ret = errCode == std::err{} && (ptr == str.data() + str.size());
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
     return ret;
 }
 
