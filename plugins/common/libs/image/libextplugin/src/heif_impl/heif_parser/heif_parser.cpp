@@ -258,6 +258,9 @@ void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_
     if (!infe || infe->GetItemType() != "grid") {
         return;
     }
+    if (!irefBox_) {
+        return;
+    }
     auto toItemIds = irefBox_->GetReferences(gridItemId, BOX_TYPE_DIMG);
     for (heif_item_id toItemId: toItemIds) {
         auto tileImage = GetImage(toItemId);
@@ -271,6 +274,9 @@ void HeifParser::GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &o
 {
     auto infe = GetInfeBox(itemId);
     if (!infe || infe->GetItemType() != "iden") {
+        return;
+    }
+    if (!irefBox_) {
         return;
     }
     auto toItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
@@ -469,6 +475,11 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetLumaBitNum(hvccConfig.bitDepthLuma);
         image->SetChromaBitNum(hvccConfig.bitDepthChroma);
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
+
+        auto nalArrays = hvcc->GetNalArrays();
+        hvcc->ParserHvccColorRangeFlag(nalArrays);
+        auto spsConfig = hvcc->GetSpsConfig();
+        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
     }
     ExtractDisplayData(image, itemId);
 }
@@ -482,6 +493,9 @@ void HeifParser::ExtractDerivedImageProperties()
             continue;
         }
         auto &image = pair.second;
+        if (!irefBox_) {
+            return;
+        }
         auto tileItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
         if (tileItemIds.empty()) {
             continue;
@@ -553,6 +567,9 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
 
 void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
 {
+    if (!irefBox_) {
+        return;
+    }
     std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(tmapId);
     for (const HeifIrefBox::Reference &ref : references) {
         uint32_t type = ref.box.GetBoxType();
