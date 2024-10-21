@@ -40,6 +40,7 @@ public:
     virtual void Set(std::shared_ptr<ExifMetadata> &ptr) = 0;
     virtual uint32_t GetFilterArea(const std::vector<std::string> &exifKeys,
                                    std::vector<std::pair<uint32_t, uint32_t>> &ranges) = 0;
+    virtual bool IsFileChanged() = 0;
 };
 } // namespace Media
 } // namespace OHOS

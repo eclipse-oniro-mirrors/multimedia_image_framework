@@ -30,7 +30,11 @@ public:
     static std::unique_ptr<FileSourceStream> CreateSourceStream(const int fd);
     static std::unique_ptr<FileSourceStream> CreateSourceStream(
         const int fd, int32_t offset, int32_t size);
-    FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original);
+    static bool ShouldUseMmap(int fd);
+    FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                     bool useMmap = true, int originalFd = SOURCE_STREAM_INVALID_FD);
+    FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                     bool useMmap = true, const std::string &originalPath = SOURCE_STREAM_INVALID_PATH);
     ~FileSourceStream() override;
 
     bool Read(uint32_t desiredSize, ImagePlugin::DataStreamBuffer &outData) override;
@@ -59,6 +63,7 @@ private:
     uint8_t *fileData_ = nullptr;
     int mmapFd_ = -1;
     bool mmapFdPassedOn_ = false;
+    bool useMmap_ = true;
 };
 } // namespace Media
 } // namespace OHOS

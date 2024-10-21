@@ -19,7 +19,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <string>
 #include <vector>
+
+#include "image_log.h"
+#include "image_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -30,6 +34,9 @@ enum SeekPos {
 };
 
 using byte = uint8_t;
+
+constexpr int METADATA_STREAM_INVALID_FD = -1;
+const std::string METADATA_STREAM_INVALID_PATH = "";
 
 enum class OpenMode {
     Read,     // Read mode
@@ -165,6 +172,57 @@ public:
      * @return The size of the MetadataStream
      */
     virtual ssize_t GetSize() = 0;
+
+    /* *
+     * Get the size of the original file
+     * @return The size of the original file
+     */
+    virtual size_t GetOriginalSize()
+    {
+        if (originalFd_ == METADATA_STREAM_INVALID_FD && originalPath_.empty()) {
+            return GetSize();
+        }
+
+        size_t size = 0;
+        if (originalFd_ != METADATA_STREAM_INVALID_FD) {
+            ImageUtils::GetFileSize(originalFd_, size);
+        } else if (!originalPath_.empty()) {
+            ImageUtils::GetFileSize(originalPath_, size);
+        }
+        return size;
+    }
+
+    /* *
+     * Check if the original file has been changed
+     * @return true if the original file has been changed, false otherwise
+     */
+    virtual bool IsFileChanged()
+    {
+        if (isFileChanged_) {
+            return isFileChanged_;
+        }
+        if (GetOriginalSize() < static_cast<size_t>(GetSize())) {
+            IMAGE_LOGE("MetadataStream:: Original file has been changed");
+            isFileChanged_ = true;
+        }
+        return isFileChanged_;
+    }
+
+protected:
+    /* *
+     * Original file path
+     */
+    std::string originalPath_ = METADATA_STREAM_INVALID_PATH;
+
+    /* *
+     * Original file fd number
+     */
+    int originalFd_ = METADATA_STREAM_INVALID_FD;
+
+    /* *
+     * Whether original file is changed
+     */
+    bool isFileChanged_ = false;
 
 private:
     /* *

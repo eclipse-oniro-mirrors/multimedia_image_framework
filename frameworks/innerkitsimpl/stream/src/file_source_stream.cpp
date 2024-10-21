@@ -16,7 +16,9 @@
 #include "file_source_stream.h"
 
 #include <cerrno>
+#include <fcntl.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 
 #include "directory_ex.h"
 #include "file_packer_stream.h"
@@ -29,6 +31,9 @@
 #define SUPPORT_MMAP
 #endif
 
+const unsigned HMDFS_IOC = 0xf2;
+#define HMDFS_IOC_GET_LOCATION _IOR(HMDFS_IOC, 7, unsigned int)
+
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
 
@@ -40,9 +45,25 @@ namespace Media {
 using namespace std;
 using namespace ImagePlugin;
 
-FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original)
-    : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original)
-{}
+constexpr int INVALID_POSITION = -1;
+constexpr int IOCTL_SUCCESS = 0;
+constexpr int NETWORK_POSITION = 2;
+
+FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                                   bool useMmap, int originalFd)
+    : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original),
+    useMmap_(useMmap)
+{
+    originalFd_ = originalFd;
+}
+
+FileSourceStream::FileSourceStream(std::FILE *file, size_t size, size_t offset, size_t original,
+                                   bool useMmap, const std::string &originalPath)
+    : filePtr_(file), fileSize_(size), fileOffset_(offset), fileOriginalOffset_(original),
+    useMmap_(useMmap)
+{
+    originalPath_ = originalPath;
+}
 
 FileSourceStream::~FileSourceStream()
 {
@@ -59,6 +80,12 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
     if (!PathToRealPath(pathName, realPath)) {
         IMAGE_LOGE("[FileSourceStream]input the file path exception, errno:%{public}d.", errno);
         return nullptr;
+    }
+    int fd = open(realPath.c_str(), O_RDONLY);
+    bool useMmap = true;
+    if (fd >= 0) {
+        useMmap = ShouldUseMmap(fd);
+        close(fd);
     }
     FILE *filePtr = fopen(realPath.c_str(), "rb");
     if (filePtr == nullptr) {
@@ -77,7 +104,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const string &
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, size, offset, offset);
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, realPath);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
@@ -93,6 +120,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
+    bool useMmap = ShouldUseMmap(fd);
     size_t size = 0;
     if (!ImageUtils::GetFileSize(dupFd, size)) {
         IMAGE_LOGE("[FileSourceStream]get the file size fail. dupFd=%{public}d", dupFd);
@@ -111,7 +139,7 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(const int fd)
         fclose(filePtr);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, size, offset, offset);
+    return make_unique<FileSourceStream>(filePtr, size, offset, offset, useMmap, fd);
 }
 
 unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
@@ -128,13 +156,13 @@ unique_ptr<FileSourceStream> FileSourceStream::CreateSourceStream(
         IMAGE_LOGE("[FileSourceStream]open file fail.");
         return nullptr;
     }
-
+    bool useMmap = ShouldUseMmap(fd);
     int ret = fseek(filePtr, offset, SEEK_SET);
     if (ret != 0) {
         IMAGE_LOGE("[FileSourceStream]Go to %{public}d position fail, ret:%{public}d.", offset, ret);
         return nullptr;
     }
-    return make_unique<FileSourceStream>(filePtr, length, offset, offset);
+    return make_unique<FileSourceStream>(filePtr, length, offset, offset, useMmap, fd);
 }
 
 bool FileSourceStream::Read(uint32_t desiredSize, DataStreamBuffer &outData)
@@ -331,6 +359,24 @@ uint8_t *FileSourceStream::GetDataPtr(bool populate)
     if (fileData_ != nullptr) {
         return fileData_;
     }
+
+    if (!useMmap_) {
+        uint32_t size = static_cast<uint32_t>(GetStreamSize());
+        uint8_t* buffer = new (std::nothrow) uint8_t [size];
+        if (buffer == nullptr) {
+            IMAGE_LOGE("[FileSourceStream] Failed to new stream buffer.");
+            return nullptr;
+        }
+        uint32_t readSize = 0;
+        if (!GetData(size, buffer, size, readSize)) {
+            delete [] buffer;
+            return nullptr;
+        }
+        IMAGE_LOGD("[FileSourceStream] UseMmap is false, read buffer success.");
+        fileData_ = buffer;
+        return fileData_;
+    }
+
 #ifdef SUPPORT_MMAP
     if (filePtr_ == nullptr) {
         return nullptr;
@@ -361,11 +407,14 @@ void FileSourceStream::ResetReadBuffer()
         free(readBuffer_);
         readBuffer_ = nullptr;
     }
-    if (fileData_ != nullptr && !mmapFdPassedOn_) {
+    if (fileData_ != nullptr && !mmapFdPassedOn_ && useMmap_) {
 #ifdef SUPPORT_MMAP
         ::munmap(fileData_, fileSize_);
         close(mmapFd_);
 #endif
+    }
+    if (!useMmap_) {
+        delete [] fileData_;
     }
     fileData_ = nullptr;
 }
@@ -388,5 +437,22 @@ int FileSourceStream::GetMMapFd()
     mmapFdPassedOn_ = true;
     return mmapFd_;
 }
+
+bool FileSourceStream::ShouldUseMmap(int fd)
+{
+    int location = INVALID_POSITION;
+    bool useMmap = true;
+    int err = ioctl(fd, HMDFS_IOC_GET_LOCATION, &location);
+    if (err == IOCTL_SUCCESS) {
+        if (location == NETWORK_POSITION) {
+            IMAGE_LOGD("[FileSourceStream] Network file can not use mmap.");
+            useMmap = false;
+        }
+    } else {
+        IMAGE_LOGE("[FileSourceStream] ioctl failed, error:%{public}d", err);
+    }
+    return useMmap;
+}
+
 } // namespace Media
 } // namespace OHOS
