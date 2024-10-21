@@ -1084,7 +1084,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
         rowDataSize = pixelBytes * (((infoWidth + NUM_7) >> NUM_3) << NUM_3);
     } else {
-        rowDataSize = pixelBytes * info.size.width;
+        rowDataSize = pixelBytes * infoWidth;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
