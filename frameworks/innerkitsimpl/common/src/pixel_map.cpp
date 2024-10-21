@@ -1070,18 +1070,21 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info)
 
 uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 {
-    uint32_t infoWidth = static_cast<uint32_t>(info.size.width);
+    uint64_t infoWidth = static_cast<uint64_t>(info.size.width);
+    uint64_t pixelBytes = static_cast<uint64_t>(pixelBytes_);
+    uint64_t rowDataSize = 0;
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
-        rowDataSize_ = pixelBytes_ * ((info.size.width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        SetRowStride(rowDataSize_);
-        IMAGE_LOGI("ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
+        rowDataSize = pixelBytes * ((infoWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+        SetRowStride(static_cast<uint32_t>(rowDataSize));
+        IMAGE_LOGI("ALPHA_8 rowDataSize %{public}llu.", static_cast<unsigned long long>(rowDataSize));
     } else if (info.pixelFormat == PixelFormat::ASTC_4x4) {
-        rowDataSize_ = pixelBytes_ * (((infoWidth + NUM_3) >> NUM_2) << NUM_2);
+        rowDataSize = pixelBytes * (((infoWidth + NUM_3) >> NUM_2) << NUM_2);
     } else if (info.pixelFormat == PixelFormat::ASTC_6x6) {
-        rowDataSize_ = pixelBytes_ * (((info.size.width + NUM_5) / NUM_6) * NUM_6);
+        rowDataSize = pixelBytes * (((infoWidth + NUM_5) / NUM_6) * NUM_6);
     } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
-        rowDataSize_ = pixelBytes_ * (((infoWidth + NUM_7) >> NUM_3) << NUM_3);
+        rowDataSize = pixelBytes * (((infoWidth + NUM_7) >> NUM_3) << NUM_3);
     } else {
+        rowDataSize = pixelBytes * infoWidth;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
@@ -1091,13 +1094,17 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
             SetRowStride(sbBuffer->GetStride());
         } else {
-            SetRowStride(pixelBytes_ * info.size.width);
+            SetRowStride(static_cast<uint32_t>(rowDataSize));
         }
 #else
-        SetRowStride(pixelBytes_ * info.size.width);
+        SetRowStride(static_cast<uint32_t>(rowDataSize));
 #endif
-        rowDataSize_ = pixelBytes_ * info.size.width;
     }
+    if (rowDataSize > INT_MAX) {
+        IMAGE_LOGE("set imageInfo failed, rowDataSize overflowed");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    rowDataSize_ = static_cast<int32_t>(rowDataSize);
     return SUCCESS;
 }
 
@@ -1117,9 +1124,10 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    uint64_t totalSize = static_cast<uint64_t>(info.size.width) * static_cast<uint64_t>(info.size.height) *
-        static_cast<uint64_t>(pixelBytes_);
-    if ((allocatorType_ == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) || totalSize > INT_MAX) {
+    uint64_t totalPixels = static_cast<uint64_t>(info.size.width) * static_cast<uint64_t>(info.size.height);
+    uint64_t totalSize = totalPixels * static_cast<uint64_t>(pixelBytes_);
+    if ((allocatorType_ == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) ||
+        totalPixels > INT_MAX || totalSize > INT_MAX) {
         ResetPixelMap();
         IMAGE_LOGE("image size is out of range.");
         return ERR_IMAGE_TOO_LARGE;
@@ -1385,7 +1393,12 @@ int32_t PixelMap::GetByteCount()
     if (IsYUV(imageInfo_.pixelFormat)) {
         return GetYUVByteCount(imageInfo_);
     } else {
-        return rowDataSize_ * imageInfo_.size.height;
+        uint64_t byteCount = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
+        if (byteCount > INT_MAX) {
+            IMAGE_LOGE("GetByteCount failed: byteCount overflowed");
+            return 0;
+        }
+        return byteCount;
     }
 }
 
@@ -2541,9 +2554,9 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
     int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    uint64_t totalSize = static_cast<uint64_t>(imgInfo.size.width) * static_cast<uint64_t>(imgInfo.size.height) *
-        static_cast<uint64_t>(bytesPerPixel);
-    if (bytesPerPixel == 0 || rowDataSize == 0 || totalSize > INT_MAX ||
+    uint64_t totalPixels = static_cast<uint64_t>(imgInfo.size.width) * static_cast<uint64_t>(imgInfo.size.height);
+    uint64_t totalSize = totalPixels * static_cast<uint64_t>(bytesPerPixel);
+    if (bytesPerPixel == 0 || rowDataSize <= 0 || totalPixels > INT_MAX || totalSize > INT_MAX ||
         (allocatorType == AllocatorType::HEAP_ALLOC && totalSize > PIXEL_MAP_MAX_RAM_SIZE) ||
         rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
         IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel or rowDataSize (%{public}d) or totalSize (%{public}llu) "
@@ -2553,12 +2566,12 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         return false;
     }
 
-    int32_t expectedBufferSize = rowDataSize * imgInfo.size.height;
+    uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
     if (isAstc) {
         expectedBufferSize = ImageUtils::GetAstcBytesCount(imgInfo);
     }
     if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
-        bufferSize != expectedBufferSize) {
+        static_cast<uint64_t>(bufferSize) != expectedBufferSize) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
         return false;
@@ -2876,10 +2889,11 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     int32_t dataSize = rowDataSize_ * imageInfo_.size.height;
-    if (isUnMap_ || data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
+    if (isUnMap_ || data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0 ||
+        (rowDataSize_ != 0 && imageInfo_.size.height > dataSize / rowDataSize_)) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
-        IMAGE_LOGE("pixel map tlv encode fail: no data, isUnMap %{public}d", isUnMap_);
+        IMAGE_LOGE("pixel map tlv encode fail: no data or invalid dataSize, isUnMap %{public}d", isUnMap_);
         return false;
     }
     WriteVarint(buff, dataSize);
@@ -2946,9 +2960,9 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     uint8_t *data = nullptr;
     int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
     ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data);
-    if (data == nullptr) {
+    if (data == nullptr || allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
         delete pixelMap;
-        IMAGE_LOGE("pixel map tlv decode fail: no data");
+        IMAGE_LOGE("pixel map tlv decode fail: no data or invalid allocType");
         return nullptr;
     }
     uint32_t ret = pixelMap->SetImageInfo(imageInfo);
