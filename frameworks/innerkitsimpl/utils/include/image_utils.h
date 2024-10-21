@@ -35,6 +35,7 @@ public:
     static bool GetFileSize(const int fd, size_t &size);
     static bool GetInputStreamSize(std::istream &inputStream, size_t &size);
     static int32_t GetPixelBytes(const PixelFormat &pixelFormat);
+    static int32_t GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format);
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
@@ -65,6 +66,7 @@ public:
     static void FloatToBytes(float data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void Int32ToBytes(int32_t data, std::vector<uint8_t>& bytes, uint32_t& offset, bool isBigEndian = true);
     static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
+    static int KMPFind(const uint8_t* target, uint32_t targetLen, const uint8_t* pattern, uint32_t patternLen);
     static void FlushSurfaceBuffer(PixelMap* pixelMap);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsMetadataTypeSupported(MetadataType metadataType);

@@ -248,6 +248,9 @@ uint32_t ExtDecoder::DmaMemAlloc(DecodeContext &context, uint64_t count, SkImage
         requestConfig.usage |= BUFFER_USAGE_VENDOR_PRI16; // height is 64-bytes aligned
         IMAGE_LOGD("ExtDecoder::DmaMemAlloc desiredFormat is NV21");
         count = JpegDecoderYuv::GetYuvOutSize(dstInfo.width(), dstInfo.height());
+    } else if (context.info.pixelFormat == PixelFormat::RGBA_F16) {
+        requestConfig.format = GRAPHIC_PIXEL_FMT_RGBA16_FLOAT;
+        count = dstInfo.width() * dstInfo.height() * ImageUtils::GetPixelBytes(PixelFormat::RGBA_F16);
     }
     GSError ret = sb->Alloc(requestConfig);
     if (ret != GSERROR_OK) {
@@ -2186,7 +2189,7 @@ bool ExtDecoder::DecodeHeifAuxiliaryMap(DecodeContext& context, AuxiliaryPicture
     if (rowStride <= 0) {
         return false;
     }
-    decoder->setAuxiliaryDstBuffer(dstBuffer, static_cast<size_t>(rowStride));
+    decoder->setAuxiliaryDstBuffer(dstBuffer, context.pixelsBuffer.bufferSize, static_cast<size_t>(rowStride));
     if (!decoder->decodeAuxiliaryMap()) {
         IMAGE_LOGE("Decoded auxiliary map type is not supported, or decoded failed. Type: %{public}d", type);
         return false;

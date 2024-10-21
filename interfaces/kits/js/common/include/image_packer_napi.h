@@ -30,7 +30,9 @@
 #include "image_source.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "picture_napi.h"
+#endif
 #include "pixel_map.h"
 #include "image_source_napi.h"
 
