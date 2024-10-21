@@ -30,7 +30,7 @@ public:
 
     static napi_value Init(napi_env env, napi_value exports);
     static std::shared_ptr<Picture> GetPicture(napi_env env, napi_value picture);
-    static napi_value CreatePicture(napi_env env, std::shared_ptr<Picture> picture);
+    static napi_value CreatePicture(napi_env env, std::shared_ptr<Picture> &picture);
     static int32_t CreatePictureNapi(napi_env env, napi_value* result);
     void SetNativePicture(std::shared_ptr<Picture> picture);
     
