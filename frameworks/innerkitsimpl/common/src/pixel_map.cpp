@@ -370,8 +370,7 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
-    size_t bufferSize = IsYUV(dstImageInfo.pixelFormat) ? static_cast<size_t>(PixelMap::GetYUVByteCount(dstImageInfo)) :
-        static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
+    size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
         static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
     if (bufferSize > UINT_MAX) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size too large: width = %{public}d, height = %{public}d",
@@ -452,7 +451,6 @@ unique_ptr<PixelMap> PixelMap::Create(const uint32_t *colors, uint32_t colorLeng
         nullptr);
     ImageUtils::DumpPixelMapIfDumpEnabled(dstPixelMap);
     SetYUVDataInfoToPixelMap(dstPixelMap);
-    ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
     return dstPixelMap;
 }
 // LCOV_EXCL_STOP
@@ -651,7 +649,11 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
         IMAGE_LOGE("set image info fail");
         return nullptr;
     }
-
+    uint32_t bufferSize = dstPixelMap->GetByteCount();
+    if (bufferSize == 0) {
+        IMAGE_LOGE("calloc parameter bufferSize:[%{public}d] error.", bufferSize);
+        return nullptr;
+    }
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
     int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
@@ -679,7 +681,6 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
             SetYUVDataInfoToPixelMap(dstPixelMap);
         }
     }
-    ImageUtils::FlushSurfaceBuffer(dstPixelMap.get());
     return dstPixelMap;
 }
 // LCOV_EXCL_STOP
