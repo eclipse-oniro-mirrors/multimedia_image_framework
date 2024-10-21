@@ -192,16 +192,16 @@ int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat forma
     uint64_t rowDataSize = 0;
     switch (format) {
         case PixelFormat::ALPHA_8:
-            rowDataSize = pixelBytes * ((uWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            rowDataSize = pixelBytes * ((widthU + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
             break;
         case PixelFormat::ASTC_4x4:
-            rowDataSize = pixelBytes * (((uWidth + NUM_3) >> NUM_2) << NUM_2);
+            rowDataSize = pixelBytes * (((widthU + NUM_3) >> NUM_2) << NUM_2);
             break;
         case PixelFormat::ASTC_6x6:
-            rowDataSize = pixelBytes * (((uWidth + NUM_5) / NUM_6) * NUM_6);
+            rowDataSize = pixelBytes * (((widthU + NUM_5) / NUM_6) * NUM_6);
             break;
         case PixelFormat::ASTC_8x8:
-            rowDataSize = pixelBytes * (((uWidth + NUM_7) >> NUM_3) << NUM_3);
+            rowDataSize = pixelBytes * (((widthU + NUM_7) >> NUM_3) << NUM_3);
             break;
         default:
             rowDataSize = pixelBytes * widthU;
