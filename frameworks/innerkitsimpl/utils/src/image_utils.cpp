@@ -204,7 +204,7 @@ int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat forma
             rowDataSize = pixelBytes * (((uWidth + NUM_7) >> NUM_3) << NUM_3);
             break;
         default:
-            rowDataSize = pixelBytes * uWidth;
+            rowDataSize = pixelBytes * widthU;
     }
     if (rowDataSize > INT_MAX) {
         IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");

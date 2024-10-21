@@ -1082,19 +1082,6 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
         rowDataSize = pixelBytes * (((infoWidth + NUM_7) >> NUM_3) << NUM_3);
     } else {
         rowDataSize = pixelBytes * infoWidth;
-    }
-
-    if (rowDataSize > INT_MAX) {
-        IMAGE_LOGE("set imageInfo failed, rowDataSize overflowed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    rowDataSize_ = static_cast<int32_t>(rowDataSize);
-
-    if (info.pixelFormat == PixelFormat::ALPHA_8) {
-        SetRowStride(rowDataSize_);
-        IMAGE_LOGI("ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
-    } else if (info.pixelFormat != PixelFormat::ASTC_4x4 && info.pixelFormat != PixelFormat::ASTC_6x6 &&
-        info.pixelFormat != PixelFormat::ASTC_8x8) {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
