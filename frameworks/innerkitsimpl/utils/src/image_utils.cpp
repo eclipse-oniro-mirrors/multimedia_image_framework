@@ -187,19 +187,26 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
 
 int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
 {
-    int32_t pixelBytes = GetPixelBytes(format);
+    uint64_t widthU = static_cast<uint64_t>(width);
+    uint64_t pixelBytes = static_cast<uint64_t>(GetPixelBytes(format));
+    uint64_t rowDataSize = 0;
     switch (format) {
         case PixelFormat::ALPHA_8:
-            return pixelBytes * ((width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            rowDataSize = pixelBytes * ((widthU + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
         case PixelFormat::ASTC_4x4:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_3) >> NUM_2) << NUM_2);
+            rowDataSize = pixelBytes * (((widthU + NUM_3) >> NUM_2) << NUM_2);
         case PixelFormat::ASTC_6x6:
-            return pixelBytes * (((width + NUM_5) / NUM_6) * NUM_6);
+            rowDataSize = pixelBytes * (((widthU + NUM_5) / NUM_6) * NUM_6);
         case PixelFormat::ASTC_8x8:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_7) >> NUM_3) << NUM_3);
+            rowDataSize = pixelBytes * (((widthU + NUM_7) >> NUM_3) << NUM_3);
         default:
-            return pixelBytes * width;
+            rowDataSize = pixelBytes * width;
     }
+    if (rowDataSize > INT_MAX) {
+        IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
+        return 0;
+    }
+    return static_cast<int32_t>(rowDataSize);
 }
 
 uint32_t ImageUtils::RegisterPluginServer()
