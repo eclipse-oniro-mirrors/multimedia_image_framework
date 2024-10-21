@@ -1387,6 +1387,7 @@ int32_t PixelMap::GetByteCount()
     } else {
         uint64_t byteCount = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
         if (byteCount > INT_MAX) {
+            IMAGE_LOGE("GetByteCount failed: byteCount overflowed");
             return 0;
         }
         return byteCount;
