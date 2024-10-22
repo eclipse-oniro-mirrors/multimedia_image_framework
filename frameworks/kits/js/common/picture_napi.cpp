@@ -808,7 +808,7 @@ napi_value PictureNapi::GetMetadata(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), nullptr, IMAGE_LOGE("Empty native picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Unsupport MetadataType");
     }
@@ -861,7 +861,7 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType == static_cast<int32_t>(MetadataType::EXIF)) {
+    if (metadataType == static_cast<uint32_t>(MetadataType::EXIF)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(

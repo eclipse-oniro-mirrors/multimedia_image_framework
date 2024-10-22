@@ -38,6 +38,7 @@ ImageFwkExtManager::ImageFwkExtManager()
     hevcSoftwareDecodeFunc_ = nullptr;
     isImageFwkExtNativeSoOpened_ = false;
     extNativeSoHandle_ = nullptr;
+    doHardwareEncodePictureFunc_ = nullptr;
 #endif
 }
 

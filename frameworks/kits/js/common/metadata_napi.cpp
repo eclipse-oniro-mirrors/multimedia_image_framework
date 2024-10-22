@@ -508,7 +508,7 @@ static void GetPropertiesExecute(napi_env env, void *data)
     uint32_t status = SUCCESS;
     for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
         std::string valueStr = "";
-        status = context->rMetadata->GetValue(*keyStrIt, valueStr);
+        status = static_cast<uint32_t>(context->rMetadata->GetValue(*keyStrIt, valueStr));
         if (status == SUCCESS) {
             context->KVSArray.emplace_back(std::make_pair(*keyStrIt, valueStr));
         } else {

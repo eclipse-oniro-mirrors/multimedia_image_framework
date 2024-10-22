@@ -115,7 +115,7 @@ namespace {
     };
 #endif
 }
-
+const static uint64_t MAX_NUM_AUXI_PIC = 32;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -481,6 +481,9 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     }
     picture->SetMainPixel(pixelmapPtr);
     uint64_t numAuxiliaryPictures = parcel.ReadUint64();
+    if (numAuxiliaryPictures > MAX_NUM_AUXI_PIC) {
+        return nullptr;
+    }
     
     for (size_t i = NUM_0; i < numAuxiliaryPictures; ++i) {
         int32_t type = parcel.ReadInt32();
