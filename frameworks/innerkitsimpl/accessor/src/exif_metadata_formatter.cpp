@@ -1493,6 +1493,13 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
     return std::make_pair(Media::SUCCESS, tmpValue);
 }
 
+static bool ConvertToInt(const std::string& str, int& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
 static bool StrToDouble(const std::string &value, double &output)
 {
     if (value.empty()) {
@@ -1506,17 +1513,13 @@ static bool StrToDouble(const std::string &value, double &output)
     std::string numeratorStr = value.substr(0, slashPos);
     std::string denominatorStr = value.substr(slashPos + 1);
     int numerator = 0;
-    std::from_chars_result res1 = std::from_chars(
-        numeratorStr.data(), numeratorStr.data() + numeratorStr.size(), numerator);
-    if (res1.ec != std::errc()) {
-        IMAGE_LOGD("numeratorStr convert string to int failed");
+    if (!ConvertToInt(numeratorStr, numerator)) {
+        IMAGE_LOGI("numeratorStr = %{public}s convert convert string to int failed", numeratorStr.c_str());
         return false;
     }
     int denominator = 0;
-    std::from_chars_result res2 = std::from_chars(
-        denominatorStr.data(), denominatorStr.data() + denominatorStr.size(), denominator);
-    if (res2.ec != std::errc()) {
-        IMAGE_LOGD("denominatorStr convert string to int failed");
+    if (!ConvertToInt(denominatorStr, denominator)) {
+        IMAGE_LOGI("denominatorStr = %{public}s convert convert string to int failed", denominatorStr.c_str());
         return false;
     }
     if (denominator == 0) {

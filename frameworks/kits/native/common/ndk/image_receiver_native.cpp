@@ -166,6 +166,13 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
     return IMAGE_SUCCESS;
 }
 
+static bool ConvertToUint64(const std::string& str, uint64_t& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNative* receiver, uint64_t* surfaceId)
 {
@@ -185,10 +192,9 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
     }
     IMAGE_LOGI("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
 
-    std::from_chars_result res = std::from_chars(strKey.data(), strKey.data() + strKey.size(), *surfaceId);
-    if (res.ec != std::errc()) {
-        IMAGE_LOGD("strKey convert string to longlong failed");
-        return IMAGE_BAD_SOURCE;
+    if (!ConvertToUint64(strKey, *surfaceId)) {
+        IMAGE_LOGI("strKey = %{public}s convert string to uint64_t failed", strKey.c_str());
+        return IMAGE_UNKNOWN_ERROR;
     }
     return IMAGE_SUCCESS;
 }
