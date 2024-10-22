@@ -623,7 +623,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
     if (!GET_UINT32_BY_NAME(root, "rowStride", tmpNumber)) {
         IMAGE_LOGI("No rowStride in auxiliaryPictureInfo");
     }
-    context->auxiliaryPictureInfo.rowStride = static_cast<int32_t>tmpNumber;
+    context->auxiliaryPictureInfo.rowStride = static_cast<int32_t>(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {
