@@ -2372,15 +2372,6 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
     return true;
 }
 
-bool PixelMap::WriteFenced(Parcel &parcel) const
-{
-    if (!parcel.WriteInt32(BASE_MEDIA_ERR_OFFSET)) {
-        IMAGE_LOGE("WriteFenced fencedId:[%{public}u] to parcel failed.", BASE_MEDIA_ERR_OFFSET);
-        return false;
-    }
-    return true;
-}
-
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
@@ -2392,10 +2383,6 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
         IMAGE_LOGE("set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
-        return false;
-    }
-    if (!WriteFenced(parcel)) {
-        IMAGE_LOGE("WriteFenced start failed.");
         return false;
     }
 
@@ -2422,10 +2409,6 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
-    if (!WriteFenced(parcel)) {
-        IMAGE_LOGE("WriteFenced end failed.");
-        return false;
-    }
     return true;
 }
 
@@ -2673,16 +2656,6 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
     return true;
 }
 
-bool PixelMap::ReadFenced(Parcel &parcel)
-{
-    int32_t fenced = parcel.ReadInt32();
-    if (fenced != BASE_MEDIA_ERR_OFFSET) {
-        IMAGE_LOGE("fenced: %{public}d, parcel is Damaged", fenced);
-        return false;
-    }
-    return true;
-}
-
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 {
     PIXEL_MAP_ERR error;
@@ -2696,11 +2669,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 {
-    if (!ReadFenced(parcel)) {
-        IMAGE_LOGE("ReadFenced start failed.");
-        return nullptr;
-    }
-
     ImageInfo imgInfo;
     PixelMap *pixelMap = nullptr;
     if (!ReadImageInfo(parcel, imgInfo)) {
@@ -2757,10 +2725,6 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         return nullptr;
     }
 
-    if (!ReadFenced(parcel)) {
-        IMAGE_LOGE("ReadFenced end failed.");
-        return nullptr;
-    }
     return pixelMap;
 }
 

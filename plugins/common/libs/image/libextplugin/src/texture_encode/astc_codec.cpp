@@ -210,7 +210,7 @@ void extractDimensions(std::string &format, TextureEncodeOptions &param)
 
             auto ret_x = std::from_chars(widthStr.data(), widthStr.data() + widthStr.size(), param.blockX_);
             auto ret_y = std::from_chars(heightStr.data(), heightStr.data() + heightStr.size(), param.blockY_);
-            if (!(ret_x.ec == std::errc() || ret_y.ec == std::errc())) {
+            if (!(ret_x.ec == std::errc() && ret_y.ec == std::errc())) {
                 IMAGE_LOGE("Failed to convert string to number");
             }
         }
