@@ -158,6 +158,7 @@ static const uint32_t MAX_SOURCE_SIZE = 300 * 1024 * 1024;
 constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
+static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -4442,31 +4443,57 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     }
 }
 
-void ImageSource::DecodeJpegAuxiliaryPicture(
-    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+static bool OnlyDecodeGainmap(std::set<AuxiliaryPictureType> &auxTypes)
 {
-    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
-    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
-    if (!jpegMpfParser->ParsingAuxiliaryPictures(streamBuffer, streamSize, false)) {
-        IMAGE_LOGE("Jpeg parse auxiliary pictures failed!");
-        errorCode = ERR_IMAGE_DATA_ABNORMAL;
-        return;
+    return auxTypes.size() == SINGLE_FRAME_SIZE && auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end();
+}
+
+static std::vector<SingleJpegImage> ParsingJpegAuxiliaryPictures(uint8_t *stream, uint32_t streamSize,
+    std::set<AuxiliaryPictureType> &auxTypes, ImageHdrType hdrType)
+{
+    ImageTrace imageTrace("%s", __func__);
+    if (stream == nullptr || streamSize == 0) {
+        IMAGE_LOGE("No source stream when parsing auxiliary pictures");
+        return {};
     }
-    if (sourceHdrType_ > ImageHdrType::SDR) {
+    auto jpegMpfParser = std::make_unique<JpegMpfParser>();
+    if (!OnlyDecodeGainmap(auxTypes) && !jpegMpfParser->ParsingAuxiliaryPictures(stream, streamSize, false)) {
+        IMAGE_LOGE("JpegMpfParser parse auxiliary pictures failed!");
+        jpegMpfParser->images_.clear();
+    }
+    if (hdrType > ImageHdrType::SDR) {
+        uint32_t gainmapStreamSize = streamSize;
+        for (auto &image : jpegMpfParser->images_) {
+            gainmapStreamSize = std::min(gainmapStreamSize, image.offset);
+        }
         SingleJpegImage gainmapImage = {
-            .offset = mainDecoder_->GetGainMapOffset(),
-            .size = streamSize - mainDecoder_->GetGainMapOffset(),
+            .offset = 0,
+            .size = gainmapStreamSize,
             .auxType = AuxiliaryPictureType::GAINMAP,
             .auxTagName = AUXILIARY_TAG_GAINMAP,
         };
         jpegMpfParser->images_.push_back(gainmapImage);
     }
+    return jpegMpfParser->images_;
+}
 
+void ImageSource::DecodeJpegAuxiliaryPicture(
+    std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
+{
+    uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
+    uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
+    if (streamBuffer == nullptr || streamSize == 0) {
+        IMAGE_LOGE("Jpeg source stream is invalid!");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+    streamBuffer += mainDecoder_->GetGainMapOffset();
+    streamSize -= mainDecoder_->GetGainMapOffset();
+    auto auxInfos = ParsingJpegAuxiliaryPictures(streamBuffer, streamSize, auxTypes, sourceHdrType_);
     MainPictureInfo mainInfo;
     mainInfo.hdrType = sourceHdrType_;
     picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
-    for (auto &auxInfo : jpegMpfParser->images_) {
+    for (auto &auxInfo : auxInfos) {
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
             continue;
         }
