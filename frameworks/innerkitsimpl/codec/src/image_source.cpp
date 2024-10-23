@@ -2592,9 +2592,12 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
     auto metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer, bufferSize);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("Create metadataAccessor failed.");
+        delete[] tmpBuffer;
         return ERR_IMAGE_SOURCE_DATA;
     }
-    return metadataAccessor->GetFilterArea(exifKeys, ranges);
+    auto ret = metadataAccessor->GetFilterArea(exifKeys, ranges);
+    delete[] tmpBuffer;
+    return ret;
 }
 
 void ImageSource::SetIncrementalSource(const bool isIncrementalSource)
