@@ -2552,10 +2552,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     }
 
     int32_t expectedBufferSize = rowDataSize * imgInfo.size.height;
-    if (isAstc) {
-        expectedBufferSize = ImageUtils::GetAstcBytesCount(imgInfo);
-    }
-    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
+    if ((!isAstc) && (!IsYUV(imgInfo.pixelFormat)) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
         bufferSize != expectedBufferSize) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid");
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
