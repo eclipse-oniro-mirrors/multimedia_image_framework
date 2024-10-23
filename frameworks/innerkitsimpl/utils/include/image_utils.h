@@ -23,7 +23,6 @@
 #include "iosfwd"
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
-namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
