@@ -23,6 +23,7 @@
 #include "iosfwd"
 
 namespace OHOS { namespace MultimediaPlugin { class PluginServer; } }
+namespace OHOS { namespace ImagePlugin { struct DecodeContext; } }
 namespace OHOS {
 namespace Media {
 const std::string IMAGE_ENCODE_FORMAT = "encodeFormat";
@@ -68,6 +69,8 @@ public:
     static void ArrayToBytes(const uint8_t* data, uint32_t length, std::vector<uint8_t>& bytes, uint32_t& offset);
     static int KMPFind(const uint8_t* target, uint32_t targetLen, const uint8_t* pattern, uint32_t patternLen);
     static void FlushSurfaceBuffer(PixelMap* pixelMap);
+    static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
+    static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();

@@ -295,12 +295,14 @@ uint32_t WebpDecoder::DoCommonDecode(DecodeContext &context)
     VP8StatusCode status = WebPIUpdate(idec, dataBuffer_.inputStreamBuffer, static_cast<size_t>(dataBuffer_.dataSize));
     if (status == VP8_STATUS_OK) {
         state_ = WebpDecodingState::IMAGE_DECODED;
+        ImageUtils::FlushContextSurfaceBuffer(context);
         return SUCCESS;
     }
     if (status == VP8_STATUS_SUSPENDED && opts_.allowPartialImage) {
         state_ = WebpDecodingState::IMAGE_PARTIAL;
         context.ifPartialOutput = true;
         IMAGE_LOGI("this is partial image data to decode.");
+        ImageUtils::FlushContextSurfaceBuffer(context);
         return SUCCESS;
     }
 
