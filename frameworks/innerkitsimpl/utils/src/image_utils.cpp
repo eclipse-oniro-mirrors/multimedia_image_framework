@@ -188,19 +188,30 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
 
 int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
 {
-    int32_t pixelBytes = GetPixelBytes(format);
+    uint64_t widthU = static_cast<uint64_t>(width);
+    uint64_t pixelBytes = static_cast<uint64_t>(GetPixelBytes(format));
+    uint64_t rowDataSize = 0;
     switch (format) {
         case PixelFormat::ALPHA_8:
-            return pixelBytes * ((width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            rowDataSize = pixelBytes * ((widthU + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            break;
         case PixelFormat::ASTC_4x4:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_3) >> NUM_2) << NUM_2);
+            rowDataSize = pixelBytes * (((widthU + NUM_3) >> NUM_2) << NUM_2);
+            break;
         case PixelFormat::ASTC_6x6:
-            return pixelBytes * (((width + NUM_5) / NUM_6) * NUM_6);
+            rowDataSize = pixelBytes * (((widthU + NUM_5) / NUM_6) * NUM_6);
+            break;
         case PixelFormat::ASTC_8x8:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_7) >> NUM_3) << NUM_3);
+            rowDataSize = pixelBytes * (((widthU + NUM_7) >> NUM_3) << NUM_3);
+            break;
         default:
-            return pixelBytes * width;
+            rowDataSize = pixelBytes * widthU;
     }
+    if (rowDataSize > INT_MAX) {
+        IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
+        return 0;
+    }
+    return static_cast<int32_t>(rowDataSize);
 }
 
 uint32_t ImageUtils::RegisterPluginServer()
@@ -296,7 +307,12 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV21:
         case PixelFormat::NV12:
         case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010:
+        case PixelFormat::YCRCB_P010: {
+            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_PREMUL) {
+                return AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+            }
+            break;
+        }
         case PixelFormat::CMYK:
         default: {
             IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);

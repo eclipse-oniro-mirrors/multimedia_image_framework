@@ -330,7 +330,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
     if (!metadataPtr) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_UNSUPPORTED_METADATA;
     }
     *metadata = new OH_PictureMetadata(metadataPtr);
     return IMAGE_SUCCESS;
@@ -353,7 +353,13 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
     if (!metadataPtr) {
         return IMAGE_BAD_PARAMETER;
     }
-    auxiliaryPicture->GetInnerAuxiliaryPicture()->SetMetadata(metadataTypeInner, metadataPtr);
+    if (!(auxiliaryPicture->GetInnerAuxiliaryPicture()->GetType() != OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP
+        && metadataTypeInner == OHOS::Media::MetadataType::FRAGMENT)) {
+        auxiliaryPicture->GetInnerAuxiliaryPicture()->SetMetadata(metadataTypeInner, metadataPtr);
+    } else {
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
+
     return IMAGE_SUCCESS;
 }
 

@@ -41,6 +41,8 @@ enum heif_error {
     heif_error_invalid_color_profile = 19,
     heif_invalid_exif_data = 20,
     heif_invalid_mirror_direction = 21,
+    heif_error_big_length = 22,
+    heif_invalid_color_range_flag = 23,
 };
 } // namespace ImagePlugin
 } // namespace OHOS

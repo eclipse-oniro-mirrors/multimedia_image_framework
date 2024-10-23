@@ -18,6 +18,7 @@
 #ifdef HEIF_HW_DECODE_ENABLE
 #include "ffrt.h"
 #include "image_fwk_ext_manager.h"
+#include "image_func_timer.h"
 #include "image_system_properties.h"
 #include "image_trace.h"
 #include "image_utils.h"
@@ -75,12 +76,14 @@ const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
 const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 
 const static uint16_t BT2020_PRIMARIES = 9;
+const static int BIT_SHIFT_16BITS = 16;
 
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
     uint32_t height;
     uint32_t stride;
+    uint8_t colorRangeFlag;
     OH_NativeBuffer_Planes *planesInfo;
     AVPixelFormat format;
 };
@@ -130,6 +133,14 @@ static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatCon
                                      static_cast<int>(dstParam.width), static_cast<int>(dstParam.height),
                                      dstParam.format,
                                      SWS_BICUBIC, nullptr, nullptr, nullptr);
+
+    //if need applu colorspace in scale, change defult table;
+    auto srcColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+    auto dstColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+    sws_setColorspaceDetails(ctx, srcColorTable,
+                             srcParam.colorRangeFlag,
+                             dstColorTable, 0,
+                             0, 1 << BIT_SHIFT_16BITS, 1 << BIT_SHIFT_16BITS);
     if (srcFrame != nullptr && dstFrame != nullptr && ctx != nullptr) {
         res = FillFrameInfoForPixelConvert(srcFrame, srcParam)
                 && FillFrameInfoForPixelConvert(dstFrame, dstParam)
@@ -391,6 +402,7 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
     }
     gridInfo.displayWidth = image->GetOriginalWidth();
     gridInfo.displayHeight = image->GetOriginalHeight();
+    gridInfo.colorRangeFlag = image->GetColorRangeFlag();
     GetTileSize(image, gridInfo);
     GetRowColNum(gridInfo);
 }
@@ -768,6 +780,7 @@ bool HeifDecoderImpl::HwDecodeMimeImage(std::shared_ptr<HeifImage> &image)
 bool HeifDecoderImpl::SwDecodeImage(std::shared_ptr<HeifImage> &image, HevcSoftDecodeParam &param,
                                     GridInfo &gridInfo, bool isPrimary)
 {
+    ImageFuncTimer imageFuncTime("HeifDecoderImpl::%s, desiredpixelformat: %d", __func__, outPixelFormat_);
     if (outPixelFormat_ == PixelFormat::UNKNOWN) {
         IMAGE_LOGE("unknown pixel type: %{public}d", outPixelFormat_);
         return false;
@@ -1003,11 +1016,13 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
     PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
                                         gridInfo.displayWidth, gridInfo.displayHeight,
                                         static_cast<uint32_t>(hwBuffer->GetStride()),
+                                        gridInfo.colorRangeFlag,
                                         srcBufferPlanesInfo,
                                         GraphicPixFmt2AvPixFmtForYuv(
                                             static_cast<GraphicPixelFormat>(hwBuffer->GetFormat()))};
     PixelFormatConvertParam dstParam = {dstMemory, gridInfo.displayWidth, gridInfo.displayHeight,
                                         static_cast<uint32_t>(dstRowStride),
+                                        gridInfo.colorRangeFlag,
                                         dstBufferPlanesInfo,
                                         PixFmt2AvPixFmtForOutput(outPixelFormat_)};
     return ConvertPixelFormat(srcParam, dstParam);

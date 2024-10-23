@@ -723,6 +723,19 @@ static HdrMetadata GetHdrMetadata(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>&
     return metadata;
 }
 
+static HdrMetadata GetHdrMetadata(std::shared_ptr<PixelMap>& mainPixelmap, std::shared_ptr<PixelMap>& gainmapPixelmap)
+{
+    HdrMetadata hdrMetadata;
+    if (mainPixelmap != nullptr && mainPixelmap->GetHdrMetadata() != nullptr) {
+        hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    } else if (gainmapPixelmap != nullptr && gainmapPixelmap->GetHdrMetadata() != nullptr) {
+        hdrMetadata = *(gainmapPixelmap->GetHdrMetadata().get());
+    } else {
+        IMAGE_LOGW("%{public}s no hdrMetadata in pixelmap", __func__);
+    }
+    return hdrMetadata;
+}
+
 uint32_t ExtEncoder::EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
     bool needExif, SkWStream& outputStream)
 {
@@ -1376,7 +1389,7 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     pixelmap_ = gainmapPixelmap.get();
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
 
-    HdrMetadata hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    HdrMetadata hdrMetadata = GetHdrMetadata(mainPixelmap, gainmapPixelmap);
     SkDynamicMemoryWStream hdrStream;
     uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, hdrStream, hdrMetadata);
     IMAGE_LOGD("%{public}s splice hdr stream result is: %{public}u", __func__, error);
@@ -1501,14 +1514,22 @@ void ExtEncoder::EncodeJpegAuxiliaryPictures(SkWStream& skStream)
 uint32_t ExtEncoder::WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream)
 {
     auto pixelMap = auxPicture->GetContentPixel();
-    if (pixelMap == nullptr || pixelMap->GetFd() == nullptr) {
-        return ERR_DMA_NOT_EXIST;
+    if (pixelMap == nullptr) {
+        return ERR_DMA_DATA_ABNORMAL;
     }
-    sptr<SurfaceBuffer> auxSptr(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
     pixelmap_ = pixelMap.get();
-    bool isSRGB = pixelMap->GetToSdrColorSpaceIsSRGB();
-    SkImageInfo skInfo = GetSkInfo(pixelmap_, false, isSRGB);
-    sk_sp<SkData> skData = GetImageEncodeData(auxSptr, skInfo, false);
+    sk_sp<SkData> skData = nullptr;
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || pixelMap->GetFd() == nullptr) {
+        SkDynamicMemoryWStream nonDMAStream;
+        uint32_t error = EncodeImageByPixelMap(pixelmap_, false, nonDMAStream);
+        IMAGE_LOGD("%{public}s EncodeImageByPixelMap result: %{public}u", __func__, error);
+        skData = nonDMAStream.detachAsData();
+    } else {
+        sptr<SurfaceBuffer> auxSptr(reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd()));
+        bool isSRGB = pixelMap->GetToSdrColorSpaceIsSRGB();
+        SkImageInfo skInfo = GetSkInfo(pixelmap_, false, isSRGB);
+        skData = GetImageEncodeData(auxSptr, skInfo, false);
+    }
     if (skData == nullptr) {
         return ERR_IMAGE_ENCODE_FAILED;
     }

@@ -1604,6 +1604,9 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return error;
     }
     uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
+    if (result == ERR_MEDIA_MMAP_FILE_CHANGED) {
+        result = ERR_IMAGE_SOURCE_DATA;
+    }
     delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
     return result;
 }

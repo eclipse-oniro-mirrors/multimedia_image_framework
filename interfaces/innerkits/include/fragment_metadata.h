@@ -41,6 +41,10 @@ public:
     bool Marshalling(Parcel &parcel) const override;
     static FragmentMetadata *Unmarshalling(Parcel &parcel);
     static FragmentMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
+    virtual MetadataType GetType() const override
+    {
+        return MetadataType::FRAGMENT;
+    }
 
 protected:
     ImageMetadata::PropertyMapPtr properties_ = std::make_shared<ImageMetadata::PropertyMap>();
