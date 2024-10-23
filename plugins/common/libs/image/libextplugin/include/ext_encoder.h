@@ -76,6 +76,8 @@ private:
     uint32_t EncodeEditScenePicture();
     void CheckJpegAuxiliaryTagName();
     uint32_t EncodeJpegPicture(SkWStream& skStream);
+    uint32_t EncodeJpegPictureDualVividInner(SkWStream& skStream, std::shared_ptr<PixelMap>& mainPixelmap,
+        std::shared_ptr<PixelMap>& gainmapPixelmap);
     uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
     void EncodeJpegAuxiliaryPictures(SkWStream& skStream);
