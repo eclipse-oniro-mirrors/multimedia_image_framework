@@ -48,6 +48,9 @@ constexpr auto CHUNK_FLAG_COMPRESS_NO = 0;
 constexpr auto CHUNK_FLAG_COMPRESS_YES = 1;
 constexpr auto NULL_CHAR_AMOUNT = 2;
 constexpr auto HEX_STRING_UNIT_SIZE = 2;
+constexpr auto EXIF_INFO_LENGTH_TWO = 2;
+constexpr auto CHUNKDATA_KEYSIZE_OFFSET_ONE = 1;
+constexpr auto CHUNKDATA_KEYSIZE_OFFSET_THREE = 3;
 }
 
 int PngImageChunkUtils::ParseTextChunk(const DataBuf &chunkData, TextChunkType chunkType,
@@ -100,6 +103,10 @@ DataBuf PngImageChunkUtils::GetRawTextFromZtxtChunk(const DataBuf &chunkData, si
         IMAGE_LOGE("Failed to get raw text from ztxt: chunkData is null. ");
         return {};
     }
+    if (chunkData.CData(keySize + CHUNKDATA_KEYSIZE_OFFSET_ONE) == nullptr) {
+        IMAGE_LOGE("Failed to get raw text from itxt:  keySize + 1 greater than chunklength.");
+        return {};
+    }
     if (*(chunkData.CData(keySize + 1)) != CHUNK_COMPRESS_METHOD_VALID) {
         IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
             "Expected: %{public}d, Found: %{public}d",
@@ -144,9 +151,33 @@ std::string FetchString(const char *chunkData, size_t dataLength)
     return { chunkData, stringLength };
 }
 
+bool CheckChunkData(const DataBuf &chunkData, size_t keySize)
+{
+    const byte compressionFlag = chunkData.ReadUInt8(keySize + 1);
+    const byte compressionMethod = chunkData.ReadUInt8(keySize + 2);
+    if ((compressionFlag != CHUNK_FLAG_COMPRESS_NO) && (compressionFlag != CHUNK_FLAG_COMPRESS_YES)) {
+        IMAGE_LOGE("Metadata corruption detected: Invalid compression flag. "
+            "Expected: %{public}d or %{public}d, Found: %{public}d",
+            CHUNK_FLAG_COMPRESS_NO, CHUNK_FLAG_COMPRESS_YES, compressionFlag);
+        return false;
+    }
+
+    if ((compressionFlag == CHUNK_FLAG_COMPRESS_YES) && (compressionMethod != CHUNK_COMPRESS_METHOD_VALID)) {
+        IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
+            "Expected: %{public}d, Found: %{public}d",
+            CHUNK_COMPRESS_METHOD_VALID, compressionMethod);
+        return false;
+    }
+    return true;
+}
+
 DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize,
     DataBuf &rawText, bool &isCompressed)
 {
+    if (chunkData.CData(keySize + CHUNKDATA_KEYSIZE_OFFSET_THREE) == nullptr) {
+        IMAGE_LOGE("Failed to get raw text from itxt:  keySize + 3 greater than chunklength.");
+        return {};
+    }
     const size_t nullCount = static_cast<size_t>(std::count(chunkData.CData(keySize + 3),
                                                             chunkData.CData(chunkData.Size() - 1), '\0'));
     if (nullCount < NULL_CHAR_AMOUNT) {
@@ -155,22 +186,10 @@ DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, si
             nullCount);
         return {};
     }
-
+    if (!CheckChunkData(chunkData, keySize)) {
+        return {};
+    }
     const byte compressionFlag = chunkData.ReadUInt8(keySize + 1);
-    const byte compressionMethod = chunkData.ReadUInt8(keySize + 2);
-    if ((compressionFlag != CHUNK_FLAG_COMPRESS_NO) && (compressionFlag != CHUNK_FLAG_COMPRESS_YES)) {
-        IMAGE_LOGE("Metadata corruption detected: Invalid compression flag. "
-            "Expected: %{public}d or %{public}d, Found: %{public}d",
-            CHUNK_FLAG_COMPRESS_NO, CHUNK_FLAG_COMPRESS_YES, compressionFlag);
-        return {};
-    }
-
-    if ((compressionFlag == CHUNK_FLAG_COMPRESS_YES) && (compressionMethod != CHUNK_COMPRESS_METHOD_VALID)) {
-        IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
-            "Expected: %{public}d, Found: %{public}d",
-            CHUNK_COMPRESS_METHOD_VALID, compressionMethod);
-        return {};
-    }
 
     const size_t languageTextPos = keySize + 3;
     const size_t languageTextMaxLen = chunkData.Size() - keySize - 3;
@@ -433,6 +452,10 @@ DataBuf PngImageChunkUtils::ConvertRawTextToExifInfo(const DataBuf &rawText)
         return exifInfo;
     }
     unsigned char *destPtr = exifInfo.Data();
+    if (sourcePtr + EXIF_INFO_LENGTH_TWO * exifInfoLength > endPtr) {
+        IMAGE_LOGE("Invalid text length in raw profile text, it will result in OOB.");
+        return {};
+    }
     int ret = ConvertAsciiToInt(sourcePtr, exifInfoLength, destPtr);
     if (ret != 0) {
         IMAGE_LOGE("Error encountered when converting Exif string ASCII to integer.");
