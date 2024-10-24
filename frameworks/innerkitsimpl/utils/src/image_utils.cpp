@@ -40,6 +40,7 @@
 #include "image_trace.h"
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
+#include "image/abs_image_decoder.h"
 #include "pixel_map.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
