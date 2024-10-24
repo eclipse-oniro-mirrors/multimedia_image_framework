@@ -49,7 +49,7 @@ constexpr auto CHUNK_FLAG_COMPRESS_YES = 1;
 constexpr auto NULL_CHAR_AMOUNT = 2;
 constexpr auto HEX_STRING_UNIT_SIZE = 2;
 constexpr auto EXIF_INFO_LENGTH_TWO = 2;
-constexpr auto CHUNKDATA_KEYSIZE_OFFSET_ONE = 3;
+constexpr auto CHUNKDATA_KEYSIZE_OFFSET_ONE = 1;
 constexpr auto CHUNKDATA_KEYSIZE_OFFSET_THREE = 3;
 }
 

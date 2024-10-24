@@ -163,6 +163,7 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
 
     if (size > WEBP_MAX_CHUNKDATA_SIZE) {
         IMAGE_LOGE("Image stream chunkdata size is too large.");
+        return false;
     }
     DataBuf chunkData(size);
     if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
