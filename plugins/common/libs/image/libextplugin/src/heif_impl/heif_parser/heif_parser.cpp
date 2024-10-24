@@ -853,7 +853,9 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
     for (int index = 0; index < UINT32_BYTES_NUM; ++index) {
         content[index] = (uint8_t)offsetFourcc[index];
     }
-    memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size);
+    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != EOK) {
+        return heif_invalid_exif_data
+    }
     return SetMetadata(image, content, "Exif", nullptr);
 }
 
