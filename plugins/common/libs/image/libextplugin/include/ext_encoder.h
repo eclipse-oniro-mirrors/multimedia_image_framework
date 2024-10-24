@@ -111,6 +111,13 @@ private:
         std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
     uint32_t AssembleHeifHdrPicture(
         sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifAuxiliaryNoncodingMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
+        AuxiliaryPictureType auxType);
+    uint32_t AssembleHeifUnrefocusMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifFragmentMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifAuxiliaryPicture(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
+        std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    HDI::Codec::Image::V2_0::ImageItem InitAuxiliaryImageItem(uint32_t id, std::string itemName);
 #endif
     bool GetStaticMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V2_0::MasteringDisplayColourVolume& color,
         HDI::Codec::Image::V2_0::ContentLightLevel& light);
@@ -120,6 +127,8 @@ private:
     void GetColourInfo(ColorManager::ColorSpaceName color, HDI::Codec::Image::V2_0::ColourInfo& info);
     bool AssembleIT35SharedBuffer(Media::HdrMetadata metadata, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
     bool AssembleICCImageProperty(sk_sp<SkData>& iccProfile, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
+    bool FillPixelSharedBuffer(sptr<SurfaceBuffer> sbBuffer, uint32_t capacity,
+        HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
     bool FillNclxColorProperty(std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem>& item, size_t& offset,
         HDI::Codec::Image::V2_0::ColourInfo& colorInfo);
     bool AssembleOutputSharedBuffer(HDI::Codec::Image::V2_0::SharedBuffer& outBuffer,
@@ -130,6 +139,7 @@ private:
         std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
     bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V2_0::MetaItem>& metaItems);
     void AssembleExifRefItem(std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    void AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
 #endif
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);
