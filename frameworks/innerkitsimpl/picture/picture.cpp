@@ -44,6 +44,7 @@ namespace {
         { GRAPHIC_PIXEL_FMT_BGRA_8888, PixelFormat::BGRA_8888 },
         { GRAPHIC_PIXEL_FMT_RGB_888, PixelFormat::RGB_888 },
         { GRAPHIC_PIXEL_FMT_RGB_565, PixelFormat::RGB_565 },
+        { GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, PixelFormat::RGBA_F16 },
     };
 
     static const std::map<CM_ColorSpaceType, ColorSpace> CM_COLORSPACE_MAP = {
@@ -114,7 +115,7 @@ namespace {
     };
 #endif
 }
-
+const static uint64_t MAX_NUM_AUXI_PIC = 32;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -127,7 +128,8 @@ static bool IsYuvFormat(PixelFormat format)
 
 static bool IsAlphaFormat(PixelFormat format)
 {
-    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 || format == PixelFormat::RGBA_1010102;
+    return format == PixelFormat::RGBA_8888 || format == PixelFormat::BGRA_8888 ||
+        format == PixelFormat::RGBA_1010102 || format == PixelFormat::RGBA_F16;
 }
 
 static PixelFormat SbFormat2PixelFormat(int32_t sbFormat)
@@ -201,6 +203,18 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
         info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
     }
     pixelMap->SetImageYUVInfo(info);
+}
+
+static void SetMimeTypeToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
+{
+    if (mainPixelMap != nullptr && hdrPixelMap != nullptr) {
+        ImageInfo mainInfo;
+        mainPixelMap->GetImageInfo(mainInfo);
+        ImageInfo hdrInfo;
+        hdrPixelMap->GetImageInfo(hdrInfo);
+        hdrInfo.encodedFormat = mainInfo.encodedFormat;
+        hdrPixelMap->SetImageInfo(hdrInfo, true);
+    }
 }
 
 Picture::~Picture() {}
@@ -348,7 +362,9 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
     ImageSource::SetVividMetaColor(*metadata, baseCmColor, gainmapCmColor, hdrCmColor);
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, *metadata);
 
-    return ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
+    auto hdrPixelMap = ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
+    SetMimeTypeToHdr(mainPixelMap_, hdrPixelMap);
+    return hdrPixelMap;
 }
 
 std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
@@ -467,6 +483,9 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     }
     picture->SetMainPixel(pixelmapPtr);
     uint64_t numAuxiliaryPictures = parcel.ReadUint64();
+    if (numAuxiliaryPictures > MAX_NUM_AUXI_PIC) {
+        return nullptr;
+    }
     
     for (size_t i = NUM_0; i < numAuxiliaryPictures; ++i) {
         int32_t type = parcel.ReadInt32();
@@ -492,7 +511,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     if (hasExifData) {
         picture->exifMetadata_ = std::shared_ptr<ExifMetadata>(ExifMetadata::Unmarshalling(parcel));
     }
-    
+
     return picture.release();
 }
 

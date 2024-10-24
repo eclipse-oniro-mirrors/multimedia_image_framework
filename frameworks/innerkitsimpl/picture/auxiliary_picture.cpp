@@ -22,8 +22,9 @@
 
 namespace OHOS {
 namespace Media {
-AuxiliaryPicture::~AuxiliaryPicture() {}
 
+const static uint64_t MAX_META_TYPE = 64;
+AuxiliaryPicture::~AuxiliaryPicture() {}
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
                                                            AuxiliaryPictureType type, Size size)
 {
@@ -146,6 +147,11 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
+    if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
+        IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
+        return false;
+    }
+
     if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
         return false;
     }
@@ -187,11 +193,15 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     auxiliaryPictureInfo.rowStride = parcel.ReadInt32();
     auxiliaryPictureInfo.size.height = parcel.ReadInt32();
     auxiliaryPictureInfo.size.width = parcel.ReadInt32();
+    auxiliaryPictureInfo.jpegTagName = parcel.ReadString();
     auxPtr->SetAuxiliaryPictureInfo(auxiliaryPictureInfo);
 
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
     
     uint64_t size = parcel.ReadUint64();
+    if (size > MAX_META_TYPE) {
+        return nullptr;
+    }
     
     for (size_t i = 0; i < size; ++i) {
         MetadataType type = static_cast<MetadataType>(parcel.ReadInt32());

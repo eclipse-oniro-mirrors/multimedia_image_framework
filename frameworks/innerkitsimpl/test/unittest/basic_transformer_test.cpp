@@ -141,12 +141,13 @@ HWTEST_F(BasicTransformerTest, GetAroundPixelRGB565Test001, TestSize.Level3)
     GTEST_LOG_(INFO) << "BasicTransformerTest: GetAroundPixelRGB565Test001 start";
     BasicTransformer basicTransformer;
     Media::BasicTransformer::AroundPos aroundPos;
-    uint8_t *data = new uint8_t;
+    uint32_t *color = new uint32_t(0);
+    uint8_t *data = reinterpret_cast<uint8_t*>(color);
     uint32_t rb = 2;
     Media::BasicTransformer::AroundPixels aroundPixels;
     basicTransformer.GetAroundPixelRGB565(aroundPos, data, rb, aroundPixels);
-    ASSERT_NE(aroundPixels.color11, 0);
-    delete data;
+    ASSERT_EQ(aroundPixels.color11, 0);
+    delete color;
     GTEST_LOG_(INFO) << "BasicTransformerTest: GetAroundPixelRGB565Test001 end";
 }
 }

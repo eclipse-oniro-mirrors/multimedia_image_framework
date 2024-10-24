@@ -129,6 +129,7 @@ static void CommonCallbackRoutine(napi_env env, MetadataNapiAsyncContext* &async
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
@@ -245,14 +246,13 @@ napi_value MetadataNapi::Constructor(napi_env env, napi_callback_info info)
         if (pMetadataNapi->nativeMetadata_  == nullptr) {
             IMAGE_LOGE("Failed to set nativeMetadata_ with null. Maybe a reentrancy error");
         }
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pMetadataNapi.get()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pMetadataNapi.release()),
                            MetadataNapi::Destructor, nullptr, nullptr);
         if (status != napi_ok) {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }
     }
-    pMetadataNapi.release();
     return thisVar;
 }
 
@@ -508,7 +508,7 @@ static void GetPropertiesExecute(napi_env env, void *data)
     uint32_t status = SUCCESS;
     for (auto keyStrIt = context->keyStrArray.begin(); keyStrIt != context->keyStrArray.end(); ++keyStrIt) {
         std::string valueStr = "";
-        status = context->rMetadata->GetValue(*keyStrIt, valueStr);
+        status = static_cast<uint32_t>(context->rMetadata->GetValue(*keyStrIt, valueStr));
         if (status == SUCCESS) {
             context->KVSArray.emplace_back(std::make_pair(*keyStrIt, valueStr));
         } else {
@@ -533,7 +533,7 @@ static void SetPropertiesExecute(napi_env env, void *data)
         IMAGE_LOGD("CheckExifDataValue");
         status = context->rMetadata->SetValue(recordIterator->first, recordIterator->second);
         IMAGE_LOGD("Check ret status: %{public}d", status);
-        if (status != SUCCESS) {
+        if (!status) {
             IMAGE_LOGE("There is invalid exif data parameter");
             context->errMsgArray.insert(std::make_pair(status, recordIterator->first));
             continue;

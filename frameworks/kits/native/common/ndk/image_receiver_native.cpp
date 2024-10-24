@@ -15,6 +15,7 @@
 
 #include <memory>
 #include <string>
+#include <charconv>
 
 #include "common_utils.h"
 #include "image_log.h"
@@ -165,6 +166,13 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
     return IMAGE_SUCCESS;
 }
 
+static bool ConvertToUint64(const std::string& str, uint64_t& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNative* receiver, uint64_t* surfaceId)
 {
@@ -184,7 +192,10 @@ Image_ErrorCode OH_ImageReceiverNative_GetReceivingSurfaceId(OH_ImageReceiverNat
     }
     IMAGE_LOGI("OH_ImageReceiverNative_GetReceivingSurfaceId Receiver key = %{public}s", strKey.c_str());
 
-    *surfaceId = std::stoull(strKey);
+    if (!ConvertToUint64(strKey, *surfaceId)) {
+        IMAGE_LOGI("strKey = %{public}s convert string to uint64_t failed", strKey.c_str());
+        return IMAGE_UNKNOWN_ERROR;
+    }
     return IMAGE_SUCCESS;
 }
 

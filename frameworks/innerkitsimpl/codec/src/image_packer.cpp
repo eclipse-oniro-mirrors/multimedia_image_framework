@@ -288,12 +288,14 @@ uint32_t ImagePacker::AddImage(ImageSource &source, uint32_t index)
     return AddImage(*pixelMap_.get());
 }
 
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 uint32_t ImagePacker::AddPicture(Picture &picture)
 {
     return DoEncodingFunc([this, &picture](ImagePlugin::AbsImageEncoder* encoder) {
         return encoder->AddPicture(picture);
     });
 }
+#endif
 
 uint32_t ImagePacker::FinalizePacking()
 {
@@ -353,6 +355,7 @@ void ImagePacker::CopyOptionsToPlugin(const PackOption &opts, PlEncodeOptions &p
     plOpts.disposalTypes = opts.disposalTypes;
     plOpts.needsPackProperties = opts.needsPackProperties;
     plOpts.desiredDynamicRange = opts.desiredDynamicRange;
+    plOpts.isEditScene = opts.isEditScene;
 }
 
 void ImagePacker::FreeOldPackerStream()

@@ -73,7 +73,12 @@ private:
     uint32_t EncodeSingleVivid(ExtWStream& outputStream);
     uint32_t EncodePicture();
     uint32_t EncodeCameraScenePicture(SkWStream& skStream);
-    uint32_t EncodeEditScenePicture(ExtWStream& outputStream);
+    uint32_t EncodeEditScenePicture();
+    void CheckJpegAuxiliaryTagName();
+    uint32_t EncodeJpegPicture(SkWStream& skStream);
+    uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
+    uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
+    uint32_t EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
         bool needExif, SkWStream& outputStream);
@@ -94,6 +99,11 @@ private:
         ColorManager::ColorSpaceName color, Media::HdrMetadata& metadata, const PlEncodeOptions &opts);
     std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem> AssembleGainmapImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
         ColorManager::ColorSpaceName color, const PlEncodeOptions& opts);
+
+    uint32_t AssembleSdrImageItem(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo sdrInfo,
+        std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifHdrPicture(
+        sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
 #endif
     bool GetStaticMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V2_0::MasteringDisplayColourVolume& color,
         HDI::Codec::Image::V2_0::ContentLightLevel& light);

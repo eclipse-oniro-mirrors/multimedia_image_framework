@@ -40,6 +40,7 @@ config("image_external_config") {
     "//foundation/multimedia/image_framework/interfaces/innerkits/include",
     "//foundation/multimedia/image_framework/interfaces/kits/native/include",
     "${image_subsystem}/frameworks/kits/js/common/ndk/include",
+    "${image_subsystem}/frameworks/kits/js/common/picture_ndk/include",
   ]
 
   include_dirs += [

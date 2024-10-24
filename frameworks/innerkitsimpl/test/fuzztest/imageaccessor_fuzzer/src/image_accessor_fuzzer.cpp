@@ -55,7 +55,8 @@ void JpegAccessorTest(const uint8_t *data, size_t size)
         IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
         return;
     }
-    if (EncodedFormat::JPEG != MetadataAccessorFactory::GetImageType(stream)) {
+    uint32_t errorCode = SUCCESS;
+    if (EncodedFormat::JPEG != MetadataAccessorFactory::GetImageType(stream, errorCode)) {
         return;
     }
     std::shared_ptr<JpegExifMetadataAccessor> metadataAccessor = std::make_shared<JpegExifMetadataAccessor>(stream);
@@ -84,7 +85,8 @@ void PngAccessorTest(const uint8_t *data, size_t size)
         IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
         return;
     }
-    if (EncodedFormat::PNG != MetadataAccessorFactory::GetImageType(stream)) {
+    uint32_t errorCode = SUCCESS;
+    if (EncodedFormat::PNG != MetadataAccessorFactory::GetImageType(stream, errorCode)) {
         return;
     }
     std::shared_ptr<PngExifMetadataAccessor> metadataAccessor = std::make_shared<PngExifMetadataAccessor>(stream);
@@ -108,7 +110,8 @@ void WebpAccessorTest(const uint8_t *data, size_t size)
         IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
         return;
     }
-    if (EncodedFormat::WEBP != MetadataAccessorFactory::GetImageType(stream)) {
+    uint32_t errorCode = SUCCESS;
+    if (EncodedFormat::WEBP != MetadataAccessorFactory::GetImageType(stream, errorCode)) {
         return;
     }
 
@@ -138,7 +141,8 @@ void HeifAccessorTest(const uint8_t *data, size_t size)
         IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
         return;
     }
-    if (EncodedFormat::HEIF != MetadataAccessorFactory::GetImageType(stream)) {
+    uint32_t errorCode = SUCCESS;
+    if (EncodedFormat::HEIF != MetadataAccessorFactory::GetImageType(stream, errorCode)) {
         return;
     }
 
@@ -162,7 +166,8 @@ void DngAccessorTest(const uint8_t *data, size_t size)
         IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
         return;
     }
-    if (EncodedFormat::DNG != MetadataAccessorFactory::GetImageType(stream)) {
+    uint32_t errorCode = SUCCESS;
+    if (EncodedFormat::DNG != MetadataAccessorFactory::GetImageType(stream, errorCode)) {
         return;
     }
 

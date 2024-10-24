@@ -166,14 +166,13 @@ napi_value AuxiliaryPictureNapi::Constructor(napi_env env, napi_callback_info in
         if (pAuxiliaryPictureNapi->nativeAuxiliaryPicture_ == nullptr) {
             IMAGE_LOGE("Failed to set nativeAuxiliaryPicture_ with null. Maybe a reentrancy error");
         }
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pAuxiliaryPictureNapi.get()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pAuxiliaryPictureNapi.release()),
                            AuxiliaryPictureNapi::Destructor, nullptr, nullptr);
         if (status != napi_ok) {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }
     }
-    pAuxiliaryPictureNapi.release();
     return thisVar;
 }
 
@@ -285,8 +284,8 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     }
     status = napi_get_value_uint32(env, argValue[NUM_2], &auxiType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
-    if (auxiType < static_cast<int32_t>(AuxiliaryPictureType::GAINMAP)
-        || auxiType > static_cast<int32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+    if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
+        || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
         IMAGE_LOGE("AuxiliaryFigureType is invalid");
         return result;
     }
@@ -317,10 +316,7 @@ napi_value AuxiliaryPictureNapi::GetType(napi_env env, napi_callback_info info)
         auto auxType = auxPictureNapi->nativeAuxiliaryPicture_->GetType();
         IMAGE_LOGD("AuxiliaryPictureNapi::GetType %{public}d", auxType);
         if (static_cast<int32_t>(auxType) >= NUM_0 && auxType <= AuxiliaryPictureType::FRAGMENT_MAP) {
-            napi_value type = nullptr;
-            napi_create_object(env, &nVal.result);
-            napi_create_int32(env, static_cast<int32_t>(auxType), &type);
-            napi_set_named_property(env, nVal.result, "auxiliaryPictureType", type);
+            napi_create_int32(env, static_cast<int32_t>(auxType), &nVal.result);
         }
     } else {
         IMAGE_LOGE("Native picture is nullptr!");
@@ -335,15 +331,12 @@ napi_value AuxiliaryPictureNapi::Release(napi_env env, napi_callback_info info)
     napi_get_undefined(env, &nVal.result);
     nVal.argc = NUM_0;
     IMAGE_LOGD("Call Release");
-    std::unique_ptr<AuxiliaryPictureNapiAsyncContext> asyncContext =
-        std::make_unique<AuxiliaryPictureNapiAsyncContext>();
+    AuxiliaryPictureNapi *auxiliaryPicture = nullptr;
+
     IMG_JS_ARGS(env, info, nVal.status, nVal.argc, nullptr, nVal.thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nVal.result, IMAGE_LOGE("Fail to call napi_get_cb_info"));
-    nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    nVal.status = napi_remove_wrap(env, nVal.thisVar, reinterpret_cast<void**>(&auxiliaryPicture));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, asyncContext->nConstructor), nVal.result,
-        IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext.release();
     return nVal.result;
 }
 
@@ -386,6 +379,7 @@ static void GetMetadataComplete(napi_env env, napi_status status, void *data)
     if (context->imageMetadata != nullptr) {
         result = MetadataNapi::CreateMetadata(env, context->imageMetadata);
     }
+
     if (!IMG_IS_OK(status)) {
         context->status = ERROR;
         IMAGE_LOGE("Get Metadata failed!");
@@ -419,8 +413,8 @@ napi_value AuxiliaryPictureNapi::GetMetadata(napi_env env, napi_callback_info in
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType >= static_cast<int32_t>(MetadataType::EXIF)
-        && metadataType <= static_cast<int32_t>(MetadataType::FRAGMENT)) {
+    if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
+        && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
@@ -479,8 +473,8 @@ napi_value AuxiliaryPictureNapi::SetMetadata(napi_env env, napi_callback_info in
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType >= static_cast<int32_t>(MetadataType::EXIF)
-        && metadataType <= static_cast<int32_t>(MetadataType::FRAGMENT)) {
+    if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
+        && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
@@ -563,7 +557,7 @@ napi_value AuxiliaryPictureNapi::GetAuxiliaryPictureInfo(napi_env env, napi_call
     IMAGE_LOGD("Call GetAuxiliaryPictureInfo");
     IMG_JS_ARGS(env, info, nVal.status, nVal.argc, nullptr, nVal.thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nullptr, IMAGE_LOGE("Call napi_get_cb_info failed"));
-    std::unique_ptr<AuxiliaryPictureNapi> auxiliaryPictureNapi = nullptr;
+    AuxiliaryPictureNapi *auxiliaryPictureNapi = nullptr;
     nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&auxiliaryPictureNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, auxiliaryPictureNapi),
         nullptr, IMAGE_LOGE("Fail to unwrap context"));
@@ -577,7 +571,6 @@ napi_value AuxiliaryPictureNapi::GetAuxiliaryPictureInfo(napi_env env, napi_call
     } else {
         IMAGE_LOGE("Native auxiliarypicture is nullptr!");
     }
-    auxiliaryPictureNapi.release();
     return nVal.result;
 }
 
@@ -596,7 +589,7 @@ static void ParseColorSpace(napi_env env, napi_value val, AuxiliaryPictureNapiAs
     if (context->AuxColorSpace == nullptr) {
         ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_INVALID_PARAMETER, "ColorSpace mismatch");
-            return;
+        return;
     }
     context->rPixelmap->InnerSetColorSpace(*(context->AuxColorSpace));
 #else
@@ -630,7 +623,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
     if (!GET_UINT32_BY_NAME(root, "rowStride", tmpNumber)) {
         IMAGE_LOGI("No rowStride in auxiliaryPictureInfo");
     }
-    context->auxiliaryPictureInfo.rowStride = tmpNumber;
+    context->auxiliaryPictureInfo.rowStride = static_cast<int32_t>(tmpNumber);
 
     tmpNumber = 0;
     if (!GET_UINT32_BY_NAME(root, "pixelFormat", tmpNumber)) {

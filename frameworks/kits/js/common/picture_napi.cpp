@@ -155,6 +155,7 @@ static void CommonCallbackRoutine(napi_env env, PictureAsyncContext* &asyncConte
     }
 
     if (asyncContext == nullptr) {
+        napi_close_handle_scope(env, scope);
         return;
     }
     if (asyncContext->status == SUCCESS) {
@@ -306,14 +307,13 @@ napi_value PictureNapi::Constructor(napi_env env, napi_callback_info info)
         if (pPictureNapi->nativePicture_ == nullptr) {
             IMAGE_LOGE("Failed to set nativePicture_ with null. Maybe a reentrancy error");
         }
-        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pPictureNapi.get()),
+        status = napi_wrap(env, thisVar, reinterpret_cast<void *>(pPictureNapi.release()),
                            PictureNapi::Destructor, nullptr, nullptr);
         if (status != napi_ok) {
             IMAGE_LOGE("Failure wrapping js to native napi");
             return undefineVar;
         }
     }
-    pPictureNapi.release();
     return thisVar;
 }
 
@@ -437,7 +437,7 @@ napi_value PictureNapi::GetAuxiliaryPicture(napi_env env, napi_callback_info inf
 
 std::shared_ptr<Picture> PictureNapi::GetPicture(napi_env env, napi_value picture)
 {
-    std::unique_ptr<PictureNapi> pictureNapi = nullptr;
+    PictureNapi *pictureNapi = nullptr;
     napi_status status = napi_unwrap(env, picture, reinterpret_cast<void**>(&pictureNapi));
     if (!IMG_IS_OK(status)) {
         IMAGE_LOGE("GetPicture napi unwrap failed");
@@ -447,12 +447,7 @@ std::shared_ptr<Picture> PictureNapi::GetPicture(napi_env env, napi_value pictur
         IMAGE_LOGE("GetPixelMap pixmapNapi is nullptr");
         return nullptr;
     }
-    auto pictureNapiPtr = pictureNapi.release();
-    if (pictureNapiPtr == nullptr) {
-        IMAGE_LOGE("GetPicture pictureNapi is nullptr");
-        return nullptr;
-    }
-    return pictureNapiPtr->nativePicture_;
+    return pictureNapi->nativePicture_;
 }
 
 napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info info)
@@ -651,14 +646,12 @@ napi_value PictureNapi::Release(napi_env env, napi_callback_info info)
     nVal.result = nullptr;
     napi_get_undefined(env, &nVal.result);
     nVal.argc = NUM_0;
-    std::unique_ptr<PictureAsyncContext> asyncContext = std::make_unique<PictureAsyncContext>();
     IMG_JS_ARGS(env, info, nVal.status, nVal.argc, nullptr, nVal.thisVar);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nVal.result, IMAGE_LOGE("Fail to call napi_get_cb_info"));
-    nVal.status = napi_unwrap(env, nVal.thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(nVal.status), nVal.result, IMAGE_LOGE("Fail to arg info"));
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(nVal.status, asyncContext->nConstructor),
-                         nVal.result, IMAGE_LOGE("Fail to unwrap context"));
-    asyncContext.release();
+    PictureNapi *picturenapi = nullptr;
+    nVal.status = napi_remove_wrap(env, nVal.thisVar, reinterpret_cast<void**>(&picturenapi));
+
     return nVal.result;
 }
 
@@ -819,7 +812,7 @@ napi_value PictureNapi::GetMetadata(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), nullptr, IMAGE_LOGE("Empty native picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType != static_cast<int32_t>(MetadataType::EXIF)) {
+    if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
         return ImageNapiUtils::ThrowExceptionError(
             env, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Unsupport MetadataType");
     }
@@ -872,7 +865,7 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
-    if (metadataType == static_cast<int32_t>(MetadataType::EXIF)) {
+    if (metadataType == static_cast<uint32_t>(MetadataType::EXIF)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(

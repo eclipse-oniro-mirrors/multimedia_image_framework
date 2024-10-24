@@ -28,17 +28,20 @@ struct SingleJpegImage {
     uint32_t offset;
     uint32_t size;
     AuxiliaryPictureType auxType;
+    std::string auxTagName;
 };
 
 class JpegMpfParser {
 public:
     bool CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset);
     bool Parsing(uint8_t* data, uint32_t size);
+    bool ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian = true);
     std::vector<SingleJpegImage> images_;
+    static bool ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& fragmentRect, bool isBigEndian = true);
+
 private:
     bool ParsingMpIndexIFD(uint8_t* data, uint32_t size, uint32_t dataOffset, bool isBigEndian);
     bool ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndian, uint32_t imageNums);
-    AuxiliaryPictureType ParsingImageAttribute(uint32_t imageAttr, bool isBigEndian);
     uint32_t imageNums_ = 0;
 };
 

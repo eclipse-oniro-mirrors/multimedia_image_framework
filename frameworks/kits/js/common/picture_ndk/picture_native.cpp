@@ -326,6 +326,9 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
     }
 
     auto metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
+    if (!metadataPtr) {
+        return IMAGE_UNSUPPORTED_METADATA;
+    }
     *metadata = new OH_PictureMetadata(metadataPtr);
     return IMAGE_SUCCESS;
 }
@@ -443,7 +446,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetRowStride(OH_AuxiliaryPictureInfo *in
     if (info == nullptr || !info->GetInnerAuxiliaryPictureInfo()) {
         return IMAGE_BAD_PARAMETER;
     }
-    info->GetInnerAuxiliaryPictureInfo()->rowStride = rowStride;
+    info->GetInnerAuxiliaryPictureInfo()->rowStride = static_cast<int32_t>(rowStride);
     return  IMAGE_SUCCESS;
 }
 

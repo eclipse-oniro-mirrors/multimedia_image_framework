@@ -52,9 +52,12 @@ Image_ErrorCode OH_PictureMetadata_GetProperty(OH_PictureMetadata *metadata, Ima
     if (metadata == nullptr || key == nullptr || key->data == nullptr || key->size == 0 || value == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
+        return IMAGE_BAD_PARAMETER;
+    }
     std::string keyString(key->data, key->size);
     std::string val;
-    uint32_t errorCode = metadata->GetInnerAuxiliaryMetadata()->GetValue(keyString, val);
+    uint32_t errorCode = static_cast<uint32_t>(metadata->GetInnerAuxiliaryMetadata()->GetValue(keyString, val));
     if (errorCode != IMAGE_SUCCESS || val.empty()) {
         return IMAGE_UNSUPPORTED_METADATA;
     }
@@ -78,6 +81,9 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
 {
     if (metadata == nullptr || key == nullptr || key->data == nullptr || key->size == 0 ||
         value == nullptr || value->data == nullptr || value->size == 0) {
+        return IMAGE_BAD_PARAMETER;
+    }
+    if (!metadata->GetInnerAuxiliaryMetadata()) {
         return IMAGE_BAD_PARAMETER;
     }
     std::string keyString(key->data, key->size);

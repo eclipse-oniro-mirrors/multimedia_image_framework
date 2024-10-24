@@ -39,10 +39,10 @@ public:
     ExifData* GetExifData();
     bool CreateExifdata();
     NATIVEEXPORT std::shared_ptr<ExifMetadata> Clone();
-    void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
     bool Marshalling(Parcel &parcel) const override;
     static ExifMetadata *Unmarshalling(Parcel &parcel);
     static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
+    void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
 
 private:
     ExifEntry* CreateEntry(const std::string &key, const ExifTag &tag, const size_t len);
