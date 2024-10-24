@@ -425,8 +425,6 @@ protected:
     void ReleaseSharedMemory(void *addr, void *context, uint32_t size);
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
-    bool WriteFenced(Parcel &parcel) const;
-    static bool ReadFenced(Parcel &parcel);
     bool WritePropertiesToParcel(Parcel &parcel) const;
     bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
                                   int32_t &bufferSize, PIXEL_MAP_ERR &error);
