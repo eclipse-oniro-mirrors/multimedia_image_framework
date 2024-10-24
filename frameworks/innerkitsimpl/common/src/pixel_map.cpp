@@ -2098,15 +2098,18 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 {
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (fd < 0) {
+        IMAGE_LOGE("WriteFileDescriptor get fd failed, fd:[%{public}d].", fd);
         return false;
     }
     int dupFd = dup(fd);
     if (dupFd < 0) {
+        IMAGE_LOGE("WriteFileDescriptor dup fd failed, dupFd:[%{public}d].", dupFd);
         return false;
     }
     sptr<IPCFileDescriptor> descriptor = new IPCFileDescriptor(dupFd);
     return parcel.WriteObject<IPCFileDescriptor>(descriptor);
 #else
+    IMAGE_LOGE("[Pixemap] Not support Cross-Platform");
     return false;
 #endif
 }
@@ -2116,11 +2119,12 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
 #if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     sptr<IPCFileDescriptor> descriptor = parcel.ReadObject<IPCFileDescriptor>();
     if (descriptor == nullptr) {
+        IMAGE_LOGE("ReadFileDescriptor get descriptor failed");
         return -1;
     }
     int fd = descriptor->GetFd();
     if (fd < 0) {
-        IMAGE_LOGE("ReadFileDescriptor GetFd failed, fd:[%{public}d].", fd);
+        IMAGE_LOGE("ReadFileDescriptor get fd failed, fd:[%{public}d].", fd);
         return -1;
     }
     int dupFd = dup(fd);
@@ -2130,6 +2134,7 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
     }
     return dupFd;
 #else
+    IMAGE_LOGE("[Pixemap] Not support Cross-Platform");
     return -1;
 #endif
 }

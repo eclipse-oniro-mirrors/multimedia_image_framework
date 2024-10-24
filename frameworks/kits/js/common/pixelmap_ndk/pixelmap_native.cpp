@@ -312,6 +312,7 @@ Image_ErrorCode OH_PixelmapInitializationOptions_Release(OH_Pixelmap_Initializat
         return IMAGE_BAD_PARAMETER;
     }
     delete ops;
+    ops = nullptr;
     return IMAGE_SUCCESS;
 }
 
@@ -395,6 +396,7 @@ Image_ErrorCode OH_PixelmapImageInfo_Release(OH_Pixelmap_ImageInfo *info)
         return IMAGE_BAD_PARAMETER;
     }
     delete  info;
+    info = nullptr;
     return IMAGE_SUCCESS;
 }
 
