@@ -427,7 +427,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     if (context != nullptr) {
         delete context;
         context = nullptr;
-    }   
+    }
 }
 
 static void ImageSourceCallbackWithErrorObj(napi_env env,

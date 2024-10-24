@@ -42,7 +42,7 @@ bool WbmpFormatAgent::read_byte(uint8_t *stream, uint8_t &value, uint32_t &offse
 {
     if (stream == nullptr) {
         IMAGE_LOGE("read_byte: stream is nullptr");
-        return false; 
+        return false;
     }
     if (offset >= dataSize) {
         IMAGE_LOGE("read_header data offset %{public}u. dataSize %{public}u", offset, dataSize);
