@@ -195,7 +195,7 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
 
     images_.clear();
     for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
-        int matchedPos = ImageUtils::KMPFind(data, dataSize,
+        int32_t matchedPos = ImageUtils::KMPFind(data, dataSize,
             reinterpret_cast<const uint8_t*>(it.first.c_str()), it.first.size());
         if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
             continue;
