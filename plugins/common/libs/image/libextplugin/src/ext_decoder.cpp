@@ -894,7 +894,9 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
 #endif
     IMAGE_LOGD("decode format %{public}d", skEncodeFormat);
     if (skEncodeFormat == SkEncodedImageFormat::kGIF || skEncodeFormat == SkEncodedImageFormat::kWEBP) {
-        return GifDecode(index, context, rowStride);
+        res = GifDecode(index, context, rowStride);
+        ImageUtils::FlushContextSurfaceBuffer(context);
+        return res;
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
     if (ret != SkCodec::kSuccess && ResetCodec()) {

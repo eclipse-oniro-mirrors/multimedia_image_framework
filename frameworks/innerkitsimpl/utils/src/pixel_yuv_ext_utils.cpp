@@ -131,7 +131,6 @@ bool PixelYuvExtUtils::Yuv420ToARGB(const uint8_t *sample, uint8_t *dstArgb,
     return true;
 }
 
-
 bool PixelYuvExtUtils::NV12Rotate(uint8_t *src, PixelSize &size, YUVDataInfo &info,
     OpenSourceLibyuv::RotationMode &rotateNum, uint8_t* dst, YUVStrideInfo &dstStrides)
 {
@@ -301,7 +300,6 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
                          tempVData, dstUWidth, dstUWidth, dstUHeight, filterMode);
     // Merge  the UV
     uint8_t *dstUV = dst + GetYSize(dstYStride, dstYHeight);
-
     int32_t dstUVStride = static_cast<int32_t>(dstUWidth * NUM_2);
     //AllocatorType DMA_ALLOC
     if (dstYStride != dstYWidth) {
@@ -370,7 +368,7 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     ConvertYuvMode(filterMode, option);
 
     uint8_t* srcY = src + yuvInfo.yuvDataInfo.yOffset;
-    int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride)
+    int srcYStride = static_cast<int>(yuvInfo.yuvDataInfo.yStride);
     uint8_t* srcUV = srcY + yuvInfo.yuvDataInfo.uvOffset;
     int srcUVStride = static_cast<int>(yuvInfo.yuvDataInfo.uvStride);
     int srcWidth = yuvInfo.width;
@@ -418,21 +416,22 @@ void PixelYuvExtUtils::ScaleYuv420(int32_t dst_width, int32_t dst_height, const 
     }
 }
 
+
 bool PixelYuvExtUtils::FlipXaxis(uint8_t *src, uint8_t *dst, Size &size, PixelFormat format,
     YUVDataInfo &info, YUVStrideInfo &dstStrides)
 {
     IMAGE_LOGE("PixelYuvExtUtils FlipXaxis");
     uint8_t *srcY = src + info.yOffset;
     uint8_t *srcUV = src + info.uvOffset;
-    int srcYStride = info.yStride;
-    int srcUVStride = info.uvStride;
+    int srcYStride = static_cast<int>(info.yStride);
+    int srcUVStride = static_cast<int>(info.uvStride);
     int32_t width = size.width;
     int32_t height = size.height;
 
     uint8_t* dstY = dst + dstStrides.yOffset;
     uint8_t* dstUV = dst + dstStrides.uvOffset;
-    int dstYStride = dstStrides.yStride;
-    int dstUVStride = dstStrides.uvStride;
+    int dstYStride = static_cast<int>(dstStrides.yStride);
+    int dstUVStride = static_cast<int>(dstStrides.uvStride);
 
     auto converter = ConverterHandle::GetInstance().GetHandle();
     converter.NV12Copy(srcY, srcYStride, srcUV, srcUVStride, dstY, dstYStride, dstUV, dstUVStride, width, -height);
@@ -447,13 +446,13 @@ bool PixelYuvExtUtils::Mirror(uint8_t *src, uint8_t *dst, Size &size, PixelForma
     uint8_t *srcUV = src + info.uvOffset;
     int32_t width = size.width;
     int32_t height = size.height;
-    int srcYStride = info.yStride;
-    int srcUVStride = info.uvStride;
+    int srcYStride = static_cast<int>(info.yStride);
+    int srcUVStride = static_cast<int>(info.uvStride);
 
     uint8_t *dstY = dst + dstStrides.yOffset;
     uint8_t *dstUV = dst +  dstStrides.uvOffset;
-    int dstYStride = dstStrides.yStride;
-    int dstUVStride = dstStrides.uvStride;
+    int dstYStride = static_cast<int>(dstStrides.yStride);
+    int dstUVStride = static_cast<int>(dstStrides.uvStride);
     height = isReversed? -height : height;
 
     int iret = converter.NV12Mirror(srcY, srcYStride, srcUV, srcUVStride, dstY, dstYStride,

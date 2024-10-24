@@ -484,6 +484,17 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
             return false;
         }
         SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+        if (dstHwBuffer_ && (dstHwBuffer_->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+            GSError err = dstHwBuffer_->Map();
+            if (err != GSERROR_OK) {
+                IMAGE_LOGE("SurfaceBuffer Map failed, GSError=%{public}d", err);
+                return true;
+            }
+            err = dstHwBuffer_->FlushCache();
+            if (err != GSERROR_OK) {
+                IMAGE_LOGE("FlushCache failed, GSError=%{public}d", err);
+            }
+        }
         return true;
     }
     sptr<SurfaceBuffer> hwBuffer;
@@ -498,6 +509,12 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
         return false;
     }
     HwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    if (hwBuffer && (hwBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = hwBuffer->InvalidateCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("InvalidateCache failed, GSError=%{public}d", err);
+        }
+    }
     return true;
 }
 

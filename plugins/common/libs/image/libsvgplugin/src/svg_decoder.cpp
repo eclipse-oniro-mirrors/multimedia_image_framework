@@ -645,6 +645,7 @@ uint32_t SvgDecoder::DoDecode(uint32_t index, DecodeContext &context)
     }
 
     IMAGE_LOGD("[DoDecode] OUT");
+    ImageUtils::FlushContextSurfaceBuffer(context);
     return Media::SUCCESS;
 }
 } // namespace ImagePlugin
