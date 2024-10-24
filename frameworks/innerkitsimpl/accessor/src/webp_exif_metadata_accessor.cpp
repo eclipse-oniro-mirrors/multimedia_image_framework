@@ -160,7 +160,6 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
         return false;
     }
     const uint32_t size = GetULong(chunkSize, littleEndian);
-
     if (size > WEBP_MAX_CHUNKDATA_SIZE) {
         IMAGE_LOGE("Image stream chunkdata size is too large.");
         return false;

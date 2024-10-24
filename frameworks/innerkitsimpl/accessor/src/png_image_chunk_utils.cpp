@@ -151,6 +151,26 @@ std::string FetchString(const char *chunkData, size_t dataLength)
     return { chunkData, stringLength };
 }
 
+bool CheckChunkData(const DataBuf &chunkData, size_t keySize) 
+{
+    const byte compressionFlag = chunkData.ReadUInt8(keySize + 1);
+    const byte compressionMethod = chunkData.ReadUInt8(keySize + 2);
+    if ((compressionFlag != CHUNK_FLAG_COMPRESS_NO) && (compressionFlag != CHUNK_FLAG_COMPRESS_YES)) {
+        IMAGE_LOGE("Metadata corruption detected: Invalid compression flag. "
+            "Expected: %{public}d or %{public}d, Found: %{public}d",
+            CHUNK_FLAG_COMPRESS_NO, CHUNK_FLAG_COMPRESS_YES, compressionFlag);
+        return false;
+    }
+
+    if ((compressionFlag == CHUNK_FLAG_COMPRESS_YES) && (compressionMethod != CHUNK_COMPRESS_METHOD_VALID)) {
+        IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
+            "Expected: %{public}d, Found: %{public}d",
+            CHUNK_COMPRESS_METHOD_VALID, compressionMethod);
+        return false;
+    }
+    return true;
+}
+
 DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, size_t keySize,
     DataBuf &rawText, bool &isCompressed)
 {
@@ -166,22 +186,10 @@ DataBuf PngImageChunkUtils::GetRawTextFromItxtChunk(const DataBuf &chunkData, si
             nullCount);
         return {};
     }
-
+    if (!CheckChunkData(chunkData, keySize)) {
+        return {};
+    }
     const byte compressionFlag = chunkData.ReadUInt8(keySize + 1);
-    const byte compressionMethod = chunkData.ReadUInt8(keySize + 2);
-    if ((compressionFlag != CHUNK_FLAG_COMPRESS_NO) && (compressionFlag != CHUNK_FLAG_COMPRESS_YES)) {
-        IMAGE_LOGE("Metadata corruption detected: Invalid compression flag. "
-            "Expected: %{public}d or %{public}d, Found: %{public}d",
-            CHUNK_FLAG_COMPRESS_NO, CHUNK_FLAG_COMPRESS_YES, compressionFlag);
-        return {};
-    }
-
-    if ((compressionFlag == CHUNK_FLAG_COMPRESS_YES) && (compressionMethod != CHUNK_COMPRESS_METHOD_VALID)) {
-        IMAGE_LOGE("Metadata corruption detected: Invalid compression method. "
-            "Expected: %{public}d, Found: %{public}d",
-            CHUNK_COMPRESS_METHOD_VALID, compressionMethod);
-        return {};
-    }
 
     const size_t languageTextPos = keySize + 3;
     const size_t languageTextMaxLen = chunkData.Size() - keySize - 3;
