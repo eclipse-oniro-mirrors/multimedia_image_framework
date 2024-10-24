@@ -151,7 +151,7 @@ std::string FetchString(const char *chunkData, size_t dataLength)
     return { chunkData, stringLength };
 }
 
-bool CheckChunkData(const DataBuf &chunkData, size_t keySize) 
+bool CheckChunkData(const DataBuf &chunkData, size_t keySize)
 {
     const byte compressionFlag = chunkData.ReadUInt8(keySize + 1);
     const byte compressionMethod = chunkData.ReadUInt8(keySize + 2);
