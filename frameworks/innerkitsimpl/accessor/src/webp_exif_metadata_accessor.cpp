@@ -53,7 +53,7 @@ constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_EXIF = "EXIF";
 constexpr auto WEBP_CHUNK_OPERATE_FLAG = 0xFF;
 constexpr auto WEBP_WRITE_BLOCK = 4096 * 32;
-constexpr auto WEBP_MAX_CHUNKDATA_SIZE = 300 * 1024 *1024;
+constexpr auto WEBP_MAX_CHUNKDATA_SIZE = 300 * 1024 * 1024;
 }
 
 WebpExifMetadataAccessor::WebpExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream)
