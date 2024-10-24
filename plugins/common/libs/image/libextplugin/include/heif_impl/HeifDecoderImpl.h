@@ -69,6 +69,7 @@ public:
     bool getAuxiliaryMapInfo(HeifFrameInfo* frameInfo);
     bool decodeAuxiliaryMap();
     void setAuxiliaryDstBuffer(uint8_t* dstBuffer, size_t dstSize, size_t rowStride);
+    void getFragmentMetadata(Media::Rect& fragmentMetadata);
 private:
     bool Reinit(HeifFrameInfo *frameInfo);
 

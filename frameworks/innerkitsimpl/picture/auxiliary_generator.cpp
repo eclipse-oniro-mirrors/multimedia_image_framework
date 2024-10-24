@@ -195,6 +195,23 @@ static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImage
     return SUCCESS;
 }
 
+static uint32_t DecodeHeifFragmentMetadata(std::unique_ptr<AbsImageDecoder> &extDecoder,
+    std::unique_ptr<AuxiliaryPicture> &auxPicture)
+{
+    Rect fragmentRect;
+    if (!extDecoder->GetHeifFragmentMetadata(fragmentRect)) {
+        IMAGE_LOGE("Heif parsing fragment metadata failed");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
+    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
+    return SUCCESS;
+}
+
 static uint32_t DecodeJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream,
     std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
@@ -340,6 +357,8 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPictu
     }
     if (type == AuxiliaryPictureType::GAINMAP) {
         errorCode = DecodeHdrMetadata(hdrType, extDecoder, auxPicture);
+    } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
     }
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode heif metadata failed! errorCode: %{public}u", errorCode);

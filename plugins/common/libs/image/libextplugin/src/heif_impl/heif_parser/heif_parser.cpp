@@ -28,6 +28,7 @@ namespace OHOS {
 namespace ImagePlugin {
 
 const auto EXIF_ID = "Exif\0\0";
+const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragmentmap";
 const std::set<std::string> INFE_ITEM_TYPE = {
     "hvc1", "grid", "tmap", "iden", "mime"
 };
@@ -361,6 +362,22 @@ void HeifParser::ExtractISOMetadata(const heif_item_id& itemId)
     primaryImage_->SetISOMetadata(extendInfo);
 }
 
+void HeifParser::ExtractFragmentMetadata(const heif_item_id& itemId)
+{
+    HeifFragmentMetadata extendInfo;
+    auto ispe = GetProperty<HeifIspeBox>(itemId);
+    if (ispe) {
+        extendInfo.width = ispe->GetWidth();
+        extendInfo.height = ispe->GetHeight();
+    }
+    auto rloc = GetProperty<HeifRlocBox>(itemId);
+    if (rloc) {
+        extendInfo.horizontalOffset = rloc->GetX();
+        extendInfo.verticalOffset = rloc->GetY();
+    }
+    primaryImage_->SetFragmentMetadata(extendInfo);
+}
+
 void HeifParser::ExtractDisplayData(std::shared_ptr<HeifImage>& image, heif_item_id& itemId)
 {
     auto mdcv = GetProperty<HeifMdcvBox>(itemId);
@@ -527,6 +544,9 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
         return;
     }
 
+    if (auxc->GetAuxType() == HEIF_AUXTTYPE_ID_FRAGMENT_MAP) {
+        ExtractFragmentMetadata(auxItemId);
+    }
     auxImage->SetAuxImage(masterItemId, auxc->GetAuxType());
     masterImage->AddAuxImage(auxImage);
 }
