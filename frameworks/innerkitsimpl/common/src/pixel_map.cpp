@@ -1074,8 +1074,6 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     uint64_t rowDataSize = 0;
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
         rowDataSize = pixelBytes * ((infoWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
-        SetRowStride(static_cast<uint32_t>(rowDataSize));
-        IMAGE_LOGI("ALPHA_8 rowDataSize %{public}llu.", static_cast<unsigned long long>(rowDataSize));
     } else if (info.pixelFormat == PixelFormat::ASTC_4x4) {
         rowDataSize = pixelBytes * (((infoWidth + NUM_3) >> NUM_2) << NUM_2);
     } else if (info.pixelFormat == PixelFormat::ASTC_6x6) {
@@ -1083,7 +1081,20 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     } else if (info.pixelFormat == PixelFormat::ASTC_8x8) {
         rowDataSize = pixelBytes * (((infoWidth + NUM_7) >> NUM_3) << NUM_3);
     } else {
-        rowDataSize = pixelBytes * info.size.width;
+        rowDataSize = pixelBytes * infoWidth;
+    }
+
+    if (rowDataSize > INT_MAX) {
+        IMAGE_LOGE("set imageInfo failed, rowDataSize overflowed");
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    rowDataSize_ = static_cast<int32_t>(rowDataSize);
+
+    if (info.pixelFormat == PixelFormat::ALPHA_8) {
+        SetRowStride(rowDataSize_);
+        IMAGE_LOGI("ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
+    } else if (info.pixelFormat != PixelFormat::ASTC_4x4 && info.pixelFormat != PixelFormat::ASTC_6x6 &&
+        info.pixelFormat != PixelFormat::ASTC_8x8) {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
@@ -1093,17 +1104,12 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
             SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(context_);
             SetRowStride(sbBuffer->GetStride());
         } else {
-            SetRowStride(static_cast<uint32_t>(rowDataSize));
+            SetRowStride(rowDataSize_);
         }
 #else
-        SetRowStride(static_cast<uint32_t>(rowDataSize));
+        SetRowStride(rowDataSize_);
 #endif
     }
-    if (rowDataSize > INT_MAX) {
-        IMAGE_LOGE("set imageInfo failed, rowDataSize overflowed");
-        return ERR_IMAGE_DATA_ABNORMAL;
-    }
-    rowDataSize_ = static_cast<int32_t>(rowDataSize);
     return SUCCESS;
 }
 
