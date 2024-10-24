@@ -423,9 +423,11 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     }
 
     napi_delete_async_work(env, context->work);
-
-    delete context;
-    context = nullptr;
+    
+    if (context != nullptr) {
+        delete context;
+        context = nullptr;
+    }   
 }
 
 static void ImageSourceCallbackWithErrorObj(napi_env env,

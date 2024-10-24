@@ -34,6 +34,9 @@ WeakRefCounter::~WeakRefCounter()
 
 void* WeakRefCounter::GetRefPtr()
 {
+    if (refCounter_ != nullptr) {
+        return nullptr;
+    }
     if ((cookie_ != nullptr) && (!refCounter_->IsRefPtrValid())) {
         cookie_ = nullptr;
     }
