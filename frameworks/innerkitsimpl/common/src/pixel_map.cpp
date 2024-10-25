@@ -1069,7 +1069,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info)
 
 uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
 {
-    rowDataSize_ = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat, pixelBytes_);
+    rowDataSize_ = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
     if (rowDataSize_ <= 0) {
         IMAGE_LOGE("set imageInfo failed, rowDataSize_ invalid");
         return ERR_IMAGE_DATA_ABNORMAL;
@@ -1117,8 +1117,8 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         IMAGE_LOGE("pixel map set rowDataSize error.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
-    if (rowDataSize_ != 0 && info.size.height >
-        (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) / rowDataSize_) {
+    if (static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(info.size.height) >
+        (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
         ResetPixelMap();
         IMAGE_LOGE("pixel map size (byte count) out of range.");
         return ERR_IMAGE_TOO_LARGE;
@@ -2518,8 +2518,8 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
 
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
     if (!isAstc && !IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
-        expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) &&
-        static_cast<uint64_t>(bufferSize) != expectedBufferSize) {
+        (expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
+        static_cast<uint64_t>(bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid, expect: %{public}llu, actual: %{public}d",
             static_cast<unsigned long long>(expectedBufferSize), bufferSize);
         PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
