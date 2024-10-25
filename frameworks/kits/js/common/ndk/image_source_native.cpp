@@ -682,10 +682,6 @@ Image_ErrorCode OH_DecodingOptionsForPicture_SetDesiredAuxiliaryPictures(OH_Deco
     std::set<AuxiliaryPictureType> tmpDesireSet;
     auto innerDecodingOptionsForPicture = options->GetInnerDecodingOptForPicture().get();
     for (size_t index = 0; index < length; index++) {
-        if (desiredAuxiliaryPictures[index] < AUXILIARY_PICTURE_TYPE_GAINMAP ||
-            desiredAuxiliaryPictures[index] > AUXILIARY_PICTURE_TYPE_FRAGMENT_MAP) {
-            return IMAGE_BAD_PARAMETER;
-        }
         auto auxTypeTmp = AuxTypeNativeToInner(desiredAuxiliaryPictures[index]);
         if (!OHOS::Media::ImageUtils::IsAuxiliaryPictureTypeSupported(auxTypeTmp)) {
             return IMAGE_BAD_PARAMETER;

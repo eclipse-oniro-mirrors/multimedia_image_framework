@@ -12,26 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGEPICTURE_FUZZER_H
+#define FRAMEWORKS_INNERKITSIMPL_TEST_FUZZTEST_IMAGEFRAMEWORK_FUZZER_IMAGEPICTURE_FUZZER_H
 
-#ifndef IMAGE_CODEC_GRID_INFO_H
-#define IMAGE_CODEC_GRID_INFO_H
-
-#include <cinttypes>
-
-namespace OHOS {
-namespace ImagePlugin {
-struct GridInfo {
-    uint32_t displayWidth = 0;
-    uint32_t displayHeight = 0;
-    bool enableGrid = false;
-    uint32_t cols = 0;
-    uint32_t rows = 0;
-    uint32_t tileWidth = 0;
-    uint32_t tileHeight = 0;
-    uint8_t colorRangeflag = 1; // 0 -> limitRange:[16,235], 1 -> fullRange:[0, 255]
-
-    bool IsValid() const;
-};
-}
-}
-#endif //IMAGE_CODEC_GRID_INFO_H
+#define FUZZ_PROJECT_NAME "image_gif_encoder_fuzzer"
+#endif

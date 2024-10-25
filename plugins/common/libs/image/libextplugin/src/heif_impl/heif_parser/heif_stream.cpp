@@ -63,7 +63,9 @@ bool HeifBufferInputStream::Read(void *data, size_t size)
         return false;
     }
 
-    memcpy_s(data, size, &data_[pos_], size);
+    if (memcpy_s(data, size, &data_[pos_], size) != EOK) {
+        return false;
+    }
     pos_ = pos_ + static_cast<int64_t>(size);
 
     return true;

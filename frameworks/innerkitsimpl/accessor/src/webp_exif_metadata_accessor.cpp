@@ -53,6 +53,7 @@ constexpr auto WEBP_CHUNK_HEADER_ANMF = "ANMF";
 constexpr auto WEBP_CHUNK_HEADER_EXIF = "EXIF";
 constexpr auto WEBP_CHUNK_OPERATE_FLAG = 0xFF;
 constexpr auto WEBP_WRITE_BLOCK = 4096 * 32;
+constexpr auto WEBP_MAX_CHUNKDATA_SIZE = 300 * 1024 * 1024;
 }
 
 WebpExifMetadataAccessor::WebpExifMetadataAccessor(std::shared_ptr<MetadataStream> &stream)
@@ -159,7 +160,10 @@ bool WebpExifMetadataAccessor::CheckChunkVp8x(Vp8xAndExifInfo &exifFlag) const
         return false;
     }
     const uint32_t size = GetULong(chunkSize, littleEndian);
-
+    if (size > WEBP_MAX_CHUNKDATA_SIZE) {
+        IMAGE_LOGE("Image stream chunkdata size is too large.");
+        return false;
+    }
     DataBuf chunkData(size);
     if (size == 0 || chunkData.Empty() || chunkData.Data() == nullptr) {
         IMAGE_LOGE("Image stream does not find vp8x data.");
