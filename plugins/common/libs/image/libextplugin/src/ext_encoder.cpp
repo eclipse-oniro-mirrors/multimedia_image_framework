@@ -1814,7 +1814,9 @@ bool ExtEncoder::AssembleOutputSharedBuffer(SharedBuffer& outBuffer, std::shared
     }
     outMem = mem;
     tmpMemoryList_.push_back(mem);
-    outBuffer.fd = *static_cast<int *>(mem->extend.data);
+    if (mem->extend.data != nullptr) {
+        outBuffer.fd = *static_cast<int *>(mem->extend.data);
+    }
     outBuffer.capacity = outputCapacity;
     return true;
 }

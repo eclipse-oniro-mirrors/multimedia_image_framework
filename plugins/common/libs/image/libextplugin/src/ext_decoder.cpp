@@ -1651,7 +1651,7 @@ static uint32_t GetDelayTime(SkCodec * codec, uint32_t index, int32_t &value)
         return ERR_MEDIA_INVALID_PARAM;
     }
     auto frameInfos = codec->getFrameInfo();
-    if (index > frameInfos.size() - 1) {
+    if (index >= frameInfos.size()) {
         IMAGE_LOGE("[GetDelayTime] frame size %{public}zu, index:%{public}d", frameInfos.size(), index);
         return ERR_MEDIA_INVALID_PARAM;
     }
@@ -1667,7 +1667,7 @@ static uint32_t GetDisposalType(SkCodec * codec, uint32_t index, int32_t &value)
         return ERR_MEDIA_INVALID_PARAM;
     }
     auto frameInfos = codec->getFrameInfo();
-    if (index > frameInfos.size() - 1) {
+    if (index >= frameInfos.size()) {
         IMAGE_LOGE("[GetDisposalType] frame size %{public}zu, index:%{public}d", frameInfos.size(), index);
         return ERR_MEDIA_INVALID_PARAM;
     }
