@@ -41,8 +41,8 @@ public:
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
-    static bool IsValidImageInfo(ImageInfo info);
-    static bool IsAstc(const PixelFormat &format);
+    static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
     static bool IsFormatSupportDma(const PixelFormat &format);
