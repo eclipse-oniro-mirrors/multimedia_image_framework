@@ -221,6 +221,7 @@ SutDecSoManager::SutDecSoManager()
     sutDecSoDecFunc_ = nullptr;
     isSutFunc_ = nullptr;
     getTextureInfoFunc_ = nullptr;
+    getExpandInfoFromSutFunc_ = nullptr;
     if (LoadSutDecSo()) {
         IMAGE_LOGD("[ImageSource] astcenc sut dec so is success to be opened!");
     } else {
