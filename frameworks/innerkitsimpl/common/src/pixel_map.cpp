@@ -2833,15 +2833,14 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
-    int32_t dataSize = rowDataSize_ * imageInfo_.size.height;
-    if (isUnMap_ || data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0 ||
-        (rowDataSize_ != 0 && imageInfo_.size.height > dataSize / rowDataSize_)) {
+    uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
+    if (isUnMap_ || data == nullptr || dataSize > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
         IMAGE_LOGE("pixel map tlv encode fail: no data or invalid dataSize, isUnMap %{public}d", isUnMap_);
         return false;
     }
-    WriteVarint(buff, dataSize);
+    WriteVarint(buff, static_cast<int32_t>(dataSize));
     WriteData(buff, data, imageInfo_.size.height, rowDataSize_, rowStride_);
     WriteUint8(buff, TLV_END); // end tag
     return true;
