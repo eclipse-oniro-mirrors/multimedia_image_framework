@@ -195,7 +195,7 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
 
     images_.clear();
     for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
-        int matchedPos = ImageUtils::KMPFind(data, dataSize,
+        int32_t matchedPos = ImageUtils::KMPFind(data, dataSize,
             reinterpret_cast<const uint8_t*>(it.first.c_str()), it.first.size());
         if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
             continue;
@@ -207,10 +207,10 @@ bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, b
         offset -= UINT32_BYTE_SIZE;
         uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
         SingleJpegImage auxImage = {
+            .offset = offset - UINT32_BYTE_SIZE - imageSize,
+            .size = imageSize,
             .auxType = it.second,
             .auxTagName = it.first,
-            .size = imageSize,
-            .offset = offset - UINT32_BYTE_SIZE - imageSize,
         };
         images_.push_back(auxImage);
         IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",

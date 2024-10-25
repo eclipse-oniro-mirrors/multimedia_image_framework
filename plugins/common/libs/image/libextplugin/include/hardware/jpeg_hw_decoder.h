@@ -55,8 +55,8 @@ public:
     ~JpegHardwareDecoder();
 
     bool IsHardwareDecodeSupported(const std::string& srcImgFormat, OHOS::Media::Size srcImgSize);
-    uint32_t Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream, OHOS::Media::Size srcImgSize, uint32_t sampleSize,
-                    OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
+    uint32_t Decode(SkCodec *codec, ImagePlugin::InputDataStream *srcStream, OHOS::Media::Size srcImgSize,
+                    uint32_t sampleSize, OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer);
 private:
     class LifeSpanTimer {
     public:

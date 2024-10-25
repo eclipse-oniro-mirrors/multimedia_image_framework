@@ -115,7 +115,8 @@ protected:
     static uint32_t Get420OutPlaneHeight(YuvComponentIndex com, int imageHeight);
     static uint32_t Get420OutPlaneSize(YuvComponentIndex com, int imageWidth, int imageHeight);
     static uint32_t GetJpegDecompressedYuvSize(uint32_t width, uint32_t height, int subsample);
-    static void InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info, JpegYuvFmt fmt);
+    static void InitYuvDataOutInfoTo420(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info,
+                                        JpegYuvFmt fmt);
     static void InitYuvDataOutInfoTo420NV(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info);
     static void InitYuvDataOutInfo(uint32_t width, uint32_t height, OHOS::Media::YUVDataInfo &info);
     static bool IsYU12YV12Format(JpegYuvFmt fmt);

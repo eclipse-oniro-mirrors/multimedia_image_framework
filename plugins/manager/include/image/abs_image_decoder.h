@@ -213,6 +213,11 @@ public:
     }
 #endif
 
+    virtual uint32_t GetHeifParseErr()
+    {
+        return 0;
+    }
+    
     virtual Media::ImageHdrType CheckHdrType()
     {
         return Media::ImageHdrType::SDR;
@@ -236,11 +241,6 @@ public:
     virtual bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr)
     {
         return false;
-    }
-
-    virtual uint32_t GetHeifParseErr()
-    {
-        return 0;
     }
 
     virtual bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type)
