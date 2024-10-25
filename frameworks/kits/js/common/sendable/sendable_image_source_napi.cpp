@@ -38,10 +38,10 @@ thread_local std::shared_ptr<ImageSource> SendableImageSourceNapi::sImgSrc_ = nu
 std::shared_ptr<IncrementalPixelMap> SendableImageSourceNapi::sIncPixelMap_ = nullptr;
 static const std::string CLASS_NAME = "ImageSourceSendable";
 static const std::string FILE_URL_PREFIX = "file://";
-std::string SendableImageSourceNapi::filePath_ = "";
-int SendableImageSourceNapi::fileDescriptor_ = -1;
-void* SendableImageSourceNapi::fileBuffer_ = nullptr;
-size_t SendableImageSourceNapi::fileBufferSize_ = 0;
+thread_local std::string SendableImageSourceNapi::filePath_ = "";
+thread_local int SendableImageSourceNapi::fileDescriptor_ = -1;
+thread_local void* SendableImageSourceNapi::fileBuffer_ = nullptr;
+thread_local size_t SendableImageSourceNapi::fileBufferSize_ = 0;
 napi_ref SendableImageSourceNapi::pixelMapFormatRef_ = nullptr;
 napi_ref SendableImageSourceNapi::propertyKeyRef_ = nullptr;
 napi_ref SendableImageSourceNapi::imageFormatRef_ = nullptr;
@@ -50,6 +50,8 @@ napi_ref SendableImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
+
+static std::mutex imageSourceCrossThreadMutex_;
 
 struct RawFileDescriptorInfo {
     int32_t fd = INVALID_FD;
@@ -722,10 +724,14 @@ napi_value SendableImageSourceNapi::CreateImageSource(napi_env env, napi_callbac
         napi_get_undefined(env, &result);
         return result;
     }
-    filePath_ = asyncContext->pathName;
-    fileDescriptor_ = asyncContext->fdIndex;
-    fileBuffer_ = asyncContext->sourceBuffer;
-    fileBufferSize_ = asyncContext->sourceBufferSize;
+
+    {
+        std::lock_guard<std::mutex> lock(imageSourceCrossThreadMutex_);
+        filePath_ = asyncContext->pathName;
+        fileDescriptor_ = asyncContext->fdIndex;
+        fileBuffer_ = asyncContext->sourceBuffer;
+        fileBufferSize_ = asyncContext->sourceBufferSize;
+    }
 
     napi_value constructor = nullptr;
     status = napi_get_reference_value(env, sConstructor_, &constructor);
