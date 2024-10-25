@@ -186,26 +186,26 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
     return pixelBytes;
 }
 
-int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
+int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const PixelFormat &format, int32_t pixelBytes)
 {
     uint64_t uWidth = static_cast<uint64_t>(width);
-    uint64_t pixelBytes = static_cast<uint64_t>(GetPixelBytes(format));
+    uint64_t uPixelBytes = static_cast<uint64_t>(pixelBytes <= 0 ? GetPixelBytes(format) : pixelBytes);
     uint64_t rowDataSize = 0;
     switch (format) {
         case PixelFormat::ALPHA_8:
-            rowDataSize = pixelBytes * ((uWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            rowDataSize = uPixelBytes * ((uWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
             break;
         case PixelFormat::ASTC_4x4:
-            rowDataSize = pixelBytes * (((uWidth + NUM_3) >> NUM_2) << NUM_2);
+            rowDataSize = uPixelBytes * (((uWidth + NUM_3) >> NUM_2) << NUM_2);
             break;
         case PixelFormat::ASTC_6x6:
-            rowDataSize = pixelBytes * (((uWidth + NUM_5) / NUM_6) * NUM_6);
+            rowDataSize = uPixelBytes * (((uWidth + NUM_5) / NUM_6) * NUM_6);
             break;
         case PixelFormat::ASTC_8x8:
-            rowDataSize = pixelBytes * (((uWidth + NUM_7) >> NUM_3) << NUM_3);
+            rowDataSize = uPixelBytes * (((uWidth + NUM_7) >> NUM_3) << NUM_3);
             break;
         default:
-            rowDataSize = pixelBytes * uWidth;
+            rowDataSize = uPixelBytes * uWidth;
     }
     if (rowDataSize > INT_MAX) {
         IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
@@ -345,6 +345,11 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
+}
+
+bool ImageUtils::IsAstc(const PixelFormat &format)
+{
+    return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
 bool ImageUtils::IsWidthAligned(const int32_t &width)
