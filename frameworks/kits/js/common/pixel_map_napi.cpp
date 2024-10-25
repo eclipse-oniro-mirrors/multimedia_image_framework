@@ -1580,6 +1580,7 @@ napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_in
     }
     std::unique_ptr<PixelMapAsyncContext> asyncContext = std::make_unique<PixelMapAsyncContext>();
     napi_unwrap(env, argValue[NUM_0], (void **)&napi_messageSequence);
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, napi_messageSequence), result, IMAGE_LOGE("fail to unwrap context"));
     auto messageParcel = napi_messageSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return PixelMapNapi::ThrowExceptionError(env,
@@ -3578,6 +3579,7 @@ napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
     NAPI_MessageSequence *napiSequence = nullptr;
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
     napi_unwrap(env, nVal.argv[0], reinterpret_cast<void**>(&napiSequence));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, napiSequence), result, IMAGE_LOGE("fail to unwrap context"));
     auto messageParcel = napiSequence->GetMessageParcel();
     if (messageParcel == nullptr) {
         return ImageNapiUtils::ThrowExceptionError(
