@@ -96,7 +96,7 @@ extern "C" {
     FFI_EXPORT RetDataUI32 FfiOHOSGetFrameCount(int64_t id);
     FFI_EXPORT uint32_t FfiOHOSUpdateData(int64_t id, UpdateDataInfo info);
     FFI_EXPORT uint32_t FfiOHOSRelease(int64_t id);
-    FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions &opts);
+    FFI_EXPORT RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions opts);
     FFI_EXPORT CArrI64 FfiOHOSImageSourceCreatePixelMapList(int64_t id, uint32_t index, CDecodingOptions opts,
         uint32_t* errorCode);
     FFI_EXPORT CArrI32 FfiOHOSImageSourceGetDelayTime(int64_t id, uint32_t* errorCode);

@@ -570,7 +570,7 @@ extern "C"
         return instance->ModifyImageProperties(key.head, value.head, key.size);
     }
 
-    RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions &opts)
+    RetDataI64U32 FfiOHOSImageSourceCreatePixelMap(int64_t id, uint32_t index, CDecodingOptions opts)
     {
         IMAGE_LOGD("[ImageSource] FfiOHOSImageSourceCreatePixelMap start");
         RetDataI64U32 ret = { .code = ERR_IMAGE_INIT_ABNORMAL, .data = 0 };
