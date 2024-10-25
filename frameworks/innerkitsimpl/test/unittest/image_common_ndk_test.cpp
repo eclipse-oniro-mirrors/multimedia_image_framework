@@ -171,7 +171,7 @@ HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetSetPropertyTest1, TestSize.Le
  */
 HWTEST_F(ImageCommonNdkTest, OH_PictureMetadata_GetSetPropertyTest2, TestSize.Level1)
 {
-    TestPictureMetadataGetSetProperty(FRAGMENT_METADATA, "WIDTH");
+    TestPictureMetadataGetSetProperty(FRAGMENT_METADATA, FRAGMENT_METADATA_KEY_WIDTH);
 }
 /**
  * @tc.name: OH_PictureMetadata_ReleaseTest001
