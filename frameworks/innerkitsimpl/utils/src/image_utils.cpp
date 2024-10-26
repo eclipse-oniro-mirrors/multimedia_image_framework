@@ -186,7 +186,7 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
     return pixelBytes;
 }
 
-int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
+int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const PixelFormat &format)
 {
     uint64_t uWidth = static_cast<uint64_t>(width);
     uint64_t pixelBytes = static_cast<uint64_t>(GetPixelBytes(format));
@@ -345,6 +345,11 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
+}
+
+bool ImageUtils::IsAstc(PixelFormat format)
+{
+    return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
 bool ImageUtils::IsWidthAligned(const int32_t &width)
