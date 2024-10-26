@@ -118,6 +118,17 @@ void HeifImage::SetChromaBitNum(int bitNum)
     chromaBitNum_ = bitNum;
 }
 
+int HeifImage::GetColorRangeFlag() const
+{
+    return colorRangeFlag_;
+}
+
+
+void HeifImage::SetColorRangeFlag(int flag)
+{
+    colorRangeFlag_ = flag;
+}
+
 HeifColorFormat HeifImage::GetDefaultColorFormat() const
 {
     return defaultColorFormat_;

@@ -303,7 +303,7 @@ STATIC_EXEC_FUNC(Packing)
         BuildMsgOnError(context, context->resultBuffer == nullptr, "ImagePacker buffer alloc error");
         return;
     }
-    context->rImagePacker->StartPacking(context->resultBuffer.get(),
+    uint32_t packRes = context->rImagePacker->StartPacking(context->resultBuffer.get(),
         context->resultBufferSize, context->packOption);
     if (context->packType == TYPE_IMAGE_SOURCE) {
         IMAGE_LOGI("ImagePacker set image source");
@@ -321,6 +321,11 @@ STATIC_EXEC_FUNC(Packing)
         context->rImagePacker->AddImage(*(context->rPixelMap));
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
+        if (packRes != SUCCESS) {
+            BuildMsgOnError(context, packRes == SUCCESS, "Packing picture failed",
+                packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
+            return;
+        }
         if (!SetPicture(context)) {
             return;
         }
@@ -330,7 +335,7 @@ STATIC_EXEC_FUNC(Packing)
             return;
         }
     }
-    auto packRes = context->rImagePacker->FinalizePacking(packedSize);
+    packRes = context->rImagePacker->FinalizePacking(packedSize);
     IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
     if (packedSize > 0 && (packedSize < context->resultBufferSize)) {
         context->packedSize = packedSize;
@@ -750,6 +755,7 @@ static std::shared_ptr<ImageSource> GetImageSourceFromNapi(napi_env env, napi_va
 {
     if (env == nullptr || value == nullptr) {
         IMAGE_LOGE("GetImageSourceFromNapi input is null");
+        return nullptr;
     }
     std::unique_ptr<ImageSourceNapi> imageSourceNapi = std::make_unique<ImageSourceNapi>();
     napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&imageSourceNapi));
@@ -955,24 +961,21 @@ static void ParserPackToFileArguments(napi_env env,
 #endif
     } else if (context->packType == TYPE_ARRAY) {
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPixelMaps != nullptr,
-            "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
+        uint32_t errorCode = (context->packType == TYPE_PICTURE) ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
         BuildMsgOnError(context, (napi_get_value_int32(env, argv[PARAM1], &(context->fd)) == napi_ok &&
-            context->fd > INVALID_FD), "fd mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            context->fd > INVALID_FD), "fd mismatch", errorCode);
     }
     if (argc > PARAM2 && ImageNapiUtils::getType(env, argv[PARAM2]) == napi_object) {
         if (context->packType == TYPE_ARRAY) {
-            BuildMsgOnError(context,
-                parsePackOptionOfLoop(env, argv[PARAM2], &(context->packOption)),
+            BuildMsgOnError(context, parsePackOptionOfLoop(env, argv[PARAM2], &(context->packOption)),
                 "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
-            BuildMsgOnError(context,
-                parsePackOptionOfdisposalTypes(env, argv[PARAM2], &(context->packOption)),
+            BuildMsgOnError(context, parsePackOptionOfdisposalTypes(env, argv[PARAM2], &(context->packOption)),
                 "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
         } else {
-            BuildMsgOnError(context,
-                parsePackOptions(env, argv[PARAM2], &(context->packOption)),
+            BuildMsgOnError(context, parsePackOptions(env, argv[PARAM2], &(context->packOption)),
                 "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
         }
     }
@@ -1004,13 +1007,19 @@ STATIC_EXEC_FUNC(PackToFile)
 {
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     if (context->fd <= INVALID_FD) {
-        BuildMsgOnError(context, context->fd <= INVALID_FD, "ImagePacker invalid fd", ERR_IMAGE_INVALID_PARAMETER);
+        uint32_t errorCode = context->packType == TYPE_PICTURE ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
+        BuildMsgOnError(context, context->fd <= INVALID_FD, "ImagePacker invalid fd", errorCode);
         return;
     }
 
     auto startRes = context->rImagePacker->StartPacking(context->fd, context->packOption);
     if (startRes != SUCCESS) {
         context->status = ERROR;
+        if (context->packType == TYPE_PICTURE) {
+            BuildMsgOnError(context, startRes == SUCCESS, "PackToFile start packing failed",
+                startRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
+            return;
+        }
         BuildMsgOnError(context, startRes == SUCCESS, "Start packing failed", startRes);
         return;
     }

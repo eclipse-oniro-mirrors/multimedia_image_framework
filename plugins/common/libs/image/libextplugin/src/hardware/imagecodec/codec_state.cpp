@@ -30,6 +30,9 @@ void ImageCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::OMX_EMPTY_BUFFER_DONE: {
+            if (info.param == nullptr) {
+                return;
+            }
             uint32_t bufferId;
             if (!info.param->GetValue(BUFFER_ID, bufferId)) {
                 SLOGE("OnMsgReceived param has no BUFFER_ID");
@@ -38,6 +41,9 @@ void ImageCodec::BaseState::OnMsgReceived(const MsgInfo &info)
             return;
         }
         case MsgWhat::OMX_FILL_BUFFER_DONE: {
+            if (info.param == nullptr) {
+                return;
+            }
             OmxCodecBuffer omxBuffer;
             if (!info.param->GetValue("omxBuffer", omxBuffer)) {
                 SLOGE("OnMsgReceived param has no omxBuffer");
@@ -79,6 +85,9 @@ void ImageCodec::BaseState::ReplyErrorCode(MsgId id, int32_t err)
 
 void ImageCodec::BaseState::OnCodecEvent(const MsgInfo &info)
 {
+    if (info.param == nullptr) {
+        return;
+    }
     CodecEventType event{};
     uint32_t data1;
     uint32_t data2;

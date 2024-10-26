@@ -55,6 +55,7 @@ config("image_external_config") {
     include_dirs += [
       "//foundation/graphic/graphic_2d/utils/color_manager/export",
       "//commonlibrary/c_utils/base/include",
+      "//third_party/skia",
     ]
   }
 

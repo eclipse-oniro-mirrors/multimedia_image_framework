@@ -342,7 +342,12 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 {
-    if (mainPixelMap_ == nullptr || !HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
+    if (mainPixelMap_ == nullptr) {
+        IMAGE_LOGE("picture mainPixelMap_ is empty.");
+        return nullptr;
+    }
+    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) ||
+        mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("Unsupport HDR compose.");
         return nullptr;
     }
@@ -432,15 +437,15 @@ bool Picture::Marshalling(Parcel &data) const
         IMAGE_LOGE("Failed to write number of auxiliary pictures.");
         return false;
     }
-    
+
     for (const auto &auxiliaryPicture : auxiliaryPictures_) {
         AuxiliaryPictureType type =  auxiliaryPicture.first;
-        
+
         if (!data.WriteInt32(static_cast<int32_t>(type))) {
             IMAGE_LOGE("Failed to write auxiliary picture type.");
             return false;
         }
-        
+
         if (!auxiliaryPicture.second || !auxiliaryPicture.second->Marshalling(data)) {
             IMAGE_LOGE("Failed to marshal auxiliary picture of type %d.", static_cast<int>(type));
             return false;
@@ -470,7 +475,7 @@ bool Picture::Marshalling(Parcel &data) const
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -489,7 +494,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 {
     std::unique_ptr<Picture> picture = std::make_unique<Picture>();
     std::shared_ptr<PixelMap> pixelmapPtr(PixelMap::Unmarshalling(parcel));
-    
+
     if (!pixelmapPtr) {
         IMAGE_LOGE("Failed to unmarshal main PixelMap.");
         return nullptr;
@@ -499,7 +504,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     if (numAuxiliaryPictures > MAX_AUXILIARY_PICTURE_COUNT) {
         return nullptr;
     }
-    
+
     for (size_t i = NUM_0; i < numAuxiliaryPictures; ++i) {
         int32_t type = parcel.ReadInt32();
         std::shared_ptr<AuxiliaryPicture> auxPtr(AuxiliaryPicture::Unmarshalling(parcel));

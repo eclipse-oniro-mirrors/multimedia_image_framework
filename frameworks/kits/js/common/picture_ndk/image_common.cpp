@@ -15,6 +15,7 @@
 #include "image_common.h"
 #include "image_common_impl.h"
 #include "image_utils.h"
+#include "image_type.h"
 #include "exif_metadata.h"
 #include "fragment_metadata.h"
 #include "securec.h"
@@ -92,10 +93,14 @@ Image_ErrorCode OH_PictureMetadata_SetProperty(OH_PictureMetadata *metadata, Ima
     if (keyString.empty() || valueString.empty()) {
         return IMAGE_BAD_PARAMETER;
     }
-    uint32_t casted;
-    if (!OHOS::Media::ImageUtils::StrToUint32(valueString, casted)) {
-        return IMAGE_BAD_PARAMETER;
+
+    if (metadata->GetInnerAuxiliaryMetadata()->GetType() == OHOS::Media::MetadataType::FRAGMENT) {
+        uint32_t casted;
+        if (!OHOS::Media::ImageUtils::StrToUint32(valueString, casted)) {
+            return IMAGE_BAD_PARAMETER;
+        }
     }
+
     bool isSucc = metadata->GetInnerAuxiliaryMetadata()->SetValue(keyString, valueString);
     if (isSucc != true) {
         return IMAGE_UNSUPPORTED_METADATA;

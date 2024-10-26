@@ -475,6 +475,11 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetLumaBitNum(hvccConfig.bitDepthLuma);
         image->SetChromaBitNum(hvccConfig.bitDepthChroma);
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
+
+        auto nalArrays = hvcc->GetNalArrays();
+        hvcc->ParserHvccColorRangeFlag(nalArrays);
+        auto spsConfig = hvcc->GetSpsConfig();
+        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
     }
     ExtractDisplayData(image, itemId);
 }
@@ -848,7 +853,9 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
     for (int index = 0; index < UINT32_BYTES_NUM; ++index) {
         content[index] = (uint8_t)offsetFourcc[index];
     }
-    memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size);
+    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != EOK) {
+        return heif_invalid_exif_data;
+    }
     return SetMetadata(image, content, "Exif", nullptr);
 }
 
@@ -909,6 +916,9 @@ uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 void HeifParser::SetTiffOffset()
 {
     if (tiffOffset_ != 0) {
+        return;
+    }
+    if (GetPrimaryImage() == nullptr) {
         return;
     }
     auto metadataList = GetPrimaryImage()->GetAllMetadata();

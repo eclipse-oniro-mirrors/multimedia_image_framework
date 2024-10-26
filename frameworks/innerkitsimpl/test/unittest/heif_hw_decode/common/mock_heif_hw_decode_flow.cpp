@@ -67,10 +67,10 @@ bool HeifHwDecoderFlow::InputParser::ParseGridInfo(GridInfo& gridInfo)
 
     if (vec[GRID_FLAG].find(NO_GRID_INDICATOR) != string::npos) {
         gridInfo.enableGrid = false;
-        gridInfo.cols = 0;
-        gridInfo.rows = 0;
-        gridInfo.tileWidth = 0;
-        gridInfo.tileHeight = 0;
+        gridInfo.cols = 1;
+        gridInfo.rows = 1;
+        gridInfo.tileWidth = gridInfo.displayWidth;
+        gridInfo.tileHeight = gridInfo.displayHeight;
     } else {
         IF_TRUE_RETURN_VAL_WITH_MSG(vec.size() < MAX_MAIN_SEG_CNT, false,
                                     "invalid source: %{public}s", source_.c_str());
@@ -172,9 +172,11 @@ bool HeifHwDecoderFlow::Run(const CommandOpt& opt)
     ret = ret && AllocOutput(opt.pixelFormat);
     ret = ret && DoDecode();
     if (ret) {
-        LOGI("demo succeed");
+        LOGI("run testcase OK: --pixelFormat %{public}d -i %{public}s",
+             static_cast<int>(opt.pixelFormat), opt.inputPath.c_str());
     } else {
-        LOGE("demo failed");
+        LOGE("run testcase FAIL: --pixelFormat %{public}d -i %{public}s",
+             static_cast<int>(opt.pixelFormat), opt.inputPath.c_str());
     }
     return ret;
 }
@@ -201,7 +203,9 @@ bool HeifHwDecoderFlow::AllocOutput(UserPixelFormat userPixelFormat)
         return false;
     }
     GraphicPixelFormat pixelFmt = iter->second;
-    output_ = hwDecoder_.AllocateOutputBuffer(gridInfo_.displayWidth, gridInfo_.displayHeight, pixelFmt);
+    output_ = hwDecoder_.AllocateOutputBuffer(gridInfo_.tileWidth * gridInfo_.cols,
+                                              gridInfo_.tileHeight * gridInfo_.rows,
+                                              pixelFmt);
     if (output_ == nullptr) {
         LOGE("failed to alloc output");
         return false;

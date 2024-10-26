@@ -402,6 +402,11 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
 
     if (context->status == SUCCESS) {
         result[NUM_1] = valueParam;
+    } else if (context->errMsgArray.size() > 0) {
+        auto iter = context->errMsgArray.find(IMAGE_DECODE_FAILED);
+        if (iter != context->errMsgArray.end()) {
+            ImageNapiUtils::CreateErrorObj(env, result[NUM_0], iter->first, iter->second);
+        }
     } else if (context->errMsg.size() > 0) {
         napi_create_string_utf8(env, context->errMsg.c_str(), NAPI_AUTO_LENGTH, &result[NUM_0]);
     } else {
@@ -423,9 +428,11 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
     }
 
     napi_delete_async_work(env, context->work);
-
-    delete context;
-    context = nullptr;
+    
+    if (context != nullptr) {
+        delete context;
+        context = nullptr;
+    }
 }
 
 static void ImageSourceCallbackWithErrorObj(napi_env env,
@@ -2813,10 +2820,6 @@ static void CreatePictureExecute(napi_env env, void *data)
         context->status = ERROR;
     }
 
-    if (context->status != SUCCESS) {
-        context->errMsg = "Create Picture error";
-        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "Create Picture error.");
-    }
     IMAGE_LOGD("CreatePictureExecute OUT");
 }
 
@@ -2829,6 +2832,8 @@ static void CreatePictureComplete(napi_env env, napi_status status, void *data)
     if (context->status == SUCCESS) {
         result = PictureNapi::CreatePicture(env, context->rPicture);
     } else {
+        std::pair<int32_t, std::string> errorMsg(static_cast<int32_t>(IMAGE_DECODE_FAILED), "Create Picture error");
+        context->errMsgArray.insert(errorMsg);
         napi_get_undefined(env, &result);
     }
     IMAGE_LOGD("CreatePictureComplete OUT");
@@ -2906,9 +2911,6 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
             return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
                 "DecodingOptionsForPicture mismatch");
         }
-    } else {
-        IMAGE_LOGE("argCount mismatch");
-        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Create Picture argCount mismatch.");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

@@ -122,9 +122,11 @@ ssize_t BufferMetadataStream::Write(uint8_t *data, ssize_t size)
     }
 
     // Copy the new data into the buffer
-    if (EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size)) {
-        IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
-        return -1;
+    if (data != nullptr) {
+        if (EOK != memcpy_s(buffer_ + currentOffset_, capacity_ - currentOffset_, data, size)) {
+            IMAGE_LOGE("BufferMetadataStream::Write failed, memcpy error");
+            return -1;
+        }
     }
 
     // Update the current offset and buffer size

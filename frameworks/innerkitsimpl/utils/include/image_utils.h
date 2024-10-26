@@ -36,12 +36,13 @@ public:
     static bool GetFileSize(const int fd, size_t &size);
     static bool GetInputStreamSize(std::istream &inputStream, size_t &size);
     static int32_t GetPixelBytes(const PixelFormat &pixelFormat);
-    static int32_t GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format);
+    static int32_t GetRowDataSizeByPixelFormat(const int32_t &width, const PixelFormat &format);
     static bool PathToRealPath(const std::string &path, std::string &realPath);
     static bool FloatCompareZero(float src);
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
     static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
     static bool IsFormatSupportDma(const PixelFormat &format);
