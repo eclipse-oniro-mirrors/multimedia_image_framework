@@ -2980,7 +2980,6 @@ napi_value PixelMapNapi::Translate(napi_env env, napi_callback_info info)
     nVal.argc = NUM_3;
     napi_value argValue[NUM_3] = {0};
     nVal.argv = argValue;
-    IMAGE_LOGD("Translate IN");
     if (!prepareNapiEnv(env, info, &nVal)) {
         return nVal.result;
     }
@@ -3206,7 +3205,6 @@ napi_value PixelMapNapi::Flip(napi_env env, napi_callback_info info)
     nVal.argc = NUM_3;
     napi_value argValue[NUM_3] = {0};
     nVal.argv = argValue;
-    IMAGE_LOGD("Flip IN");
     if (!prepareNapiEnv(env, info, &nVal)) {
         return nVal.result;
     }
@@ -3235,8 +3233,7 @@ napi_value PixelMapNapi::Flip(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_BUILD_ERROR(nVal.context->nConstructor->GetPixelNapiEditable(),
         BuildContextError(env, nVal.context->error, "pixelmap has crossed threads . Flip failed",
         ERR_RESOURCE_UNAVAILABLE), IMG_CREATE_CREATE_ASYNC_WORK(env, nVal.status, "FlipGeneralError",
-        [](napi_env env, void *data) {}, GeneralErrorComplete, nVal.context, nVal.context->work),
-        nVal.result);
+        [](napi_env env, void *data) {}, GeneralErrorComplete, nVal.context, nVal.context->work), nVal.result);
     napi_value _resource = nullptr;
     napi_create_string_utf8(env, "Flip", NAPI_AUTO_LENGTH, &_resource);
     nVal.status = napi_create_async_work(env, nullptr, _resource,
