@@ -55,6 +55,8 @@ public:
 
     void InferAllFullBoxVersion();
 
+    static std::shared_ptr<HeifBox> MakeBox(uint32_t boxType);
+
     template<typename T>
     std::shared_ptr<T> GetChild(uint32_t boxType) const
     {
