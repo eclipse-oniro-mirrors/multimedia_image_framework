@@ -707,6 +707,7 @@ static std::shared_ptr<ImageSource> GetImageSourceFromNapi(napi_env env, napi_va
 {
     if (env == nullptr || value == nullptr) {
         IMAGE_LOGE("GetImageSourceFromNapi input is null");
+        return nullptr;
     }
     std::unique_ptr<ImageSourceNapi> imageSourceNapi = std::make_unique<ImageSourceNapi>();
     napi_status status = napi_unwrap(env, value, reinterpret_cast<void**>(&imageSourceNapi));

@@ -899,7 +899,7 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return res;
     }
     SkCodec::Result ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_);
-    if (ret != SkCodec::kSuccess && ResetCodec()) {
+    if (ret != SkCodec::kSuccess && ResetCodec() && skEncodeFormat != SkEncodedImageFormat::kHEIF) {
         ret = codec_->getPixels(dstInfo_, dstBuffer, rowStride, &dstOptions_); // Try again
     }
     if (ret != SkCodec::kSuccess) {
