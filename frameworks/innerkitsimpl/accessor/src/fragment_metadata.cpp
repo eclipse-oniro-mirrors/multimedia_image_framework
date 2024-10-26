@@ -61,6 +61,10 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
         IMAGE_LOGE("Key is not supported.");
         return false;
     }
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("SetValue: properties_ is nullptr");
+        return false;
+    }
     uint32_t casted;
     if (!ImageUtils::StrToUint32(value, casted)) {
         IMAGE_LOGE("Invalid value: %{public}s.", value.c_str());
@@ -133,6 +137,10 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
         return nullptr;
     }
     if (size > MAX_FRAGMENT_MAP_META_COUNT) {
+        return nullptr;
+    }
+    if (fragmentMetadataPtr->properties_ == nullptr) {
+        IMAGE_LOGE("Unmarshalling: fragmentMetadataPtr->properties_ is nullptr");
         return nullptr;
     }
     for (uint64_t i = 0; i < size; ++i) {

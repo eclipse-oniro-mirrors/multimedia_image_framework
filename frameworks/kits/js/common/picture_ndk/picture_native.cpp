@@ -84,7 +84,7 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
         return IMAGE_UNSUPPORTED_OPERATION;
     }
     auto mainPixelmapNative = std::make_unique<OH_PixelmapNative>(std::move(pixelPtrTmp));
-    if (mainPixelmapNative == nullptr || !mainPixelmapNative->GetInnerPixelmap()) {
+    if (mainPixelmapNative.get() == nullptr || !mainPixelmapNative->GetInnerPixelmap()) {
         return IMAGE_ALLOC_FAILED;
     }
     *mainPixelmap = mainPixelmapNative.release();

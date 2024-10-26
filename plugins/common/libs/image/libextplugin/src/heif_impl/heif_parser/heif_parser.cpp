@@ -918,6 +918,9 @@ void HeifParser::SetTiffOffset()
     if (tiffOffset_ != 0) {
         return;
     }
+    if (GetPrimaryImage() == nullptr) {
+        return;
+    }
     auto metadataList = GetPrimaryImage()->GetAllMetadata();
     heif_item_id exifId = 0;
     for (auto metadata : metadataList) {

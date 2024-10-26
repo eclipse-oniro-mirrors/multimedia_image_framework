@@ -218,6 +218,9 @@ STATIC_EXEC_FUNC(CreateAuxiliaryPicture)
     opts.size = context->size;
     opts.editable = true;
     auto colors = static_cast<uint32_t*>(context->arrayBuffer);
+    if (colors == nullptr) {
+        return;
+    }
     auto tmpPixelmap = PixelMap::Create(colors, context->arrayBufferSize, opts);
     std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
     auto picture = AuxiliaryPicture::Create(pixelmap, context->type, context->size);
