@@ -472,6 +472,9 @@ void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, ui
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+            if (!sbBuffer) {
+                return;
+            }
             totalSize = static_cast<int32_t>(sbBuffer->GetSize());
         } else {
             totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
