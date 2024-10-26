@@ -43,7 +43,7 @@ public:
     bool Marshalling(Parcel &parcel) const override;
     static ExifMetadata *Unmarshalling(Parcel &parcel);
     static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
-    virtual MetadataType GetType() const override
+    MetadataType GetType() const override
     {
         return MetadataType::EXIF;
     }

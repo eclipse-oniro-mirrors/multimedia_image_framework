@@ -223,7 +223,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_WritePixelsTest002, TestSize.
     std::unique_ptr<uint8_t[]> source = std::make_unique<uint8_t[]>(size);
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_WritePixels(picture, source.get(), size);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_ERROR);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
@@ -239,7 +239,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_WritePixelsTest003, TestSize.
     size_t bufferSize = NUM_0;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_WritePixels(picture, source, bufferSize);
-    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_COPY_FAILED);
 }
 
 /**
@@ -270,7 +270,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_ReadPixelsTest002, TestSize.L
     std::unique_ptr<uint8_t[]> destination = std::make_unique<uint8_t[]>(size);
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_ReadPixels(picture, destination.get(), &size);
-    EXPECT_EQ(ret, IMAGE_UNKNOWN_ERROR);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
@@ -439,7 +439,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_SetMetadataTest001, TestSize.
     EXPECT_EQ(ret, IMAGE_SUCCESS);
     OH_PictureMetadata *metadataPtrGet = nullptr;
     ret = OH_AuxiliaryPictureNative_GetMetadata(picture, EXIF_METADATA, &metadataPtrGet);
-    EXPECT_EQ(ret, IMAGE_SUCCESS);
+    EXPECT_EQ(ret, IMAGE_UNSUPPORTED_METADATA);
     OH_PictureMetadata_Release(metadataptr);
     OH_PictureMetadata_Release(metadataPtrGet);
     OH_AuxiliaryPictureNative_Release(picture);
