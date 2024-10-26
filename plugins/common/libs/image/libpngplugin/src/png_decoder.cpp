@@ -554,6 +554,9 @@ void PngDecoder::PngErrorExit(png_structp pngPtr, png_const_charp message)
         IMAGE_LOGE("ErrorExit png_structp or error message is null.");
         return;
     }
+    if (png_jmpbuf(pngPtr) == nullptr) {
+        return;
+    }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngPtr));
     if (jmpBuf == nullptr) {
         IMAGE_LOGE("jmpBuf exception.");
@@ -727,6 +730,9 @@ uint32_t PngDecoder::ReadIncrementalHead(InputDataStream *stream, PngImageInfo &
     }
     stream->Seek(pos);
     // set the exception handle
+    if (png_jmpbuf(pngStructPtr_) == nullptr) {
+        return ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
         IMAGE_LOGE("read incremental head PNG decode head exception.");
@@ -909,6 +915,9 @@ uint32_t PngDecoder::IncrementalReadRows(InputDataStream *stream)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     // set the exception handle
+    if (png_jmpbuf(pngStructPtr_) == nullptr) {
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
         IMAGE_LOGE("[IncrementalReadRows]PNG decode exception.");
@@ -1054,6 +1063,9 @@ uint32_t PngDecoder::ConfigInfo(const PixelDecodeOptions &opts)
     }
 
     // get the libpng interface exception.
+    if (png_jmpbuf(pngStructPtr_) == nullptr) {
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
         IMAGE_LOGE("config decoding info fail.");
@@ -1068,6 +1080,9 @@ uint32_t PngDecoder::DoOneTimeDecode(DecodeContext &context)
     if (idatLength_ <= 0) {
         IMAGE_LOGE("normal decode the image source incomplete.");
         return ERR_IMAGE_SOURCE_DATA_INCOMPLETE;
+    }
+    if (png_jmpbuf(pngStructPtr_) == nullptr) {
+        return ERR_IMAGE_DECODE_ABNORMAL;
     }
     jmp_buf *jmpBuf = &(png_jmpbuf(pngStructPtr_));
     if ((jmpBuf == nullptr) || setjmp(*jmpBuf)) {
