@@ -105,8 +105,8 @@ bool HeifFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
                 continue;
             }
             if (i == MAX_LOOP_SIZE) {
-                // Prevent stack out of bounds reads.
-                IMAGE_LOGI("check heif format failed.");
+                // When numCompatibleBrands is 4, i equals 5, and there is no heif brand, it will be read out of bounds.
+                IMAGE_LOGI("check heif format failed, the number of cycles exceeded expectations");
                 return false;
             }
             auto *brandPtr = static_cast<const uint32_t *>(tmpBuff) + (numCompatibleBrands + i);
