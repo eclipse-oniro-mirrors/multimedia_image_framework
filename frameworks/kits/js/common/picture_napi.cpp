@@ -190,7 +190,10 @@ static ImageType ParserImageType(napi_env env, napi_value argv)
     bool isInstance = false;
     napi_status ret = napi_invalid_arg;
 
-    napi_get_global(env, &global);
+    ret = napi_get_global(env, &global);
+    if (ret != napi_ok) {
+        IMAGE_LOGI("Get global failed!");
+    }
 
     ret = napi_get_named_property(env, global, "PixelMap", &constructor);
     if (ret != napi_ok) {
