@@ -219,11 +219,15 @@ std::vector<uint8_t> HeifHvccBox::GetNaluData(const std::vector<HvccNalArray> &n
 void HeifHvccBox::ProcessBoxData(std::vector<uint8_t> &nalu)
 {
     int naluSize = nalu.size();
+    std::vector<int> indicesToDelete;
     for (int i = UINT16_BYTES_NUM; i < naluSize; ++i) {
         if (nalu[i - UINT8_BYTES_NUM] == 0x00 &&
             nalu[i - SKIP_DOUBLE_DATA_PROCESS_BYTE] == 0x00 && nalu[i] == 0x03) {
-            nalu.erase(nalu.begin() + i);
+            indicesToDelete.push_back(i);
         }
+    }
+    for (auto it = indicesToDelete.rbegin(); it != indicesToDelete.rend(); ++it) {
+        nalu.erase(nalu.begin() + *it);
     }
 }
 
@@ -356,13 +360,12 @@ void HeifHvccBox::ReadGolombCodesForSizeId(std::vector<uint8_t> &nalUnits, int s
 
 void HeifHvccBox::ParseSpsScallListData(std::vector<uint8_t> &nalUnits)
 {
-    std::vector<std::vector<int>> scalingListPredModeFlag;
     for (int sizeId = 0; sizeId < GENERAL_PROFILE_SIZE; ++sizeId) {
         for (int matrixId = 0; matrixId < NUM_TEMPORAL_ID_SIZE;
-             matrixId += ((sizeId == SUB_LAYER_MINUS) ? SUB_LAYER_MINUS : READ_BIT_NUM_FLAG)) {
-            scalingListPredModeFlag[sizeId][matrixId] = GetWord(nalUnits, READ_BIT_NUM_FLAG);
-            if (!scalingListPredModeFlag[sizeId][matrixId]) {
-                scalingListPredModeFlag[sizeId][matrixId] = GetGolombCode(nalUnits);
+            matrixId += ((sizeId == SUB_LAYER_MINUS) ? SUB_LAYER_MINUS : READ_BIT_NUM_FLAG)) {
+            uint8_t tmpFlag = GetWord(nalUnits, READ_BIT_NUM_FLAG);
+            if (!tmpFlag) {
+                GetGolombCode(nalUnits);
             } else {
                 ReadGolombCodesForSizeId(nalUnits, sizeId);
             }
