@@ -197,6 +197,7 @@ int ExifMetadata::HandleMakerNote(std::string &value) const
     if (value.length() > 1 && value[value.length() - 1] == ',') {
         value = value.substr(0, value.length() - 1);
     }
+    mnote_huawei_free_entry_count(ec);
 
     return SUCCESS;
 }
