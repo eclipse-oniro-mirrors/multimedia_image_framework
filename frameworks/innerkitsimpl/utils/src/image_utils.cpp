@@ -308,8 +308,8 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV12:
         case PixelFormat::YCBCR_P010:
         case PixelFormat::YCRCB_P010: {
-            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_PREMUL) {
-                return AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
+            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+                return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
             }
             break;
         }
