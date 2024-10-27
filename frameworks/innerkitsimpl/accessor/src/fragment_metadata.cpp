@@ -31,7 +31,11 @@ const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
 FragmentMetadata::FragmentMetadata() {}
 
 FragmentMetadata::FragmentMetadata(const FragmentMetadata& fragmentMetadata)
-    : properties_(std::make_shared<ImageMetadata::PropertyMap>(*fragmentMetadata.properties_)) {}
+{
+    if (fragmentMetadata.properties_ != nullptr) {
+        properties_ = std::make_shared<ImageMetadata::PropertyMap>(*fragmentMetadata.properties_);
+    }
+}
 
 FragmentMetadata::~FragmentMetadata() {}
 
@@ -42,6 +46,10 @@ static bool IsValidKey(const std::string &key)
 
 int FragmentMetadata::GetValue(const std::string &key, std::string &value) const
 {
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("%{public}s properties is nullptr.", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     if (!IsValidKey(key)) {
         IMAGE_LOGE("Key is not supported.");
         return ERR_IMAGE_INVALID_PARAMETER;
@@ -77,6 +85,10 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
 
 bool FragmentMetadata::RemoveEntry(const std::string &key)
 {
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("%{public}s properties is nullptr.", __func__);
+        return false;
+    }
     if (!IsValidKey(key)) {
         IMAGE_LOGE("Key is not supported.");
         return false;
@@ -104,6 +116,10 @@ std::shared_ptr<ImageMetadata> FragmentMetadata::CloneMetadata()
 
 bool FragmentMetadata::Marshalling(Parcel &parcel) const
 {
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("%{public}s properties is nullptr.", __func__);
+        return false;
+    }
     if (!parcel.WriteUint64(properties_->size())) {
         return false;
     }
