@@ -693,5 +693,47 @@ HWTEST_F(PixelAstcTest, PixelAstcTest026, TestSize.Level3)
     }
     GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest026 end";
 }
+
+/**
+ * @tc.name: PixelAstcTest027
+ * @tc.desc: PixelAstc
+ * @tc.type: FUNC
+ */
+HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest027 start";
+    size_t width = 256; // ASTC width
+    size_t height = 256; // ASTC height
+    // 4 means ASTC compression format is 4x4
+    size_t blockNum = ((width + 4 - 1) / 4) * ((height + 4 - 1) / 4);
+    // 16 means ASTC per block bytes and header bytes
+    size_t size = blockNum * 16 + 16;
+    uint8_t* data = (uint8_t*)malloc(size);
+
+    // 4 means blockSize
+    if (!GenAstcHeader(data, 4, width, height)) {
+        GTEST_LOG_(INFO) << "GenAstcHeader failed";
+    }
+    //  16 means header bytes
+    if (!ConstructAstcBody(data + 16, blockNum, ASTC_BLOCK4X4_FIT_SUT_ASTC_EXAMPLE0)) {
+        GTEST_LOG_(INFO) << "ConstructAstcBody failed";
+    }
+    uint32_t errorCode = 0;
+    SourceOptions opts;
+    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(data, size, opts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+    ASSERT_NE(imageSource.get(), nullptr);
+
+    DecodeOptions decodeOpts;
+    decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    if (data != nullptr) {
+        free(data);
+        data = nullptr;
+    }
+    GTEST_LOG_(INFO) << "PixelAstcTest: PixelAstcTest027 end";
+}
 }
 }

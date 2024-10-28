@@ -577,7 +577,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         }
     }
     if (isAstc_.has_value() && isAstc_.value()) {
-        return CreatePixelMapForASTC(errorCode, opts.fastAstc);
+        return CreatePixelMapForASTC(errorCode, opts);
     }
 #endif
 
@@ -3171,15 +3171,16 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 #endif
 
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
-    const uint8_t *sourceFilePtr)
+    const uint8_t *sourceFilePtr, const DecodeOptions &opts)
 {
 #if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
     ImageInfo pixelAstcInfo;
     pixelAstc->GetImageInfo(pixelAstcInfo);
-    AllocatorType allocatorType = IsSupportAstcZeroCopy(pixelAstcInfo.size) ?
-        AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
+    AllocatorType allocatorType = (opts.allocatorType == AllocatorType::DEFAULT) ?
+        (IsSupportAstcZeroCopy(pixelAstcInfo.size) ? AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC) :
+        opts.allocatorType;
     std::unique_ptr<AbsMemory> dstMemory = MemoryManager::CreateMemory(allocatorType, memoryData);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("ReadFileAndResoveAstc CreateMemory failed");
@@ -3212,7 +3213,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
     return true;
 }
 
-unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, bool fastAstc)
+unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, const DecodeOptions &opts)
 #if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 {
     errorCode = ERROR;
@@ -3246,7 +3247,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, boo
 #else
     size_t astcSize = ImageUtils::GetAstcBytesCount(info);
 #endif
-    if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceFilePtr)) {
+    if (!ReadFileAndResoveAstc(fileSize, astcSize, pixelAstc, sourceFilePtr, opts)) {
         IMAGE_LOGE("[ImageSource] astc ReadFileAndResoveAstc failed.");
         return nullptr;
     }
