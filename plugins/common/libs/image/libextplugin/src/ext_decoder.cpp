@@ -403,6 +403,10 @@ bool ExtDecoder::GetScaledSize(int &dWidth, int &dHeight, float &scale)
         finalScale = Max(static_cast<float>(dWidth) / info_.width(),
             static_cast<float>(dHeight) / info_.height());
     }
+    if (codec_ == nullptr) {
+        IMAGE_LOGE("codec is null in GetScaledSize!");
+        return false;
+    }
     auto scaledDimension = codec_->getScaledDimensions(finalScale);
     dWidth = scaledDimension.width();
     dHeight = scaledDimension.height();
@@ -824,6 +828,10 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
         return SUCCESS;
     }
 #endif
+    uint32_t res = PreDecodeCheck(index);
+    if (res != SUCCESS) {
+        return res;
+    }
     context.outInfo.size.width = static_cast<uint32_t>(dstInfo_.width());
     context.outInfo.size.height = static_cast<uint32_t>(dstInfo_.height());
     if (IsHeifToYuvDecode(context)) {
@@ -833,10 +841,6 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     if (IsHeifToSingleHdrDecode(context)) {
         context.isHardDecode = true;
         return DoHeifToSingleHdrDecode(context);
-    }
-    uint32_t res = PreDecodeCheck(index);
-    if (res != SUCCESS) {
-        return res;
     }
     SkEncodedImageFormat skEncodeFormat = codec_->getEncodedFormat();
     PixelFormat format = context.info.pixelFormat;
