@@ -33,7 +33,6 @@ extern "C" {
 #endif
 
 constexpr size_t SIZE_ZERO = 0;
-constexpr int32_t NUM_1 = 1;
 constexpr int32_t IMAGE_BASE = 62980096;
 static constexpr int32_t IMAGE_BASE_19 = 19;
 static constexpr int32_t IMAGE_BASE_16 = 16;
@@ -383,7 +382,7 @@ Image_ErrorCode OH_PackingOptionsForSequence_SetDelayTimeList(OH_PackingOptionsF
     options->delayTimeListLength = delayTimeListLength;
     if (options->frameCount > options->delayTimeListLength) {
         for (uint32_t i = delayTimeListLength; i < options->frameCount; i++) {
-            options->delayTimeList[i] = delayTimeList[options->delayTimeListLength - NUM_1];
+            options->delayTimeList[i] = delayTimeList[options->delayTimeListLength - 1];
         }
         options->delayTimeListLength = options->frameCount;
     }
@@ -585,7 +584,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePack
     if (options->frameCount > options->delayTimeListLength && options->delayTimeListLength != 0) {
         for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
             packOption.delayTimes.push_back(
-                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - NUM_1]));
+                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1]));
         }
     }
     for (uint32_t i = 0; i < options->disposalTypesLength; i++) {
@@ -615,7 +614,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
     if (options->frameCount > options->delayTimeListLength && options->delayTimeListLength != 0) {
         for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
             packOption.delayTimes.push_back(
-                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - NUM_1]));
+                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1]));
         }
     }
     for (uint32_t i = 0; i < options->disposalTypesLength; i++) {

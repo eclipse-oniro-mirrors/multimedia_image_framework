@@ -25,6 +25,9 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 namespace Multimedia {
+
+constexpr int8_t ARGB_8888_BYTES = 4;
+constexpr int32_t OUT_DATA_LENGTH = 1000;
 class ImagePackerNdk2Test : public testing::Test {
 public:
     ImagePackerNdk2Test() {}
@@ -140,22 +143,152 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmap, TestS
 }
 
 /**
- * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence
- * @tc.desc: test OH_ImagePackerNative_PackToDataFromPixelmapSequence
+ * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence001
+ * @tc.desc: test imagePacker is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence, TestSize.Level3)
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence start";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence001 start";
     OH_ImagePackerNative *imagePacker = nullptr;
+
     OH_PackingOptionsForSequence* option = nullptr;
-    OH_PixelmapNative **pixelMaps = nullptr;
-    uint8_t* outData = nullptr;
-    size_t *outDataSize = nullptr;
+    Image_ErrorCode errCode = OH_PackingOptionsForSequence_Create(&option);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(option, nullptr);
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    std::vector<OH_PixelmapNative*> pixelMaps;
+    OH_PixelmapNative* pixelMap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    pixelMaps.push_back(pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMaps.data(), nullptr);
+
+    std::unique_ptr<uint8_t[]> outData = std::make_unique<uint8_t[]>(OUT_DATA_LENGTH);
+    ASSERT_NE(outData.get(), nullptr);
+
+    size_t outDataSize = 0;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
-        pixelMaps, 0, outData, outDataSize);
+        pixelMaps.data(), 0, outData.get(), &outDataSize);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence end";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence001 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence002
+ * @tc.desc: test options is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence002 start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    Image_ErrorCode errCode = OH_ImagePackerNative_Create(&imagePacker);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    OH_PackingOptionsForSequence* option = nullptr;
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    std::vector<OH_PixelmapNative*> pixelMaps;
+    OH_PixelmapNative* pixelMap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    pixelMaps.push_back(pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMaps.data(), nullptr);
+
+    std::unique_ptr<uint8_t[]> outData = std::make_unique<uint8_t[]>(OUT_DATA_LENGTH);
+    ASSERT_NE(outData.get(), nullptr);
+
+    size_t outDataSize = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
+        pixelMaps.data(), 0, outData.get(), &outDataSize);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence001 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence003
+ * @tc.desc: test pixelmapSequence is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence003 start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    Image_ErrorCode errCode = OH_ImagePackerNative_Create(&imagePacker);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    OH_PackingOptionsForSequence* option = nullptr;
+    errCode = OH_PackingOptionsForSequence_Create(&option);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(option, nullptr);
+
+    OH_PixelmapNative **pixelMaps = nullptr;
+
+    std::unique_ptr<uint8_t[]> outData = std::make_unique<uint8_t[]>(OUT_DATA_LENGTH);
+    ASSERT_NE(outData.get(), nullptr);
+
+    size_t outDataSize = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
+        pixelMaps, 0, outData.get(), &outDataSize);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence003 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_PackToDataFromPixelmapSequence004
+ * @tc.desc: test outData is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToDataFromPixelmapSequence004, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence004 start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    Image_ErrorCode errCode = OH_ImagePackerNative_Create(&imagePacker);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    OH_PackingOptionsForSequence* option = nullptr;
+    errCode = OH_PackingOptionsForSequence_Create(&option);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(option, nullptr);
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    std::vector<OH_PixelmapNative*> pixelMaps;
+    OH_PixelmapNative* pixelMap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    pixelMaps.push_back(pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMaps.data(), nullptr);
+
+    uint8_t* outData = nullptr;
+
+    size_t outDataSize = 0;
+    Image_ErrorCode ret = OH_ImagePackerNative_PackToDataFromPixelmapSequence(imagePacker, option,
+        pixelMaps.data(), 0, outData, &outDataSize);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToDataFromPixelmapSequence004 end";
 }
 
 /**
@@ -193,20 +326,101 @@ HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmap, TestS
 }
 
 /**
- * @tc.name: OH_ImagePackerNative_PackToFileFromPixelmapSequence
- * @tc.desc: test OH_ImagePackerNative_PackToFileFromPixelmapSequence
+ * @tc.name: OH_ImagePackerNative_PackToFileFromPixelmapSequence001
+ * @tc.desc: test imagePacker is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmapSequence, TestSize.Level3)
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmapSequence001, TestSize.Level3)
 {
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence start";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence001 start";
     OH_ImagePackerNative *imagePacker = nullptr;
+
     OH_PackingOptionsForSequence* option = nullptr;
+    Image_ErrorCode errCode = OH_PackingOptionsForSequence_Create(&option);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(option, nullptr);
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    std::vector<OH_PixelmapNative*> pixelMaps;
+    OH_PixelmapNative* pixelMap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    pixelMaps.push_back(pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMaps.data(), nullptr);
+
+    int32_t fd = 0;
+    Image_ErrorCode ret =
+        OH_ImagePackerNative_PackToFileFromPixelmapSequence(imagePacker, option, pixelMaps.data(), 0, fd);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence001 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_PackToFileFromPixelmapSequence002
+ * @tc.desc: test option is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmapSequence002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence002 start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    Image_ErrorCode errCode = OH_ImagePackerNative_Create(&imagePacker);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    OH_PackingOptionsForSequence* option = nullptr;
+
+    size_t dataSize = ARGB_8888_BYTES;
+    uint8_t data[] = {0x01, 0x02, 0x03, 0xFF};
+    OH_Pixelmap_InitializationOptions *createOpts;
+    OH_PixelmapInitializationOptions_Create(&createOpts);
+    OH_PixelmapInitializationOptions_SetWidth(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetHeight(createOpts, 1);
+    OH_PixelmapInitializationOptions_SetPixelFormat(createOpts, PIXEL_FORMAT_BGRA_8888);
+    std::vector<OH_PixelmapNative*> pixelMaps;
+    OH_PixelmapNative* pixelMap = nullptr;
+    errCode = OH_PixelmapNative_CreatePixelmap(data, dataSize, createOpts, &pixelMap);
+    pixelMaps.push_back(pixelMap);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(pixelMaps.data(), nullptr);
+
+    int32_t fd = 0;
+    Image_ErrorCode ret =
+        OH_ImagePackerNative_PackToFileFromPixelmapSequence(imagePacker, option, pixelMaps.data(), 0, fd);
+    ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence002 end";
+}
+
+/**
+ * @tc.name: OH_ImagePackerNative_PackToFileFromPixelmapSequence003
+ * @tc.desc: test pixelmapSequence is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImagePackerNdk2Test, OH_ImagePackerNative_PackToFileFromPixelmapSequence003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence003 start";
+    OH_ImagePackerNative *imagePacker = nullptr;
+    Image_ErrorCode errCode = OH_ImagePackerNative_Create(&imagePacker);
+    EXPECT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(imagePacker, nullptr);
+
+    OH_PackingOptionsForSequence* option = nullptr;
+    errCode = OH_PackingOptionsForSequence_Create(&option);
+    ASSERT_EQ(errCode, IMAGE_SUCCESS);
+    ASSERT_NE(option, nullptr);
+
     OH_PixelmapNative **pixelMaps = nullptr;
+
     int32_t fd = 0;
     Image_ErrorCode ret = OH_ImagePackerNative_PackToFileFromPixelmapSequence(imagePacker, option, pixelMaps, 0, fd);
     ASSERT_EQ(ret, IMAGE_BAD_PARAMETER);
-    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence end";
+    GTEST_LOG_(INFO) << "ImagePackerNdk2Test: OH_ImagePackerNative_PackToFileFromPixelmapSequence003 end";
 }
 
 /**

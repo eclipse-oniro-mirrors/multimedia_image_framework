@@ -175,6 +175,7 @@ HWTEST_F(ImageSourceGifExTest, CreatePixelMapList004, TestSize.Level3)
     const SourceOptions opts;
     const std::string inputName = INPUT_PATH + testName;
     auto imageSource = ImageSource::CreateImageSource(inputName, opts, errorCode);
+    ASSERT_NE(imageSource, nullptr);
 
     const DecodeOptions decodeOpts;
     auto pixelMaps = imageSource->CreatePixelMapList(decodeOpts, errorCode);
