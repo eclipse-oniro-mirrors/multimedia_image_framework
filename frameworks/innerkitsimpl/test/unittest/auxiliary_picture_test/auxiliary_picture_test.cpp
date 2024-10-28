@@ -621,8 +621,8 @@ HWTEST_F(AuxiliaryPictureTest, SetMetadata003, TestSize.Level1)
     ASSERT_NE(auxiliaryPicture, nullptr);
     auxiliaryPicture->SetMetadata(MetadataType::EXIF, srcExifMetadata);
     auxiliaryPicture->SetMetadata(MetadataType::FRAGMENT, srcFragmentMetadata);
-    EXPECT_TRUE(auxiliaryPicture->HasMetadata(MetadataType::EXIF));
-    EXPECT_TRUE(auxiliaryPicture->HasMetadata(MetadataType::FRAGMENT));
+    EXPECT_FALSE(auxiliaryPicture->HasMetadata(MetadataType::EXIF));
+    EXPECT_FALSE(auxiliaryPicture->HasMetadata(MetadataType::FRAGMENT));
     std::shared_ptr<ImageMetadata> dstExifMetadata = auxiliaryPicture->GetMetadata(MetadataType::EXIF);
     EXPECT_EQ(dstExifMetadata, nullptr);
     std::shared_ptr<ImageMetadata> dstFragmentMetadata = auxiliaryPicture->GetMetadata(MetadataType::FRAGMENT);

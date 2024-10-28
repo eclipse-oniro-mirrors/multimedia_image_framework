@@ -660,7 +660,7 @@ static bool ParseAuxiliaryPictureInfo(napi_env env, napi_value result, napi_valu
         return false;
     }
 
-    if (!GET_INT32_BY_NAME(root, "rowStride", tmpInt32) && tmpInt32 < 0) {
+    if (!GET_INT32_BY_NAME(root, "rowStride", tmpInt32) || tmpInt32 < 0) {
         IMAGE_LOGI("Invalid rowStride in auxiliaryPictureInfo");
         return false;
     }
