@@ -97,6 +97,15 @@ do \
     } \
 } while (0)
 
+#define NAPI_CHECK_AND_DELETE_REF(env, ref) \
+do \
+{ \
+    if ((env) != nullptr && (ref) != nullptr) { \
+        napi_delete_reference((env), (ref)); \
+        ref = nullptr; \
+    } \
+} while (0)
+
 #define IMG_ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 
 #define GET_BUFFER_BY_NAME(root, name, res, len) ImageNapiUtils::GetBufferByName(env, (root), (name), &(res), &(len))

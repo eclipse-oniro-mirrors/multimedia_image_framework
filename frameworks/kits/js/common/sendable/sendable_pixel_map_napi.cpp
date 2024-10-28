@@ -696,7 +696,7 @@ napi_value SendablePixelMapNapi::CreatePremultipliedSendablePixelMap(napi_env en
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -750,7 +750,7 @@ napi_value SendablePixelMapNapi::CreateUnpremultipliedSendablePixelMap(napi_env 
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -804,7 +804,7 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMap(napi_env env, napi_callb
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1046,7 +1046,7 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMapFromSurface(napi_env env,
         asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1158,7 +1158,7 @@ napi_value SendablePixelMapNapi::Unmarshalling(napi_env env, napi_callback_info 
         UnmarshallingExec, UnmarshallingComplete, asyncContext, asyncContext->work);
 
     if (!IMG_IS_OK(status)) {
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
         return ImageNapiUtils::ThrowExceptionError(
             env, ERROR, "Fail to create async work");
     }
@@ -1338,7 +1338,7 @@ napi_value SendablePixelMapNapi::ReadPixelsToBuffer(napi_env env, napi_callback_
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1445,7 +1445,7 @@ napi_value SendablePixelMapNapi::ReadPixels(napi_env env, napi_callback_info inf
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1545,7 +1545,7 @@ napi_value SendablePixelMapNapi::WritePixels(napi_env env, napi_callback_info in
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1647,7 +1647,7 @@ napi_value SendablePixelMapNapi::WriteBufferToPixels(napi_env env, napi_callback
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -1797,7 +1797,7 @@ napi_value SendablePixelMapNapi::GetImageInfo(napi_env env, napi_callback_info i
         }, GetImageInfoComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -2045,7 +2045,7 @@ napi_value SendablePixelMapNapi::CreateAlphaPixelmap(napi_env env, napi_callback
         }, CreateAlphaPixelmapComplete, asyncContext, asyncContext->work);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -2211,7 +2211,7 @@ napi_value SendablePixelMapNapi::Release(napi_env env, napi_callback_info info)
 
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, {
         IMAGE_LOGE("fail to create async work");
-        napi_delete_reference(env, asyncContext->callbackRef);
+        NAPI_CHECK_AND_DELETE_REF(env, asyncContext->callbackRef);
     });
     return result;
 }
@@ -2312,7 +2312,7 @@ napi_value SendablePixelMapNapi::SetAlpha(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -2430,7 +2430,7 @@ napi_value SendablePixelMapNapi::Scale(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -2545,7 +2545,7 @@ napi_value SendablePixelMapNapi::Translate(napi_env env, napi_callback_info info
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -2660,7 +2660,7 @@ napi_value SendablePixelMapNapi::Rotate(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -2771,7 +2771,7 @@ napi_value SendablePixelMapNapi::Flip(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -2891,7 +2891,7 @@ napi_value SendablePixelMapNapi::Crop(napi_env env, napi_callback_info info)
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
@@ -3124,7 +3124,7 @@ napi_value SendablePixelMapNapi::ApplyColorSpace(napi_env env, napi_callback_inf
         if (nVal.status == napi_ok) {
             nVal.context.release();
         } else {
-            napi_delete_reference(env, nVal.context->callbackRef);
+            NAPI_CHECK_AND_DELETE_REF(env, nVal.context->callbackRef);
         }
     }
     return nVal.result;
