@@ -38,6 +38,7 @@ namespace Media {
 static const uint8_t NUM_2 = 2;
 static const uint8_t NUM_4 = 4;
 static const uint32_t BYTE_PER_PIXEL = 2;
+static const float ROUND_FLOAT_NUMBER = 0.5f;
 
 static const std::map<PixelFormat, AVPixelFormat> FFMPEG_PIXEL_FORMAT_MAP = {
     {PixelFormat::UNKNOWN, AVPixelFormat::AV_PIX_FMT_NONE},
@@ -433,8 +434,8 @@ void PixelYuvExtUtils::ScaleYuv420(float xAxis, float yAxis, const AntiAliasingO
     int srcWidth = yuvInfo.width;
     int srcHeight = yuvInfo.height;
 
-    int32_t dst_width = yuvInfo.width * xAxis;
-    int32_t dst_height = yuvInfo.height * yAxis;
+    int32_t dst_width = (yuvInfo.width * xAxis + ROUND_FLOAT_NUMBER);
+    int32_t dst_height = (yuvInfo.height * yAxis + ROUND_FLOAT_NUMBER);
     uint8_t* dstY = dst + dstStrides.yOffset;
     int dstYStride = static_cast<int>(dstStrides.yStride);
     uint8_t* dstUV = dst + dstStrides.uvOffset;
