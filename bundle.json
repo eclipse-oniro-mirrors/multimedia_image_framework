@@ -61,9 +61,7 @@
           "ets_runtime"
         ],
         "third_party": [
-          "flutter",
-          "bounds_checking_function",
-          "expat"
+          "bounds_checking_function"
         ]
       },
       "build": {

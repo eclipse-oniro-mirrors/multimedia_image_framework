@@ -185,7 +185,6 @@ image_native_ios_include_dirs = [
   "$skia_root/skia/src/ports/skia_ohos",
   "$skia_root/skia/src/ports",
   "$skia_root/skia/src/images",
-  "//third_party/expat/lib",
   "$skia_root/skia/include/private",
   "$skia_root/skia/third_party/externals/freetype/include/freetype",
 
