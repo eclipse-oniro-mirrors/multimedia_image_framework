@@ -2962,6 +2962,10 @@ static void FreeAllExtMemSut(AstcOutInfo &astcInfo)
 
 static bool FillAstcSutExtInfo(AstcOutInfo &astcInfo, SutInInfo &sutInfo)
 {
+    if (g_sutDecSoManager.getExpandInfoFromSutFunc_ == nullptr) {
+        IMAGE_LOGE("[ImageSource] SUT dec getExpandInfoFromSutFunc_ is nullptr!");
+        return false;
+    }
     if (!g_sutDecSoManager.getExpandInfoFromSutFunc_(sutInfo, astcInfo, false)) {
         IMAGE_LOGE("[ImageSource] GetExpandInfoFromSut failed!");
         return false;

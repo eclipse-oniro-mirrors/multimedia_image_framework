@@ -794,6 +794,9 @@ __constant short color_unquant_tables[QUANT_MAX][COLOR_NUM] = {
 
 void Swap(float4* lhs, float4* rhs)
 {
+    if ((lhs == NULL) || (rhs == NULL)) {
+        return;
+    }
     float4 tmp = *lhs;
     *lhs = *rhs;
     *rhs = tmp;
@@ -801,6 +804,9 @@ void Swap(float4* lhs, float4* rhs)
 
 void FindMinMax(float4* texels, float4 ptMean, float4 vecK, float4* e0, float4* e1)
 {
+    if ((texels == NULL) || (e0 == NULL) || (e1 == NULL)) {
+        return;
+    }
     float a = 1e31f; // max float is clipped to 1e31f
     float b = -1e31f; // min float is clipped to -1e31f
     for (int i = START_INDEX; i < BLOCK_SIZE; ++i) {
@@ -821,6 +827,9 @@ void FindMinMax(float4* texels, float4 ptMean, float4 vecK, float4* e0, float4* 
 
 void MaxAccumulationPixelDirection(float4* texels, float4 ptMean, float4* e0, float4* e1, bool hasAlpha)
 {
+    if ((texels == NULL) || (e0 == NULL) || (e1 == NULL)) {
+        return;
+    }
     float4 sumR = (float4)(FLOAT_ZERO);
     float4 sumG = (float4)(FLOAT_ZERO);
     float4 sumB = (float4)(FLOAT_ZERO);
@@ -858,6 +867,9 @@ void MaxAccumulationPixelDirection(float4* texels, float4 ptMean, float4* e0, fl
 
 void EncodeColorNormal(short quantLevel, float4 e0, float4 e1, short* endpointQuantized)
 {
+    if (endpointQuantized == NULL) {
+        return;
+    }
     int4 e0q = (int4)((int)(round(e0.x)), (int)(round(e0.y)),
         (int)(round(e0.z)), (int)(round(e0.w)));
     int4 e1q = (int4)((int)(round(e1.x)), (int)(round(e1.y)),
@@ -874,6 +886,9 @@ void EncodeColorNormal(short quantLevel, float4 e0, float4 e1, short* endpointQu
 
 void DecodeColor(short quantLevel, short endpointQuantized[COLOR_COMPONENT_NUM], float4* e0, float4* e1)
 {
+    if ((endpointQuantized == NULL) || (e0 == NULL) || (e1 == NULL)) {
+        return;
+    }
     (*e0).x = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_R_INDEX]]);
     (*e1).x = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP1_R_INDEX]]);
     (*e0).y = (float)(color_unquant_tables[quantLevel][endpointQuantized[EP0_G_INDEX]]);
@@ -894,6 +909,9 @@ short QuantizeWeight(uint weightRange, float weight)
 void CalculateNormalWeights(int part, PartInfo* partInfo, float4* texels,
     float4 endPoint[END_POINT_NUM], float* projw)
 {
+    if ((partInfo == NULL) || (texels == NULL) || (endPoint == NULL) || (projw == NULL)) {
+        return;
+    }
     int i = START_INDEX;
     float4 vecK = endPoint[EP1_INDEX] - endPoint[EP0_INDEX];
     if (length(vecK) < SMALL_VALUE && !partInfo) {
@@ -932,6 +950,9 @@ void QuantizeWeights(float projw[X_GRIDS * Y_GRIDS], uint weightRange, short* we
 
 void CalculateQuantizedWeights(float4* texels, uint weightRange, float4 endPoint[END_POINT_NUM], short* weights)
 {
+    if ((texels == NULL) || (endPoint == NULL) || (weights == NULL)) {
+        return;
+    }
     float projw[X_GRIDS * Y_GRIDS];
     CalculateNormalWeights(INT_ZERO, NULL, texels, endPoint, projw);
     QuantizeWeights(projw, weightRange, weights);
@@ -939,6 +960,9 @@ void CalculateQuantizedWeights(float4* texels, uint weightRange, float4 endPoint
 
 void Orbits8Ptr(uint4* outputs, uint* bitoffset, uint number, uint bitcount)
 {
+    if ((outputs == NULL) || (bitoffset == NULL)) {
+        return;
+    }
     uint newpos = *bitoffset + bitcount;
     uint nidx = newpos >> 5; // split low bits (5 bits) to get high bits
     uint uidx = *bitoffset >> 5; // split low bits (5 bits) to get high bits
@@ -1546,7 +1570,7 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClFillImage(ClAstcImageOption *imageIn,
     imageIn->stride = stride;
     imageIn->width = width;
     imageIn->height = height;
-    if (AstcClEncImageCheckImageOption(imageIn)) {
+    if (AstcClEncImageCheckImageOption(imageIn) != CL_ASTC_ENC_SUCCESS) {
         IMAGE_LOGE("astc AstcClEncImageCheckImageOption failed!");
         return CL_ASTC_ENC_FAILED;
     }
@@ -1749,12 +1773,16 @@ CL_ASTC_SHARE_LIB_API CL_ASTC_STATUS AstcClEncImage(ClAstcHandle *clAstcHandle,
         IMAGE_LOGE("astc AstcClEncImage clAstcHandle or imageIn or buffer is nullptr!");
         return CL_ASTC_ENC_FAILED;
     }
-    if (AstcClEncImageCheckImageOption(imageIn)) {
+    if (AstcClEncImageCheckImageOption(imageIn) != CL_ASTC_ENC_SUCCESS) {
         IMAGE_LOGE("astc AstcClEncImageCheckImageOption failed!");
         return CL_ASTC_ENC_FAILED;
     }
     GenAstcHeader(buffer, DIM, DIM, imageIn->width, imageIn->height);
     ClAstcObjEnc *encObj = &clAstcHandle->encObj;
+    if (encObj == nullptr) {
+        IMAGE_LOGE("astc AstcClEncImage clAstcHandle encObj is nullptr!");
+        return CL_ASTC_ENC_FAILED;
+    }
     if (ClCreateBufferAndImage(imageIn, clAstcHandle, encObj) != CL_ASTC_ENC_SUCCESS) {
         ReleaseClAstcObj(encObj);
         IMAGE_LOGE("astc ClCreateBufferAndImage failed!");
