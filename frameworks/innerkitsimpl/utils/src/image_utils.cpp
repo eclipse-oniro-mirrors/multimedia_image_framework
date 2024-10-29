@@ -348,31 +348,6 @@ bool ImageUtils::IsAstc(PixelFormat format)
     return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
-bool ImageUtils::IsWidthAligned(const int32_t &width)
-{
-    return ((static_cast<uint32_t>(width) * NUM_4) & INT_255) == 0;
-}
-
-bool ImageUtils::IsSizeSupportDma(const Size &size)
-{
-    // Check for overflow risk
-    if (size.width > 0 && size.height > INT_MAX / size.width) {
-        return false;
-    }
-    return size.width * size.height >= DMA_SIZE;
-}
-
-bool ImageUtils::IsFormatSupportDma(const PixelFormat &format)
-{
-    return format == PixelFormat::UNKNOWN || format == PixelFormat::RGBA_8888;
-}
-
-bool ImageUtils::Is10Bit(const PixelFormat &format)
-{
-    return format == PixelFormat::RGBA_1010102 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010;
-}
-
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
 {
     if (width == 0 || bytesPerPixel == 0) {
