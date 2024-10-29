@@ -1073,7 +1073,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     rowDataSize_ = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
     if (rowDataSize_ <= 0) {
         IMAGE_LOGE("set imageInfo failed, rowDataSize_ invalid");
-        return ERR_IMAGE_DATA_ABNORMAL;
+        return rowDataSize_ < 0 ? ERR_IMAGE_TOO_LARGE : ERR_IMAGE_DATA_ABNORMAL;
     }
 
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
@@ -1114,9 +1114,10 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    if (SetRowDataSizeForImageInfo(info) != SUCCESS) {
+    uint32_t ret = SetRowDataSizeForImageInfo(info);
+    if (ret != SUCCESS) {
         IMAGE_LOGE("pixel map set rowDataSize error.");
-        return ERR_IMAGE_DATA_ABNORMAL;
+        return ret;
     }
     if (static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(info.size.height) >
         (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
@@ -2122,11 +2123,11 @@ int PixelMap::ReadFileDescriptor(Parcel &parcel)
 
 bool PixelMap::WriteImageInfo(Parcel &parcel) const
 {
-    if (!parcel.WriteInt32(imageInfo_.size.width)) {
+    if (imageInfo_.size.width <= 0 || !parcel.WriteInt32(imageInfo_.size.width)) {
         IMAGE_LOGE("write image info width:[%{public}d] to parcel failed.", imageInfo_.size.width);
         return false;
     }
-    if (!parcel.WriteInt32(imageInfo_.size.height)) {
+    if (imageInfo_.size.height <= 0 || !parcel.WriteInt32(imageInfo_.size.height)) {
         IMAGE_LOGE("write image info height:[%{public}d] to parcel failed.", imageInfo_.size.height);
         return false;
     }
@@ -2181,10 +2182,6 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         return false;
     }
 
-    if (!parcel.WriteInt32(static_cast<int32_t>(rowDataSize_))) {
-        IMAGE_LOGE("write image info rowStride_:[%{public}d] to parcel failed.", rowDataSize_);
-        return false;
-    }
     if (!parcel.WriteUint32(versionId_)) {
         IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
         return false;
@@ -2346,12 +2343,12 @@ bool PixelMap::WriteYuvDataInfoToParcel(Parcel &parcel) const
 bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
-        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.width))) {
-            IMAGE_LOGE("write astcrealSize_.width:[%{public}d] to parcel failed.", astcrealSize_.width);
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcRealSize_.width))) {
+            IMAGE_LOGE("write astcRealSize_.width:[%{public}d] to parcel failed.", astcRealSize_.width);
             return false;
         }
-        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.height))) {
-            IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcRealSize_.height))) {
+            IMAGE_LOGE("write astcRealSize_.height:[%{public}d] to parcel failed.", astcRealSize_.height);
             return false;
         }
     }
@@ -2410,6 +2407,10 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     }
     imgInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
+    if (ImageUtils::GetPixelBytes(imgInfo.pixelFormat) == 0) {
+        IMAGE_LOGE("invalid pixelFormat:0");
+        return false;
+    }
     imgInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map colorSpace:[%{public}d] to parcel.", imgInfo.colorSpace);
     imgInfo.alphaType = static_cast<AlphaType>(parcel.ReadInt32());
@@ -2518,21 +2519,25 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
         InnerSetColorSpace(grColorSpace);
     }
 
-    int32_t rowDataSize = parcel.ReadInt32();
     uint32_t versionId = parcel.ReadUint32();
     SetVersionId(versionId);
     bufferSize = parcel.ReadInt32();
-    int32_t bytesPerPixel = ImageUtils::GetPixelBytes(imgInfo.pixelFormat);
-    if (bytesPerPixel == 0 ||
-        rowDataSize != ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat)) {
-        IMAGE_LOGE("ReadPropertiesFromParcel bytesPerPixel or rowDataSize (%{public}d) invalid", rowDataSize);
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED,
-            "bytesPerPixel or rowDataSize invalid");
+
+    int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat);
+    if (rowDataSize <= 0) {
+        IMAGE_LOGE("ReadPropertiesFromParcel rowDataSize (%{public}d) invalid", rowDataSize);
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "rowDataSize invalid");
         return false;
     }
 
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
-    if (!isAstc && !IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
+    if (isAstc) {
+        Size astcSize;
+        GetAstcRealSize(astcSize);
+        ImageInfo astcImgInfo = {astcSize, imgInfo.pixelFormat};
+        expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
+    }
+    if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
         (expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
         static_cast<uint64_t>(bufferSize) != expectedBufferSize)) {
         IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid, expect: %{public}llu, actual: %{public}d",
@@ -2827,14 +2832,10 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_BASEDENSITY);
     WriteVarint(buff, GetVarintLen(imageInfo_.baseDensity));
     WriteVarint(buff, imageInfo_.baseDensity);
-    WriteUint8(buff, TLV_IMAGE_ALLOCATORTYPE);
-    AllocatorType tmpAllocatorType = AllocatorType::HEAP_ALLOC;
-    WriteVarint(buff, GetVarintLen(static_cast<int32_t>(tmpAllocatorType)));
-    WriteVarint(buff, static_cast<int32_t>(tmpAllocatorType));
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
-    if (isUnMap_ || data == nullptr || dataSize > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
+    if (isUnMap_ || data == nullptr || dataSize > MAX_IMAGEDATA_SIZE) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
         IMAGE_LOGE("pixel map tlv encode fail: no data or invalid dataSize, isUnMap %{public}d", isUnMap_);
@@ -2846,7 +2847,7 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     return true;
 }
 
-void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
+void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data)
 {
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
@@ -2874,10 +2875,6 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
             case TLV_IMAGE_BASEDENSITY:
                 info.baseDensity = ReadVarint(buff, cursor);
                 break;
-            case TLV_IMAGE_ALLOCATORTYPE:
-                type = ReadVarint(buff, cursor);
-                IMAGE_LOGI("pixel alloctype: %{public}d", type);
-                break;
             case TLV_IMAGE_DATA:
                 size = len;
                 if (data != nullptr) {
@@ -2902,9 +2899,8 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     ImageInfo imageInfo;
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
-    int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
-    ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data);
-    if (data == nullptr || allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
+    ReadTlvAttr(buff, imageInfo, dataSize, &data);
+    if (data == nullptr) {
         delete pixelMap;
         IMAGE_LOGE("pixel map tlv decode fail: no data or invalid allocType");
         return nullptr;
@@ -2922,7 +2918,7 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
         IMAGE_LOGE("pixel map tlv decode fail: dataSize not match");
         return nullptr;
     }
-    pixelMap->SetPixelsAddr(data, nullptr, dataSize, static_cast<AllocatorType>(allocType), nullptr);
+    pixelMap->SetPixelsAddr(data, nullptr, dataSize, AllocatorType::HEAP_ALLOC, nullptr);
     return pixelMap;
 }
 

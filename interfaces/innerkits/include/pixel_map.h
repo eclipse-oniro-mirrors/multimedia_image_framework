@@ -135,11 +135,11 @@ public:
     NATIVEEXPORT virtual int32_t GetHeight();
     NATIVEEXPORT void GetAstcRealSize(Size &size)
     {
-        size = astcrealSize_;
+        size = astcRealSize_;
     }
     NATIVEEXPORT void SetAstcRealSize(Size size)
     {
-        astcrealSize_ = size;
+        astcRealSize_ = size;
     }
     NATIVEEXPORT void GetTransformData(TransformData &transformData);
     NATIVEEXPORT void SetTransformData(TransformData transformData);
@@ -477,7 +477,7 @@ protected:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
-    static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
+    static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;
@@ -509,7 +509,7 @@ protected:
     uint32_t uniqueId_ = 0;
     bool isAstc_ = false;
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
-    Size astcrealSize_;
+    Size astcRealSize_;
     std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
     ImageHdrType hdrType_ = static_cast<ImageHdrType>(0);
 
