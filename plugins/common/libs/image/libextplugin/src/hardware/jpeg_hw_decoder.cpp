@@ -314,7 +314,10 @@ bool JpegHardwareDecoder::CopySrcImgToDecodeInputBuffer(ImagePlugin::InputDataSt
         JPEG_HW_LOGE("inputBufferHandle is nullptr");
         return false;
     }
-    bufferMgr_->Mmap(*inputBufferHandle);
+    if (bufferMgr_->Mmap(*inputBufferHandle) == nullptr) {
+        JPEG_HW_LOGE("failed to map input buffer");
+        return false;
+    }
     (void)bufferMgr_->InvalidateCache(*inputBufferHandle);
     srcStream->Seek(0);
     uint32_t readSize = 0;
