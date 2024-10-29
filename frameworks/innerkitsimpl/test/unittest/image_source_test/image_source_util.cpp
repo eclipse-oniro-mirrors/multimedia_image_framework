@@ -35,8 +35,8 @@ using namespace OHOS::ImageSourceUtil;
 
 namespace OHOS {
 namespace ImageSourceUtil {
-constexpr uint32_t NUM_1 = 1;
-constexpr uint32_t NUM_100 = 100;
+constexpr uint32_t NUMBERHINT = 1;
+constexpr uint32_t QUALITY = 100;
 constexpr int64_t BUFFER_SIZE = 2 * 1024 * 1024;
 
 int64_t PackImage(const std::string &filePath, std::unique_ptr<PixelMap> pixelMap)
@@ -44,8 +44,8 @@ int64_t PackImage(const std::string &filePath, std::unique_ptr<PixelMap> pixelMa
     ImagePacker imagePacker;
     PackOption option;
     option.format = "image/jpeg";
-    option.quality = NUM_100;
-    option.numberHint = NUM_1;
+    option.quality = QUALITY;
+    option.numberHint = NUMBERHINT;
     std::set<std::string> formats;
     if (pixelMap == nullptr) {
         IMAGE_LOGE("pixelMap is nullptr");
@@ -68,7 +68,7 @@ int64_t PackImage(std::unique_ptr<ImageSource> imageSource)
     ImagePacker imagePacker;
     PackOption option;
     option.format = "image/jpeg";
-    option.quality = NUM_100;
+    option.quality = QUALITY;
     option.numberHint = 1;
     std::set<std::string> formats;
     if (imageSource == nullptr) {
@@ -99,8 +99,8 @@ int64_t PackImage(const std::string &filePath,
     ImagePacker imagePacker;
     PackOption option;
     option.format = "image/gif";
-    option.quality = NUM_100;
-    option.numberHint = NUM_1;
+    option.quality = QUALITY;
+    option.numberHint = NUMBERHINT;
     std::set<std::string> formats;
     if (pixelMaps == nullptr) {
         IMAGE_LOGE("pixelMap is nullptr");
