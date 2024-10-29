@@ -1533,7 +1533,6 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
     }
 
     std::unique_lock<std::mutex> guard(decodingMutex_);
-
     auto metadataAccessor = MetadataAccessorFactory::Create(fd);
     return ModifyImageProperty(metadataAccessor, key, value);
 }
@@ -1585,10 +1584,12 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
     uint32_t bufferSize = sourceStreamPtr_->GetStreamSize();
     auto bufferPtr = sourceStreamPtr_->GetDataPtr();
     if (bufferPtr != nullptr) {
-        return CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+        uint32_t ret = CreateExifMetadata(bufferPtr, bufferSize, addFlag);
+        if (ret != ERR_MEDIA_MMAP_FILE_CHANGED) {
+            return ret;
+        }
     }
 
-    uint32_t readSize = 0;
     if (bufferSize == 0) {
         IMAGE_LOGE("Invalid buffer size. It's zero. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
@@ -1598,21 +1599,10 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
     }
-
-    uint8_t* tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    uint32_t error = SUCCESS;
+    auto tmpBuffer = ReadSourceBuffer(bufferSize, error);
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("Allocate buffer failed, tmpBuffer is nullptr.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    sourceStreamPtr_->Seek(0);
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
-    sourceStreamPtr_->Seek(savedPosition);
-    if (!retRead) {
-        IMAGE_LOGE("sourceStream read failed.");
-        delete[] tmpBuffer; // Don't forget to delete tmpBuffer if read failed
-        return ERR_IMAGE_SOURCE_DATA;
+        return error;
     }
     uint32_t result = CreateExifMetadata(tmpBuffer, bufferSize, addFlag);
     delete[] tmpBuffer; // Don't forget to delete tmpBuffer after using it
@@ -1621,16 +1611,20 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
 
 uint32_t ImageSource::CreateExifMetadata(uint8_t *buffer, const uint32_t size, bool addFlag)
 {
-    auto metadataAccessor = MetadataAccessorFactory::Create(buffer, size);
+    uint32_t error = SUCCESS;
+    DataInfo dataInfo {buffer, size};
+    auto metadataAccessor = MetadataAccessorFactory::Create(dataInfo, error, BufferMetadataStream::Fix,
+                                                            sourceStreamPtr_->GetOriginalFd(),
+                                                            sourceStreamPtr_->GetOriginalPath());
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("metadataAccessor nullptr return ERR");
-        return ERR_IMAGE_SOURCE_DATA;
+        return error == ERR_MEDIA_MMAP_FILE_CHANGED ? error : ERR_IMAGE_SOURCE_DATA;
     }
 
     uint32_t ret = metadataAccessor->Read();
     if (ret != SUCCESS && !addFlag) {
         IMAGE_LOGD("get metadataAccessor ret %{public}d", ret);
-        return ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
+        return metadataAccessor->IsFileChanged() ? ERR_MEDIA_MMAP_FILE_CHANGED : ERR_IMAGE_DECODE_EXIF_UNSUPPORT;
     }
 
     if (metadataAccessor->Get() == nullptr) {
@@ -2538,6 +2532,35 @@ uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pai
     }
     return SUCCESS;
 }
+
+uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
+{
+    if (bufferSize > MAX_BUFFER_SIZE) {
+        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    auto tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    if (tmpBuffer == nullptr) {
+        IMAGE_LOGE("New buffer failed, bufferSize:%{public}u.", bufferSize);
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    uint32_t savedPosition = sourceStreamPtr_->Tell();
+    sourceStreamPtr_->Seek(0);
+    uint32_t readSize = 0;
+    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
+    sourceStreamPtr_->Seek(savedPosition);
+    if (!retRead) {
+        IMAGE_LOGE("SourceStream read failed.");
+        delete[] tmpBuffer;
+        errorCode = ERR_IMAGE_SOURCE_DATA;
+        return nullptr;
+    }
+    errorCode = SUCCESS;
+    return tmpBuffer;
+}
+
 uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
                                     std::vector<std::pair<uint32_t, uint32_t>> &ranges)
 {
@@ -2560,30 +2583,21 @@ uint32_t ImageSource::GetFilterArea(const std::vector<std::string> &exifKeys,
         }
         return metadataAccessor->GetFilterArea(exifKeys, ranges);
     }
-    if (bufferSize > MAX_BUFFER_SIZE) {
-        IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
-    auto tmpBuffer = new (std::nothrow) uint8_t[bufferSize];
+    uint32_t error = SUCCESS;
+    auto tmpBuffer = ReadSourceBuffer(bufferSize, error);
     if (tmpBuffer == nullptr) {
-        IMAGE_LOGE("New buffer failed, bufferSize:%{public}u.", bufferSize);
-        return ERR_IMAGE_SOURCE_DATA;
+        return error;
     }
-    uint32_t savedPosition = sourceStreamPtr_->Tell();
-    sourceStreamPtr_->Seek(0);
-    uint32_t readSize = 0;
-    bool retRead = sourceStreamPtr_->Read(bufferSize, tmpBuffer, bufferSize, readSize);
-    sourceStreamPtr_->Seek(savedPosition);
-    if (!retRead) {
-        IMAGE_LOGE("SourceStream read failed.");
-        return ERR_IMAGE_SOURCE_DATA;
-    }
+
     auto metadataAccessor = MetadataAccessorFactory::Create(tmpBuffer, bufferSize);
     if (metadataAccessor == nullptr) {
         IMAGE_LOGD("Create metadataAccessor failed.");
+        delete[] tmpBuffer;
         return ERR_IMAGE_SOURCE_DATA;
     }
-    return metadataAccessor->GetFilterArea(exifKeys, ranges);
+    auto ret = metadataAccessor->GetFilterArea(exifKeys, ranges);
+    delete[] tmpBuffer;
+    return ret;
 }
 
 void ImageSource::SetIncrementalSource(const bool isIncrementalSource)
@@ -4327,15 +4341,13 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
 
     std::set<AuxiliaryPictureType> auxTypes = (opts.desireAuxiliaryPictures.size() > 0) ?
             opts.desireAuxiliaryPictures : ImageUtils::GetAllAuxiliaryPictureType();
-    uint32_t auxErrorCode = SUCCESS;
     if (format == IMAGE_HEIF_FORMAT) {
-        DecodeHeifAuxiliaryPictures(auxTypes, picture, auxErrorCode);
+        DecodeHeifAuxiliaryPictures(auxTypes, picture, errorCode);
     } else if (format == IMAGE_JPEG_FORMAT) {
-        DecodeJpegAuxiliaryPicture(auxTypes, picture, auxErrorCode);
+        DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
     }
-
-    if (auxErrorCode != SUCCESS) {
-        IMAGE_LOGI("Decode auxiliary pictures failed, error code: %{public}u", auxErrorCode);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
     }
     return picture;
 }
@@ -4353,8 +4365,8 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
             IMAGE_LOGE("The auxiliary picture type does not exist! Type: %{public}d", auxType);
             continue;
         }
-        auto auxiliaryPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
-            sourceHdrType_, auxType, IMAGE_HEIF_FORMAT, mainDecoder_, errorCode);
+        auto auxiliaryPicture = AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(
+            sourceHdrType_, auxType, mainDecoder_, errorCode);
         if (auxiliaryPicture == nullptr) {
             IMAGE_LOGE("Generate heif auxiliary picture failed! Type: %{public}d, errorCode: %{public}d",
                 auxType, errorCode);
@@ -4365,93 +4377,54 @@ void ImageSource::DecodeHeifAuxiliaryPictures(
     }
 }
 
-bool ImageSource::TryDecodeJpegGainMap(std::unique_ptr<Picture> &picture, uint8_t *streamBuffer, uint32_t streamSize,
-    uint32_t &errorCode)
-{
-    if (streamBuffer == nullptr || streamSize == 0) {
-        IMAGE_LOGE("TryDecodeJpegGainMap: streamBuffer or streamSize is null");
-        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
-        return false;
-    }
-    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
-    if (gainMapOffset == 0 || gainMapOffset > streamSize) {
-        IMAGE_LOGE("TryDecodeJpegGainMap: Gain map offset is invalid! offset: %{public}u, streamSize: %{public}u",
-                   gainMapOffset, streamSize);
-        return false;
-    }
-
-    std::unique_ptr<InputDataStream> gainMapStream =
-        BufferSourceStream::CreateSourceStream((streamBuffer + gainMapOffset), (streamSize - gainMapOffset));
-    if (gainMapStream == nullptr) {
-        IMAGE_LOGE("Create auxiliary stream fail, gainMapOffset is %{public}u", gainMapOffset);
-        return false;
-    }
-    auto jpegGainMapDecoder = std::unique_ptr<AbsImageDecoder>(
-        DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *gainMapStream, errorCode));
-    if (jpegGainMapDecoder == nullptr) {
-        IMAGE_LOGE("TryDecodeJpegGainMap create gainmap decoder fail, gainmap offset is %{public}d", gainMapOffset);
-        return false;
-    }
-
-    auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
-        sourceHdrType_, AuxiliaryPictureType::GAINMAP, IMAGE_JPEG_FORMAT, jpegGainMapDecoder, errorCode);
-    if (auxPicture == nullptr) {
-        IMAGE_LOGE("Generate jpeg auxiliary picture failed!, errorCode: %{public}d", errorCode);
-        return false;
-    }
-    auxPicture->GetContentPixel()->SetEditable(true);
-    picture->SetAuxiliaryPicture(auxPicture);
-    return true;
-}
-
 void ImageSource::DecodeJpegAuxiliaryPicture(
     std::set<AuxiliaryPictureType> &auxTypes, std::unique_ptr<Picture> &picture, uint32_t &errorCode)
 {
     uint8_t *streamBuffer = sourceStreamPtr_->GetDataPtr();
     uint32_t streamSize = sourceStreamPtr_->GetStreamSize();
-    if (sourceHdrType_ > ImageHdrType::SDR) {
-        if (auxTypes.find(AuxiliaryPictureType::GAINMAP) != auxTypes.end()) {
-            if (TryDecodeJpegGainMap(picture, streamBuffer, streamSize, errorCode)) {
-                IMAGE_LOGI("TryDecodeJpegGainMap success!");
-                auxTypes.erase(AuxiliaryPictureType::GAINMAP);
-            } else {
-                IMAGE_LOGI("TryDecodeJpegGainMap failed!");
-            }
-        }
-    }
-    uint32_t mpfOffset = 0;
     auto jpegMpfParser = std::make_unique<JpegMpfParser>();
-    if (!jpegMpfParser->CheckMpfOffset(streamBuffer, streamSize, mpfOffset)) {
-        IMAGE_LOGE("Jpeg calculate mpf offset failed! mpfOffset: %{public}u", mpfOffset);
-        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
+    if (!jpegMpfParser->ParsingAuxiliaryPictures(streamBuffer, streamSize, false)) {
+        IMAGE_LOGE("Jpeg parse auxiliary pictures failed!");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-    if (!jpegMpfParser->Parsing(streamBuffer + mpfOffset, streamSize - mpfOffset)) {
-        IMAGE_LOGE("Jpeg parse mpf data failed!");
-        errorCode = ERR_IMAGE_DECODE_HEAD_ABNORMAL;
-        return;
+    if (sourceHdrType_ > ImageHdrType::SDR) {
+        SingleJpegImage gainmapImage = {
+            .auxType = AuxiliaryPictureType::GAINMAP,
+            .auxTagName = AUXILIARY_TAG_GAINMAP,
+            .offset = mainDecoder_->GetGainMapOffset(),
+            .size = streamSize - mainDecoder_->GetGainMapOffset(),
+        };
+        jpegMpfParser->images_.push_back(gainmapImage);
     }
 
-    uint32_t preOffset = mpfOffset + JPEG_MPF_IDENTIFIER_SIZE;
+    MainPictureInfo mainInfo;
+    mainInfo.hdrType = sourceHdrType_;
+    picture->GetMainPixel()->GetImageInfo(mainInfo.imageInfo);
     for (auto &auxInfo : jpegMpfParser->images_) {
-        if (auxTypes.find(auxInfo.auxType) != auxTypes.end()) {
-            IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
-            std::unique_ptr<InputDataStream> auxStream =
-                BufferSourceStream::CreateSourceStream((streamBuffer + preOffset + auxInfo.offset), auxInfo.size);
-            if (auxStream == nullptr) {
-                IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
-                continue;
-            }
-            auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
-                DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
-            auto auxPicture = AuxiliaryGenerator::GenerateAuxiliaryPicture(
-                sourceHdrType_, auxInfo.auxType, IMAGE_JPEG_FORMAT, auxDecoder, errorCode);
-            if (auxPicture == nullptr) {
-                IMAGE_LOGE("Generate jepg auxiliary picture failed!, errorCode: %{public}d", errorCode);
-            } else {
-                auxPicture->GetContentPixel()->SetEditable(true);
-                picture->SetAuxiliaryPicture(auxPicture);
-            }
+        if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
+            continue;
+        }
+        IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
+        std::unique_ptr<InputDataStream> auxStream =
+            BufferSourceStream::CreateSourceStream((streamBuffer + auxInfo.offset), auxInfo.size);
+        if (auxStream == nullptr) {
+            IMAGE_LOGE("Create auxiliary stream fail, auxiliary offset is %{public}u", auxInfo.offset);
+            continue;
+        }
+        auto auxDecoder = std::unique_ptr<AbsImageDecoder>(
+            DoCreateDecoder(InnerFormat::IMAGE_EXTENDED_CODEC, pluginServer_, *auxStream, errorCode));
+        uint32_t auxErrorCode = ERROR;
+        auto auxPicture = AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+            mainInfo, auxInfo.auxType, auxStream, auxDecoder, auxErrorCode);
+        if (auxPicture != nullptr) {
+            AuxiliaryPictureInfo auxPictureInfo = auxPicture->GetAuxiliaryPictureInfo();
+            auxPictureInfo.jpegTagName = auxInfo.auxTagName;
+            auxPicture->SetAuxiliaryPictureInfo(auxPictureInfo);
+            auxPicture->GetContentPixel()->SetEditable(true);
+            picture->SetAuxiliaryPicture(auxPicture);
+        } else {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed!, error: %{public}d", auxErrorCode);
         }
     }
 }

@@ -15,11 +15,13 @@
 
 #include "auxiliary_generator.h"
 #include "abs_image_decoder.h"
+#include "fragment_metadata.h"
 #include "hdr_type.h"
 #include "image_log.h"
 #include "image_utils.h"
 #include "image_mime_type.h"
 #include "image_source.h"
+#include "jpeg_mpf_parser.h"
 #include "metadata.h"
 #include "pixel_map.h"
 #include "pixel_yuv.h"
@@ -33,14 +35,40 @@ namespace OHOS {
 namespace Media {
 using namespace ImagePlugin;
 
-static const uint32_t FIRST_FRAME = 0;
+static constexpr uint32_t FIRST_FRAME = 0;
+static constexpr int32_t DEFAULT_SCALE_DENOMINATOR = 1;
+static constexpr int32_t DEPTH_SCALE_DENOMINATOR = 4;
+static constexpr int32_t LINEAR_SCALE_DENOMINATOR = 4;
 
 static inline bool IsSizeVailed(const Size &size)
 {
     return (size.width != 0 && size.height != 0);
 }
 
-static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo)
+static inline bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
+{
+    return (type == AuxiliaryPictureType::GAINMAP || type == AuxiliaryPictureType::UNREFOCUS_MAP ||
+            type == AuxiliaryPictureType::FRAGMENT_MAP);
+}
+
+static int32_t GetAuxiliaryPictureDenominator(AuxiliaryPictureType type)
+{
+    int32_t denominator = DEFAULT_SCALE_DENOMINATOR;
+    switch (type) {
+        case AuxiliaryPictureType::DEPTH_MAP:
+            denominator = DEPTH_SCALE_DENOMINATOR;
+            break;
+        case AuxiliaryPictureType::LINEAR_MAP:
+            denominator = LINEAR_SCALE_DENOMINATOR;
+            break;
+        default:
+            break;
+    }
+    return denominator;
+}
+
+static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decoder, PlImageInfo &plInfo,
+                                         AuxiliaryPictureType type)
 {
     Size size;
     uint32_t errorCode = decoder->GetImageSize(FIRST_FRAME, size);
@@ -49,7 +77,8 @@ static uint32_t SetAuxiliaryDecodeOption(std::unique_ptr<AbsImageDecoder> &decod
     }
     PixelDecodeOptions plOptions;
     plOptions.desiredSize = size;
-    plOptions.desiredPixelFormat = PixelFormat::RGBA_8888;
+    bool useF16Format = (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP);
+    plOptions.desiredPixelFormat = useF16Format ? PixelFormat::RGBA_F16 : PixelFormat::RGBA_8888;
     errorCode = decoder->SetDecodeOptions(FIRST_FRAME, plOptions, plInfo);
     return errorCode;
 }
@@ -90,14 +119,16 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
 #endif
 }
 
-static ImageInfo MakeImageInfo(int width, int height, PixelFormat format, AlphaType alphaType, ColorSpace colorSpace)
+static ImageInfo MakeImageInfo(const Size &size, PixelFormat format, AlphaType alphaType,
+    ColorSpace colorSpace, const std::string &encodedFormat)
 {
     ImageInfo info;
-    info.size.width = width;
-    info.size.height = height;
+    info.size.width = size.width;
+    info.size.height = size.height;
     info.pixelFormat = format;
     info.alphaType = alphaType;
     info.colorSpace = colorSpace;
+    info.encodedFormat = encodedFormat;
     return info;
 }
 
@@ -115,7 +146,7 @@ static AuxiliaryPictureInfo MakeAuxiliaryPictureInfo(AuxiliaryPictureType type,
 }
 
 static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
-    std::unique_ptr<AbsImageDecoder> &decoder, uint32_t &errorCode)
+    std::unique_ptr<AbsImageDecoder> &decoder, const std::string &encodedFormat, uint32_t &errorCode)
 {
     std::shared_ptr<PixelMap> pixelMap;
     if (ImageSource::IsYuvFormat(context.pixelFormat)) {
@@ -132,8 +163,8 @@ static std::shared_ptr<PixelMap> CreatePixelMapByContext(DecodeContext &context,
         return nullptr;
     }
 
-    ImageInfo imageinfo = MakeImageInfo(context.outInfo.size.width, context.outInfo.size.height,
-                                        context.pixelFormat, context.info.alphaType, context.colorSpace);
+    ImageInfo imageinfo = MakeImageInfo(context.outInfo.size, context.pixelFormat,
+                                        context.info.alphaType, context.colorSpace, encodedFormat);
     pixelMap->SetImageInfo(imageinfo, true);
 
     PixelMapAddrInfos addrInfos;
@@ -164,49 +195,121 @@ static uint32_t DecodeHdrMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImage
     return SUCCESS;
 }
 
-static uint32_t DecodeMetadata(ImageHdrType hdrType, std::unique_ptr<AbsImageDecoder> &extDecoder,
-    AuxiliaryPictureType type, std::unique_ptr<AuxiliaryPicture> &auxPicture)
+static uint32_t DecodeHeifFragmentMetadata(std::unique_ptr<AbsImageDecoder> &extDecoder,
+    std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
-    IMAGE_LOGD("Decode metadata entry, auxiliary picture type: %{public}d", type);
-    uint32_t errorCode = ERROR;
-    switch (type) {
-        case AuxiliaryPictureType::GAINMAP:
-            errorCode = DecodeHdrMetadata(hdrType, extDecoder, auxPicture);
-            break;
-        case AuxiliaryPictureType::DEPTH_MAP:
-        case AuxiliaryPictureType::UNREFOCUS_MAP:
-        case AuxiliaryPictureType::LINEAR_MAP:
-        case AuxiliaryPictureType::FRAGMENT_MAP:
-            break;
-        default:
-            errorCode = ERR_MEDIA_DATA_UNSUPPORT;
-            break;
+    Rect fragmentRect;
+    if (!extDecoder->GetHeifFragmentMetadata(fragmentRect)) {
+        IMAGE_LOGE("Heif parsing fragment metadata failed");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
     }
-    if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode hdr metadata failed! errorCode: %{public}u", errorCode);
-    }
-    return errorCode;
+    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
+    return SUCCESS;
 }
 
-std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateAuxiliaryPicture(
-    ImageHdrType hdrType, AuxiliaryPictureType type, const std::string &format,
-    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+static uint32_t DecodeJpegFragmentMetadata(std::unique_ptr<InputDataStream> &auxStream,
+    std::unique_ptr<AuxiliaryPicture> &auxPicture)
 {
-    IMAGE_LOGI("AuxiliaryPictureType: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
-    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || extDecoder == nullptr) {
-        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+    uint8_t *data = auxStream->GetDataPtr();
+    uint32_t size = auxStream->GetStreamSize();
+    Rect fragmentRect;
+    if (!JpegMpfParser::ParsingFragmentMetadata(data, size, fragmentRect)) {
+        IMAGE_LOGE("Jpeg parsing fragment metadata failed");
+        return ERR_IMAGE_GET_DATA_ABNORMAL;
+    }
+    std::shared_ptr<ImageMetadata> fragmentMetadata = std::make_shared<FragmentMetadata>();
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_X, std::to_string(fragmentRect.left));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_Y, std::to_string(fragmentRect.top));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_WIDTH, std::to_string(fragmentRect.width));
+    fragmentMetadata->SetValue(FRAGMENT_METADATA_KEY_HEIGHT, std::to_string(fragmentRect.height));
+    auxPicture->SetMetadata(MetadataType::FRAGMENT, fragmentMetadata);
+    return SUCCESS;
+}
+
+static sptr<SurfaceBuffer> AllocSurfaceBuffer(Size &size, int32_t format, uint32_t &errorCode)
+{
+    IMAGE_LOGD("SurfaceBuffer alloc width: %{public}d, height: %{public}d, format: %{public}d",
+        size.width, size.height, format);
+    sptr<SurfaceBuffer> sb = SurfaceBuffer::Create();
+    BufferRequestConfig requestConfig = {
+        .width = size.width,
+        .height = size.height,
+        .strideAlignment = 0x8, // set 0x8 as default value to alloc SurfaceBufferImpl
+        .format = format,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
+        .timeout = 0,
+    };
+    GSError ret = sb->Alloc(requestConfig);
+    if (ret != GSERROR_OK) {
+        IMAGE_LOGE("SurfaceBuffer alloc failed, %{public}s", GSErrorStr(ret).c_str());
+        errorCode = ERR_DMA_NOT_EXIST;
         return nullptr;
     }
+    void *nativeBuffer = sb.GetRefPtr();
+    if (ImageUtils::SurfaceBuffer_Reference(nativeBuffer) != OHOS::GSERROR_OK) {
+        IMAGE_LOGE("Native buffer reference failed");
+        errorCode = ERR_SURFACEBUFFER_REFERENCE_FAILED;
+        return nullptr;
+    }
+    errorCode = SUCCESS;
+    return sb;
+}
 
+static uint32_t CopyToSurfaceBuffer(std::unique_ptr<InputDataStream> &stream, sptr<SurfaceBuffer> &surfaceBuffer)
+{
+    uint8_t *src = stream->GetDataPtr();
+    uint32_t srcSize = stream->GetStreamSize();
+    uint8_t *dst = static_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
+    uint32_t dstSize = surfaceBuffer->GetSize();
+    if (src == nullptr || dst == nullptr || srcSize == 0 || dstSize == 0) {
+        IMAGE_LOGE("%{public}s: invalid input data", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    IMAGE_LOGD("SurfaceBuffer size: %{public}u, stream size: %{public}u", dstSize, srcSize);
+    if (memcpy_s(dst, dstSize, src, srcSize) != EOK) {
+        IMAGE_LOGE("%{public}s: memcpy failed", __func__);
+        ImageUtils::SurfaceBuffer_Unreference(surfaceBuffer.GetRefPtr());
+        return ERR_MEMORY_COPY_FAILED;
+    }
+    return SUCCESS;
+}
+
+static void SetUncodedAuxilaryPictureInfo(std::unique_ptr<AuxiliaryPicture> &auxPicture)
+{
+    if (auxPicture == nullptr || auxPicture->GetContentPixel() == nullptr) {
+        IMAGE_LOGE("%{public}s auxPicture or auxPixelMap is nullptr", __func__);
+        return;
+    }
+    auto auxPixelMap = auxPicture->GetContentPixel();
+    ImageInfo imageInfo;
+    auxPixelMap->GetImageInfo(imageInfo);
+    auto auxInfo = MakeAuxiliaryPictureInfo(auxPicture->GetType(), imageInfo.size, auxPixelMap->GetRowStride(),
+        imageInfo.pixelFormat, imageInfo.colorSpace);
+    auxPicture->SetAuxiliaryPictureInfo(auxInfo);
+}
+
+static std::unique_ptr<AuxiliaryPicture> GenerateAuxiliaryPicture(ImageHdrType hdrType, AuxiliaryPictureType type,
+    const std::string &format, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+{
+    IMAGE_LOGI("Generate by decoder, type: %{public}d, format: %{public}s", static_cast<int>(type), format.c_str());
     DecodeContext context;
     context.allocatorType = AllocatorType::DMA_ALLOC;
-    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info);
+    errorCode = SetAuxiliaryDecodeOption(extDecoder, context.info, type);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}d", errorCode);
+        IMAGE_LOGE("Set auxiliary decode option failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
     if (format == IMAGE_HEIF_FORMAT) {
 #ifdef HEIF_HW_DECODE_ENABLE
+        if (type == AuxiliaryPictureType::LINEAR_MAP || type == AuxiliaryPictureType::DEPTH_MAP) {
+            context.pixelFormat = PixelFormat::RGBA_F16;
+            context.info.pixelFormat = PixelFormat::RGBA_F16;
+        }
         if (!extDecoder->DecodeHeifAuxiliaryMap(context, type)) {
             errorCode = ERR_IMAGE_DECODE_FAILED;
         }
@@ -215,29 +318,99 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateAuxiliaryPicture(
 #endif
     } else if (format == IMAGE_JPEG_FORMAT) {
         errorCode = extDecoder->Decode(FIRST_FRAME, context);
-        if (errorCode != SUCCESS) {
-            FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
-        }
         context.hdrType = hdrType;
     } else {
         errorCode = ERR_MEDIA_DATA_UNSUPPORT;
     }
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode failed! Format: %{public}s, errorCode: %{public}d", format.c_str(), errorCode);
+        IMAGE_LOGE("Decode failed! Format: %{public}s, errorCode: %{public}u", format.c_str(), errorCode);
+        FreeContextBuffer(context.freeFunc, context.allocatorType, context.pixelsBuffer);
         return nullptr;
     }
 
-    std::shared_ptr<PixelMap> pixelMap = CreatePixelMapByContext(context, extDecoder, errorCode);
+    std::string encodedFormat = IsAuxiliaryPictureEncoded(type) ? format : "";
+    std::shared_ptr<PixelMap> pixelMap = CreatePixelMapByContext(context, extDecoder, encodedFormat, errorCode);
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("Decode failed! CreatePixelMapByContext failed errorCode: %{public}u", errorCode);
+        return nullptr;
+    }
     auto auxPicture = AuxiliaryPicture::Create(pixelMap, type, context.outInfo.size);
     auxPicture->SetAuxiliaryPictureInfo(
         MakeAuxiliaryPictureInfo(type, context.outInfo.size, pixelMap->GetRowStride(),
                                  context.pixelFormat, context.outInfo.colorSpace));
-    errorCode = DecodeMetadata(hdrType, extDecoder, type, auxPicture);
+    return auxPicture;
+}
+
+std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateHeifAuxiliaryPicture(ImageHdrType hdrType,
+    AuxiliaryPictureType type, std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+{
+    IMAGE_LOGI("Generate heif auxiliary picture, type: %{public}d", static_cast<int>(type));
+    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || extDecoder == nullptr) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+
+    auto auxPicture = GenerateAuxiliaryPicture(hdrType, type, IMAGE_HEIF_FORMAT, extDecoder, errorCode);
     if (errorCode != SUCCESS) {
-        IMAGE_LOGE("Decode metadata failed! errorCode: %{public}d", errorCode);
+        IMAGE_LOGE("Generate heif auxiliary picture failed! errorCode: %{public}u", errorCode);
+        return nullptr;
+    }
+    if (type == AuxiliaryPictureType::GAINMAP) {
+        errorCode = DecodeHdrMetadata(hdrType, extDecoder, auxPicture);
+    } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+        errorCode = DecodeHeifFragmentMetadata(extDecoder, auxPicture);
+    }
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("Decode heif metadata failed! errorCode: %{public}u", errorCode);
         return nullptr;
     }
     return std::move(auxPicture);
+}
+
+std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPicture(
+    const MainPictureInfo &mainInfo, AuxiliaryPictureType type, std::unique_ptr<InputDataStream> &auxStream,
+    std::unique_ptr<AbsImageDecoder> &extDecoder, uint32_t &errorCode)
+{
+    IMAGE_LOGI("Generate jpeg auxiliary picture, type: %{public}d", static_cast<int>(type));
+    if (!ImageUtils::IsAuxiliaryPictureTypeSupported(type) || auxStream == nullptr || extDecoder == nullptr) {
+        errorCode = ERR_IMAGE_INVALID_PARAMETER;
+        return nullptr;
+    }
+
+    if (IsAuxiliaryPictureEncoded(type)) {
+        auto auxPicture = GenerateAuxiliaryPicture(mainInfo.hdrType, type, IMAGE_JPEG_FORMAT, extDecoder, errorCode);
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("Generate jpeg auxiliary picture failed! errorCode: %{public}u", errorCode);
+            return nullptr;
+        }
+        if (type == AuxiliaryPictureType::GAINMAP) {
+            errorCode = DecodeHdrMetadata(mainInfo.hdrType, extDecoder, auxPicture);
+        } else if (type == AuxiliaryPictureType::FRAGMENT_MAP) {
+            errorCode = DecodeJpegFragmentMetadata(auxStream, auxPicture);
+        }
+        if (errorCode != SUCCESS) {
+            IMAGE_LOGE("Decode jpeg metadata failed! errorCode: %{public}u", errorCode);
+            return nullptr;
+        }
+        return auxPicture;
+    }
+
+    int32_t denominator = GetAuxiliaryPictureDenominator(type);
+    denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
+    Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
+    sptr<SurfaceBuffer> surfaceBuffer = AllocSurfaceBuffer(size, GRAPHIC_PIXEL_FMT_RGBA16_FLOAT, errorCode);
+    if (errorCode != SUCCESS || surfaceBuffer == nullptr) {
+        IMAGE_LOGE("Alloc surface buffer failed! errorCode: %{public}u", errorCode);
+        return nullptr;
+    }
+    errorCode = CopyToSurfaceBuffer(auxStream, surfaceBuffer);
+    if (errorCode != SUCCESS) {
+        IMAGE_LOGE("Convert stream to surface buffer failed! errorCode: %{public}u", errorCode);
+        return nullptr;
+    }
+    auto auxPicture = AuxiliaryPicture::Create(surfaceBuffer, type, size);
+    SetUncodedAuxilaryPictureInfo(auxPicture);
+    return auxPicture;
 }
 
 } // namespace Media

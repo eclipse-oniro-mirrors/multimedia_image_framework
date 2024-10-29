@@ -490,6 +490,7 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
         return iccPaseredResult;
     }
 #endif
+    ImageUtils::FlushContextSurfaceBuffer(context);
     return Media::SUCCESS;
 }
 
@@ -528,6 +529,7 @@ uint32_t JpegDecoder::Decode(uint32_t index, DecodeContext &context)
         if (ret == Media::SUCCESS) {
             state_ = JpegDecodingState::IMAGE_DECODED;
             IMAGE_LOGD("jpeg hardware decode success.");
+            ImageUtils::InvalidateContextSurfaceBuffer(context);
             return ret;
         }
     }

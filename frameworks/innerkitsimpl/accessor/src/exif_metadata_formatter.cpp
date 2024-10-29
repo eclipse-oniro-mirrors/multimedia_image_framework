@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <utility>
+#include <charconv>
 
 #include "exif_metadata_formatter.h"
 #include "hilog/log_cpp.h"
@@ -48,7 +49,7 @@ const int CONSTANT_0 = 0;
 const int CONSTANT_1 = 1;
 const int CONSTANT_2 = 2;
 
-const static std::set<std::string> READ_WRITE_KEYS = {
+const std::set<std::string> READ_WRITE_KEYS = {
     "BitsPerSample",
     "Orientation",
     "ImageLength",
@@ -205,7 +206,7 @@ const static std::set<std::string> READ_WRITE_KEYS = {
     "MicroVideoPresentationTimestampUS",
 };
 
-const static std::set<std::string> READ_ONLY_KEYS = {
+const std::set<std::string> READ_ONLY_KEYS = {
     "HwMnotePhysicalAperture",
     "HwMnoteRollAngle",        "HwMnotePitchAngle",
     "HwMnoteSceneFoodConf",    "HwMnoteSceneStageConf",
@@ -1491,6 +1492,13 @@ std::pair<int32_t, std::string> ExifMetadatFormatter::Format(const std::string &
     return std::make_pair(Media::SUCCESS, tmpValue);
 }
 
+static bool ConvertToInt(const std::string& str, int& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
 static bool StrToDouble(const std::string &value, double &output)
 {
     if (value.empty()) {
@@ -1503,8 +1511,16 @@ static bool StrToDouble(const std::string &value, double &output)
     }
     std::string numeratorStr = value.substr(0, slashPos);
     std::string denominatorStr = value.substr(slashPos + 1);
-    int numerator = stoi(numeratorStr);
-    int denominator = stoi(denominatorStr);
+    int numerator = 0;
+    if (!ConvertToInt(numeratorStr, numerator)) {
+        IMAGE_LOGI("numeratorStr = %{public}s convert convert string to int failed", numeratorStr.c_str());
+        return false;
+    }
+    int denominator = 0;
+    if (!ConvertToInt(denominatorStr, denominator)) {
+        IMAGE_LOGI("denominatorStr = %{public}s convert convert string to int failed", denominatorStr.c_str());
+        return false;
+    }
     if (denominator == 0) {
         return false;
     }

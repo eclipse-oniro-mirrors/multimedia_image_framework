@@ -22,11 +22,16 @@
 
 #include <limits>
 #include <cstring>
+#include <set>
 
 namespace OHOS {
 namespace ImagePlugin {
 
 const auto EXIF_ID = "Exif\0\0";
+const auto HEIF_AUXTTYPE_ID_FRAGMENT_MAP = "urn:com:huawei:photo:5:0:0:aux:fragmentmap";
+const std::set<std::string> INFE_ITEM_TYPE = {
+    "hvc1", "grid", "tmap", "iden", "mime"
+};
 
 HeifParser::HeifParser() = default;
 
@@ -253,6 +258,9 @@ void HeifParser::GetTileImages(heif_item_id gridItemId, std::vector<std::shared_
     if (!infe || infe->GetItemType() != "grid") {
         return;
     }
+    if (!irefBox_) {
+        return;
+    }
     auto toItemIds = irefBox_->GetReferences(gridItemId, BOX_TYPE_DIMG);
     for (heif_item_id toItemId: toItemIds) {
         auto tileImage = GetImage(toItemId);
@@ -266,6 +274,9 @@ void HeifParser::GetIdenImage(heif_item_id itemId, std::shared_ptr<HeifImage> &o
 {
     auto infe = GetInfeBox(itemId);
     if (!infe || infe->GetItemType() != "iden") {
+        return;
+    }
+    if (!irefBox_) {
         return;
     }
     auto toItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
@@ -302,7 +313,7 @@ heif_error HeifParser::AssembleImages()
             continue;
         }
         const std::string& itemType = infe->GetItemType();
-        if (itemType != "hvc1" && itemType != "grid" && itemType != "tmap" && itemType != "iden") {
+        if (INFE_ITEM_TYPE.find(itemType) == INFE_ITEM_TYPE.end()) {
             continue;
         }
         auto image = std::make_shared<HeifImage>(itemId);
@@ -355,6 +366,22 @@ void HeifParser::ExtractISOMetadata(const heif_item_id& itemId)
         return ;
     }
     primaryImage_->SetISOMetadata(extendInfo);
+}
+
+void HeifParser::ExtractFragmentMetadata(const heif_item_id& itemId)
+{
+    HeifFragmentMetadata extendInfo;
+    auto ispe = GetProperty<HeifIspeBox>(itemId);
+    if (ispe) {
+        extendInfo.width = ispe->GetWidth();
+        extendInfo.height = ispe->GetHeight();
+    }
+    auto rloc = GetProperty<HeifRlocBox>(itemId);
+    if (rloc) {
+        extendInfo.horizontalOffset = rloc->GetX();
+        extendInfo.verticalOffset = rloc->GetY();
+    }
+    primaryImage_->SetFragmentMetadata(extendInfo);
 }
 
 void HeifParser::ExtractDisplayData(std::shared_ptr<HeifImage>& image, heif_item_id& itemId)
@@ -461,6 +488,9 @@ void HeifParser::ExtractDerivedImageProperties()
             continue;
         }
         auto &image = pair.second;
+        if (!irefBox_) {
+            return;
+        }
         auto tileItemIds = irefBox_->GetReferences(itemId, BOX_TYPE_DIMG);
         if (tileItemIds.empty()) {
             continue;
@@ -523,12 +553,18 @@ void HeifParser::ExtractAuxImage(std::shared_ptr<HeifImage> &auxImage, const Hei
         return;
     }
 
+    if (auxc->GetAuxType() == HEIF_AUXTTYPE_ID_FRAGMENT_MAP) {
+        ExtractFragmentMetadata(auxItemId);
+    }
     auxImage->SetAuxImage(masterItemId, auxc->GetAuxType());
     masterImage->AddAuxImage(auxImage);
 }
 
 void HeifParser::ExtractGainmapImage(const heif_item_id& tmapId)
 {
+    if (!irefBox_) {
+        return;
+    }
     std::vector<HeifIrefBox::Reference> references = irefBox_->GetReferencesFrom(tmapId);
     for (const HeifIrefBox::Reference &ref : references) {
         uint32_t type = ref.box.GetBoxType();
@@ -812,7 +848,9 @@ heif_error HeifParser::SetExifMetadata(const std::shared_ptr<HeifImage> &image, 
     for (int index = 0; index < UINT32_BYTES_NUM; ++index) {
         content[index] = (uint8_t)offsetFourcc[index];
     }
-    memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size);
+    if (memcpy_s(content.data() + UINT32_BYTES_NUM, size, data, size) != EOK) {
+        return heif_invalid_exif_data;
+    }
     return SetMetadata(image, content, "Exif", nullptr);
 }
 

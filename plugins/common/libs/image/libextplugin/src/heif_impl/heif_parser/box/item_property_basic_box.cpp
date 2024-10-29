@@ -62,5 +62,24 @@ heif_error HeifPixiBox::Write(HeifStreamWriter &writer) const
     WriteCalculatedHeader(writer, boxStart);
     return heif_error_ok;
 }
+
+heif_error HeifRlocBox::ParseContent(HeifStreamReader &reader)
+{
+    ParseFullHeader(reader);
+    horizontalOffset_ = reader.Read32();
+    verticalOffset_ = reader.Read32();
+    return reader.GetError();
+}
+
+heif_error HeifRlocBox::Write(HeifStreamWriter &writer) const
+{
+    size_t boxStart = ReserveHeader(writer);
+
+    writer.Write32(horizontalOffset_);
+    writer.Write32(verticalOffset_);
+
+    WriteCalculatedHeader(writer, boxStart);
+    return heif_error_ok;
+}
 } // namespace ImagePlugin
 } // namespace OHOS

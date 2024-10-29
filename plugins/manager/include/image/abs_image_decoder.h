@@ -213,6 +213,11 @@ public:
     }
 #endif
 
+    virtual uint32_t GetHeifParseErr()
+    {
+        return 0;
+    }
+    
     virtual Media::ImageHdrType CheckHdrType()
     {
         return Media::ImageHdrType::SDR;
@@ -238,17 +243,17 @@ public:
         return false;
     }
 
-    virtual uint32_t GetHeifParseErr()
-    {
-        return 0;
-    }
-
     virtual bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type)
     {
         return false;
     }
 
     virtual bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type)
+    {
+        return false;
+    }
+
+    virtual bool GetHeifFragmentMetadata(Media::Rect& metadata)
     {
         return false;
     }

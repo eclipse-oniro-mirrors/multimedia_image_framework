@@ -19,6 +19,7 @@
 #include "hilog/log_cpp.h"
 #include "image_log.h"
 #include "image_utils.h"
+#include "media_errors.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -38,15 +39,10 @@ constexpr uint8_t UINT32_BYTE_SIZE = 4;
 constexpr uint16_t TAG_TYPE_UNDEFINED = 0x07;
 constexpr uint16_t TAG_TYPE_LONG = 0x04;
 constexpr uint16_t HDR_MULTI_PICTURE_APP_LENGTH = 90;
+constexpr uint16_t FRAGMENT_METADATA_LENGTH = 20;
 
 constexpr uint8_t JPEG_MARKER_PREFIX = 0xFF;
 constexpr uint8_t JPEG_MARKER_APP2 = 0xE2;
-
-constexpr uint8_t MP_TYPE_UNDEFINED = 0x00;
-constexpr uint8_t MP_TYPE_LARGE_THUMBNAIL = 0x01;
-constexpr uint8_t MP_TYPE_MULTI_VIEW = 0x02;
-constexpr uint8_t MP_TYPE_BASELINE_MP_PRIMARY = 0x03;
-constexpr uint8_t MP_TYPE_GAINMAP = 0x05;
 
 static constexpr uint8_t MULTI_PICTURE_HEADER_FLAG[] = {
     'M', 'P', 'F', '\0'
@@ -62,6 +58,10 @@ static constexpr uint8_t MPF_VERSION_DEFAULT[] = {
     '0', '1', '0', '0'
 };
 
+static constexpr uint8_t FRAGMENT_META_FLAG[] = {
+    0xFF, 0xEC, 0x00, 0x12
+};
+
 enum MpfIFDTag : uint16_t {
     MPF_VERSION_TAG = 45056,
     NUMBERS_OF_IMAGES_TAG = 45057,
@@ -70,12 +70,12 @@ enum MpfIFDTag : uint16_t {
     TOTAL_FRAMES_TAG = 45060,
 };
 
-static const std::map<uint8_t, AuxiliaryPictureType> MP_AUXILIARY_TYPE_MAP = {
-    {MP_TYPE_UNDEFINED, AuxiliaryPictureType::NONE},
-    {MP_TYPE_LARGE_THUMBNAIL, AuxiliaryPictureType::NONE},
-    {MP_TYPE_MULTI_VIEW, AuxiliaryPictureType::NONE},
-    {MP_TYPE_BASELINE_MP_PRIMARY, AuxiliaryPictureType::NONE},
-    {MP_TYPE_GAINMAP, AuxiliaryPictureType::GAINMAP},
+static const std::map<std::string, AuxiliaryPictureType> AUXILIARY_TAG_TYPE_MAP = {
+    {AUXILIARY_TAG_DEPTH_MAP_BACK, AuxiliaryPictureType::DEPTH_MAP},
+    {AUXILIARY_TAG_DEPTH_MAP_FRONT, AuxiliaryPictureType::DEPTH_MAP},
+    {AUXILIARY_TAG_UNREFOCUS_MAP, AuxiliaryPictureType::UNREFOCUS_MAP},
+    {AUXILIARY_TAG_LINEAR_MAP, AuxiliaryPictureType::LINEAR_MAP},
+    {AUXILIARY_TAG_FRAGMENT_MAP, AuxiliaryPictureType::FRAGMENT_MAP}
 };
 
 bool JpegMpfParser::CheckMpfOffset(uint8_t* data, uint32_t size, uint32_t& offset)
@@ -177,7 +177,6 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
     images_.resize(imageNums);
     for (uint32_t i = 0; i < imageNums; i++) {
         uint32_t imageAttr = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
-        images_[i].auxType = ParsingImageAttribute(imageAttr, isBigEndian);
         images_[i].size = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         images_[i].offset = ImageUtils::BytesToUint32(data, dataOffset, isBigEndian);
         uint16_t image1EntryNum = ImageUtils::BytesToUint16(data, dataOffset, isBigEndian);
@@ -188,17 +187,60 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
     return true;
 }
 
-AuxiliaryPictureType JpegMpfParser::ParsingImageAttribute(uint32_t imageAttr, bool isBigEndian)
+bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian)
 {
-    vector<uint8_t> bytes(UINT32_BYTE_SIZE);
-    uint32_t offset = 0;
-    ImageUtils::Uint32ToBytes(imageAttr, bytes, offset, isBigEndian);
-    uint8_t mpType = isBigEndian ? bytes[1] : bytes[UINT16_BYTE_SIZE];
-    auto iter = MP_AUXILIARY_TYPE_MAP.find(mpType);
-    if (iter == MP_AUXILIARY_TYPE_MAP.end()) {
-        return AuxiliaryPictureType::NONE;
+    if (data == nullptr || dataSize == 0) {
+        return false;
     }
-    return iter->second;
+
+    images_.clear();
+    for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
+        int32_t matchedPos = ImageUtils::KMPFind(data, dataSize,
+            reinterpret_cast<const uint8_t*>(it.first.c_str()), it.first.size());
+        if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
+            continue;
+        }
+        uint32_t offset = static_cast<uint32_t>(matchedPos);
+        if (offset > dataSize) {
+            continue;
+        }
+        offset -= UINT32_BYTE_SIZE;
+        uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
+        SingleJpegImage auxImage = {
+            .offset = offset - UINT32_BYTE_SIZE - imageSize,
+            .size = imageSize,
+            .auxType = it.second,
+            .auxTagName = it.first,
+        };
+        images_.push_back(auxImage);
+        IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
+            __func__, auxImage.auxType, auxImage.offset, auxImage.size, auxImage.auxTagName.c_str());
+    }
+    return true;
+}
+
+bool JpegMpfParser::ParsingFragmentMetadata(uint8_t* data, uint32_t size, Rect& fragmentRect, bool isBigEndian)
+{
+    if (data == nullptr || size == 0) {
+        return false;
+    }
+
+    for (uint32_t offset = 0; offset < size; offset++) {
+        if (memcmp(data + offset, FRAGMENT_META_FLAG, sizeof(FRAGMENT_META_FLAG)) == 0) {
+            if (offset + FRAGMENT_METADATA_LENGTH > size) {
+                return false;
+            }
+            offset += UINT32_BYTE_SIZE;
+            fragmentRect.left = ImageUtils::BytesToInt32(data, offset, isBigEndian);
+            fragmentRect.top = ImageUtils::BytesToInt32(data, offset, isBigEndian);
+            fragmentRect.width = ImageUtils::BytesToInt32(data, offset, isBigEndian);
+            fragmentRect.height = ImageUtils::BytesToInt32(data, offset, isBigEndian);
+            IMAGE_LOGD("[%{public}s] left=%{public}d, top=%{public}d, width=%{public}d, height=%{public}d",
+                __func__, fragmentRect.left, fragmentRect.top, fragmentRect.width, fragmentRect.height);
+            return true;
+        }
+    }
+    return false;
 }
 
 static void WriteMPEntryToBytes(vector<uint8_t>& bytes, uint32_t& offset, std::vector<SingleJpegImage> images)

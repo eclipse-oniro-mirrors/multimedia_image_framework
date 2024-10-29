@@ -35,7 +35,7 @@ struct PlEncodeOptions {
     std::vector<uint16_t> delayTimes;
     std::vector<uint8_t> disposalTypes;
     bool needsPackProperties = false;
-    bool isEditScene = false;
+    bool isEditScene = true;
 };
 
 class AbsImageEncoder {

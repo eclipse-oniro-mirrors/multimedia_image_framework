@@ -611,7 +611,7 @@ napi_value SetRecordParametersInfo(napi_env env, std::vector<std::pair<std::stri
         }
     }
 
-    IMAGE_LOGD("Set record parameters info success.");
+    IMAGE_LOGD("Set record parameters info success");
     return result;
 }
 
@@ -636,7 +636,7 @@ napi_value CreateModifyErrorArray(napi_env env, std::multimap<std::int32_t, std:
                 "The given buffer size is too small to add new exif data! exif key: " + it->second);
         } else if (it->first == ERR_IMAGE_DECODE_EXIF_UNSUPPORT) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first,
-                "The exif data format is not standard! exif key: " + it->second);
+                "The image does not support EXIF decoding. exif key: " + it->second);
         } else if (it->first == ERR_MEDIA_VALUE_INVALID) {
             ImageNapiUtils::CreateErrorObj(env, errMsgVal, it->first, it->second);
         } else {
@@ -1771,7 +1771,7 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
     }
     switch (context->status) {
         case ERR_IMAGE_DECODE_EXIF_UNSUPPORT:
-            errMsg = "Unsupport EXIF info key.";
+            errMsg = "The image does not support EXIF decoding.";
             break;
         case ERROR:
             errMsg = "The operation failed.";
@@ -1789,7 +1789,7 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
             errMsg = "The image format does not mastch.";
             break;
         case ERR_IMAGE_UNKNOWN_FORMAT:
-            errMsg = "Unknow image format.";
+            errMsg = "Unknown image format.";
             break;
         case ERR_IMAGE_INVALID_PARAMETER:
             errMsg = "Invalid image parameter.";
@@ -1801,7 +1801,7 @@ static void GenerateErrMsg(ImageSourceAsyncContext *context, std::string &errMsg
             errMsg = "Failed to create the image plugin.";
             break;
         case ERR_IMAGE_DECODE_HEAD_ABNORMAL:
-            errMsg = "The image decoding header is abnormal.";
+            errMsg = "Failed to decode the image header.";
             break;
         case ERR_MEDIA_VALUE_INVALID:
             errMsg = "The EXIF value is invalid.";
@@ -1896,7 +1896,9 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContext(napi_env env, napi
         context->keyStr = GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->keyStrArray = GetStringArrayArgument(env, argValue[NUM_0]);
-        if (context->keyStrArray.size() == 0) return nullptr;
+        if (context->keyStrArray.size() == 0) {
+            return nullptr;
+        }
         context->isBatch = true;
     } else {
         IMAGE_LOGE("arg 0 type mismatch");

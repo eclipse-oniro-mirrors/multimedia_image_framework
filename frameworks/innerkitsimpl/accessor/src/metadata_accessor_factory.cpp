@@ -43,40 +43,66 @@ const byte riffHeader[] = { 0x52, 0x49, 0x46, 0x46 };
 const byte heifHeader[] = { 0x66, 0x74, 0x79, 0x70 };
 const byte DNG_LITTLE_ENDIAN_HEADER[] = { 0x49, 0x49, 0x2A, 0x00 };
 const byte DNG_BIG_ENDIAN_HEADER[] = { 0x4D, 0x4D, 0x00, 0x2A };
+const ssize_t STREAM_READ_ERROR = -1;
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(uint8_t *buffer, const uint32_t size,
-    BufferMetadataStream::MemoryMode mode)
+                                                                  BufferMetadataStream::MemoryMode mode)
 {
-    if (buffer == nullptr) {
-        return nullptr;
-    }
-    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(buffer, size, mode);
-    return Create(stream);
+    DataInfo dataInfo {buffer, size};
+    uint32_t error = SUCCESS;
+    return Create(dataInfo, error, mode);
 }
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const int fd)
 {
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd);
-    if (!stream->Open(OpenMode::ReadWrite)) {
-        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
-        return nullptr;
-    }
-    return Create(stream);
+    uint32_t error = SUCCESS;
+    return Create(fd, error);
 }
 
 std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const std::string &path)
 {
-    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path);
+    uint32_t error = SUCCESS;
+    return Create(path, error);
+}
+
+std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const DataInfo &dataInfo, uint32_t &error,
+                                                                  BufferMetadataStream::MemoryMode mode,
+                                                                  int originalFd,
+                                                                  const std::string &originalPath)
+{
+    if (dataInfo.buffer == nullptr) {
+        return nullptr;
+    }
+    std::shared_ptr<MetadataStream> stream = std::make_shared<BufferMetadataStream>(dataInfo.buffer, dataInfo.size,
+                                                                                    mode, originalFd, originalPath);
+    return Create(stream, error);
+}
+
+std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const int fd, uint32_t &error, const int originalFd)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(fd, originalFd);
+    if (!stream->Open(OpenMode::ReadWrite)) {
+        IMAGE_LOGE("Failed to open the stream with file descriptor: %{public}d", fd);
+        return nullptr;
+    }
+    return Create(stream, error);
+}
+
+std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(const std::string &path, uint32_t &error,
+                                                                  const std::string &originalPath)
+{
+    std::shared_ptr<MetadataStream> stream = std::make_shared<FileMetadataStream>(path, originalPath);
     if (!stream->Open(OpenMode::ReadWrite)) {
         IMAGE_LOGE("Failed to open the stream with file");
         return nullptr;
     }
-    return Create(stream);
+    return Create(stream, error);
 }
 
-std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_ptr<MetadataStream> &stream)
+std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_ptr<MetadataStream> &stream,
+                                                                  uint32_t &error)
 {
-    EncodedFormat type = GetImageType(stream);
+    EncodedFormat type = GetImageType(stream, error);
 
     switch (type) {
         case EncodedFormat::JPEG:
@@ -94,13 +120,20 @@ std::shared_ptr<MetadataAccessor> MetadataAccessorFactory::Create(std::shared_pt
     }
 }
 
-EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStream> &stream)
+EncodedFormat MetadataAccessorFactory::GetImageType(std::shared_ptr<MetadataStream> &stream, uint32_t &error)
 {
     byte buff[IMAGE_HEADER_SIZE] = {0};
     auto byteSize = static_cast<uint32_t>(sizeof(byte));
     stream->Seek(0, SeekPos::BEGIN);
-    stream->Read(buff, IMAGE_HEADER_SIZE * byteSize);
+    auto ret = stream->Read(buff, IMAGE_HEADER_SIZE * byteSize);
     stream->Seek(0, SeekPos::BEGIN);
+    if (ret == STREAM_READ_ERROR) {
+        IMAGE_LOGE("Failed to read image type from stream.");
+        if (stream->IsFileChanged()) {
+            error = ERR_MEDIA_MMAP_FILE_CHANGED;
+        }
+        return EncodedFormat::UNKNOWN;
+    }
 
     if (memcmp(buff, jpegHeader, sizeof(jpegHeader) * byteSize) == 0) {
         return EncodedFormat::JPEG;

@@ -26,16 +26,30 @@
 
 namespace OHOS {
 namespace Media {
+
+struct DataInfo {
+    uint8_t *buffer = nullptr;
+    uint32_t size = 0;
+};
+
 class MetadataAccessorFactory {
 public:
     static std::shared_ptr<MetadataAccessor> Create(uint8_t *buffer, const uint32_t size,
-        BufferMetadataStream::MemoryMode mode = BufferMetadataStream::Fix);
+                                                    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::Fix);
     static std::shared_ptr<MetadataAccessor> Create(const int fd);
     static std::shared_ptr<MetadataAccessor> Create(const std::string &path);
+    static std::shared_ptr<MetadataAccessor> Create(const DataInfo &dataInfo, uint32_t &error,
+                                                    BufferMetadataStream::MemoryMode mode = BufferMetadataStream::Fix,
+                                                    int originalFd = METADATA_STREAM_INVALID_FD,
+                                                    const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
+    static std::shared_ptr<MetadataAccessor> Create(const int fd, uint32_t &error,
+                                                    const int originalFd = METADATA_STREAM_INVALID_FD);
+    static std::shared_ptr<MetadataAccessor> Create(const std::string &path, uint32_t &error,
+                                                    const std::string &originalPath = METADATA_STREAM_INVALID_PATH);
 
 private:
-    static std::shared_ptr<MetadataAccessor> Create(std::shared_ptr<MetadataStream> &stream);
-    static EncodedFormat GetImageType(std::shared_ptr<MetadataStream> &stream);
+    static std::shared_ptr<MetadataAccessor> Create(std::shared_ptr<MetadataStream> &stream, uint32_t &error);
+    static EncodedFormat GetImageType(std::shared_ptr<MetadataStream> &stream, uint32_t &error);
 };
 } // namespace Media
 } // namespace OHOS

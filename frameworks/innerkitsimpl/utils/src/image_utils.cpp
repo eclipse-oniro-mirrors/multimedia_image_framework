@@ -40,6 +40,7 @@
 #include "image_trace.h"
 #include "hitrace_meter.h"
 #include "image_system_properties.h"
+#include "image/abs_image_decoder.h"
 #include "pixel_map.h"
 #ifdef IOS_PLATFORM
 #include <sys/syscall.h>
@@ -701,13 +702,60 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
     }
 }
 
+static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vector<int>& next)
+{
+    int prefixEnd = 0;
+    next[0] = prefixEnd;
+    for (uint32_t i = 1; i < patternLen; ++i) {
+        // if not match, move prefixEnd to next position
+        while (prefixEnd > 0 && pattern[prefixEnd] != pattern[i]) {
+            prefixEnd = next[prefixEnd - 1];
+        }
+        // if match, update prefixEnd
+        if (pattern[prefixEnd] == pattern[i]) {
+            prefixEnd++;
+        }
+        //update next array
+        next[i] = prefixEnd;
+    }
+}
+
+int ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
+    const uint8_t* pattern, uint32_t patternLen)
+{
+    if (target == nullptr || pattern == nullptr || patternLen == 0) {
+        IMAGE_LOGE("ImageUtils FindFirstMatchingStringByKMP failed, patternLen is zero");
+        return ERR_MEDIA_INVALID_VALUE;
+    }
+
+    std::vector<int> next(patternLen, 0);
+    GetNextArray(pattern, patternLen, next);
+    uint32_t targetIndex = 0;
+    uint32_t patternIndex = 0;
+    for (; targetIndex < targetLen; ++targetIndex) {
+        // if not match, move patternIndex to next position
+        while (patternIndex > 0 && target[targetIndex] != pattern[patternIndex]) {
+            patternIndex = next[patternIndex - 1];
+        }
+        // if match, update patternIndex
+        if (target[targetIndex] == pattern[patternIndex]) {
+            ++patternIndex;
+        }
+        // find the first matching string success
+        if (patternIndex == patternLen) {
+            return targetIndex - patternLen + 1;
+        }
+    }
+    return ERR_MEDIA_INVALID_VALUE;
+}
+
 void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!pixelMap || pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         return;
     }
-    SurfaceBuffer* surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(pixelMap->GetFd());
     if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = surfaceBuffer->Map();
         if (err != GSERROR_OK) {
@@ -715,6 +763,47 @@ void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
             return;
         }
         err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+#else
+    return;
+#endif
+}
+
+void ImageUtils::FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->Map();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils Map failed, GSError=%{public}d", err);
+            return;
+        }
+        err = surfaceBuffer->FlushCache();
+        if (err != GSERROR_OK) {
+            IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
+        }
+    }
+#else
+    return;
+#endif
+}
+
+void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context)
+{
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (context.pixelsBuffer.context == nullptr || context.allocatorType != AllocatorType::DMA_ALLOC) {
+        return;
+    }
+    SurfaceBuffer* surfaceBuffer = static_cast<SurfaceBuffer*>(context.pixelsBuffer.context);
+    if (surfaceBuffer && (surfaceBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
+        GSError err = surfaceBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
             IMAGE_LOGE("ImageUtils FlushCache failed, GSError=%{public}d", err);
         }

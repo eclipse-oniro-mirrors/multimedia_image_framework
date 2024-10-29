@@ -24,6 +24,7 @@
 
 #include "file_metadata_stream.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "metadata_stream.h"
 
 #undef LOG_DOMAIN
@@ -44,16 +45,18 @@ ssize_t FileWrapper::FRead(void *destv, size_t size, ssize_t nmemb, FILE *file)
     return ::fread(destv, size, nmemb, file);
 }
 
-FileMetadataStream::FileMetadataStream(const std::string &filePath)
+FileMetadataStream::FileMetadataStream(const std::string &filePath, const std::string &originalPath)
 {
     initPath_ = INIT_FROM_PATH;
     Initialize(filePath);
+    originalPath_ = originalPath;
 }
 
-FileMetadataStream::FileMetadataStream(int fileDescriptor)
+FileMetadataStream::FileMetadataStream(int fileDescriptor, int originalFd)
 {
     initPath_ = INIT_FROM_FD;
     Initialize("", fileDescriptor);
+    originalFd_ = originalFd;
 }
 
 FileMetadataStream::FileMetadataStream(const std::string &filePath, std::unique_ptr<FileWrapper> fileWrapper)
@@ -507,5 +510,6 @@ ssize_t FileMetadataStream::GetSize()
 
     return fileSize;
 }
+
 } // namespace Media
 } // namespace OHOS
