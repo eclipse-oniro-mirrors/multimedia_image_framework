@@ -509,7 +509,10 @@ bool HeifDecoderImpl::decode(HeifFrameInfo *frameInfo)
     if (!convertRes) {
         return false;
     }
-    HwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    bool hwApplyAlphaImageRes = HwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    if (!hwApplyAlphaImageRes) {
+        SwApplyAlphaImage(primaryImage_, dstMemory_, dstRowStride_);
+    }
     if (hwBuffer && (hwBuffer->GetUsage() & BUFFER_USAGE_MEM_MMZ_CACHE)) {
         GSError err = hwBuffer->InvalidateCache();
         if (err != GSERROR_OK) {
