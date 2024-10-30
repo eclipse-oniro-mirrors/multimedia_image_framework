@@ -22,7 +22,7 @@
 #include "image_trace.h"
 #include "log_tags.h"
 #include "color_space_object_convertor.h"
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <cstdint>
 #include <regex>
 #include <vector>
@@ -70,7 +70,7 @@ static const std::map<std::string, std::set<uint32_t>> ETS_API_ERROR_CODE = {
 static const std::string CLASS_NAME = "PixelMap";
 static const std::int32_t NEW_INSTANCE_ARGC = 1;
 thread_local napi_ref PixelMapNapi::sConstructor_ = nullptr;
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 NAPI_MessageSequence* napi_messageSequence = nullptr;
 #endif
 napi_ref PixelMapNapi::AntiAliasingLevel_ = nullptr;
@@ -551,7 +551,7 @@ napi_value PixelMapNapi::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapSync", CreatePixelMapSync),
         DECLARE_NAPI_STATIC_FUNCTION("unmarshalling", Unmarshalling),
         DECLARE_NAPI_STATIC_FUNCTION(CREATE_PIXEL_MAP_FROM_PARCEL.c_str(), CreatePixelMapFromParcel),
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurface", CreatePixelMapFromSurface),
         DECLARE_NAPI_STATIC_FUNCTION("createPixelMapFromSurfaceSync", CreatePixelMapFromSurfaceSync),
         DECLARE_NAPI_STATIC_FUNCTION("convertPixelFormat", ConvertPixelMapFormat),
@@ -1216,7 +1216,7 @@ napi_value PixelMapNapi::CreatePixelMapSync(napi_env env, napi_callback_info inf
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreatePixelMapFromSurface)
 {
     if (data == nullptr) {
@@ -1317,7 +1317,7 @@ static std::string GetStringArgument(napi_env env, napi_value value)
 
 napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_info info)
 {
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     napi_value result = nullptr;
     return result;
 #else
@@ -1371,7 +1371,7 @@ napi_value PixelMapNapi::CreatePixelMapFromSurface(napi_env env, napi_callback_i
 
 napi_value PixelMapNapi::CreatePixelMapFromSurfaceSync(napi_env env, napi_callback_info info)
 {
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     napi_value result = nullptr;
     return result;
 #else
@@ -1447,7 +1447,7 @@ napi_value PixelMapNapi::CreatePixelMap(napi_env env, std::shared_ptr<PixelMap> 
 
 STATIC_EXEC_FUNC(Unmarshalling)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (data == nullptr) {
         IMAGE_LOGE("UnmarshallingExec invalid parameter: data is null");
         return;
@@ -1497,7 +1497,7 @@ void PixelMapNapi::UnmarshallingComplete(napi_env env, napi_status status, void 
 
 napi_value PixelMapNapi::Unmarshalling(napi_env env, napi_callback_info info)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (PixelMapNapi::GetConstructor() == nullptr) {
         napi_value exports = nullptr;
         napi_create_object(env, &exports);
@@ -1563,7 +1563,7 @@ napi_value PixelMapNapi::ThrowExceptionError(napi_env env,
 }
 
 napi_value PixelMapNapi::CreatePixelMapFromParcel(napi_env env, napi_callback_info info)
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
 {
     napi_value result = nullptr;
     return result;
@@ -2902,7 +2902,7 @@ napi_value PixelMapNapi::ScaleSync(napi_env env, napi_callback_info info)
 napi_value PixelMapNapi::SetMemoryNameSync(napi_env env, napi_callback_info info)
 {
     napi_value result = nullptr;
-#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     return result;
 #else
     napi_get_undefined(env, &result);
@@ -3588,7 +3588,7 @@ napi_value PixelMapNapi::SetColorSpace(napi_env env, napi_callback_info info)
 
 napi_value PixelMapNapi::Marshalling(napi_env env, napi_callback_info info)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     NapiValues nVal;
     nVal.argc = NUM_1;
     napi_value argValue[NUM_1] = {0};
@@ -3976,7 +3976,7 @@ napi_value PixelMapNapi::SetTransferDetached(napi_env env, napi_callback_info in
     nVal.context->nConstructor->SetTransferDetach(detach);
     return nVal.result;
 }
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 enum HdrMetadataKey : uint32_t {
     HDR_METADATA_TYPE = 0,
     HDR_STATIC_METADATA,

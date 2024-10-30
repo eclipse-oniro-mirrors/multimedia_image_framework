@@ -26,13 +26,13 @@
 #include <filesystem>
 #include <vector>
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "auxiliary_generator.h"
 #include "auxiliary_picture.h"
 #endif
 
 #include "buffer_source_stream.h"
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#if !defined(_WIN32) && !defined(_APPLE)
 #include "hitrace_meter.h"
 #include "image_trace.h"
 #include "image_data_statistics.h"
@@ -61,7 +61,7 @@
 #include "securec.h"
 #include "source_stream.h"
 #include "image_dfx.h"
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 #include "include/jpeg_decoder.h"
 #else
 #include "surface_buffer.h"
@@ -569,7 +569,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
-#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(ANDROID_PLATFORM) || !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
         uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
@@ -1199,7 +1199,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMap(uint32_t index, const DecodeOpt
             context.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
         }
     }
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
     context.allocatorType = AllocatorType::HEAP_ALLOC;
 #endif
     errorCode = mainDecoder_->Decode(index, context);
@@ -1513,7 +1513,7 @@ uint32_t ImageSource::ModifyImageProperty(uint32_t index, const std::string &key
 {
     ImageDataStatistics imageDataStatistics("[ImageSource]ModifyImageProperty by path.");
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -1855,7 +1855,7 @@ NATIVEEXPORT void ImageSource::SetExifMetadata(std::shared_ptr<ExifMetadata> &pt
 
 uint32_t ImageSource::RemoveImageProperties(uint32_t index, const std::set<std::string> &keys, const std::string &path)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (!std::filesystem::exists(path)) {
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -3178,7 +3178,7 @@ static bool FormatIsSUT(const uint8_t *fileData, size_t fileSize)
 static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<PixelAstc> &pixelAstc,
     const uint8_t *sourceFilePtr, const DecodeOptions &opts)
 {
-#if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM) || defined(_WIN32) || defined(_APPLE))
+#if !(defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM))
     Size desiredSize = {astcSize, 1};
     MemoryData memoryData = {nullptr, astcSize, "CreatePixelMapForASTC Data", desiredSize, pixelAstc->GetPixelFormat()};
     ImageInfo pixelAstcInfo;
@@ -3219,7 +3219,7 @@ static bool ReadFileAndResoveAstc(size_t fileSize, size_t astcSize, unique_ptr<P
 }
 
 unique_ptr<PixelMap> ImageSource::CreatePixelMapForASTC(uint32_t &errorCode, const DecodeOptions &opts)
-#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM) || defined(_WIN32) || defined(_APPLE)
+#if defined(ANDROID_PLATFORM) || defined(IOS_PLATFORM)
 {
     errorCode = ERROR;
     return nullptr;
@@ -4397,7 +4397,7 @@ DecodeContext ImageSource::DecodeImageDataToContextExtended(uint32_t index, Imag
     return context;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPicture &opts, uint32_t &errorCode)
 {
     DecodeOptions dopts;

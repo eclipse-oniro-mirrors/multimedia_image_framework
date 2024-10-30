@@ -17,7 +17,7 @@
 
 #include <map>
 #include <mutex>
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#ifndef _WIN32
 #include "securec.h"
 #else
 #include "memory.h"
