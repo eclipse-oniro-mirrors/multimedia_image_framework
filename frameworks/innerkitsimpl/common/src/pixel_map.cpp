@@ -2207,6 +2207,7 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
             IMAGE_LOGE("write pixel map check ashmem size failed, fd:[%{public}d].", *fd);
+            ::close(*fd);
             return false;
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
@@ -2365,10 +2366,12 @@ bool PixelMap::Marshalling(Parcel &parcel) const
     if (isAstc_ || IsYUV(imageInfo_.pixelFormat) || imageInfo_.pixelFormat == PixelFormat::RGBA_F16) {
         bufferSize = pixelsSize_;
     }
+    size_t capacityLength =
+        static_cast<size_t>(buffersize) + static_cast<size_t>(PIXEL_MAP_INFO_MAX_LENGTH);
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
-        static_cast<size_t>(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH) > parcel.GetDataCapacity() &&
+        capacityLength > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
-        IMAGE_LOGE("set parcel max capacity:[%{public}d] failed.", bufferSize + PIXEL_MAP_INFO_MAX_LENGTH);
+        IMAGE_LOGE("set parcel max capacity:[%{public}zu] failed.", capacityLength);
         return false;
     }
 
@@ -2629,7 +2632,7 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         }
         ReleaseMemory(pixelMemInfo.allocatorType, pixelMemInfo.base, pixelMemInfo.context, pixelMemInfo.bufferSize);
         if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
-            delete static_cast<int32_t *>(pixelMemInfo.context);
+            ::close(*static_cast<int32_t *>(pixelMemInfo.context));
             pixelMemInfo.context = nullptr;
         }
         IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
