@@ -21,7 +21,7 @@
 #include <chrono>
 #include <iostream>
 #include <unistd.h>
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
 #include <linux/dma-buf.h>
 #endif
 #include <sys/ioctl.h>
@@ -47,7 +47,7 @@
 #include "pixel_yuv.h"
 #include "color_utils.h"
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+#ifndef _WIN32
 #include "securec.h"
 #else
 #include "memory.h"
@@ -166,7 +166,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
             break;
         }
         case AllocatorType::DMA_ALLOC: {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
             ImageUtils::SurfaceBuffer_Unreference(static_cast<SurfaceBuffer*>(context_));
             data_ = nullptr;
             context_ = nullptr;
@@ -831,7 +831,7 @@ bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageI
         dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
     dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
@@ -1080,7 +1080,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
         SetRowStride(rowDataSize_);
         IMAGE_LOGI("ALPHA_8 rowDataSize_ %{public}d.", rowDataSize_);
     } else if (!ImageUtils::IsAstc(info.pixelFormat)) {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (allocatorType_ == AllocatorType::DMA_ALLOC) {
             if (context_ == nullptr) {
                 IMAGE_LOGE("set imageInfo failed, context_ is null");
@@ -1139,7 +1139,7 @@ const uint8_t *PixelMap::GetPixel8(int32_t x, int32_t y)
             pixelBytes_);
         return nullptr;
     }
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return (data_ + y * rowStride_ + x);
 #else
     return (data_ + y * rowDataSize_  + x);
@@ -1154,7 +1154,7 @@ const uint16_t *PixelMap::GetPixel16(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint16_t*
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return reinterpret_cast<uint16_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
 #else
     return reinterpret_cast<uint16_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << RGB_565_SHIFT));
@@ -1169,7 +1169,7 @@ const uint32_t *PixelMap::GetPixel32(int32_t x, int32_t y)
         return nullptr;
     }
     // convert uint8_t* to uint32_t*
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return reinterpret_cast<uint32_t *>(data_ + y * rowStride_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
 #else
     return reinterpret_cast<uint32_t *>(data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) << ARGB_8888_SHIFT));
@@ -1182,7 +1182,7 @@ const uint8_t *PixelMap::GetPixel(int32_t x, int32_t y)
         IMAGE_LOGE("input pixel position:(%{public}d, %{public}d) invalid.", x, y);
         return nullptr;
     }
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     return (data_ + y * rowStride_ + (static_cast<uint32_t>(x) * pixelBytes_));
 #else
     return (data_ + y * rowDataSize_ + (static_cast<uint32_t>(x) * pixelBytes_));
@@ -2077,7 +2077,7 @@ uint8_t *PixelMap::ReadImageData(Parcel &parcel, int32_t bufferSize)
 
 bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     if (fd < 0) {
         IMAGE_LOGE("WriteFileDescriptor get fd failed, fd:[%{public}d].", fd);
         return false;
@@ -2097,7 +2097,7 @@ bool PixelMap::WriteFileDescriptor(Parcel &parcel, int fd)
 
 int PixelMap::ReadFileDescriptor(Parcel &parcel)
 {
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     sptr<IPCFileDescriptor> descriptor = parcel.ReadObject<IPCFileDescriptor>();
     if (descriptor == nullptr) {
         IMAGE_LOGE("ReadFileDescriptor get descriptor failed");
@@ -3694,7 +3694,7 @@ uint32_t PixelMap::crop(const Rect &rect)
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
-#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM) && !defined(_WIN32) && !defined(_APPLE)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         if (m->extend.data == nullptr) {
             IMAGE_LOGE("GendstTransInfo get surfacebuffer failed");
