@@ -107,6 +107,7 @@ struct ImagePackerAsyncContext {
     int64_t packedSize = 0;
     int fd = INVALID_FD;
     ImagePackerError error;
+    bool needReturnErrorCode = true;
 };
 
 struct PackingOption {
@@ -203,16 +204,6 @@ static void CommonCallbackRoutine(napi_env env, ImagePackerAsyncContext* &connec
     connect = nullptr;
 }
 
-static void BuildMsgOnError(ImagePackerAsyncContext* ctx, bool assertion, const std::string msg)
-{
-    if (ctx == nullptr || assertion) {
-        return;
-    }
-    IMAGE_LOGE("%{public}s", msg.c_str());
-    ctx->error.hasErrorCode = false;
-    ctx->error.msg = msg;
-}
-
 static void BuildMsgOnError(ImagePackerAsyncContext* ctx, bool assertion,
     const std::string msg, int32_t errorCode)
 {
@@ -220,7 +211,7 @@ static void BuildMsgOnError(ImagePackerAsyncContext* ctx, bool assertion,
         return;
     }
     IMAGE_LOGE("%{public}s", msg.c_str());
-    ctx->error.hasErrorCode = true;
+    ctx->error.hasErrorCode = ctx->needReturnErrorCode;
     ctx->error.errorCode = errorCode;
     ctx->error.msg = msg;
 }
@@ -300,32 +291,33 @@ STATIC_EXEC_FUNC(Packing)
     context->resultBuffer = std::make_unique<uint8_t[]>(
         (context->resultBufferSize <= 0) ? getDefaultBufferSize(context) : context->resultBufferSize);
     if (context->resultBuffer == nullptr) {
-        BuildMsgOnError(context, context->resultBuffer == nullptr, "ImagePacker buffer alloc error");
+        BuildMsgOnError(context, false, "ImagePacker buffer alloc error", ERR_IMAGE_ENCODE_FAILED);
         return;
     }
-    uint32_t packRes = context->rImagePacker->StartPacking(context->resultBuffer.get(),
+    auto startRes = context->rImagePacker->StartPacking(context->resultBuffer.get(),
         context->resultBufferSize, context->packOption);
+    if (startRes != SUCCESS) {
+        context->status = ERROR;
+        BuildMsgOnError(context, false, "Packing start packing failed",
+                startRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : ERR_IMAGE_ENCODE_FAILED);
+        return;
+    }
     if (context->packType == TYPE_IMAGE_SOURCE) {
         IMAGE_LOGI("ImagePacker set image source");
         if (context->rImageSource == nullptr) {
-            BuildMsgOnError(context, context->rImageSource == nullptr, "ImageSource is nullptr");
+            BuildMsgOnError(context, false, "ImageSource is nullptr", COMMON_ERR_INVALID_PARAMETER);
             return;
         }
         context->rImagePacker->AddImage(*(context->rImageSource));
     } else if (context->packType == TYPE_PIXEL_MAP) {
         IMAGE_LOGD("ImagePacker set pixelmap");
         if (context->rPixelMap == nullptr) {
-            BuildMsgOnError(context, context->rImageSource == nullptr, "Pixelmap is nullptr");
+            BuildMsgOnError(context, false, "Pixelmap is nullptr", COMMON_ERR_INVALID_PARAMETER);
             return;
         }
         context->rImagePacker->AddImage(*(context->rPixelMap));
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
-        if (packRes != SUCCESS) {
-            BuildMsgOnError(context, packRes == SUCCESS, "Packing picture failed",
-                packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
-            return;
-        }
         if (!SetPicture(context)) {
             return;
         }
@@ -335,11 +327,15 @@ STATIC_EXEC_FUNC(Packing)
             return;
         }
     }
-    packRes = context->rImagePacker->FinalizePacking(packedSize);
+    auto packRes = context->rImagePacker->FinalizePacking(packedSize);
     IMAGE_LOGD("packedSize=%{public}" PRId64, packedSize);
-    if (packedSize > 0 && (packedSize < context->resultBufferSize)) {
+    if (packRes == SUCCESS) {
         context->packedSize = packedSize;
         context->status = SUCCESS;
+    } else if (packedSize == context->resultBufferSize) {
+        context->status = ERROR;
+        BuildMsgOnError(context, false, "output buffer is not enough", ERR_IMAGE_TOO_LARGE);
+        IMAGE_LOGE("output buffer is not enough.");
     } else {
         context->status = ERROR;
         IMAGE_LOGE("Packing failed, packedSize outside size.");
@@ -422,6 +418,7 @@ napi_value ImagePackerNapi::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor props[] = {
         DECLARE_NAPI_FUNCTION("packing", Packing),
+        DECLARE_NAPI_FUNCTION("packToData", PackToData),
         DECLARE_NAPI_FUNCTION("packToFile", PackToFile),
         DECLARE_NAPI_FUNCTION("packingFromPixelMap", Packing),
         DECLARE_NAPI_FUNCTION("release", Release),
@@ -775,19 +772,22 @@ static void ParserPackingArguments(napi_env env,
 {
     int32_t refCount = 1;
     if (argc < PARAM1 || argc > PARAM3) {
-        BuildMsgOnError(context, (argc < PARAM1 || argc > PARAM3), "Arguments Count error");
+        BuildMsgOnError(context, false, "Arguments Count error", COMMON_ERR_INVALID_PARAMETER);
     }
     context->packType = ParserPackingArgumentType(env, argv[PARAM0]);
     if (context->packType == TYPE_IMAGE_SOURCE) {
         context->rImageSource = GetImageSourceFromNapi(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rImageSource != nullptr, "ImageSource mismatch");
+        BuildMsgOnError(context, context->rImageSource != nullptr, "ImageSource mismatch",
+            COMMON_ERR_INVALID_PARAMETER);
     } else if (context->packType == TYPE_PIXEL_MAP) {
         context->rPixelMap = PixelMapNapi::GetPixelMap(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPixelMap != nullptr, "PixelMap mismatch");
+        BuildMsgOnError(context, context->rPixelMap != nullptr, "PixelMap mismatch",
+            COMMON_ERR_INVALID_PARAMETER);
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPicture != nullptr, "Picture mismatch");
+        BuildMsgOnError(context, context->rPicture != nullptr, "Picture mismatch",
+            COMMON_ERR_INVALID_PARAMETER);
 #endif
     } else if (context->packType == TYPE_ARRAY) {
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
@@ -804,8 +804,8 @@ static void ParserPackingArguments(napi_env env,
                 parsePackOptionOfdisposalTypes(env, argv[PARAM1], &(context->packOption)),
                 "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
         } else {
-            BuildMsgOnError(context,
-                parsePackOptions(env, argv[PARAM1], &(context->packOption)), "PackOptions mismatch");
+            BuildMsgOnError(context, parsePackOptions(env, argv[PARAM1], &(context->packOption)),
+                "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
             context->resultBufferSize = parseBufferSize(env, argv[PARAM1], context);
         }
     }
@@ -814,7 +814,7 @@ static void ParserPackingArguments(napi_env env,
     }
 }
 
-napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
+napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info, bool needReturnError)
 {
     ImageTrace imageTrace("ImagePackerNapi::Packing");
     napi_status status;
@@ -831,6 +831,7 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
     std::unique_ptr<ImagePackerAsyncContext> asyncContext = std::make_unique<ImagePackerAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->constructor_));
     NAPI_ASSERT(env, IMG_IS_READY(status, asyncContext->constructor_), "fail to unwrap constructor_");
+    asyncContext->needReturnErrorCode = needReturnError;
 
     asyncContext->rImagePacker = asyncContext->constructor_->nativeImgPck;
     ParserPackingArguments(env, argv, argc, asyncContext.get());
@@ -851,6 +852,16 @@ napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
         nullptr, IMAGE_LOGE("fail to create async work"));
     return result;
+}
+
+napi_value ImagePackerNapi::Packing(napi_env env, napi_callback_info info)
+{
+    return Packing(env, info, false);
+}
+
+napi_value ImagePackerNapi::PackToData(napi_env env, napi_callback_info info)
+{
+    return Packing(env, info, true);
 }
 
 napi_value ImagePackerNapi::GetSupportedFormats(napi_env env, napi_callback_info info)
