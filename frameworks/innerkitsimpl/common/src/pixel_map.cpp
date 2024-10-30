@@ -2367,7 +2367,7 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         bufferSize = pixelsSize_;
     }
     size_t capacityLength =
-        static_cast<size_t>(buffersize) + static_cast<size_t>(PIXEL_MAP_INFO_MAX_LENGTH);
+        static_cast<size_t>(bufferSize) + static_cast<size_t>(PIXEL_MAP_INFO_MAX_LENGTH);
     if (static_cast<size_t>(bufferSize) <= MIN_IMAGEDATA_SIZE &&
         capacityLength > parcel.GetDataCapacity() &&
         !parcel.SetDataCapacity(bufferSize + PIXEL_MAP_INFO_MAX_LENGTH)) {
