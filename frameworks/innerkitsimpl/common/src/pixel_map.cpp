@@ -366,6 +366,10 @@ static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelF
 
 static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 {
+    if (dstPixelMap == nullptr) {
+        IMAGE_LOGE("SetYUVDataInfo failed");
+        return;
+    }
     if (IsYUV(dstPixelMap->GetPixelFormat())) {
         YUVDataInfo yDatainfo;
         UpdateYUVDataInfo(dstPixelMap->GetWidth(), dstPixelMap->GetHeight(), yDatainfo);
@@ -396,6 +400,10 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (dstMemory->GetType() == AllocatorType::DMA_ALLOC) {
         SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(dstMemory->extend.data);
+        if (sbBuffer == nullptr) {
+            IMAGE_LOGE("get SurfaceBuffer failed");
+            return IMAGE_RESULT_MALLOC_ABNORMAL;
+        }
         dstRowStride = sbBuffer->GetStride();
     }
 #endif
@@ -480,7 +488,7 @@ void PixelMap::ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataS
     }
 }
 
-uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
+uint32_t PixelMap::SetMemoryName(const std::string &pixelMapName)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     if (GetFd() == nullptr) {
@@ -490,7 +498,7 @@ uint32_t PixelMap::SetMemoryName(std::string pixelMapName)
 
     AllocatorType allocatorType = GetAllocatorType();
 
-    if (pixelMapName.size() <= 0 || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
+    if (pixelMapName.empty() || pixelMapName.size() > DMA_BUF_NAME_LEN - 1) {
         IMAGE_LOGE("name size not compare");
         return COMMON_ERR_INVALID_PARAMETER;
     }
@@ -1087,6 +1095,10 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
                 return ERR_IMAGE_DATA_ABNORMAL;
             }
             SurfaceBuffer* sbBuffer = static_cast<SurfaceBuffer*>(context_);
+            if (sbBuffer == nullptr) {
+                IMAGE_LOGE("Type conversion failed");
+                return ERR_IMAGE_DATA_ABNORMAL;
+            }
             SetRowStride(sbBuffer->GetStride());
         } else {
             SetRowStride(rowDataSize_);
@@ -2632,7 +2644,7 @@ bool PixelMap::UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, Pix
         }
         ReleaseMemory(pixelMemInfo.allocatorType, pixelMemInfo.base, pixelMemInfo.context, pixelMemInfo.bufferSize);
         if (pixelMemInfo.allocatorType == AllocatorType::SHARE_MEM_ALLOC && pixelMemInfo.context != nullptr) {
-            ::close(*static_cast<int32_t *>(pixelMemInfo.context));
+            delete static_cast<int32_t *>(pixelMemInfo.context);
             pixelMemInfo.context = nullptr;
         }
         IMAGE_LOGE("create pixel map from parcel failed, set image info error.");
@@ -3443,6 +3455,9 @@ static bool GendstTransInfo(SkTransInfo &srcInfo, SkTransInfo &dstInfo, SkMatrix
         return false;
     }
     memoryInfo.memory = std::move(dstMemory);
+    if (memoryInfo.memory == nullptr) {
+        return false;
+    }
     if (memset_s(memoryInfo.memory->data.data, memoryInfo.memory->data.size,
         0, memoryInfo.memory->data.size) != 0) {
         memoryInfo.memory->Release();
@@ -3653,6 +3668,10 @@ void PixelMap::flip(bool xAxis, bool yAxis)
 void PixelMap::CopySurfaceBufferInfo(void *data)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (data == nullptr) {
+        IMAGE_LOGE("CopySurfaceBufferInfo failed");
+        return;
+    }
     if (allocatorType_ == AllocatorType::DMA_ALLOC) {
         sptr<SurfaceBuffer> sourceSurfaceBuffer(static_cast<SurfaceBuffer*> (GetFd()));
         sptr<SurfaceBuffer> dstSurfaceBuffer(static_cast<SurfaceBuffer*>(data));
@@ -3693,7 +3712,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (m == nullptr) {
+    if (m == nullptr || m->extend.data == nullptr || m->data.data == nullptr) {
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
@@ -3724,6 +3743,10 @@ uint32_t PixelMap::crop(const Rect &rect)
 static bool DecomposeImage(sptr<SurfaceBuffer>& hdr, sptr<SurfaceBuffer>& sdr, bool isSRGB = false)
 {
     ImageTrace imageTrace("PixelMap decomposeImage");
+    if (hdr == nullptr || sdr == nullptr) {
+        IMAGE_LOGE("hdr or sdr is empty");
+        return false;
+    }
     VpeUtils::SetSbMetadataType(hdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_SINGLE);
     VpeUtils::SetSbMetadataType(sdr, HDI::Display::Graphic::Common::V1_0::CM_IMAGE_HDR_VIVID_DUAL);
     VpeUtils::SetSbColorSpaceType(sdr,
@@ -3795,6 +3818,10 @@ static void UpdateSdrYuvStrides(const ImageInfo &imageInfo, YUVStrideInfo &dstSt
     }
     if (dstType == AllocatorType::DMA_ALLOC) {
         auto sb = static_cast<SurfaceBuffer*>(context);
+        if (sb == nullptr) {
+            IMAGE_LOGE("get SurfaceBuffer failed");
+            return;
+        }
         OH_NativeBuffer_Planes *planes = nullptr;
         GSError retVal = sb->GetPlanesInfo(reinterpret_cast<void**>(&planes));
         if (retVal != OHOS::GSERROR_OK || planes == nullptr) {

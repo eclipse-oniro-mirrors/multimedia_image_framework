@@ -182,13 +182,13 @@ public:
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
-    NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
+    NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
         errorInfo = info;
     }
 
-    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, std::string info)
+    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, const std::string &info)
     {
         err.errorCode = code;
         err.errorInfo = info;
@@ -298,7 +298,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT uint32_t SetMemoryName(std::string pixelMapName);
+    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
