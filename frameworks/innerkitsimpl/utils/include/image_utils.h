@@ -82,6 +82,8 @@ public:
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
     static bool StrToUint32(const std::string& str, uint32_t& value);
     static bool IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue);
+    static bool IsInRange(int32_t value, int32_t minValue, int32_t maxValue);
+    static bool IsEven(int32_t value);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);
