@@ -1747,7 +1747,6 @@ group("unittest") {
   testonly = true
   deps = [
     ":attrdatatest",
-    ":bmpplugintest",
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
