@@ -185,21 +185,32 @@ int32_t ImageUtils::GetPixelBytes(const PixelFormat &pixelFormat)
     return pixelBytes;
 }
 
-int32_t ImageUtils::GetRowDataSizeByPixelFormat(int32_t width, PixelFormat format)
+int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const PixelFormat &format)
 {
-    int32_t pixelBytes = GetPixelBytes(format);
+    uint64_t uWidth = static_cast<uint64_t>(width);
+    uint64_t pixelBytes = static_cast<uint64_t>(GetPixelBytes(format));
+    uint64_t rowDataSize = 0;
     switch (format) {
         case PixelFormat::ALPHA_8:
-            return pixelBytes * ((width + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            rowDataSize = pixelBytes * ((uWidth + FILL_NUMBER) / ALIGN_NUMBER * ALIGN_NUMBER);
+            break;
         case PixelFormat::ASTC_4x4:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_3) >> NUM_2) << NUM_2);
+            rowDataSize = pixelBytes * (((uWidth + NUM_3) >> NUM_2) << NUM_2);
+            break;
         case PixelFormat::ASTC_6x6:
-            return pixelBytes * (((width + NUM_5) / NUM_6) * NUM_6);
+            rowDataSize = pixelBytes * (((uWidth + NUM_5) / NUM_6) * NUM_6);
+            break;
         case PixelFormat::ASTC_8x8:
-            return pixelBytes * (((static_cast<uint32_t>(width) + NUM_7) >> NUM_3) << NUM_3);
+            rowDataSize = pixelBytes * (((uWidth + NUM_7) >> NUM_3) << NUM_3);
+            break;
         default:
-            return pixelBytes * width;
+            rowDataSize = pixelBytes * uWidth;
     }
+    if (rowDataSize > INT_MAX) {
+        IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
+        return 0;
+    }
+    return static_cast<int32_t>(rowDataSize);
 }
 
 uint32_t ImageUtils::RegisterPluginServer()
@@ -330,6 +341,11 @@ bool ImageUtils::IsValidImageInfo(const ImageInfo &info)
         return false;
     }
     return true;
+}
+
+bool ImageUtils::IsAstc(PixelFormat format)
+{
+    return format == PixelFormat::ASTC_4x4 || format == PixelFormat::ASTC_6x6 || format == PixelFormat::ASTC_8x8;
 }
 
 bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
