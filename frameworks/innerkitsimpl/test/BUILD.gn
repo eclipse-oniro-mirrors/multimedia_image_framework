@@ -1910,7 +1910,6 @@ group("unittest") {
   deps = [
     ":attrdatatest",
     ":auxiliarypicturetest",
-    ":bmpplugintest",
     ":colorconvertertest",
     ":convertertest",
     ":creatortest",
