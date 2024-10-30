@@ -930,7 +930,10 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     sptr<SurfaceBuffer> gainMapSptr(reinterpret_cast<SurfaceBuffer*>(gainPixelMap->GetFd()));
-    HdrMetadata metadata = *(gainPixelMap->GetHdrMetadata().get());
+    HdrMetadata metadata;
+    if (gainPixelMap->GetHdrMetadata() != nullptr) {
+        metadata = *(gainPixelMap->GetHdrMetadata().get());
+    }
 
     ColorManager::ColorSpaceName colorspaceName =
         sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
@@ -1348,7 +1351,10 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVivid(SkWStream& skStream)
     pixelmap_ = gainmapPixelmap.get();
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
 
-    HdrMetadata hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    HdrMetadata hdrMetadata;
+    if (mainPixelmap->GetHdrMetadata() != nullptr) {
+        hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
+    }
     uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, skStream, hdrMetadata);
     IMAGE_LOGD("%{public}s splice hdr stream result is: %{public}u", __func__, error);
     return error;
