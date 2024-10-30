@@ -25,7 +25,7 @@
 #include "media_errors.h"
 #include "memory_manager.h"
 #include "pixel_convert_adapter.h"
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "securec.h"
 #else
 #include "memory.h"
@@ -457,7 +457,7 @@ bool PostProc::AllocHeapBuffer(uint64_t bufferSize, uint8_t **buffer)
             static_cast<unsigned long long>(bufferSize));
         return false;
     }
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_APPLE) || defined(IOS_PLATFORM) || defined(ANDROID_PLATFORM)
     errno_t backRet = memset_s(*buffer, 0, bufferSize);
     if (backRet != EOK) {
         IMAGE_LOGE("[PostProc]memset convertData fail, errorCode = %{public}d", backRet);

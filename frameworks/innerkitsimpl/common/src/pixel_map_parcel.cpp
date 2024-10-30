@@ -17,13 +17,13 @@
 #include <unistd.h>
 #include "image_log.h"
 #include "media_errors.h"
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include "securec.h"
 #else
 #include "memory.h"
 #endif
 
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 #include <sys/mman.h>
 #include "ashmem.h"
 #endif
@@ -43,7 +43,7 @@ constexpr int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
 void PixelMapParcel::ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size)
 {
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         int *fd = static_cast<int *>(context);
         if (addr != nullptr) {
             ::munmap(addr, size);
@@ -133,7 +133,7 @@ std::unique_ptr<PixelMap> PixelMapParcel::CreateFromParcel(OHOS::MessageParcel& 
     uint8_t *base = nullptr;
     int32_t *context = nullptr;
     if (allocType == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         base = ReadAshmemDataFromParcel(data, bufferSize, context);
 #endif
     } else {
@@ -205,7 +205,7 @@ bool PixelMapParcel::WriteToParcel(PixelMap* pixelMap, OHOS::MessageParcel& data
         return false;
     }
     if (pixelMap->GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-#if !defined(_WIN32) && !defined(_APPLE)
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         int *fd = static_cast<int *>(pixelMap->GetFd());
         if (*fd < 0) {
             IMAGE_LOGE("write pixel map failed, fd < 0.");
