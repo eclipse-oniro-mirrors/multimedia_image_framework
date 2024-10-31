@@ -1484,7 +1484,11 @@ bool PixelMap::IsSameImage(const PixelMap &other)
         IMAGE_LOGI("IsSameImage imageInfo is not same");
         return false;
     }
-    uint64_t size = static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height;
+    if (ImageUtils::CheckMulOverflow(rowDataSize_, imageInfo_.size.height)) {
+        IMAGE_LOGI("IsSameImage imageInfo is invalid");
+        return false;
+    }
+    uint64_t size = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
     if (memcmp(data_, other.data_, size) != 0) {
         IMAGE_LOGI("IsSameImage memcmp is not same");
         return false;
@@ -1697,7 +1701,12 @@ uint32_t PixelMap::ResetConfig(const Size &size, const PixelFormat &format)
         IMAGE_LOGE("ResetConfig get bytes by per pixel fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    uint64_t dstSize = static_cast<uint64_t>(size.width) * size.height * bytesPerPixel;
+    if (ImageUtils::CheckMulOverflow(size.width, size.height, bytesPerPixel)) {
+        IMAGE_LOGE("ResetConfig reset input width(%{public}d) or height(%{public}d) is invalid.", size.width,
+                   size.height);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint64_t dstSize = static_cast<uint64_t>(size.width) * static_cast<uint64_t>(size.height) * bytesPerPixel;
     if (dstSize > static_cast<uint64_t>(pixelsSize_)) {
         IMAGE_LOGE("ResetConfig reset dstSize(%{public}llu) > current(%{public}u).",
             static_cast<unsigned long long>(dstSize), pixelsSize_);
