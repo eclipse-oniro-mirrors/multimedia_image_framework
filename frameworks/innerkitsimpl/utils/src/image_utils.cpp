@@ -721,9 +721,9 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
     }
 }
 
-static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vector<int>& next)
+static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vector<uint32_t>& next)
 {
-    int prefixEnd = 0;
+    uint32_t prefixEnd = 0;
     next[0] = prefixEnd;
     for (uint32_t i = 1; i < patternLen; ++i) {
         // if not match, move prefixEnd to next position
@@ -739,7 +739,7 @@ static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vecto
     }
 }
 
-int ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
+int32_t ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
     const uint8_t* pattern, uint32_t patternLen)
 {
     if (target == nullptr || pattern == nullptr || patternLen == 0) {
@@ -747,7 +747,7 @@ int ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
         return ERR_MEDIA_INVALID_VALUE;
     }
 
-    std::vector<int> next(patternLen, 0);
+    std::vector<uint32_t> next(patternLen, 0);
     GetNextArray(pattern, patternLen, next);
     uint32_t targetIndex = 0;
     uint32_t patternIndex = 0;
@@ -762,7 +762,7 @@ int ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
         }
         // find the first matching string success
         if (patternIndex == patternLen) {
-            return targetIndex - patternLen + 1;
+            return static_cast<int32_t>(targetIndex) - static_cast<int32_t>(patternLen) + static_cast<int32_t>(NUM_1);
         }
     }
     return ERR_MEDIA_INVALID_VALUE;
