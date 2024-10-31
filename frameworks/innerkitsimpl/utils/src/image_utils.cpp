@@ -354,7 +354,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rowSize = static_cast<int64_t>(width) * bytesPerPixel;
+    int32_t rowSize = width * bytesPerPixel;
     if ((rowSize / width) != bytesPerPixel) {
         IMAGE_LOGE("width * bytesPerPixel overflow!");
         return true;
@@ -368,12 +368,12 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rectSize = static_cast<int64_t>(width) * height;
+    int32_t rectSize = width * height;
     if ((rectSize / width) != height) {
         IMAGE_LOGE("width * height overflow!");
         return true;
     }
-    int64_t bufferSize = rectSize * bytesPerPixel;
+    int32_t bufferSize = rectSize * bytesPerPixel;
     if ((bufferSize / bytesPerPixel) != rectSize) {
         IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
