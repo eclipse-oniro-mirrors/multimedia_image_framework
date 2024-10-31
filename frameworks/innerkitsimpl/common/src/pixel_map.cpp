@@ -282,7 +282,7 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
         IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
@@ -296,7 +296,7 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 {
     if (IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     int32_t rowDataSize = GetRGBxRowDataSize(info);
@@ -310,7 +310,7 @@ int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 int32_t PixelMap::GetYUVByteCount(const ImageInfo& info)
 {
     if (!IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     if (info.size.width <= 0 || info.size.height <= 0) {
