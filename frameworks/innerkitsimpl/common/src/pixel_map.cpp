@@ -2193,6 +2193,12 @@ bool PixelMap::WritePropertiesToParcel(Parcel &parcel) const
         IMAGE_LOGE("write image info versionId_:[%{public}d] to parcel failed.", versionId_);
         return false;
     }
+
+    if (!WriteAstcRealSizeToParcel(parcel)) {
+        IMAGE_LOGE("write ASTC real size to parcel failed.");
+        return false;
+    }
+
     return true;
 }
 
@@ -2389,10 +2395,6 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("write transformData to parcel failed.");
         return false;
     }
-    if (!WriteAstcRealSizeToParcel(parcel)) {
-        IMAGE_LOGE("write astcrealSize to parcel failed.");
-        return false;
-    }
 
     if (!WriteYuvDataInfoToParcel(parcel)) {
         IMAGE_LOGE("write WriteYuvDataInfoToParcel to parcel failed.");
@@ -2415,7 +2417,7 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     imgInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
     if (ImageUtils::GetPixelBytes(imgInfo.pixelFormat) == 0) {
-        IMAGE_LOGE("invalid pixelFormat:0");
+        IMAGE_LOGE("invalid pixelFormat:[0]");
         return false;
     }
     imgInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
@@ -2493,63 +2495,87 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
     return true;
 }
 
-bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
+bool PixelMap::ReadAstcRealSizeFromParcel(Parcel& parcel)
 {
-    if (pixelMap == nullptr) {
-        IMAGE_LOGE("ReadAstcRealSize invalid input parameter: pixelMap is null");
-        return false;
-    }
-
-    if (pixelMap->IsAstc()) {
+    if (IsAstc()) {
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
-        pixelMap->SetAstcRealSize(realSize);
+        SetAstcRealSize(realSize);
     }
     return true;
 }
 
-bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
-    AllocatorType &allocatorType, int32_t &bufferSize, PIXEL_MAP_ERR &error)
+bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo, PixelMemInfo& memInfo)
 {
-    bool isEditable = parcel.ReadBool();
-    SetEditable(isEditable);
-    bool isAstc = parcel.ReadBool();
-    SetAstc(isAstc);
+    if (!ReadImageInfo(parcel, imgInfo)) {
+        IMAGE_LOGE("ReadPropertiesFromParcel: read image info failed");
+        return false;
+    }
 
-    allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
+    if (IsYUV(imgInfo.pixelFormat)) {
+#ifdef EXT_PIXEL
+        pixelMap = new(std::nothrow) PixelYuvExt();
+#else
+        pixelMap = new(std::nothrow) PixelYuv();
+#endif
+    } else {
+        pixelMap = new(std::nothrow) PixelMap();
+    }
+
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("ReadPropertiesFromParcel: create PixelMap failed");
+        return false;
+    }
+
+    pixelMap->SetEditable(parcel.ReadBool());
+    memInfo.isAstc = parcel.ReadBool();
+    pixelMap->SetAstc(memInfo.isAstc);
+    memInfo.allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
+    // PixelMap's allocator type should only be set after SetImageInfo()
 
     int32_t csm = parcel.ReadInt32();
     if (csm != ERR_MEDIA_INVALID_VALUE) {
         OHOS::ColorManager::ColorSpaceName colorSpaceName = static_cast<OHOS::ColorManager::ColorSpaceName>(csm);
         OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
-        InnerSetColorSpace(grColorSpace);
+        pixelMap->InnerSetColorSpace(grColorSpace);
     }
 
-    uint32_t versionId = parcel.ReadUint32();
-    SetVersionId(versionId);
-    bufferSize = parcel.ReadInt32();
+    pixelMap->SetVersionId(parcel.ReadUint32());
+
+    if (!pixelMap->ReadAstcRealSizeFromParcel(parcel)) {
+        IMAGE_LOGE("ReadPropertiesFromParcel: read ASTC real size failed");
+        return false;
+    }
+
+    return true;
+}
+
+bool PixelMap::ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
+    PIXEL_MAP_ERR& error)
+{
+    memInfo.bufferSize = parcel.ReadInt32();
 
     int32_t rowDataSize = ImageUtils::GetRowDataSizeByPixelFormat(imgInfo.size.width, imgInfo.pixelFormat);
     if (rowDataSize <= 0) {
-        IMAGE_LOGE("ReadPropertiesFromParcel rowDataSize (%{public}d) invalid", rowDataSize);
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "rowDataSize invalid");
+        IMAGE_LOGE("ReadBufferSizeFromParcel: rowDataSize (%{public}d) invalid", rowDataSize);
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "row data size invalid");
         return false;
     }
 
     uint64_t expectedBufferSize = static_cast<uint64_t>(rowDataSize) * static_cast<uint64_t>(imgInfo.size.height);
-    if (isAstc) {
-        Size astcSize;
-        GetAstcRealSize(astcSize);
-        ImageInfo astcImgInfo = {astcSize, imgInfo.pixelFormat};
+    if (memInfo.isAstc) {
+        Size realSize;
+        GetAstcRealSize(realSize);
+        ImageInfo astcImgInfo = {realSize, imgInfo.pixelFormat};
         expectedBufferSize = ImageUtils::GetAstcBytesCount(astcImgInfo);
     }
     if (!IsYUV(imgInfo.pixelFormat) && imgInfo.pixelFormat != PixelFormat::RGBA_F16 &&
-        (expectedBufferSize > (allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
-        static_cast<uint64_t>(bufferSize) != expectedBufferSize)) {
-        IMAGE_LOGE("ReadPropertiesFromParcel bufferSize invalid, expect: %{public}llu, actual: %{public}d",
-            static_cast<unsigned long long>(expectedBufferSize), bufferSize);
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "bufferSize invalid");
+        (expectedBufferSize > (memInfo.allocatorType == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX) ||
+        static_cast<uint64_t>(memInfo.bufferSize) != expectedBufferSize)) {
+        IMAGE_LOGE("ReadBufferSizeFromParcel: bufferSize invalid, expect:%{public}llu, actual:%{public}d",
+            static_cast<unsigned long long>(expectedBufferSize), memInfo.bufferSize);
+        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "buffer size invalid");
         return false;
     }
     return true;
@@ -2666,57 +2692,42 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
 PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
 {
     ImageInfo imgInfo;
-    PixelMap *pixelMap = nullptr;
-    if (!ReadImageInfo(parcel, imgInfo)) {
-        IMAGE_LOGE("read imageInfo fail");
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "read imageInfo fail");
-        return nullptr;
-    }
-    if (IsYUV(imgInfo.pixelFormat)) {
-#ifdef EXT_PIXEL
-        pixelMap = new(std::nothrow) PixelYuvExt();
-#else
-        pixelMap = new(std::nothrow) PixelYuv();
-#endif
-    } else {
-        pixelMap = new(std::nothrow) PixelMap();
-    }
-
-    if (pixelMap == nullptr) {
-        PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "pixelmap create failed");
-        return nullptr;
-    }
-
+    PixelMap* pixelMap = nullptr;
     PixelMemInfo pixelMemInfo;
-    if (!pixelMap->ReadPropertiesFromParcel(parcel, imgInfo, pixelMemInfo.allocatorType,
-        pixelMemInfo.bufferSize, error)) {
-        IMAGE_LOGE("read properties fail");
+
+    if (!ReadPropertiesFromParcel(parcel, pixelMap, imgInfo, pixelMemInfo)) {
+        if (pixelMap == nullptr) {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "PixelMap creation failed");
+        } else {
+            PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "Read properties failed");
+            delete pixelMap;
+        }
+        IMAGE_LOGE("Unmarshalling: read properties failed");
+        return nullptr;
+    }
+
+    if (!pixelMap->ReadBufferSizeFromParcel(parcel, imgInfo, pixelMemInfo, error)) {
+        IMAGE_LOGE("Unmarshalling: read buffer size failed");
         delete pixelMap;
         return nullptr;
     }
-    pixelMemInfo.isAstc = pixelMap->IsAstc();
     if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
-        IMAGE_LOGE("read memInfo fail");
+        IMAGE_LOGE("Unmarshalling: read memInfo failed");
         delete pixelMap;
         return nullptr;
     }
     if (!UpdatePixelMapMemInfo(pixelMap, imgInfo, pixelMemInfo)) {
-        IMAGE_LOGE("update pixelMap memInfo fail");
+        IMAGE_LOGE("Unmarshalling: update pixelMap memInfo failed");
         delete pixelMap;
         return nullptr;
     }
     if (!pixelMap->ReadTransformData(parcel, pixelMap)) {
-        IMAGE_LOGE("read transformData fail");
-        delete pixelMap;
-        return nullptr;
-    }
-    if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
-        IMAGE_LOGE("read astcrealSize fail");
+        IMAGE_LOGE("Unmarshalling: read transformData failed");
         delete pixelMap;
         return nullptr;
     }
     if (!pixelMap->ReadYuvDataInfoFromParcel(parcel, pixelMap)) {
-        IMAGE_LOGE("ReadYuvDataInfoFromParcel fail");
+        IMAGE_LOGE("Unmarshalling: ReadYuvDataInfoFromParcel failed");
         delete pixelMap;
         return nullptr;
     }

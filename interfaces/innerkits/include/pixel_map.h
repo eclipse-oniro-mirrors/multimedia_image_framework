@@ -375,7 +375,7 @@ public:
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
-    NATIVEEXPORT void  setAllocatorType(AllocatorType allocatorType)
+    NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
     {
         allocatorType_ = allocatorType;
     }
@@ -427,14 +427,16 @@ protected:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WritePropertiesToParcel(Parcel &parcel) const;
-    bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
-                                  int32_t &bufferSize, PIXEL_MAP_ERR &error);
+    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo,
+        PixelMemInfo& memInfo);
+    bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
+        PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
     static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
-    bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
+    bool ReadAstcRealSizeFromParcel(Parcel& parcel);
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
