@@ -11,17 +11,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-group("fuzztest") {
-  testonly = true
-  deps = [
-    "imageaccessor_fuzzer:ImageAccessorFuzzTest",
-    "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
-    "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
-    "imagepicture_fuzzer:ImagePictureFuzzTest",
-    "imagepixelmap_fuzzer:ImagePixelmapFuzzTest",
-    "imageplugin_fuzzer:ImagePluginFuzzTest",
-    "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
-    "imagesource_fuzzer:ImageSourceFuzzTest",
-    "imageyuvconvert_fuzzer:ImageYuvConvertFuzzTest",
-  ]
-}
+FUZZ
