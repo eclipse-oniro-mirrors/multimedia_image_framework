@@ -129,6 +129,7 @@ const static std::string DEFAULT_PACKAGE_NAME = "entry";
 const static std::string DEFAULT_VERSION_ID = "1";
 const static std::string UNKNOWN_IMAGE = "unknown";
 constexpr static int NUM_ONE = 1;
+constexpr static uint64_t MALLOC_LIMIT = 300 * 1024 * 1024;
 #ifdef JPEG_HW_DECODE_ENABLE
 const static uint32_t PLANE_COUNT_TWO = 2;
 #endif
@@ -1085,7 +1086,13 @@ uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
 {
     ImageTrace imageTrace("Ext AllocOutputBuffer");
-    uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
+    if (ImageUtils::CheckMulOverflow(hwDstInfo_.height(), hwDstInfo_.width(), hwDstInfo_.bytesPerPixel())) {
+        IMAGE_LOGE("Invalid dstInfo height:%{public}d, width:%{public}d", hwDstInfo_.height(), hwDstInfo_.width());
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height()) *
+            static_cast<uint64_t>(hwDstInfo_.width()) *
+            static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);
@@ -1280,7 +1287,10 @@ uint32_t ExtDecoder::GifDecode(uint32_t index, DecodeContext &context, const uin
     if (curInfo.fDisposalMethod != SkCodecAnimation::DisposalMethod::kRestorePrevious) {
         if (gifCache_ == nullptr) {
             frameCacheInfo_ = InitFrameCacheInfo(rowStride, dstInfo_);
-            if (frameCacheInfo_.byteCount == 0) {
+            uint64_t memorySize = frameCacheInfo_.byteCount;
+            if (memorySize == 0 || memorySize >= MALLOC_LIMIT) {
+                IMAGE_LOGE("%{public}s memorySize invalid: %{public}llu", __func__,
+                    static_cast<unsigned long long>(memorySize));
                 return ERR_IMAGE_DECODE_ABNORMAL;
             }
             gifCache_ = static_cast<uint8_t *>(calloc(frameCacheInfo_.byteCount, 1));
