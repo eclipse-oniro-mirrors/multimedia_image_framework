@@ -81,6 +81,7 @@ constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
+constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
@@ -898,6 +899,16 @@ bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
 bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
 {
     return (value >= minValue) && (value <= maxValue);
+}
+
+bool ImageUtils::IsInRange(int32_t value, int32_t minValue, int32_t maxValue)
+{
+    return (value >= minValue) && (value <= maxValue);
+}
+
+bool ImageUtils::IsEven(int32_t value)
+{
+    return value % BASE_EVEN_DIVISOR == 0;
 }
 } // namespace Media
 } // namespace OHOS

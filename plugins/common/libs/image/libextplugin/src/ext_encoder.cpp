@@ -159,6 +159,9 @@ static const std::map<AuxiliaryPictureType, std::string> DEFAULT_AUXILIARY_TAG_M
 static const uint8_t NUM_3 = 3;
 static const uint8_t NUM_4 = 4;
 
+static constexpr int32_t MAX_IMAGE_SIZE = 8196;
+static constexpr int32_t MIN_IMAGE_SIZE = 128;
+
 #ifdef HEIF_HW_ENCODE_ENABLE
 using namespace OHOS::HDI::Codec::Image::V2_0;
 static std::mutex g_codecMtx;
@@ -430,13 +433,11 @@ bool ExtEncoder::IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::P
         IMAGE_LOGE("pixelMap is nullptr");
         return false;
     }
-    static const int32_t maxImageSize = 8196;
-    static const int32_t minImageSize = 128;
     bool isSupport = ImageSystemProperties::GetHardWareEncodeEnabled() && opts.format == "image/jpeg" &&
         (pixelMap->GetWidth() % 2 == 0) && (pixelMap->GetHeight() % 2 == 0) &&
         (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) &&
-        pixelMap->GetWidth() <= maxImageSize && pixelMap->GetHeight() <= maxImageSize &&
-        pixelMap->GetWidth() >= minImageSize && pixelMap->GetHeight() >= minImageSize;
+        pixelMap->GetWidth() <= MAX_IMAGE_SIZE && pixelMap->GetHeight() <= MAX_IMAGE_SIZE &&
+        pixelMap->GetWidth() >= MIN_IMAGE_SIZE && pixelMap->GetHeight() >= MIN_IMAGE_SIZE;
     if (!isSupport) {
         IMAGE_LOGD("hardware encode is not support, dstEncodeFormat:%{public}s, pixelWidth:%{public}d, "
             "pixelHeight:%{public}d, pixelFormat:%{public}d", opts.format.c_str(), pixelMap->GetWidth(),
@@ -1496,19 +1497,83 @@ uint32_t ExtEncoder::EncodePicture()
     return EncodeCameraScenePicture(wStream);
 }
 
+static bool IsValidSizeForHardwareEncode(int32_t width, int32_t height)
+{
+    if (ImageUtils::IsEven(width) && ImageUtils::IsInRange(width, MIN_IMAGE_SIZE, MAX_IMAGE_SIZE) &&
+        ImageUtils::IsEven(height) && ImageUtils::IsInRange(height, MIN_IMAGE_SIZE, MAX_IMAGE_SIZE)) {
+        return true;
+    }
+    IMAGE_LOGD("%{public}s hardware encode is not support, width: %{public}d, height: %{public}d",
+        __func__, width, height);
+    return false;
+}
+
+bool ExtEncoder::IsPictureSupportHardwareEncode()
+{
+    if (!ImageSystemProperties::GetHardWareEncodeEnabled()) {
+        IMAGE_LOGE("%{public}s hardware encode disabled", __func__);
+        return false;
+    }
+    if (picture_ == nullptr) {
+        IMAGE_LOGE("%{public}s picture is null", __func__);
+        return false;
+    }
+
+    auto mainPixelMap = picture_->GetMainPixel();
+    if (mainPixelMap == nullptr ||
+        !IsValidSizeForHardwareEncode(mainPixelMap->GetWidth(), mainPixelMap->GetHeight())) {
+        IMAGE_LOGI("%{public}s MainPixelMap not support hardware encode", __func__);
+        return false;
+    }
+
+    const auto& auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
+    for (const auto& auxType : auxTypes) {
+        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) {
+            continue;
+        }
+        auto auxPixelMap = auxPicture->GetContentPixel();
+        if (auxPixelMap == nullptr) {
+            continue;
+        }
+        if (!IsValidSizeForHardwareEncode(auxPixelMap->GetWidth(), auxPixelMap->GetHeight())) {
+            IMAGE_LOGI("%{public}s auxType: %{public}d not support hardware encode", __func__, auxType);
+            return false;
+        }
+    }
+    return true;
+}
+
+uint32_t ExtEncoder::TryHardwareEncodePicture(SkWStream& skStream, std::string& errorMsg)
+{
+    errorMsg = "Hardware encode picture failed";
+    if (picture_ == nullptr) {
+        errorMsg = "picture is nullptr";
+        return ERR_IMAGE_DATA_ABNORMAL;
+    }
+    static ImageFwkExtManager imageFwkExtManager;
+    if (!imageFwkExtManager.LoadImageFwkExtNativeSo() || imageFwkExtManager.doHardwareEncodePictureFunc_ != nullptr) {
+        errorMsg = "Load hardware encode library failed";
+        return ERR_IMAGE_ENCODE_FAILED;
+    }
+    return imageFwkExtManager.doHardwareEncodePictureFunc_(&skStream, opts_, picture_);
+}
+
 uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
 {
     uint32_t retCode = ERR_IMAGE_ENCODE_FAILED;
-    std::string errorMsg = "Load hardware encode library failed";
-    static ImageFwkExtManager imageFwkExtManager;
-    if (imageFwkExtManager.LoadImageFwkExtNativeSo() && imageFwkExtManager.doHardwareEncodePictureFunc_ != nullptr) {
-        retCode = imageFwkExtManager.doHardwareEncodePictureFunc_(&skStream, opts_, picture_);
-        errorMsg = "Hardware encode picture failed";
-    }
-    if (retCode != SUCCESS && encodeFormat_ == SkEncodedImageFormat::kJPEG) {
-        IMAGE_LOGE("%{public}s, retCode is: %{public}d, try jpeg software encode", errorMsg.c_str(), retCode);
-        retCode = EncodeJpegPicture(skStream);
-        errorMsg = "Jpeg software encode picture failed";
+    std::string errorMsg = "Unknown encode failed";
+    if (encodeFormat_ == SkEncodedImageFormat::kHEIF) {
+        retCode = TryHardwareEncodePicture(skStream, errorMsg);
+    } else if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
+        if (IsPictureSupportHardwareEncode()) {
+            retCode = TryHardwareEncodePicture(skStream, errorMsg);
+        }
+        if (retCode != SUCCESS) {
+            IMAGE_LOGW("%{public}s, retCode is: %{public}d, try jpeg software encode", errorMsg.c_str(), retCode);
+            retCode = EncodeJpegPicture(skStream);
+            errorMsg = "Jpeg software encode picture failed";
+        }
     }
     if (retCode != SUCCESS) {
         ImageInfo imageInfo;
