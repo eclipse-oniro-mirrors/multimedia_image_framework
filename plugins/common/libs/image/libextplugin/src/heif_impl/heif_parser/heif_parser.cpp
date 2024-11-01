@@ -207,6 +207,25 @@ heif_error HeifParser::GetAllProperties(heif_item_id itemId, std::vector<std::sh
     return ipcoBox_->GetProperties(itemId, ipmaBox_, properties);
 }
 
+heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
+{
+    if (!HasItemId(itemId)) {
+        return heif_error_item_data_not_found;
+    }
+    auto items = ilocBox_->GetItems();
+    const HeifIlocBox::Item *ilocItem = nullptr;
+    for (const auto &item: items) {
+        if (item.itemId == itemId) {
+            ilocItem = &item;
+            break;
+        }
+    }
+    if (!ilocItem) {
+        return heif_error_item_data_not_found;
+    }
+    return ilocBox_->ReadIlocDataLength(*ilocItem, length);
+}
+
 heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *out, heif_header_option option) const
 {
     if (!HasItemId(itemId)) {

@@ -648,39 +648,33 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
     return res;
 }
 
-bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                                    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
+void HeifDecoderImpl::GetGridsInputs(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
+                                     std::vector<std::vector<uint8_t>> &inputs, size_t numGrid)
 {
-    if (hwDecoder == nullptr || image == nullptr) {
-        IMAGE_LOGE("HeifDecoderImpl::DecodeGrids hwDecoder or image is nullptr");
-        return false;
-    }
-    std::vector<std::shared_ptr<HeifImage>> tileImages;
-    parser_->GetTileImages(image->GetItemId(), tileImages);
-    if (tileImages.empty()) {
-        IMAGE_LOGE("grid image has no tile image");
-        return false;
-    }
-    size_t numGrid = tileImages.size();
-    std::vector<std::vector<uint8_t>> inputs;
-
     if (hwDecoder->IsPackedInputSupported()) {
+        size_t gridLength = 0;
         size_t inputIndex = 0;
         inputs.resize(GRID_NUM_2);
         for (size_t index = 0; index < numGrid; ++index) {
             std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            std::shared_ptr<HeifImage> nextTileImage;
             if (index == 0) {
                 // get hvcc header
                 parser_->GetItemData(tileImage->GetItemId(), &inputs[inputIndex], heif_only_header);
                 ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
                 ++inputIndex;
             }
-            if (inputs[inputIndex].size() >= MAX_INPUT_BUFFER_SIZE) {
+            if (inputs[inputIndex].size() + gridLength >= MAX_INPUT_BUFFER_SIZE) {
                 ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
                 ++inputIndex;
                 inputs.emplace_back(std::vector<uint8_t>());
             }
             parser_->GetItemData(tileImage->GetItemId(), &inputs[inputIndex], heif_no_header);
+            gridLength = 0;
+            if (index + 1 != numGrid) {
+                nextTileImage = tileImages[index + 1];
+                parser_->GetGridLength(nextTileImage->GetItemId(), gridLength);
+            }
         }
         ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
     } else {
@@ -696,6 +690,25 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
             ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
         }
     }
+}
+
+
+bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
+    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
+{
+    if (hwDecoder == nullptr || image == nullptr) {
+        IMAGE_LOGE("HeifDecoderImpl::DecodeGrids hwDecoder or image is nullptr");
+        return false;
+    }
+    std::vector<std::shared_ptr<HeifImage>> tileImages;
+    parser_->GetTileImages(image->GetItemId(), tileImages);
+    if (tileImages.empty()) {
+        IMAGE_LOGE("grid image has no tile image");
+        return false;
+    }
+    size_t numGrid = tileImages.size();
+    std::vector<std::vector<uint8_t>> inputs;
+    GetGridsInputs(hwDecoder, tileImages, inputs, numGrid);
 
     uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);
     if (err != SUCCESS) {
