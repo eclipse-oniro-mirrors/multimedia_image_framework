@@ -210,7 +210,7 @@ heif_error HeifParser::GetAllProperties(heif_item_id itemId, std::vector<std::sh
 heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
 {
     if (!HasItemId(itemId)) {
-        return heif_error_item_data_not_found;
+        return heif_error_item_not_found;
     }
     auto items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
