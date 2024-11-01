@@ -99,7 +99,7 @@ heif_error HeifIlocBox::ReadIlocDataLength(const Item &item, size_t &length)
         if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {
             return heif_error_grid_too_large;
         }
-        lentgth = extent.length;
+        length = extent.length;
     }
     return heif_error_ok;
 }

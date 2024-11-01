@@ -649,7 +649,7 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
 }
 
 void HeifDecoderImpl::GetGridsInputs(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
-                                     std::vector<std::vector<uint8_t>> &inputs, size_t numGrid)
+    std::vector<std::vector<uint8_t>> &inputs, size_t numGrid)
 {
     if (hwDecoder->IsPackedInputSupported()) {
         size_t gridLength = 0;
