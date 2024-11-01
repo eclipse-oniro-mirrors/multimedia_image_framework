@@ -2495,13 +2495,18 @@ bool PixelMap::ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap)
     return true;
 }
 
-bool PixelMap::ReadAstcRealSizeFromParcel(Parcel& parcel)
+bool PixelMap::ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap)
 {
-    if (IsAstc()) {
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("ReadAstcRealSize invalid input parameter: pixelMap is null");
+        return false;
+    }
+
+    if (pixelMap->IsAstc()) {
         Size realSize;
         realSize.width = parcel.ReadInt32();
         realSize.height = parcel.ReadInt32();
-        SetAstcRealSize(realSize);
+        pixelMap->SetAstcRealSize(realSize);
     }
     return true;
 }
@@ -2543,7 +2548,7 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
 
     pixelMap->SetVersionId(parcel.ReadUint32());
 
-    if (!pixelMap->ReadAstcRealSizeFromParcel(parcel)) {
+    if (!pixelMap->ReadAstcRealSize(parcel, pixelMap)) {
         IMAGE_LOGE("ReadPropertiesFromParcel: read ASTC real size failed");
         return false;
     }

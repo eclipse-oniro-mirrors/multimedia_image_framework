@@ -436,7 +436,7 @@ protected:
     bool WriteTransformDataToParcel(Parcel &parcel) const;
     bool ReadTransformData(Parcel &parcel, PixelMap *pixelMap);
     bool WriteAstcRealSizeToParcel(Parcel &parcel) const;
-    bool ReadAstcRealSizeFromParcel(Parcel& parcel);
+    bool ReadAstcRealSize(Parcel &parcel, PixelMap *pixelMap);
     bool WriteYuvDataInfoToParcel(Parcel &parcel) const;
     bool ReadYuvDataInfoFromParcel(Parcel &parcel, PixelMap *pixelMap);
     uint32_t SetRowDataSizeForImageInfo(ImageInfo info);
