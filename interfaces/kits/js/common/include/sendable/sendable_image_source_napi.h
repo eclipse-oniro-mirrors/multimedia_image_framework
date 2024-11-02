@@ -34,10 +34,10 @@ public:
     SendableImageSourceNapi();
     ~SendableImageSourceNapi();
     std::shared_ptr<ImageSource> nativeImgSrc = nullptr;
-    static std::string filePath_;
-    static int fileDescriptor_;
-    static void* fileBuffer_;
-    static size_t fileBufferSize_;
+    static thread_local std::string filePath_;
+    static thread_local int fileDescriptor_;
+    static thread_local void* fileBuffer_;
+    static thread_local size_t fileBufferSize_;
 
     std::shared_ptr<IncrementalPixelMap> GetIncrementalPixelMap()
     {
