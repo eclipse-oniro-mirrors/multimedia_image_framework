@@ -51,6 +51,8 @@ private:
     static void Destructor(napi_env env, void *nativeObject, void *finalize);
     static napi_value Packing(napi_env env, napi_callback_info info);
     static napi_value PackingMultiFrames(napi_env env, napi_callback_info info);
+    static napi_value PackToData(napi_env env, napi_callback_info info);
+    static napi_value Packing(napi_env env, napi_callback_info info, bool needReturnError);
     static napi_value PackingFromPixelMap(napi_env env, napi_callback_info info);
     static napi_value PackToFile(napi_env env, napi_callback_info info);
     static napi_value PackToFileMultiFrames(napi_env env, napi_callback_info info);
