@@ -136,11 +136,11 @@ public:
     NATIVEEXPORT virtual int32_t GetHeight();
     NATIVEEXPORT void GetAstcRealSize(Size &size)
     {
-        size = astcRealSize_;
+        size = astcrealSize_;
     }
     NATIVEEXPORT void SetAstcRealSize(Size size)
     {
-        astcRealSize_ = size;
+        astcrealSize_ = size;
     }
     NATIVEEXPORT void GetTransformData(TransformData &transformData);
     NATIVEEXPORT void SetTransformData(TransformData transformData);
@@ -508,7 +508,7 @@ protected:
     uint32_t uniqueId_ = 0;
     bool isAstc_ = false;
     TransformData transformData_ = {1, 1, 0, 0, 0, 0, 0, 0, 0, false, false};
-    Size astcRealSize_;
+    Size astcrealSize_;
     std::shared_ptr<HdrMetadata> hdrMetadata_ = nullptr;
     ImageHdrType hdrType_ = static_cast<ImageHdrType>(0);
 

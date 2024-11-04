@@ -2360,12 +2360,12 @@ bool PixelMap::WriteYuvDataInfoToParcel(Parcel &parcel) const
 bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 {
     if (isAstc_) {
-        if (!parcel.WriteInt32(static_cast<int32_t>(astcRealSize_.width))) {
-            IMAGE_LOGE("write astcRealSize_.width:[%{public}d] to parcel failed.", astcRealSize_.width);
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.width))) {
+            IMAGE_LOGE("write astcrealSize_.width:[%{public}d] to parcel failed.", astcrealSize_.width);
             return false;
         }
-        if (!parcel.WriteInt32(static_cast<int32_t>(astcRealSize_.height))) {
-            IMAGE_LOGE("write astcRealSize_.height:[%{public}d] to parcel failed.", astcRealSize_.height);
+        if (!parcel.WriteInt32(static_cast<int32_t>(astcrealSize_.height))) {
+            IMAGE_LOGE("write astcrealSize_.height:[%{public}d] to parcel failed.", astcrealSize_.height);
             return false;
         }
     }
