@@ -31,6 +31,7 @@ public:
     HeifHardwareDecoder();
     ~HeifHardwareDecoder();
     sptr<SurfaceBuffer> AllocateOutputBuffer(uint32_t width, uint32_t height, int32_t pixelFmt);
+    bool IsPackedInputSupported();
     uint32_t DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs, sptr<SurfaceBuffer>& output);
 private:
     class HeifDecoderCallback : public ImageCodecCallback {
@@ -55,6 +56,7 @@ private:
     static bool GetUvPlaneOffsetFromSurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, uint64_t& offset);
     bool IsHardwareDecodeSupported(const GridInfo& gridInfo);
     bool SetCallbackForDecoder();
+    void GetPackedInputFlag();
     bool ConfigureDecoder(const GridInfo& gridInfo, sptr<SurfaceBuffer>& output);
     bool SetOutputBuffer(const GridInfo& gridInfo, sptr<SurfaceBuffer> output);
     bool WaitForOmxToReturnInputBuffer(uint32_t& bufferId, std::shared_ptr<ImageCodecBuffer>& buffer);
@@ -86,6 +88,8 @@ private:
     static constexpr uint32_t SAMPLE_RATIO_FOR_YUV420_SP = 2;
     static constexpr size_t MIN_SIZE_OF_INPUT = 2;
     static constexpr int MAX_PATH_LEN = 256;
+
+    bool packedInputFlag_ = false;
 
     std::shared_ptr<ImageCodec> heifDecoderImpl_;
 
