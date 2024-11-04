@@ -307,7 +307,7 @@ napi_value PictureNapi::Constructor(napi_env env, napi_callback_info info)
     std::unique_ptr<PictureNapi> pPictureNapi = std::make_unique<PictureNapi>();
     if (pPictureNapi != nullptr) {
         pPictureNapi->env_ = env;
-        pPictureNapi->nativePicture_ = sPicture_;
+        pPictureNapi->nativePicture_ = std::move(sPicture_);
         if (pPictureNapi->nativePicture_ == nullptr) {
             IMAGE_LOGE("Failed to set nativePicture_ with null. Maybe a reentrancy error");
         }
@@ -330,7 +330,7 @@ void PictureNapi::Destructor(napi_env env, void *nativeObject, void *finalize)
     }
 }
 
-napi_value PictureNapi::CreatePicture(napi_env env, std::shared_ptr<Picture> picture)
+napi_value PictureNapi::CreatePicture(napi_env env, std::shared_ptr<Picture> &picture)
 {
     if (sConstructor_ == nullptr) {
         napi_value exports = nullptr;
