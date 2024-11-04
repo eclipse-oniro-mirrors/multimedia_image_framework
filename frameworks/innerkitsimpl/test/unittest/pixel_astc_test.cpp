@@ -726,7 +726,15 @@ HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
 
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::unique_ptr<PixelMap> pixelMap_dma = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    decodeOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap_heap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap_ashmem = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
     if (data != nullptr) {
