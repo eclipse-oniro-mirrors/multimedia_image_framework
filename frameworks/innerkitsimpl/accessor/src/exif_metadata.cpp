@@ -514,7 +514,7 @@ bool ExifMetadata::SetRational(ExifEntry *ptrEntry, const ExifByteOrder &order, 
             IMAGE_LOGE("Failed to read ExifRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
+        unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_rational(ptrEntry->data + offset, order, rat);
         icount++;
     }
@@ -532,7 +532,7 @@ bool ExifMetadata::SetSRational(ExifEntry *ptrEntry, const ExifByteOrder &order,
             IMAGE_LOGE("Failed to read ExifSRational from string. Current count: %{public}lu", icount);
             return false;
         }
-        int offset = static_cast<int>(icount * exif_format_get_size(ptrEntry->format));
+        unsigned long offset = icount * exif_format_get_size(ptrEntry->format);
         exif_set_srational(ptrEntry->data + offset, order, rat);
         icount++;
     }

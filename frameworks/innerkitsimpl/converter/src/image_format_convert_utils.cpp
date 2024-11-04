@@ -20,6 +20,7 @@
 #include <map>
 #include "hilog/log.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "log_tags.h"
 #include "securec.h"
 #include "pixel_convert_adapter.h"
@@ -616,23 +617,23 @@ static bool YuvToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride);
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride);
 
-    int dstyStride = 0;
-    int dstuvStride = 0;
+    uint32_t dstyStride = 0;
+    uint32_t dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = static_cast<int>(destInfo.yStride);
-        dstuvStride = static_cast<int>(destInfo.uvStride);
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
-        dstyStride = static_cast<int>(destParam.width);
+        dstyStride = destParam.width;
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
-            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
+            destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
     }
 
-    destParam.stride[0] = dstyStride * TWO_SLICES;
-    destParam.stride[1] = dstuvStride * TWO_SLICES;
+    destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
+    destParam.stride[1] = static_cast<int>(dstuvStride * TWO_SLICES);
     return true;
 }
 
@@ -674,23 +675,23 @@ static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride * TWO_SLICES);
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride * TWO_SLICES);
 
-    int dstyStride = 0;
-    int dstuvStride = 0;
+    uint32_t dstyStride = 0;
+    uint32_t dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = static_cast<int>(destInfo.yStride);
-        dstuvStride = static_cast<int>(destInfo.uvStride);
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset;
     } else {
-        dstyStride = static_cast<int>(destParam.width);
+        dstyStride = destParam.width;
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
-            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
+            destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height;
+        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
     }
 
-    destParam.stride[0] = dstyStride;
-    destParam.stride[1] = dstuvStride;
+    destParam.stride[0] = static_cast<int>(dstyStride);
+    destParam.stride[1] = static_cast<int>(dstuvStride);
     return true;
 }
 
@@ -755,23 +756,23 @@ static bool YuvP010ToYuvP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &sr
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride) * TWO_SLICES;
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride) * TWO_SLICES;
 
-    int dstyStride = 0;
-    int dstuvStride = 0;
+    uint32_t dstyStride = 0;
+    uint32_t dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = static_cast<int>(destInfo.yStride);
-        dstuvStride = static_cast<int>(destInfo.uvStride);
+        dstyStride = destInfo.yStride;
+        dstuvStride = destInfo.uvStride;
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
-        dstyStride = static_cast<int>(destParam.width);
+        dstyStride = destParam.width;
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
-            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
+            destParam.width : (destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer +  static_cast<uint32_t>(dstyStride) * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer +  dstyStride * destParam.height * TWO_SLICES;
     }
 
-    destParam.stride[0] = dstyStride * TWO_SLICES;
-    destParam.stride[1] = dstuvStride * TWO_SLICES;
+    destParam.stride[0] = static_cast<int>(dstyStride * TWO_SLICES);
+    destParam.stride[1] = static_cast<int>(dstuvStride * TWO_SLICES);
     return true;
 }
 

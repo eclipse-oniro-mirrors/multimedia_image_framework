@@ -104,7 +104,7 @@ bool PixelYuvExtUtils::Yuv420ToBGRA(const uint8_t *sample, uint8_t *dstArgb,
     info.uvStride = (info.uvStride +1) & ~1;
     const uint8_t *srcY = sample + info.yOffset;
     const uint8_t *srcUV = sample + info.uvOffset;
-    const uint32_t dstStrideARGB = static_cast<uint32_t>(size.width * NUM_4);
+    const uint32_t dstStrideARGB = static_cast<uint32_t>(size.width) * NUM_4;
     auto converter = ConverterHandle::GetInstance().GetHandle();
     if (pixelFormat == PixelFormat::NV12) {
         converter.NV12ToARGB(srcY, info.yStride, srcUV, info.uvStride,
