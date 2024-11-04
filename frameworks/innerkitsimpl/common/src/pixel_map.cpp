@@ -377,7 +377,7 @@ static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &d
     const ImageInfo &dstImageInfo, bool useDMA)
 {
     if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height,
-            ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat))) {
+                                     ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat))) {
         IMAGE_LOGE("[PixelMap]Create: pixelmap size overflow: width = %{public}d, height = %{public}d",
                    dstImageInfo.size.width, dstImageInfo.size.height);
         return IMAGE_RESULT_BAD_PARAMETER;
