@@ -265,6 +265,10 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
     uint32_t dstUHeight = static_cast<uint32_t>(GetUVHeight(dstYHeight));
     // Split VUplane
     std::unique_ptr<uint8_t[]> uvData = std::make_unique<uint8_t[]>(NUM_2 * srcUWidth * srcUHeight);
+    if (uvData == nullptr) {
+        IMAGE_LOGE("ScaleUVPlane make unique ptr for uvData failed.");
+        return;
+    }
     uint8_t *uData = nullptr;
     uint8_t *vData = nullptr;
     uint32_t dstSplitStride = srcUWidth;
@@ -282,6 +286,10 @@ static void ScaleUVPlane(const uint8_t *src, uint8_t*dst, OpenSourceLibyuv::Filt
     }
     // malloc memory to store temp u v
     std::unique_ptr<uint8_t[]> tempUVData = std::make_unique<uint8_t[]>(NUM_2 * dstUWidth * dstUHeight);
+    if (tempUVData == nullptr) {
+        IMAGE_LOGE("ScaleUVPlane make unique ptr for tempUVData failed.");
+        return;
+    }
     uint8_t *tempUData = nullptr;
     uint8_t *tempVData = nullptr;
     if (yuvInfo.yuvFormat == PixelFormat::NV12) {
