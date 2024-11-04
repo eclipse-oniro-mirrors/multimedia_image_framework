@@ -360,7 +360,11 @@ uint32_t JpegDecoder::DoSwDecode(DecodeContext &context) __attribute__((no_sanit
     }
     uint32_t rowStride = GetRowBytes();
     if (context.pixelsBuffer.buffer == nullptr) {
-        uint64_t byteCount = static_cast<uint64_t>(rowStride) * decodeInfo_.output_height;
+        if (ImageUtils::CheckMulOverflow(rowStride, decodeInfo_.output_height)) {
+            IMAGE_LOGE("invalid size.");
+            return ERR_IMAGE_DECODE_ABNORMAL;
+        }
+        uint64_t byteCount = static_cast<uint64_t>(rowStride) * static_cast<uint64_t>(decodeInfo_.output_height);
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
         if (context.allocatorType == Media::AllocatorType::SHARE_MEM_ALLOC) {
             uint32_t id = context.pixelmapUniqueId_;
