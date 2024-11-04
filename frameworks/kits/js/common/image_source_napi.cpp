@@ -24,6 +24,7 @@
 #include "exif_metadata_formatter.h"
 #include "image_dfx.h"
 #include "color_space_object_convertor.h"
+#include "image_common.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -2815,7 +2816,7 @@ static void CreatePictureExecute(napi_env env, void *data)
 
     if (context->status != SUCCESS) {
         context->errMsg = "Create Picture error";
-        IMAGE_LOGE("Create Picture error");
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "Create Picture error.");
     }
     IMAGE_LOGD("CreatePictureExecute OUT");
 }
@@ -2903,11 +2904,9 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         }
     } else if (argCount == NUM_1) {
         if (!ParseDecodingOptionsForPicture(env, argValue[NUM_0], &(asyncContext->decodingOptsForPicture))) {
-            IMAGE_LOGE("DecodingOptionsForPicture mismatch");
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                "DecodingOptionsForPicture mismatch");
         }
-    } else {
-        IMAGE_LOGE("argCount mismatch");
-        return result;
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
