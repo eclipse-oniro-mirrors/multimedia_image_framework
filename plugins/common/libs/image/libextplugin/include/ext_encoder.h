@@ -76,8 +76,16 @@ private:
     uint32_t EncodeEditScenePicture();
     void CheckJpegAuxiliaryTagName();
     uint32_t EncodeJpegPicture(SkWStream& skStream);
+    uint32_t EncodeJpegPictureDualVividInner(SkWStream& skStream, std::shared_ptr<PixelMap>& mainPixelmap,
+        std::shared_ptr<PixelMap>& gainmapPixelmap);
     uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
+    void EncodeJpegAuxiliaryPictures(SkWStream& skStream);
+    uint32_t WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
+    uint32_t SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& skData);
+    uint32_t WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
+    void WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,
+        SkWStream& skStream);
     uint32_t EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,

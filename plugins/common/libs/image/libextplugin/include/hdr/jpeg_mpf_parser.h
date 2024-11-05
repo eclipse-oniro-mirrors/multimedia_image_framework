@@ -48,6 +48,9 @@ private:
 class JpegMpfPacker {
 public:
     static std::vector<uint8_t> PackHdrJpegMpfMarker(SingleJpegImage base, SingleJpegImage gainmap);
+    static std::vector<uint8_t> PackFragmentMetadata(Media::Rect& fragmentRect, bool isBigEndian = true);
+    static std::vector<uint8_t> PackDataSize(uint32_t size, bool isBigEndian = true);
+    static std::vector<uint8_t> PackAuxiliaryTagName(std::string& tagName);
 };
 } // namespace Media
 } // namespace OHOS
