@@ -709,7 +709,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
     // 16 means ASTC per block bytes and header bytes
     size_t size = blockNum * 16 + 16;
     uint8_t* data = (uint8_t*)malloc(size);
-
+    ASSERT_NE(data, nullptr);
     // 4 means blockSize
     if (!GenAstcHeader(data, 4, width, height)) {
         GTEST_LOG_(INFO) << "GenAstcHeader failed";
