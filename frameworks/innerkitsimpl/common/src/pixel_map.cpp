@@ -2863,7 +2863,6 @@ static bool CheckTlvImageInfo(const ImageInfo &info, uint8_t **data)
 
 bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
 {
-    
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ReadVarint(buff, cursor);
@@ -2920,7 +2919,8 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
     int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
-    if (!ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data)) {
+    if (allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC) ||
+        !ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data)) {
         delete pixelMap;
         IMAGE_LOGE("pixel map tlv decode fail");
         return nullptr;
