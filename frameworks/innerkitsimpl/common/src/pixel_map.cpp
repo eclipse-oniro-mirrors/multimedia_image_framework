@@ -3281,24 +3281,23 @@ uint32_t PixelMap::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
 uint32_t PixelMap::SetAlpha(const float percent)
 {
     auto alphaType = GetAlphaType();
-    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN ||
-        alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
-        IMAGE_LOGE(
-            "Could not set alpha on %{public}s",
-            GetNamedAlphaType(alphaType).c_str());
+    if (alphaType == AlphaType::IMAGE_ALPHA_TYPE_UNKNOWN || alphaType == AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+        IMAGE_LOGE("Could not set alpha on %{public}s", GetNamedAlphaType(alphaType).c_str());
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
     if (percent <= 0 || percent > 1) {
-        IMAGE_LOGE(
-            "Set alpha input should (0 < input <= 1). Current input %{public}f",
-            percent);
+        IMAGE_LOGE("Set alpha input should (0 < input <= 1). Current input %{public}f", percent);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
 
     bool isPixelPremul = alphaType == AlphaType::IMAGE_ALPHA_TYPE_PREMUL;
     auto pixelFormat = GetPixelFormat();
-    uint32_t pixelsSize = static_cast<uint32_t>(GetByteCount());
+    int32_t pixelsSize = GetByteCount();
+    if (pixelsSize <= 0) {
+        IMAGE_LOGE("Invalid byte count: %{public}d", pixelsSize);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
     int8_t alphaIndex = GetAlphaIndex(pixelFormat);
     if (alphaIndex == INVALID_ALPHA_INDEX) {
         IMAGE_LOGE("Could not set alpha on %{public}s",
@@ -3312,7 +3311,9 @@ uint32_t PixelMap::SetAlpha(const float percent)
             GetNamedPixelFormat(pixelFormat).c_str(), pixelBytes_);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    for (uint32_t i = 0; i < pixelsSize;) {
+
+    uint32_t uPixelsSize = static_cast<uint32_t>(pixelsSize);
+    for (uint32_t i = 0; i < pixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
         uint8_t* pixel = data_ + i;
         if (pixelFormat == PixelFormat::RGBA_F16) {
             SetF16PixelAlpha(pixel, percent, isPixelPremul);
@@ -3321,7 +3322,6 @@ uint32_t PixelMap::SetAlpha(const float percent)
         } else {
             SetUintPixelAlpha(pixel, percent, pixelBytes_, alphaIndex, isPixelPremul);
         }
-        i += static_cast<uint32_t>(pixelBytes_);
     }
     return SUCCESS;
 }
