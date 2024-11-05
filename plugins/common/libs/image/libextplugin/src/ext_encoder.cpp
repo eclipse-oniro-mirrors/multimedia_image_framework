@@ -86,12 +86,13 @@ namespace {
     constexpr static uint32_t GAINMAP_IMAGE_ITEM_ID = 2;
     constexpr static uint32_t TMAP_IMAGE_ITEM_ID = 3;
     constexpr static uint32_t EXIF_META_ITEM_ID = 4;
-    constexpr static uint32_t DEPTH_MAP_ITEM_ID = 10;
-    constexpr static uint32_t UNREFOCUS_MAP_ITEM_ID = 11;
-    constexpr static uint32_t LINEAR_MAP_ITEM_ID = 12;
-    constexpr static uint32_t FRAGMENT_MAP_ITEM_ID = 13;
+    constexpr static uint32_t DEPTH_MAP_ITEM_ID = 5;
+    constexpr static uint32_t UNREFOCUS_MAP_ITEM_ID = 6;
+    constexpr static uint32_t LINEAR_MAP_ITEM_ID = 7;
+    constexpr static uint32_t FRAGMENT_MAP_ITEM_ID = 8;
     const static std::string COMPRESS_TYPE_TMAP = "tmap";
     const static std::string COMPRESS_TYPE_HEVC = "hevc";
+    const static std::string COMPRESS_TYPE_NONE = "none";
     const static std::string DEFAULT_ASHMEM_TAG = "Heif Encoder Default";
     const static std::string ICC_ASHMEM_TAG = "Heif Encoder Property";
     const static std::string IT35_ASHMEM_TAG = "Heif Encoder IT35";
@@ -99,6 +100,12 @@ namespace {
     const static std::string IMAGE_DATA_TAG = "Heif Encoder Image";
     const static std::string HDR_GAINMAP_TAG = "Heif Encoder Gainmap";
     const static std::string EXIF_ASHMEM_TAG = "Heif Encoder Exif";
+    const static std::string GAINMAP_IMAGE_ITEM_NAME = "Gain map Image";
+    const static std::string DEPTH_MAP_ITEM_NAME =  "Depth Map Image";
+    const static std::string UNREFOCUS_MAP_ITEM_NAME = "Unrefocus Map Image";
+    const static std::string LINEAR_MAP_ITEM_NAME = "Linear Map Image";
+    const static std::string FRAGMENT_MAP_ITEM_NAME = "Fragment Map Image";
+    constexpr uint32_t PLACE_HOLDER_LENGTH = 1;
     const static size_t DEFAULT_OUTPUT_SIZE = 35 * 1024 * 1024; // 35M
     const static uint16_t STATIC_METADATA_COLOR_SCALE = 50000;
     const static uint16_t STATIC_METADATA_LUM_SCALE = 10000;
@@ -115,6 +122,13 @@ namespace {
         0x45, 0x78, 0x69, 0x66, 0x00, 0x00
     };
 }
+
+struct HeifEncodeItemInfo {
+    uint32_t itemId = 0;
+    std::string itemName = "";
+    std::string itemType = "";
+};
+
 static const std::map<SkEncodedImageFormat, std::string> FORMAT_NAME = {
     {SkEncodedImageFormat::kBMP, IMAGE_BMP_FORMAT},
     {SkEncodedImageFormat::kGIF, IMAGE_GIF_FORMAT},
@@ -840,18 +854,59 @@ static bool FillLitePropertyItem(std::vector<uint8_t>& properties, size_t& offse
     const void* payloadData, size_t payloadSize)
 {
     uint8_t* memData = properties.data();
-    size_t memSize = properties.size();
-    if (offset > memSize) {
-        IMAGE_LOGE("FillLitePropertyItem failed, offset[%{public}ld] over memSize[%{public}ld]", offset, memSize);
+    if (memData == nullptr) {
+        IMAGE_LOGE("FillLitePropertyItem memData is nullptr");
         return false;
     }
+    size_t memSize = properties.size();
     size_t typeSize = sizeof(type);
+    size_t endOffset = offset + typeSize + payloadSize;
+    if (endOffset > memSize) {
+        IMAGE_LOGE("FillLitePropertyItem, endOffset[%{public}ld] over memSize[%{public}ld]", endOffset, memSize);
+        return false;
+    }
     bool res = memcpy_s(memData + offset, memSize - offset, &type, typeSize) == EOK &&
         memcpy_s(memData + offset + typeSize, memSize - offset - typeSize, payloadData, payloadSize) == EOK;
     if (res) {
-        offset += (typeSize + payloadSize);
+        offset = endOffset;
     }
     return res;
+}
+
+// format: enum + strlen + str
+static bool FillLitePropertyItemByString(std::vector<uint8_t>& properties, size_t& offset, PropertyType type,
+    std::string& payloadString)
+{
+    uint8_t* memData = properties.data();
+    if (memData == nullptr) {
+        IMAGE_LOGE("%{public}s memData is nullptr", __func__);
+        return false;
+    }
+    size_t memSize = properties.size();
+    if (payloadString == "") {
+        IMAGE_LOGE("%{public}s failed, payloadString is Null", __func__);
+        return false;
+    }
+    size_t lenSize = UINT32_BYTES_NUM;
+    size_t strLen = payloadString.length();
+    size_t typeSize = sizeof(type);
+    size_t endOffset = offset + typeSize + lenSize + strLen;
+    if (endOffset >= memSize) {
+        IMAGE_LOGE("%{public}s failed, offset[%{public}ld] over memSize[%{public}ld]", __func__, offset, memSize);
+        return false;
+    }
+    size_t capacitySize = memSize - offset;
+    const char* payloadData = payloadString.data();
+    if (memcpy_s(memData + offset, capacitySize, &type, typeSize) != EOK || memcpy_s(memData + offset + typeSize,
+        capacitySize - typeSize, &strLen, lenSize) != EOK || memcpy_s(memData + offset + typeSize + lenSize,
+        capacitySize - typeSize - lenSize, payloadData, strLen) != EOK) {
+        IMAGE_LOGE("%{public}s copy failed, offset[%{public}ld] over memSize[%{public}d]", __func__, offset, memSize);
+        return false;
+    }
+
+    properties[endOffset] = '\0';
+    offset = endOffset + PLACE_HOLDER_LENGTH;
+    return true;
 }
 
 std::shared_ptr<ImageItem> ExtEncoder::AssembleHdrBaseImageItem(sptr<SurfaceBuffer>& surfaceBuffer,
@@ -869,6 +924,7 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleHdrBaseImageItem(sptr<SurfaceBuff
     item->quality = opts.quality;
     item->pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
     item->sharedProperties.fd = -1;
+    item->pixelSharedBuffer.fd = -1;
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
     ContentLightLevel light;
@@ -901,12 +957,13 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleGainmapImageItem(sptr<SurfaceBuff
     }
     auto item = std::make_shared<ImageItem>();
     item->id = GAINMAP_IMAGE_ITEM_ID;
-    item->itemName = "Gain Map Image";
+    item->itemName = GAINMAP_IMAGE_ITEM_NAME;
     item->isPrimary = false;
     item->isHidden = true;
     item->compressType = COMPRESS_TYPE_HEVC;
     item->quality = opts.quality;
     item->sharedProperties.fd = -1;
+    item->pixelSharedBuffer.fd = -1;
     item->pixelBuffer = sptr<NativeBuffer>::MakeSptr(surfaceBuffer->GetBufferHandle());
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
@@ -984,6 +1041,252 @@ uint32_t ExtEncoder::AssembleSdrImageItem(
     ColorType colorType = ColorType::RICC;
     if (!FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType))) {
         IMAGE_LOGE("%{public}s Fill color type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    inputImgs.push_back(item);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::AssembleHeifAuxiliaryPicture(std::vector<ImageItem>& inputImgs, std::vector<ItemRef>& refs)
+{
+    if (!picture_) {
+        IMAGE_LOGE("picture_ is nullptr");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::DEPTH_MAP)) {
+        if (AssembleHeifAuxiliaryNoncodingMap(inputImgs, AuxiliaryPictureType::DEPTH_MAP) == SUCCESS) {
+            AssembleAuxiliaryRefItem(AuxiliaryPictureType::DEPTH_MAP, refs);
+        } else {
+            IMAGE_LOGE("%{public}s depthMap assemble fail", __func__);
+        }
+    } 
+    if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP)) {
+        if (AssembleHeifUnrefocusMap(inputImgs) == SUCCESS) {
+            AssembleAuxiliaryRefItem(AuxiliaryPictureType::UNREFOCUS_MAP, refs);
+        } else {
+            IMAGE_LOGE("%{public}s unrefocusMap assemble fail", __func__);
+        }
+    }
+    if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::LINEAR_MAP)) {
+        if (AssembleHeifAuxiliaryNoncodingMap(inputImgs, AuxiliaryPictureType::LINEAR_MAP) == SUCCESS) {
+            AssembleAuxiliaryRefItem(AuxiliaryPictureType::LINEAR_MAP, refs);
+        } else {
+            IMAGE_LOGE("%{public}s linearMap assemble fail", __func__);
+        }
+    }
+    if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        if (AssembleHeifFragmentMap(inputImgs) == SUCCESS) {
+            AssembleAuxiliaryRefItem(AuxiliaryPictureType::FRAGMENT_MAP, refs);
+        } else {
+            IMAGE_LOGE("%{public}s fragmentMap assemble fail", __func__);
+        }
+    }
+    return SUCCESS;
+}
+
+ImageItem ExtEncoder::InitAuxiliaryImageItem(uint32_t id, std::string itemName)
+{
+    ImageItem item;
+    item.id = id;
+    item.itemName = itemName;
+    item.isPrimary = false;
+    item.isHidden = true;
+    item.quality = opts_.quality;
+    item.sharedProperties.fd = -1;
+    item.pixelSharedBuffer.fd = -1;
+    if (id == DEPTH_MAP_ITEM_ID || id == LINEAR_MAP_ITEM_ID) {
+        item.compressType = COMPRESS_TYPE_NONE;
+    } else {
+        item.compressType = COMPRESS_TYPE_HEVC;
+    }
+    return item;
+}
+
+HeifEncodeItemInfo GetHeifEncodeItemInfo(AuxiliaryPictureType auxType)
+{
+    HeifEncodeItemInfo itemInfo;
+    switch (auxType) {
+        case AuxiliaryPictureType::GAINMAP:
+            itemInfo.itemId = GAINMAP_IMAGE_ITEM_ID;
+            itemInfo.itemName = GAINMAP_IMAGE_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_GAINMAP;
+            break;
+        case AuxiliaryPictureType::DEPTH_MAP:
+            itemInfo.itemId = DEPTH_MAP_ITEM_ID;
+            itemInfo.itemName = DEPTH_MAP_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_DEPTH_MAP;
+            break;
+        case AuxiliaryPictureType::UNREFOCUS_MAP:
+            itemInfo.itemId = UNREFOCUS_MAP_ITEM_ID;
+            itemInfo.itemName = UNREFOCUS_MAP_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_UNREFOCUS_MAP;
+            break;
+        case AuxiliaryPictureType::LINEAR_MAP:
+            itemInfo.itemId = LINEAR_MAP_ITEM_ID;
+            itemInfo.itemName = LINEAR_MAP_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_LINEAR_MAP;
+            break;
+        case AuxiliaryPictureType::FRAGMENT_MAP:
+            itemInfo.itemId = FRAGMENT_MAP_ITEM_ID;
+            itemInfo.itemName = FRAGMENT_MAP_ITEM_NAME;
+            itemInfo.itemType = HEIF_AUXTTYPE_ID_FRAGMENT_MAP;
+            break;
+        default:
+            break;
+    }
+    return itemInfo;
+}
+
+uint32_t ExtEncoder::AssembleHeifAuxiliaryNoncodingMap(std::vector<ImageItem>& inputImgs, AuxiliaryPictureType auxType)
+{
+    auto auxMap = picture_->GetAuxiliaryPicture(auxType);
+    if (!auxMap || !auxMap->GetContentPixel() ||
+        auxMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s The auxMap is nullptr or allocator type is not DMA_ALLOC", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    sptr<SurfaceBuffer> auxMapSptr(reinterpret_cast<SurfaceBuffer*>(auxMap->GetContentPixel()->GetFd()));
+    if (!auxMapSptr) {
+        IMAGE_LOGE("%{public}s auxMapSptr is nullptr", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+
+    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(auxType);
+    auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
+    std::string auxTypeStr = itemInfo.itemType;
+    Resolution resolution = {
+        auxMap->GetContentPixel()->GetWidth(),
+        auxMap->GetContentPixel()->GetHeight()
+    };
+    uint32_t litePropertiesSize =
+        sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH;
+    litePropertiesSize += (sizeof(PropertyType::IMG_RESOLUTION) + sizeof(Resolution));
+    size_t offset = 0;
+    item.liteProperties.resize(litePropertiesSize);
+    if (!FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr)) {
+        IMAGE_LOGE("%{public}s Fill auxiliary type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (!FillLitePropertyItem(item.liteProperties, offset, PropertyType::IMG_RESOLUTION, &resolution,
+        sizeof(Resolution))) {
+        IMAGE_LOGE("%{public}s Fill color type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    uint32_t capacity = auxMap->GetContentPixel()->GetCapacity();
+    if (!FillPixelSharedBuffer(auxMapSptr, capacity, item.pixelSharedBuffer)) {
+        IMAGE_LOGE("%{public}s Fill pixel shared buffer failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    inputImgs.push_back(item);
+    return SUCCESS;
+}
+
+uint32_t ExtEncoder::AssembleHeifUnrefocusMap(std::vector<ImageItem>& inputImgs)
+{
+    auto unrefocusMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::UNREFOCUS_MAP);
+    if (!unrefocusMap || !unrefocusMap->GetContentPixel() ||
+        unrefocusMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s The unrefocusMap is nullptr or allocator type is not DMA_ALLOC", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::UNREFOCUS_MAP);
+    auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
+    bool sdrIsSRGB = unrefocusMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo unrefocusInfo = GetSkInfo(unrefocusMap->GetContentPixel().get(), false, sdrIsSRGB);
+    sk_sp<SkData> iccProfile = icc_from_color_space(unrefocusInfo);
+    if (!AssembleICCImageProperty(iccProfile, item.sharedProperties)) {
+        IMAGE_LOGE("%{public}s AssembleICCImageProperty failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    sptr<SurfaceBuffer> unrefocusMapSptr(reinterpret_cast<SurfaceBuffer*>(unrefocusMap->GetContentPixel()->GetFd()));
+    if (!unrefocusMapSptr) {
+        IMAGE_LOGE("%{public}s unrefocusMapSptr is nullptr", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(unrefocusMapSptr->GetBufferHandle());
+    std::string auxTypeStr = itemInfo.itemType;
+
+    uint32_t litePropertiesSize =
+        sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH;
+    litePropertiesSize += (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    item.liteProperties.resize(litePropertiesSize);
+    size_t offset = 0;
+    if (!FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr)) {
+        IMAGE_LOGE("%{public}s Fill auxiliary type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    ColorType colorType = ColorType::RICC;
+    if (!FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType))) {
+        IMAGE_LOGE("%{public}s Fill color type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    inputImgs.push_back(item);
+    return SUCCESS;
+}
+
+RelativeLocation GetFragmentRelLocation(std::shared_ptr<AuxiliaryPicture> &fragmentMap)
+{
+    RelativeLocation loc;
+    auto fragmentMeta = fragmentMap->GetMetadata(MetadataType::FRAGMENT);
+    if (fragmentMeta == nullptr) {
+        IMAGE_LOGE("The fragmentMap has not fragmentMap");
+        return loc;
+    }
+    std::string loc_x = "";
+    std::string loc_y = "";
+    uint32_t horizontalOffset = 0;
+    uint32_t verticalOffset = 0;
+    fragmentMeta->GetValue(FRAGMENT_METADATA_KEY_X, loc_x);
+    fragmentMeta->GetValue(FRAGMENT_METADATA_KEY_Y, loc_y);
+    ImageUtils::StrToUint32(loc_x, horizontalOffset);
+    ImageUtils::StrToUint32(loc_y, verticalOffset);
+    loc.horizontalOffset = horizontalOffset;
+    loc.verticalOffset = verticalOffset;
+    return loc;
+}
+
+uint32_t ExtEncoder::AssembleHeifFragmentMap(std::vector<ImageItem>& inputImgs)
+{
+    auto fragmentMap = picture_->GetAuxiliaryPicture(AuxiliaryPictureType::FRAGMENT_MAP);
+    if (!fragmentMap || !fragmentMap->GetContentPixel() ||
+        fragmentMap->GetContentPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s The fragmentMap is nullptr or allocator type is not DMA_ALLOC", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    sptr<SurfaceBuffer> fragmentMapSptr(reinterpret_cast<SurfaceBuffer*>(fragmentMap->GetContentPixel()->GetFd()));
+    if (!fragmentMapSptr) {
+        IMAGE_LOGE("%{public}s fragmentMapSptr is nullptr", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    HeifEncodeItemInfo itemInfo = GetHeifEncodeItemInfo(AuxiliaryPictureType::FRAGMENT_MAP);
+    auto item = InitAuxiliaryImageItem(itemInfo.itemId, itemInfo.itemName);
+    bool sdrIsSRGB = fragmentMap->GetContentPixel()->GetToSdrColorSpaceIsSRGB();
+    SkImageInfo fragmentInfo = GetSkInfo(fragmentMap->GetContentPixel().get(), false, sdrIsSRGB);
+    sk_sp<SkData> iccProfile = icc_from_color_space(fragmentInfo);
+    if (!AssembleICCImageProperty(iccProfile, item.sharedProperties)) {
+        IMAGE_LOGE("%{public}s AssembleICCImageProperty failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    item.pixelBuffer = sptr<NativeBuffer>::MakeSptr(fragmentMapSptr->GetBufferHandle());
+    std::string auxTypeStr = itemInfo.itemType;
+    uint32_t litePropertiesSize =
+        sizeof(PropertyType::AUX_TYPE) + UINT32_BYTES_NUM + auxTypeStr.length() + PLACE_HOLDER_LENGTH;
+    litePropertiesSize += (sizeof(PropertyType::COLOR_TYPE) + sizeof(ColorType));
+    litePropertiesSize += (sizeof(PropertyType::RLOC_INFO) + sizeof(RelativeLocation));
+    item.liteProperties.resize(litePropertiesSize);
+    size_t offset = 0;
+    ColorType colorType = ColorType::RICC;
+    if (!FillLitePropertyItem(item.liteProperties, offset, PropertyType::COLOR_TYPE, &colorType, sizeof(ColorType))) {
+        IMAGE_LOGE("%{public}s Fill color type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    if (!FillLitePropertyItemByString(item.liteProperties, offset, PropertyType::AUX_TYPE, auxTypeStr)) {
+        IMAGE_LOGE("%{public}s Fill auxiliary type failed", __func__);
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+    RelativeLocation loc = GetFragmentRelLocation(fragmentMap);
+    if (!FillLitePropertyItem(item.liteProperties, offset, PropertyType::RLOC_INFO, &loc, sizeof(RelativeLocation))) {
+        IMAGE_LOGE("%{public}s Fill auxiliary type failed", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     inputImgs.push_back(item);
@@ -1132,6 +1435,7 @@ uint32_t ExtEncoder::EncodeHeifSdrImage(sptr<SurfaceBuffer>& sdr, SkImageInfo sd
     item.compressType = COMPRESS_TYPE_HEVC;
     item.quality = opts_.quality;
     item.sharedProperties.fd = -1;
+    item.pixelSharedBuffer.fd = -1;
     ImageInfo info;
     pixelmap_->GetImageInfo(info);
     sk_sp<SkData> iccProfile = icc_from_color_space(sdrInfo);
@@ -1231,10 +1535,11 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
     std::vector<ItemRef> refs;
     switch (opts_.desiredDynamicRange) {
         case EncodeDynamicRange::AUTO:
-            if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
-                error = AssembleHeifHdrPicture(mainSptr, sdrIsSRGB, inputImgs);
+            if (picture_->HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) &&
+                AssembleHeifHdrPicture(mainSptr, sdrIsSRGB, inputImgs) == SUCCESS) {
                 AssembleDualHdrRefItem(refs);
             } else {
+                inputImgs.clear();
                 error = AssembleSdrImageItem(mainSptr, mainInfo, inputImgs);
             }
             break;
@@ -1261,6 +1566,10 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
     }
     if (AssembleExifMetaItem(inputMetas)) {
         AssembleExifRefItem(refs);
+    }
+    error = AssembleHeifAuxiliaryPicture(inputImgs, refs);
+    if (error != SUCCESS) {
+        return error;
     }
     return DoHeifEncode(inputImgs, inputMetas, refs);
 #else
@@ -1667,6 +1976,7 @@ std::shared_ptr<ImageItem> ExtEncoder::AssembleTmapImageItem(ColorManager::Color
     item->compressType = COMPRESS_TYPE_TMAP;
     item->quality = opts.quality;
     item->sharedProperties.fd = -1;
+    item->pixelSharedBuffer.fd = -1;
     ColourInfo colorInfo;
     GetColourInfo(color, colorInfo);
     ContentLightLevel light;
@@ -1721,6 +2031,7 @@ std::shared_ptr<ImageItem> ExtEncoder::AssemblePrimaryImageItem(sptr<SurfaceBuff
     item->compressType = COMPRESS_TYPE_HEVC;
     item->quality = opts.quality;
     item->sharedProperties.fd = -1;
+    item->pixelSharedBuffer.fd = -1;
     sk_sp<SkData> iccProfile = icc_from_color_space(ToSkInfo(pixelmap_));
     bool tempRes = AssembleICCImageProperty(iccProfile, item->sharedProperties);
     if (!tempRes) {
@@ -1805,6 +2116,64 @@ bool ExtEncoder::AssembleExifMetaItem(std::vector<MetaItem>& metaItems)
     }
     FreeExifBlob(&exifBlob);
     return fillRes;
+}
+
+bool ExtEncoder::FillPixelSharedBuffer(sptr<SurfaceBuffer> sbBuffer, uint32_t capacity, SharedBuffer& outBuffer)
+{
+    if (sbBuffer == nullptr || capacity == 0) {
+        IMAGE_LOGI("%{public}s iccprofile is nullptr", __func__);
+        return false;
+    }
+    std::shared_ptr<AbsMemory> sharedMem = AllocateNewSharedMem(capacity, IMAGE_DATA_TAG);
+    if (sharedMem == nullptr) {
+        IMAGE_LOGE("%{public}s alloc failed", __func__);
+        return false;
+    }
+    tmpMemoryList_.push_back(sharedMem);
+    uint8_t* memData = reinterpret_cast<uint8_t*>(sharedMem->data.data);
+    size_t memSize = sharedMem->data.size;
+    if (capacity > memSize) {
+        IMAGE_LOGE("%{public}s shared capacity[%{public}d] over memSize[%{public}ld]", __func__, capacity, memSize);
+        return false;
+    }
+    if (sharedMem->extend.data == nullptr) {
+        IMAGE_LOGE("%{public}s sharedMem's extend data is nullptr", __func__);
+        return false;
+    }
+    if (memcpy_s(memData, memSize, sbBuffer->GetVirAddr(), capacity) == EOK) {
+        outBuffer.fd = *static_cast<int *>(sharedMem->extend.data);
+        outBuffer.capacity = memSize;
+        outBuffer.filledLen = memSize;
+    } else {
+        IMAGE_LOGE("%{public}s memcpy failed", __func__);
+        return false;
+    }
+    return true;
+}
+
+void ExtEncoder::AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector<ItemRef>& refs)
+{
+    auto item = std::make_shared<ItemRef>();
+    item->type = ReferenceType::AUXL;
+    item->to.resize(INDEX_ONE);
+    item->to[INDEX_ZERO] = PRIMARY_IMAGE_ITEM_ID;
+    switch (type) {
+        case AuxiliaryPictureType::DEPTH_MAP:
+            item->from = DEPTH_MAP_ITEM_ID;
+            break;
+        case AuxiliaryPictureType::UNREFOCUS_MAP:
+            item->from = UNREFOCUS_MAP_ITEM_ID;
+            break;
+        case AuxiliaryPictureType::LINEAR_MAP:
+            item->from = LINEAR_MAP_ITEM_ID;
+            break;
+        case AuxiliaryPictureType::FRAGMENT_MAP:
+            item->from = FRAGMENT_MAP_ITEM_ID;
+            break;
+        default:
+            break;
+    }
+    refs.push_back(*item);
 }
 #endif
 } // namespace ImagePlugin
