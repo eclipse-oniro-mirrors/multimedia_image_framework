@@ -2853,14 +2853,22 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     return true;
 }
 
-void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
+static bool CheckTlvImageInfo(const ImageInfo &info, uint8_t **data)
+{
+    if (info.size.width <= 0 || info.size.height <= 0 || data == nullptr || *data == nullptr) {
+        return false;
+    }
+    return true;
+}
+
+bool PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data)
 {
     int cursor = 0;
     for (uint8_t tag = ReadUint8(buff, cursor); tag != TLV_END; tag = ReadUint8(buff, cursor)) {
         int32_t len = ReadVarint(buff, cursor);
         if (len <= 0 || static_cast<size_t>(cursor + len) > buff.size()) {
             IMAGE_LOGE("ReadTlvAttr out of range");
-            return;
+            return false;
         }
         switch (tag) {
             case TLV_IMAGE_WIDTH:
@@ -2887,7 +2895,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
             case TLV_IMAGE_DATA:
                 size = len;
-                if (data != nullptr) {
+                if (data != nullptr && *data == nullptr) {
                     *data = ReadData(buff, size, cursor);
                 }
                 break;
@@ -2897,6 +2905,7 @@ void PixelMap::ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t 
                 break;
         }
     }
+    return CheckTlvImageInfo(info, data);
 }
 
 PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
@@ -2910,10 +2919,10 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
     int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
-    ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data);
-    if (data == nullptr || allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
+    if (allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC) ||
+        !ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data)) {
         delete pixelMap;
-        IMAGE_LOGE("pixel map tlv decode fail: no data or invalid allocType");
+        IMAGE_LOGE("pixel map tlv decode fail");
         return nullptr;
     }
     uint32_t ret = pixelMap->SetImageInfo(imageInfo);
