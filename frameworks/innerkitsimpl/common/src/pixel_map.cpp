@@ -229,13 +229,13 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 {
     if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
-        IMAGE_LOGE("set image info fail");
+        IMAGE_LOGE("set image info failed");
         return false;
     }
-    uint32_t bufferSize = static_cast<uint32_t>(pixelMap->GetByteCount());
-    if (bufferSize == 0 || (pixelMap->GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+    int32_t bufferSize = pixelMap->GetByteCount();
+    if (bufferSize <= 0 || (pixelMap->GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
-        IMAGE_LOGE("AllocSharedMemory parameter is zero");
+        IMAGE_LOGE("Invalid byte count");
         return false;
     }
     return true;
@@ -282,7 +282,7 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 {
     if ((info.pixelFormat <= PixelFormat::UNKNOWN || info.pixelFormat >= PixelFormat::EXTERNAL_MAX) ||
         IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
@@ -296,7 +296,7 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
 int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 {
     if (IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     int32_t rowDataSize = GetRGBxRowDataSize(info);
@@ -310,7 +310,7 @@ int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
 int32_t PixelMap::GetYUVByteCount(const ImageInfo& info)
 {
     if (!IsYUV(info.pixelFormat)) {
-        IMAGE_LOGE("[ImageUtil]unsupport pixel format");
+        IMAGE_LOGE("[ImageUtil]unsupported pixel format");
         return -1;
     }
     if (info.size.width <= 0 || info.size.height <= 0) {
@@ -650,14 +650,10 @@ unique_ptr<PixelMap> PixelMap::Create(const InitializationOptions &opts)
     dstAlphaType = ImageUtils::GetValidAlphaTypeByFormat(dstAlphaType, dstPixelFormat);
     ImageInfo dstImageInfo = MakeImageInfo(opts.size.width, opts.size.height, dstPixelFormat, dstAlphaType);
     if (dstPixelMap->SetImageInfo(dstImageInfo) != SUCCESS) {
-        IMAGE_LOGE("set image info fail");
+        IMAGE_LOGE("set image info failed");
         return nullptr;
     }
-    uint32_t bufferSize = dstPixelMap->GetByteCount();
-    if (bufferSize == 0) {
-        IMAGE_LOGE("calloc parameter bufferSize:[%{public}d] error.", bufferSize);
-        return nullptr;
-    }
+
     std::unique_ptr<AbsMemory> dstMemory = nullptr;
     int32_t dstRowStride = 0;
     int errorCode = AllocPixelMapMemory(dstMemory, dstRowStride, dstImageInfo, opts.useDMA);
@@ -705,11 +701,14 @@ void PixelMap::UpdatePixelsAlpha(const AlphaType &alphaType, const PixelFormat &
         }
         if (alphaIndex != -1) {
             uint8_t pixelBytes = dstPixelMap.GetPixelBytes();
-            uint32_t bufferSize = dstPixelMap.GetByteCount();
-            uint32_t i = alphaIndex;
-            while (i < bufferSize) {
+            int32_t bufferSize = dstPixelMap.GetByteCount();
+            if (bufferSize <= 0) {
+                IMAGE_LOGE("UpdatePixelsAlpha invalid byte count: %{public}d", bufferSize);
+                return;
+            }
+            uint32_t uBufferSize = static_cast<uint32_t>(bufferSize);
+            for (uint32_t i = alphaIndex; i < uBufferSize; i += pixelBytes) {
                 dstPixels[i] = ALPHA_OPAQUE;
-                i += pixelBytes;
             }
         }
     }
@@ -799,44 +798,45 @@ unique_ptr<PixelMap> PixelMap::Create(PixelMap &source, const Rect &srcRect, con
 bool PixelMap::SourceCropAndConvert(PixelMap &source, const ImageInfo &srcImageInfo, const ImageInfo &dstImageInfo,
     const Rect &srcRect, PixelMap &dstPixelMap)
 {
-    uint32_t bufferSize = dstPixelMap.GetByteCount();
-    if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+    int32_t bufferSize = dstPixelMap.GetByteCount();
+    if (bufferSize <= 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
         IMAGE_LOGE("SourceCropAndConvert  parameter bufferSize:[%{public}d] error.", bufferSize);
         return false;
     }
+    size_t uBufferSize = static_cast<size_t>(bufferSize);
     int fd = 0;
     void *dstPixels = nullptr;
     if (source.GetAllocatorType() == AllocatorType::SHARE_MEM_ALLOC) {
-        dstPixels = AllocSharedMemory(bufferSize, fd, dstPixelMap.GetUniqueId());
+        dstPixels = AllocSharedMemory(uBufferSize, fd, dstPixelMap.GetUniqueId());
     } else {
-        dstPixels = malloc(bufferSize);
+        dstPixels = malloc(uBufferSize);
     }
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
         return false;
     }
-    if (memset_s(dstPixels, bufferSize, 0, bufferSize) != EOK) {
+    if (memset_s(dstPixels, uBufferSize, 0, uBufferSize) != EOK) {
         IMAGE_LOGE("dstPixels memset_s failed.");
     }
     Position srcPosition { srcRect.left, srcRect.top };
     if (!PixelConvertAdapter::ReadPixelsConvert(source.GetPixels(), srcPosition, source.GetRowStride(), srcImageInfo,
         dstPixels, dstPixelMap.GetRowStride(), dstImageInfo)) {
         IMAGE_LOGE("pixel convert in adapter failed.");
-        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
+        ReleaseBuffer(fd > 0 ? AllocatorType::SHARE_MEM_ALLOC : AllocatorType::HEAP_ALLOC, fd, uBufferSize, &dstPixels);
         return false;
     }
 
     if (fd <= 0) {
-        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+        dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
         return true;
     }
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     void *fdBuffer = new int32_t();
     *static_cast<int32_t *>(fdBuffer) = fd;
-    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, bufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
+    dstPixelMap.SetPixelsAddr(dstPixels, fdBuffer, uBufferSize, AllocatorType::SHARE_MEM_ALLOC, nullptr);
 #else
-    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, bufferSize, AllocatorType::HEAP_ALLOC, nullptr);
+    dstPixelMap.SetPixelsAddr(dstPixels, nullptr, uBufferSize, AllocatorType::HEAP_ALLOC, nullptr);
 #endif
     return true;
 }
@@ -935,18 +935,20 @@ static void SetDstPixelMapInfo(PixelMap &source, PixelMap &dstPixelMap, void* ds
 
 bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &error)
 {
-    uint32_t bufferSize = source.GetByteCount();
     if (source.GetPixels() == nullptr) {
         IMAGE_LOGE("source pixelMap data invalid");
         error = IMAGE_RESULT_GET_DATA_ABNORMAL;
         return false;
     }
-    if (bufferSize == 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
+
+    int32_t bufferSize = source.GetByteCount();
+    if (bufferSize <= 0 || (source.GetAllocatorType() == AllocatorType::HEAP_ALLOC &&
         bufferSize > PIXEL_MAP_MAX_RAM_SIZE)) {
-        IMAGE_LOGE("AllocSharedMemory parameter bufferSize:[%{public}d] error.", bufferSize);
+        IMAGE_LOGE("CopyPixelMap parameter bufferSize:[%{public}d] error.", bufferSize);
         error = IMAGE_RESULT_DATA_ABNORMAL;
         return false;
     }
+    size_t uBufferSize = static_cast<size_t>(bufferSize);
     int fd = -1;
     void *dstPixels = nullptr;
     unique_ptr<AbsMemory> memory;
@@ -954,14 +956,14 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
     if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
         ImageInfo dstImageInfo;
         dstPixelMap.GetImageInfo(dstImageInfo);
-        MemoryData memoryData = {nullptr, bufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
+        MemoryData memoryData = {nullptr, uBufferSize, "Copy ImageData", dstImageInfo.size, dstImageInfo.pixelFormat};
         memory = MemoryManager::CreateMemory(source.GetAllocatorType(), memoryData);
         if (memory == nullptr) {
             return false;
         }
         dstPixels = memory->data.data;
     } else {
-        dstPixels = malloc(bufferSize);
+        dstPixels = malloc(uBufferSize);
     }
     if (dstPixels == nullptr) {
         IMAGE_LOGE("source crop allocate memory fail allocatetype: %{public}d ", source.GetAllocatorType());
@@ -969,16 +971,16 @@ bool PixelMap::CopyPixelMap(PixelMap &source, PixelMap &dstPixelMap, int32_t &er
         return false;
     }
     void *tmpDstPixels = dstPixels;
-    if (!CopyPixMapToDst(source, tmpDstPixels, fd, bufferSize)) {
+    if (!CopyPixMapToDst(source, tmpDstPixels, fd, uBufferSize)) {
         if (sourceType == AllocatorType::SHARE_MEM_ALLOC || sourceType == AllocatorType::DMA_ALLOC) {
             memory->Release();
         } else {
-            ReleaseBuffer(AllocatorType::HEAP_ALLOC, fd, bufferSize, &dstPixels);
+            ReleaseBuffer(AllocatorType::HEAP_ALLOC, fd, uBufferSize, &dstPixels);
         }
         error = IMAGE_RESULT_ERR_SHAMEM_DATA_ABNORMAL;
         return false;
     }
-    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, bufferSize, memory);
+    SetDstPixelMapInfo(source, dstPixelMap, dstPixels, uBufferSize, memory);
     return true;
 }
 

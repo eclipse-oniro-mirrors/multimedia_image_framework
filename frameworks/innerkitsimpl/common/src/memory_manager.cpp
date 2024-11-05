@@ -94,7 +94,7 @@ uint32_t SharedMemory::Create()
 {
 #ifdef SUPPORT_SHARED_MEMORY
     IMAGE_LOGD("SharedMemory::Create IN tag %{public}s, data size %{public}zu",
-        (data.tag == nullptr)?"nullptr":data.tag, data.size);
+        data.tag == nullptr ? "nullptr" : data.tag, data.size);
 
     if (data.tag == nullptr || data.size == SIZE_ZERO) {
         IMAGE_LOGE("SharedMemory::Create tag is nullptr or data size %{public}zu", data.size);
