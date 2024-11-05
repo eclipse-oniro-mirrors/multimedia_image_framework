@@ -630,8 +630,53 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
     return res;
 }
 
+void HeifDecoderImpl::PreparePackedInput(HeifHardwareDecoder *hwDecoder,
+    std::vector<std::shared_ptr<HeifImage>> tileImages,
+    std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount)
+{
+    if (hwDecoder->IsPackedInputSupported()) {
+        size_t gridLength = 0;
+        size_t inputIndex = 0;
+        packedInput.resize(GRID_NUM_2);
+        for (size_t index = 0; index < gridCount; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            std::shared_ptr<HeifImage> nextTileImage;
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &packedInput[inputIndex], heif_only_header);
+                ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+                ++inputIndex;
+            }
+            if (packedInput[inputIndex].size() + gridLength >= MAX_INPUT_BUFFER_SIZE) {
+                ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+                ++inputIndex;
+                packedInput.emplace_back(std::vector<uint8_t>());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &packedInput[inputIndex], heif_no_header);
+            gridLength = 0;
+            if (index + 1 != gridCount) {
+                nextTileImage = tileImages[index + 1];
+                parser_->GetGridLength(nextTileImage->GetItemId(), gridLength);
+            }
+        }
+        ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+    } else {
+        packedInput.resize(gridCount + 1);
+        for (size_t index = 0; index < gridCount; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &packedInput[index], heif_only_header);
+                ProcessChunkHead(packedInput[index].data(), packedInput[index].size());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &packedInput[index + 1], heif_no_header);
+            ProcessChunkHead(packedInput[index + 1].data(), packedInput[index + 1].size());
+        }
+    }
+}
+
 bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                                    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
+    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
     if (hwDecoder == nullptr || image == nullptr) {
         IMAGE_LOGE("HeifDecoderImpl::DecodeGrids hwDecoder or image is nullptr");
@@ -643,28 +688,18 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
         IMAGE_LOGE("grid image has no tile image");
         return false;
     }
-    size_t numGrid = tileImages.size();
-    std::vector<std::vector<uint8_t>> inputs(numGrid + 1);
+    size_t gridCount = tileImages.size();
+    std::vector<std::vector<uint8_t>> packedInput;
+    PreparePackedInput(hwDecoder, tileImages, packedInput, gridCount);
 
-    for (size_t index = 0; index < numGrid; ++index) {
-        std::shared_ptr<HeifImage> &tileImage = tileImages[index];
-        if (index == 0) {
-            // get hvcc header
-            parser_->GetItemData(tileImage->GetItemId(), &inputs[index], heif_only_header);
-            ProcessChunkHead(inputs[index].data(), inputs[index].size());
-        }
-        parser_->GetItemData(tileImage->GetItemId(), &inputs[index + 1], heif_no_header);
-        ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
-    }
-
-    uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);
+    uint32_t err = hwDecoder->DoDecode(gridInfo, packedInput, hwBuffer);
     if (err != SUCCESS) {
         IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
                    " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
                    " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
                    err, gridInfo.displayWidth, gridInfo.displayHeight,
                    hwBuffer->GetFormat(), gridInfo.cols, gridInfo.rows,
-                   gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size());
+                   gridInfo.tileWidth, gridInfo.tileHeight, packedInput[0].size());
         SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
         return false;
     }
