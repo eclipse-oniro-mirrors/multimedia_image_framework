@@ -76,6 +76,7 @@ const int32_t TYPE_IMAGE_SOURCE = 1;
 const int32_t TYPE_PIXEL_MAP = 2;
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 const int32_t TYPE_PICTURE = 3;
+const int32_t TYPE_ARRAY = 4;
 #endif
 const int64_t DEFAULT_BUFFER_SIZE = 25 * 1024 * 1024; // 25M is the maximum default packedSize
 const int MASK_3 = 0x3;
@@ -264,8 +265,10 @@ STATIC_EXEC_FUNC(Packing)
     IMAGE_LOGD("ImagePacker BufferSize %{public}" PRId64, context->resultBufferSize);
     context->resultBuffer = std::make_unique<uint8_t[]>(
         (context->resultBufferSize <= 0) ? getDefaultBufferSize(context) : context->resultBufferSize);
+    int32_t innerEncodeErrorCode = static_cast<int32_t>(
+        context->packType == TYPE_PICTURE ? IMAGE_ENCODE_FAILED : ERR_IMAGE_ENCODE_FAILED);
     if (context->resultBuffer == nullptr) {
-        BuildMsgOnError(context, false, "ImagePacker buffer alloc error", ERR_IMAGE_ENCODE_FAILED);
+        BuildMsgOnError(context, false, "ImagePacker buffer alloc error", innerEncodeErrorCode);
         return;
     }
     auto startRes = context->rImagePacker->StartPacking(context->resultBuffer.get(),
@@ -273,7 +276,7 @@ STATIC_EXEC_FUNC(Packing)
     if (startRes != SUCCESS) {
         context->status = ERROR;
         BuildMsgOnError(context, false, "Packing start packing failed",
-            startRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : ERR_IMAGE_ENCODE_FAILED);
+            startRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode);
         return;
     }
     if (context->packType == TYPE_IMAGE_SOURCE) {
@@ -308,15 +311,17 @@ STATIC_EXEC_FUNC(Packing)
         context->status = SUCCESS;
     } else if (packedSize == context->resultBufferSize) {
         context->status = ERROR;
-        BuildMsgOnError(context, false, "output buffer is not enough", ERR_IMAGE_TOO_LARGE);
+        if (context->packType == TYPE_PICTURE) {
+            BuildMsgOnError(context, false, "output buffer is not enough", IMAGE_ENCODE_FAILED);
+        } else {
+            BuildMsgOnError(context, false, "output buffer is not enough", ERR_IMAGE_TOO_LARGE);
+        }
         IMAGE_LOGE("output buffer is not enough.");
     } else {
         context->status = ERROR;
         IMAGE_LOGE("Packing failed, packedSize outside size.");
-        if (context->packType == TYPE_PICTURE) {
-            BuildMsgOnError(context, packRes == SUCCESS, "Packing picture failed",
-                packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
-        }
+        BuildMsgOnError(context, false, "Packing failed",
+            packRes == ERR_IMAGE_INVALID_PARAMETER ? COMMON_ERR_INVALID_PARAMETER : innerEncodeErrorCode);
     }
 }
 
@@ -738,7 +743,7 @@ static void ParserPackingArguments(napi_env env,
         BuildMsgOnError(context, false, "Arguments Count error", COMMON_ERR_INVALID_PARAMETER);
     }
     context->packType = ParserPackingArgumentType(env, argv[PARAM0]);
-    if (context->packType == TYPE_PICTURE) {
+    if (context->packType == TYPE_PICTURE || context->packType == TYPE_ARRAY) {
         context->needReturnErrorCode = true;
     }
     if (context->packType == TYPE_IMAGE_SOURCE) {
