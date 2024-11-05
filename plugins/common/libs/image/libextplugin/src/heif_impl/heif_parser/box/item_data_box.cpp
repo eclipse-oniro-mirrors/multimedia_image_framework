@@ -93,7 +93,7 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
     return reader.GetError();
 }
 
-heif_error HeifIlocBox::ReadIlocDataLength(const Item &item, size_t &length)
+heif_error HeifIlocBox::GetIlocDataLength(const Item &item, size_t &length)
 {
     for (const auto &extent: item.extents) {
         if (extent.length > MAX_HEIF_IMAGE_GRID_SIZE) {

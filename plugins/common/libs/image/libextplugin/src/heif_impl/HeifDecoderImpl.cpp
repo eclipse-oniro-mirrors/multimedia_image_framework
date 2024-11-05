@@ -649,13 +649,13 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
 }
 
 void HeifDecoderImpl::GetGridsInputs(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
-    std::vector<std::vector<uint8_t>> &inputs, size_t numGrid)
+    std::vector<std::vector<uint8_t>> &inputs, size_t gridCount)
 {
     if (hwDecoder->IsPackedInputSupported()) {
         size_t gridLength = 0;
         size_t inputIndex = 0;
         inputs.resize(GRID_NUM_2);
-        for (size_t index = 0; index < numGrid; ++index) {
+        for (size_t index = 0; index < gridCount; ++index) {
             std::shared_ptr<HeifImage> &tileImage = tileImages[index];
             std::shared_ptr<HeifImage> nextTileImage;
             if (index == 0) {
@@ -671,15 +671,15 @@ void HeifDecoderImpl::GetGridsInputs(HeifHardwareDecoder *hwDecoder, std::vector
             }
             parser_->GetItemData(tileImage->GetItemId(), &inputs[inputIndex], heif_no_header);
             gridLength = 0;
-            if (index + 1 != numGrid) {
+            if (index + 1 != gridCount) {
                 nextTileImage = tileImages[index + 1];
                 parser_->GetGridLength(nextTileImage->GetItemId(), gridLength);
             }
         }
         ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
     } else {
-        inputs.resize(numGrid + 1);
-        for (size_t index = 0; index < numGrid; ++index) {
+        inputs.resize(gridCount + 1);
+        for (size_t index = 0; index < gridCount; ++index) {
             std::shared_ptr<HeifImage> &tileImage = tileImages[index];
             if (index == 0) {
                 // get hvcc header
@@ -705,9 +705,9 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
         IMAGE_LOGE("grid image has no tile image");
         return false;
     }
-    size_t numGrid = tileImages.size();
+    size_t gridCount = tileImages.size();
     std::vector<std::vector<uint8_t>> inputs;
-    GetGridsInputs(hwDecoder, tileImages, inputs, numGrid);
+    GetGridsInputs(hwDecoder, tileImages, inputs, gridCount);
 
     uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);
     if (err != SUCCESS) {

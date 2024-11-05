@@ -223,7 +223,7 @@ heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
     } else {
         return heif_error_item_data_not_found;
     }
-    return ilocBox_->ReadIlocDataLength(*ilocItem, length);
+    return ilocBox_->GetIlocDataLength(*ilocItem, length);
 }
 
 heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *out, heif_header_option option) const
