@@ -20,6 +20,7 @@
 #include "box/item_property_transform_box.h"
 #include "securec.h"
 
+#include <algorithm>
 #include <limits>
 #include <cstring>
 #include <set>
@@ -214,13 +215,12 @@ heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
     }
     auto items = ilocBox_->GetItems();
     const HeifIlocBox::Item *ilocItem = nullptr;
-    for (const auto &item: items) {
-        if (item.itemId == itemId) {
-            ilocItem = &item;
-            break;
-        }
-    }
-    if (!ilocItem) {
+    auto iter = std::find_if(items.begin(), items.end(), [&itemId](const auto &item) {
+        return item.itemId == itemId;
+    });
+    if (iter != items.end()) {
+        ilocItem = &*iter;
+    } else {
         return heif_error_item_data_not_found;
     }
     return ilocBox_->ReadIlocDataLength(*ilocItem, length);

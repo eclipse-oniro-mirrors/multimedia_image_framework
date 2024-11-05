@@ -692,7 +692,6 @@ void HeifDecoderImpl::GetGridsInputs(HeifHardwareDecoder *hwDecoder, std::vector
     }
 }
 
-
 bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
     GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
