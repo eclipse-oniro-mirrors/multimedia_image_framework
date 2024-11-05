@@ -15,6 +15,7 @@
 
 #include "image_packer_napi.h"
 
+#include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "image_packer.h"
@@ -312,6 +313,10 @@ STATIC_EXEC_FUNC(Packing)
     } else {
         context->status = ERROR;
         IMAGE_LOGE("Packing failed, packedSize outside size.");
+        if (context->packType == TYPE_PICTURE) {
+            BuildMsgOnError(context, packRes == SUCCESS, "Packing picture failed",
+                packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
+        }
     }
 }
 
@@ -1167,21 +1172,38 @@ bool SetPicture(ImagePackerAsyncContext *context)
     IMAGE_LOGD("ImagePacker set picture");
     if (context->rPicture == nullptr) {
         BuildMsgOnError(context, context->rImageSource == nullptr,
-            "Picture is nullptr", ERR_IMAGE_INVALID_PARAMETER);
-        return true;
+            "Picture is nullptr", IMAGE_BAD_PARAMETER);
+        return false;
     }
     context->rImagePacker->AddPicture(*(context->rPicture));
-    return false;
+    return true;
 }
 #endif
 
-STATIC_EXEC_FUNC(PackToFile)
+static void FinalizePacking(ImagePackerAsyncContext* context)
 {
     int64_t packedSize = 0;
+    auto packRes = context->rImagePacker->FinalizePacking(packedSize);
+    IMAGE_LOGD("packRes=%{public}d packedSize=%{public}" PRId64, packRes, packedSize);
+    if (packRes == SUCCESS && packedSize > 0) {
+        context->packedSize = packedSize;
+        context->status = SUCCESS;
+    } else {
+        context->status = ERROR;
+        BuildMsgOnError(context, packRes == SUCCESS, "PackedSize outside size", packRes);
+        IMAGE_LOGE("Packing failed, packedSize outside size.");
+        if (context->packType == TYPE_PICTURE) {
+            BuildMsgOnError(context, packRes == SUCCESS, "PackToFile picture failed",
+                packRes == ERR_IMAGE_INVALID_PARAMETER ? IMAGE_BAD_PARAMETER : IMAGE_ENCODE_FAILED);
+        }
+    }
+}
+
+STATIC_EXEC_FUNC(PackToFile)
+{
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     if (context->fd <= INVALID_FD) {
-        BuildMsgOnError(context, context->fd <= INVALID_FD,
-        "ImagePacker invalid fd", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, context->fd <= INVALID_FD, "ImagePacker invalid fd", ERR_IMAGE_INVALID_PARAMETER);
         return;
     }
 
@@ -1209,21 +1231,12 @@ STATIC_EXEC_FUNC(PackToFile)
         context->rImagePacker->AddImage(*(context->rPixelMap));
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     } else if (context->packType == TYPE_PICTURE) {
-        if (SetPicture(context)) {
+        if (!SetPicture(context)) {
             return;
         }
 #endif
     }
-    auto packRes = context->rImagePacker->FinalizePacking(packedSize);
-    IMAGE_LOGD("packRes=%{public}d packedSize=%{public}" PRId64, packRes, packedSize);
-    if (packRes == SUCCESS && packedSize > 0) {
-        context->packedSize = packedSize;
-        context->status = SUCCESS;
-    } else {
-        context->status = ERROR;
-        BuildMsgOnError(context, packRes == SUCCESS, "PackedSize outside size", packRes);
-        IMAGE_LOGE("Packing failed, packedSize outside size.");
-    }
+    FinalizePacking(context);
 }
 
 STATIC_COMPLETE_FUNC(PackToFile)

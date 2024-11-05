@@ -24,6 +24,7 @@
 #include "napi_message_sequence.h"
 #include "metadata.h"
 #include "metadata_napi.h"
+#include "image_common.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -484,12 +485,14 @@ napi_value PictureNapi::SetAuxiliaryPicture(napi_env env, napi_callback_info inf
         auto auxiliaryPicturePtr = auxiliaryPictureNapi->GetNativeAuxiliaryPic();
         if (auxiliaryPicturePtr != nullptr) {
             if (type != auxiliaryPicturePtr->GetAuxiliaryPictureInfo().auxiliaryPictureType) {
-                IMAGE_LOGE("The type does not match the auxiliary picture type!");
+                return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                    "The type does not match the auxiliary picture type!");
             } else {
                 pictureNapi->nativePicture_->SetAuxiliaryPicture(auxiliaryPicturePtr);
             }
         } else {
-            IMAGE_LOGE("native auxiliary picture is nullptr!");
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                "Native auxiliary picture is nullptr!");
         }
     } else {
         IMAGE_LOGE("native picture is nullptr!");
@@ -544,11 +547,10 @@ napi_value PictureNapi::CreatePicture(napi_env env, napi_callback_info info)
     if (ParserImageType(env, argValue[NUM_0]) == ImageType::TYPE_PIXEL_MAP) {
         asyncContext->rPixelMap = PixelMapNapi::GetPixelMap(env, argValue[NUM_0]);
         if (asyncContext->rPixelMap == nullptr) {
-            BuildContextError(env, asyncContext->error, "input image type mismatch", ERR_IMAGE_GET_DATA_ABNORMAL);
+            BuildContextError(env, asyncContext->error, "Input image type mismatch", IMAGE_BAD_PARAMETER);
         }
     } else {
-        BuildContextError(env, asyncContext->error, "input image type mismatch",
-            ERR_IMAGE_GET_DATA_ABNORMAL);
+        BuildContextError(env, asyncContext->error, "Input image type mismatch", IMAGE_BAD_PARAMETER);
     }
     CreatePictureExec(env, static_cast<void*>((asyncContext).get()));
     status = napi_get_reference_value(env, sConstructor_, &constructor);
@@ -589,7 +591,7 @@ napi_value PictureNapi::CreatePictureFromParcel(napi_env env, napi_callback_info
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     if (!IMG_IS_OK(status) || argCount != NUM_1) {
         return PictureNapi::ThrowExceptionError(env,
-            CREATE_PICTURE_FROM_PARCEL, ERR_IMAGE_INVALID_PARAMETER, "Fail to napi_get_cb_info");
+            CREATE_PICTURE_FROM_PARCEL, IMAGE_BAD_PARAMETER, "Fail to napi_get_cb_info");
     }
     napi_unwrap(env, argValue[NUM_0], (void **)&messageSequence);
     auto messageParcel = messageSequence->GetMessageParcel();
@@ -668,12 +670,12 @@ napi_value PictureNapi::Marshalling(napi_env env, napi_callback_info info)
     nVal.argv = argValue;
     if (!prepareNapiEnv(env, info, &nVal)) {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Fail to unwrap context");
+            env, IMAGE_BAD_PARAMETER, "Fail to unwrap context");
     }
     nVal.context->rPicture = nVal.context->nConstructor->nativePicture_;
     if (nVal.argc != NUM_0 && nVal.argc != NUM_1) {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args count");
+            env, IMAGE_BAD_PARAMETER, "Invalid args count");
     }
     NAPI_MessageSequence *napiSequence = nullptr;
     napi_get_cb_info(env, info, &nVal.argc, nVal.argv, nullptr, nullptr);
@@ -735,7 +737,10 @@ napi_value PictureNapi::GetHdrComposedPixelMap(napi_env env, napi_callback_info 
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture),
         nullptr, IMAGE_LOGE("Empty native pixelmap"));
     if (asyncContext->rPicture->GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) == nullptr) {
-        return ImageNapiUtils::ThrowExceptionError(env, ERR_MEDIA_UNKNOWN, "There is no GAINMAP");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "There is no GAINMAP");
+    }
+    if (asyncContext->rPicture->GetMainPixel()->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_OPERATION, "Unsupported operations");
     }
     napi_create_promise(env, &(asyncContext->deferred), &result);
 
@@ -815,10 +820,12 @@ napi_value PictureNapi::GetMetadata(napi_env env, napi_callback_info info)
     asyncContext->rPicture = asyncContext->nConstructor->nativePicture_;
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), nullptr, IMAGE_LOGE("Empty native picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get metadata type"), IMAGE_LOGE("Fail to get metadata type"));
     if (metadataType != static_cast<uint32_t>(MetadataType::EXIF)) {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Unsupport MetadataType");
+            env, IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
@@ -868,21 +875,25 @@ napi_value PictureNapi::SetMetadata(napi_env env, napi_callback_info info)
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rPicture), nullptr, IMAGE_LOGE("Empty native picture"));
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get metadata type"), IMAGE_LOGE("Fail to get metadata type"));
     if (metadataType == static_cast<uint32_t>(MetadataType::EXIF)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_DECODE_EXIF_UNSUPPORT, "Unsupport MetadataType");
+            env, IMAGE_UNSUPPORTED_METADATA, "Unsupport MetadataType");
     }
 
     status = napi_unwrap(env, argValue[NUM_1], reinterpret_cast<void**>(&asyncContext->metadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to unwrap MetadataNapi"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to unwrap MetadataNapi"), IMAGE_LOGE("Fail to unwrap MetadataNapi"));
     if (asyncContext->metadataNapi != nullptr) {
         asyncContext->imageMetadata = asyncContext->metadataNapi->GetNativeMetadata();
     } else {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args Metadata");
+            env, IMAGE_BAD_PARAMETER, "Invalid args Metadata");
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

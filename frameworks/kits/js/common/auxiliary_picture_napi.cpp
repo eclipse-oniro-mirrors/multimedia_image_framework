@@ -24,6 +24,7 @@
 #include "metadata_napi.h"
 #include "color_space_object_convertor.h"
 #include "image_utils.h"
+#include "image_common.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -233,6 +234,9 @@ static bool ParseSize(napi_env env, napi_value root, int32_t& width, int32_t& he
     if (!GET_INT32_BY_NAME(root, "width", width) || !GET_INT32_BY_NAME(root, "height", height)) {
         return false;
     }
+    if (width <= 0 || height <= 0) {
+        return false;
+    }
     return true;
 }
 
@@ -267,15 +271,14 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Call napi_get_cb_info failed"));
     
-    IMG_NAPI_CHECK_RET_D(argCount == NUM_3, ImageNapiUtils::ThrowExceptionError(env, COMMON_ERR_INVALID_PARAMETER,
+    IMG_NAPI_CHECK_RET_D(argCount == NUM_3, ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
         "Invalid args count"), IMAGE_LOGE("Invalid args count %{public}zu", argCount));
 
     status = napi_get_arraybuffer_info(env, argValue[NUM_0], &(asyncContext->arrayBuffer),
-                                       &(asyncContext->arrayBufferSize));
+        &(asyncContext->arrayBufferSize));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to get auxiliary picture buffer"));
     if (asyncContext->arrayBuffer == nullptr || asyncContext->arrayBufferSize < NUM_0) {
-        IMAGE_LOGE("Auxiliary picture buffer invalid or Auxiliary picture buffer size invalid");
-        return result;
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Auxiliary picture buffer invalid.");
     }
     
     if (!ParseSize(env, argValue[NUM_1], asyncContext->size.width, asyncContext->size.height)) {
@@ -286,8 +289,7 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
     if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
         || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
-        IMAGE_LOGE("AuxiliaryFigureType is invalid");
-        return result;
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
     asyncContext->type = ParseAuxiliaryPictureType(auxiType);
     CreateAuxiliaryPictureExec(env, static_cast<void*>((asyncContext).get()));
@@ -370,6 +372,16 @@ static void CommonCallbackRoutine(napi_env env, AuxiliaryPictureNapiAsyncContext
     connect = nullptr;
 }
 
+static bool CheckMetadataType(const AuxiliaryPictureNapiAsyncContext* context)
+{
+    if (context == nullptr || context->rAuxiliaryPicture == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is null");
+        return false;
+    }
+    return !(context->rAuxiliaryPicture->GetType() != AuxiliaryPictureType::FRAGMENT_MAP &&
+        context->metadataType == MetadataType::FRAGMENT);
+}
+
 static void GetMetadataComplete(napi_env env, napi_status status, void *data)
 {
     IMAGE_LOGD("[AuxiliaryPicture]GetMetadata IN");
@@ -412,15 +424,20 @@ napi_value AuxiliaryPictureNapi::GetMetadata(napi_env env, napi_callback_info in
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->rAuxiliaryPicture),
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env,
+        IMAGE_BAD_PARAMETER, "Invalid args metadata type."), IMAGE_LOGE("Fail to get metadata type"));
     if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
         && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
         return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args metadata type");
+            env, IMAGE_BAD_PARAMETER, "Invalid args metadata type");
     }
 
+    if (!CheckMetadataType(asyncContext.get())) {
+        return ImageNapiUtils::ThrowExceptionError(
+            env, IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
+    }
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "GetMetadata",
         [](napi_env env, void* data) {
@@ -459,7 +476,6 @@ napi_value AuxiliaryPictureNapi::SetMetadata(napi_env env, napi_callback_info in
     napi_value argValue[NUM_2] = {0};
     uint32_t metadataType = 0;
 
-    IMAGE_LOGD("SetMetadata IN");
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get argments from info"));
     std::unique_ptr<AuxiliaryPictureNapiAsyncContext> asyncContext =
@@ -472,18 +488,21 @@ napi_value AuxiliaryPictureNapi::SetMetadata(napi_env env, napi_callback_info in
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
 
     status = napi_get_value_uint32(env, argValue[NUM_0], &metadataType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get metadata type"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env,
+        IMAGE_BAD_PARAMETER, "Fail to get metadata type."), IMAGE_LOGE("Fail to get metadata type."));
     if (metadataType >= static_cast<uint32_t>(MetadataType::EXIF)
         && metadataType <= static_cast<uint32_t>(MetadataType::FRAGMENT)) {
         asyncContext->metadataType = MetadataType(metadataType);
     } else {
-        return ImageNapiUtils::ThrowExceptionError(
-            env, ERR_IMAGE_INVALID_PARAMETER, "Invalid args metadata type");
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args metadata type.");
     }
 
+    if (!CheckMetadataType(asyncContext.get())) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_UNSUPPORTED_METADATA, "Unsupported metadata");
+    }
     status = napi_unwrap(env, argValue[NUM_1], reinterpret_cast<void**>(&asyncContext->metadataNapi));
-    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->metadataNapi),
-        nullptr, IMAGE_LOGE("Fail to unwrap MetadataNapi"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->metadataNapi), ImageNapiUtils::ThrowExceptionError(env,
+        IMAGE_BAD_PARAMETER, "Fail to unwrap MetadataNapi."), IMAGE_LOGE("Fail to unwrap MetadataNapi"));
     asyncContext->imageMetadata = asyncContext->metadataNapi->GetNativeMetadata();
     if (asyncContext->imageMetadata == nullptr) {
         IMAGE_LOGE("Empty native metadata");
@@ -496,8 +515,7 @@ napi_value AuxiliaryPictureNapi::SetMetadata(napi_env env, napi_callback_info in
             context->rAuxiliaryPicture->SetMetadata(context->metadataType, context->imageMetadata);
             context->status = SUCCESS;
         }, SetMetadataComplete, asyncContext, asyncContext->work);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("Fail to create async work"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), nullptr, IMAGE_LOGE("Fail to create async work"));
     return result;
 }
 
@@ -651,7 +669,8 @@ napi_value AuxiliaryPictureNapi::SetAuxiliaryPictureInfo(napi_env env, napi_call
 
     IMG_JS_ARGS(env, info, status, argCount, argValue, thisVar);
 
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Call napi_get_cb_info failed"));
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(
+        env, IMAGE_BAD_PARAMETER, "Parameter error."), IMAGE_LOGE("Call napi_get_cb_info failed."));
     std::unique_ptr<AuxiliaryPictureNapiAsyncContext> asyncContext =
         std::make_unique<AuxiliaryPictureNapiAsyncContext>();
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext->nConstructor));
@@ -661,7 +680,8 @@ napi_value AuxiliaryPictureNapi::SetAuxiliaryPictureInfo(napi_env env, napi_call
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, asyncContext->auxPicture),
         nullptr, IMAGE_LOGE("Empty native auxiliary picture"));
     IMG_NAPI_CHECK_RET_D(ParseAuxiliaryPictureInfo(env, result, argValue[NUM_0], asyncContext.get()),
-        nullptr, IMAGE_LOGE("AuxiliaryPictureInfo mismatch"));
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Parameter error."),
+        IMAGE_LOGE("AuxiliaryPictureInfo mismatch"));
     
     if (status == napi_ok) {
         asyncContext->auxPicture->SetAuxiliaryPictureInfo(asyncContext->auxiliaryPictureInfo);
@@ -722,7 +742,7 @@ napi_value AuxiliaryPictureNapi::ReadPixelsToBuffer(napi_env env, napi_callback_
                     context->arrayBufferSize, static_cast<uint8_t*>(context->arrayBuffer));
             } else {
                 context->status = ERR_MEDIA_MALLOC_FAILED;
-                IMAGE_LOGE("Fail to malloc memory for arraybuffer");
+                ImageNapiUtils::ThrowExceptionError(env, IMAGE_ALLOC_FAILED, "Memory alloc failed.");
             }
         }, ReadPixelsToBufferComplete, asyncContext, asyncContext->work);
 
@@ -762,7 +782,8 @@ napi_value AuxiliaryPictureNapi::WritePixelsFromBuffer(napi_env env, napi_callba
     status = napi_get_arraybuffer_info(env, argValue[NUM_0],
         &(asyncContext->arrayBuffer), &(asyncContext->arrayBufferSize));
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status),
-        nullptr, IMAGE_LOGE("Fail to get buffer info"));
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "Invalid args."), IMAGE_LOGE("Fail to get buffer info"));
 
     napi_create_promise(env, &(asyncContext->deferred), &result);
     IMG_CREATE_CREATE_ASYNC_WORK(env, status, "WritePixelsFromBuffer",
