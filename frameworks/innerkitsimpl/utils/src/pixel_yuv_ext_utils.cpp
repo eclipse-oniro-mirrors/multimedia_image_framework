@@ -336,15 +336,15 @@ static bool CopyP010Pixels(
         dstY += dstStrides.yStride;
         srcY += srcStrides.yStride;
     }
-
+    uint32_t uvStride = std::min(srcStrides.uvStride, dstStrides.uvStride);
     for (uint32_t y = 0; y < static_cast<uint32_t>(GetUVHeight(yHeight)); y++) {
-        errno_t ret = memcpy_s(dstUV, stride * BYTE_PER_PIXEL, srcUV, stride * BYTE_PER_PIXEL);
+        errno_t ret = memcpy_s(dstUV, uvStride * BYTE_PER_PIXEL, srcUV, uvStride * BYTE_PER_PIXEL);
         if (ret != EOK) {
             IMAGE_LOGE("CopyP010Pixels memcpy dstY failed.");
             return false;
         }
-        dstUV += dstStrides.yStride;
-        srcUV += srcStrides.yStride;
+        dstUV += dstStrides.uvStride;
+        srcUV += srcStrides.uvStride;
     }
     return true;
 }
@@ -352,16 +352,16 @@ static bool CopyP010Pixels(
 static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &converter,
     OpenSourceLibyuv::FilterMode &filterMode, YuvImageInfo &yuvInfo, YUVStrideInfo &dstStrides)
 {
-    uint32_t height = yuvInfo.yuvDataInfo.yHeight + yuvInfo.yuvDataInfo.uvHeight;
+    uint32_t height = yuvInfo.yuvDataInfo.yHeight;
     std::unique_ptr<uint16_t[]> srcPixels = std::make_unique<uint16_t[]>(GetImageSize(yuvInfo.width, height));
     if (srcPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 srcPixels make unique ptr failed");
         return;
     }
     uint16_t *srcBuffer = reinterpret_cast<uint16_t *>(yuvPixels.srcPixels);
-    YUVStrideInfo srcStrides = {yuvInfo.yuvDataInfo.yStride, yuvInfo.yuvDataInfo.yStride,
+    YUVStrideInfo srcStrides = {yuvInfo.yuvDataInfo.yStride, yuvInfo.yuvDataInfo.uvStride,
         yuvInfo.yuvDataInfo.yOffset, yuvInfo.yuvDataInfo.uvOffset};
-    YUVStrideInfo dstStride = {yuvInfo.width, yuvInfo.width, 0, GetYSize(yuvInfo.width, yuvInfo.yuvDataInfo.yHeight)};
+    YUVStrideInfo dstStride = {yuvInfo.width, GetUVStride(yuvInfo.width), 0, GetYSize(yuvInfo.width, yuvInfo.height)};
     if (!CopyP010Pixels(srcBuffer, srcStrides, srcPixels.get(), dstStride, yuvInfo.yuvDataInfo.yHeight)) {
         return;
     }
@@ -370,18 +370,21 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     int32_t srcWidth = yuvInfo.width;
     int32_t srcHeight = yuvInfo.height;
     uint16_t *dstBuffer = reinterpret_cast<uint16_t *>(yuvPixels.dstPixels);
-    int32_t dst_width = yuvInfo.width * yuvPixels.xAxis;
-    int32_t dst_height = yuvInfo.height * yuvPixels.yAxis;
+    int32_t dst_width = yuvInfo.width * yuvPixels.xAxis + ROUND_FLOAT_NUMBER;
+    int32_t dst_height = yuvInfo.height * yuvPixels.yAxis + ROUND_FLOAT_NUMBER;
+    dst_width = (dst_width + 1) / NUM_2 * NUM_2;
+    dst_height = (dst_height + 1) / NUM_2 * NUM_2;
     std::unique_ptr<uint16_t[]> dstPixels = std::make_unique<uint16_t[]>(GetImageSize(srcWidth, srcHeight));
     if (dstPixels == nullptr) {
         IMAGE_LOGE("ScaleP010 dstPixels make unique ptr failed");
         return;
     }
+
     uint16_t* dstY = dstPixels.get();
     uint16_t* dstU = dstPixels.get() + GetYSize(srcWidth, srcHeight);
     uint16_t* dstV = dstPixels.get() + GetVOffset(srcWidth, srcHeight);
     if (converter.P010ToI010(srcY, srcWidth, srcUV,
-        srcWidth, dstY, srcWidth, dstU, GetUStride(srcWidth), dstV,
+        GetUVStride(srcWidth), dstY, srcWidth, dstU, GetUStride(srcWidth), dstV,
         GetUStride(srcWidth), srcWidth, srcHeight) == -1) {
         IMAGE_LOGE("NV12P010ToI010 failed");
         return;
@@ -401,8 +404,7 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
         return;
     }
 
-    std::unique_ptr<uint16_t[]> dstPixel =
-        std::make_unique<uint16_t[]>(GetImageSize(dst_width, dst_height + GetUVHeight(dst_height)));
+    std::unique_ptr<uint16_t[]> dstPixel = std::make_unique<uint16_t[]>(GetImageSize(dst_width, dst_height));
     if (dstPixel == nullptr) {
         IMAGE_LOGE("ScaleP010 dstPixel make unique ptr failed");
         return;
@@ -410,12 +412,12 @@ static void ScaleP010(YuvPixels yuvPixels, OpenSourceLibyuv::ImageYuvConverter &
     uint16_t* dstPixelY = dstPixel.get();
     uint16_t* dstPixelUV = dstPixel.get() + GetYSize(dst_width, dst_height);
     if (converter.I010ToP010(scaleY, dst_width, scaleU, GetUStride(dst_width),
-        scaleV, GetUStride(dst_width), dstPixelY, dst_width, dstPixelUV, dst_width,
+        scaleV, GetUStride(dst_width), dstPixelY, dst_width, dstPixelUV, GetUVStride(dst_width),
         dst_width, dst_height) == -1) {
         IMAGE_LOGE("I010ToP010 failed");
         return;
     }
-    YUVStrideInfo dstPixelStrides = {dst_width, dst_width, 0, GetYSize(dst_width, dst_height)};
+    YUVStrideInfo dstPixelStrides = {dst_width, GetUVStride(dst_width), 0, GetYSize(dst_width, dst_height)};
     if (!CopyP010Pixels(dstPixelY, dstPixelStrides, dstBuffer, dstStrides, dst_height)) {
         return;
     }
