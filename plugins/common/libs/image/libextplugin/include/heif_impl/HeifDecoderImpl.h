@@ -94,6 +94,9 @@ private:
                        std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
+    void PreparePackedInput(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount);
+
     bool HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
