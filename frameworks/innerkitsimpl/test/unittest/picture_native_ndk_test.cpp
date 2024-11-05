@@ -223,7 +223,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_WritePixelsTest002, TestSize.
     std::unique_ptr<uint8_t[]> source = std::make_unique<uint8_t[]>(size);
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_WritePixels(picture, source.get(), size);
-    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
+    EXPECT_EQ(ret, IMAGE_COPY_FAILED);
     OH_AuxiliaryPictureNative_Release(picture);
 }
 
@@ -239,7 +239,7 @@ HWTEST_F(PictureNdkTest, OH_AuxiliaryPictureNative_WritePixelsTest003, TestSize.
     size_t bufferSize = NUM_0;
 
     Image_ErrorCode ret = OH_AuxiliaryPictureNative_WritePixels(picture, source, bufferSize);
-    EXPECT_EQ(ret, IMAGE_COPY_FAILED);
+    EXPECT_EQ(ret, IMAGE_BAD_PARAMETER);
 }
 
 /**

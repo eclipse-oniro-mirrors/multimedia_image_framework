@@ -210,6 +210,28 @@ bool PixelYuv::YuvRotateConvert(Size &size, int32_t degrees, int32_t &dstWidth, 
     }
 }
 
+bool PixelYuv::YuvRotateConvert(Size &srcSize, int32_t degrees, Size &dstSize,
+                                OpenSourceLibyuv::RotationMode &rotateNum, YUVDataInfo yuvDataInfo)
+{
+    switch (degrees) {
+        case DEGREES90:
+            dstSize.width = srcSize.height;
+            dstSize.height = std::max(static_cast<uint32_t>(srcSize.width), yuvDataInfo.yStride);
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate90;
+            return true;
+        case DEGREES180:
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate180;
+            return true;
+        case DEGREES270:
+            dstSize.width = srcSize.height;
+            dstSize.height = std::max(static_cast<uint32_t>(srcSize.width), yuvDataInfo.yStride);
+            rotateNum = OpenSourceLibyuv::RotationMode::kRotate270;
+            return true;
+        default:
+            return false;
+    }
+}
+
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 static void GetYUVStrideInfo(int32_t pixelFmt, OH_NativeBuffer_Planes *planes, YUVStrideInfo &dstStrides)
 {
@@ -291,22 +313,24 @@ void PixelYuv::rotate(float degrees)
         degrees += DEGREES360 * (n + 1);
     }
     OpenSourceLibyuv::RotationMode rotateNum = OpenSourceLibyuv::RotationMode::kRotate0;
-    int32_t dstWidth = imageInfo_.size.width;
-    int32_t dstHeight = imageInfo_.size.height;
-    if (!YuvRotateConvert(imageInfo_.size, degrees, dstWidth, dstHeight, rotateNum)) {
+    YUVDataInfo yuvDataInfo;
+    GetImageYUVInfo(yuvDataInfo);
+    Size dstSize;
+    dstSize.width = imageInfo_.size.width;
+    dstSize.height = imageInfo_.size.height;
+    if (!YuvRotateConvert(imageInfo_.size, degrees, dstSize, rotateNum, yuvDataInfo)) {
         IMAGE_LOGI("rotate degress is invalid, don't need rotate");
         return ;
     }
     YUVStrideInfo dstStrides;
-    auto dstMemory = CreateMemory(imageInfo_.pixelFormat, "Rotate ImageData", dstWidth, dstHeight, dstStrides);
+    auto dstMemory = CreateMemory(imageInfo_.pixelFormat, "Rotate ImageData",
+                                  dstSize.width, dstSize.height, dstStrides);
     if (dstMemory == nullptr) {
         IMAGE_LOGE("rotate CreateMemory failed");
         return;
     }
 
     uint8_t *dst = reinterpret_cast<uint8_t *>(dstMemory->data.data);
-    YUVDataInfo yuvDataInfo;
-    GetImageYUVInfo(yuvDataInfo);
     YuvImageInfo srcInfo = {PixelYuvUtils::ConvertFormat(imageInfo_.pixelFormat),
         imageInfo_.size.width, imageInfo_.size.height, imageInfo_.pixelFormat, yuvDataInfo};
     YuvImageInfo dstInfo;

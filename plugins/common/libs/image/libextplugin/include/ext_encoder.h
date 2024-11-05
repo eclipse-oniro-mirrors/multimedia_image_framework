@@ -62,6 +62,8 @@ public:
 private:
     DISALLOW_COPY_AND_MOVE(ExtEncoder);
     static bool IsHardwareEncodeSupported(const PlEncodeOptions &opts, Media::PixelMap* pixelMap);
+    bool IsPictureSupportHardwareEncode();
+    uint32_t TryHardwareEncodePicture(SkWStream& skStream, std::string& errorMsg);
     uint32_t DoHardWareEncode(SkWStream* skStream);
     bool HardwareEncode(SkWStream &skStream, bool needExif);
     uint32_t DoEncode(SkWStream* skStream, const SkBitmap& src, const SkEncodedImageFormat& skFormat);

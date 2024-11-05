@@ -81,6 +81,7 @@ constexpr int32_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 constexpr int32_t DMA_SIZE = 512 * 512; // DMA minimum effective size
+constexpr int32_t BASE_EVEN_DIVISOR = 2;
 constexpr float EPSILON = 1e-6;
 constexpr int MAX_DIMENSION = INT32_MAX >> 2;
 static bool g_pluginRegistered = false;
@@ -383,7 +384,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rowSize = static_cast<int64_t>(width) * bytesPerPixel;
+    int32_t rowSize = width * bytesPerPixel;
     if ((rowSize / width) != bytesPerPixel) {
         IMAGE_LOGE("width * bytesPerPixel overflow!");
         return true;
@@ -397,12 +398,12 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rectSize = static_cast<int64_t>(width) * height;
+    int32_t rectSize = width * height;
     if ((rectSize / width) != height) {
         IMAGE_LOGE("width * height overflow!");
         return true;
     }
-    int64_t bufferSize = rectSize * bytesPerPixel;
+    int32_t bufferSize = rectSize * bytesPerPixel;
     if ((bufferSize / bytesPerPixel) != rectSize) {
         IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
@@ -898,6 +899,16 @@ bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
 bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
 {
     return (value >= minValue) && (value <= maxValue);
+}
+
+bool ImageUtils::IsInRange(int32_t value, int32_t minValue, int32_t maxValue)
+{
+    return (value >= minValue) && (value <= maxValue);
+}
+
+bool ImageUtils::IsEven(int32_t value)
+{
+    return value % BASE_EVEN_DIVISOR == 0;
 }
 } // namespace Media
 } // namespace OHOS
