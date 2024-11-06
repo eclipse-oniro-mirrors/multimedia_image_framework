@@ -140,7 +140,7 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
-    if (!data.WriteInt32(auxiliaryPictureInfo_.rowStride)) {
+    if (!data.WriteUint32(auxiliaryPictureInfo_.rowStride)) {
         IMAGE_LOGE("Failed to write row stride of auxiliary pictures.");
         return false;
     }
