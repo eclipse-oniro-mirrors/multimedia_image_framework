@@ -15,6 +15,7 @@
 
 #include "image_source_napi.h"
 #include <fcntl.h>
+#include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "media_errors.h"
@@ -421,7 +422,10 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         napi_delete_reference(env, context->callbackRef);
     }
 
-    napi_delete_async_work(env, context->work);
+    if (context != nullptr) {
+        delete context;
+        context = nullptr;
+    }
 
     delete context;
     context = nullptr;
@@ -2042,7 +2046,9 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
         context->keyStr = GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->kVStrArray = GetRecordArgument(env, argValue[NUM_0]);
-        if (context->kVStrArray.size() == 0) return nullptr;
+        if (context->kVStrArray.size() == 0) {
+                        return nullptr;
+        }
         context->isBatch = true;
     } else {
         IMAGE_LOGE("arg 0 type mismatch");

@@ -218,6 +218,9 @@ STATIC_EXEC_FUNC(CreateAuxiliaryPicture)
     opts.size = context->size;
     opts.editable = true;
     auto colors = static_cast<uint32_t*>(context->arrayBuffer);
+    if (colors == nullptr) {
+        return;
+    }
     auto tmpPixelmap = PixelMap::Create(colors, context->arrayBufferSize, opts);
     std::shared_ptr<PixelMap> pixelmap = std::move(tmpPixelmap);
     auto picture = AuxiliaryPicture::Create(pixelmap, context->type, context->size);
@@ -283,12 +286,13 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     
     if (!ParseSize(env, argValue[NUM_1], asyncContext->size.width, asyncContext->size.height)) {
         IMAGE_LOGE("Fail to get auxiliary picture size");
-        return result;
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
     status = napi_get_value_uint32(env, argValue[NUM_2], &auxiType);
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
     if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
         || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
+        IMAGE_LOGE("Auxiliary picture type is invalid");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
     asyncContext->type = ParseAuxiliaryPictureType(auxiType);

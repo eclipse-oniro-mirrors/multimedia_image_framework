@@ -66,6 +66,10 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
         IMAGE_LOGE("Invalid value: %{public}s.", value.c_str());
         return false;
     }
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("SetValue: properties_ is nullptr");
+        return false;
+    }
     (*properties_)[key] = value;
     return true;
 }
@@ -131,15 +135,19 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     if (!parcel.ReadUint64(size)) {
         return nullptr;
     }
+    if (size > MAX_FRAG_DATA) {
+        return nullptr;
+    }
+    if (fragmentMetadataPtr->properties_ == nullptr) {
+        IMAGE_LOGE("Unmarshalling: fragmentMetadataPtr->properties_ is nullptr");
+        return nullptr;
+    }
     for (uint64_t i = 0; i < size; ++i) {
         std::string key;
         std::string value;
         if (!parcel.ReadString(key)) {
             return nullptr;
-        }
-        if (size > MAX_FRAG_DATA) {
-            return nullptr;
-        }
+        }       
         if (!parcel.ReadString(value)) {
             return nullptr;
         }
