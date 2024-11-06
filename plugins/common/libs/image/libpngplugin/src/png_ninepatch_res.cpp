@@ -24,6 +24,9 @@ namespace OHOS {
 namespace ImagePlugin {
 static void Fill9patchOffsets(PngNinePatchRes *patch)
 {
+    if (patch == nullptr) {
+        return;
+    }
     patch->xDivsOffset = sizeof(PngNinePatchRes);
     patch->yDivsOffset = patch->xDivsOffset + (patch->numXDivs * sizeof(int32_t));
     patch->colorsOffset = patch->yDivsOffset + (patch->numYDivs * sizeof(int32_t));
