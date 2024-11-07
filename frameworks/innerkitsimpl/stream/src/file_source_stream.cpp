@@ -449,7 +449,7 @@ bool FileSourceStream::ShouldUseMmap(int fd)
             useMmap = false;
         }
     } else {
-        IMAGE_LOGE("[FileSourceStream] ioctl failed, error:%{public}d", err);
+        IMAGE_LOGD("[FileSourceStream] ioctl failed, error: %{public}d, errno: %{public}d.", err, errno);
     }
     return useMmap;
 }

@@ -730,6 +730,8 @@ static bool ParseISOMetadata(uint8_t* data, uint32_t length, HdrMetadata& metada
         return false;
     }
     uint8_t flag = data[dataOffset++];
+
+    //The first bit indicates the gainmapChannelNum, the second bit indicates the useBaseColorFlag.
     metadata.extendMeta.metaISO.gainmapChannelNum = ((flag & 0x80) == 0x80) ? THREE_COMPONENTS : ONE_COMPONENT;
     metadata.extendMeta.metaISO.useBaseColorFlag = ((flag & 0x40) == 0x40) ? 0x01 : 0x00;
 
@@ -922,7 +924,6 @@ static void PackVividPreInfo(vector<uint8_t>& bytes, uint32_t& offset, bool base
 }
 // LCOV_EXCL_STOP
 
-
 uint32_t HdrJpegPackerHelper::GetBaseVividMarkerSize()
 {
     const uint32_t baseInfoMarkerLength =
@@ -1106,6 +1107,7 @@ static bool PackVividStaticMetadata(vector<uint8_t>& bytes, uint32_t& index, vec
     return true;
 #endif
 }
+// LCOV_EXCL_STOP
 
 static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetadata& metadata)
 {

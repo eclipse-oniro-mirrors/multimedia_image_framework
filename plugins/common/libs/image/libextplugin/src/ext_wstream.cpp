@@ -63,6 +63,10 @@ size_t ExtWStream::bytesWritten() const
 
 bool MetadataWStream::write(const void *buffer, size_t size)
 {
+    if (stream_ == nullptr) {
+        IMAGE_LOGE("MetadataWStream::write stream is nullptr");
+        return false;
+    }
     OHOS::Media::byte* bytePtr = reinterpret_cast<OHOS::Media::byte*>(const_cast<void*>(buffer));
     if (stream_->Write(bytePtr, size) !=0) {
         return true;
@@ -72,11 +76,19 @@ bool MetadataWStream::write(const void *buffer, size_t size)
 
 size_t MetadataWStream::bytesWritten() const
 {
+    if (stream_ == nullptr) {
+        IMAGE_LOGE("MetadataWStream::bytesWritten stream is nullptr");
+        return SIZE_ZERO;
+    }
     return stream_->GetSize();
 }
 
 uint8_t* MetadataWStream::GetAddr()
 {
+    if (stream_ == nullptr) {
+        IMAGE_LOGE("MetadataWStream::GetAddr stream is nullptr");
+        return nullptr;
+    }
     return stream_->GetAddr();
 }
 

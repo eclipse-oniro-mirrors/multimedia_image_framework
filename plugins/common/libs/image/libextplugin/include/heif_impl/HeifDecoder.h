@@ -91,6 +91,7 @@ struct HeifDecoder {
     virtual bool getScanline(uint8_t* dst) = 0;
 
     virtual size_t skipScanlines(int count) = 0;
+    virtual void getErrMsg(std::string& errMsg) = 0;
     virtual bool getImageInfo(HeifFrameInfo *frameInfo) = 0;
     virtual bool decodeGainmap() = 0;
     virtual void setGainmapDstBuffer(uint8_t* dstBuffer, size_t rowStride) = 0;
@@ -100,7 +101,6 @@ struct HeifDecoder {
     virtual void getVividMetadata(std::vector<uint8_t>& uwaInfo, std::vector<uint8_t>& displayInfo,
         std::vector<uint8_t>& lightInfo) = 0;
     virtual void getISOMetadata(std::vector<uint8_t>& isoMetadata) = 0;
-    virtual void getErrMsg(std::string& errMsg) = 0;
 };
 
 #endif // PLUGINS_COMMON_LIBS_IMAGE_LIBEXTPLUGIN_INCLUDE_HEIF_DECODER_H

@@ -43,7 +43,7 @@ public:
     static ExifMetadata *Unmarshalling(Parcel &parcel);
     static ExifMetadata *Unmarshalling(Parcel &parcel, PICTURE_ERR &error);
     void GetFilterArea(const std::vector<std::string> &exifKeys, std::vector<std::pair<uint32_t, uint32_t>> &ranges);
-    virtual MetadataType GetType() const override
+    MetadataType GetType() const override
     {
         return MetadataType::EXIF;
     }

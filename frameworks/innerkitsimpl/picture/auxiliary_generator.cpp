@@ -395,6 +395,7 @@ std::shared_ptr<AuxiliaryPicture> AuxiliaryGenerator::GenerateJpegAuxiliaryPictu
         return auxPicture;
     }
 
+    //linner, depth
     int32_t denominator = GetAuxiliaryPictureDenominator(type);
     denominator = (denominator == 0) ? DEFAULT_SCALE_DENOMINATOR : denominator;
     Size size = {mainInfo.imageInfo.size.width / denominator, mainInfo.imageInfo.size.height / denominator};
