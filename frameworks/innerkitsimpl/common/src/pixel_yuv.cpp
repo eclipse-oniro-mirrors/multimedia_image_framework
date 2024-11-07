@@ -609,13 +609,19 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     auto dstUV = data_ + yuvDataInfo.uvOffset;
     /* copy Y plane*/
     for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
-        memcpy_s(dstY, yuvDataInfo.yWidth, srcY, yuvDataInfo.yWidth);
+        if (memcpy_s(dstY, yuvDataInfo.yWidth, srcY, yuvDataInfo.yWidth) != EOK) {
+            IMAGE_LOGE("PixelYuv write pixels yInfo failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
         dstY += yuvDataInfo.yStride;
         srcY += yuvDataInfo.yWidth;
     }
     /* copy UV plane*/
     for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
-        memcpy_s(dstUV, yuvDataInfo.uvWidth, srcUV, yuvDataInfo.uvWidth);
+        if (memcpy_s(dstUV, yuvDataInfo.uvWidth, srcUV, yuvDataInfo.uvWidth) != EOK) {
+            IMAGE_LOGE("PixelYuv write pixels uvInfo failed.");
+            return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
+        }
         dstUV += yuvDataInfo.uvStride;
         srcUV += yuvDataInfo.uvWidth;
     }
@@ -689,13 +695,19 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
     uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;
     /* copy Y plane*/
     for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
-        memcpy_s(dst, yuvDataInfo.yWidth, srcYPixels, yuvDataInfo.yWidth);
+        if (memcpy_s(dst, yuvDataInfo.yWidth, srcYPixels, yuvDataInfo.yWidth) != EOK) {
+            IMAGE_LOGE("PixelYuv read pixels yInfo failed.");
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         dst += yuvDataInfo.yWidth;
         srcYPixels += yuvDataInfo.yStride;
     }
     /* copy UV plane*/
     for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
-        memcpy_s(dst, yuvDataInfo.uvWidth, srcUVPixels, yuvDataInfo.uvWidth);
+        if (memcpy_s(dst, yuvDataInfo.uvWidth, srcUVPixels, yuvDataInfo.uvWidth) != EOK) {
+            IMAGE_LOGE("PixelYuv read pixels uvInfo failed.");
+            return ERR_IMAGE_INVALID_PARAMETER;
+        }
         dst += yuvDataInfo.uvWidth;
         srcUVPixels += yuvDataInfo.uvStride;
     }
