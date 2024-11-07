@@ -3360,7 +3360,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
     }
 
     uint32_t uPixelsSize = static_cast<uint32_t>(pixelsSize);
-    for (uint32_t i = 0; i < pixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
+    for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
         uint8_t* pixel = data_ + i;
         if (pixelFormat == PixelFormat::RGBA_F16) {
             SetF16PixelAlpha(pixel, percent, isPixelPremul);
