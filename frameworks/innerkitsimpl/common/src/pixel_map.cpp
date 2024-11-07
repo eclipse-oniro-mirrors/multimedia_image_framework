@@ -2937,8 +2937,8 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     int32_t dataSize = 0;
     uint8_t *data = nullptr;
     int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
-    if (allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC) ||
-        !ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data)) {
+    if (!ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data) ||
+        allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
         delete pixelMap;
         IMAGE_LOGE("pixel map tlv decode fail");
         return nullptr;
