@@ -107,7 +107,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetRowStride(OH_ImageNative* image, uint32_t componentType, int32_t* rowStride)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == rowStride) {
-        IMAGE_LOGE("OH_ImageNative_GetRowStride: Invalid parameter",);
+        IMAGE_LOGE("OH_ImageNative_GetRowStride: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
