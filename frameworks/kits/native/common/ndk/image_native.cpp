@@ -163,7 +163,7 @@ Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
         image->imgNative->release();
         delete image->imgNative;
     }
-    IMAGE_LOGI("OH_ImageNative has been deleted");
+    IMAGE_LOGI("OH_ImageNative Release");
     delete image;
     return IMAGE_SUCCESS;
 }

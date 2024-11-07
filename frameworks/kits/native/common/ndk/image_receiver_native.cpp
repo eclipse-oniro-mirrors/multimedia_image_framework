@@ -79,7 +79,7 @@ Image_ErrorCode OH_ImageReceiverOptions_Create(OH_ImageReceiverOptions** options
         return IMAGE_ALLOC_FAILED;
     }
     *options = rst;
-    IMAGE_LOGI("OH_ImageReceiverOptions has been created.");
+    IMAGE_LOGI("OH_ImageReceiverOptions Create.");
     return IMAGE_SUCCESS;
 }
 
@@ -133,7 +133,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverOptions_Release(OH_ImageReceiverOptions* options)
 {
     if (nullptr != options) {
-        IMAGE_LOGI("OH_ImageReceiverOptions has been deleted.");
+        IMAGE_LOGI("OH_ImageReceiverOptions Release.");
         delete options;
     }
     return IMAGE_SUCCESS;
@@ -162,7 +162,7 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
     }
 
     *receiver = rst;
-    IMAGE_LOGI("OH_ImageReceiverNative has been created.");
+    IMAGE_LOGI("OH_ImageReceiverNative Create.");
     return IMAGE_SUCCESS;
 }
 
@@ -360,7 +360,7 @@ Image_ErrorCode OH_ImageReceiverNative_Release(OH_ImageReceiverNative* receiver)
         return IMAGE_BAD_PARAMETER;
     }
     receiver->ptrImgRcv.reset();
-    IMAGE_LOGI("OH_ImageReceiverNative has been deleted.");
+    IMAGE_LOGI("OH_ImageReceiverNative Release.");
     delete receiver;
     return IMAGE_SUCCESS;
 }

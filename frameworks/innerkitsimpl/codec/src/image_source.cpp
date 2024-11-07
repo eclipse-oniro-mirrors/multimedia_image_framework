@@ -2706,7 +2706,7 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     }
     sub = sub + BASE64_URL_PREFIX.size();
     uint32_t subSize = size - (sub - data1);
-    IMAGE_LOGD("[ImageSource]Base64 image input");
+    IMAGE_LOGD("[ImageSource]Base64 image input: size %{public}u.", subSize);
 #ifdef NEW_SKIA
     size_t outputLen = 0;
     SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
