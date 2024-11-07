@@ -139,7 +139,9 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest001, TestSize.Level1)
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_WIDTH, "1000"));
-    std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> KValueStr = *(propertyMap);
     EXPECT_EQ(KValueStr.size(), 2);
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1001");
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_WIDTH)->second, "1000");
@@ -155,7 +157,9 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest002, TestSize.Level2)
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     ASSERT_FALSE(fragmentMetadata.SetValue("ERRORCODE", "1000"));
-    std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> KValueStr = *(propertyMap);
     EXPECT_EQ(KValueStr.size(), 1);
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1001");
     EXPECT_EQ(KValueStr.find("ERRORCODE"), KValueStr.end());
@@ -171,7 +175,9 @@ HWTEST_F(FragmentMetadataTest, GetAllPropertiesTest003, TestSize.Level1)
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1001"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_HEIGHT, "1000"));
-    std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> KValueStr = *(propertyMap);
     ASSERT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_HEIGHT)->second, "1000");
 }
 
@@ -189,8 +195,12 @@ HWTEST_F(FragmentMetadataTest, CloneMetadataTest001, TestSize.Level1)
     newmetadata->GetValue(FRAGMENT_METADATA_KEY_WIDTH, newValue);
     fragmentMetadata.GetValue(FRAGMENT_METADATA_KEY_WIDTH, oldValue);
     EXPECT_EQ(newValue, oldValue);
-    std::map<std::string, std::string> oldKValueStr = *(fragmentMetadata.GetAllProperties());
-    std::map<std::string, std::string> newKValueStr = *(newmetadata->GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> oldKValueStr = *(propertyMap);
+    propertyMap = newmetadata->GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> newKValueStr = *propertyMap;
     EXPECT_EQ(oldKValueStr.size(), newKValueStr.size());
 }
 
@@ -204,10 +214,14 @@ HWTEST_F(FragmentMetadataTest, RemoveEntryTest001, TestSize.Level1)
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
-    std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> KValueStr = *propertyMap;
     ASSERT_EQ(KValueStr.size(), 2);
     fragmentMetadata.RemoveEntry(FRAGMENT_METADATA_KEY_X);
-    KValueStr = *(fragmentMetadata.GetAllProperties());
+    propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    KValueStr = *propertyMap;
     EXPECT_EQ(KValueStr.size(), 1);
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_X), KValueStr.end());
 }
@@ -222,13 +236,19 @@ HWTEST_F(FragmentMetadataTest, RemoveEntryTest002, TestSize.Level2)
     FragmentMetadata fragmentMetadata;
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_X, "300"));
     ASSERT_TRUE(fragmentMetadata.SetValue(FRAGMENT_METADATA_KEY_Y, "256"));
-    std::map<std::string, std::string> KValueStr = *(fragmentMetadata.GetAllProperties());
+    ImageMetadata::PropertyMapPtr propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    std::map<std::string, std::string> KValueStr = *(propertyMap);
     ASSERT_EQ(KValueStr.size(), 2);
     fragmentMetadata.RemoveEntry("ERRORCODE");
-    KValueStr = *(fragmentMetadata.GetAllProperties());
+    propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    KValueStr = *propertyMap;
     EXPECT_EQ(KValueStr.size(), 2);
     fragmentMetadata.RemoveEntry(FRAGMENT_METADATA_KEY_WIDTH);
-    KValueStr = *(fragmentMetadata.GetAllProperties());
+    propertyMap = fragmentMetadata.GetAllProperties();
+    ASSERT_NE(propertyMap, nullptr);
+    KValueStr = *propertyMap;
     EXPECT_EQ(KValueStr.size(), 2);
 }
 
@@ -262,6 +282,7 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest001, TestSize.Level1)
     EXPECT_EQ(KValueStr.size(), 2);
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_X)->second, "300");
     EXPECT_EQ(KValueStr.find(FRAGMENT_METADATA_KEY_Y)->second, "256");
+    delete newfragmentMetadata;
 }
 
 /**
@@ -280,6 +301,7 @@ HWTEST_F(FragmentMetadataTest, UnmarshallingTest002, TestSize.Level2)
     ASSERT_NE(newfragmentMetadata, nullptr);
     std::map<std::string, std::string> KValueStr = *(newfragmentMetadata->GetAllProperties());
     EXPECT_EQ(KValueStr.size(), 0);
+    delete newfragmentMetadata;
 }
 
 } // namespace OHOS
