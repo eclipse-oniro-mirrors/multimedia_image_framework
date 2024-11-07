@@ -24,6 +24,11 @@ ohos_fuzztest("ImagePixelmapFuzzTest") {
   ]
   sources = [ "src/image_pixelmap_fuzzer.cpp" ]
 
+  cflags = [
+    "-DIMAGE_DEBUG_FLAG",
+    "-DIMAGE_COLORSPACE_FLAG",
+  ]
+
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
   external_deps = [
     "c_utils:utils",
