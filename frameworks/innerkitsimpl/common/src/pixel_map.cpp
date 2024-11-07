@@ -2535,6 +2535,11 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
         return false;
     }
 
+    if (pixelMap != nullptr) {
+        pixelMap->FreePixelMap();
+        pixelMap = nullptr;
+    }
+
     if (IsYUV(imgInfo.pixelFormat)) {
 #ifdef EXT_PIXEL
         pixelMap = new(std::nothrow) PixelYuvExt();
