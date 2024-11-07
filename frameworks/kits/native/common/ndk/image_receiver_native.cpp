@@ -162,7 +162,7 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
     }
 
     *receiver = rst;
-    IMAGE_LOGI("OH_ImageReceiverNative has been created.", rst);
+    IMAGE_LOGI("OH_ImageReceiverNative has been created.");
     return IMAGE_SUCCESS;
 }
 
