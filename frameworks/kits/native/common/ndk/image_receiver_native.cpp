@@ -79,7 +79,7 @@ Image_ErrorCode OH_ImageReceiverOptions_Create(OH_ImageReceiverOptions** options
         return IMAGE_ALLOC_FAILED;
     }
     *options = rst;
-    IMAGE_LOGI("OH_ImageReceiverOptions 0x%{public}p has been created.", rst);
+    IMAGE_LOGI("OH_ImageReceiverOptions has been created.");
     return IMAGE_SUCCESS;
 }
 
@@ -133,7 +133,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverOptions_Release(OH_ImageReceiverOptions* options)
 {
     if (nullptr != options) {
-        IMAGE_LOGI("OH_ImageReceiverOptions 0x%{public}p has been deleted.", options);
+        IMAGE_LOGI("OH_ImageReceiverOptions has been deleted.");
         delete options;
     }
     return IMAGE_SUCCESS;
@@ -143,7 +143,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, OH_ImageReceiverNative** receiver)
 {
     if (nullptr == options || nullptr == receiver) {
-        IMAGE_LOGE("Invalid parameter: options=0x%{public}p, receiver=0x%{public}p", options, receiver);
+        IMAGE_LOGE("OH_ImageReceiverNative_Create: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -162,7 +162,7 @@ Image_ErrorCode OH_ImageReceiverNative_Create(OH_ImageReceiverOptions* options, 
     }
 
     *receiver = rst;
-    IMAGE_LOGI("OH_ImageReceiverNative 0x%{public}p has been created.", rst);
+    IMAGE_LOGI("OH_ImageReceiverNative has been created.", rst);
     return IMAGE_SUCCESS;
 }
 
@@ -238,7 +238,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
     }
 
     *image = rst;
-    IMAGE_LOGI("OH_ImageNative 0x%{public}p has been created.", rst);
+    IMAGE_LOGI("OH_ImageNative has been created.");
     return IMAGE_SUCCESS;
 }
 
@@ -281,7 +281,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
     }
 
     *image = rst;
-    IMAGE_LOGI("OH_ImageNative 0x%{public}p has been created.", rst);
+    IMAGE_LOGI("OH_ImageNative has been created.");
     return IMAGE_SUCCESS;
 }
 
@@ -289,7 +289,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_On(OH_ImageReceiverNative* receiver, OH_ImageReceiver_OnCallback callback)
 {
     if (nullptr == receiver || nullptr == callback) {
-        IMAGE_LOGE("Invalid parameter: receiver=0x%{public}p, callback=0x%{public}p", receiver, callback);
+        IMAGE_LOGE("OH_ImageReceiverNative_On: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     if (nullptr == receiver->ptrImgRcv) {
@@ -323,7 +323,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_GetSize(OH_ImageReceiverNative* receiver, Image_Size* size)
 {
     if (nullptr == receiver || nullptr == size) {
-        IMAGE_LOGE("Invalid parameter: receiver=0x%{public}p, size=0x%{public}p", receiver, size);
+        IMAGE_LOGE("OH_ImageReceiverNative_GetSize: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     if (nullptr == receiver->ptrImgRcv || nullptr == receiver->ptrImgRcv->iraContext_) {
@@ -340,7 +340,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageReceiverNative_GetCapacity(OH_ImageReceiverNative* receiver, int32_t* capacity)
 {
     if (nullptr == receiver || nullptr == capacity) {
-        IMAGE_LOGE("Invalid parameter: receiver=0x%{public}p, capacity=0x%{public}p", receiver, capacity);
+        IMAGE_LOGE("OH_ImageReceiverNative_GetCapacity: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     if (nullptr == receiver->ptrImgRcv || nullptr == receiver->ptrImgRcv->iraContext_) {
@@ -360,7 +360,7 @@ Image_ErrorCode OH_ImageReceiverNative_Release(OH_ImageReceiverNative* receiver)
         return IMAGE_BAD_PARAMETER;
     }
     receiver->ptrImgRcv.reset();
-    IMAGE_LOGI("OH_ImageReceiverNative 0x%{public}p has been deleted.", receiver);
+    IMAGE_LOGI("OH_ImageReceiverNative has been deleted.");
     delete receiver;
     return IMAGE_SUCCESS;
 }

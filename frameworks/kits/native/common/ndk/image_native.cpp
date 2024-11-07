@@ -29,7 +29,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetImageSize(OH_ImageNative* image, Image_Size* size)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == size) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, size=0x%{public}p", image, size);
+        IMAGE_LOGE("OH_ImageNative_GetImageSize: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     int32_t width = 0;
@@ -44,7 +44,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetComponentTypes(OH_ImageNative* image, uint32_t** types, size_t* typeSize)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == typeSize) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, typeSize=0x%{public}p", image, typeSize);
+        IMAGE_LOGE("OH_ImageNative_GetComponentTypes: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -70,7 +70,7 @@ Image_ErrorCode OH_ImageNative_GetByteBuffer(OH_ImageNative* image,
                                              uint32_t componentType, OH_NativeBuffer** nativeBuffer)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == nativeBuffer) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, nativeBuffer=0x%{public}p", image, nativeBuffer);
+        IMAGE_LOGE("OH_ImageNative_GetByteBuffer: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -90,7 +90,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetBufferSize(OH_ImageNative* image, uint32_t componentType, size_t* size)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == size) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, size=0x%{public}p", image, size);
+        IMAGE_LOGE("OH_ImageNative_GetBufferSize: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -107,7 +107,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetRowStride(OH_ImageNative* image, uint32_t componentType, int32_t* rowStride)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == rowStride) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, rowStride=0x%{public}p", image, rowStride);
+        IMAGE_LOGE("OH_ImageNative_GetRowStride: Invalid parameter",);
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -124,7 +124,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetPixelStride(OH_ImageNative* image, uint32_t componentType, int32_t* pixelStride)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == pixelStride) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, pixelStride=0x%{public}p", image, pixelStride);
+        IMAGE_LOGE("OH_ImageNative_GetPixelStride: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
 
@@ -141,7 +141,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image, int64_t *timestamp)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == timestamp) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p, timestamp=0x%{public}p", image, timestamp);
+        IMAGE_LOGE("OH_ImageNative_GetTimestamp: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     if (OHOS::Media::SUCCESS == image->imgNative->GetTimestamp(*timestamp)) {
@@ -156,14 +156,14 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_Release(OH_ImageNative* image)
 {
     if (nullptr == image) {
-        IMAGE_LOGE("Invalid parameter: image=0x%{public}p", image);
+        IMAGE_LOGE("OH_ImageNative_Release: Invalid parameter");
         return IMAGE_BAD_PARAMETER;
     }
     if (nullptr != image->imgNative) {
         image->imgNative->release();
         delete image->imgNative;
     }
-    IMAGE_LOGI("OH_ImageNative 0x%{public}p has been deleted.", image);
+    IMAGE_LOGI("OH_ImageNative has been deleted");
     delete image;
     return IMAGE_SUCCESS;
 }
