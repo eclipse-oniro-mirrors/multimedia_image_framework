@@ -1074,7 +1074,7 @@ uint32_t PixelMap::SetRowDataSizeForImageInfo(ImageInfo info)
     rowDataSize_ = ImageUtils::GetRowDataSizeByPixelFormat(info.size.width, info.pixelFormat);
     if (rowDataSize_ <= 0) {
         IMAGE_LOGE("set imageInfo failed, rowDataSize_ invalid");
-        return ERR_IMAGE_DATA_ABNORMAL;
+        return rowDataSize_ < 0 ? ERR_IMAGE_TOO_LARGE : ERR_IMAGE_DATA_ABNORMAL;
     }
 
     if (info.pixelFormat == PixelFormat::ALPHA_8) {
@@ -1115,9 +1115,10 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
-    if (SetRowDataSizeForImageInfo(info) != SUCCESS) {
+    uint32_t ret = SetRowDataSizeForImageInfo(info);
+    if (ret != SUCCESS) {
         IMAGE_LOGE("pixel map set rowDataSize error.");
-        return ERR_IMAGE_DATA_ABNORMAL;
+        return ret;
     }
     if (static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(info.size.height) >
         (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
@@ -3313,7 +3314,7 @@ uint32_t PixelMap::SetAlpha(const float percent)
     }
 
     uint32_t uPixelsSize = static_cast<uint32_t>(pixelsSize);
-    for (uint32_t i = 0; i < pixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
+    for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
         uint8_t* pixel = data_ + i;
         if (pixelFormat == PixelFormat::RGBA_F16) {
             SetF16PixelAlpha(pixel, percent, isPixelPremul);
