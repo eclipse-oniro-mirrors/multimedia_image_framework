@@ -183,13 +183,13 @@ public:
     NATIVEEXPORT virtual void SetFreePixelMapProc(CustomFreePixelMap func);
     NATIVEEXPORT virtual void SetTransformered(bool isTransformered);
     NATIVEEXPORT uint32_t ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul);
-    NATIVEEXPORT void SetPixelMapError(uint32_t code, std::string info)
+    NATIVEEXPORT void SetPixelMapError(uint32_t code, const std::string &info)
     {
         errorCode = code;
         errorInfo = info;
     }
 
-    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, std::string info)
+    NATIVEEXPORT static void ConstructPixelMapError(PIXEL_MAP_ERR &err, uint32_t code, const std::string &info)
     {
         err.errorCode = code;
         err.errorInfo = info;
@@ -299,7 +299,7 @@ public:
     NATIVEEXPORT uint32_t GetImagePropertyInt(const std::string &key, int32_t &value);
     NATIVEEXPORT uint32_t GetImagePropertyString(const std::string &key, std::string &value);
     NATIVEEXPORT uint32_t ModifyImageProperty(const std::string &key, const std::string &value);
-    NATIVEEXPORT uint32_t SetMemoryName(std::string pixelMapName);
+    NATIVEEXPORT uint32_t SetMemoryName(const std::string &pixelMapName);
 
     NATIVEEXPORT bool IsHdr();
     NATIVEEXPORT uint32_t ToSdr();
@@ -476,7 +476,7 @@ protected:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
-    static void ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data);
+    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;

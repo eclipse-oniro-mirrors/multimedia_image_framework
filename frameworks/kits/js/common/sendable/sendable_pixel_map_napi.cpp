@@ -931,7 +931,7 @@ napi_value SendablePixelMapNapi::CreateSendablePixelMapSync(napi_env env, napi_c
     return result;
 }
 
-#if !defined(IOS_PLATFORM) && !defined(A_PLATFORM)
+#if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
 STATIC_EXEC_FUNC(CreateSendablePixelMapFromSurface)
 {
     auto context = static_cast<PixelMapAsyncContext*>(data);

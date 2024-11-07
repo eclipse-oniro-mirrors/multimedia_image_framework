@@ -569,7 +569,7 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapEx(uint32_t index, const DecodeO
         "desiredSize: (%{public}d, %{public}d)",
         static_cast<unsigned long>(imageId_), opts.desiredPixelFormat, opts.desiredSize.width, opts.desiredSize.height);
 
-#if !defined(ANDROID_PLATFORM) || !defined(IOS_PLATFORM)
+#if !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
     if (!isAstc_.has_value()) {
         ImagePlugin::DataStreamBuffer outData;
         uint32_t res = GetData(outData, ASTC_HEADER_SIZE);
@@ -4404,6 +4404,7 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     dopts.desiredPixelFormat = PixelFormat::RGBA_8888;
     dopts.desiredDynamicRange = (ParseHdrType() && IsSingleHdrImage(sourceHdrType_)) ?
         DecodeDynamicRange::HDR : DecodeDynamicRange::SDR;
+    dopts.editable = true;
     std::shared_ptr<PixelMap> mainPixelMap = CreatePixelMap(dopts, errorCode);
     std::unique_ptr<Picture> picture = Picture::Create(mainPixelMap);
     if (picture == nullptr) {

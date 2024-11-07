@@ -709,7 +709,7 @@ HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
     // 16 means ASTC per block bytes and header bytes
     size_t size = blockNum * 16 + 16;
     uint8_t* data = (uint8_t*)malloc(size);
-
+    ASSERT_NE(data, nullptr);
     // 4 means blockSize
     if (!GenAstcHeader(data, 4, width, height)) {
         GTEST_LOG_(INFO) << "GenAstcHeader failed";
@@ -726,7 +726,15 @@ HWTEST_F(PixelAstcTest, PixelAstcTest027, TestSize.Level3)
 
     DecodeOptions decodeOpts;
     decodeOpts.allocatorType = AllocatorType::DMA_ALLOC;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    std::unique_ptr<PixelMap> pixelMap_dma = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    decodeOpts.allocatorType = AllocatorType::HEAP_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap_heap = imageSource->CreatePixelMap(decodeOpts, errorCode);
+    ASSERT_EQ(errorCode, SUCCESS);
+
+    decodeOpts.allocatorType = AllocatorType::SHARE_MEM_ALLOC;
+    std::unique_ptr<PixelMap> pixelMap_ashmem = imageSource->CreatePixelMap(decodeOpts, errorCode);
     ASSERT_EQ(errorCode, SUCCESS);
 
     if (data != nullptr) {

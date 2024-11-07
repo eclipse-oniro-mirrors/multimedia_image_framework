@@ -50,6 +50,8 @@ public:
 
     const std::vector<Item> &GetItems() const { return items_; }
 
+    heif_error GetIlocDataLength(const Item &item, size_t &length);
+
     heif_error ReadData(const Item &item,
                     const std::shared_ptr<HeifInputStream> &stream,
                     const std::shared_ptr<class HeifIdatBox> &idat,
