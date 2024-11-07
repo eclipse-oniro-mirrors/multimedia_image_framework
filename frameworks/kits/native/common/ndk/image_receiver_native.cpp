@@ -238,7 +238,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadLatestImage(OH_ImageReceiverNative* r
     }
 
     *image = rst;
-    IMAGE_LOGI("OH_ImageNative has been created.");
+    IMAGE_LOGI("OH_ImageNative ReadLatestImage.");
     return IMAGE_SUCCESS;
 }
 
@@ -281,7 +281,7 @@ Image_ErrorCode OH_ImageReceiverNative_ReadNextImage(OH_ImageReceiverNative* rec
     }
 
     *image = rst;
-    IMAGE_LOGI("OH_ImageNative has been created.");
+    IMAGE_LOGI("OH_ImageNative ReadNextImage.");
     return IMAGE_SUCCESS;
 }
 
