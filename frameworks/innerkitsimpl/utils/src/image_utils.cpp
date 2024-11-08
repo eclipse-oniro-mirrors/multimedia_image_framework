@@ -25,6 +25,7 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <charconv>
 
 #include "__config"
 #include "image_log.h"
@@ -838,6 +839,12 @@ bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
     return (auxTypes.find(type) != auxTypes.end());
 }
 
+bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
+{
+    return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||
+        AuxiliaryPictureType::FRAGMENT_MAP == type;
+}
+
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
 {
     if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {
@@ -891,20 +898,9 @@ size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
 
 bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
 {
-    if (str.empty() || !isdigit(str.front())) {
-        return false;
-    }
-
-    char* end = nullptr;
-    errno = 0;
-    auto addr = str.c_str();
-    auto result = strtoul(addr, &end, 10); /* 10 means decimal */
-    if ((end == addr) || (end[0] != '\0') || (errno == ERANGE) ||
-        (result > UINT32_MAX)) {
-        return false;
-    }
-    value = static_cast<uint32_t>(result);
-    return true;
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
 }
 
 bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
