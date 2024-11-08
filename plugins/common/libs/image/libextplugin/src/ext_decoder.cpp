@@ -864,9 +864,11 @@ uint32_t ExtDecoder::Decode(uint32_t index, DecodeContext &context)
     }
     size_t tempByteCount = dstInfo_.computeMinByteSize();
     if (SkImageInfo::ByteSizeOverflowed(tempByteCount)) {
+        IMAGE_LOGE("Image too large, dstInfo_height: %{public}d, dstInfo_width: %{public}d",
+            dstInfo_.height(), dstInfo_.width());
         return ERR_IMAGE_TOO_LARGE;
     }
-    uint64_t byteCount = static_cast<uint64_t>(tempByteCount);
+    uint64_t byteCount = tempByteCount;
     uint8_t *dstBuffer = nullptr;
     std::unique_ptr<uint8_t[]> tmpBuffer;
     if (dstInfo_.colorType() == SkColorType::kRGB_888x_SkColorType) {
