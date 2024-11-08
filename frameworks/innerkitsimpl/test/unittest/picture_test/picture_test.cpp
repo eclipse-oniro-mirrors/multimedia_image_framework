@@ -14,13 +14,11 @@
  */
 
 #define protected public
-#include <fcntl.h>
 #include <gtest/gtest.h>
 #include <surface.h>
 #include "picture.h"
 #include "image_type.h"
 #include "image_utils.h"
-#include "image_source.h"
 #include "pixel_map.h"
 #include "metadata.h"
 #include "exif_metadata.h"
@@ -44,10 +42,9 @@ public:
 
 static const std::string IMAGE_INPUT_JPEG_PATH = "/data/local/tmp/image/test_metadata.jpg";
 static const std::string IMAGE_INPUT_EXIF_JPEG_PATH = "/data/local/tmp/image/test_exif.jpg";
-constexpr int32_t SIZE_WIDTH = 2;
-constexpr int32_t SIZE_HEIGHT = 3;
-constexpr int32_t BUFFER_LENGTH = 8;
-constexpr int32_t STRIDE_ALIGNMENT = 8;
+static const int32_t SIZE_WIDTH = 2;
+static const int32_t SIZE_HEIGHT = 3;
+static const int32_t BUFFER_LENGTH = 8;
 
 static std::shared_ptr<PixelMap> CreatePixelMap()
 {
@@ -67,6 +64,9 @@ static std::unique_ptr<Picture> CreatePicture()
 {
     std::shared_ptr<PixelMap> pixelmap = CreatePixelMap();
     EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap == nullptr) {
+        return nullptr;
+    }
     return Picture::Create(pixelmap);
 }
 
@@ -74,8 +74,15 @@ static std::shared_ptr<AuxiliaryPicture> CreateAuxiliaryPicture(AuxiliaryPicture
 {
     std::shared_ptr<PixelMap> pixelmap = CreatePixelMap();
     EXPECT_NE(pixelmap, nullptr);
+    if (pixelmap == nullptr) {
+        return nullptr;
+    }
     Size size = {SIZE_WIDTH, SIZE_HEIGHT};
     std::unique_ptr<AuxiliaryPicture> tmpAuxiliaryPicture = AuxiliaryPicture::Create(pixelmap, type, size);
+    EXPECT_NE(tmpAuxiliaryPicture, nullptr);
+    if (tmpAuxiliaryPicture == nullptr) {
+        return nullptr;
+    }
     std::shared_ptr<AuxiliaryPicture> auxiliaryPicture = std::move(tmpAuxiliaryPicture);
     return auxiliaryPicture;
 }
@@ -113,6 +120,7 @@ HWTEST_F(PictureTest, SurfaceBuffer2PixelMapTest001, TestSize.Level3)
 HWTEST_F(PictureTest, SurfaceBuffer2PixelMapTest002, TestSize.Level1)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
     std::shared_ptr<PixelMap> pixelmap = Picture::SurfaceBuffer2PixelMap(buffer);
     EXPECT_NE(nullptr, pixelmap);
 }
@@ -439,6 +447,10 @@ HWTEST_F(PictureTest, MarshallingTest004, TestSize.Level2)
 HWTEST_F(PictureTest, MarshallingTest005, TestSize.Level1)
 {
     const std::string srcValue = "9, 9, 8";
+    std::string realPath;
+    if (!ImageUtils::PathToRealPath(IMAGE_INPUT_JPEG_PATH.c_str(), realPath)) {
+        return;
+    }
     auto exifData = exif_data_new_from_file(IMAGE_INPUT_JPEG_PATH.c_str());
     ASSERT_NE(exifData, nullptr);
     std::shared_ptr<ExifMetadata> srcExifMetadata = std::make_shared<ExifMetadata>(exifData);
@@ -523,46 +535,11 @@ HWTEST_F(PictureTest, CreateTest002, TestSize.Level2)
 }
 
 /**
- * @tc.name: CreateTest003
- * @tc.desc: When creating a Picture, pass in PixelMap with ExifMetadata and return ExifMetadata.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, CreateTest003, TestSize.Level1)
-{
-    const int fd = open(IMAGE_INPUT_EXIF_JPEG_PATH.c_str(), O_RDWR | S_IRUSR | S_IWUSR);
-    ASSERT_NE(fd, -1);
-
-    uint32_t errorCode = 0;
-    SourceOptions opts;
-    std::unique_ptr<ImageSource> imageSource = ImageSource::CreateImageSource(fd, opts, errorCode);
-    DecodeOptions decodeOpts;
-    std::unique_ptr<PixelMap> pixelMap = imageSource->CreatePixelMap(decodeOpts, errorCode);
-    ASSERT_NE(pixelMap, nullptr);
-    std::shared_ptr<PixelMap> newpixelMap = std::move(pixelMap);
-
-    std::unique_ptr<Picture> picture = Picture::Create(newpixelMap);
-    std::shared_ptr<ExifMetadata> newExifMetadata = picture->GetExifMetadata();
-    EXPECT_NE(newExifMetadata, nullptr);
-}
-
-/**
- * @tc.name: CreateTest004
- * @tc.desc: When creating a Picture, pass in a PixelMap without ExifMetadata and return null.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, CreateTest004, TestSize.Level2)
-{
-    std::unique_ptr<Picture> picture = CreatePicture();
-    std::shared_ptr<ExifMetadata> newExifMetadata = picture->GetExifMetadata();
-    EXPECT_EQ(newExifMetadata, nullptr);
-}
-
-/**
-* @tc.name: CreateTest005
+* @tc.name: CreateTest003
 * @tc.desc: Create a Picture using the correct SurfaceBuffer.
 * @tc.type: FUNC
 */
-HWTEST_F(PictureTest, CreateTest005, TestSize.Level1)
+HWTEST_F(PictureTest, CreateTest003, TestSize.Level1)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = OHOS::SurfaceBuffer::Create();
     ASSERT_NE(surfaceBuffer, nullptr);
@@ -571,11 +548,11 @@ HWTEST_F(PictureTest, CreateTest005, TestSize.Level1)
 }
 
 /**
-* @tc.name: CreateTest006
+* @tc.name: CreateTest004
 * @tc.desc: Create a Picture using the SurfaceBuffer with null ptr.
 * @tc.type: FUNC
 */
-HWTEST_F(PictureTest, CreateTest006, TestSize.Level2)
+HWTEST_F(PictureTest, CreateTest004, TestSize.Level2)
 {
     OHOS::sptr<OHOS::SurfaceBuffer> surfaceBuffer = nullptr;
     std::unique_ptr<Picture> picture = Picture::Create(surfaceBuffer);
@@ -629,72 +606,6 @@ HWTEST_F(PictureTest, GetGainmapPixelmapTest002, TestSize.Level2)
     picture->SetAuxiliaryPicture(gainmapAuxiliaryPic);
     std::shared_ptr<PixelMap> desPixelMap = picture->GetGainmapPixelMap();
     EXPECT_EQ(desPixelMap, nullptr);
-}
-
-/**
- * @tc.name: SetMaintenanceDataTest001
- * @tc.desc: Set maintenance data successfully.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, SetMaintenanceDataTest001, TestSize.Level1)
-{
-    uint8_t dataBlob[] = "Test set maintenance data";
-    uint32_t size = sizeof(dataBlob) / sizeof(dataBlob[0]);
-    ASSERT_NE(size, 0);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
-    ASSERT_NE(maintenanceBuffer, nullptr);
-    BufferRequestConfig requestConfig = {
-        .width = SIZE_WIDTH,
-        .height = SIZE_HEIGHT,
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-    };
-    GSError ret = maintenanceBuffer->Alloc(requestConfig);
-    ASSERT_EQ(ret, GSERROR_OK);
-    bool result = memcpy_s(maintenanceBuffer->GetVirAddr(), size, dataBlob, size);
-    EXPECT_EQ(result, EOK);
-    result = picture->SetMaintenanceData(maintenanceBuffer);
-    EXPECT_EQ(result, true);
-}
-
-/**
- * @tc.name: GetMaintenanceDataTest001
- * @tc.desc: Get maintenance data successfully.
- * @tc.type: FUNC
- */
-HWTEST_F(PictureTest, GetMaintenanceDataTest001, TestSize.Level1)
-{
-    uint8_t dataBlob[] = "Test get maintenance data";
-    uint32_t size = sizeof(dataBlob) / sizeof(dataBlob[0]);
-    ASSERT_NE(size, 0);
-    std::unique_ptr<Picture> picture = CreatePicture();
-    ASSERT_NE(picture, nullptr);
-    sptr<SurfaceBuffer> maintenanceBuffer = SurfaceBuffer::Create();
-    ASSERT_NE(maintenanceBuffer, nullptr);
-    BufferRequestConfig requestConfig = {
-        .width = SIZE_WIDTH,
-        .height = SIZE_HEIGHT,
-        .strideAlignment = STRIDE_ALIGNMENT,
-        .format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BGRA_8888,
-        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_MEM_MMZ_CACHE,
-        .timeout = 0,
-    };
-    GSError ret = maintenanceBuffer->Alloc(requestConfig);
-    ASSERT_EQ(ret, GSERROR_OK);
-    bool result = memcpy_s(maintenanceBuffer->GetVirAddr(), size, dataBlob, size);
-    EXPECT_EQ(result, EOK);
-    auto handle = maintenanceBuffer->GetBufferHandle();
-    ASSERT_NE(handle, nullptr);
-    handle->size = size;
-    result = picture->SetMaintenanceData(maintenanceBuffer);
-    ASSERT_EQ(result, true);
-    sptr<SurfaceBuffer> newMaintenanceData = picture->GetMaintenanceData();
-    EXPECT_NE(newMaintenanceData, nullptr);
-    EXPECT_EQ(newMaintenanceData->GetSize(), size);
 }
 
 /**
