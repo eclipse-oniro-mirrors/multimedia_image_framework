@@ -770,6 +770,10 @@ void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
             rowNum, outputRowsNum_, pngImageInfo_.height);
         return;
     }
+    if (inputStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s fail, inputStreamPtr_ is nullptr", __func__);
+        return;
+    }
     outputRowsNum_++;
     uint8_t *offset = pixelsData_ + rowNum * pngImageInfo_.rowDataSize;
     uint32_t offsetSize = (pngImageInfo_.height - rowNum) * pngImageInfo_.rowDataSize;
