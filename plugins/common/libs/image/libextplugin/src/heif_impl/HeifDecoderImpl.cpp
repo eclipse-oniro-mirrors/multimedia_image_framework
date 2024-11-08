@@ -73,6 +73,7 @@ const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
 const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
+const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 
 const static uint16_t BT2020_PRIMARIES = 9;
 

@@ -57,6 +57,7 @@ public:
     int32_t Release();
     int32_t GetOutputBufferUsage(uint64_t& usage);
     int32_t SetOutputBuffer(sptr<SurfaceBuffer> output);
+    int32_t GetPackedInputFlag(bool& flag);
 protected:
     enum MsgWhat : MsgType {
         INIT,
@@ -70,6 +71,7 @@ protected:
         RELEASE,
         GET_OUTPUT_BUFFER_USAGE,
         SET_OUTPUT_BUFFER,
+        GET_PACKED_INPUT_FLAG,
 
         INNER_MSG_BEGIN = 1000,
         CODEC_EVENT,
@@ -149,6 +151,7 @@ protected:
     virtual int32_t ReConfigureOutputBufferCnt() = 0;
     virtual uint64_t OnGetOutputBufferUsage() = 0;
     virtual int32_t OnSetOutputBuffer(sptr<SurfaceBuffer> output) = 0;
+    virtual bool OnGetPackedInputFlag() = 0;
 
     // start
     virtual bool ReadyToStart() = 0;
@@ -250,6 +253,7 @@ protected:
     bool is10Bit_ = false;
     bool debugMode_ = false;
     bool dumpMode_ = false;
+    bool isPackedInputSupported_ = false;
     sptr<HdiCodecNamespace::ICodecCallback> compCb_ = nullptr;
     sptr<HdiCodecNamespace::ICodecComponent> compNode_ = nullptr;
     sptr<HdiCodecNamespace::ICodecComponentManager> compMgr_ = nullptr;
@@ -322,6 +326,7 @@ private:
         void OnConfigure(const MsgInfo &info);
         void OnGetOutputBufferUsage(const MsgInfo &info);
         void OnSetOutputBuffer(const MsgInfo &info);
+        void OnGetPackedInputFlag(const MsgInfo &info);
         void OnStart(const MsgInfo &info);
         void OnShutDown(const MsgInfo &info) override;
     };
