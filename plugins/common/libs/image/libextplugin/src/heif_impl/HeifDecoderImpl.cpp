@@ -73,6 +73,7 @@ const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
 const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
+const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 
 const static uint16_t BT2020_PRIMARIES = 9;
 
@@ -644,17 +645,39 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
         return false;
     }
     size_t numGrid = tileImages.size();
-    std::vector<std::vector<uint8_t>> inputs(numGrid + 1);
+    std::vector<std::vector<uint8_t>> inputs;
 
-    for (size_t index = 0; index < numGrid; ++index) {
-        std::shared_ptr<HeifImage> &tileImage = tileImages[index];
-        if (index == 0) {
-            // get hvcc header
-            parser_->GetItemData(tileImage->GetItemId(), &inputs[index], heif_only_header);
-            ProcessChunkHead(inputs[index].data(), inputs[index].size());
+    if (hwDecoder->IsPackedInputSupported()) {
+        size_t inputIndex = 0;
+        inputs.resize(GRID_NUM_2);
+        for (size_t index = 0; index < numGrid; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &inputs[inputIndex], heif_only_header);
+                ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
+                ++inputIndex;
+            }
+            if (inputs[inputIndex].size() >= MAX_INPUT_BUFFER_SIZE) {
+                ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
+                ++inputIndex;
+                inputs.emplace_back(std::vector<uint8_t>());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &inputs[inputIndex], heif_no_header);
         }
-        parser_->GetItemData(tileImage->GetItemId(), &inputs[index + 1], heif_no_header);
-        ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
+        ProcessChunkHead(inputs[inputIndex].data(), inputs[inputIndex].size());
+    } else {
+        inputs.resize(numGrid + 1);
+        for (size_t index = 0; index < numGrid; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &inputs[index], heif_only_header);
+                ProcessChunkHead(inputs[index].data(), inputs[index].size());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &inputs[index + 1], heif_no_header);
+            ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
+        }
     }
 
     uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);

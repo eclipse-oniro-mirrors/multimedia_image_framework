@@ -34,6 +34,7 @@ private:
     int32_t ReConfigureOutputBufferCnt() override;
     uint64_t OnGetOutputBufferUsage() override;
     int32_t OnSetOutputBuffer(sptr<SurfaceBuffer> output) override;
+    bool OnGetPackedInputFlag() override;
 
     // start
     int32_t AllocateBuffersOnPort(OMX_DIRTYPE portIndex, bool isOutputPortSettingChanged) override;
