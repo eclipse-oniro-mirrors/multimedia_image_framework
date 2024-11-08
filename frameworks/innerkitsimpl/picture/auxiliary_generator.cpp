@@ -133,7 +133,7 @@ static ImageInfo MakeImageInfo(const Size &size, PixelFormat format, AlphaType a
 }
 
 static AuxiliaryPictureInfo MakeAuxiliaryPictureInfo(AuxiliaryPictureType type,
-    const Size &size, int32_t rowStride, PixelFormat format, ColorSpace colorSpace)
+    const Size &size, uint32_t rowStride, PixelFormat format, ColorSpace colorSpace)
 {
     AuxiliaryPictureInfo info;
     info.auxiliaryPictureType = type;
