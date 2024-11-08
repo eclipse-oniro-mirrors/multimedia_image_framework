@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace Media {
 
-const static uint64_t MAX_META_TYPE = 64;
+const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
                                                            AuxiliaryPictureType type, Size size)
@@ -137,7 +137,7 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
-    if (!data.WriteInt32(auxiliaryPictureInfo_.rowStride)) {
+    if (!data.WriteUint32(auxiliaryPictureInfo_.rowStride)) {
         IMAGE_LOGE("Failed to write row stride of auxiliary pictures.");
         return false;
     }
@@ -190,7 +190,7 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     auxiliaryPictureInfo.auxiliaryPictureType = static_cast<AuxiliaryPictureType>(parcel.ReadInt32());
     auxiliaryPictureInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
     auxiliaryPictureInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
-    auxiliaryPictureInfo.rowStride = parcel.ReadInt32();
+    auxiliaryPictureInfo.rowStride = parcel.ReadUint32();
     auxiliaryPictureInfo.size.height = parcel.ReadInt32();
     auxiliaryPictureInfo.size.width = parcel.ReadInt32();
     auxiliaryPictureInfo.jpegTagName = parcel.ReadString();
@@ -199,7 +199,7 @@ AuxiliaryPicture *AuxiliaryPicture::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     std::map<MetadataType, std::shared_ptr<ImageMetadata>> metadatas;
     
     uint64_t size = parcel.ReadUint64();
-    if (size > MAX_META_TYPE) {
+    if (size > MAX_PICTURE_META_TYPE_COUNT) {
         return nullptr;
     }
     
