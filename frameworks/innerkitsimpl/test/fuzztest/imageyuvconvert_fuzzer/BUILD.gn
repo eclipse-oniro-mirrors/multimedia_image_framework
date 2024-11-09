@@ -31,5 +31,8 @@ ohos_fuzztest("ImageYuvConvertFuzzTest") {
 
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
 
-  external_deps = [ "hilog:libhilog" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
 }
