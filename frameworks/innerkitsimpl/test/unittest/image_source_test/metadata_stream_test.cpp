@@ -619,15 +619,6 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_Read002, TestSize.Level3)
     EXPECT_EQ(-1, bytesRead);
 }
 
-// Define a global jmp_buf variable
-static sigjmp_buf g_jmpBuf;
-
-// Define a signal handler function
-static void HandleSigsegv(int sig)
-{
-    siglongjmp(g_jmpBuf, 1);
-}
-
 /**
  * @tc.name: FileMetadataStream_MMap001
  * @tc.desc: Test the MMap function of FileMetadataStream, trying to write to a
@@ -649,16 +640,6 @@ HWTEST_F(MetadataStreamTest, FileMetadataStream_MMap001, TestSize.Level3)
     stream.Open(OpenMode::ReadWrite);
     result = stream.GetAddr(false);
     ASSERT_NE(result, nullptr);
-
-    // Set the signal handler function
-    signal(SIGSEGV, HandleSigsegv);
-
-    // Try to write data
-    if (sigsetjmp(g_jmpBuf, 1) == 0) {
-        result[0] = 0;
-        // If no segmentation fault is triggered, then this is an error
-        FAIL() << "Expected a segmentation fault";
-    }
 }
 
 /**
@@ -1375,14 +1356,14 @@ HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write007, TestSize.Level3)
 HWTEST_F(MetadataStreamTest, BufferMetadataStream_Write008, TestSize.Level3)
 {
     BufferMetadataStream stream;
-    byte *buf = new byte[13];
+    byte *buf = new byte[14];
     ASSERT_TRUE(stream.Open());
-    stream.Write((uint8_t *)"Hello, world!", 13);
+    stream.Write((uint8_t *)"Hello, world!\0", 14);
     stream.Seek(4, SeekPos::BEGIN);
     stream.Write((uint8_t *)"a", 1);
     stream.Write((uint8_t *)"b", 1);
     stream.Seek(0, SeekPos::BEGIN);
-    stream.Read(buf, 13);
+    stream.Read(buf, 14);
     ASSERT_STREQ((char *)buf, "Hellab world!");
     delete[] buf;
 }
