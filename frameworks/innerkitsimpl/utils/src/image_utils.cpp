@@ -469,7 +469,9 @@ void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, ui
     std::string fileName = FILE_DIR_IN_THE_SANDBOX + GetLocalTime() + customFileName + std::to_string(imageId) +
         GetPixelMapName(pixelMap) + ".dat";
     int32_t totalSize = pixelMap->GetRowStride() * pixelMap->GetHeight();
-    if (pixelMap->GetPixelFormat() == PixelFormat::NV12 || pixelMap->GetPixelFormat() == PixelFormat::NV21) {
+    PixelFormat pixelFormat = pixelMap->GetPixelFormat();
+    if (pixelFormat == PixelFormat::NV12 || pixelFormat == PixelFormat::NV21 ||
+        pixelFormat == PixelFormat::YCBCR_P010 || pixelFormat == PixelFormat::YCRCB_P010) {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         if (pixelMap->GetAllocatorType() == AllocatorType::DMA_ALLOC) {
             auto sbBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());

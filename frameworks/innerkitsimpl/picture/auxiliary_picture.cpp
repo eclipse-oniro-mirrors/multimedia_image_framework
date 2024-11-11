@@ -110,7 +110,8 @@ void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetad
 
 bool AuxiliaryPicture::HasMetadata(MetadataType type)
 {
-    return metadatas_.find(type) != metadatas_.end() && metadatas_[type] != nullptr;
+    auto item = metadatas_.find(type);
+    return item != metadatas_.end() && item->second != nullptr;
 }
 
 bool AuxiliaryPicture::Marshalling(Parcel &data) const
