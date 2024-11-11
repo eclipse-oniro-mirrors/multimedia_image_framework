@@ -322,9 +322,16 @@ std::vector<int64_t> ImageSourceImpl::CreatePixelMapList(uint32_t index, DecodeO
     if ((*errorCode == SUCCESS) && (index >= 0) && (index < frameCount)) {
         pixelMaps = nativeImgSrc->CreatePixelMapList(opts, *errorCode);
     }
+    if (*errorCode != SUCCESS) {
+        return ret;
+    }
     for (size_t i = 0; i < pixelMaps->size(); i++) {
         std::unique_ptr<PixelMap> pixelmap = move(pixelMaps->operator[](i));
         auto nativeImage = FFIData::Create<PixelMapImpl>(move(pixelmap));
+        if (nativeImage == nullptr) {
+            *errorCode = ERR_IMAGE_INIT_ABNORMAL;
+            return ret;
+        }
         ret.push_back(nativeImage->GetID());
     }
     IMAGE_LOGD("[ImageSourceImpl] CreatePixelMapList success.");
