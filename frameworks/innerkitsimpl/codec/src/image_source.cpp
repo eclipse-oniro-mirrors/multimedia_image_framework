@@ -3017,7 +3017,7 @@ static bool TextureSuperCompressDecodeInit(AstcOutInfo *astcInfo, SutInInfo *sut
         return false;
     }
     sutInfo->sutBytes = static_cast<int32_t>(inBytes);
-    if (outBytes > std::numeric_limits<int32_t>::max()) {
+    if (outBytes > static_cast<size_t>(std::numeric_limits<int32_t>::max())) {
         IMAGE_LOGE("astc SuperDecompressTexture outBytes overflow!");
         return false;
     }
