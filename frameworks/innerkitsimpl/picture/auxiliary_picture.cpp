@@ -24,6 +24,7 @@ namespace OHOS {
 namespace Media {
 
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
+const static uint64_t MAX_JPEG_TAG_NAME_LENGTH = 100;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
@@ -113,18 +114,8 @@ bool AuxiliaryPicture::HasMetadata(MetadataType type)
     return metadatas_.find(type) != metadatas_.end() && metadatas_[type] != nullptr;
 }
 
-bool AuxiliaryPicture::Marshalling(Parcel &data) const
+bool AuxiliaryPicture::WriteAuxPictureInfoToParcel(Parcel &data) const
 {
-    if (content_ == nullptr) {
-        IMAGE_LOGE("Auxiliary picture is null.");
-        return false;
-    }
-
-    if (!content_->Marshalling(data)) {
-        IMAGE_LOGE("Failed to marshal auxiliary picture.");
-        return false;
-    }
-
     if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.auxiliaryPictureType))) {
         IMAGE_LOGE("Failed to write type of auxiliary pictures.");
         return false;
@@ -150,11 +141,39 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
+    if (auxiliaryPictureInfo_.jpegTagName.length() > MAX_JPEG_TAG_NAME_LENGTH) {
+        IMAGE_LOGE("The length of jpeg tag name exceeds the maximum limit.");
+        return false;
+    }
     if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
         IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
         return false;
     }
+    
+    return true;
+}
 
+bool AuxiliaryPicture::Marshalling(Parcel &data) const
+{
+    if (content_ == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is null.");
+        return false;
+    }
+
+    if (!content_->Marshalling(data)) {
+        IMAGE_LOGE("Failed to marshal auxiliary picture.");
+        return false;
+    }
+
+    if (!WriteAuxPictureInfoToParcel(data)) {
+        IMAGE_LOGE("write auxiliary picture info to parcel failed.");
+        return false;
+    }
+
+    if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
+        return false;
+    }
     if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
         return false;
     }
