@@ -2434,7 +2434,7 @@ bool PixelMap::ReadImageInfo(Parcel &parcel, ImageInfo &imgInfo)
     imgInfo.pixelFormat = static_cast<PixelFormat>(parcel.ReadInt32());
     IMAGE_LOGD("read pixel map pixelFormat:[%{public}d] to parcel.", imgInfo.pixelFormat);
     if (ImageUtils::GetPixelBytes(imgInfo.pixelFormat) == 0) {
-        IMAGE_LOGE("invalid pixelFormat:[0]");
+        IMAGE_LOGE("invalid pixelFormat:[%{public}d]", imgInfo.pixelFormat);
         return false;
     }
     imgInfo.colorSpace = static_cast<ColorSpace>(parcel.ReadInt32());
