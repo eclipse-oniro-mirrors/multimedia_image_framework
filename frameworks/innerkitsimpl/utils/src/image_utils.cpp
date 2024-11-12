@@ -207,9 +207,9 @@ int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const Pixe
         default:
             rowDataSize = pixelBytes * uWidth;
     }
-    if (rowDataSize > INT_MAX) {
+    if (rowDataSize > INT32_MAX) {
         IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
-        return 0;
+        return -1;
     }
     return static_cast<int32_t>(rowDataSize);
 }
