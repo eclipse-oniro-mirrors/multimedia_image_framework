@@ -97,23 +97,23 @@ constexpr uint8_t BGRA_BYTES = 4;
 constexpr uint8_t RGBA_F16_BYTES = 8;
 constexpr uint8_t PER_PIXEL_LEN = 1;
 constexpr uint32_t MAX_READ_COUNT = 2048;
-static const int32_t PLANE_Y = 0;
-static const int32_t PLANE_U = 1;
-static const int32_t PLANE_V = 2;
+static constexpr int32_t PLANE_Y = 0;
+static constexpr int32_t PLANE_U = 1;
+static constexpr int32_t PLANE_V = 2;
 
 constexpr uint8_t FILL_NUMBER = 3;
 constexpr uint8_t ALIGN_NUMBER = 4;
 
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-static const uint8_t NUM_1 = 1;
+static constexpr uint8_t NUM_1 = 1;
 #endif
-static const uint8_t NUM_2 = 2;
-static const uint8_t NUM_3 = 3;
-static const uint8_t NUM_4 = 4;
-static const uint8_t NUM_5 = 5;
-static const uint8_t NUM_6 = 6;
-static const uint8_t NUM_7 = 7;
-static const uint8_t NUM_8 = 8;
+static constexpr uint8_t NUM_2 = 2;
+static constexpr uint8_t NUM_3 = 3;
+static constexpr uint8_t NUM_4 = 4;
+static constexpr uint8_t NUM_5 = 5;
+static constexpr uint8_t NUM_6 = 6;
+static constexpr uint8_t NUM_7 = 7;
+static constexpr uint8_t NUM_8 = 8;
 
 constexpr int32_t ANTIALIASING_SIZE = 350;
 
@@ -228,6 +228,10 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
 
 bool CheckPixelmap(std::unique_ptr<PixelMap> &pixelMap, ImageInfo &imageInfo)
 {
+    if (pixelMap == nullptr) {
+        IMAGE_LOGE("pixelmap is nullptr");
+        return false;
+    }
     if (pixelMap->SetImageInfo(imageInfo) != SUCCESS) {
         IMAGE_LOGE("set image info failed");
         return false;
@@ -2939,6 +2943,10 @@ PixelMap *PixelMap::DecodeTlv(std::vector<uint8_t> &buff)
     int32_t allocType = static_cast<int32_t>(AllocatorType::DEFAULT);
     if (!ReadTlvAttr(buff, imageInfo, allocType, dataSize, &data) ||
         allocType != static_cast<int32_t>(AllocatorType::HEAP_ALLOC)) {
+        if (data != nullptr) {
+            free(data);
+            data = nullptr;
+        }
         delete pixelMap;
         IMAGE_LOGE("pixel map tlv decode fail");
         return nullptr;
