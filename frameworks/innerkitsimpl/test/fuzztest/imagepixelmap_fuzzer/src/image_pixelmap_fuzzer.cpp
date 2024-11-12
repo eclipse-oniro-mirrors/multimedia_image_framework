@@ -21,9 +21,20 @@
 
 #include "pixel_map.h"
 
+#include <chrono>
+#include <thread>
+#include "image_log.h"
+
 constexpr uint32_t WIDTH_FACTOR = 4;
-constexpr uint32_t FORMAT_LENGTH = 5;
 constexpr uint32_t STRING_LENGTH = 10;
+constexpr uint32_t MAX_LENGTH_MODULO = 1024;
+constexpr uint32_t PIXELFORMAT_MODULO = 8;
+constexpr uint32_t ALPHATYPE_MODULO = 4;
+constexpr uint32_t SCALEMODE_MODULO = 2;
+constexpr uint32_t COLORSPACENAME_MODULO = 10;
+
+constexpr uint32_t DIVISOR = 2;
+constexpr uint32_t NUM_1 = 1;
 
 namespace OHOS {
 namespace Media {
@@ -83,17 +94,19 @@ bool ChangeParcel(Parcel &parcel)
 /*
  * get a pixelmap from opts
  */
-std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts()
+std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts(Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
 {
-    int32_t width = GetData<int32_t>();
-    int32_t height = GetData<int32_t>();
+    int32_t width = GetData<int32_t>() % MAX_LENGTH_MODULO;
+    int32_t height = GetData<int32_t>() % MAX_LENGTH_MODULO;
     Media::InitializationOptions opts;
     opts.size.width = width;
     opts.size.height = height;
-    opts.srcPixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    opts.pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>());
+    opts.srcPixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
+        static_cast<Media::PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO) : pixelFormat;
+    opts.pixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
+        static_cast<Media::PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO) : pixelFormat;
+    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>() % ALPHATYPE_MODULO);
+    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>() % SCALEMODE_MODULO);
     opts.editable = GetData<bool>();
     opts.useSourceIfMatch = GetData<bool>();
     auto pixelmap = Media::PixelMap::Create(opts);
@@ -106,17 +119,19 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromOpts()
 /*
  * get a pixelmap from g_data
  */
-std::unique_ptr<Media::PixelMap> GetPixelMapFromData()
+std::unique_ptr<Media::PixelMap> GetPixelMapFromData(Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
 {
-    int32_t width = GetData<int32_t>();
-    int32_t height = GetData<int32_t>();
+    int32_t width = GetData<int32_t>() % MAX_LENGTH_MODULO;
+    int32_t height = GetData<int32_t>() % MAX_LENGTH_MODULO;
     Media::InitializationOptions opts;
     opts.size.width = width;
     opts.size.height = height;
-    opts.srcPixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    opts.pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>());
+    opts.srcPixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
+        static_cast<Media::PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO) : pixelFormat;
+    opts.pixelFormat = pixelFormat == PixelFormat::UNKNOWN ?
+        static_cast<Media::PixelFormat>(GetData<int32_t>() % PIXELFORMAT_MODULO) : pixelFormat;
+    opts.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>() % ALPHATYPE_MODULO);
+    opts.scaleMode = static_cast<Media::ScaleMode>(GetData<int32_t>() % SCALEMODE_MODULO);
     opts.editable = GetData<bool>();
     opts.useSourceIfMatch = GetData<bool>();
     size_t datalength = width * height * WIDTH_FACTOR;
@@ -129,11 +144,25 @@ std::unique_ptr<Media::PixelMap> GetPixelMapFromData()
         delete[] colorData;
         colorData = nullptr;
     }
-    if (pixelmap == nullptr) {
+    return pixelmap;
+}
+
+/*
+ * get a pixelmap from other Pixelmap
+ */
+std::unique_ptr<Media::PixelMap> GetPixelMapFromPixelmap(std::unique_ptr<Media::PixelMap> &pixelMap,
+                                                         Media::PixelFormat pixelFormat = PixelFormat::UNKNOWN)
+{
+    int32_t width = pixelMap->GetWidth() / DIVISOR + NUM_1;
+    int32_t height = pixelMap->GetHeight() / DIVISOR + NUM_1;
+    Media::InitializationOptions opts;
+    opts.size.width = width;
+    opts.size.height = height;
+    auto outPixelmap = Media::PixelMap::Create(*pixelMap, opts);
+    if (outPixelmap == nullptr) {
         return nullptr;
     }
-
-    return pixelmap;
+    return outPixelmap;
 }
 
 /*
@@ -179,29 +208,6 @@ Media::YUVStrideInfo GetYUVStrideInfo()
  */
 bool g_pixelMapSetImageInfoTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
-    Media::ImageInfo imageInfo;
-    Media::Size infoSize;
-    infoSize.width = GetData<int32_t>();
-    infoSize.height = GetData<int32_t>();
-    imageInfo.size = infoSize;
-    imageInfo.pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
-    imageInfo.colorSpace = static_cast<Media::ColorSpace>(GetData<int32_t>());
-    imageInfo.alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    imageInfo.baseDensity = GetData<int32_t>();
-    char* encodedFormat = new char[FORMAT_LENGTH];
-    if (encodedFormat == nullptr) {
-        return false;
-    }
-    for (size_t i = 0; i < FORMAT_LENGTH; i++) {
-        encodedFormat[i] = GetData<char>();
-    }
-    std::string str(encodedFormat);
-    if (encodedFormat != nullptr) {
-        delete [] encodedFormat;
-        encodedFormat = nullptr;
-    }
-    imageInfo.encodedFormat = str;
-    pixelMap->SetImageInfo(imageInfo, true);
     Media::YUVDataInfo yuvInfo = GetYUVDataInfo();
     pixelMap->SetImageYUVInfo(yuvInfo);
     int32_t width = GetData<int32_t>();
@@ -218,6 +224,9 @@ bool g_pixelMapSetImageInfoTest(std::unique_ptr<Media::PixelMap> &pixelMap)
  */
 bool PixelMapGetPixelsTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
+    if (pixelMap == nullptr) {
+        return false;
+    }
     int32_t width = GetData<int32_t>();
     int32_t height = GetData<int32_t>();
     const uint8_t* pixel = pixelMap->GetPixel(width, height);
@@ -341,12 +350,17 @@ bool PixelMapTransformTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     rect.width = GetData<int32_t>();
     rect.height = GetData<int32_t>();
     pixelMap->crop(rect);
-    float percent = std::fmod(GetData<float>(), 1.0f);
-    pixelMap->SetAlpha(percent);
     pixelMap->ToSdr();
     Media::PixelFormat pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
     bool toSRGB = GetData<bool>();
     pixelMap->ToSdr(pixelFormat, toSRGB);
+    // test scale and resize
+    float resizeX = std::fmod(GetData<float>(), 1.0f);
+    float resizeY = std::fmod(GetData<float>(), 1.0f);
+    pixelMap->scale(scaleX, scaleY);
+    pixelMap->resize(resizeX, resizeY);
+    bool toSdrColorSpaceIsSRGB = GetData<bool>();
+    pixelMap->SetToSdrColorSpaceIsSRGB(toSdrColorSpaceIsSRGB);
     return true;
 }
 
@@ -357,17 +371,94 @@ bool PixelMapSetImagePropertiesTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
     // test set ImageInfo
     g_pixelMapSetImageInfoTest(pixelMap);
-    // test write Pixels
-    PixelMapWritePixelsTest(pixelMap);
+    // reset config
     Media::Size size;
     size.width = GetData<int32_t>();
     size.height = GetData<int32_t>();
     Media::PixelFormat pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
     pixelMap->ResetConfig(size, pixelFormat);
+    // Set Alpha Type
     Media::AlphaType alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
     pixelMap->SetAlphaType(alphaType);
+    // Set Memory Name
     std::string memoryName = GetStringFromData();
     pixelMap->SetMemoryName(memoryName);
+    // Set PixelMap Error
+    uint32_t errorCode = GetData<uint32_t>();
+    std::string errorInfo = GetStringFromData();
+    pixelMap->SetPixelMapError(errorCode, errorInfo);
+    // Set Astc
+    Media::Size astcSize;
+    astcSize.width = GetData<int32_t>();
+    astcSize.height = GetData<int32_t>();
+    pixelMap->SetAstcRealSize(astcSize);
+    pixelMap->SetAstc(GetData<bool>());
+    // Set Transform Data
+    Media::TransformData transformData;
+    transformData.scaleX = std::fmod(GetData<float>(), 1.0f);
+    transformData.scaleY = std::fmod(GetData<float>(), 1.0f);
+    transformData.rotateD = std::fmod(GetData<float>(), 1.0f);
+    transformData.cropLeft = std::fmod(GetData<float>(), 1.0f);
+    transformData.cropTop = std::fmod(GetData<float>(), 1.0f);
+    transformData.cropWidth = std::fmod(GetData<float>(), 1.0f);
+    transformData.cropHeight = std::fmod(GetData<float>(), 1.0f);
+    transformData.translateX = std::fmod(GetData<float>(), 10.0f);
+    transformData.translateY = std::fmod(GetData<float>(), 10.0f);
+    transformData.flipX = GetData<bool>();
+    transformData.flipY = GetData<bool>();
+    pixelMap->SetTransformData(transformData);
+    pixelMap->SetTransformered(GetData<bool>());
+    // Set RowStride
+    int32_t rowStride = GetData<int32_t>();
+    pixelMap->SetRowStride(rowStride);
+    // Set Hdr Type
+    Media::ImageHdrType imageHdrType = static_cast<Media::ImageHdrType>(GetData<int32_t>());
+    pixelMap->SetHdrType(imageHdrType);
+    return true;
+}
+
+/*
+ * test pixelmap is same image
+ */
+bool PixelMapIsSameImageTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+{
+    std::unique_ptr<Media::PixelMap> otherPixelMap = GetPixelMapFromOpts();
+    if (!otherPixelMap) {
+        return false;
+    }
+    pixelMap->IsSameImage(*(otherPixelMap.get()));
+    return true;
+}
+
+/*
+ * test pixelmap get functions
+ */
+bool PixelMapGetFunctionsTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+{
+    if (pixelMap->IsHdr()) {
+        pixelMap->GetHdrType();
+        pixelMap->GetHdrMetadata();
+    }
+    // test Get Image Property
+    std::string imagePropertyKey = GetStringFromData();
+    int32_t intValue;
+    std::string strValue;
+    pixelMap->GetImagePropertyInt(imagePropertyKey, intValue);
+    pixelMap->GetImagePropertyString(imagePropertyKey, strValue);
+    // test Modify Image Property
+    std::string modifyImagePropertyKey = GetStringFromData();
+    std::string modifyImagePropertyVal = GetStringFromData();
+    pixelMap->ModifyImageProperty(modifyImagePropertyKey, modifyImagePropertyVal);
+    // test basic get functions
+    pixelMap->GetAlphaType();
+    pixelMap->GetExifMetadata();
+    pixelMap->GetColorSpace();
+    pixelMap->GetToSdrColorSpaceIsSRGB();
+    // test basic boolean functions
+    pixelMap->IsStrideAlignment();
+    pixelMap->IsEditable();
+    pixelMap->IsSourceAsResponse();
+    pixelMap->IsTransformered();
     return true;
 }
 
@@ -413,17 +504,18 @@ bool PixelMapGetImagePropertiesTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     PixelMapReadPixelsTest(pixelMap);
     if (pixelMap->GetAllocatorType() == Media::AllocatorType::SHARE_MEM_ALLOC ||
         pixelMap->GetAllocatorType() == Media::AllocatorType::DMA_ALLOC) {
+        pixelMap->GetAllocatedByteCount(imageInfo);
         if (!(pixelMap->GetFd())) {
             return false;
         }
     }
-    std::string imagePropertyKey = GetStringFromData();
-    int32_t intValue;
-    std::string strValue;
-    pixelMap->GetImagePropertyInt(imagePropertyKey, intValue);
-    pixelMap->GetImagePropertyString(imagePropertyKey, strValue);
     Media::YUVDataInfo yuvDataInfo;
     pixelMap->GetImageYUVInfo(yuvDataInfo);
+    pixelMap->GetYUVByteCount(imageInfo);
+    pixelMap->GetRGBxRowDataSize(imageInfo);
+    pixelMap->GetRGBxByteCount(imageInfo);
+    // test pixelmap get functions
+    PixelMapGetFunctionsTest(pixelMap);
     return true;
 }
 
@@ -444,31 +536,65 @@ bool PixelMapInterfaceTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 }
 
 /*
+ * test pixelmap CS interface
+ */
+bool PixelMapCSTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+{
+    OHOS::ColorManager::ColorSpaceName colorSpaceName =
+        static_cast<OHOS::ColorManager::ColorSpaceName>(GetData<int32_t>() % COLORSPACENAME_MODULO);
+    OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
+#ifdef IMAGE_COLORSPACE_FLAG
+    pixelMap->InnerSetColorSpace(grColorSpace);
+    pixelMap->InnerSetColorSpace(grColorSpace, true);
+    pixelMap->InnerGetGrColorSpace();
+    pixelMap->ApplyColorSpace(grColorSpace);
+#endif
+    return true;
+}
+
+/*
  * test pixelmap IPC interface
  */
 bool PixelMapIPCTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
     // test parcel pixelmap
     Parcel parcel;
-    pixelMap->Marshalling(parcel);
-    ChangeParcel(parcel);
+    pixelMap->SetMemoryName("MarshallingPixelMap");
+    if (!pixelMap->Marshalling(parcel)) {
+        IMAGE_LOGI("PixelMapIPCTest Marshalling failed id: %{public}d, isUnmap: %{public}d",
+            pixelMap->GetUniqueId(), pixelMap->IsUnMap());
+        return false;
+    }
     Media::PixelMap* unmarshallingPixelMap = Media::PixelMap::Unmarshalling(parcel);
     if (!unmarshallingPixelMap) {
         return false;
     }
-    std::unique_ptr<Media::PixelMap> parcelPixelMap = std::unique_ptr<Media::PixelMap>(unmarshallingPixelMap);
-    PixelMapInterfaceTest(parcelPixelMap);
-    parcelPixelMap->Marshalling(parcel);
+    unmarshallingPixelMap->SetMemoryName("unmarshallingPixelMap");
+    IMAGE_LOGI("PixelMapIPCTest unmarshallingPixelMap failed id: %{public}d, isUnmap: %{public}d",
+        unmarshallingPixelMap->GetUniqueId(), unmarshallingPixelMap->IsUnMap());
+    unmarshallingPixelMap->FreePixelMap();
+    delete unmarshallingPixelMap;
+    unmarshallingPixelMap = nullptr;
+    return true;
+}
 
+/*
+ * test pixelmap TLV interface
+ */
+bool PixelMapTLVTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+{
     // test tlv pixelmap
-    std::vector<uint8_t> buff(g_data, g_data + g_size);
+    std::vector<uint8_t> buff;
+    if (!pixelMap->EncodeTlv(buff)) {
+        return false;
+    }
     Media::PixelMap* decodePixelMap = Media::PixelMap::DecodeTlv(buff);
     if (!decodePixelMap) {
         return false;
     }
-    std::unique_ptr<Media::PixelMap> tlvPixelMap = std::unique_ptr<Media::PixelMap>(decodePixelMap);
-    PixelMapInterfaceTest(tlvPixelMap);
-    tlvPixelMap->EncodeTlv(buff);
+    decodePixelMap->FreePixelMap();
+    delete decodePixelMap;
+    decodePixelMap = nullptr;
     return true;
 }
 
@@ -482,22 +608,61 @@ bool PixelMapMainFuzzTest(const uint8_t* data, size_t size)
     g_size = size;
     g_pos = 0;
 
-    // creatye from opts
+    // create PixelMap from opts
     std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts();
     if (!pixelMapFromOpts) {
         return false;
     }
     PixelMapInterfaceTest(pixelMapFromOpts);
 
-    // creatye from data
-    std::unique_ptr<Media::PixelMap> pixelMapFromData = GetPixelMapFromData();
+    // PixelMap Transform Test
+    std::unique_ptr<Media::PixelMap> pixelMapTransform = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+    if (!pixelMapTransform) {
+        return false;
+    }
+    PixelMapTransformTest(pixelMapTransform);
+
+    // create from opts with PixelFormat::RGBA_8888
+    std::unique_ptr<Media::PixelMap> pixelMapFromOpts_rgba8888 = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+    if (!pixelMapFromOpts_rgba8888) {
+        return false;
+    }
+    PixelMapWritePixelsTest(pixelMapFromOpts_rgba8888);
+    PixelMapTLVTest(pixelMapFromOpts_rgba8888);
+    pixelMapFromOpts_rgba8888->SetMemoryName("pixelMapFromOpts_rgba8888");
+
+    // create PixelMap from other PixelMap
+    std::unique_ptr<Media::PixelMap> pixelMapFromOtherPixelMap = GetPixelMapFromPixelmap(pixelMapFromOpts_rgba8888,
+        Media::PixelFormat::RGBA_8888);
+    if (!pixelMapFromOtherPixelMap) {
+        return false;
+    }
+
+    return true;
+}
+
+bool PixelMapFromOptsMainFuzzTest()
+{
+    if (g_data == nullptr) {
+        return false;
+    }
+    // create from opts
+    std::unique_ptr<Media::PixelMap> pixelMapFromOpts = GetPixelMapFromOpts(Media::PixelFormat::RGBA_8888);
+    if (!pixelMapFromOpts) {
+        return false;
+    }
+    PixelMapIPCTest(pixelMapFromOpts);
+    PixelMapCSTest(pixelMapFromOpts);
+    return true;
+}
+
+bool PixelMapFromDataMainFuzzTest()
+{
+    // create from data
+    std::unique_ptr<Media::PixelMap> pixelMapFromData = GetPixelMapFromData(Media::PixelFormat::RGBA_8888);
     if (!pixelMapFromData) {
         return false;
     }
-    PixelMapInterfaceTest(pixelMapFromData);
-
-    PixelMapIPCTest(pixelMapFromOpts);
-    PixelMapIPCTest(pixelMapFromData);
     return true;
 }
 
@@ -509,5 +674,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
     OHOS::Media::PixelMapMainFuzzTest(data, size);
+    OHOS::Media::PixelMapFromOptsMainFuzzTest();
+    OHOS::Media::PixelMapFromDataMainFuzzTest();
     return 0;
 }
