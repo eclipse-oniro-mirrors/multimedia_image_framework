@@ -555,19 +555,18 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     return true;
 }
 
-void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param)
+void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData)
 {
     param.expandNums = 1;
     param.extInfoBytes = 1;
 #ifdef IMAGE_COLORSPACE_FLAG
-    uint8_t colorData = static_cast<uint8_t>(astcPixelMap_->InnerGetGrColorSpace().GetColorSpaceName());
+    colorData = static_cast<uint8_t>(astcPixelMap_->InnerGetGrColorSpace().GetColorSpaceName());
 #else
-    uint8_t colorData = 0;
+    colorData = 0;
 #endif
-    param.extInfoBuf = &colorData;
 }
 
-bool AstcCodec::DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
     if (!TryTextureSuperCompress(param, astcBuffer)) {
@@ -586,10 +585,12 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
     TextureEncodeOptions param;
-    InitTextureEncodeOptions(param);
+    uint8_t colorData;
+    InitTextureEncodeOptions(param, colorData);
+    param.extInfoBuf = &colorData;
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
-    int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
+    uint32_t stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
@@ -612,7 +613,7 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         free(astcBuffer);
         return ERROR;
     }
-    if (!DoSUT(param, astcBuffer, extendInfo)) {
+    if (!TryEncSUT(param, astcBuffer, extendInfo)) {
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space
