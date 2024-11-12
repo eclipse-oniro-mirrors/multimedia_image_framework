@@ -18,7 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <securec.h>
-
+#include "media_errors.h"
 #include "pixel_map.h"
 
 #include <chrono>
@@ -377,9 +377,6 @@ bool PixelMapSetImagePropertiesTest(std::unique_ptr<Media::PixelMap> &pixelMap)
     size.height = GetData<int32_t>();
     Media::PixelFormat pixelFormat = static_cast<Media::PixelFormat>(GetData<int32_t>());
     pixelMap->ResetConfig(size, pixelFormat);
-    // Set Alpha Type
-    Media::AlphaType alphaType = static_cast<Media::AlphaType>(GetData<int32_t>());
-    pixelMap->SetAlphaType(alphaType);
     // Set Memory Name
     std::string memoryName = GetStringFromData();
     pixelMap->SetMemoryName(memoryName);
@@ -418,15 +415,21 @@ bool PixelMapSetImagePropertiesTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 }
 
 /*
- * test pixelmap is same image
+ * test pixelmap convert alpha format
  */
-bool PixelMapIsSameImageTest(std::unique_ptr<Media::PixelMap> &pixelMap)
+bool PixelMapConvertAlphaFormatTest(std::unique_ptr<Media::PixelMap> &rPixelMap)
 {
-    std::unique_ptr<Media::PixelMap> otherPixelMap = GetPixelMapFromOpts();
-    if (!otherPixelMap) {
+    std::unique_ptr<Media::PixelMap> wPixelMap = GetPixelMapFromOpts();
+    if (!wPixelMap) {
         return false;
     }
-    pixelMap->IsSameImage(*(otherPixelMap.get()));
+    if (rPixelMap->IsSameImage(*wPixelMap)) {
+        bool isPremul = = GetData<bool>();
+        uint32_t res = rPixelMap->ConvertAlphaFormat(wPixelMap, isPremul);
+        if (res != SUCCESS) {
+            return false;
+        }
+    }
     return true;
 }
 
@@ -651,8 +654,8 @@ bool PixelMapFromOptsMainFuzzTest()
     if (!pixelMapFromOpts) {
         return false;
     }
-    PixelMapIPCTest(pixelMapFromOpts);
     PixelMapCSTest(pixelMapFromOpts);
+    PixelMapConvertAlphaFormatTest(pixelMapFromOpts);
     return true;
 }
 

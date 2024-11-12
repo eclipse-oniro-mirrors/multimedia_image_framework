@@ -77,6 +77,9 @@ static const std::string IMAGE_INPUT_YUV_PATH3 = "/data/local/tmp/P010.yuv";
 bool g_pixelMapIpcTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
     // test parcel pixelmap
+    if (!pixelMap) {
+        return false;
+    }
     Parcel parcel;
     pixelMap->SetMemoryName("MarshallingPixelMap");
     if (!pixelMap->Marshalling(parcel)) {
