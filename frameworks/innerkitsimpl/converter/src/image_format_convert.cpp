@@ -601,8 +601,21 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
+bool ImageFormatConvert::SetConvertImageInfo(std::unique_ptr<PixelMap> &srcPixelMap,
+                                             std::unique_ptr<PixelMap> &dstPixelMap)
+{
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return false;
+    }
+    dstPixelMap->SetHdrType(srcPixelMap->GetHdrType());
+    dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
+    auto exifData = srcPixelMap->GetHdrMetadata();
+    dstPixelMap->SetExifMetadata(exifData);
+    return true;
+}
+
 bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixelMap,
-                                                    std::shared_ptr<PixelMap> &dstPixelMap)
+                                             std::unique_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
