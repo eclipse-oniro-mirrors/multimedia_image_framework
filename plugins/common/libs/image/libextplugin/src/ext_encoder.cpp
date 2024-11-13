@@ -1013,10 +1013,7 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     sptr<SurfaceBuffer> gainMapSptr(reinterpret_cast<SurfaceBuffer*>(gainPixelMap->GetFd()));
-    HdrMetadata metadata;
-    if (gainPixelMap->GetHdrMetadata() != nullptr) {
-        metadata = *(gainPixelMap->GetHdrMetadata().get());
-    }
+    HdrMetadata metadata = GetHdrMetadata(mainSptr, gainMapSptr);
 
     ColorManager::ColorSpaceName colorspaceName =
         sdrIsSRGB ? ColorManager::ColorSpaceName::SRGB : ColorManager::ColorSpaceName::DISPLAY_P3;
@@ -1591,8 +1588,8 @@ uint32_t ExtEncoder::EncodeEditScenePicture()
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     auto mainPixelMap = picture_->GetMainPixel();
-    if (!mainPixelMap) {
-        IMAGE_LOGE("MainPixelMap is nullptr");
+    if (!mainPixelMap || mainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("MainPixelMap is nullptr or mainPixelMap is not DMA buffer");
         return ERR_IMAGE_DATA_ABNORMAL;
     }
 
@@ -1726,10 +1723,7 @@ uint32_t ExtEncoder::EncodeJpegPictureDualVividInner(SkWStream& skStream, std::s
     pixelmap_ = gainmapPixelmap.get();
     sk_sp<SkData> gainMapImageData = GetImageEncodeData(gainMapSptr, gainmapInfo, false);
 
-    HdrMetadata hdrMetadata;
-    if (mainPixelmap->GetHdrMetadata() != nullptr) {
-        hdrMetadata = *(mainPixelmap->GetHdrMetadata().get());
-    }
+    HdrMetadata hdrMetadata = GetHdrMetadata(baseSptr, gainMapSptr);
     SkDynamicMemoryWStream hdrStream;
     uint32_t error = HdrJpegPackerHelper::SpliceHdrStream(baseImageData, gainMapImageData, hdrStream, hdrMetadata);
     IMAGE_LOGD("%{public}s splice hdr stream result is: %{public}u", __func__, error);

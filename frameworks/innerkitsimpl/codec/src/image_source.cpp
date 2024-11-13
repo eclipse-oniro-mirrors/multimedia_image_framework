@@ -159,6 +159,7 @@ constexpr uint8_t ASTC_EXTEND_INFO_TLV_NUM = 1; // curren only one group TLV
 constexpr uint32_t ASTC_EXTEND_INFO_SIZE_DEFINITION_LENGTH = 4; // 4 bytes to discripte for extend info summary bytes
 constexpr uint32_t ASTC_EXTEND_INFO_LENGTH_LENGTH = 4; // 4 bytes to discripte the content bytes for every TLV group
 static constexpr uint32_t SINGLE_FRAME_SIZE = 1;
+static constexpr uint8_t ISO_USE_BASE_COLOR = 0x01;
 
 struct AstcExtendInfo {
     uint32_t extendBufferSumBytes = 0;
@@ -4427,10 +4428,46 @@ std::unique_ptr<Picture> ImageSource::CreatePicture(const DecodingOptionsForPict
     } else if (format == IMAGE_JPEG_FORMAT) {
         DecodeJpegAuxiliaryPicture(auxTypes, picture, errorCode);
     }
+    SetHdrMetadataForPicture(picture);
     if (errorCode != SUCCESS) {
         IMAGE_LOGE("Decode auxiliary pictures failed, error code: %{public}u", errorCode);
     }
     return picture;
+}
+
+void ImageSource::SetHdrMetadataForPicture(std::unique_ptr<Picture> &picture)
+{
+    if (picture == nullptr) {
+        IMAGE_LOGE("%{public}s picture is nullptr", __func__);
+        return;
+    }
+    std::shared_ptr<PixelMap> mainPixelMap = picture->GetMainPixel();
+    std::shared_ptr<PixelMap> gainmapPixelMap = picture->GetGainmapPixelMap();
+    if (mainPixelMap == nullptr || gainmapPixelMap == nullptr || gainmapPixelMap->GetHdrMetadata() == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap or hdrMetadata is nullptr", __func__);
+        return;
+    }
+    if (mainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || mainPixelMap->GetFd() == nullptr ||
+        gainmapPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || gainmapPixelMap->GetFd() == nullptr) {
+        IMAGE_LOGW("%{public}s mainPixelMap or gainmapPixelMap is not DMA buffer", __func__);
+        return;
+    }
+    ImageHdrType hdrType = gainmapPixelMap->GetHdrType();
+    HdrMetadata metadata = *(gainmapPixelMap->GetHdrMetadata());
+
+    CM_ColorSpaceType baseCmColor =
+        ConvertColorSpaceType(mainPixelMap->InnerGetGrColorSpace().GetColorSpaceName(), true);
+    // Set hdrMetadata for main
+    sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap->GetFd()));
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, metadata);
+
+    // Set hdrMetadata for gainmap
+    sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainmapPixelMap->GetFd()));
+    CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
+    CM_ColorSpaceType gainmapCmColor =
+        metadata.extendMeta.metaISO.useBaseColorFlag == ISO_USE_BASE_COLOR ? baseCmColor : hdrCmColor;
+    SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
 }
 
 void ImageSource::DecodeHeifAuxiliaryPictures(
