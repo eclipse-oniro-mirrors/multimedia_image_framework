@@ -601,7 +601,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
-static bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixelMap,
+bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixelMap,
                                                     std::shared_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
