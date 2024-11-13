@@ -250,11 +250,11 @@ Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative 
     }
     auto innerAuxiliaryPicture = auxiliaryPicture->GetInnerAuxiliaryPicture();
     if (!innerAuxiliaryPicture) {
-        return IMAGE_COPY_FAILED;
+        return IMAGE_BAD_PARAMETER;
     }
     uint32_t ret = innerAuxiliaryPicture->WritePixels(source, static_cast<uint64_t>(bufferSize));
     if (ret != OHOS::Media::SUCCESS) {
-        return IMAGE_BAD_PARAMETER;
+        return IMAGE_COPY_FAILED;
     }
     return IMAGE_SUCCESS;
 }
@@ -324,16 +324,16 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
         return IMAGE_BAD_PARAMETER;
     }
 
-    std::shared_ptr<OHOS::Media::ImageMetadata> metadataPtr = nullptr;
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
         return IMAGE_BAD_PARAMETER;
     }
+    std::shared_ptr<OHOS::Media::ImageMetadata> metadataPtr = nullptr;
     if (metadataTypeInner == OHOS::Media::MetadataType::EXIF) {
         return IMAGE_UNSUPPORTED_METADATA;
-    } else if (auxiliaryPicture->GetInnerAuxiliaryPicture()->GetType() !=
-        OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP &&
-        metadataTypeInner == OHOS::Media::MetadataType::FRAGMENT) {
+    } else if (auxiliaryPicture->GetInnerAuxiliaryPicture()->GetType()
+        != OHOS::Media::AuxiliaryPictureType::FRAGMENT_MAP
+        && metadataTypeInner == OHOS::Media::MetadataType::FRAGMENT) {
         return IMAGE_UNSUPPORTED_METADATA;
     } else {
         metadataPtr = auxiliaryPicture->GetInnerAuxiliaryPicture()->GetMetadata(metadataTypeInner);
@@ -355,7 +355,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
 
     auto metadataTypeInner = MetaDataTypeNativeToInner(metadataType);
     if (!OHOS::Media::ImageUtils::IsMetadataTypeSupported(metadataTypeInner)) {
-        return IMAGE_UNSUPPORTED_METADATA;
+        return IMAGE_BAD_PARAMETER;
     }
 
     auto metadataPtr = metadata->GetInnerAuxiliaryMetadata();

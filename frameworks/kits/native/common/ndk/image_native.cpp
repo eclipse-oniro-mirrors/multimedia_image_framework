@@ -141,7 +141,7 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImageNative_GetTimestamp(OH_ImageNative *image, int64_t *timestamp)
 {
     if (nullptr == image || nullptr == image->imgNative || nullptr == timestamp) {
-        IMAGE_LOGE("OH_ImageNative_GetTimestamp: Invalid parameter");
+        IMAGE_LOGE("%{public} Invalid parameter: Null Pointer Error", __func__);
         return IMAGE_BAD_PARAMETER;
     }
     if (OHOS::Media::SUCCESS == image->imgNative->GetTimestamp(*timestamp)) {
