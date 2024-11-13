@@ -28,6 +28,7 @@
 namespace OHOS {
 namespace Media {
 const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
+const static uint64_t MAX_FRAGMENT_MAP_META_LENGTH = 100;
 FragmentMetadata::FragmentMetadata() {}
 
 FragmentMetadata::FragmentMetadata(const FragmentMetadata& fragmentMetadata)
@@ -120,10 +121,27 @@ bool FragmentMetadata::Marshalling(Parcel &parcel) const
         IMAGE_LOGE("%{public}s properties is nullptr.", __func__);
         return false;
     }
+    if (properties_->size() > MAX_FRAGMENT_MAP_META_COUNT) {
+        IMAGE_LOGE("The number of metadata properties exceeds the maximum limit.");
+        return false;
+    }
     if (!parcel.WriteUint64(properties_->size())) {
         return false;
     }
     for (const auto &pair : *properties_) {
+        if (!IsValidKey(pair.first)) {
+            IMAGE_LOGE("The key of fragmentmetadata is invalid.");
+            return false;
+        }
+        uint32_t casted;
+        if (!ImageUtils::StrToUint32(pair.second, casted)) {
+            IMAGE_LOGE("The Value of fragmentmetadata is invalid.");
+            return false;
+        }
+        if (pair.first.length() > MAX_FRAGMENT_MAP_META_LENGTH || pair.second.length() > MAX_FRAGMENT_MAP_META_LENGTH) {
+            IMAGE_LOGE("The length of fragment string exceeds the maximum limit.");
+            return false;
+        }
         if (!parcel.WriteString(pair.first)) {
             return false;
         }
@@ -169,6 +187,16 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
             return nullptr;
         }
         if (!IsValidKey(key)) {
+            IMAGE_LOGE("The key of fragmentmetadata is invalid.");
+            return nullptr;
+        }
+        uint32_t casted;
+        if (!ImageUtils::StrToUint32(value, casted)) {
+            IMAGE_LOGE("The Value of fragmentmetadata is invalid.");
+            return nullptr;
+        }
+        if (key.length() > MAX_FRAGMENT_MAP_META_LENGTH || value.length() > MAX_FRAGMENT_MAP_META_LENGTH) {
+            IMAGE_LOGE("The length of fragment string exceeds the maximum limit.");
             return nullptr;
         }
         fragmentMetadataPtr->properties_->insert(std::make_pair(key, value));
