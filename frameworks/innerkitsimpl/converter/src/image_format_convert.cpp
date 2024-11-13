@@ -607,10 +607,16 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcP
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
     }
-    dstPixelMap->SetHdrType(srcPixelMap->GetHdrType());
-    dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
-    auto exifData = srcPixelMap->GetExifMetadata();
-    dstPixelMap->SetExifMetadata(exifData);
+    if (srcPixelMap->GetHdrType() != nullptr) {
+        dstPixelMap->SetHdrType(srcPixelMap->GetHdrType());
+    }
+    if (srcPixelMap->GetHdrMetadata() != nullptr) {
+        dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());   
+    }
+    if (srcPixelMap->GetExifMetadata() != nullptr) {
+        auto exifData = srcPixelMap->GetExifMetadata();
+        dstPixelMap->SetExifMetadata(exifData);
+    }
     return true;
 }
 
