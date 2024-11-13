@@ -602,7 +602,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
 }
 
 bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap,
-                                             std::unique_ptr<PixelMap> &dstPixelMap)
+                                                 std::unique_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
@@ -615,7 +615,7 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcP
 }
 
 bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcPixelMap,
-                                             std::unique_ptr<PixelMap> &dstPixelMap)
+                                                 std::unique_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
