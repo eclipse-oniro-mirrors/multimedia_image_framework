@@ -601,16 +601,16 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
-static bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPiexlMap,
-                                                    std::shared_ptr<PixelMap> &dstPiexlMap)
+static bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixelMap,
+                                                    std::shared_ptr<PixelMap> &dstPixelMap)
 {
-    if (srcPiexlMap == nullptr || dstPiexlMap == nullptr) {
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
     }
-    dstPiexlMap->SetHdrType(srcPiexlMap->GetHdrType());
-    dstPiexlMap->SetHdrMetadata(srcPiexlMap->GetHdrMetadata());
-    auto exifData = srcPiexlMap->GetHdrMetadata();
-    dstPiexlMap->SetExifMetadata(exifData);
+    dstPixelMap->SetHdrType(srcPixelMap->GetHdrType());
+    dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
+    auto exifData = srcPixelMap->GetHdrMetadata();
+    dstPixelMap->SetExifMetadata(exifData);
 }
 
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
