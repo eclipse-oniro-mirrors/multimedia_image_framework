@@ -19,6 +19,7 @@ namespace {
     const uint8_t CONSTRUCTION_METHOD_FILE_OFFSET = 0;
     const uint8_t CONSTRUCTION_METHOD_IDAT_OFFSET = 1;
     const uint32_t MAX_HEIF_IMAGE_GRID_SIZE = 128 * 1024 * 1024;
+    const uint32_t MAX_HEIF_ITEM_COUNT = 2000;
 }
 
 namespace OHOS {
@@ -68,6 +69,9 @@ heif_error HeifIlocBox::ParseContent(HeifStreamReader &reader)
     int baseOffsetSize = (values4 >> baseOffsetSizeShift) & 0xF;
     int indexSize = (GetVersion() >= HEIF_BOX_VERSION_ONE) ? (values4 & 0xF) : 0;
     uint32_t itemCount = GetVersion() < HEIF_BOX_VERSION_TWO ? reader.Read16() : reader.Read32();
+    if (itemCount > MAX_HEIF_ITEM_COUNT) {
+        return heif_error_too_many_item;
+    }
     for (uint32_t itemIndex = 0; itemIndex < itemCount; ++itemIndex) {
         Item item;
         item.itemId = GetVersion() < HEIF_BOX_VERSION_TWO ? reader.Read16() : reader.Read32();
