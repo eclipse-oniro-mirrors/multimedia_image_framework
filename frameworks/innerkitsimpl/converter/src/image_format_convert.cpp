@@ -699,18 +699,18 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
             return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         }
     }
-
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
     if (ret != SUCCESS) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
+    pixelMap->SetHdrType(destPixelMap->GetHdrType());
+    pixelMap->SetHdrMetadata(destPixelMap->GetHdrMetadata());
+    auto exifData = destPixelMap->GetHdrMetadata();
+    pixelMap->SetExifMetadata(exifData);
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (info.pixelFormat == PixelFormat::RGBA_1010102 || info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
-    }
+    pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
@@ -753,18 +753,18 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
             return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         }
     }
-
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
     if (ret != SUCCESS) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
+    pixelMap->SetHdrType(destPixelMap->GetHdrType());
+    pixelMap->SetHdrMetadata(destPixelMap->GetHdrMetadata());
+    auto exifData = destPixelMap->GetHdrMetadata();
+    pixelMap->SetExifMetadata(exifData);
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (info.pixelFormat == PixelFormat::RGBA_1010102 || info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
-    }
+    pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
