@@ -72,6 +72,7 @@ constexpr uint8_t ARGB_R_SHIFT = 16;
 constexpr uint8_t ARGB_G_SHIFT = 8;
 constexpr uint8_t ARGB_B_SHIFT = 0;
 // Define pixel map malloc max size 600MB
+// Memory copy will be performed twice on heap memory during IPC, so the size has to be limited
 constexpr int32_t PIXEL_MAP_MAX_RAM_SIZE = 600 * 1024 * 1024;
 
 typedef struct PixelMapError {
@@ -374,10 +375,6 @@ public:
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
     static int32_t GetAllocatedByteCount(const ImageInfo& info);
-    NATIVEEXPORT void  setAllocatorType(AllocatorType allocatorType)
-    {
-        allocatorType_ = allocatorType;
-    }
 
     NATIVEEXPORT uint32_t GetVersionId();
     NATIVEEXPORT void AddVersionId();
@@ -426,8 +423,10 @@ protected:
     static void ReleaseBuffer(AllocatorType allocatorType, int fd, uint64_t dataSize, void **buffer);
     static void *AllocSharedMemory(const uint64_t bufferSize, int &fd, uint32_t uniqueId);
     bool WritePropertiesToParcel(Parcel &parcel) const;
-    bool ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo, AllocatorType &allocatorType,
-                                  int32_t &bufferSize, PIXEL_MAP_ERR &error);
+    static bool ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, ImageInfo& imgInfo,
+        PixelMemInfo& memInfo);
+    bool ReadBufferSizeFromParcel(Parcel& parcel, const ImageInfo& imgInfo, PixelMemInfo& memInfo,
+        PIXEL_MAP_ERR& error);
     bool WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) const;
     static bool ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
     bool WriteTransformDataToParcel(Parcel &parcel) const;
@@ -477,7 +476,7 @@ protected:
     void WriteData(std::vector<uint8_t> &buff, const uint8_t *data,
         const int32_t &height, const int32_t &rowDataSize, const int32_t &rowStride) const;
     static uint8_t *ReadData(std::vector<uint8_t> &buff, int32_t size, int32_t &cursor);
-    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &type, int32_t &size, uint8_t **data);
+    static bool ReadTlvAttr(std::vector<uint8_t> &buff, ImageInfo &info, int32_t &size, uint8_t **data);
     bool DoTranslation(TransInfos &infos, const AntiAliasingOption &option = AntiAliasingOption::NONE);
     void UpdateImageInfo();
     bool IsYuvFormat() const;
