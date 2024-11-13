@@ -601,7 +601,7 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
-bool ImageFormatConvert::SetConvertImageInfo(std::unique_ptr<PixelMap> &srcPixelMap,
+bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap,
                                              std::unique_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
@@ -614,7 +614,7 @@ bool ImageFormatConvert::SetConvertImageInfo(std::unique_ptr<PixelMap> &srcPixel
     return true;
 }
 
-bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixelMap,
+bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcPixelMap,
                                              std::unique_ptr<PixelMap> &dstPixelMap)
 {
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
@@ -727,11 +727,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
     }
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
-    if (ret != SUCCESS) {
+    bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
+    if (ret != SUCCESS || isSetMetaData == false) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
-    SetConvertImageInfo(destPixelMap, pixelMap);
 #ifdef IMAGE_COLORSPACE_FLAG
     pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
@@ -778,13 +778,13 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
     }
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
-    if (ret != SUCCESS) {
+    bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
+    if (ret != SUCCESS || isSetMetaData == false) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
-    SetConvertImageInfo(destPixelMap, pixelMap);
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
