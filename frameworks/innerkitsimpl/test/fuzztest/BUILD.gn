@@ -19,7 +19,6 @@ group("fuzztest") {
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
     "imagepicture_fuzzer:ImagePictureFuzzTest",
     "imagepixelmap_fuzzer:ImagePixelmapFuzzTest",
-    "imagepixelmap_fuzzer:ImagePixelmapFuzzTest2",
     "imageplugin_fuzzer:ImagePluginFuzzTest",
     "imagepngplugin_fuzzer:ImagePngPluginFuzzTest",
     "imagesource_fuzzer:ImageSourceFuzzTest",

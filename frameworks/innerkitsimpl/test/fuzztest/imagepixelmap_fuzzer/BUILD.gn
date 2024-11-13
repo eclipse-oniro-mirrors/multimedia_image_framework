@@ -14,46 +14,55 @@
 import("//build/test.gni")
 import("//foundation/multimedia/image_framework/ide/image_decode_config.gni")
 
-ohos_fuzztest("ImagePixelmapFuzzTest") {
-  module_out_path = "multimedia_image/image_framework"
-  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmap_fuzzer"
-
-  include_dirs = [
-    "./include",
-    "$image_subsystem/interfaces/innerkits/include",
-  ]
-  sources = [ "src/image_pixelmap_fuzzer.cpp" ]
-
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
-
-  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
-  external_deps = [
-    "c_utils:utils",
-    "hilog:libhilog",
+group("ImagePixelmapFuzzTest") {
+  testonly = true
+  deps = [
+    ":ImagePixelmapFuzzTest1",
+    ":ImagePixelmapFuzzTest2",
+    ":ImagePixelmapFuzzTest3",
   ]
 }
 
-ohos_fuzztest("ImagePixelmapFuzzTest2") {
-  module_out_path = "multimedia_image/image_framework"
-  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmap_fuzzer"
-
+config("image_external_config") {
   include_dirs = [
     "./include",
     "$image_subsystem/interfaces/innerkits/include",
   ]
-  sources = [ "src/pixelmap_tlv.cpp" ]
+}
 
-  cflags = [
-    "-DIMAGE_DEBUG_FLAG",
-    "-DIMAGE_COLORSPACE_FLAG",
-  ]
-
+ohos_fuzztest("ImagePixelmapFuzzTest1") {
+  public_configs = [ ":image_external_config" ]
+  sources = [ "src/image_pixelmap_fuzzer.cpp" ]
   deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
   ]
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmap_fuzzer"
+  module_out_path = "multimedia_image/image_framework"
+}
+
+ohos_fuzztest("ImagePixelmapFuzzTest2") {
+  public_configs = [ ":image_external_config" ]
+  sources = [ "src/pixelmap_tlv.cpp" ]
+  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+  ]
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmap_fuzzer"
+  module_out_path = "multimedia_image/image_framework"
+}
+
+ohos_fuzztest("ImagePixelmapFuzzTest3") {
+  public_configs = [ ":image_external_config" ]
+  sources = [ "src/pixelmap_parcel.cpp" ]
+  deps = [ "$image_subsystem/interfaces/innerkits:image_native" ]
+  external_deps = [
+    "c_utils:utils",
+    "hilog:libhilog",
+    "ipc:ipc_core",
+  ]
+  fuzz_config_file = "$image_subsystem/frameworks/innerkitsimpl/test/fuzztest/imagepixelmap_fuzzer"
+  module_out_path = "multimedia_image/image_framework"
 }
