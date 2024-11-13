@@ -337,7 +337,7 @@ bool IsAstc(const std::string &format)
 static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,
     ImageInfo &imageInfo, PlEncodeOptions &opts)
 {
-    ImageFuncTimer imageFuncTimer("insert exit data (%d, %d)", imageInfo.size.width, imageInfo.size.height);
+    ImageFuncTimer imageFuncTimer("insert exif data (%d, %d)", imageInfo.size.width, imageInfo.size.height);
     auto metadataAccessor =
         MetadataAccessorFactory::Create(tStream.GetAddr(), tStream.bytesWritten(), BufferMetadataStream::Dynamic);
     if (metadataAccessor != nullptr) {
@@ -1552,7 +1552,7 @@ uint32_t ExtEncoder::TryHardwareEncodePicture(SkWStream& skStream, std::string& 
         return ERR_IMAGE_DATA_ABNORMAL;
     }
     static ImageFwkExtManager imageFwkExtManager;
-    if (!imageFwkExtManager.LoadImageFwkExtNativeSo() || imageFwkExtManager.doHardwareEncodePictureFunc_ != nullptr) {
+    if (!imageFwkExtManager.LoadImageFwkExtNativeSo() || imageFwkExtManager.doHardwareEncodePictureFunc_ == nullptr) {
         errorMsg = "Load hardware encode library failed";
         return ERR_IMAGE_ENCODE_FAILED;
     }
@@ -1568,6 +1568,8 @@ uint32_t ExtEncoder::EncodeCameraScenePicture(SkWStream& skStream)
     } else if (encodeFormat_ == SkEncodedImageFormat::kJPEG) {
         if (IsPictureSupportHardwareEncode()) {
             retCode = TryHardwareEncodePicture(skStream, errorMsg);
+        } else {
+            errorMsg = "Not support hardware encode";
         }
         if (retCode != SUCCESS) {
             IMAGE_LOGW("%{public}s, retCode is: %{public}d, try jpeg software encode", errorMsg.c_str(), retCode);
