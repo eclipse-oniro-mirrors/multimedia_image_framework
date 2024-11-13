@@ -64,6 +64,10 @@ public:
 
     HeifColorFormat GetDefaultColorFormat() const;
 
+    int GetColorRangeFlag() const;
+
+    void SetColorRangeFlag(int flag);
+
     void SetDefaultColorFormat(HeifColorFormat format);
 
     HeifPixelFormat GetDefaultPixelFormat() const;
@@ -127,6 +131,7 @@ private:
 
     int lumaBitNum_ = -1;
     int chromaBitNum_ = -1;
+    int colorRangeFlag_ = 1;
 
     heif_item_id thumbnailMasterItemId_ = 0;
     std::vector<std::shared_ptr<HeifImage>> m_thumbnails;

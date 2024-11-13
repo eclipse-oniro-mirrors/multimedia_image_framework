@@ -18,6 +18,7 @@
 
 namespace OHOS {
 namespace ImagePlugin {
+const uint8_t BIT_SHIFT = 1;
 const uint8_t ONE_BYTE_SHIFT = 8;
 const uint8_t TWO_BYTES_SHIFT = 16;
 const uint8_t THREE_BYTES_SHIFT = 24;
