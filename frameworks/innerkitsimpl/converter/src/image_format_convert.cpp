@@ -601,6 +601,18 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
+static bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPiexlMap,
+                                                    std::shared_ptr<PixelMap> &dstPiexlMap)
+{
+    if (srcPiexlMap == nullptr || dstPiexlMap == nullptr) {
+        return false;
+    }
+    dstPiexlMap->SetHdrType(srcPiexlMap->GetHdrType());
+    dstPiexlMap->SetHdrMetadata(srcPiexlMap->GetHdrMetadata());
+    auto exifData = srcPiexlMap->GetHdrMetadata();
+    dstPiexlMap->SetExifMetadata(exifData);
+}
+
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
 {
     auto allocType = srcPiexlMap->GetAllocatorType();
@@ -705,10 +717,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
-    pixelMap->SetHdrType(destPixelMap->GetHdrType());
-    pixelMap->SetHdrMetadata(destPixelMap->GetHdrMetadata());
-    auto exifData = destPixelMap->GetHdrMetadata();
-    pixelMap->SetExifMetadata(exifData);
+    SetConvertImageInfo(destPixelMap, pixelMap);
 #ifdef IMAGE_COLORSPACE_FLAG
     pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
@@ -759,10 +768,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
-    pixelMap->SetHdrType(destPixelMap->GetHdrType());
-    pixelMap->SetHdrMetadata(destPixelMap->GetHdrMetadata());
-    auto exifData = destPixelMap->GetHdrMetadata();
-    pixelMap->SetExifMetadata(exifData);
+    SetConvertImageInfo(destPixelMap, pixelMap);
 #ifdef IMAGE_COLORSPACE_FLAG
     pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
