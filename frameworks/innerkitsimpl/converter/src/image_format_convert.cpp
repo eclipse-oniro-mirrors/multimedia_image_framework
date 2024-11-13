@@ -609,7 +609,7 @@ bool ImageFormatConvert::SetConvertImageInfo(std::unique_ptr<PixelMap> &srcPixel
     }
     dstPixelMap->SetHdrType(srcPixelMap->GetHdrType());
     dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
-    auto exifData = srcPixelMap->GetHdrMetadata();
+    auto exifData = srcPixelMap->GetExifMetadata();
     dstPixelMap->SetExifMetadata(exifData);
     return true;
 }
@@ -733,7 +733,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
     }
     SetConvertImageInfo(destPixelMap, pixelMap);
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->innerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
