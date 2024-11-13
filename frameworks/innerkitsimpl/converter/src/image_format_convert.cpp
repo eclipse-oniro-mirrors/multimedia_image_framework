@@ -611,6 +611,7 @@ bool ImageFormatConvert::SetConvertImageInfo(std::shared_ptr<PixelMap> &srcPixel
     dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
     auto exifData = srcPixelMap->GetHdrMetadata();
     dstPixelMap->SetExifMetadata(exifData);
+    return true;
 }
 
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
