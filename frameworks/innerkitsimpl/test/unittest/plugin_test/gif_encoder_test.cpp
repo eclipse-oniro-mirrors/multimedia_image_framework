@@ -134,7 +134,7 @@ HWTEST_F(GifEncoderTest, FinalizeEncode001, TestSize.Level3)
     GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncode001 start";
     auto gifEncoder = std::make_shared<GifEncoder>();
     auto result = gifEncoder->FinalizeEncode();
-    ASSERT_EQ(result, ERR_IMAGE_INVALID_PARAMETER);
+    ASSERT_EQ(result, COMMON_ERR_INVALID_PARAMETER);
     GTEST_LOG_(INFO) << "GifEncoderTest: FinalizeEncode001 end";
 }
 

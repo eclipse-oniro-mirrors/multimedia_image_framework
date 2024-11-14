@@ -90,7 +90,7 @@ private:
     int crntShiftState_;
     uint32_t crntShiftDWord_;
     uint32_t dictionary_[DICTIONARY_SIZE];
-    uint8_t outputLZWBuffer_[256];
+    uint8_t outputLZWBuffer_[256] = {0};
 };
 
 } // namespace ImagePlugin
