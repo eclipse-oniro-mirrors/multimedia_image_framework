@@ -706,6 +706,12 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
+#ifdef IMAGE_COLORSPACE_FLAG
+    if (info.pixelFormat == PixelFormat::RGBA_1010102 || info.pixelFormat == PixelFormat::YCBCR_P010 ||
+        info.pixelFormat == PixelFormat::YCRCB_P010) {
+        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+    }
+#endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
 }

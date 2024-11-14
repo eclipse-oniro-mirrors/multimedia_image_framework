@@ -60,6 +60,11 @@ struct YuvImageInfo {
     YUVDataInfo yuvDataInfo;
 };
 
+struct YuvPixelsP010Translate {
+    uint16_t *srcPixels;
+    uint16_t *dstPixels;
+};
+
 class PixelYuvUtils {
 public:
     static int32_t YuvConvertOption(const AntiAliasingOption &option);

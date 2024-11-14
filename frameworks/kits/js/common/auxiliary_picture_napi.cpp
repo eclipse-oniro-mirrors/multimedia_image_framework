@@ -292,7 +292,7 @@ napi_value AuxiliaryPictureNapi::CreateAuxiliaryPicture(napi_env env, napi_callb
     IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("Fail to get auxiliary picture Type"));
     if (auxiType < static_cast<uint32_t>(AuxiliaryPictureType::GAINMAP)
         || auxiType > static_cast<uint32_t>(AuxiliaryPictureType::FRAGMENT_MAP)) {
-        IMAGE_LOGE("Auxiliary picture type is invalid");
+        IMAGE_LOGE("AuxiliaryFigureType type is invalid");
         return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER, "Invalid args.");
     }
     asyncContext->type = ParseAuxiliaryPictureType(auxiType);
