@@ -1597,7 +1597,7 @@ uint32_t ImageSource::CreatExifMetadataByImageSource(bool addFlag)
         return ERR_IMAGE_SOURCE_DATA;
     }
 
-    if (bufferSize > MAX_BUFFER_SIZE) {
+    if (bufferSize > MAX_SOURCE_SIZE) {
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         return ERR_IMAGE_SOURCE_DATA;
     }
@@ -2535,7 +2535,7 @@ uint32_t ImageSource::GetFilterArea(const int &privacyType, std::vector<std::pai
 
 uint8_t* ImageSource::ReadSourceBuffer(uint32_t bufferSize, uint32_t &errorCode)
 {
-    if (bufferSize > MAX_BUFFER_SIZE) {
+    if (bufferSize > MAX_SOURCE_SIZE) {
         IMAGE_LOGE("Invalid buffer size. It's too big. Please check the buffer size.");
         errorCode = ERR_IMAGE_SOURCE_DATA;
         return nullptr;
