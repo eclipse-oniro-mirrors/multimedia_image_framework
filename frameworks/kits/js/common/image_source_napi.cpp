@@ -25,7 +25,6 @@
 #include "exif_metadata_formatter.h"
 #include "image_dfx.h"
 #include "color_space_object_convertor.h"
-#include "image_common.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -422,13 +421,12 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         napi_delete_reference(env, context->callbackRef);
     }
 
+    napi_delete_reference(env, context->callbackRef);
+
     if (context != nullptr) {
         delete context;
         context = nullptr;
     }
-
-    delete context;
-    context = nullptr;
 }
 
 static void ImageSourceCallbackWithErrorObj(napi_env env,

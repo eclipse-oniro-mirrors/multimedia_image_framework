@@ -65,7 +65,6 @@ using SrProcessImageT =
     int32_t (*)(int32_t, OHNativeWindowBuffer*, OHNativeWindowBuffer*, int32_t);
 #endif
 
-
 VpeUtils::VpeUtils()
 {
     static std::once_flag flag;
@@ -116,30 +115,6 @@ int32_t VpeUtils::ColorSpaceConverterDestory(void* handle, int32_t* instanceId)
         return VPE_ERROR_FAILED;
     }
     DestoryT destory = (DestoryT)dlsym(handle, "ColorSpaceConverterDestroy");
-    if (!destory) {
-        return VPE_ERROR_FAILED;
-    }
-    return destory(instanceId);
-}
-
-int32_t VpeUtils::DetailEnhancerCreate(void* handle, int32_t* instanceId)
-{
-    if (handle == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
-    CreateT create = (CreateT)dlsym(handle, "DetailEnhancerCreate");
-    if (!create) {
-        return VPE_ERROR_FAILED;
-    }
-    return create(instanceId);
-}
-
-int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
-{
-    if (*instanceId == VPE_ERROR_FAILED || handle == nullptr) {
-        return VPE_ERROR_FAILED;
-    }
-    DestoryT destory = (DestoryT)dlsym(handle, "DetailEnhancerDestroy");
     if (!destory) {
         return VPE_ERROR_FAILED;
     }
@@ -415,6 +390,30 @@ int32_t VpeUtils::ColorSpaceConverterImageProcess(sptr<SurfaceBuffer> &input, sp
     OH_NativeWindow_DestroyNativeWindowBuffer(hdr);
     ColorSpaceConverterDestory(dlHandler_, &instanceId);
     return res;
+}
+
+int32_t VpeUtils::DetailEnhancerCreate(void* handle, int32_t* instanceId)
+{
+    if (handle == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    CreateT create = (CreateT)dlsym(handle, "DetailEnhancerCreate");
+    if (!create) {
+        return VPE_ERROR_FAILED;
+    }
+    return create(instanceId);
+}
+
+int32_t VpeUtils::DetailEnhancerDestory(void* handle, int32_t* instanceId)
+{
+    if (*instanceId == VPE_ERROR_FAILED || handle == nullptr) {
+        return VPE_ERROR_FAILED;
+    }
+    DestoryT destory = (DestoryT)dlsym(handle, "DetailEnhancerDestroy");
+    if (!destory) {
+        return VPE_ERROR_FAILED;
+    }
+    return destory(instanceId);
 }
 
 int32_t VpeUtils::DetailEnhancerImageProcess(sptr<SurfaceBuffer> &input, sptr<SurfaceBuffer> &output, int32_t level)

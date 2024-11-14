@@ -49,7 +49,6 @@ napi_ref SendableImageSourceNapi::alphaTypeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::scaleModeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::componentTypeRef_ = nullptr;
 napi_ref SendableImageSourceNapi::decodingDynamicRangeRef_ = nullptr;
-napi_ref SendableImageSourceNapi::decodingResolutionQualityRef_ = nullptr;
 
 static std::mutex imageSourceCrossThreadMutex_;
 
@@ -197,11 +196,6 @@ static std::vector<struct ImageEnum> sDecodingDynamicRangeMap = {
     {"AUTO", 0, ""},
     {"SDR", 1, ""},
     {"HDR", 2, ""},
-};
-static std::vector<struct ImageEnum> sDecodingResolutionQualityMap = {
-    {"LOW", 1, ""},
-    {"MEDIUM", 2, ""},
-    {"HIGH", 3, ""},
 };
 
 static bool ParseSize(napi_env env, napi_value root, Size* size)
@@ -362,32 +356,6 @@ static PixelFormat ParsePixlForamt(int32_t val)
     return PixelFormat::UNKNOWN;
 }
 
-static ResolutionQuality ParseResolutionQuality(napi_env env, napi_value root)
-{
-    uint32_t resolutionQuality = NUM_0;
-    if (!GET_UINT32_BY_NAME(root, "resolutionQuality", resolutionQuality)) {
-        IMAGE_LOGD("no resolutionQuality");
-        return ResolutionQuality::LOW;
-    }
-    if (resolutionQuality <= static_cast<uint32_t>(ResolutionQuality::HIGH)) {
-        return ResolutionQuality(resolutionQuality);
-    }
-    return ResolutionQuality::LOW;
-}
-
-static DecodeDynamicRange ParseDynamicRange(napi_env env, napi_value root)
-{
-    uint32_t tmpNumber = 0;
-    if (!GET_UINT32_BY_NAME(root, "desiredDynamicRange", tmpNumber)) {
-        IMAGE_LOGD("no desiredDynamicRange");
-        return DecodeDynamicRange::SDR;
-    }
-    if (tmpNumber <= static_cast<uint32_t>(DecodeDynamicRange::HDR)) {
-        return DecodeDynamicRange(tmpNumber);
-    }
-    return DecodeDynamicRange::SDR;
-}
-
 static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* opts, std::string &error)
 {
     uint32_t tmpNumber = 0;
@@ -428,8 +396,6 @@ static bool ParseDecodeOptions2(napi_env env, napi_value root, DecodeOptions* op
     if (opts->desiredColorSpaceInfo == nullptr) {
         IMAGE_LOGD("no desiredColorSpace");
     }
-    opts->desiredDynamicRange = ParseDynamicRange(env, root);
-    opts->resolutionQuality = ParseResolutionQuality(env, root);
     return true;
 }
 
@@ -543,7 +509,6 @@ static std::shared_ptr<PixelMap> CreatePixelMapInner(SendableImageSourceNapi *th
         IMAGE_LOGD("Get Incremental PixelMap!!!");
         pixelMap = incPixelMap;
     } else {
-        decodeOpts.invokeType = JS_INTERFACE;
         pixelMap = imageSource->CreatePixelMapEx(index, decodeOpts, status);
     }
 
