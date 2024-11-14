@@ -624,7 +624,7 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcP
         return false;
     }
     if (srcPixelMap->GetHdrMetadata() != nullptr) {
-        dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());   
+        dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
     }
     if (srcPixelMap->GetExifMetadata() != nullptr) {
         auto exifData = srcPixelMap->GetExifMetadata();
