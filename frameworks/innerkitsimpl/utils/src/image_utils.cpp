@@ -721,53 +721,6 @@ void ImageUtils::ArrayToBytes(const uint8_t* data, uint32_t length, vector<uint8
     }
 }
 
-static void GetNextArray(const uint8_t* pattern, uint32_t patternLen, std::vector<uint32_t>& next)
-{
-    uint32_t prefixEnd = 0;
-    next[0] = prefixEnd;
-    for (uint32_t i = 1; i < patternLen; ++i) {
-        // if not match, move prefixEnd to next position
-        while (prefixEnd > 0 && pattern[prefixEnd] != pattern[i]) {
-            prefixEnd = next[prefixEnd - 1];
-        }
-        // if match, update prefixEnd
-        if (pattern[prefixEnd] == pattern[i]) {
-            prefixEnd++;
-        }
-        //update next array
-        next[i] = prefixEnd;
-    }
-}
-
-int32_t ImageUtils::KMPFind(const uint8_t* target, uint32_t targetLen,
-    const uint8_t* pattern, uint32_t patternLen)
-{
-    if (target == nullptr || pattern == nullptr || patternLen == 0) {
-        IMAGE_LOGE("ImageUtils FindFirstMatchingStringByKMP failed, patternLen is zero");
-        return ERR_MEDIA_INVALID_VALUE;
-    }
-
-    std::vector<uint32_t> next(patternLen, 0);
-    GetNextArray(pattern, patternLen, next);
-    uint32_t targetIndex = 0;
-    uint32_t patternIndex = 0;
-    for (; targetIndex < targetLen; ++targetIndex) {
-        // if not match, move patternIndex to next position
-        while (patternIndex > 0 && target[targetIndex] != pattern[patternIndex]) {
-            patternIndex = next[patternIndex - 1];
-        }
-        // if match, update patternIndex
-        if (target[targetIndex] == pattern[patternIndex]) {
-            ++patternIndex;
-        }
-        // find the first matching string success
-        if (patternIndex == patternLen) {
-            return static_cast<int32_t>(targetIndex) - static_cast<int32_t>(patternLen) + static_cast<int32_t>(NUM_1);
-        }
-    }
-    return ERR_MEDIA_INVALID_VALUE;
-}
-
 void ImageUtils::FlushSurfaceBuffer(PixelMap* pixelMap)
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)

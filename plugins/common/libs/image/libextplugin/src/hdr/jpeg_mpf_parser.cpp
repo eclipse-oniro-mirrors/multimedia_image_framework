@@ -187,30 +187,77 @@ bool JpegMpfParser::ParsingMpEntry(uint8_t* data, uint32_t size, bool isBigEndia
     return true;
 }
 
+static bool FindAuxiliaryTags(const uint8_t* data, uint32_t size, std::string& foundTag)
+{
+    if (data == nullptr || size < AUXILIARY_TAG_NAME_LENGTH) {
+        return false;
+    }
+    for (const auto &[tagName, _] : AUXILIARY_TAG_TYPE_MAP) {
+        if (memcmp(data, tagName.c_str(), tagName.size()) == 0) {
+            foundTag = tagName;
+            return true;
+        }
+    }
+    return false;
+}
+
+// |<------------------ Auxiliary picture structure ----------------->|
+// |<- Image data ->|<- Image size(4 Bytes) ->|<- Tag name(8 Bytes) ->|
+static int32_t GetLastAuxiliaryTagOffset(const uint8_t* data, uint32_t size, std::string& foundTag)
+{
+    if (data == nullptr || size < AUXILIARY_TAG_NAME_LENGTH) {
+        return ERR_MEDIA_INVALID_VALUE;
+    }
+    uint32_t offset = size - AUXILIARY_TAG_NAME_LENGTH;
+    while (offset > 0) {
+        if (FindAuxiliaryTags(data + offset, size - offset, foundTag)) {
+            return static_cast<int32_t>(offset);
+        }
+        --offset;
+    }
+    return ERR_MEDIA_INVALID_VALUE;
+}
+
+// Parse the following types of auxiliary pictures: DEPTH_MAP, UNREFOCUS_MAP, LINEAR_MAP, FRAGMENT_MAP
 bool JpegMpfParser::ParsingAuxiliaryPictures(uint8_t* data, uint32_t dataSize, bool isBigEndian)
 {
     if (data == nullptr || dataSize == 0) {
         return false;
     }
 
-    images_.clear();
-    for (const auto& it : AUXILIARY_TAG_TYPE_MAP) {
-        int32_t matchedPos = ImageUtils::KMPFind(data, dataSize,
-            reinterpret_cast<const uint8_t*>(it.first.c_str()), it.first.size());
+    uint32_t offset = dataSize;
+    while (offset > 0) {
+        std::string foundTag("");
+        int32_t matchedPos = GetLastAuxiliaryTagOffset(data, offset, foundTag);
         if (matchedPos == ERR_MEDIA_INVALID_VALUE) {
+            IMAGE_LOGI("%{public}s no more auxiliary pictures", __func__);
+            break;
+        }
+        offset = static_cast<uint32_t>(matchedPos);
+        auto it = AUXILIARY_TAG_TYPE_MAP.find(foundTag);
+        if (it == AUXILIARY_TAG_TYPE_MAP.end()) {
+            IMAGE_LOGW("%{public}s unknown auxiliary tag: %{public}s", __func__, foundTag.c_str());
             continue;
         }
-        uint32_t offset = static_cast<uint32_t>(matchedPos);
-        if (offset > dataSize) {
+
+        if (offset < UINT32_BYTE_SIZE) {
+            IMAGE_LOGW("%{public}s invalid offset: %{public}u, auxiliary tag: %{public}s",
+                __func__, offset, foundTag.c_str());
             continue;
         }
         offset -= UINT32_BYTE_SIZE;
         uint32_t imageSize = ImageUtils::BytesToUint32(data, offset, isBigEndian);
+        if (offset < imageSize + UINT32_BYTE_SIZE) {
+            IMAGE_LOGW("%{public}s invalid image size: %{public}u, offset: %{public}u, auxiliary tag: %{public}s",
+                __func__, imageSize, offset, foundTag.c_str());
+            continue;
+        }
+        offset = offset - imageSize - UINT32_BYTE_SIZE;
         SingleJpegImage auxImage = {
-            .offset = offset - UINT32_BYTE_SIZE - imageSize,
+            .offset = offset,
             .size = imageSize,
-            .auxType = it.second,
-            .auxTagName = it.first,
+            .auxType = it->second,
+            .auxTagName = it->first,
         };
         images_.push_back(auxImage);
         IMAGE_LOGD("[%{public}s] auxType=%{public}d, offset=%{public}u, size=%{public}u, tagName=%{public}s",
