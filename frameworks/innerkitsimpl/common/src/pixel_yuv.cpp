@@ -582,7 +582,7 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     YUVDataInfo yuvDataInfo;
-    GetImageInfo(yuvDataInfo);
+    GetImageYUVInfo(yuvDataInfo);
     uint32_t yWidth = static_cast<uint32_t>(imageInfo_.size.width);
     uint32_t yHeight = static_cast<uint32_t>(imageInfo_.size.height);
     uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
