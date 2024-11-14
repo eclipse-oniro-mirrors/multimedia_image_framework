@@ -108,6 +108,7 @@ struct ImagePackerAsyncContext {
     int fd = INVALID_FD;
     ImagePackerError error;
     bool needReturnErrorCode = true;
+    uint32_t frameCount;
 };
 
 struct PackingOption {
@@ -274,7 +275,7 @@ bool SetArrayPixel(ImagePackerAsyncContext *context)
 {
     IMAGE_LOGD("ImagePacker set pixelmap array");
     if (!context->rPixelMaps) {
-        BuildMsgOnError(context, !context->rPixelMaps, "Pixelmap is nullptr", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, false, "PixelmapList is nullptr", COMMON_ERR_INVALID_PARAMETER);
         return false;
     }
     for (auto &pixelMap : *context->rPixelMaps.get()) {
@@ -555,46 +556,81 @@ static int64_t parseBufferSize(napi_env env, napi_value root, ImagePackerAsyncCo
     return tmpNumber;
 }
 
-static bool parsePackOptionOfdelayTimes(napi_env env, napi_value root, PackOption* opts)
+static bool handlePixelMapList(ImagePackerAsyncContext* context)
 {
-    napi_value tmpValue = nullptr;
-    if (!GET_NODE_BY_NAME(root, "frameCount", tmpValue)) {
-        IMAGE_LOGE("No frameCount in pack option");
+    if (context->frameCount == 0) {
+        IMAGE_LOGE("Parameter input error, invalid frameCount");
         return false;
     }
-    uint32_t Count = 0;
-    napi_get_value_uint32(env, tmpValue, &Count);
+    if (context->rPixelMaps->empty()) {
+        IMAGE_LOGE("Parameter input error, pixelmaplist is empty");
+        return false;
+    }
+    uint32_t pixelMapListLength = context->rPixelMaps->size();
+    if (pixelMapListLength > context->frameCount) {
+        for (uint32_t i = pixelMapListLength; i > context->frameCount; i--) {
+            context->rPixelMaps->pop_back();
+        }
+    } else if (pixelMapListLength < context->frameCount) {
+        for (uint32_t i = pixelMapListLength; i < context->frameCount; i++) {
+            context->rPixelMaps->push_back((*context->rPixelMaps)[pixelMapListLength - 1]);
+        }
+    }
+    return true;
+}
+
+static bool parsePackOptionOfdelayTimes(napi_env env, napi_value root, ImagePackerAsyncContext* context)
+{
+    napi_value tmpValue = nullptr;
     if (!GET_NODE_BY_NAME(root, "delayTimeList", tmpValue)) {
         IMAGE_LOGE("No delayTimeList in pack option");
         return false;
     }
     bool isDelayTimesArray = false;
     napi_is_array(env, tmpValue, &isDelayTimesArray);
-    uint32_t num;
     if (isDelayTimesArray) {
+        int32_t num;
         uint32_t len = 0;
-        if (napi_get_array_length(env, tmpValue, &len) != napi_ok) {
+        if (napi_get_array_length(env, tmpValue, &len) != napi_ok || len == 0) {
             IMAGE_LOGE("Parse pack napi_get_array_length failed");
-            return false;
-        }
-        if (Count - len < 0) {
-            IMAGE_LOGE("Parameter input error");
             return false;
         }
         for (size_t i = 0; i < len; i++) {
             napi_value item;
             napi_get_element(env, tmpValue, i, &item);
-            if (napi_get_value_uint32(env, item, &num) != napi_ok) {
+            if (napi_get_value_int32(env, item, &num) != napi_ok) {
                 IMAGE_LOGE("Parse delayTime in item failed %{public}zu", i);
                 return false;
             }
-            opts->delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+            if (num <= 0 || num > MASK_16) {
+                IMAGE_LOGE("Invalid delayTime, out of range");
+                return false;
+            }
+            context->packOption.delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
         }
-        for (size_t i = 0; i < Count - len; i++) {
-            opts->delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+        if (len < context->frameCount) {
+            for (uint32_t i = len; i < context->frameCount; i++) {
+                context->packOption.delayTimes.push_back(static_cast<uint16_t>(num & MASK_16));
+            }
         }
     }
     return true;
+}
+
+static bool parsePackOptionOfFrameCout(napi_env env, napi_value root, ImagePackerAsyncContext* context)
+{
+    napi_value tmpValue = nullptr;
+    if (!GET_NODE_BY_NAME(root, "frameCount", tmpValue)) {
+        IMAGE_LOGE("No frameCount in pack option");
+        return false;
+    }
+    uint32_t count = 0;
+    napi_get_value_uint32(env, tmpValue, &count);
+    context->frameCount = count;
+    if (!handlePixelMapList(context)) {
+        return false;
+    }
+    return parsePackOptionOfdelayTimes(env, root, context);
 }
 
 static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOption* opts)
@@ -603,8 +639,8 @@ static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOp
     GET_NODE_BY_NAME(root, "disposalTypes", tmpValue);
     bool isDisposalTypesArray = false;
     napi_is_array(env, tmpValue, &isDisposalTypesArray);
-    uint32_t num;
     if (isDisposalTypesArray) {
+        int32_t num;
         uint32_t len = 0;
         if (napi_get_array_length(env, tmpValue, &len) != napi_ok) {
             IMAGE_LOGE("Parse pack napi_get_array_length failed");
@@ -613,8 +649,12 @@ static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOp
         for (size_t i = 0; i < len; i++) {
             napi_value item;
             napi_get_element(env, tmpValue, i, &item);
-            if (napi_get_value_uint32(env, item, &num) != napi_ok) {
+            if (napi_get_value_int32(env, item, &num) != napi_ok) {
                 IMAGE_LOGE("Parse disposalTypes in item failed %{public}zu", i);
+                return false;
+            }
+            if (num < 0 || num > MASK_3) {
+                IMAGE_LOGE("Invalid disposalTypes, out of range");
                 return false;
             }
             opts->disposalTypes.push_back(static_cast<uint16_t>(num & MASK_3));
@@ -623,13 +663,25 @@ static bool parsePackOptionOfdisposalTypes(napi_env env, napi_value root, PackOp
     return true;
 }
 
-static bool parsePackOptionOfLoop(napi_env env, napi_value root, PackOption* opts)
+static bool parsePackOptionOfLoop(napi_env env, napi_value root, ImagePackerAsyncContext* context)
 {
-    opts->format = "image/gif";
-    uint32_t tmpNumber = 0;
-    GET_UINT32_BY_NAME(root, "loopCount", tmpNumber);
-    opts->loop = static_cast<uint16_t>(tmpNumber & MASK_16);
-    return parsePackOptionOfdelayTimes(env, root, opts);
+    napi_value nullValue;
+    napi_get_null(env, &nullValue);
+    if (root == nullValue) {
+        IMAGE_LOGE("PackingOptionsForSequence is null");
+        return false;
+    }
+    context->packOption.format = "image/gif";
+    int32_t tmpNumber = 0;
+    if (!GET_INT32_BY_NAME(root, "loopCount", tmpNumber)) {
+        tmpNumber = 1;
+    }
+    if (tmpNumber < 0 || tmpNumber > MASK_16) {
+        IMAGE_LOGE("Invalid loopCount");
+        return false;
+    }
+    context->packOption.loop = static_cast<uint16_t>(tmpNumber & MASK_16);
+    return parsePackOptionOfFrameCout(env, root, context);
 }
 
 static bool parsePackOptionOfQuality(napi_env env, napi_value root, PackOption* opts)
@@ -797,19 +849,20 @@ static void ParserPackingArguments(napi_env env,
             COMMON_ERR_INVALID_PARAMETER);
 #endif
     } else if (context->packType == TYPE_ARRAY) {
+        context->needReturnErrorCode = true;
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPixelMaps != nullptr,
-            "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_object) {
         if (context->packType == TYPE_ARRAY) {
             BuildMsgOnError(context,
-                parsePackOptionOfLoop(env, argv[PARAM1], &(context->packOption)),
-                "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+                parsePackOptionOfLoop(env, argv[PARAM1], context),
+                "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
             context->resultBufferSize = parseBufferSize(env, argv[PARAM1]);
             BuildMsgOnError(context,
                 parsePackOptionOfdisposalTypes(env, argv[PARAM1], &(context->packOption)),
-                "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+                "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
         } else {
             BuildMsgOnError(context, parsePackOptions(env, argv[PARAM1], &(context->packOption)),
                 "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
@@ -959,8 +1012,7 @@ static void ParserPackToFileArguments(napi_env env,
 {
     int32_t refCount = 1;
     if (argc < PARAM1 || argc > PARAM4) {
-        BuildMsgOnError(context, (argc < PARAM1 || argc > PARAM4),
-            "Arguments Count error", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, false, "Arguments Count error", ERR_IMAGE_INVALID_PARAMETER);
     }
     context->packType = ParserPackingArgumentType(env, argv[PARAM0]);
     if (context->packType == TYPE_IMAGE_SOURCE) {
@@ -975,11 +1027,11 @@ static void ParserPackToFileArguments(napi_env env,
     } else if (context->packType == TYPE_PICTURE) {
         context->rPicture = PictureNapi::GetPicture(env, argv[PARAM0]);
         BuildMsgOnError(context, context->rPicture != nullptr,
-            "Picture mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            "Picture mismatch", COMMON_ERR_INVALID_PARAMETER);
 #endif
     } else if (context->packType == TYPE_ARRAY) {
         context->rPixelMaps = PixelMapNapi::GetPixelMaps(env, argv[PARAM0]);
-        BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", ERR_IMAGE_INVALID_PARAMETER);
+        BuildMsgOnError(context, context->rPixelMaps != nullptr, "PixelMap mismatch", COMMON_ERR_INVALID_PARAMETER);
     }
     if (argc > PARAM1 && ImageNapiUtils::getType(env, argv[PARAM1]) == napi_number) {
         uint32_t errorCode = (context->packType == TYPE_PICTURE) ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
@@ -988,10 +1040,10 @@ static void ParserPackToFileArguments(napi_env env,
     }
     if (argc > PARAM2 && ImageNapiUtils::getType(env, argv[PARAM2]) == napi_object) {
         if (context->packType == TYPE_ARRAY) {
-            BuildMsgOnError(context, parsePackOptionOfLoop(env, argv[PARAM2], &(context->packOption)),
-                "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+            BuildMsgOnError(context, parsePackOptionOfLoop(env, argv[PARAM2], context),
+                "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
             BuildMsgOnError(context, parsePackOptionOfdisposalTypes(env, argv[PARAM2], &(context->packOption)),
-                "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
+                "PackOptions mismatch", COMMON_ERR_INVALID_PARAMETER);
         } else {
             BuildMsgOnError(context, parsePackOptions(env, argv[PARAM2], &(context->packOption)),
                 "PackOptions mismatch", ERR_IMAGE_INVALID_PARAMETER);
@@ -1026,7 +1078,7 @@ STATIC_EXEC_FUNC(PackToFile)
     auto context = static_cast<ImagePackerAsyncContext*>(data);
     if (context->fd <= INVALID_FD) {
         uint32_t errorCode = context->packType == TYPE_PICTURE ? IMAGE_BAD_PARAMETER : ERR_IMAGE_INVALID_PARAMETER;
-        BuildMsgOnError(context, context->fd <= INVALID_FD, "ImagePacker invalid fd", errorCode);
+        BuildMsgOnError(context, false, "ImagePacker invalid fd", errorCode);
         return;
     }
 

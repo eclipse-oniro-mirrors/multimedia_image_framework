@@ -162,7 +162,7 @@ uint32_t GifEncoder::FinalizeEncode()
 
     if (pixelMaps_.empty()) {
         IMAGE_LOGE("FinalizeEncode, no pixel map input.");
-        return ERR_IMAGE_INVALID_PARAMETER;
+        return COMMON_ERR_INVALID_PARAMETER;
     }
 
     uint32_t errorCode = ERROR;
