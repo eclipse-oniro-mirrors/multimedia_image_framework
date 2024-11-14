@@ -47,7 +47,7 @@ if (use_clang_ios) {
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
       "//foundation/multimedia/image_framework/plugins/manager:pluginmanager",
     ]
-    deps += [ "//third_party/ffmpeg:libohosffmpeg_static" ]
+    deps += [ "//third_party/ffmpeg:libohosffmpeg" ]
     if (defined(global_parts_info) &&
         defined(global_parts_info.open_source_libyuv)) {
       defines += [ "EXT_PIXEL" ]
@@ -56,6 +56,7 @@ if (use_clang_ios) {
 
     #relative_install_dir = "module/multimedia"
     subsystem_name = "multimedia"
+    innerapi_tags = [ "platformsdk_indirect" ]
     part_name = "image_framework"
   }
 } else {
@@ -88,7 +89,7 @@ if (use_clang_ios) {
     ]
 
     external_deps =
-        [ "drivers_interface_display:libdisplay_commontype_proxy_1.0" ]
+        [ "drivers_interface_display:libdisplay_commontype_idl_headers" ]
     if (use_mingw_win) {
       defines = image_decode_windows_defines
       include_dirs += [ "//third_party/ffmpeg" ]
@@ -143,8 +144,8 @@ if (use_clang_ios) {
       ]
       external_deps += [
         "c_utils:utils",
-        "ffmpeg:libohosffmpeg",
         "ffrt:libffrt",
+        "ffmpeg:libohosffmpeg",
         "graphic_2d:color_manager",
         "graphic_surface:surface",
         "hilog:libhilog",
@@ -252,6 +253,7 @@ ohos_static_library("image_utils_static") {
     include_dirs += [
       "$image_subsystem/mock/native/include/log",
       "//third_party/bounds_checking_function/include",
+      "//third_party/ffmpeg",
     ]
     include_dirs += [ "//third_party/ffmpeg" ]
     include_dirs += [ "$image_subsystem/mock/native/include/log" ]
@@ -259,6 +261,7 @@ ohos_static_library("image_utils_static") {
       "//foundation/graphic/graphic_2d/utils/color_manager:color_manager",
       "//foundation/multimedia/image_framework/mock/native:log_mock_static",
     ]
+    deps += ["//third_party/ffmpeg:libohosffmpeg"]
     sources += [ "//foundation/multimedia/image_framework/frameworks/innerkitsimpl/utils/src/image_trace.cpp" ]
     sources += [
       "src/image_data_statistics.cpp",
@@ -281,9 +284,9 @@ ohos_static_library("image_utils_static") {
 
     external_deps = [
       "c_utils:utils",
-      "drivers_interface_display:libdisplay_commontype_proxy_1.0",
-      "ffmpeg:libohosffmpeg",
+      "drivers_interface_display:libdisplay_commontype_idl_headers",
       "ffrt:libffrt",
+      "ffmpeg:libohosffmpeg",
       "graphic_2d:color_manager",
       "graphic_surface:surface",
       "hilog:libhilog",
