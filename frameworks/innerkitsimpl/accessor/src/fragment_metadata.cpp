@@ -16,6 +16,7 @@
 #include <iostream>
 #include "fragment_metadata.h"
 #include "image_log.h"
+#include "image_utils.h"
 #include "media_errors.h"
 
 #undef LOG_DOMAIN
@@ -26,7 +27,7 @@
 
 namespace OHOS {
 namespace Media {
-const static uint64_t MAX_FRAG_DATA = 10;
+const static uint64_t MAX_FRAGMENT_MAP_META_COUNT = 10;
 FragmentMetadata::FragmentMetadata() {}
 
 FragmentMetadata::FragmentMetadata(const FragmentMetadata& fragmentMetadata)
@@ -58,6 +59,15 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
 {
     if (!IsValidKey(key)) {
         IMAGE_LOGE("Key is not supported.");
+        return false;
+    }
+    uint32_t casted;
+    if (!ImageUtils::StrToUint32(value, casted)) {
+        IMAGE_LOGE("Invalid value: %{public}s.", value.c_str());
+        return false;
+    }
+    if (properties_ == nullptr) {
+        IMAGE_LOGE("SetValue: properties_ is nullptr");
         return false;
     }
     (*properties_)[key] = value;
@@ -125,15 +135,19 @@ FragmentMetadata *FragmentMetadata::Unmarshalling(Parcel &parcel, PICTURE_ERR &e
     if (!parcel.ReadUint64(size)) {
         return nullptr;
     }
+    if (size > MAX_FRAGMENT_MAP_META_COUNT) {
+        return nullptr;
+    }
+    if (fragmentMetadataPtr->properties_ == nullptr) {
+        IMAGE_LOGE("Unmarshalling: fragmentMetadataPtr->properties_ is nullptr");
+        return nullptr;
+    }
     for (uint64_t i = 0; i < size; ++i) {
         std::string key;
         std::string value;
         if (!parcel.ReadString(key)) {
             return nullptr;
-        }
-        if (size > MAX_FRAG_DATA) {
-            return nullptr;
-        }
+        }       
         if (!parcel.ReadString(value)) {
             return nullptr;
         }

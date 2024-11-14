@@ -770,9 +770,18 @@ void PngDecoder::SaveRows(png_bytep row, png_uint_32 rowNum)
             rowNum, outputRowsNum_, pngImageInfo_.height);
         return;
     }
+    if (inputStreamPtr_ == nullptr) {
+        IMAGE_LOGE("%{public}s fail, inputStreamPtr_ is nullptr", __func__);
+        return;
+    }
     outputRowsNum_++;
     uint8_t *offset = pixelsData_ + rowNum * pngImageInfo_.rowDataSize;
     uint32_t offsetSize = (pngImageInfo_.height - rowNum) * pngImageInfo_.rowDataSize;
+    if (static_cast<size_t>(pngImageInfo_.rowDataSize * pngImageInfo_.height) > inputStreamPtr_->GetStreamSize()) {
+        IMAGE_LOGE("Invalid data size, height:%{public}u, rowDataSize:%{public}u",
+                   pngImageInfo_.height, pngImageInfo_.rowDataSize);
+        return;
+    }
     errno_t ret = memcpy_s(offset, offsetSize, row, pngImageInfo_.rowDataSize);
     if (ret != 0) {
         IMAGE_LOGE("copy data fail, ret:%{public}d, rowDataSize:%{public}u, offsetSize:%{public}u.", ret,

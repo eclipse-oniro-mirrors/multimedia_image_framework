@@ -196,7 +196,7 @@ napi_value SendableImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> 
 
     IMAGE_FUNCTION_IN();
     if (env == nullptr || nativeImage == nullptr) {
-        IMAGE_ERR("Input args is invalid %{public}p vs %{public}p", env, nativeImage.get());
+        IMAGE_ERR("Input args is invalid");
         return nullptr;
     }
     if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {

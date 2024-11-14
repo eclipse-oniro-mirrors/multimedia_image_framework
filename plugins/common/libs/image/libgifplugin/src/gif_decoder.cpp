@@ -348,7 +348,13 @@ uint32_t GifDecoder::AllocateLocalPixelMapBuffer()
     if (localPixelMapBuffer_ == nullptr) {
         int32_t bgWidth = gifPtr_->SWidth;
         int32_t bgHeight = gifPtr_->SHeight;
-        uint64_t pixelMapBufferSize = static_cast<uint64_t>(bgWidth * bgHeight * sizeof(uint32_t));
+        if (ImageUtils::CheckMulOverflow(bgWidth, bgHeight, sizeof(uint32_t))) {
+            IMAGE_LOGE("[AllocateLocalPixelMapBuffer]size is invalid, width:%{public}d, height:%{public}d",
+                       bgWidth, bgHeight);
+            return ERR_IMAGE_TOO_LARGE;
+        }
+        uint64_t pixelMapBufferSize = static_cast<uint64_t>(bgWidth) *
+                static_cast<uint64_t>(bgHeight) * sizeof(uint32_t);
         // create local pixelmap buffer, next frame depends on the previous
         if (pixelMapBufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
             IMAGE_LOGE("[AllocateLocalPixelMapBuffer]pixelmap buffer size %{public}llu out of max size",
@@ -704,7 +710,13 @@ uint32_t GifDecoder::RedirectOutputBuffer(DecodeContext &context)
     }
     int32_t bgWidth = gifPtr_->SWidth;
     int32_t bgHeight = gifPtr_->SHeight;
-    uint64_t imageBufferSize = static_cast<uint64_t>(bgWidth * bgHeight * sizeof(uint32_t));
+    if (ImageUtils::CheckMulOverflow(bgWidth, bgHeight, sizeof(uint32_t))) {
+        IMAGE_LOGE("[RedirectOutputBuffer]size is invalid, width:%{public}d, height:%{public}d",
+                   bgWidth, bgHeight);
+        return ERR_IMAGE_TOO_LARGE;
+    }
+    uint64_t imageBufferSize = static_cast<uint64_t>(bgWidth) *
+            static_cast<uint64_t>(bgHeight) * sizeof(uint32_t);
     uint32_t allocRes = SUCCESS;
     if (context.pixelsBuffer.buffer == nullptr) {
         context.pixelsBuffer.bufferSize = imageBufferSize;
@@ -814,7 +826,14 @@ uint32_t GifDecoder::ParseFrameDetail()
     SavedImage *saveImagePtr = &gifPtr_->SavedImages[frameIndex];
     int32_t imageWidth = saveImagePtr->ImageDesc.Width;
     int32_t imageHeight = saveImagePtr->ImageDesc.Height;
-    uint64_t imageSize = static_cast<uint64_t>(imageWidth * imageHeight);
+    if (ImageUtils::CheckMulOverflow(imageWidth, imageHeight)) {
+        IMAGE_LOGE("[ParseFrameDetail]size is invalid, size: [%{public}d, %{public}d]", imageWidth,
+                   imageHeight);
+        // if error, imageCount go back and next time DGifGetImageDesc will retry.
+        gifPtr_->ImageCount--;
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    uint64_t imageSize = static_cast<uint64_t>(imageWidth) * static_cast<uint64_t>(imageHeight);
     if (imageWidth <= 0 || imageHeight <= 0 || imageSize > SIZE_MAX) {
         IMAGE_LOGE("[ParseFrameDetail]check frame size[%{public}d, %{public}d] failed", imageWidth,
             imageHeight);

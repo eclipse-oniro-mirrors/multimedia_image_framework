@@ -284,21 +284,6 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmap(OH_ImagePackerNative
     OH_PackingOptions *options, OH_PixelmapNative *pixelmap, uint8_t *outData, size_t *size);
 
 /**
- * @brief Encoding a <b>PixelMap</b> list into the a file with fd with required format
- *
- * @param imagePacker The imagePacker to use for packing.
- * @param options Indicates the encoding {@link OH_PackingOptions}.
- * @param pixelmaps The pixelmap array to be packed.
- * @param mapSize The pixelmap array size to be packed.
- * @param outData The output data buffer to store the packed image.
- * @param outDataSize A pointer to the size of the output data buffer.
- * @return Returns {@link Image_ErrorCode}
- * @since 12
- */
-Image_ErrorCode OH_ImagePacker_PackToDataMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
-    OH_PixelmapNative **pixelmaps, int32_t mapSize, uint8_t* outData, size_t* outDataSize);
-
-/**
  * @brief Encoding an <b>ImageSource</b> into the a file with fd with required format.
  *
  * @param imagePacker The image packer to use for packing.
@@ -325,21 +310,6 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmap(OH_ImagePackerNative
     OH_PackingOptions *options, OH_PixelmapNative *pixelmap, int32_t fd);
 
 /**
- * @brief Encoding a <b>PixelMap</b> list into the a file with fd with required format
- *
- 
-  * @param imagePacker The image packer to use for packing.
-  * @param options Indicates the encoding {@link OH_PackingOptions}.
-  * @param pixelmaps The pixelmap array to be packed.
-  * @param mapSize The pixelmap array size to be packed.
-  * @param fd Indicates a writable file descriptor.
-  * @return Returns {@link Image_ErrorCode}
-  * @since 12
- */
-Image_ErrorCode OH_ImagePacker_PackToFileMultiFrames(OH_ImagePackerNative *imagePacker, OH_PackingOptions *options,
-    OH_PixelmapNative **pixelmaps, int32_t mapSize, int32_t fd);
-
-/**
   * @brief Releases an imagePacker object.
   *
   * @param imagePacker A pointer to the image packer object to be released.
@@ -361,7 +331,7 @@ Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker);
  *         {@link IMAGE_BAD_PARAMETER} imagePacker is nullptr, or picture is nullptr, or outData is nullptr,
  *         or size is invalid.
  *         {@link IMAGE_ENCODE_FAILED} encode failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PictureNative *picture, uint8_t *outData, size_t *size);
@@ -377,7 +347,7 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPicture(OH_ImagePackerNative 
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} imagePacker is nullptr, or picture is nullptr, or fd is invalid.
  *         {@link IMAGE_ENCODE_FAILED} encode failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative *imagePacker,
     OH_PackingOptions *options, OH_PictureNative *picture, int32_t fd);

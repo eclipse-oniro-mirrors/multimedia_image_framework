@@ -2717,7 +2717,7 @@ unique_ptr<SourceStream> ImageSource::DecodeBase64(const uint8_t *data, uint32_t
     }
     sub = sub + BASE64_URL_PREFIX.size();
     uint32_t subSize = size - (sub - data1);
-    IMAGE_LOGD("[ImageSource]Base64 image input: %{public}p, data: %{public}p, size %{public}u.", data, sub, subSize);
+    IMAGE_LOGD("[ImageSource]Base64 image input: size %{public}u.", subSize);
 #ifdef NEW_SKIA
     size_t outputLen = 0;
     SkBase64::Error error = SkBase64::Decode(sub, subSize, nullptr, &outputLen);
@@ -4427,8 +4427,14 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         errorCode = ERR_IMAGE_DATA_ABNORMAL;
         return;
     }
-    streamBuffer += mainDecoder_->GetGainMapOffset();
-    streamSize -= mainDecoder_->GetGainMapOffset();
+    uint32_t gainMapOffset = mainDecoder_->GetGainMapOffset();
+    if (gainMapOffset >= streamSize) {
+        IMAGE_LOGE("GainMapOffset is invalid!");
+        errorCode = ERR_IMAGE_DATA_ABNORMAL;
+        return;
+    }
+    streamBuffer += gainMapOffset;
+    streamSize -= gainMapOffset;
     auto auxInfos = ParsingJpegAuxiliaryPictures(streamBuffer, streamSize, auxTypes, sourceHdrType_);
     MainPictureInfo mainInfo;
     mainInfo.hdrType = sourceHdrType_;

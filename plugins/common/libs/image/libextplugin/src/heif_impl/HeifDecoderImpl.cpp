@@ -73,14 +73,17 @@ const static uint32_t PLANE_COUNT_TWO = 2;
 const static uint32_t HEIF_HARDWARE_TILE_MIN_DIM = 128;
 const static uint32_t HEIF_HARDWARE_TILE_MAX_DIM = 4096;
 const static uint32_t HEIF_HARDWARE_DISPLAY_MIN_DIM = 128;
+const static size_t MAX_INPUT_BUFFER_SIZE = 5 * 1024 * 1024;
 
 const static uint16_t BT2020_PRIMARIES = 9;
+const static int BIT_SHIFT_16BITS = 16;
 
 struct PixelFormatConvertParam {
     uint8_t *data;
     uint32_t width;
     uint32_t height;
     uint32_t stride;
+    uint8_t colorRangeFlag;
     OH_NativeBuffer_Planes *planesInfo;
     AVPixelFormat format;
 };
@@ -130,6 +133,14 @@ static bool ConvertPixelFormat(PixelFormatConvertParam &srcParam, PixelFormatCon
                                      static_cast<int>(dstParam.width), static_cast<int>(dstParam.height),
                                      dstParam.format,
                                      SWS_BICUBIC, nullptr, nullptr, nullptr);
+
+    //if need applu colorspace in scale, change defult table;
+    auto srcColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+    auto dstColorTable = sws_getCoefficients(SWS_CS_DEFAULT);
+    sws_setColorspaceDetails(ctx, srcColorTable,
+                             srcParam.colorRangeFlag,
+                             dstColorTable, 0,
+                             0, 1 << BIT_SHIFT_16BITS, 1 << BIT_SHIFT_16BITS);
     if (srcFrame != nullptr && dstFrame != nullptr && ctx != nullptr) {
         res = FillFrameInfoForPixelConvert(srcFrame, srcParam)
                 && FillFrameInfoForPixelConvert(dstFrame, dstParam)
@@ -390,6 +401,7 @@ void HeifDecoderImpl::InitGridInfo(const std::shared_ptr<HeifImage> &image, Grid
     }
     gridInfo.displayWidth = image->GetOriginalWidth();
     gridInfo.displayHeight = image->GetOriginalHeight();
+    gridInfo.colorRangeFlag = image->GetColorRangeFlag();
     GetTileSize(image, gridInfo);
     GetRowColNum(gridInfo);
 }
@@ -630,8 +642,53 @@ bool HeifDecoderImpl::HwDecodeImage(HeifHardwareDecoder *hwDecoder,
     return res;
 }
 
+void HeifDecoderImpl::PreparePackedInput(HeifHardwareDecoder *hwDecoder,
+    std::vector<std::shared_ptr<HeifImage>> tileImages,
+    std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount)
+{
+    if (hwDecoder->IsPackedInputSupported()) {
+        size_t gridLength = 0;
+        size_t inputIndex = 0;
+        packedInput.resize(GRID_NUM_2);
+        for (size_t index = 0; index < gridCount; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            std::shared_ptr<HeifImage> nextTileImage;
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &packedInput[inputIndex], heif_only_header);
+                ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+                ++inputIndex;
+            }
+            if (packedInput[inputIndex].size() + gridLength >= MAX_INPUT_BUFFER_SIZE) {
+                ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+                ++inputIndex;
+                packedInput.emplace_back(std::vector<uint8_t>());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &packedInput[inputIndex], heif_no_header);
+            gridLength = 0;
+            if (index + 1 != gridCount) {
+                nextTileImage = tileImages[index + 1];
+                parser_->GetGridLength(nextTileImage->GetItemId(), gridLength);
+            }
+        }
+        ProcessChunkHead(packedInput[inputIndex].data(), packedInput[inputIndex].size());
+    } else {
+        packedInput.resize(gridCount + 1);
+        for (size_t index = 0; index < gridCount; ++index) {
+            std::shared_ptr<HeifImage> &tileImage = tileImages[index];
+            if (index == 0) {
+                // get hvcc header
+                parser_->GetItemData(tileImage->GetItemId(), &packedInput[index], heif_only_header);
+                ProcessChunkHead(packedInput[index].data(), packedInput[index].size());
+            }
+            parser_->GetItemData(tileImage->GetItemId(), &packedInput[index + 1], heif_no_header);
+            ProcessChunkHead(packedInput[index + 1].data(), packedInput[index + 1].size());
+        }
+    }
+}
+
 bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
-                                    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
+    GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer)
 {
     if (hwDecoder == nullptr || image == nullptr) {
         IMAGE_LOGE("HeifDecoderImpl::DecodeGrids hwDecoder or image is nullptr");
@@ -643,28 +700,18 @@ bool HeifDecoderImpl::HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_
         IMAGE_LOGE("grid image has no tile image");
         return false;
     }
-    size_t numGrid = tileImages.size();
-    std::vector<std::vector<uint8_t>> inputs(numGrid + 1);
+    size_t gridCount = tileImages.size();
+    std::vector<std::vector<uint8_t>> packedInput;
+    PreparePackedInput(hwDecoder, tileImages, packedInput, gridCount);
 
-    for (size_t index = 0; index < numGrid; ++index) {
-        std::shared_ptr<HeifImage> &tileImage = tileImages[index];
-        if (index == 0) {
-            // get hvcc header
-            parser_->GetItemData(tileImage->GetItemId(), &inputs[index], heif_only_header);
-            ProcessChunkHead(inputs[index].data(), inputs[index].size());
-        }
-        parser_->GetItemData(tileImage->GetItemId(), &inputs[index + 1], heif_no_header);
-        ProcessChunkHead(inputs[index + 1].data(), inputs[index + 1].size());
-    }
-
-    uint32_t err = hwDecoder->DoDecode(gridInfo, inputs, hwBuffer);
+    uint32_t err = hwDecoder->DoDecode(gridInfo, packedInput, hwBuffer);
     if (err != SUCCESS) {
         IMAGE_LOGE("heif hw decoder return error: %{public}d, width: %{public}d, height: %{public}d,"
                    " imageType: grid, inPixelFormat: %{public}d, colNum: %{public}d, rowNum: %{public}d,"
                    " tileWidth: %{public}d, tileHeight: %{public}d, hvccLen: %{public}zu",
                    err, gridInfo.displayWidth, gridInfo.displayHeight,
                    hwBuffer->GetFormat(), gridInfo.cols, gridInfo.rows,
-                   gridInfo.tileWidth, gridInfo.tileHeight, inputs[0].size());
+                   gridInfo.tileWidth, gridInfo.tileHeight, packedInput[0].size());
         SetHardwareDecodeErrMsg(gridInfo.tileWidth, gridInfo.tileHeight);
         return false;
     }
@@ -980,11 +1027,13 @@ bool HeifDecoderImpl::ConvertHwBufferPixelFormat(sptr<SurfaceBuffer> &hwBuffer, 
     PixelFormatConvertParam srcParam = {static_cast<uint8_t *>(hwBuffer->GetVirAddr()),
                                         gridInfo.displayWidth, gridInfo.displayHeight,
                                         static_cast<uint32_t>(hwBuffer->GetStride()),
+                                        gridInfo.colorRangeFlag,
                                         srcBufferPlanesInfo,
                                         GraphicPixFmt2AvPixFmtForYuv(
                                             static_cast<GraphicPixelFormat>(hwBuffer->GetFormat()))};
     PixelFormatConvertParam dstParam = {dstMemory, gridInfo.displayWidth, gridInfo.displayHeight,
                                         static_cast<uint32_t>(dstRowStride),
+                                        gridInfo.colorRangeFlag,
                                         dstBufferPlanesInfo,
                                         PixFmt2AvPixFmtForOutput(outPixelFormat_)};
     return ConvertPixelFormat(srcParam, dstParam);

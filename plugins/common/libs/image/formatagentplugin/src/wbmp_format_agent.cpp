@@ -40,6 +40,10 @@ constexpr uint8_t HIGH_BIT_MASK = 0x80;
 
 bool WbmpFormatAgent::read_byte(uint8_t *stream, uint8_t &value, uint32_t &offset, uint32_t dataSize)
 {
+    if (stream == nullptr) {
+        IMAGE_LOGE("read_byte: stream is nullptr");
+        return false;
+    }
     if (offset >= dataSize) {
         IMAGE_LOGE("read_header data offset %{public}u. dataSize %{public}u", offset, dataSize);
         return false;

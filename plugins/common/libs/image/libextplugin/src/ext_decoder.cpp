@@ -1083,7 +1083,13 @@ void ExtDecoder::ReportImageType(SkEncodedImageFormat skEncodeFormat)
 uint32_t ExtDecoder::AllocOutputBuffer(DecodeContext &context,
     OHOS::HDI::Codec::Image::V2_0::CodecImageBuffer& outputBuffer)
 {
-    uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height() * hwDstInfo_.width() * hwDstInfo_.bytesPerPixel());
+    if (ImageUtils::CheckMulOverflow(hwDstInfo_.height(), hwDstInfo_.width(), hwDstInfo_.bytesPerPixel())) {
+        IMAGE_LOGE("Invalid dstInfo height:%{public}d, width:%{public}d", hwDstInfo_.height(), hwDstInfo_.width());
+        return ERR_IMAGE_DECODE_ABNORMAL;
+    }
+    uint64_t byteCount = static_cast<uint64_t>(hwDstInfo_.height()) *
+            static_cast<uint64_t>(hwDstInfo_.width()) *
+            static_cast<uint64_t>(hwDstInfo_.bytesPerPixel());
     uint32_t ret = DmaMemAlloc(context, byteCount, hwDstInfo_);
     if (ret != SUCCESS) {
         IMAGE_LOGE("Alloc OutputBuffer failed, ret=%{public}d", ret);

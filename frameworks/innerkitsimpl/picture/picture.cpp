@@ -115,7 +115,7 @@ namespace {
     };
 #endif
 }
-const static uint64_t MAX_NUM_AUXI_PIC = 32;
+const static uint64_t MAX_AUXILIARY_PICTURE_COUNT = 32;
 static const uint8_t NUM_0 = 0;
 static const uint8_t NUM_1 = 1;
 static const uint8_t NUM_2 = 2;
@@ -205,13 +205,14 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
     pixelMap->SetImageYUVInfo(info);
 }
 
-static void SetMimeTypeToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
+static void SetImageInfoToHdr(std::shared_ptr<PixelMap> &mainPixelMap, std::unique_ptr<PixelMap> &hdrPixelMap)
 {
     if (mainPixelMap != nullptr && hdrPixelMap != nullptr) {
         ImageInfo mainInfo;
         mainPixelMap->GetImageInfo(mainInfo);
         ImageInfo hdrInfo;
         hdrPixelMap->GetImageInfo(hdrInfo);
+        hdrInfo.size = mainInfo.size;
         hdrInfo.encodedFormat = mainInfo.encodedFormat;
         hdrPixelMap->SetImageInfo(hdrInfo, true);
     }
@@ -341,7 +342,12 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 {
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)) {
+    if (mainPixelMap_ == nullptr) {
+        IMAGE_LOGE("picture mainPixelMap_ is empty.");
+        return nullptr;
+    }
+    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) ||
+        mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
         IMAGE_LOGE("Unsupport HDR compose.");
         return nullptr;
     }
@@ -363,7 +369,7 @@ std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
     VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, *metadata);
 
     auto hdrPixelMap = ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
-    SetMimeTypeToHdr(mainPixelMap_, hdrPixelMap);
+    SetImageInfoToHdr(mainPixelMap_, hdrPixelMap);
     return hdrPixelMap;
 }
 
@@ -419,15 +425,15 @@ bool Picture::Marshalling(Parcel &data) const
         IMAGE_LOGE("Failed to write number of auxiliary pictures.");
         return false;
     }
-    
+
     for (const auto &auxiliaryPicture : auxiliaryPictures_) {
         AuxiliaryPictureType type =  auxiliaryPicture.first;
-        
+ 
         if (!data.WriteInt32(static_cast<int32_t>(type))) {
             IMAGE_LOGE("Failed to write auxiliary picture type.");
             return false;
         }
-        
+
         if (!auxiliaryPicture.second || !auxiliaryPicture.second->Marshalling(data)) {
             IMAGE_LOGE("Failed to marshal auxiliary picture of type %d.", static_cast<int>(type));
             return false;
@@ -457,7 +463,7 @@ bool Picture::Marshalling(Parcel &data) const
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -483,10 +489,10 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     }
     picture->SetMainPixel(pixelmapPtr);
     uint64_t numAuxiliaryPictures = parcel.ReadUint64();
-    if (numAuxiliaryPictures > MAX_NUM_AUXI_PIC) {
+    if (numAuxiliaryPictures > MAX_AUXILIARY_PICTURE_COUNT) {
         return nullptr;
     }
-    
+
     for (size_t i = NUM_0; i < numAuxiliaryPictures; ++i) {
         int32_t type = parcel.ReadInt32();
         std::shared_ptr<AuxiliaryPicture> auxPtr(AuxiliaryPicture::Unmarshalling(parcel));

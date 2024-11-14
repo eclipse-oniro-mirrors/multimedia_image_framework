@@ -20,7 +20,7 @@
  * @brief Provides APIs for obtaining picture data and information.
  *
  * @Syscap SystemCapability.Multimedia.Image.Core
- * @since 12
+ * @since 13
  */
 
 /**
@@ -29,8 +29,9 @@
  * @brief Declares the APIs that can access a picture.
  *
  * @library libpicture.so
+ * @kit ImageKit
  * @Syscap SystemCapability.Multimedia.Image.Core
- * @since 12
+ * @since 13
  */
 #ifndef INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PICTURE_NATIVE_H_
 #define INTERFACES_KITS_NATIVE_INCLUDE_IMAGE_PICTURE_NATIVE_H_
@@ -44,14 +45,14 @@ extern "C" {
 /**
  * @brief Define a Picture struct type, used for picture pointer controls.
  *
- * @since 12
+ * @since 13
  */
 struct OH_PictureNative;
 
 /**
  * @brief Define a Picture struct type, used for picture pointer controls.
  *
- * @since 12
+ * @since 13
  */
 typedef struct OH_PictureNative OH_PictureNative;
  
@@ -59,7 +60,7 @@ typedef struct OH_PictureNative OH_PictureNative;
  * @brief Define a AuxiliaryPicture struct type, used for auxiliary
  * picture pointer controls.
  *
- * @since 12
+ * @since 13
  */
 struct OH_AuxiliaryPictureNative;
 
@@ -67,7 +68,7 @@ struct OH_AuxiliaryPictureNative;
  * @brief Define a AuxiliaryPicture struct type, used for auxiliary
  * picture pointer controls.
  *
- * @since 12
+ * @since 13
  */
 typedef struct OH_AuxiliaryPictureNative OH_AuxiliaryPictureNative;
 
@@ -75,7 +76,7 @@ typedef struct OH_AuxiliaryPictureNative OH_AuxiliaryPictureNative;
  * @brief Define a AuxiliaryPictureInfo struct type, used for auxiliary
  * picture info controls.
  *
- * @since 12
+ * @since 13
  */
 struct OH_AuxiliaryPictureInfo;
 
@@ -83,14 +84,14 @@ struct OH_AuxiliaryPictureInfo;
  * @brief Define a AuxiliaryPictureInfo struct type, used for auxiliary
  * picture info controls.
  *
- * @since 12
+ * @since 13
  */
 typedef struct OH_AuxiliaryPictureInfo OH_AuxiliaryPictureInfo;
 
 /**
  * @brief Define a auxiliary picture type.
  *
- * @since 12
+ * @since 13
  */
 typedef enum {
     /*
@@ -123,7 +124,7 @@ typedef enum {
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} mainPixelmap is nullptr, or picture is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_CreatePicture(OH_PixelmapNative *mainPixelmap, OH_PictureNative **picture);
 
@@ -135,7 +136,7 @@ Image_ErrorCode OH_PictureNative_CreatePicture(OH_PixelmapNative *mainPixelmap, 
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or mainPixelmap is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetMainPixelmap(OH_PictureNative *picture, OH_PixelmapNative **mainPixelmap);
 
@@ -148,7 +149,7 @@ Image_ErrorCode OH_PictureNative_GetMainPixelmap(OH_PictureNative *picture, OH_P
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or hdrPixelmap is nullptr.
  *         {@link IMAGE_UNSUPPORTED_OPERATION} Unsupported operation, e.g. the picture does not has a gainmap
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *picture, OH_PixelmapNative **hdrPixelmap);
 
@@ -160,7 +161,7 @@ Image_ErrorCode OH_PictureNative_GetHdrComposedPixelmap(OH_PictureNative *pictur
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or gainmapPixelmap is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetGainmapPixelmap(OH_PictureNative *picture, OH_PixelmapNative **gainmapPixelmap);
 
@@ -173,7 +174,7 @@ Image_ErrorCode OH_PictureNative_GetGainmapPixelmap(OH_PictureNative *picture, O
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or auxiliaryPicture is nullptr, or the type is invalid.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type,
     OH_AuxiliaryPictureNative *auxiliaryPicture);
@@ -187,7 +188,7 @@ Image_ErrorCode OH_PictureNative_SetAuxiliaryPicture(OH_PictureNative *picture, 
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or auxiliaryPicture is nullptr, or the type is invalid.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, Image_AuxiliaryPictureType type,
     OH_AuxiliaryPictureNative **auxiliaryPicture);
@@ -202,7 +203,7 @@ Image_ErrorCode OH_PictureNative_GetAuxiliaryPicture(OH_PictureNative *picture, 
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_GetMetadata(OH_PictureNative *picture, Image_MetadataType metadataType,
     OH_PictureMetadata **metadata);
@@ -217,7 +218,7 @@ Image_ErrorCode OH_PictureNative_GetMetadata(OH_PictureNative *picture, Image_Me
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr, or metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_SetMetadata(OH_PictureNative *picture, Image_MetadataType metadataType,
     OH_PictureMetadata *metadata);
@@ -229,7 +230,7 @@ Image_ErrorCode OH_PictureNative_SetMetadata(OH_PictureNative *picture, Image_Me
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_PictureNative_Release(OH_PictureNative *picture);
 
@@ -245,7 +246,7 @@ Image_ErrorCode OH_PictureNative_Release(OH_PictureNative *picture);
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} data is nullptr, or dataLength is invalid, or size is nullptr, or the type
  *         is invalid, or auxiliaryPicture is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLength, Image_Size *size,
     Image_AuxiliaryPictureType type, OH_AuxiliaryPictureNative **auxiliaryPicture);
@@ -261,7 +262,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Create(uint8_t *data, size_t dataLengt
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or source is nullptr, or the bufferSize is invalid.
  *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
  *         {@link IMAGE_COPY_FAILED} memory copy failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative *auxiliaryPicture, uint8_t *source,
     size_t bufferSize);
@@ -278,7 +279,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_WritePixels(OH_AuxiliaryPictureNative 
  *         or the bufferSize is invalid.
  *         {@link IMAGE_ALLOC_FAILED} memory alloc failed.
  *         {@link IMAGE_COPY_FAILED} memory copy failed.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_ReadPixels(OH_AuxiliaryPictureNative *auxiliaryPicture, uint8_t *destination,
     size_t *bufferSize);
@@ -291,7 +292,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_ReadPixels(OH_AuxiliaryPictureNative *
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or type is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_GetType(OH_AuxiliaryPictureNative *auxiliaryPicture,
     Image_AuxiliaryPictureType *type);
@@ -304,7 +305,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetType(OH_AuxiliaryPictureNative *aux
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or info is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_GetInfo(OH_AuxiliaryPictureNative *auxiliaryPicture,
     OH_AuxiliaryPictureInfo **info);
@@ -317,7 +318,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetInfo(OH_AuxiliaryPictureNative *aux
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or info is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_SetInfo(OH_AuxiliaryPictureNative *auxiliaryPicture,
     OH_AuxiliaryPictureInfo *info);
@@ -333,7 +334,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetInfo(OH_AuxiliaryPictureNative *aux
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative *auxiliaryPicture,
     Image_MetadataType metadataType, OH_PictureMetadata **metadata);
@@ -349,7 +350,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_GetMetadata(OH_AuxiliaryPictureNative 
  *         {@link IMAGE_BAD_PARAMETER} auxiliaryPicture is nullptr, or metadata is nullptr.
  *         {@link IMAGE_UNSUPPORTED_METADATA} unsupported metadata type, or the metadata type does not match the
  *         auxiliary picture type.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative *auxiliaryPicture,
     Image_MetadataType metadataType, OH_PictureMetadata *metadata);
@@ -361,7 +362,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_SetMetadata(OH_AuxiliaryPictureNative 
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} picture is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureNative_Release(OH_AuxiliaryPictureNative *picture);
 
@@ -372,7 +373,7 @@ Image_ErrorCode OH_AuxiliaryPictureNative_Release(OH_AuxiliaryPictureNative *pic
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_Create(OH_AuxiliaryPictureInfo **info);
 
@@ -384,7 +385,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_Create(OH_AuxiliaryPictureInfo **info);
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or type is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_GetType(OH_AuxiliaryPictureInfo *info, Image_AuxiliaryPictureType *type);
 
@@ -396,7 +397,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_GetType(OH_AuxiliaryPictureInfo *info, I
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or type is invalid.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_SetType(OH_AuxiliaryPictureInfo *info, Image_AuxiliaryPictureType type);
 
@@ -408,7 +409,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetType(OH_AuxiliaryPictureInfo *info, I
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or size is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_GetSize(OH_AuxiliaryPictureInfo *info, Image_Size *size);
 
@@ -420,7 +421,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_GetSize(OH_AuxiliaryPictureInfo *info, I
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or size is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_SetSize(OH_AuxiliaryPictureInfo *info, Image_Size *size);
 
@@ -432,7 +433,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetSize(OH_AuxiliaryPictureInfo *info, I
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or rowStride is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_GetRowStride(OH_AuxiliaryPictureInfo *info, uint32_t *rowStride);
 
@@ -444,7 +445,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_GetRowStride(OH_AuxiliaryPictureInfo *in
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or rowStride is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_SetRowStride(OH_AuxiliaryPictureInfo *info, uint32_t rowStride);
 
@@ -456,7 +457,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetRowStride(OH_AuxiliaryPictureInfo *in
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr, or pixelFormat is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_GetPixelFormat(OH_AuxiliaryPictureInfo *info, PIXEL_FORMAT *pixelFormat);
 
@@ -468,7 +469,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_GetPixelFormat(OH_AuxiliaryPictureInfo *
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_SetPixelFormat(OH_AuxiliaryPictureInfo *info, PIXEL_FORMAT pixelFormat);
 
@@ -479,7 +480,7 @@ Image_ErrorCode OH_AuxiliaryPictureInfo_SetPixelFormat(OH_AuxiliaryPictureInfo *
  * @return Image functions result code.
  *         {@link IMAGE_SUCCESS} if the execution is successful.
  *         {@link IMAGE_BAD_PARAMETER} info is nullptr.
- * @since 12
+ * @since 13
  */
 Image_ErrorCode OH_AuxiliaryPictureInfo_Release(OH_AuxiliaryPictureInfo *info);
 

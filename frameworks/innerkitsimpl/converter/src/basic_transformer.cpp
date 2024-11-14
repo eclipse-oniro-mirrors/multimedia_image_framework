@@ -174,12 +174,15 @@ uint32_t BasicTransformer::TransformPixmap(const PixmapInfo &inPixmap, PixmapInf
     Size dstSize = inPixmap.imageInfo.size;
     GetDstDimension(inPixmap.imageInfo.size, dstSize);
     outPixmap.imageInfo.size = dstSize;
-    if (dstSize.width <= 0 || dstSize.height <= 0) {
+    if (dstSize.width <= 0 || dstSize.height <= 0 ||
+        ImageUtils::CheckMulOverflow(dstSize.width, dstSize.height, pixelBytes)) {
         IMAGE_LOGE("[BasicTransformer]buffer size is invalid.");
         return ERR_IMAGE_ALLOC_MEMORY_FAILED;
     }
 
-    uint64_t bufferSize = static_cast<uint64_t>(dstSize.width) * dstSize.height * pixelBytes;
+    uint64_t bufferSize = static_cast<uint64_t>(dstSize.width) *
+            static_cast<uint64_t>(dstSize.height) *
+            static_cast<uint64_t>(pixelBytes);
     if (bufferSize > PIXEL_MAP_MAX_RAM_SIZE) {
         IMAGE_LOGE("[BasicTransformer] buffer size:%{public}llu out of range.",
             static_cast<unsigned long long>(bufferSize));
