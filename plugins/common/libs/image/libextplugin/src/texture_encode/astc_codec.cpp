@@ -415,7 +415,7 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
         ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
         (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
     if (skipSutEnc) {
-        IMAGE_LOGD("astc is not suit to be compressed to sut!",);
+        IMAGE_LOGD("astc is not suit to be compressed to sut!");
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
