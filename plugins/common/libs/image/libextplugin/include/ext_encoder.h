@@ -76,8 +76,16 @@ private:
     uint32_t EncodeEditScenePicture();
     void CheckJpegAuxiliaryTagName();
     uint32_t EncodeJpegPicture(SkWStream& skStream);
+    uint32_t EncodeJpegPictureDualVividInner(SkWStream& skStream, std::shared_ptr<PixelMap>& mainPixelmap,
+        std::shared_ptr<PixelMap>& gainmapPixelmap);
     uint32_t EncodeJpegPictureDualVivid(SkWStream& skStream);
     uint32_t EncodeJpegPictureSdr(SkWStream& skStream);
+    void EncodeJpegAuxiliaryPictures(SkWStream& skStream);
+    uint32_t WriteJpegCodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
+    uint32_t SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& skData);
+    uint32_t WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream);
+    void WriteJpegAuxiliarySizeAndTag(uint32_t size, std::shared_ptr<AuxiliaryPicture>& auxPicture,
+        SkWStream& skStream);
     uint32_t EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInfo mainInfo, bool sdrIsSRGB);
     sk_sp<SkData> GetImageEncodeData(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info, bool needExif);
     uint32_t EncodeImageBySurfaceBuffer(sptr<SurfaceBuffer>& surfaceBuffer, SkImageInfo info,
@@ -104,6 +112,13 @@ private:
         std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
     uint32_t AssembleHeifHdrPicture(
         sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifAuxiliaryNoncodingMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
+        AuxiliaryPictureType auxType);
+    uint32_t AssembleHeifUnrefocusMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifFragmentMap(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs);
+    uint32_t AssembleHeifAuxiliaryPicture(std::vector<HDI::Codec::Image::V2_0::ImageItem>& inputImgs,
+        std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    HDI::Codec::Image::V2_0::ImageItem InitAuxiliaryImageItem(uint32_t id, std::string itemName);
 #endif
     bool GetStaticMetadata(Media::HdrMetadata& metadata, HDI::Codec::Image::V2_0::MasteringDisplayColourVolume& color,
         HDI::Codec::Image::V2_0::ContentLightLevel& light);
@@ -113,6 +128,8 @@ private:
     void GetColourInfo(ColorManager::ColorSpaceName color, HDI::Codec::Image::V2_0::ColourInfo& info);
     bool AssembleIT35SharedBuffer(Media::HdrMetadata metadata, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
     bool AssembleICCImageProperty(sk_sp<SkData>& iccProfile, HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
+    bool FillPixelSharedBuffer(sptr<SurfaceBuffer> sbBuffer, uint32_t capacity,
+        HDI::Codec::Image::V2_0::SharedBuffer& outBuffer);
     bool FillNclxColorProperty(std::shared_ptr<HDI::Codec::Image::V2_0::ImageItem>& item, size_t& offset,
         HDI::Codec::Image::V2_0::ColourInfo& colorInfo);
     bool AssembleOutputSharedBuffer(HDI::Codec::Image::V2_0::SharedBuffer& outBuffer,
@@ -123,6 +140,7 @@ private:
         std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
     bool AssembleExifMetaItem(std::vector<HDI::Codec::Image::V2_0::MetaItem>& metaItems);
     void AssembleExifRefItem(std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
+    void AssembleAuxiliaryRefItem(AuxiliaryPictureType type, std::vector<HDI::Codec::Image::V2_0::ItemRef>& refs);
 #endif
     uint32_t PixelmapEncode(ExtWStream& wStream);
     uint32_t EncodeHeifByPixelmap(Media::PixelMap* pixelmap, const PlEncodeOptions& opts);

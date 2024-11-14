@@ -305,7 +305,14 @@ bool PostProc::ProcessScanlineFilter(ScanlineFilter &scanlineFilter, const Rect 
 uint32_t PostProc::CheckScanlineFilter(const Rect &cropRect, ImageInfo &dstImageInfo, PixelMap &pixelMap,
                                        int32_t pixelBytes, ScanlineFilter &scanlineFilter)
 {
-    uint64_t bufferSize = static_cast<uint64_t>(dstImageInfo.size.width) * dstImageInfo.size.height * pixelBytes;
+    if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height, pixelBytes)) {
+        IMAGE_LOGE("[PostProc]size is too large, width:%{public}d, height:%{public}d",
+                   dstImageInfo.size.width,  dstImageInfo.size.height);
+        return ERR_IMAGE_CROP;
+    }
+    uint64_t bufferSize = static_cast<uint64_t>(dstImageInfo.size.width) *
+            static_cast<uint64_t>(dstImageInfo.size.height) *
+            static_cast<uint64_t>(pixelBytes);
     uint8_t *resultData = nullptr;
     int fd = 0;
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {
@@ -428,7 +435,9 @@ uint32_t PostProc::AllocBuffer(ImageInfo imageInfo, uint8_t **resultData, uint64
             imageInfo.size.width, imageInfo.size.height);
         return ERR_IMAGE_CROP;
     }
-    bufferSize = static_cast<uint64_t>(imageInfo.size.width) * imageInfo.size.height * pixelBytes;
+    bufferSize = static_cast<uint64_t>(imageInfo.size.width) *
+            static_cast<uint64_t>(imageInfo.size.height) *
+            static_cast<uint64_t>(pixelBytes);
     IMAGE_LOGD("[PostProc]size.width:%{public}d, size.height:%{public}d, bufferSize:%{public}lld",
         imageInfo.size.width, imageInfo.size.height, static_cast<long long>(bufferSize));
     if (decodeOpts_.allocatorType == AllocatorType::SHARE_MEM_ALLOC) {

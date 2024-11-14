@@ -188,12 +188,18 @@ bool HeifHardwareDecoder::ConfigureDecoder(const GridInfo& gridInfo, sptr<Surfac
     format.SetValue(ImageCodecDescriptionKey::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
     format.SetValue(ImageCodecDescriptionKey::PIXEL_FORMAT, output->GetFormat());
     format.SetValue(ImageCodecDescriptionKey::ENABLE_HEIF_GRID, gridInfo.enableGrid);
-    if (!gridInfo.enableGrid) {
-        static constexpr uint32_t INPUT_BUFFER_CNT_WHEN_NO_GRID = 3;
-        format.SetValue(ImageCodecDescriptionKey::INPUT_BUFFER_COUNT, INPUT_BUFFER_CNT_WHEN_NO_GRID);
+    if (!gridInfo.enableGrid || packedInputFlag_) {
+        static constexpr uint32_t INPUT_BUFFER_CNT = 3;
+        format.SetValue(ImageCodecDescriptionKey::INPUT_BUFFER_COUNT, INPUT_BUFFER_CNT);
     }
-    static constexpr uint32_t OUTPUT_BUFFER_CNT = 1;
-    format.SetValue(ImageCodecDescriptionKey::OUTPUT_BUFFER_COUNT, OUTPUT_BUFFER_CNT);
+    if (!gridInfo.enableGrid || !packedInputFlag_) {
+        static constexpr uint32_t OUTPUT_BUFFER_CNT = 1;
+        format.SetValue(ImageCodecDescriptionKey::OUTPUT_BUFFER_COUNT, OUTPUT_BUFFER_CNT);
+    }
+    if (packedInputFlag_) {
+        static constexpr char HEIF_HW_DECODER_NAME[] = "heif_hw_decoder";
+        format.SetValue(ImageCodecDescriptionKey::PROCESS_NAME, string(HEIF_HW_DECODER_NAME));
+    }
     int32_t ret = heifDecoderImpl_->Configure(format);
     if (ret != IC_ERR_OK) {
         LOGE("failed to configure decoder, err=%{public}d", ret);
@@ -284,6 +290,20 @@ void HeifHardwareDecoder::DumpInput(const GridInfo& gridInfo, const std::vector<
     DumpSingleInput("data", gridInfo, inputs);
 }
 
+void HeifHardwareDecoder::GetPackedInputFlag()
+{
+    packedInputFlag_ = false;
+    if (heifDecoderImpl_ != nullptr) {
+        (void)heifDecoderImpl_->GetPackedInputFlag(packedInputFlag_);
+    }
+}
+
+bool HeifHardwareDecoder::IsPackedInputSupported()
+{
+    GetPackedInputFlag();
+    return packedInputFlag_;
+}
+
 uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std::vector<uint8_t>>& inputs,
                                        sptr<SurfaceBuffer>& output)
 {
@@ -303,6 +323,7 @@ uint32_t HeifHardwareDecoder::DoDecode(const GridInfo& gridInfo, std::vector<std
     }
     IF_TRUE_RETURN_VAL(!IsHardwareDecodeSupported(gridInfo), Media::ERR_IMAGE_HW_DECODE_UNSUPPORT);
     IF_TRUE_RETURN_VAL(!SetCallbackForDecoder(), Media::ERR_IMAGE_DECODE_FAILED);
+    GetPackedInputFlag();
     IF_TRUE_RETURN_VAL(!ConfigureDecoder(gridInfo, output), Media::ERR_IMAGE_DECODE_FAILED);
     IF_TRUE_RETURN_VAL(!SetOutputBuffer(gridInfo, output), Media::ERR_IMAGE_DECODE_FAILED);
     Reset();

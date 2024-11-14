@@ -91,6 +91,9 @@ private:
                        std::shared_ptr<HeifImage> &image, GridInfo &gridInfo,
                        sptr<SurfaceBuffer> *outBuffer, bool isPrimary);
 
+    void PreparePackedInput(HeifHardwareDecoder *hwDecoder, std::vector<std::shared_ptr<HeifImage>> tileImages,
+        std::vector<std::vector<uint8_t>> &packedInput, size_t gridCount);
+
     bool HwDecodeGrids(HeifHardwareDecoder *hwDecoder, std::shared_ptr<HeifImage> &image,
                        GridInfo &gridInfo, sptr<SurfaceBuffer> &hwBuffer);
 
@@ -133,7 +136,7 @@ private:
     Media::PixelFormat outPixelFormat_;
     HeifFrameInfo imageInfo_{};
 
-    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0};
+    GridInfo gridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
     uint8_t *srcMemory_ = nullptr;
     uint8_t *dstMemory_;
     size_t dstRowStride_;
@@ -146,7 +149,7 @@ private:
 
     std::shared_ptr<HeifImage> auxiliaryImage_ = nullptr;
     HeifFrameInfo auxiliaryImageInfo_{};
-    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0};
+    GridInfo auxiliaryGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
     uint8_t* auxiliaryDstMemory_;
     size_t auxiliaryDstRowStride_;
     size_t auxiliaryDstMemorySize_;
@@ -154,7 +157,7 @@ private:
     HeifFrameInfo tmapInfo_{};
     std::string errMsg_;
 
-    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0};
+    GridInfo gainmapGridInfo_ = {0, 0, false, 0, 0, 0, 0, 1};
 };
 } // namespace ImagePlugin
 } // namespace OHOS

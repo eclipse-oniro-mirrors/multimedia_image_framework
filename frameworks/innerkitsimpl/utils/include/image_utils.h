@@ -73,9 +73,12 @@ public:
     static void FlushContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static void InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& context);
     static bool IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType auxiliaryPictureType);
+    static bool IsAuxiliaryPictureEncoded(AuxiliaryPictureType type);
     static bool IsMetadataTypeSupported(MetadataType metadataType);
     static const std::set<AuxiliaryPictureType> GetAllAuxiliaryPictureType();
     static size_t GetAstcBytesCount(const ImageInfo& imageInfo);
+    static bool StrToUint32(const std::string& str, uint32_t& value);
+    static bool IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue);
 private:
     static uint32_t RegisterPluginServer();
     static uint32_t SaveDataToFile(const std::string& fileName, const char* data, const size_t& totalSize);

@@ -268,6 +268,19 @@ int32_t ImageDecoder::OnSetOutputBuffer(sptr<SurfaceBuffer> output)
     return IC_ERR_OK;
 }
 
+bool ImageDecoder::OnGetPackedInputFlag()
+{
+    OMX_CONFIG_BOOLEANTYPE packedInputFlag;
+    InitOMXParam(packedInputFlag);
+    if (GetParameter(OMX_IndexParamSupportPackInput, packedInputFlag)) {
+        isPackedInputSupported_ = static_cast<bool>(packedInputFlag.bEnabled);
+    } else {
+        HLOGW("get packed input flag failed, use false as default");
+        isPackedInputSupported_ = false;
+    }
+    return isPackedInputSupported_;
+}
+
 bool ImageDecoder::ReadyToStart()
 {
     if (callback_ == nullptr || outputFormat_ == nullptr || inputFormat_ == nullptr) {

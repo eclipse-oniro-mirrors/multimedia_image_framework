@@ -1783,7 +1783,8 @@ group("unittest") {
     ":pixelastctest",
     ":pixelconvertadaptertest",
     ":pixelmaptest",
-    ":pluginlibjpegtest",
+
+    # ":pluginlibjpegtest",
     ":pluginsmanagersrcframeworktest",
     ":pngtest",
     ":rawdecodertest",

@@ -20,6 +20,7 @@
 #include "box/item_property_transform_box.h"
 #include "securec.h"
 
+#include <algorithm>
 #include <limits>
 #include <cstring>
 #include <set>
@@ -205,6 +206,24 @@ heif_error HeifParser::GetAllProperties(heif_item_id itemId, std::vector<std::sh
         return heif_error_no_ipma;
     }
     return ipcoBox_->GetProperties(itemId, ipmaBox_, properties);
+}
+
+heif_error HeifParser::GetGridLength(heif_item_id itemId, size_t &length)
+{
+    if (!HasItemId(itemId)) {
+        return heif_error_item_not_found;
+    }
+    auto items = ilocBox_->GetItems();
+    const HeifIlocBox::Item *ilocItem = nullptr;
+    auto iter = std::find_if(items.begin(), items.end(), [&itemId](const auto &item) {
+        return item.itemId == itemId;
+    });
+    if (iter != items.end()) {
+        ilocItem = &*iter;
+    } else {
+        return heif_error_item_data_not_found;
+    }
+    return ilocBox_->GetIlocDataLength(*ilocItem, length);
 }
 
 heif_error HeifParser::GetItemData(heif_item_id itemId, std::vector<uint8_t> *out, heif_header_option option) const
@@ -475,6 +494,11 @@ void HeifParser::ExtractImageProperties(std::shared_ptr<HeifImage> &image)
         image->SetLumaBitNum(hvccConfig.bitDepthLuma);
         image->SetChromaBitNum(hvccConfig.bitDepthChroma);
         image->SetDefaultPixelFormat((HeifPixelFormat) hvccConfig.chromaFormat);
+
+        auto nalArrays = hvcc->GetNalArrays();
+        hvcc->ParserHvccColorRangeFlag(nalArrays);
+        auto spsConfig = hvcc->GetSpsConfig();
+        image->SetColorRangeFlag(static_cast<int>(spsConfig.videoRangeFlag));
     }
     ExtractDisplayData(image, itemId);
 }
@@ -911,6 +935,9 @@ uint8_t HeifParser::GetConstructMethod(const heif_item_id &id)
 void HeifParser::SetTiffOffset()
 {
     if (tiffOffset_ != 0) {
+        return;
+    }
+    if (GetPrimaryImage() == nullptr) {
         return;
     }
     auto metadataList = GetPrimaryImage()->GetAllMetadata();

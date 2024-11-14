@@ -15,6 +15,7 @@
 
 #include <cinttypes>
 #include "image_log.h"
+#include "image_utils.h"
 #include "media_errors.h"
 #include "native_image.h"
 
@@ -122,8 +123,12 @@ int32_t NativeImage::SplitYUV422SPComponent()
 
     struct YUVData yuv;
     uint64_t uvStride = static_cast<uint64_t>((width + NUM_1) / NUM_2);
-    yuv.ySize = static_cast<uint64_t>(width * height);
-    yuv.uvSize = static_cast<uint64_t>(height * uvStride);
+    if (ImageUtils::CheckMulOverflow(width, height)) {
+        IMAGE_LOGE("Invalid width %{public}" PRId32 " height %{public}" PRId32, width, height);
+        return ERR_MEDIA_DATA_UNSUPPORT;
+    }
+    yuv.ySize = static_cast<uint64_t>(width) * static_cast<uint64_t>(height);
+    yuv.uvSize = static_cast<uint64_t>(height) * uvStride;
     if (surfaceSize < (yuv.ySize + yuv.uvSize * NUM_2)) {
         IMAGE_LOGE("S size %{public}" PRIu64 " < y plane %{public}" PRIu64
             " + uv plane %{public}" PRIu64, surfaceSize, yuv.ySize, yuv.uvSize * NUM_2);

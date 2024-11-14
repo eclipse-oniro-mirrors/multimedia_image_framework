@@ -197,7 +197,7 @@ napi_value ImageNapi::Create(napi_env env, std::shared_ptr<NativeImage> nativeIm
 
     IMAGE_FUNCTION_IN();
     if (env == nullptr || nativeImage == nullptr) {
-        IMAGE_ERR("Input args is invalid %{public}p vs %{public}p", env, nativeImage.get());
+        IMAGE_ERR("Input args is invalid");
         return nullptr;
     }
     if (napi_get_reference_value(env, sConstructor_, &constructor) == napi_ok && constructor != nullptr) {
@@ -241,7 +241,10 @@ static bool JsCreateWork(napi_env env, const char* name, AsyncExecCallback exec,
     AsyncCompleteCallback complete, ImageAsyncContext* ctx)
 {
     napi_value resource = nullptr;
-    napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &resource);
+    if (napi_create_string_utf8(env, name, NAPI_AUTO_LENGTH, &resource) != napi_ok) {
+        IMAGE_ERR("napi_create_string_utf8 failed");
+        return false;
+    }
     napi_status status = napi_create_async_work(
         env, nullptr, resource, reinterpret_cast<napi_async_execute_callback>(exec),
         reinterpret_cast<napi_async_complete_callback>(complete), static_cast<void *>(ctx), &(ctx->work));
@@ -308,7 +311,9 @@ static inline void ProcessCallback(napi_env env, napi_ref ref, napi_value* resul
     napi_value retVal;
     napi_value callback;
     napi_get_reference_value(env, ref, &callback);
-    napi_call_function(env, nullptr, callback, NUM2, result, &retVal);
+    if (callback != nullptr) {
+        napi_call_function(env, nullptr, callback, NUM2, result, &retVal);
+    }
     napi_delete_reference(env, ref);
 }
 static void CommonCallbackRoutine(napi_env env, ImageAsyncContext* &context, const napi_value &valueParam)

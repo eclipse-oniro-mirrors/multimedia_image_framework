@@ -15,6 +15,7 @@
 
 #include "image_source_napi.h"
 #include <fcntl.h>
+#include "image_common.h"
 #include "image_log.h"
 #include "image_napi_utils.h"
 #include "media_errors.h"
@@ -24,6 +25,7 @@
 #include "exif_metadata_formatter.h"
 #include "image_dfx.h"
 #include "color_space_object_convertor.h"
+#include "image_common.h"
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_IMAGE
@@ -420,7 +422,10 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         napi_delete_reference(env, context->callbackRef);
     }
 
-    napi_delete_async_work(env, context->work);
+    if (context != nullptr) {
+        delete context;
+        context = nullptr;
+    }
 
     delete context;
     context = nullptr;
@@ -2041,7 +2046,9 @@ static std::unique_ptr<ImageSourceAsyncContext> UnwrapContextForModify(napi_env 
         context->keyStr = GetStringArgument(env, argValue[NUM_0]);
     } else if (ImageNapiUtils::getType(env, argValue[NUM_0]) == napi_object) {
         context->kVStrArray = GetRecordArgument(env, argValue[NUM_0]);
-        if (context->kVStrArray.size() == 0) return nullptr;
+        if (context->kVStrArray.size() == 0) {
+                        return nullptr;
+        }
         context->isBatch = true;
     } else {
         IMAGE_LOGE("arg 0 type mismatch");
@@ -2815,7 +2822,7 @@ static void CreatePictureExecute(napi_env env, void *data)
 
     if (context->status != SUCCESS) {
         context->errMsg = "Create Picture error";
-        IMAGE_LOGE("Create Picture error");
+        ImageNapiUtils::ThrowExceptionError(env, IMAGE_DECODE_FAILED, "Create Picture error.");
     }
     IMAGE_LOGD("CreatePictureExecute OUT");
 }
@@ -2903,11 +2910,9 @@ napi_value ImageSourceNapi::CreatePicture(napi_env env, napi_callback_info info)
         }
     } else if (argCount == NUM_1) {
         if (!ParseDecodingOptionsForPicture(env, argValue[NUM_0], &(asyncContext->decodingOptsForPicture))) {
-            IMAGE_LOGE("DecodingOptionsForPicture mismatch");
+            return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+                "DecodingOptionsForPicture mismatch");
         }
-    } else {
-        IMAGE_LOGE("argCount mismatch");
-        return result;
     }
 
     napi_create_promise(env, &(asyncContext->deferred), &result);

@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 using namespace std;
 using namespace ImagePlugin;
+const uint32_t MAX_SOURCE_SIZE = 1024 * 1024 * 1024; 
 
 IncrementalSourceStream::IncrementalSourceStream(IncrementalMode mode)
     : incrementalMode_(mode), isFinalize_(false), dataSize_(0), dataOffset_(0)
@@ -130,7 +131,7 @@ bool IncrementalSourceStream::Seek(uint32_t position)
 
 uint32_t IncrementalSourceStream::UpdateData(const uint8_t *data, uint32_t size, bool isCompleted)
 {
-    if (data == nullptr) {
+    if (data == nullptr || size > MAX_SOURCE_SIZE) {
         IMAGE_LOGE("[IncrementalSourceStream]input the parameter exception.");
         return ERR_IMAGE_DATA_ABNORMAL;
     }

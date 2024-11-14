@@ -63,12 +63,14 @@ public:
     uint32_t ModifyImageProperty(uint32_t index, const std::string &key, const std::string &value,
         uint8_t *data, uint32_t size) override;
     uint32_t GetFilterArea(const int &privacyType, std::vector<std::pair<uint32_t, uint32_t>> &ranges) override;
+
+    uint32_t GetHeifParseErr() override;
+
     Media::ImageHdrType CheckHdrType() override;
     uint32_t GetGainMapOffset() override;
     Media::HdrMetadata GetHdrMetadata(Media::ImageHdrType type) override;
     bool DecodeHeifGainMap(DecodeContext &context) override;
     bool GetHeifHdrColorSpace(ColorManager::ColorSpaceName &gainmap, ColorManager::ColorSpaceName &hdr) override;
-    uint32_t GetHeifParseErr() override;
     bool DecodeHeifAuxiliaryMap(DecodeContext& context, Media::AuxiliaryPictureType type) override;
     bool CheckAuxiliaryMap(Media::AuxiliaryPictureType type) override;
     bool GetHeifFragmentMetadata(Media::Rect& metadata) override;

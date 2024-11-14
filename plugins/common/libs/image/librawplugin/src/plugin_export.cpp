@@ -44,6 +44,10 @@ OHOS::MultimediaPlugin::PluginClassBase *PluginExternalCreate(const string &clas
     IMAGE_LOGD("PluginExternalCreate: create object for package: %{public}s, class: %{public}s.",
                  PACKAGE_NAME.c_str(), className.c_str());
 
+    if (implClassMap.empty()) {
+        IMAGE_LOGE("implClassMap is empty");
+        return nullptr;
+    }
     auto iter = implClassMap.find(className);
     if (iter == implClassMap.end()) {
         IMAGE_LOGE("PluginExternalCreate: failed to find class: %{public}s, in package: %{public}s.",

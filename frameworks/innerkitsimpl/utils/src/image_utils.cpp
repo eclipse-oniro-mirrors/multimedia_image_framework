@@ -25,6 +25,7 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
+#include <charconv>
 
 #include "__config"
 #include "image_log.h"
@@ -206,9 +207,9 @@ int32_t ImageUtils::GetRowDataSizeByPixelFormat(const int32_t &width, const Pixe
         default:
             rowDataSize = pixelBytes * uWidth;
     }
-    if (rowDataSize > INT_MAX) {
+    if (rowDataSize > INT32_MAX) {
         IMAGE_LOGE("GetRowDataSizeByPixelFormat failed: rowDataSize overflowed");
-        return 0;
+        return -1;
     }
     return static_cast<int32_t>(rowDataSize);
 }
@@ -306,7 +307,12 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV21:
         case PixelFormat::NV12:
         case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010:
+        case PixelFormat::YCRCB_P010: {
+            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+                return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+            }
+            break;
+        }
         case PixelFormat::CMYK:
         default: {
             IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
@@ -354,7 +360,7 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t bytesPerPixel)
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rowSize = static_cast<int64_t>(width) * bytesPerPixel;
+    int32_t rowSize = width * bytesPerPixel;
     if ((rowSize / width) != bytesPerPixel) {
         IMAGE_LOGE("width * bytesPerPixel overflow!");
         return true;
@@ -368,12 +374,12 @@ bool ImageUtils::CheckMulOverflow(int32_t width, int32_t height, int32_t bytesPe
         IMAGE_LOGE("param is 0");
         return true;
     }
-    int64_t rectSize = static_cast<int64_t>(width) * height;
+    int32_t rectSize = width * height;
     if ((rectSize / width) != height) {
         IMAGE_LOGE("width * height overflow!");
         return true;
     }
-    int64_t bufferSize = rectSize * bytesPerPixel;
+    int32_t bufferSize = rectSize * bytesPerPixel;
     if ((bufferSize / bytesPerPixel) != rectSize) {
         IMAGE_LOGE("bytesPerPixel overflow!");
         return true;
@@ -838,6 +844,12 @@ bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
     return (auxTypes.find(type) != auxTypes.end());
 }
 
+bool ImageUtils::IsAuxiliaryPictureEncoded(AuxiliaryPictureType type)
+{
+    return AuxiliaryPictureType::GAINMAP == type || AuxiliaryPictureType::UNREFOCUS_MAP == type ||
+        AuxiliaryPictureType::FRAGMENT_MAP == type;
+}
+
 bool ImageUtils::IsMetadataTypeSupported(MetadataType metadataType)
 {
     if (metadataType == MetadataType::EXIF || metadataType == MetadataType::FRAGMENT) {
@@ -887,6 +899,18 @@ size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
             ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
     }
     return astcBytesCount;
+}
+
+bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)
+{
+    auto [ptr, errCode] = std::from_chars(str.data(), str.data() + str.size(), value);
+    bool ret = errCode == std::errc{} && (ptr == str.data() + str.size());
+    return ret;
+}
+
+bool ImageUtils::IsInRange(uint32_t value, uint32_t minValue, uint32_t maxValue)
+{
+    return (value >= minValue) && (value <= maxValue);
 }
 } // namespace Media
 } // namespace OHOS
