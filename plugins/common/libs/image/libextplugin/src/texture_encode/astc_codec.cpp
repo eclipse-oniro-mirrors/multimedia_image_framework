@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 
+#include <charconv>
+#include <dlfcn.h>
+
 #include "astc_codec.h"
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
 #include "image_compressor.h"
@@ -21,8 +24,6 @@
 #include "image_system_properties.h"
 #include "securec.h"
 #include "media_errors.h"
-
-#include <dlfcn.h>
 
 #undef LOG_DOMAIN
 #define LOG_DOMAIN LOG_TAG_DOMAIN_ID_PLUGIN
@@ -87,16 +88,10 @@ SutEncSoManager::SutEncSoManager()
 
 SutEncSoManager::~SutEncSoManager()
 {
-    if (!sutEncSoOpened_ || textureEncSoHandle_ == nullptr) {
-        IMAGE_LOGD("astcenc sut enc so is not be opened when dlclose!");
-        return;
-    }
-    if (dlclose(textureEncSoHandle_) != 0) {
-        IMAGE_LOGE("astcenc dlcose failed: %{public}s!", g_textureSuperEncSo.c_str());
-        return;
-    } else {
-        IMAGE_LOGD("astcenc dlcose success: %{public}s!", g_textureSuperEncSo.c_str());
-        return;
+    bool sutEncHasBeenOpen = sutEncSoOpened_ && (textureEncSoHandle_ != nullptr);
+    if (sutEncHasBeenOpen) {
+        int ret = dlclose(textureEncSoHandle_);
+        IMAGE_LOGD("astcenc dlcose ret: %{public}d %{public}s!", ret, g_textureSuperEncSo.c_str());
     }
 }
 
@@ -142,10 +137,6 @@ uint32_t AstcCodec::SetAstcEncode(OutputDataStream* outputStream, PlEncodeOption
 // test ASTCEncoder
 uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions &encodeParams)
 {
-    if (header == nullptr) {
-        IMAGE_LOGE("header is nullptr");
-        return ERROR;
-    }
     uint8_t *tmp = header;
     *tmp++ = ASTC_MAGIC_ID & ASTC_MASK;
     *tmp++ = (ASTC_MAGIC_ID >> ASTC_NUM_8) & ASTC_MASK;
@@ -168,7 +159,8 @@ uint32_t GenAstcHeader(uint8_t *header, astcenc_image img, TextureEncodeOptions 
 
 uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
 {
-    if ((work == nullptr) || (option == nullptr)) {
+    bool invalidInput = (work == nullptr) || (option == nullptr);
+    if (invalidInput) {
         IMAGE_LOGE("astc input work or option is nullptr.");
         return ERROR;
     }
@@ -180,14 +172,8 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
-    if (status == ASTCENC_ERR_BAD_BLOCK_SIZE) {
-        IMAGE_LOGE("ERROR: block size is invalid");
-        return ERROR;
-    } else if (status == ASTCENC_ERR_BAD_CPU_FLOAT) {
-        IMAGE_LOGE("ERROR: astcenc must not be compiled with fast-math");
-        return ERROR;
-    } else if (status != ASTCENC_SUCCESS) {
-        IMAGE_LOGE("ERROR: config failed");
+    if (status != ASTCENC_SUCCESS) {
+        IMAGE_LOGE("ERROR: astcenc_config_init failed, status %{public}d", status);
         return ERROR;
     }
     work->config.privateProfile = option->privateProfile_;
@@ -214,8 +200,11 @@ void extractDimensions(std::string &format, TextureEncodeOptions &param)
             std::string widthStr = dimensions.substr(0, starPos);
             std::string heightStr = dimensions.substr(starPos + 1);
 
-            param.blockX_ = static_cast<uint8_t>(std::stoi(widthStr));
-            param.blockY_ = static_cast<uint8_t>(std::stoi(heightStr));
+            auto ret_x = std::from_chars(widthStr.data(), widthStr.data() + widthStr.size(), param.blockX_);
+            auto ret_y = std::from_chars(heightStr.data(), heightStr.data() + heightStr.size(), param.blockY_);
+            if (!(ret_x.ec == std::errc() && ret_y.ec == std::errc())) {
+                IMAGE_LOGE("Failed to convert string to number");
+            }
         }
     }
 }
@@ -387,11 +376,12 @@ static QualityProfile GetAstcQuality(int32_t quality)
 }
 
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
-static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
+bool AstcCodec::TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
     uint8_t *buffer, const std::string &clBinPath)
 {
     ClAstcHandle *astcClEncoder = nullptr;
-    if ((inData == nullptr) || (buffer == nullptr)) {
+    bool invalidPara = (inData == nullptr) || (buffer == nullptr);
+    if (invalidPara) {
         IMAGE_LOGE("astc Please check TryAstcEncBasedOnCl input!");
         return false;
     }
@@ -419,16 +409,13 @@ static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
 #endif
 
 #ifdef SUT_ENCODE_ENABLE
-static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
+bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
-    if ((param.sutProfile == SutProfile::SKIP_SUT) ||
-        ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE))) {
-        IMAGE_LOGD("astc sutProfile %{public}d or the astc profile could not be superCompress!", param.sutProfile);
-        param.sutProfile = SutProfile::SKIP_SUT;
-        return true;
-    }
-    if (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM) {
-        IMAGE_LOGD("astc sut enc only support 4x4!");
+    bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
+        ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
+        (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
+    if (skipSutEnc) {
+        IMAGE_LOGD("astc is not suit to be compressed to sut!",);
         param.sutProfile = SutProfile::SKIP_SUT;
         return true;
     }
@@ -438,7 +425,8 @@ static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBu
         IMAGE_LOGE("astc sutBuffer malloc failed!");
         return false;
     }
-    if (!g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr) {
+    bool invalidSutEnc = !g_sutEncSoManager.LoadSutEncSo() || g_sutEncSoManager.sutEncSoEncFunc_ == nullptr;
+    if (invalidSutEnc) {
         IMAGE_LOGE("sut enc so dlopen failed or sutEncSoEncFunc_ is nullptr!");
         free(sutBuffer);
         return false;
@@ -495,6 +483,7 @@ uint32_t AstcCodec::AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQ
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
+    param.enableQualityCheck = enableQualityCheck;
     if (!AstcSoftwareEncodeCore(param, pixmapIn, outBuffer)) {
         IMAGE_LOGE("AstcSoftwareEncodeCore failed");
         return ERROR;
@@ -507,16 +496,13 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
     bool openClEnc = param.width_ >= WIDTH_CL_THRESHOLD && param.height_ >= HEIGHT_CL_THRESHOLD &&
         param.privateProfile_ == QualityProfile::HIGH_SPEED_PROFILE;
-    if (openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
-        (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM)) { // HardWare only support 4x4 now
+    bool enableClEnc = openClEnc && ImageSystemProperties::GetAstcHardWareEncodeEnabled() &&
+        (param.blockX_ == DEFAULT_DIM) && (param.blockY_ == DEFAULT_DIM); // HardWare only support 4x4 now
+    if (enableClEnc) {
         IMAGE_LOGI("astc hardware encode begin");
         std::string clBinPath = "/sys_prod/etc/graphic/AstcEncShader_ALN-AL00.bin";
-        if (CheckClBinIsExist(clBinPath) && TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath)) {
-            param.hardwareFlag = true;
-            IMAGE_LOGI("astc hardware encode success!");
-        } else {
-            IMAGE_LOGI("astc AstcEncShader binany file is not exist, otherwise hardware encode failed!");
-        }
+        param.hardwareFlag = CheckClBinIsExist(clBinPath) &&
+            AstcCodec::TryAstcEncBasedOnCl(param, pixmapIn, astcBuffer, clBinPath);
     }
 #endif
     if (!param.hardwareFlag) {

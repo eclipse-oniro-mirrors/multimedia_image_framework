@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Huawei Device Co., Ltd.
+ * Copyright (C) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,13 @@ public:
     uint32_t AstcSoftwareEncode(TextureEncodeOptions &param, bool enableQualityCheck,
         int32_t blocksNum, uint8_t *outBuffer, int32_t outSize);
     static bool AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8_t *astcBuffer);
+#ifdef ENABLE_ASTC_ENCODE_BASED_GPU
+    static bool TryAstcEncBasedOnCl(TextureEncodeOptions &param, uint8_t *inData,
+        uint8_t *buffer, const std::string &clBinPath);
+#endif
+#ifdef SUT_ENCODE_ENABLE
+    static bool TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer);
+#endif
     bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
     void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
     void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
