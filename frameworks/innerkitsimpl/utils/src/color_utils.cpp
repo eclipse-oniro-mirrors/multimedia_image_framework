@@ -190,33 +190,5 @@ void ColorUtils::ColorSpaceGetCicp(ColorManager::ColorSpaceName name, uint16_t& 
     range = GetRangeFlag(name);
 }
 
-#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-HDI::Display::Graphic::Common::V1_0::CM_ColorSpaceType ColorUtils::ConvertToCMColor(ColorManager::ColorSpaceName name)
-{
-    switch (name) {
-        case ColorManager::ColorSpaceName::SRGB :
-            return HDI::Display::Graphic::Common::V1_0::CM_SRGB_FULL;
-        case ColorManager::ColorSpaceName::SRGB_LIMIT :
-            return HDI::Display::Graphic::Common::V1_0::CM_SRGB_LIMIT;
-        case ColorManager::ColorSpaceName::DISPLAY_P3 :
-            return HDI::Display::Graphic::Common::V1_0::CM_P3_FULL;
-        case ColorManager::ColorSpaceName::DISPLAY_P3_LIMIT :
-            return HDI::Display::Graphic::Common::V1_0::CM_P3_LIMIT;
-        case ColorManager::ColorSpaceName::BT2020 :
-        case ColorManager::ColorSpaceName::BT2020_HLG :
-            return HDI::Display::Graphic::Common::V1_0::CM_BT2020_HLG_FULL;
-        case ColorManager::ColorSpaceName::BT2020_HLG_LIMIT :
-            return HDI::Display::Graphic::Common::V1_0::CM_BT2020_HLG_LIMIT;
-        case ColorManager::ColorSpaceName::BT2020_PQ :
-            return HDI::Display::Graphic::Common::V1_0::CM_BT2020_PQ_FULL;
-        case ColorManager::ColorSpaceName::BT2020_PQ_LIMIT :
-            return HDI::Display::Graphic::Common::V1_0::CM_BT2020_PQ_LIMIT;
-        default:
-            return HDI::Display::Graphic::Common::V1_0::CM_COLORSPACE_NONE;
-    }
-    return HDI::Display::Graphic::Common::V1_0::CM_COLORSPACE_NONE;
-}
-#endif
-
 } // namespace Media
 } // namespace OHOS
