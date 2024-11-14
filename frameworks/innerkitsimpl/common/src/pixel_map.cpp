@@ -1144,8 +1144,10 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         IMAGE_LOGE("pixel map set rowDataSize error.");
         return ret;
     }
-    if (static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(info.size.height) >
-        (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT_MAX)) {
+
+    uint64_t totalSize = static_cast<uint64_t>(info.size.height) *
+        static_cast<uint64_t>(allocatorType_ == AllocatorType::DMA_ALLOC ? GetRowStride() : rowDataSize_);
+    if (totalSize > (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT32_MAX)) {
         ResetPixelMap();
         IMAGE_LOGE("pixel map size (byte count) out of range.");
         return ERR_IMAGE_TOO_LARGE;
