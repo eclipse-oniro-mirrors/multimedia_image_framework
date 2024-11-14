@@ -607,11 +607,12 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcP
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
     }
-    if (srcPixelMap->GetHdrMetadata() != nullptr) {
-        dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
+    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (HdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(HdrMetadata);
     }
-    if (srcPixelMap->GetExifMetadata() != nullptr) {
-        auto exifData = srcPixelMap->GetExifMetadata();
+    auto exifData = srcPixelMap->GetExifMetadata();
+    if (exifData != nullptr) {
         dstPixelMap->SetExifMetadata(exifData);
     }
     return true;
@@ -623,11 +624,12 @@ bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcP
     if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
         return false;
     }
-    if (srcPixelMap->GetHdrMetadata() != nullptr) {
-        dstPixelMap->SetHdrMetadata(srcPixelMap->GetHdrMetadata());
+    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (HdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(HdrMetadata);
     }
-    if (srcPixelMap->GetExifMetadata() != nullptr) {
-        auto exifData = srcPixelMap->GetExifMetadata();
+    auto exifData = srcPixelMap->GetExifMetadata();
+    if (exifData != nullptr) {
         dstPixelMap->SetExifMetadata(exifData);
     }
     return true;
