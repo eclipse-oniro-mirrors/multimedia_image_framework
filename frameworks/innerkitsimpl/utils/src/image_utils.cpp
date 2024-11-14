@@ -307,7 +307,12 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
         case PixelFormat::NV21:
         case PixelFormat::NV12:
         case PixelFormat::YCBCR_P010:
-        case PixelFormat::YCRCB_P010:
+        case PixelFormat::YCRCB_P010: {
+            if (dstType != AlphaType::IMAGE_ALPHA_TYPE_OPAQUE) {
+                return AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+            }
+            break;
+        }
         case PixelFormat::CMYK:
         default: {
             IMAGE_LOGE("GetValidAlphaTypeByFormat unsupport the format(%{public}d).", format);
