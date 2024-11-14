@@ -54,7 +54,6 @@ static inline uint32_t Float2UInt32(float val)
     return static_cast<uint32_t>(val + FLOAT_HALF);
 }
 
-// LCOV_EXCL_START
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(ANDROID_PLATFORM) && !defined(IOS_PLATFORM)
 bool AllocShareBufferInner(DecodeContext &context, uint64_t byteCount)
 {
@@ -122,6 +121,7 @@ bool AllocShareBuffer(DecodeContext &context, uint64_t byteCount)
 #endif
 }
 
+// LCOV_EXCL_START
 bool AllocDmaBuffer(DecodeContext &context, uint64_t byteCount, SkSize &svgSize)
 {
     IMAGE_LOGD("[AllocDmaBuffer] IN byteCount=%{public}llu",
@@ -204,6 +204,7 @@ bool AllocHeapBuffer(DecodeContext &context, uint64_t byteCount)
     IMAGE_LOGD("[AllocHeapBuffer] OUT");
     return true;
 }
+// LCOV_EXCL_STOP
 
 SkImageInfo MakeImageInfo(const PixelDecodeOptions &opts)
 {
@@ -213,7 +214,6 @@ SkImageInfo MakeImageInfo(const PixelDecodeOptions &opts)
     SkAlphaType alphaType = SkAlphaType::kPremul_SkAlphaType;
     return SkImageInfo::Make(width, height, colorType, alphaType);
 }
-// LCOV_EXCL_STOP
 } // namespace
 
 SvgDecoder::SvgDecoder()
