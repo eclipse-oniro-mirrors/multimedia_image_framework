@@ -607,10 +607,17 @@ bool InitYuvDataOutInfo(SurfaceBuffer* surfaceBuffer, const ImageInfo &info, YUV
     yuvInfo.yHeight = info.size.height;
     yuvInfo.uvWidth = static_cast<uint32_t>((info.size.width + NUM_1) / NUM_2);
     yuvInfo.uvHeight = static_cast<uint32_t>((info.size.height + NUM_1) / NUM_2);
-    yuvInfo.yStride = planes->planes[0].columnStride;
-    yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
-    yuvInfo.yOffset = planes->planes[0].offset;
-    yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    if (info.pixelFormat == PixelFormat::YCBCR_P010 || info.pixelFormat == PixelFormat::YCRCB_P010) {
+        yuvInfo.yStride = planes->planes[0].columnStride / NUM_2;
+        yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride / NUM_2;
+        yuvInfo.yOffset = planes->planes[0].offset / NUM_2;
+        yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset / NUM_2;
+    } else {
+        yuvInfo.yStride = planes->planes[0].columnStride;
+        yuvInfo.uvStride = planes->planes[uvPlaneOffset].columnStride;
+        yuvInfo.yOffset = planes->planes[0].offset;
+        yuvInfo.uvOffset = planes->planes[uvPlaneOffset].offset;
+    }
     return true;
 }
 #endif
