@@ -601,6 +601,40 @@ uint32_t ImageFormatConvert::RGBConvertImageFormatOptionUnique(
     return ret;
 }
 
+bool ImageFormatConvert::SetConvertImageMetaData(std::unique_ptr<PixelMap> &srcPixelMap,
+                                                 std::unique_ptr<PixelMap> &dstPixelMap)
+{
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return false;
+    }
+    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (HdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(HdrMetadata);
+    }
+    auto exifData = srcPixelMap->GetExifMetadata();
+    if (exifData != nullptr) {
+        dstPixelMap->SetExifMetadata(exifData);
+    }
+    return true;
+}
+
+bool ImageFormatConvert::SetConvertImageMetaData(std::shared_ptr<PixelMap> &srcPixelMap,
+                                                 std::unique_ptr<PixelMap> &dstPixelMap)
+{
+    if (srcPixelMap == nullptr || dstPixelMap == nullptr) {
+        return false;
+    }
+    auto HdrMetadata = srcPixelMap->GetHdrMetadata();
+    if (HdrMetadata != nullptr) {
+        dstPixelMap->SetHdrMetadata(HdrMetadata);
+    }
+    auto exifData = srcPixelMap->GetExifMetadata();
+    if (exifData != nullptr) {
+        dstPixelMap->SetExifMetadata(exifData);
+    }
+    return true;
+}
+
 static AllocatorType GetAllocatorType(std::shared_ptr<PixelMap> &srcPiexlMap, PixelFormat destFormat)
 {
     auto allocType = srcPiexlMap->GetAllocatorType();
@@ -699,18 +733,15 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
             return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         }
     }
-
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
-    if (ret != SUCCESS) {
+    bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
+    if (ret != SUCCESS || isSetMetaData == false) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (info.pixelFormat == PixelFormat::RGBA_1010102 || info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
-    }
+    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
@@ -753,18 +784,15 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
             return ERR_IMAGE_PIXELMAP_CREATE_FAILED;
         }
     }
-
     pixelMap->SetPixelsAddr(destInfo.buffer, context, destInfo.bufferSize, allcatorType, nullptr);
     auto ret = pixelMap->SetImageInfo(info, true);
-    if (ret != SUCCESS) {
+    bool isSetMetaData = SetConvertImageMetaData(destPixelMap, pixelMap);
+    if (ret != SUCCESS || isSetMetaData == false) {
         IMAGE_LOGE("set imageInfo failed");
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    if (info.pixelFormat == PixelFormat::RGBA_1010102 || info.pixelFormat == PixelFormat::YCBCR_P010 ||
-        info.pixelFormat == PixelFormat::YCRCB_P010) {
-        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
-    }
+    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
