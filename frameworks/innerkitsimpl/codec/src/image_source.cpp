@@ -4553,6 +4553,11 @@ void ImageSource::DecodeJpegAuxiliaryPicture(
         if (auxTypes.find(auxInfo.auxType) == auxTypes.end()) {
             continue;
         }
+        if (ImageUtils::HasOverflowed(auxInfo.offset, auxInfo.size) || auxInfo.offset + auxInfo.size > streamSize) {
+            IMAGE_LOGW("Invalid auxType: %{public}d, offset: %{public}u, size: %{public}u, streamSize: %{public}u",
+                auxInfo.auxType, auxInfo.offset, auxInfo.size, streamSize);
+            continue;
+        }
         IMAGE_LOGI("Jpeg auxiliary picture has found. Type: %{public}d", auxInfo.auxType);
         std::unique_ptr<InputDataStream> auxStream =
             BufferSourceStream::CreateSourceStream((streamBuffer + auxInfo.offset), auxInfo.size);

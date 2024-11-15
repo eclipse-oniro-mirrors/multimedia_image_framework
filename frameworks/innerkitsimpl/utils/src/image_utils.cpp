@@ -912,5 +912,10 @@ bool ImageUtils::IsEven(int32_t value)
 {
     return value % BASE_EVEN_DIVISOR == 0;
 }
+
+bool ImageUtils::HasOverflowed(uint32_t num1, uint32_t num2)
+{
+    return num1 > std::numeric_limits<uint32_t>::max() - num2;
+}
 } // namespace Media
 } // namespace OHOS
