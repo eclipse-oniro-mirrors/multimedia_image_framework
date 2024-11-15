@@ -1203,6 +1203,13 @@ bool ImageFormatConvertExtUtils::NV21P010ToRGBA1010102(const uint8_t *srcBuffer,
     return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
 }
 
+static bool RGBToI420ToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo);
+    return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
+}
+
 static bool RGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,
                            DestConvertInfo &destInfo, PixelFormat destFormat)
 {

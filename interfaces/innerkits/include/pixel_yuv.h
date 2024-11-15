@@ -88,6 +88,9 @@ protected:
         const OHOS::ColorManager::ColorSpace &grColorSpace);
     NATIVEEXPORT uint32_t ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace) override;
 #endif
+private:
+    bool IsP010Yuv();
+    void GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo)
 };
 } // namespace Media
 } // namespace OHOS
