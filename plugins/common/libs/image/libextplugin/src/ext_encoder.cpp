@@ -986,8 +986,8 @@ uint32_t ExtEncoder::AssembleHeifHdrPicture(
     sptr<SurfaceBuffer>& mainSptr, bool sdrIsSRGB, std::vector<ImageItem>& inputImgs)
 {
     auto gainPixelMap = picture_->GetGainmapPixelMap();
-    if (gainPixelMap == nullptr) {
-        IMAGE_LOGE("%{public}s, the gainPixelMap is nullptr", __func__);
+    if (gainPixelMap == nullptr || gainPixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
+        IMAGE_LOGE("%{public}s, the gainPixelMap is nullptr or gainPixelMap is nonDMA", __func__);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     sptr<SurfaceBuffer> gainMapSptr(reinterpret_cast<SurfaceBuffer*>(gainPixelMap->GetFd()));
@@ -1849,23 +1849,35 @@ uint32_t ExtEncoder::SpliceFragmentStream(SkWStream& skStream, sk_sp<SkData>& sk
 uint32_t ExtEncoder::WriteJpegUncodedData(std::shared_ptr<AuxiliaryPicture>& auxPicture, SkWStream& skStream)
 {
     auto pixelMap = auxPicture->GetContentPixel();
-    if (pixelMap == nullptr || pixelMap->GetFd() == nullptr) {
-        return ERR_DMA_NOT_EXIST;
+    if (pixelMap == nullptr) {
+        return ERR_IMAGE_DATA_ABNORMAL;
     }
-    auto surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
-    void* bytes = surfaceBuffer->GetVirAddr();
-    uint32_t size = surfaceBuffer->GetWidth() * surfaceBuffer->GetHeight();
+    void* bytes = nullptr;
+    uint32_t size = 0;
+    Size imageSize;
+    if (pixelMap->GetAllocatorType() != AllocatorType::DMA_ALLOC || pixelMap->GetFd() == nullptr) {
+        bytes = pixelMap->GetWritablePixels();
+        size = pixelMap->GetCapacity();
+        imageSize.width = pixelMap->GetWidth();
+        imageSize.height = pixelMap->GetHeight();
+    } else {
+        auto surfaceBuffer = reinterpret_cast<SurfaceBuffer*>(pixelMap->GetFd());
+        bytes = surfaceBuffer->GetVirAddr();
+        size = surfaceBuffer->GetSize();
+        imageSize.width = surfaceBuffer->GetWidth();
+        imageSize.height = surfaceBuffer->GetHeight();
+    }
+    uint32_t writeSize = imageSize.width * imageSize.height;
     AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
     if (auxInfo.auxiliaryPictureType == AuxiliaryPictureType::DEPTH_MAP) {
-        size *= DEPTH_MAP_BYTES;
+        writeSize *= DEPTH_MAP_BYTES;
     } else if (auxInfo.auxiliaryPictureType == AuxiliaryPictureType::LINEAR_MAP) {
-        size *= LINEAR_MAP_BYTES;
+        writeSize *= LINEAR_MAP_BYTES;
     }
-    IMAGE_LOGD("%{public}s auxType: %{public}d, width: %{public}d, hight: %{public}d, buffer size: %{public}u,"
-        " actual size: %{public}u", __func__, auxInfo.auxiliaryPictureType, surfaceBuffer->GetWidth(),
-        surfaceBuffer->GetHeight(), surfaceBuffer->GetSize(), size);
-    size = std::min(size, surfaceBuffer->GetSize());
-    skStream.write(bytes, size);
+    IMAGE_LOGD("%{public}s auxType: %{public}d, width: %{public}d, height: %{public}d, buffer size: %{public}u,"
+        " write size: %{public}u", __func__, auxInfo.auxiliaryPictureType, imageSize.width, imageSize.height,
+        size, writeSize);
+    skStream.write(bytes, std::min(size, writeSize));
     return SUCCESS;
 }
 
