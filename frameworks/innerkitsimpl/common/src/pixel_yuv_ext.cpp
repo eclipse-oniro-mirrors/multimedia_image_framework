@@ -151,8 +151,8 @@ void PixelYuvExt::scale(float xAxis, float yAxis, const AntiAliasingOption &opti
     int32_t dstH = (imageInfo.size.height * yAxis + ROUND_FLOAT_NUMBER);
     if (imageInfo.pixelFormat == PixelFormat::YCBCR_P010 ||
         imageInfo.pixelFormat == PixelFormat::YCRCB_P010) {
-        dstW = (dstW + 1) / NUM_2 * NUM_2;
-        dstH = (dstH + 1) / NUM_2 * NUM_2;
+        dstW = (dstW + 1) / DOUBLE_NUM * DOUBLE_NUM;
+        dstH = (dstH + 1) / DOUBLE_NUM * DOUBLE_NUM;
     }
     YUVStrideInfo dstStrides;
     auto m = CreateMemory(imageInfo.pixelFormat, "Trans ImageData", dstW, dstH, dstStrides);

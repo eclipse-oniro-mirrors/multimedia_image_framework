@@ -17,6 +17,7 @@
 
 #include <sys/stat.h>
 #include <cerrno>
+#include <charconv>
 #include <climits>
 #include <cmath>
 #include <cstdint>
@@ -25,7 +26,6 @@
 #include <fstream>
 #include <sstream>
 #include <chrono>
-#include <charconv>
 
 #include "__config"
 #include "image_log.h"
@@ -325,10 +325,10 @@ AlphaType ImageUtils::GetValidAlphaTypeByFormat(const AlphaType &dstType, const 
 AllocatorType ImageUtils::GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool useDMA)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return useDMA && ((format == PixelFormat::RGBA_1010102 ||
-        format == PixelFormat::YCRCB_P010 || format == PixelFormat::YCBCR_P010)||
-        (format == PixelFormat::RGBA_8888))
-        && size.width * size.height >= DMA_SIZE ?
+    return useDMA && (format == PixelFormat::RGBA_8888 || (format == PixelFormat::RGBA_1010102 ||
+        format == PixelFormat::YCRCB_P010 ||
+        format == PixelFormat::YCBCR_P010)) &&
+        size.width * size.height >= DMA_SIZE ?
         AllocatorType::DMA_ALLOC : AllocatorType::SHARE_MEM_ALLOC;
 #else
     return AllocatorType::HEAP_ALLOC;
@@ -459,7 +459,7 @@ void ImageUtils::DumpPixelMap(PixelMap* pixelMap, std::string customFileName, ui
 #else
         totalSize = static_cast<int32_t>(pixelMap->GetCapacity());
 #endif
-        IMAGE_LOGI("ImageUtils::DumpPixelMapIfDumpEnabled YUV420 totalSize is %{public}d", totalSize);
+        IMAGE_LOGI("ImageUtils::DumpPixelMap YUV420 totalSize is %{public}d", totalSize);
     }
     if (SUCCESS != SaveDataToFile(fileName, reinterpret_cast<const char*>(pixelMap->GetPixels()), totalSize)) {
         IMAGE_LOGI("ImageUtils::DumpPixelMap failed");
@@ -573,7 +573,6 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
     std::string pixelMapStr = "_pixelMap_w" + std::to_string(pixelMap->GetWidth()) +
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
-        "_pixelFormat" + std::to_string((int32_t)pixelMap->GetPixelFormat()) +
         "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(syscall(SYS_thread_selfid)) +
@@ -596,6 +595,7 @@ std::string ImageUtils::GetPixelMapName(PixelMap* pixelMap)
         "_h" + std::to_string(pixelMap->GetHeight()) +
         "_rowStride" + std::to_string(pixelMap->GetRowStride()) +
         "_pixelFormat" + std::to_string((int32_t)pixelMap->GetPixelFormat()) +
+        yuvInfoStr +
         "_total" + std::to_string(pixelMap->GetRowStride() * pixelMap->GetHeight()) +
         "_pid" + std::to_string(getpid()) +
         "_tid" + std::to_string(gettid()) +
@@ -838,6 +838,37 @@ void ImageUtils::InvalidateContextSurfaceBuffer(ImagePlugin::DecodeContext& cont
 #endif
 }
 
+size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
+{
+    size_t astcBytesCount = 0;
+    uint32_t blockWidth = 0;
+    uint32_t blockHeight = 0;
+
+    switch (imageInfo.pixelFormat) {
+        case PixelFormat::ASTC_4x4:
+            blockWidth = ASTC_4X4_BLOCK;
+            blockHeight = ASTC_4X4_BLOCK;
+            break;
+        case PixelFormat::ASTC_6x6:
+            blockWidth = ASTC_6X6_BLOCK;
+            blockHeight = ASTC_6X6_BLOCK;
+            break;
+        case PixelFormat::ASTC_8x8:
+            blockWidth = ASTC_8X8_BLOCK;
+            blockHeight = ASTC_8X8_BLOCK;
+            break;
+        default:
+            IMAGE_LOGE("ImageUtils GetAstcBytesCount failed, format is not supported %{public}d",
+                imageInfo.pixelFormat);
+            return 0;
+    }
+    if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
+        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
+            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
+    }
+    return astcBytesCount;
+}
+
 bool ImageUtils::IsAuxiliaryPictureTypeSupported(AuxiliaryPictureType type)
 {
     auto auxTypes = GetAllAuxiliaryPictureType();
@@ -868,37 +899,6 @@ const std::set<AuxiliaryPictureType> ImageUtils::GetAllAuxiliaryPictureType()
         AuxiliaryPictureType::LINEAR_MAP,
         AuxiliaryPictureType::FRAGMENT_MAP};
     return auxTypes;
-}
-
-size_t ImageUtils::GetAstcBytesCount(const ImageInfo& imageInfo)
-{
-    size_t astcBytesCount = 0;
-    uint32_t blockWidth = 0;
-    uint32_t blockHeight = 0;
-
-    switch (imageInfo.pixelFormat) {
-        case PixelFormat::ASTC_4x4:
-            blockWidth = ASTC_4X4_BLOCK;
-            blockHeight = ASTC_4X4_BLOCK;
-            break;
-        case PixelFormat::ASTC_6x6:
-            blockWidth = ASTC_6X6_BLOCK;
-            blockHeight = ASTC_6X6_BLOCK;
-            break;
-        case PixelFormat::ASTC_8x8:
-            blockWidth = ASTC_8X8_BLOCK;
-            blockHeight = ASTC_8X8_BLOCK;
-            break;
-        default:
-            IMAGE_LOGE("ImageUtils GetAstcBytesCount failed, format is not supported %{public}d",
-                imageInfo.pixelFormat);
-            return 0;
-    }
-    if ((blockWidth >= ASTC_4X4_BLOCK) && (blockHeight >= ASTC_4X4_BLOCK)) {
-        astcBytesCount = ((imageInfo.size.width + blockWidth - 1) / blockWidth) *
-            ((imageInfo.size.height + blockHeight - 1) / blockHeight) * ASTC_BLOCK_SIZE + ASTC_HEADER_SIZE;
-    }
-    return astcBytesCount;
 }
 
 bool ImageUtils::StrToUint32(const std::string& str, uint32_t& value)

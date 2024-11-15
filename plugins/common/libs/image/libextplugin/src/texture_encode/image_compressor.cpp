@@ -1325,11 +1325,6 @@ bool OpenCLSoManager::LoadOpenCLSo()
 {
     if (!loadSuccess) {
         loadSuccess = InitOpenCLExtern(&clSoHandle);
-        if (loadSuccess) {
-            IMAGE_LOGD("astcenc OpenCLSoManager Load success!");
-        } else {
-            IMAGE_LOGE("astcenc OpenCLSoManager Load failed!");
-        }
     }
     return loadSuccess;
 }
@@ -1388,7 +1383,8 @@ static CL_ASTC_STATUS SaveClBin(cl_program program, const std::string &clBinPath
         IMAGE_LOGE("astc clGetProgramInfo CL_PROGRAM_BINARY_SIZES failed ret %{public}d!", clRet);
         return CL_ASTC_ENC_FAILED;
     }
-    if ((programBinarySizes == 0) || (programBinarySizes > MAX_MALLOC_BYTES)) {
+    bool genBinFail = (programBinarySizes == 0) || (programBinarySizes > MAX_MALLOC_BYTES);
+    if (genBinFail) {
         IMAGE_LOGE("astc clGetProgramInfo programBinarySizes %{public}zu too big!", programBinarySizes);
         return CL_ASTC_ENC_FAILED;
     }
@@ -1461,7 +1457,8 @@ static CL_ASTC_STATUS AstcClBuildProgram(ClAstcHandle *clAstcHandle, const std::
         std::ifstream contents{clBinPath};
         std::string binaryContent{std::istreambuf_iterator<char>{contents}, {}};
         size_t binSize = binaryContent.length();
-        if ((binSize == 0) || (binSize > MAX_MALLOC_BYTES)) {
+        bool invaildSize = (binSize == 0) || (binSize > MAX_MALLOC_BYTES);
+        if (invaildSize) {
             IMAGE_LOGE("astc AstcClBuildProgram read CLbin file lenth error %{public}zu!", binSize);
             return CL_ASTC_ENC_FAILED;
         }
