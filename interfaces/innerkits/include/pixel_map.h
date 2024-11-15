@@ -330,11 +330,6 @@ public:
         hdrType_ = hdrType;
     }
 
-    NATIVEEXPORT void SetAllocatorType(AllocatorType allocatorType)
-    {
-        allocatorType_ = allocatorType;
-    }
-
     // unmap方案, 减少RenderService内存占用
     NATIVEEXPORT bool UnMap();
     NATIVEEXPORT bool ReMap();
