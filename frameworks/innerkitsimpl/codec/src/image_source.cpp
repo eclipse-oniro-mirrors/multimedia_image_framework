@@ -668,6 +668,7 @@ static void FreeContextBuffer(const Media::CustomFreePixelMap &func, AllocatorTy
         int *fd = static_cast<int *>(buffer.context);
         if (buffer.buffer != nullptr) {
             ::munmap(buffer.buffer, buffer.bufferSize);
+            buffer.buffer = nullptr;
         }
         if (fd != nullptr) {
             ::close(*fd);
