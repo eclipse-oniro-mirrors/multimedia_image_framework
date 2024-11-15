@@ -197,10 +197,13 @@ static void SetYuvDataInfo(std::unique_ptr<PixelMap> &pixelMap, sptr<OHOS::Surfa
         IMAGE_LOGE("Get planesInfo failed, retVal:%{public}d", retVal);
         return;
     } else if (planes->planeCount >= NUM_2) {
+        int32_t pixelFmt = sBuffer->GetFormat();
+        int uvPlaneOffset = (pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || pixelFmt == GRAPHIC_PIXEL_FMT_YCBCR_P010) ?
+                NUM_1 : NUM_2;
         info.yStride = planes->planes[NUM_0].columnStride;
-        info.uvStride = planes->planes[NUM_1].columnStride;
+        info.uvStride = planes->planes[uvPlaneOffset].columnStride;
         info.yOffset = planes->planes[NUM_0].offset;
-        info.uvOffset = planes->planes[NUM_1].offset - NUM_1;
+        info.uvOffset = planes->planes[uvPlaneOffset].offset;
     }
     pixelMap->SetImageYUVInfo(info);
 }
@@ -428,7 +431,7 @@ bool Picture::Marshalling(Parcel &data) const
 
     for (const auto &auxiliaryPicture : auxiliaryPictures_) {
         AuxiliaryPictureType type =  auxiliaryPicture.first;
- 
+
         if (!data.WriteInt32(static_cast<int32_t>(type))) {
             IMAGE_LOGE("Failed to write auxiliary picture type.");
             return false;
@@ -482,7 +485,7 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
 {
     std::unique_ptr<Picture> picture = std::make_unique<Picture>();
     std::shared_ptr<PixelMap> pixelmapPtr(PixelMap::Unmarshalling(parcel));
-    
+
     if (!pixelmapPtr) {
         IMAGE_LOGE("Failed to unmarshal main PixelMap.");
         return nullptr;

@@ -471,7 +471,7 @@ int32_t PixelYuvUtils::YuvScale(uint8_t *srcPixels, YuvImageInfo &srcInfo,
         IMAGE_LOGE("FFMpeg: sws_scale failed!");
         return -1;
     }
-    return EXPR_SUCCESS;
+    return 0;
 }
 
 static bool CreateRotateFilter(AVFilterGraph **filterGraph, AVFilterContext **transposeCtx,
@@ -1027,8 +1027,8 @@ static void P010Translate(YuvPixelsP010Translate yuvPixels, YUVDataInfo &yuvInfo
         for (int32_t x = 0; x < GetUVStride(yuvInfo.yWidth); x += NUM_2) {
             int32_t newX = x + GetUVStride(xyAxis.xAxis);
             int32_t newY = y + GetUVHeight(xyAxis.yAxis);
-            if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) && newY >= 0 &&
-                newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
+            if (newX >= 0 && newX < GetUVStride(strides.yStride + xyAxis.xAxis) &&
+                newY >= 0 && newY < GetUVHeight(yuvInfo.yHeight + xyAxis.yAxis)) {
                 *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX) =
                     *(srcUV + y * static_cast<int32_t>(yuvInfo.yStride) + x);
                 *(dstUV + newY * static_cast<int32_t>(strides.yStride) + newX + 1) =
@@ -1057,6 +1057,5 @@ bool PixelYuvUtils::YuvTranslate(const uint8_t *srcPixels, YUVDataInfo &yuvInfo,
             return false;
     }
 }
-
 } // namespace Media
 } // namespace OHOS
