@@ -1145,8 +1145,7 @@ uint32_t PixelMap::SetImageInfo(ImageInfo &info, bool isReused)
         return ret;
     }
 
-    uint64_t totalSize = static_cast<uint64_t>(info.size.height) *
-        static_cast<uint64_t>(allocatorType_ == AllocatorType::DMA_ALLOC ? GetRowStride() : rowDataSize_);
+    int64_t totalSize = static_cast<int64_t>(std::max(rowDataSize_, GetRowStride())) * info.size.height;
     if (totalSize > (allocatorType_ == AllocatorType::HEAP_ALLOC ? PIXEL_MAP_MAX_RAM_SIZE : INT32_MAX)) {
         ResetPixelMap();
         IMAGE_LOGE("pixel map size (byte count) out of range.");
