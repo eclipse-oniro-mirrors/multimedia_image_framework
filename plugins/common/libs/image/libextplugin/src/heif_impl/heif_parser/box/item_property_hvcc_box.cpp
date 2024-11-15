@@ -418,7 +418,7 @@ bool HeifHvccBox::ParseSpsSyntaxScalingList(std::vector<uint8_t> &nalUnits)
     if (spsConfig_.longTermRefPicsPresentFlag == READ_BIT_NUM_FLAG) {
         int32_t numLongTermRefPicSps = GetGolombCode(nalUnits);
         for (int i = 0; i < numLongTermRefPicSps; i++) {
-            // itRefPicPocLsbSps[i] == log2MaxPicOrderCntLsbMinus4 + 4
+            // itRefPicPocLsbSps[i] is equal to log2MaxPicOrderCntLsbMinus4 + 4.
             GetWord(nalUnits, spsConfig_.log2MaxPicOrderCntLsbMinus4 + GENERAL_PROFILE_SIZE);
             GetWord(nalUnits, READ_BIT_NUM_FLAG);
         }

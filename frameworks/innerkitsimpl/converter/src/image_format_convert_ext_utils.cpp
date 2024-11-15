@@ -30,8 +30,8 @@ constexpr uint32_t NUM_0 = 0;
 constexpr uint32_t NUM_1 = 1;
 constexpr uint32_t NUM_2 = 2;
 
-constexpr uint32_t EVEN_ODD_DIVISOR = 2;
 constexpr uint32_t TWO_SLICES = 2;
+constexpr uint32_t EVEN_ODD_DIVISOR = 2;
 constexpr uint32_t BYTES_PER_PIXEL_RGB565 = 2;
 constexpr uint32_t BYTES_PER_PIXEL_RGB = 3;
 constexpr uint32_t BYTES_PER_PIXEL_RGBA = 4;
@@ -643,22 +643,22 @@ static bool YuvToP010Param(const YUVDataInfo &yDInfo, SrcConvertParam &srcParam,
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride);
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride);
 
-    uint32_t dstyStride = 0;
-    uint32_t dstuvStride = 0;
+    int dstyStride = 0;
+    int dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = destInfo.yStride;
-        dstuvStride = destInfo.uvStride;
+        dstyStride = static_cast<int>(destInfo.yStride);
+        dstuvStride = static_cast<int>(destInfo.uvStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset * TWO_SLICES;
     } else {
-        dstyStride = destParam.width;
+        dstyStride = static_cast<int>(destParam.width);
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
-            destParam.width : (destParam.width + 1);
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height * TWO_SLICES;
+        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height  * TWO_SLICES;
     }
-    destParam.stride[0] = static_cast<int>(dstyStride);
-    destParam.stride[1] = static_cast<int>(dstuvStride);
+    destParam.stride[0] = dstyStride;
+    destParam.stride[1] = dstuvStride;
     return true;
 }
 
@@ -768,22 +768,22 @@ static bool YuvP010ToYuvParam(const YUVDataInfo &yDInfo, SrcConvertParam &srcPar
     srcParam.stride[0] = static_cast<int>(yDInfo.yStride);
     srcParam.stride[1] = static_cast<int>(yDInfo.uvStride);
 
-    uint32_t dstyStride = 0;
-    uint32_t dstuvStride = 0;
+    int dstyStride = 0;
+    int dstuvStride = 0;
     if (destInfo.allocType == AllocatorType::DMA_ALLOC) {
-        dstyStride = destInfo.yStride;
-        dstuvStride = destInfo.uvStride;
+        dstyStride = static_cast<int>(destInfo.yStride);
+        dstuvStride = static_cast<int>(destInfo.uvStride);
         destParam.slice[0] = destInfo.buffer + destInfo.yOffset;
         destParam.slice[1] = destInfo.buffer + destInfo.uvOffset;
     } else {
-        dstyStride = destParam.width;
+        dstyStride = static_cast<int>(destParam.width);
         dstuvStride = (destParam.width % EVEN_ODD_DIVISOR == 0) ?
-            destParam.width : (destParam.width + 1);
+            static_cast<int>(destParam.width) : static_cast<int>(destParam.width + 1);
         destParam.slice[0] = destInfo.buffer;
-        destParam.slice[1] = destInfo.buffer + dstyStride * destParam.height;
+        destParam.slice[1] = destInfo.buffer + static_cast<uint32_t>(dstyStride) * destParam.height;
     }
-    destParam.stride[0] = static_cast<int>(dstyStride);
-    destParam.stride[1] = static_cast<int>(dstuvStride);
+    destParam.stride[0] = dstyStride;
+    destParam.stride[1] = dstuvStride;
     return true;
 }
 
@@ -1201,6 +1201,13 @@ bool ImageFormatConvertExtUtils::NV21P010ToRGBA1010102(const uint8_t *srcBuffer,
                                                        [[maybe_unused]]ColorSpace colorSpace)
 {
     return P010ToI010ToRGB10(srcBuffer, yDInfo, PixelFormat::YCRCB_P010, destInfo, colorSpace);
+}
+
+static bool RGBToI420ToYuvParam(const RGBDataInfo &rgbInfo, SrcConvertParam &srcParam, I420Info &i420Info,
+                                DestConvertParam &destParam, DestConvertInfo &destInfo)
+{
+    RGBToYuvParam(rgbInfo, srcParam, destParam, destInfo);
+    return I420Param(rgbInfo.width, rgbInfo.height, i420Info);
 }
 
 static bool RGBToI420ToYuv(const uint8_t *srcBuffer, const RGBDataInfo &rgbInfo, PixelFormat srcFormat,

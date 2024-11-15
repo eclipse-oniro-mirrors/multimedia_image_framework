@@ -558,6 +558,22 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
     return SUCCESS;
 }
 
+void PixelYuv::GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo)
+{
+    GetImageYUVInfo(yuvDataInfo);
+    yuvDataInfo.yWidth = static_cast<uint32_t>(imageInfo_.size.width);
+    yuvDataInfo.yHeight = static_cast<uint32_t>(imageInfo_.size.height);
+    yuvDataInfo.uvWidth = yuvDataInfo.uvWidth * NUM_2;
+    if (IsP010Yuv()) {
+        yuvDataInfo.yWidth = static_cast<uint32_t>(imageInfo_.size.width) * NUM_2;
+        yuvDataInfo.uvWidth = yuvDataInfo.yWidth;
+        yuvDataInfo.yOffset = yuvDataInfo.yOffset * NUM_2;
+        yuvDataInfo.yStride = yuvDataInfo.yStride * NUM_2;
+        yuvDataInfo.uvOffset = yuvDataInfo.uvOffset * NUM_2;
+        yuvDataInfo.uvStride = yuvDataInfo.uvStride * NUM_2;
+    }
+}
+
 uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize)
 {
     if (!IsYuvFormat()) {
@@ -582,32 +598,28 @@ uint32_t PixelYuv::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     YUVDataInfo yuvDataInfo;
-    GetImageYUVInfo(yuvDataInfo);
-    uint32_t yWidth = static_cast<uint32_t>(imageInfo_.size.width);
-    uint32_t yHeight = static_cast<uint32_t>(imageInfo_.size.height);
-    uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
-    uint32_t uvHeight = yuvDataInfo.uvHeight;
+    GetYUVInfoForCopyPixels(yuvDataInfo);
     auto srcY = source;
-    auto srcUV = source + yWidth * yHeight;
+    auto srcUV = source + yuvDataInfo.yWidth * yuvDataInfo.yHeight;
     auto dstY = data_ + yuvDataInfo.yOffset;
+    auto dstUV = data_ + yuvDataInfo.uvOffset;
     /* copy Y plane*/
-    for (int32_t y = 0; y < static_cast<int32_t>(yHeight); y++) {
-        if (memcpy_s(dstY, yWidth, srcY, yWidth) != EOK) {
+    for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
+        if (memcpy_s(dstY, yuvDataInfo.yWidth, srcY, yuvDataInfo.yWidth) != EOK) {
             IMAGE_LOGE("PixelYuv write pixels yInfo failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         dstY += yuvDataInfo.yStride;
-        srcY += yWidth;
+        srcY += yuvDataInfo.yWidth;
     }
-    auto dstUV = data_ + yuvDataInfo.uvOffset;
     /* copy UV plane*/
-    for (int32_t y = 0; y < static_cast<int32_t>(uvHeight); y++) {
-        if (memcpy_s(dstUV, uvWidth, srcUV, uvWidth) != EOK) {
+    for (int32_t y = 0; y < static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
+        if (memcpy_s(dstUV, yuvDataInfo.uvWidth, srcUV, yuvDataInfo.uvWidth) != EOK) {
             IMAGE_LOGE("PixelYuv write pixels uvInfo failed.");
             return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
         }
         dstUV += yuvDataInfo.uvStride;
-        srcUV += uvWidth;
+        srcUV += yuvDataInfo.uvWidth;
     }
     return SUCCESS;
 }
@@ -641,6 +653,14 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
     return SUCCESS;
 }
 
+bool PixelYuv::IsP010Yuv()
+{
+    if (imageInfo_.pixelFormat == PixelFormat::YCBCR_P010 || imageInfo_.pixelFormat == PixelFormat::YCRCB_P010) {
+        return true;
+    }
+    return false;
+}
+
 uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
 {
     if (!IsYuvFormat()) {
@@ -665,30 +685,25 @@ uint32_t PixelYuv::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     YUVDataInfo yuvDataInfo;
-    GetImageYUVInfo(yuvDataInfo);
-
-    uint32_t yWidth = static_cast<uint32_t>(imageInfo_.size.width);
-    uint32_t yHeight = static_cast<uint32_t>(imageInfo_.size.height);
-    uint32_t uvWidth = yuvDataInfo.uvWidth * 2;
-    uint32_t uvHeight = yuvDataInfo.uvHeight;
-    uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;
+    GetYUVInfoForCopyPixels(yuvDataInfo);
     uint8_t *srcUVPixels = data_ + yuvDataInfo.uvOffset;
+    uint8_t *srcYPixels = data_ + yuvDataInfo.yOffset;
     /* copy Y plane*/
-    for (int32_t y = 0; y<static_cast<int32_t>(yHeight); y++) {
-        if (memcpy_s(dst, yWidth, srcYPixels, yWidth) != EOK) {
+    for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.yHeight); y++) {
+        if (memcpy_s(dst, yuvDataInfo.yWidth, srcYPixels, yuvDataInfo.yWidth) != EOK) {
             IMAGE_LOGE("PixelYuv read pixels yInfo failed.");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
-        dst += yWidth;
+        dst += yuvDataInfo.yWidth;
         srcYPixels += yuvDataInfo.yStride;
     }
     /* copy UV plane*/
-    for (int32_t y = 0; y<static_cast<int32_t>(uvHeight); y++) {
-        if (memcpy_s(dst, uvWidth, srcUVPixels, uvWidth) != EOK) {
+    for (int32_t y = 0; y<static_cast<int32_t>(yuvDataInfo.uvHeight); y++) {
+        if (memcpy_s(dst, yuvDataInfo.uvWidth, srcUVPixels, yuvDataInfo.uvWidth) != EOK) {
             IMAGE_LOGE("PixelYuv read pixels uvInfo failed.");
             return ERR_IMAGE_INVALID_PARAMETER;
         }
-        dst += uvWidth;
+        dst += yuvDataInfo.uvWidth;
         srcUVPixels += yuvDataInfo.uvStride;
     }
     return SUCCESS;
