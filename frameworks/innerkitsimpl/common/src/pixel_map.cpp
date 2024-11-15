@@ -133,7 +133,7 @@ void PixelMap::FreePixelMap() __attribute__((no_sanitize("cfi")))
     }
 #endif
 
-    if (data_ == nullptr) {
+    if (!isUnMap_ && data_ == nullptr) {
         return;
     }
 
@@ -180,7 +180,7 @@ void PixelMap::ReleaseSharedMemory(void *addr, void *context, uint32_t size)
 {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
     int *fd = static_cast<int *>(context);
-    if (addr != nullptr) {
+    if (!isUnMap_ && addr != nullptr) {
         ::munmap(addr, size);
     }
     if (fd != nullptr) {
@@ -211,6 +211,8 @@ void PixelMap::SetPixelsAddr(void *addr, void *context, uint32_t size, Allocator
         IMAGE_LOGE("SetPixelsAddr error type %{public}d ", type);
     }
     data_ = static_cast<uint8_t *>(addr);
+    isUnMap_ = false;
+    unMapCount_ = 0;
     context_ = context;
     pixelsSize_ = size;
     allocatorType_ = type;
@@ -1482,8 +1484,8 @@ uint8_t PixelMap::GetARGB32ColorB(uint32_t color)
 
 bool PixelMap::IsSameImage(const PixelMap &other)
 {
-    if (data_ == nullptr || other.data_ == nullptr) {
-        IMAGE_LOGE("IsSameImage data_ is nullptr.");
+    if (isUnMap_ || data_ == nullptr || other.data_ == nullptr) {
+        IMAGE_LOGE("IsSameImage data_ is nullptr, isUnMap %{public}d.", isUnMap_);
         return false;
     }
     if (imageInfo_.size.width != other.imageInfo_.size.width ||
@@ -1512,8 +1514,8 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, uint8_t *dst)
         IMAGE_LOGE("read pixels by buffer input dst address is null.");
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("read pixels by buffer current PixelMap data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("read pixels by buffer current PixelMap data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (bufferSize < static_cast<uint64_t>(pixelsSize_)) {
@@ -1564,8 +1566,8 @@ uint32_t PixelMap::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
         IMAGE_LOGE("Read ARGB pixels: input dst address is null.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("Read ARGB pixels: current PixelMap data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("Read ARGB pixels: current PixelMap data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (!IsSupportConvertToARGB(imageInfo_.pixelFormat)) {
@@ -1659,8 +1661,8 @@ uint32_t PixelMap::ReadPixels(const uint64_t &bufferSize, const uint32_t &offset
         IMAGE_LOGE("read pixels by rect input parameter fail.");
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("read pixels by rect this pixel data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("read pixels by rect this pixel data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -1680,8 +1682,8 @@ uint32_t PixelMap::ReadPixel(const Position &pos, uint32_t &dst)
         IMAGE_LOGE("read pixel by pos input invalid exception. [x(%{public}d), y(%{public}d)]", pos.x, pos.y);
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("read pixel by pos source data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("read pixel by pos source data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     ImageInfo dstImageInfo =
@@ -1768,8 +1770,8 @@ uint32_t PixelMap::WritePixel(const Position &pos, const uint32_t &color)
         IMAGE_LOGE("write pixel by pos current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("write pixel by pos but current pixelmap data is nullptr.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("write pixel by pos but current pixelmap data is nullptr, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     ImageInfo srcImageInfo =
@@ -1799,8 +1801,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixel by rect current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("write pixel by rect current pixel map data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("write pixel by rect current pixel map data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
     uint32_t bytesPerPixel = ImageUtils::GetPixelBytes(imageInfo_.pixelFormat);
@@ -1835,8 +1837,8 @@ uint32_t PixelMap::WritePixels(const uint8_t *source, const uint64_t &bufferSize
         IMAGE_LOGE("write pixels by buffer current pixelmap image info is invalid.");
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("write pixels by buffer current pixelmap data is nullptr.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("write pixels by buffer current pixelmap data is nullptr, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_WRITE_PIXELMAP_FAILED;
     }
 
@@ -1877,8 +1879,8 @@ bool PixelMap::WritePixels(const uint32_t &color)
         IMAGE_LOGE("erase pixels by color current pixelmap image info is invalid.");
         return false;
     }
-    if (data_ == nullptr) {
-        IMAGE_LOGE("erase pixels by color current pixel map data is null.");
+    if (isUnMap_ || data_ == nullptr) {
+        IMAGE_LOGE("erase pixels by color current pixel map data is null, %{public}d.", isUnMap_);
         return false;
     }
     ImageInfo srcInfo =
@@ -1998,8 +2000,8 @@ bool PixelMap::WriteAshmemDataToParcel(Parcel &parcel, size_t size) const
 bool PixelMap::WriteImageData(Parcel &parcel, size_t size) const
 {
     const uint8_t *data = data_;
-    if (data == nullptr || size > MAX_IMAGEDATA_SIZE) {
-        IMAGE_LOGE("WriteImageData failed, data is null or size bigger than 128M.");
+    if (isUnMap_ || data == nullptr || size > MAX_IMAGEDATA_SIZE) {
+        IMAGE_LOGE("WriteImageData failed, data is null or size bigger than 128M, isUnMap %{public}d.", isUnMap_);
         return false;
     }
 
@@ -2836,10 +2838,10 @@ bool PixelMap::EncodeTlv(std::vector<uint8_t> &buff) const
     WriteUint8(buff, TLV_IMAGE_DATA);
     const uint8_t *data = data_;
     uint64_t dataSize = static_cast<uint64_t>(rowDataSize_) * static_cast<uint64_t>(imageInfo_.size.height);
-    if (data == nullptr || dataSize > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
+    if (isUnMap_ || data == nullptr || size_t(dataSize) > MAX_IMAGEDATA_SIZE || dataSize <= 0) {
         WriteVarint(buff, 0); // L is zero and no value
         WriteUint8(buff, TLV_END); // end tag
-        IMAGE_LOGE("pixel map tlv encode fail: no data or invalid dataSize");
+        IMAGE_LOGE("pixel map tlv encode fail: no data, isUnMap %{public}d", isUnMap_);
         return false;
     }
     WriteVarint(buff, static_cast<int32_t>(dataSize));
@@ -3213,8 +3215,8 @@ uint32_t PixelMap::CheckAlphaFormatInput(PixelMap &wPixelMap, const bool isPremu
     void* dstData = wPixelMap.GetWritablePixels();
     int32_t stride = wPixelMap.GetRowStride();
 
-    if (dstData == nullptr || data_ == nullptr) {
-        IMAGE_LOGE("read pixels by dstPixelMap or srcPixelMap data is null.");
+    if (isUnMap_ || dstData == nullptr || data_ == nullptr) {
+        IMAGE_LOGE("read pixels by dstPixelMap or srcPixelMap data is null, isUnMap %{public}d.", isUnMap_);
         return ERR_IMAGE_READ_PIXELMAP_FAILED;
     }
     if (!((GetAlphaType() == AlphaType::IMAGE_ALPHA_TYPE_PREMUL && !isPremul) ||
@@ -3304,9 +3306,9 @@ uint32_t PixelMap::SetAlpha(const float percent)
         return ERR_IMAGE_INVALID_PARAMETER;
     }
     int8_t alphaIndex = GetAlphaIndex(pixelFormat);
-    if (alphaIndex == INVALID_ALPHA_INDEX) {
-        IMAGE_LOGE("Could not set alpha on %{public}s",
-            GetNamedPixelFormat(pixelFormat).c_str());
+    if (isUnMap_ || alphaIndex == INVALID_ALPHA_INDEX) {
+        IMAGE_LOGE("Could not set alpha on %{public}s, isUnMap %{public}d",
+            GetNamedPixelFormat(pixelFormat).c_str(), isUnMap_);
         return ERR_IMAGE_DATA_UNSUPPORT;
     }
 
@@ -3507,6 +3509,10 @@ bool PixelMap::DoTranslation(TransInfos &infos, const AntiAliasingOption &option
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
+    if (isUnMap_) {
+        IMAGE_LOGE("DoTranslation falied, isUnMap %{public}d", isUnMap_);
+        return false;
+    }
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
     SkTransInfo dst;
@@ -3653,6 +3659,10 @@ uint32_t PixelMap::crop(const Rect &rect)
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
     GenSrcTransInfo(src, imageInfo, this, ToSkColorSpace(this));
 #else
+    if (isUnMap_) {
+        IMAGE_LOGE("PixelMap::crop falied, isUnMap %{public}d", isUnMap_);
+        return ERR_IMAGE_CROP;
+    }
     GenSrcTransInfo(src, imageInfo, data_, ToSkColorSpace(this));
 #endif
     SkTransInfo dst;
@@ -3720,6 +3730,58 @@ void PixelMap::SetToSdrColorSpaceIsSRGB(bool isSRGB)
 bool PixelMap::GetToSdrColorSpaceIsSRGB()
 {
     return toSdrColorIsSRGB_;
+}
+
+bool PixelMap::UnMap()
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(*unmapMutex_);
+    if (!isUnMap_) {
+        unMapCount_++;
+        isUnMap_ = true;
+        
+        if (data_ != nullptr) {
+            ::munmap(data_, pixelsSize_);
+            data_ = nullptr;
+        }
+    }
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool PixelMap::ReMap()
+{
+#if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) &&!defined(ANDROID_PLATFORM)
+    if (allocatorType_ != AllocatorType::SHARE_MEM_ALLOC) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(*unmapMutex_);
+    if (!isUnMap_) {
+        return true;
+    }
+
+    int *fd = static_cast<int *>(context_);
+    if (fd == nullptr) {
+        return false;
+    }
+
+    void *ptr = ::mmap(nullptr, pixelsSize_, PROT_READ, MAP_SHARED, *fd, 0);
+    if (ptr == MAP_FAILED) {
+        return false;
+    }
+
+    data_ = (uint8_t *)ptr;
+
+    isUnMap_ = false;
+    return true;
+#else
+    return false;
+#endif
 }
 
 uint32_t PixelMap::ToSdr()
@@ -3824,6 +3886,10 @@ uint32_t PixelMap::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColor
     uint64_t rowStride = src.info.minRowBytes();
     uint8_t* srcData = data_;
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
+    if (isUnMap_) {
+        IMAGE_LOGE("PixelMap::ApplyColorSpace falied, isUnMap %{public}d", isUnMap_);
+        return ERR_IMAGE_COLOR_CONVERT;
+    }
     if (GetAllocatorType() == AllocatorType::DMA_ALLOC && GetFd() != nullptr) {
         SurfaceBuffer* sbBuffer = reinterpret_cast<SurfaceBuffer*>(GetFd());
         rowStride = static_cast<uint64_t>(sbBuffer->GetStride());

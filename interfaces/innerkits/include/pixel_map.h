@@ -334,6 +334,42 @@ public:
         allocatorType_ = allocatorType;
     }
 
+    // unmap方案, 减少RenderService内存占用
+    NATIVEEXPORT bool UnMap();
+    NATIVEEXPORT bool ReMap();
+    NATIVEEXPORT bool IsUnMap()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return isUnMap_;
+    }
+    NATIVEEXPORT void IncreaseUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        useCount_ += 1;
+    }
+    NATIVEEXPORT void DecreaseUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        if (useCount_ > 0) {
+            useCount_ -= 1;
+        }
+    }
+    NATIVEEXPORT void ResetUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        useCount_ = 0;
+    }
+    NATIVEEXPORT uint64_t GetUseCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return useCount_;
+    }
+    NATIVEEXPORT uint64_t GetUnMapCount()
+    {
+        std::lock_guard<std::mutex> lock(*unmapMutex_);
+        return unMapCount_;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -413,7 +449,8 @@ protected:
 
     bool CheckValidParam(int32_t x, int32_t y)
     {
-        return (data_ == nullptr) || (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
+        return isUnMap_ || (data_ == nullptr) ||
+                       (x >= imageInfo_.size.width) || (x < 0) || (y >= imageInfo_.size.height) ||
                        (y < 0) || (pixelsSize_ < static_cast<uint64_t>(rowDataSize_) * imageInfo_.size.height)
                    ? false
                    : true;
@@ -485,6 +522,12 @@ protected:
     std::shared_ptr<std::mutex> metadataMutex_ = std::make_shared<std::mutex>();
     std::shared_ptr<std::mutex> translationMutex_ = std::make_shared<std::mutex>();
     bool toSdrColorIsSRGB_ = false;
+private:
+    // unmap方案, 减少RenderService内存占用
+    bool isUnMap_ = false;
+    uint64_t useCount_ = 0ULL;
+    uint64_t unMapCount_ = 0;
+    std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
 };
 } // namespace Media
 } // namespace OHOS
