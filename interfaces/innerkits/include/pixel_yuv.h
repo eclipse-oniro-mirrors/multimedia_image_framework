@@ -90,7 +90,7 @@ protected:
 #endif
 private:
     bool IsP010Yuv();
-    void GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo)
+    void GetYUVInfoForCopyPixels(YUVDataInfo &yuvDataInfo);
 };
 } // namespace Media
 } // namespace OHOS
