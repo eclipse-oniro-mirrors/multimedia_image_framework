@@ -2017,7 +2017,7 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
     opt.size.width = PIXEL_MAP_BIG_TEST_WIDTH;
     opt.size.height = PIXEL_MAP_BIG_TEST_HEIGHT;
     opt.useDMA = true;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, length, opt);
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, dataLength, opt);
     if (srcData != nullptr) {
         delete[] srcData;
         srcData = nullptr;
