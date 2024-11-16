@@ -2166,7 +2166,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
     int32_t width = PIXEL_MAP_BIG_TEST_WIDTH * xAxis;
-    int32_t height = PIXEL_MAP_BIG_TEST_WIDTH * yAxis;
+    int32_t height = PIXEL_MAP_BIG_TEST_HEIGHT * yAxis;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
     if (data != nullptr) {
