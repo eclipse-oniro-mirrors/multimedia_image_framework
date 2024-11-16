@@ -1955,10 +1955,10 @@ HWTEST_F(ImagePixelMapTest, ModifyImageProperty001, TestSize.Level3)
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ModifyImageProperty001 end";
 }
 
-std::unique_ptr<PixelMap> ConstructSLRPixelMap(uint32_t** dataIn)
+std::unique_ptr<PixelMap> ConstructSLRPixelMap()
 {
     const uint32_t dataLength = PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_TEST_HEIGHT;
-    uint32_t* data = new uint32_t[dataLength];
+    uint32_t* srcData = new uint32_t[dataLength];
     for (uint32_t i = 0; i < dataLength; i++) {
         data[i] = 0xFFFF0000;
     }
@@ -1967,8 +1967,11 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMap(uint32_t** dataIn)
     opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
     opts.size.width = PIXEL_MAP_TEST_WIDTH;
     opts.size.height = PIXEL_MAP_TEST_HEIGHT;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
-    *dataIn = data;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, dataLength, opts);
+    if (srcData != nullptr) {
+        delete[] srcData;
+        srcData = nullptr;
+    }
     return pixelMap;
 }
 
@@ -2003,9 +2006,9 @@ std::unique_ptr<PixelMap> ConstructSLRBigPixmap()
 
 std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
 {
-    const uint32_t length = PIXEL_MAP_BIG_TEST_HEIGHT * PIXEL_MAP_BIG_TEST_WIDTH;
-    uint32_t* srcData = new uint32_t[length];
-    for (uint32_t i = 0; i < length; i++) {
+    const uint32_t dataLength = PIXEL_MAP_BIG_TEST_HEIGHT * PIXEL_MAP_BIG_TEST_WIDTH;
+    uint32_t* srcData = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
         srcData[i] = 0xFFFF0000;
     }
     InitializationOptions opt;
@@ -2015,7 +2018,10 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
     opt.size.height = PIXEL_MAP_BIG_TEST_HEIGHT;
     opt.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, length, opt);
-    *dataIn = srcData;
+    if (srcData != nullptr) {
+        delete[] srcData;
+        srcData = nullptr;
+    }
     return pixelMap;
 }
 
@@ -2027,8 +2033,7 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale start";
-    uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = 1.5f; // 1.5f scale test
     float yAxis = 1.8f; // 1.8f scale test
@@ -2039,10 +2044,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR001, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT * yAxis;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR001 scale end";
 }
 
@@ -2076,8 +2077,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR002, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR003 scale start";
-    uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = .0f; // .0f invalid scale size
     float yAxis = .0f; // .0f invalid scale size
@@ -2088,10 +2088,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR003 scale end";
 }
 
@@ -2103,8 +2099,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR003, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR004 scale start";
-    uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = -1.0f; // -1.0f invalid scale size
     float yAxis = -2.0f; // -2.0f invalid scale size
@@ -2115,10 +2110,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR004 scale end";
 }
 
@@ -2130,8 +2121,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR004, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale start";
-    uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap();
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_WIDTH;
     float yAxis = static_cast<float>(INT32_MAX) / PIXEL_MAP_TEST_HEIGHT;
@@ -2142,10 +2132,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
     int32_t height = PIXEL_MAP_TEST_HEIGHT;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale end";
 }
 
@@ -2157,8 +2143,7 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
 HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR006 scale start";
-    uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMapWithDMA(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMapWithDMA();
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = 1.7f; // 1.7f scale test
     float yAxis = 0.9f; // 0.9f scale test
@@ -2169,10 +2154,6 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
     int32_t height = PIXEL_MAP_BIG_TEST_HEIGHT * yAxis;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
-    if (data != nullptr) {
-        delete[] data;
-        data = nullptr;
-    }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR006 scale end";
 }
 } // namespace Multimedia
