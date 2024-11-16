@@ -2158,15 +2158,15 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
 {
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR006 scale start";
     uint32_t* data = nullptr;
-    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMapWithDMA(&data);
     EXPECT_NE(pixelMap, nullptr);
     float xAxis = 1.5f; // 1.5f scale test
     float yAxis = 1.8f; // 1.8f scale test
     pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
     ImageInfo outInfo;
     pixelMap->GetImageInfo(outInfo);
-    int32_t width = PIXEL_MAP_TEST_WIDTH * xAxis;
-    int32_t height = PIXEL_MAP_TEST_HEIGHT * yAxis;
+    int32_t width = PIXEL_MAP_BIG_TEST_WIDTH * xAxis;
+    int32_t height = PIXEL_MAP_BIG_TEST_WIDTH * yAxis;
     EXPECT_EQ(width, outInfo.size.width);
     EXPECT_EQ(height, outInfo.size.height);
     if (data != nullptr) {
