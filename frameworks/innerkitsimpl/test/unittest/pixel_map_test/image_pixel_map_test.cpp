@@ -2011,8 +2011,8 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
     InitializationOptions opt;
     opt.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
     opt.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    opt.size.width = PIXEL_MAP_TEST_WIDTH;
-    opt.size.height = PIXEL_MAP_TEST_HEIGHT;
+    opt.size.width = PIXEL_MAP_BIG_TEST_WIDTH;
+    opt.size.height = PIXEL_MAP_BIG_TEST_HEIGHT;
     opt.useDMA = true;
     std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, length, opt);
     *dataIn = srcData;
