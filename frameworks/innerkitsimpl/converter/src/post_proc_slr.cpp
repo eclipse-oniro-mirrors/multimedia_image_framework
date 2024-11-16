@@ -150,7 +150,7 @@ bool SLRBoxCheck(const SLRSliceKey &key, const SLRMat &src, const SLRMat &dst, c
         return false;
     }
     int dstIndex = key.x * dst.rowStride_ + key.y;
-    int maxDstSize = dstM * dstN;
+    int maxDstSize = dstM * st.rowStride_;
     if (dstIndex >= maxDstSize) {
         IMAGE_LOGE("SLRBoxCheck dst index error:%{public}d, %{public}d", dstIndex, maxDstSize);
         return false;
@@ -175,7 +175,7 @@ void SLRBox(const SLRSliceKey &key, const SLRMat &src, SLRMat &dst, const SLRWei
     int rStart = etaI - aX + 1, rEnd = etaI + aX;
     int cStart = etaJ - aY + 1, cEnd = etaJ + aY;
     float rgba[4]{ .0f, .0f, .0f, .0f };
-    int maxSrcSize = srcM * srcN;
+    int maxSrcSize = srcM * src.rowStride_;
     for (int r = rStart; r <= rEnd; ++r) {
         int nR = min(max(0, r), srcM - 1);
         for (int c = cStart; c <= cEnd; ++c) {

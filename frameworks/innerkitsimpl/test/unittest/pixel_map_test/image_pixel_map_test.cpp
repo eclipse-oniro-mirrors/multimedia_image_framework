@@ -2001,6 +2001,24 @@ std::unique_ptr<PixelMap> ConstructSLRBigPixmap()
     return pixelMap;
 }
 
+std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
+{
+    const uint32_t dataLength = PIXEL_MAP_BIG_TEST_WIDTH * PIXEL_MAP_BIG_TEST_HEIGHT;
+    uint32_t* data = new uint32_t[dataLength];
+    for (uint32_t i = 0; i < dataLength; i++) {
+        data[i] = 0xFFFF0000;
+    }
+    InitializationOptions opts;
+    opts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opts.size.width = PIXEL_MAP_TEST_WIDTH;
+    opts.size.height = PIXEL_MAP_TEST_HEIGHT;
+    opts.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
+    *dataIn = data;
+    return pixelMap;
+}
+
 /**
 * @tc.name: ImagePixelMapSLR001
 * @tc.desc: test SLR
@@ -2129,6 +2147,33 @@ HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR005, TestSize.Level3)
         data = nullptr;
     }
     GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR005 scale end";
+}
+
+/**
+* @tc.name: ImagePixelMapSLR006
+* @tc.desc: test SLR with DMA
+* @tc.type: FUNC
+*/
+HWTEST_F(ImagePixelMapTest, ImagePixelMapSLR006, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR006 scale start";
+    uint32_t* data = nullptr;
+    std::unique_ptr<PixelMap> pixelMap = ConstructSLRPixelMap(&data);
+    EXPECT_NE(pixelMap, nullptr);
+    float xAxis = 1.5f; // 1.5f scale test
+    float yAxis = 1.8f; // 1.8f scale test
+    pixelMap->scale(xAxis, yAxis, AntiAliasingOption::SLR);
+    ImageInfo outInfo;
+    pixelMap->GetImageInfo(outInfo);
+    int32_t width = PIXEL_MAP_TEST_WIDTH * xAxis;
+    int32_t height = PIXEL_MAP_TEST_HEIGHT * yAxis;
+    EXPECT_EQ(width, outInfo.size.width);
+    EXPECT_EQ(height, outInfo.size.height);
+    if (data != nullptr) {
+        delete[] data;
+        data = nullptr;
+    }
+    GTEST_LOG_(INFO) << "ImagePixelMapTest: ImagePixelMapSLR006 scale end";
 }
 } // namespace Multimedia
 } // namespace OHOS

@@ -860,7 +860,7 @@ bool PostProc::ScalePixelMapWithSLR(const Size &desiredSize, PixelMap &pixelMap)
         IMAGE_LOGE("ScalePixelMapWithSLR create memory failed");
         return false;
     }
-    size_t rowStride;
+    size_t rowStride = 0;
     if (m->GetType() == AllocatorType::DMA_ALLOC) {
 #if !defined(_WIN32) && !defined(_APPLE) && !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
         rowStride = reinterpret_cast<SurfaceBuffer*>(m->extend.data)->GetStride();
