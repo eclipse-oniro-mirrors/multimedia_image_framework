@@ -2003,19 +2003,19 @@ std::unique_ptr<PixelMap> ConstructSLRBigPixmap()
 
 std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
 {
-    const uint32_t dataLength = PIXEL_MAP_BIG_TEST_WIDTH * PIXEL_MAP_BIG_TEST_HEIGHT;
-    uint32_t* data = new uint32_t[dataLength];
-    for (uint32_t i = 0; i < dataLength; i++) {
-        data[i] = 0xFFFF0000;
+    const uint32_t length = PIXEL_MAP_BIG_TEST_HEIGHT * PIXEL_MAP_BIG_TEST_WIDTH;
+    uint32_t* srcData = new uint32_t[length];
+    for (uint32_t i = 0; i < length; i++) {
+        srcData[i] = 0xFFFF0000;
     }
-    InitializationOptions opts;
-    opts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
-    opts.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
-    opts.size.width = PIXEL_MAP_TEST_WIDTH;
-    opts.size.height = PIXEL_MAP_TEST_HEIGHT;
-    opts.useDMA = true;
-    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(data, dataLength, opts);
-    *dataIn = data;
+    InitializationOptions opt;
+    opt.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
+    opt.alphaType = AlphaType::IMAGE_ALPHA_TYPE_OPAQUE;
+    opt.size.width = PIXEL_MAP_TEST_WIDTH;
+    opt.size.height = PIXEL_MAP_TEST_HEIGHT;
+    opt.useDMA = true;
+    std::unique_ptr<PixelMap> pixelMap = PixelMap::Create(srcData, length, opt);
+    *dataIn = srcData;
     return pixelMap;
 }
 
