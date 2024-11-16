@@ -2004,7 +2004,7 @@ std::unique_ptr<PixelMap> ConstructSLRBigPixmap()
     return pixelMap;
 }
 
-std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA(uint32_t** dataIn)
+std::unique_ptr<PixelMap> ConstructSLRPixelMapWithDMA()
 {
     const uint32_t dataLength = PIXEL_MAP_BIG_TEST_HEIGHT * PIXEL_MAP_BIG_TEST_WIDTH;
     uint32_t* srcData = new uint32_t[dataLength];
