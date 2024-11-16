@@ -1960,7 +1960,7 @@ std::unique_ptr<PixelMap> ConstructSLRPixelMap()
     const uint32_t dataLength = PIXEL_MAP_TEST_WIDTH * PIXEL_MAP_TEST_HEIGHT;
     uint32_t* srcData = new uint32_t[dataLength];
     for (uint32_t i = 0; i < dataLength; i++) {
-        data[i] = 0xFFFF0000;
+        srcData[i] = 0xFFFF0000;
     }
     InitializationOptions opts;
     opts.pixelFormat = OHOS::Media::PixelFormat::RGBA_8888;
