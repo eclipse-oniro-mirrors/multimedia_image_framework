@@ -290,8 +290,8 @@ int32_t PixelMap::GetRGBxRowDataSize(const ImageInfo& info)
         return -1;
     }
     int32_t pixelBytes = ImageUtils::GetPixelBytes(info.pixelFormat);
-    if (pixelBytes < 0) {
-        IMAGE_LOGE("[ImageUtil]get rgbx pixel bytes failed");
+    if (pixelBytes < 0 || (pixelBytes != 0 && info.size.width > INT32_MAX / pixelBytes)) {
+        IMAGE_LOGE("[ImageUtil]obtained an out of range value for rgbx pixel bytes");
         return -1;
     }
     return pixelBytes * info.size.width;
@@ -304,8 +304,8 @@ int32_t PixelMap::GetRGBxByteCount(const ImageInfo& info)
         return -1;
     }
     int32_t rowDataSize = GetRGBxRowDataSize(info);
-    if (rowDataSize < 0) {
-        IMAGE_LOGE("[ImageUtil]get rgbx row data size failed");
+    if (rowDataSize < 0 || (rowDataSize != 0 && info.size.height > INT32_MAX / rowDataSize)) {
+        IMAGE_LOGE("[ImageUtil]obtained an out of range value for rgbx row data size");
         return -1;
     }
     return rowDataSize * info.size.height;
@@ -3211,6 +3211,10 @@ static void CheckPixel(uint16_t &pixel, uint16_t alpha, const float percent)
 
 static void SetRGBA1010102PixelAlpha(uint8_t *src, const float percent, int8_t alphaIndex, bool isPixelPremul)
 {
+    if (src == nullptr) {
+        IMAGE_LOGE("SetRGBA1010102PixelAlpha invalid input parameter: src is null");
+        return;
+    }
     if (isPixelPremul) {
         uint16_t r = 0;
         uint16_t g = 0;
@@ -3393,6 +3397,11 @@ uint32_t PixelMap::SetAlpha(const float percent)
 
     uint32_t uPixelsSize = static_cast<uint32_t>(pixelsSize);
     for (uint32_t i = 0; i < uPixelsSize; i += static_cast<uint32_t>(pixelBytes_)) {
+        if (i + pixelBytes_ > uPixelsSize) {
+            IMAGE_LOGE("In setAlpha, the number of pixelBytes to be configure: %{public}d"
+                " is greater than the remaining size of pixelSize: %{public}d", pixelBytes_, pixelsSize - i);
+            break;
+        }
         uint8_t* pixel = data_ + i;
         if (pixelFormat == PixelFormat::RGBA_F16) {
             SetF16PixelAlpha(pixel, percent, isPixelPremul);
