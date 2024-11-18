@@ -345,31 +345,34 @@ static std::unique_ptr<PixelMap> ComposeHdrPixelMap(
 
 std::unique_ptr<PixelMap> Picture::GetHdrComposedPixelMap()
 {
-    if (mainPixelMap_ == nullptr) {
-        IMAGE_LOGE("picture mainPixelMap_ is empty.");
+    std::shared_ptr<PixelMap> gainmap = GetGainmapPixelMap();
+    if (mainPixelMap_ == nullptr || gainmap == nullptr) {
+        IMAGE_LOGE("picture mainPixelMap_ or gainmap is empty.");
         return nullptr;
     }
-    if (!HasAuxiliaryPicture(AuxiliaryPictureType::GAINMAP) ||
-        mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC) {
-        IMAGE_LOGE("Unsupport HDR compose.");
+    if (mainPixelMap_->GetAllocatorType() != AllocatorType::DMA_ALLOC || mainPixelMap_->GetFd() == nullptr ||
+        gainmap->GetAllocatorType() != AllocatorType::DMA_ALLOC || gainmap->GetFd() == nullptr) {
+        IMAGE_LOGE("Unsupport HDR compose, only support the DMA allocation.");
         return nullptr;
     }
-    std::shared_ptr<PixelMap> gainmap = Picture::GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)->GetContentPixel();
     ImageHdrType hdrType = gainmap->GetHdrType();
-    std::shared_ptr<HdrMetadata> metadata = gainmap->GetHdrMetadata();
+    HdrMetadata metadata;
+    if (gainmap->GetHdrMetadata() != nullptr) {
+        metadata = *(gainmap->GetHdrMetadata());
+    }
 
     CM_ColorSpaceType baseCmColor =
         ImageSource::ConvertColorSpaceType(mainPixelMap_->InnerGetGrColorSpace().GetColorSpaceName(), true);
     sptr<SurfaceBuffer> baseSptr(reinterpret_cast<SurfaceBuffer*>(mainPixelMap_->GetFd()));
-    VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, *metadata);
+    VpeUtils::SetSurfaceBufferInfo(baseSptr, false, hdrType, baseCmColor, metadata);
 
     sptr<SurfaceBuffer> gainmapSptr(reinterpret_cast<SurfaceBuffer*>(gainmap->GetFd()));
     CM_ColorSpaceType hdrCmColor = CM_BT2020_HLG_FULL;
-    CM_ColorSpaceType gainmapCmColor = metadata->extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
+    CM_ColorSpaceType gainmapCmColor = metadata.extendMeta.metaISO.useBaseColorFlag == 0x01 ? baseCmColor : hdrCmColor;
     IMAGE_LOGD("ComposeHdrImage color flag = %{public}d, gainmapChannelNum = %{public}d",
-        metadata->extendMeta.metaISO.useBaseColorFlag, metadata->extendMeta.metaISO.gainmapChannelNum);
-    ImageSource::SetVividMetaColor(*metadata, baseCmColor, gainmapCmColor, hdrCmColor);
-    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, *metadata);
+        metadata.extendMeta.metaISO.useBaseColorFlag, metadata.extendMeta.metaISO.gainmapChannelNum);
+    ImageSource::SetVividMetaColor(metadata, baseCmColor, gainmapCmColor, hdrCmColor);
+    VpeUtils::SetSurfaceBufferInfo(gainmapSptr, true, hdrType, gainmapCmColor, metadata);
 
     auto hdrPixelMap = ComposeHdrPixelMap(hdrType, hdrCmColor, mainPixelMap_, baseSptr, gainmapSptr);
     SetImageInfoToHdr(mainPixelMap_, hdrPixelMap);
@@ -382,7 +385,11 @@ std::shared_ptr<PixelMap> Picture::GetGainmapPixelMap()
         IMAGE_LOGE("Unsupport gain map.");
         return nullptr;
     } else {
-        return GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP)->GetContentPixel();
+        auto auxiliaryPicture = GetAuxiliaryPicture(AuxiliaryPictureType::GAINMAP);
+        if (auxiliaryPicture == nullptr) {
+            return nullptr;
+        }
+        return auxiliaryPicture->GetContentPixel();
     }
 }
 
@@ -397,8 +404,13 @@ std::shared_ptr<AuxiliaryPicture> Picture::GetAuxiliaryPicture(AuxiliaryPictureT
 
 void Picture::SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture)
 {
-    auxiliaryPictures_[picture->GetType()] = picture;
-    if (picture != nullptr && picture->GetType() == AuxiliaryPictureType::GAINMAP) {
+    if (picture == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is nullptr.");
+        return;
+    }
+    AuxiliaryPictureType type = picture->GetType();
+    auxiliaryPictures_[type] = picture;
+    if (type == AuxiliaryPictureType::GAINMAP) {
         std::shared_ptr<PixelMap> gainmapPixel = GetGainmapPixelMap();
         if (gainmapPixel != nullptr && mainPixelMap_ != nullptr) {
             mainPixelMap_->SetHdrMetadata(gainmapPixel->GetHdrMetadata());
@@ -409,7 +421,8 @@ void Picture::SetAuxiliaryPicture(std::shared_ptr<AuxiliaryPicture> &picture)
 
 bool Picture::HasAuxiliaryPicture(AuxiliaryPictureType type)
 {
-    return auxiliaryPictures_.find(type) != auxiliaryPictures_.end();
+    auto item = auxiliaryPictures_.find(type);
+    return item != auxiliaryPictures_.end() && item->second != nullptr;
 }
 
 bool Picture::Marshalling(Parcel &data) const
@@ -509,6 +522,10 @@ Picture *Picture::Unmarshalling(Parcel &parcel, PICTURE_ERR &error)
     bool hasMaintenanceData = parcel.ReadBool();
     if (hasMaintenanceData) {
         sptr<SurfaceBuffer> surfaceBuffer = SurfaceBuffer::Create();
+        if (surfaceBuffer == nullptr) {
+            IMAGE_LOGE("SurfaceBuffer failed to be created.");
+            return nullptr;
+        }
         if (surfaceBuffer->ReadFromMessageParcel(reinterpret_cast<MessageParcel&>(parcel)) != GSError::GSERROR_OK) {
             IMAGE_LOGE("Failed to unmarshal maintenance data");
             return nullptr;

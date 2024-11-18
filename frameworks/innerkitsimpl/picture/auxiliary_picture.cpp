@@ -102,12 +102,15 @@ std::shared_ptr<ImageMetadata> AuxiliaryPicture::GetMetadata(MetadataType type)
 
 void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata)
 {
-    metadatas_[type] = metadata;
+    if (metadata != nullptr) {
+        metadatas_[type] = metadata;
+    }
 }
 
 bool AuxiliaryPicture::HasMetadata(MetadataType type)
 {
-    return metadatas_.find(type) != metadatas_.end();
+    auto item = metadatas_.find(type);
+    return item != metadatas_.end() && item->second != nullptr;
 }
 
 bool AuxiliaryPicture::Marshalling(Parcel &data) const
@@ -156,8 +159,13 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
     
-    for (const auto &metadata : metadatas_) {
-        if (!(data.WriteInt32(static_cast<int32_t>(metadata.first)) && metadata.second->Marshalling(data))) {
+    for (const auto &[type, metadata] : metadatas_) {
+        int32_t typeInt32 = static_cast<int32_t>(type);
+        if (metadata == nullptr) {
+            IMAGE_LOGE("Metadata %{public}d is nullptr.", typeInt32);
+            return false;
+        }
+        if (!(data.WriteInt32(typeInt32) && metadata->Marshalling(data))) {
             IMAGE_LOGE("Failed to marshal metadatas.");
             return false;
         }
