@@ -350,16 +350,34 @@ std::vector<std::pair<std::string, std::string>> GetArrayArgument(napi_env env, 
     return kVStrArray;
 }
 
-napi_value CreateErrorArray(napi_env env, std::multimap<std::int32_t, std::string> errMsgArray)
+static bool FragmentValueIsError(const std::multimap<std::int32_t, std::string> &errMsgArray)
+{
+    static std::set<std::string> fragmentKeys = {
+        "XInOriginal", "YInOriginal", "FragmentImageWidth", "FragmentImageHeight"
+    };
+    for (const auto &errMsg : errMsgArray) {
+        // As long as a key is found, return true
+        if (fragmentKeys.find(errMsg.second) != fragmentKeys.end()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+napi_value CreateErrorArray(napi_env env, const MetadataNapiAsyncContext *context)
 {
     napi_value result = nullptr;
     std::string errkey = "";
-    for (const auto &entry : errMsgArray) {
-        errkey += entry.second + " ";
+    if (context->errMsgArray.empty()) {
+        return result;
     }
-
-    if (errMsgArray.size() != 0) {
-        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_BAD_PARAMETER,
+    for (const auto &errMsg : context->errMsgArray) {
+        errkey += errMsg.second + " ";
+    }
+    if (context->rMetadata->GetType() == MetadataType::FRAGMENT && FragmentValueIsError(context->errMsgArray)) {
+        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_BAD_PARAMETER, "The input value is incorrect!");
+    } else {
+        ImageNapiUtils::CreateErrorObj(env, result, IMAGE_UNSUPPORTED_METADATA,
             "The input data is incorrect! error key: " + errkey);
     }
     return result;
@@ -380,7 +398,7 @@ static void GetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
     if (context->status == SUCCESS) {
         result[NUM_1] = SetArrayInfo(env, context->KVSArray);
     } else {
-        result[NUM_0] = CreateErrorArray(env, context->errMsgArray);
+        result[NUM_0] = CreateErrorArray(env, context);
     }
 
     if (context->status == SUCCESS) {
@@ -405,7 +423,7 @@ static void SetPropertiesComplete(napi_env env, napi_status status, MetadataNapi
     napi_get_undefined(env, &result[NUM_0]);
     napi_get_undefined(env, &result[NUM_1]);
 
-    result[NUM_0] = CreateErrorArray(env, context->errMsgArray);
+    result[NUM_0] = CreateErrorArray(env, context);
     if (context->status == SUCCESS) {
         napi_resolve_deferred(env, context->deferred, result[NUM_1]);
     } else {
