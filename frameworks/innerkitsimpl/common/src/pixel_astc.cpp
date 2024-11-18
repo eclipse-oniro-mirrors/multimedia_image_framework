@@ -43,6 +43,12 @@ PixelAstc::~PixelAstc()
     FreePixelMap();
 }
 
+const uint8_t *PixelAstc::GetPixel(int32_t x, int32_t y)
+{
+    IMAGE_LOGE("GetPixel is not support on pixelastc");
+    return nullptr;
+}
+
 const uint8_t *PixelAstc::GetPixel8(int32_t x, int32_t y)
 {
     IMAGE_LOGE("GetPixel8 is not support on pixelastc");
@@ -84,6 +90,12 @@ void PixelAstc::scale(float xAxis, float yAxis)
         imageInfo.size.height *= abs(yAxis);
         SetImageInfo(imageInfo, true);
     }
+}
+
+void PixelAstc::scale(float xAxis, float yAxis, const AntiAliasingOption &option)
+{
+    IMAGE_LOGE("scale is not support on pixelastc");
+    return;
 }
 
 bool PixelAstc::resize(float xAxis, float yAxis)
@@ -197,6 +209,12 @@ uint32_t PixelAstc::ReadPixel(const Position &pos, uint32_t &dst)
     return ERR_IMAGE_INVALID_PARAMETER;
 }
 
+uint32_t PixelAstc::ReadARGBPixels(const uint64_t &bufferSize, uint8_t *dst)
+{
+    IMAGE_LOGE("ReadARGBPixels is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
 uint32_t PixelAstc::ResetConfig(const Size &size, const PixelFormat &format)
 {
     IMAGE_LOGE("ResetConfig is not support on pixelastc");
@@ -266,6 +284,98 @@ void* PixelAstc::GetWritablePixels() const
 {
     IMAGE_LOGE("GetWritablePixels is not support on pixelastc");
     return nullptr;
+}
+
+uint32_t PixelAstc::ConvertAlphaFormat(PixelMap &wPixelMap, const bool isPremul)
+{
+    IMAGE_LOGE("ConvertAlphaFormat is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+#ifdef IMAGE_COLORSPACE_FLAG
+    uint32_t PixelAstc::ApplyColorSpace(const OHOS::ColorManager::ColorSpace &grColorSpace)
+    {
+        IMAGE_LOGE("ApplyColorSpace is not support on pixelastc");
+        return ERR_IMAGE_INVALID_PARAMETER;
+    }
+#endif
+
+uint32_t PixelAstc::GetImagePropertyInt(const std::string &key, int32_t &value)
+{
+    IMAGE_LOGE("GetImagePropertyInt is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+uint32_t PixelAstc::GetImagePropertyString(const std::string &key, std::string &value)
+{
+    IMAGE_LOGE("GetImagePropertyString is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+uint32_t PixelAstc::ModifyImageProperty(const std::string &key, const std::string &value)
+{
+    IMAGE_LOGE("ModifyImageProperty is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+uint32_t PixelAstc::SetMemoryName(const std::string &pixelMapName)
+{
+    IMAGE_LOGE("SetMemoryName is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+bool PixelAstc::IsHdr()
+{
+    IMAGE_LOGE("IsHdr is not support on pixelastc");
+    return false;
+}
+
+uint32_t PixelAstc::ToSdr()
+{
+    IMAGE_LOGE("ToSdr is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+uint32_t PixelAstc::ToSdr(PixelFormat format, bool toSRGB)
+{
+    IMAGE_LOGE("ToSdr2 is not support on pixelastc");
+    return ERR_IMAGE_INVALID_PARAMETER;
+}
+
+void PixelAstc::SetToSdrColorSpaceIsSRGB(bool isSRGB)
+{
+    IMAGE_LOGE("SetToSdrColorSpaceIsSRGB is not support on pixelastc");
+    return;
+}
+
+bool PixelAstc::GetToSdrColorSpaceIsSRGB()
+{
+    IMAGE_LOGE("GetToSdrColorSpaceIsSRGB is not support on pixelastc");
+    return false;
+}
+
+std::shared_ptr<HdrMetadata> PixelAstc::GetHdrMetadata()
+{
+    IMAGE_LOGE("GetHdrMetadata is not support on pixelastc");
+    return nullptr;
+}
+
+void PixelAstc::SetHdrMetadata(const std::shared_ptr<HdrMetadata> &metadata)
+{
+    IMAGE_LOGE("SetHdrMetadata is not support on pixelastc");
+    return;
+}
+
+OHOS::Media::ImageHdrType PixelAstc::GetHdrType()
+{
+    IMAGE_LOGE("GetHdrType is not support on pixelastc");
+    return static_cast<ImageHdrType>(0);
+}
+
+void PixelAstc::SetHdrType(OHOS::Media::ImageHdrType hdrType)
+{
+    IMAGE_LOGE("SetHdrType is not support on pixelastc");
+    return;
 }
 } // namespace Media
 } // namespace OHOS

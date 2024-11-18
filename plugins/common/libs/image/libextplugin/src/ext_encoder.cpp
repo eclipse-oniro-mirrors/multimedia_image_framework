@@ -331,7 +331,7 @@ static uint32_t pixelToSkInfo(ImageData &image, SkImageInfo &skInfo, Media::Pixe
 
 bool IsAstc(const std::string &format)
 {
-    return format.find("image/astc") == 0;
+    return format.find("image/astc") == 0 || format.find("image/sut") == 0;
 }
 
 static uint32_t CreateAndWriteBlob(MetadataWStream &tStream, PixelMap *pixelmap, SkWStream& outStream,

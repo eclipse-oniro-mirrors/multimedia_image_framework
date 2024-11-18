@@ -44,7 +44,12 @@ constexpr uint8_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t ASTC_NUM_24 = 24;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 constexpr uint8_t DEFAULT_DIM = 4;
-constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 for thumbnail
+constexpr uint8_t ASTC_HIGH_SPEED_PROFILE = 20; // quality level is 20 for thumbnail
+constexpr uint8_t ASTC_BALANCE_PROFILE = 30; // quality level is 30 for thumbnail
+constexpr uint8_t ASTC_HIGH_QUALITY_PROFILE = 100; // quality level is 100 for thumbnail
+constexpr uint8_t SUT_EXTREME_SPEED_PROFILE = 20; // quality level is 20 for thumbnail
+constexpr uint8_t SUT_BALANCE_PROFILE = 30; // quality level is 30 for thumbnail
+constexpr uint8_t SUT_HIGH_QUILITY_PROFILE = 90; // quality level is 90 for thumbnail
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 constexpr uint8_t MASKBITS_FOR_8BITS = 255;
 constexpr uint8_t UINT32_1TH_BYTES = 8;
@@ -61,6 +66,12 @@ static bool CheckClBinIsExist(const std::string &name)
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 #endif
+
+static const std::map<QualityProfile, float> ASTC_PRIFLE_QULITY = {
+    {HIGH_SPEED_PROFILE, ASTCENC_PRE_FAST},
+    {CUSTOMIZED_PROFILE, ASTCENC_PRE_THOROUGH},
+    {HIGH_QUALITY_PROFILE, ASTCENC_PRE_THOROUGH}
+};
 
 #ifdef SUT_ENCODE_ENABLE
 constexpr uint8_t EXPAND_ASTC_INFO_MAX_ENC = 16;
@@ -177,6 +188,10 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int blockZ = 1;
 
     float quality = ASTCENC_PRE_FAST;
+    auto node = ASTC_PRIFLE_QULITY.find(option->privateProfile_);
+    if (node != ASTC_PRIFLE_QULITY.end()) {
+        quality = node->second;
+    }
     unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
@@ -369,18 +384,23 @@ bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pix
     return true;
 }
 
-static QualityProfile GetAstcQuality(int32_t quality)
+static bool GetAstcQuality(uint8_t quality, QualityProfile &privateProfile)
 {
-    QualityProfile privateProfile;
     switch (quality) {
-        case HIGH_SPEED_PROFILE_MAP_QUALITY:
+        case ASTC_HIGH_SPEED_PROFILE:
             privateProfile = HIGH_SPEED_PROFILE;
             break;
-        default:
+        case ASTC_BALANCE_PROFILE:
+            privateProfile = CUSTOMIZED_PROFILE;
+            break;
+        case ASTC_HIGH_QUALITY_PROFILE:
             privateProfile = HIGH_QUALITY_PROFILE;
             break;
+        default:
+            return false;
+            break;
     }
-    return privateProfile;
+    return true;
 }
 
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
@@ -489,17 +509,55 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
 }
 #endif
 
+static bool IsSUT(const std::string &format)
+{
+    return format.find("image/sut") == 0;
+}
+
+static bool GetSutQuality(PlEncodeOptions &astcOpts, uint8_t &quality, SutProfile &profile)
+{
+    if (!IsSUT(astcOpts.format)) {
+        return true;
+    }
+    switch (quality) {
+        case SUT_EXTREME_SPEED_PROFILE:
+            profile = SutProfile::EXTREME_SPEED_WITH_ALPHA;
+            break;
+        case SUT_BALANCE_PROFILE:
+            profile = SutProfile::LOSSLESS_LZ4;
+            break;
+        case SUT_HIGH_QUILITY_PROFILE:
+            profile = SutProfile::LOSSLESS_LZ4;
+            quality = ASTC_HIGH_QUALITY_PROFILE;
+            break;
+        default:
+            profile = SutProfile::SKIP_SUT;
+            return false;
+            break;
+    }
+    return true;
+}
+
 static bool InitAstcEncPara(TextureEncodeOptions &param,
     int32_t width, int32_t height, int32_t stride, PlEncodeOptions &astcOpts)
 {
+    SutProfile sutProfile;
+    QualityProfile qualityProfile;
+    uint8_t quality = astcOpts.quality;
+    if (!GetSutQuality(astcOpts, quality, sutProfile) ||
+        !GetAstcQuality(quality, qualityProfile)) {
+        IMAGE_LOGE("InitAstcEncPara failed %{public}d is invalid!", astcOpts.quality);
+        return false;
+    }
     param.enableQualityCheck = false;
     param.hardwareFlag = false;
     param.sutProfile =
-        ImageSystemProperties::GetSutEncodeEnabled() ? SutProfile::EXTREME_SPEED : SutProfile::SKIP_SUT;
+        (ImageSystemProperties::GetSutEncodeEnabled() && IsSUT(astcOpts.format)) ?
+        sutProfile : SutProfile::SKIP_SUT;
     param.width_ = width;
     param.height_ = height;
     param.stride_ = stride;
-    param.privateProfile_ = GetAstcQuality(astcOpts.quality);
+    param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
     extractDimensions(astcOpts.format, param);
     if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4

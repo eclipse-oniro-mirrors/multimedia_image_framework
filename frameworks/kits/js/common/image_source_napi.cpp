@@ -146,6 +146,7 @@ static std::vector<struct ImageEnum> sPixelMapFormatMap = {
     {"RGBA_1010102", 10, ""},
     {"YCBCR_P010", 11, ""},
     {"YCRCB_P010", 12, ""},
+    {"ASTC_4x4", 102, ""},
 };
 static std::vector<struct ImageEnum> sPropertyKeyMap = {
     {"BITS_PER_SAMPLE", 0, "BitsPerSample"},
