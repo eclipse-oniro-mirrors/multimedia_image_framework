@@ -423,10 +423,13 @@ napi_value PictureNapi::GetAuxiliaryPicture(napi_env env, napi_callback_info inf
     status = napi_unwrap(env, thisVar, reinterpret_cast<void**>(&pictureNapi));
     IMG_NAPI_CHECK_RET_D(IMG_IS_READY(status, pictureNapi), result, IMAGE_LOGE("fail to unwrap PictureNapi"));
     status = napi_get_value_uint32(env, argValue[NUM_0], &auxiType);
-    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), result, IMAGE_LOGE("fail to get auxiliary picture Type"));
-
+    IMG_NAPI_CHECK_RET_D(IMG_IS_OK(status), ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+        "Fail to get auxiliary picture type!"), IMAGE_LOGE("Fail to get auxiliary picture type."));
     AuxiliaryPictureType type = ParseAuxiliaryPictureType(auxiType);
-
+    if (type == AuxiliaryPictureType::NONE) {
+        return ImageNapiUtils::ThrowExceptionError(env, IMAGE_BAD_PARAMETER,
+            "The type does not match the auxiliary picture type!");
+    }
     if (pictureNapi->nativePicture_ != nullptr) {
         auto auxiliaryPic = pictureNapi->nativePicture_->GetAuxiliaryPicture(type);
         if (auxiliaryPic != nullptr) {
