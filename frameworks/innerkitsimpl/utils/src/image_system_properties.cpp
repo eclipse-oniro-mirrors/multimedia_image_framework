@@ -155,7 +155,7 @@ bool ImageSystemProperties::GetAstcHardWareEncodeEnabled()
 bool ImageSystemProperties::GetSutEncodeEnabled()
 {
 #if !defined(IOS_PLATFORM) && !defined(ANDROID_PLATFORM)
-    return system::GetBoolParameter("persist.multimedia.image.SutEncode.enabled", false);
+    return system::GetBoolParameter("persist.multimedia.image.SutEncode.enabled", true);
 #else
     return false;
 #endif
