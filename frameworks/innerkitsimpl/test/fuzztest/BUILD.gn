@@ -17,6 +17,7 @@ group("fuzztest") {
     "imageaccessor_fuzzer:ImageAccessorFuzzTest",
     "imagegifencoder_fuzzer:ImageGifEnCoderFuzzTest",
     "imageheifimpl_fuzzer:ImageHeifImplFuzzTest",
+    "imageinterfacepixelmap_fuzzer:ImageInterfacePixelmapFuzzTest",
     "imagepicture_fuzzer:ImagePictureFuzzTest",
     "imagepixelmapBase_fuzzer:ImagePixelmapBaseFuzzTest",
     "imagepixelmapMarshalling_fuzzer:ImagePixelmapMarshallingFuzzTest",
