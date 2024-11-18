@@ -358,7 +358,7 @@ Image_ErrorCode OH_PackingOptionsForSequence_SetFrameCount(OH_PackingOptionsForS
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    options->frameCount = frameCount;
+    options->frameCount = static_cast<int32_t>(frameCount);
     return IMAGE_SUCCESS;
 }
 
@@ -602,12 +602,12 @@ Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePack
     if (!HandlePackingOptionsForSequence(options, &packOption)) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (sequenceLength >= options->frameCount) {
+    if (sequenceLength >= static_cast<size_t>(options->frameCount)) {
         for (int i = 0; i < options->frameCount; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
     } else {
-        for (int i = 0; i < sequenceLength; i++) {
+        for (size_t i = 0; i < sequenceLength; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
         for (int i = sequenceLength; i < options->frameCount; i++) {
@@ -632,12 +632,12 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePack
     if (!HandlePackingOptionsForSequence(options, &packOption)) {
         return IMAGE_BAD_PARAMETER;
     }
-    if (sequenceLength >= options->frameCount) {
+    if (sequenceLength >= static_cast<size_t>(options->frameCount)) {
         for (int i = 0; i < options->frameCount; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
     } else {
-        for (int i = 0; i < sequenceLength; i++) {
+        for (size_t i = 0; i < sequenceLength; i++) {
             pixelmaps.push_back(pixelmapSequence[i]);
         }
         for (int i = sequenceLength; i < options->frameCount; i++) {

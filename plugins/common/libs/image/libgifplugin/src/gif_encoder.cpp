@@ -49,9 +49,9 @@ const int CLEAR_CODE = 256;
 const int LZ_MAX_CODE = 4095;
 const int FLUSH_OUTPUT = 4096;
 const int FIRST_CODE = 4097;
-const int DEFAULT_DELAY_TIME = 100;
-const int DEFAULT_DISPOSAL_TYPE = 1;
 const int DISPOSAL_METHOD_SHIFT_BIT = 2;
+const uint32_t DEFAULT_DELAY_TIME = 100;
+const uint32_t DEFAULT_DISPOSAL_TYPE = 1;
 
 const uint8_t GIF89_STAMP[] = {0x47, 0x49, 0x46, 0x38, 0x39, 0x61};
 const uint8_t APPLICATION_IDENTIFIER[] = {0x4E, 0x45, 0x54, 0x53, 0x43, 0x41, 0x50, 0x45};
@@ -181,7 +181,7 @@ uint32_t GifEncoder::DoEncode()
 
     WriteFileInfo();
 
-    for (int index = 0; index < pixelMaps_.size(); index++) {
+    for (int index = 0; index < static_cast<int>(pixelMaps_.size()); index++) {
         InitDictionary();
         WriteFrameInfo(index);
         processFrame(index);
@@ -242,9 +242,10 @@ uint32_t GifEncoder::WriteFrameInfo(int index)
     gce.graphicControlLabel = GRAPHIC_CONTROL_LABEL;
     gce.blockSize = 0x04;
     gce.packedFields = 0x00;
-    gce.packedFields |= (((index < encodeOpts_.disposalTypes.size() ?
+    gce.packedFields |= (((index < static_cast<int>(encodeOpts_.disposalTypes.size()) ?
         encodeOpts_.disposalTypes[index] : DEFAULT_DISPOSAL_TYPE) & 0x07) << DISPOSAL_METHOD_SHIFT_BIT);
-    gce.delayTime = index < encodeOpts_.delayTimes.size() ? encodeOpts_.delayTimes[index] : DEFAULT_DELAY_TIME;
+    gce.delayTime = index < static_cast<int>(encodeOpts_.delayTimes.size()) ?
+        encodeOpts_.delayTimes[index] : DEFAULT_DELAY_TIME;
     gce.transparentColorIndex = 0x00;
     gce.blockTerminator = 0x00;
     if (!Write((const uint8_t*)&gce, sizeof(GraphicControlExtension))) {
@@ -316,9 +317,13 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
     uint8_t *greenBuffer = NULL;
     uint8_t *blueBuffer = NULL;
     uint64_t frameSize = width * height;
-    if ((redBuffer = (uint8_t *)malloc(frameSize)) == NULL ||
-        (greenBuffer = (uint8_t *)malloc(frameSize)) == NULL ||
-        (blueBuffer = (uint8_t *)malloc(frameSize)) == NULL) {
+    redBuffer = (uint8_t *)malloc(frameSize);
+    greenBuffer = (uint8_t *)malloc(frameSize);
+    blueBuffer = (uint8_t *)malloc(frameSize);
+    if (redBuffer == NULL || greenBuffer == NULL || blueBuffer == NULL) {
+        free(redBuffer);
+        free(greenBuffer);
+        free(blueBuffer);
         IMAGE_LOGE("Failed to allocate memory.");
         return ERR_IMAGE_ENCODE_FAILED;
     }
@@ -342,7 +347,6 @@ uint32_t GifEncoder::colorQuantize(int index, uint16_t width, uint16_t height,
     free(redBuffer);
     free(greenBuffer);
     free(blueBuffer);
-
     return SUCCESS;
 }
 
@@ -369,9 +373,9 @@ void InitColorCube(ColorCoordinate *colorCoordinate, uint16_t width, uint16_t he
                    ColorInput *colorInput)
 {
     for (int i = 0; i < COLOR_ARRAY_SIZE; i++) {
-        colorCoordinate[i].rgb[R_IN_RGB] = (i >> RED_COORDINATE) & 0x1F;
-        colorCoordinate[i].rgb[G_IN_RGB] = (i >> GREEN_COORDINATE) & 0x1F;
-        colorCoordinate[i].rgb[B_IN_RGB] = (i >> BLUE_COORDINATE) & 0x1F;
+        colorCoordinate[i].rgb[R_IN_RGB] = (static_cast<uint32_t>(i) >> RED_COORDINATE) & 0x1F;
+        colorCoordinate[i].rgb[G_IN_RGB] = (static_cast<uint32_t>(i) >> GREEN_COORDINATE) & 0x1F;
+        colorCoordinate[i].rgb[B_IN_RGB] = (static_cast<uint32_t>(i) >> BLUE_COORDINATE) & 0x1F;
         colorCoordinate[i].pixelNum = 0;
     }
 
@@ -383,9 +387,9 @@ void InitColorCube(ColorCoordinate *colorCoordinate, uint16_t width, uint16_t he
     }
 }
 
-void InitColorSubdivMap(ColorSubdivMap* colorSubdivMap, uint16_t width, uint16_t height)
+void InitColorSubdivMap(ColorSubdivMap* colorSubdivMap, int32_t colorSubdivMapSize, uint16_t width, uint16_t height)
 {
-    for (int i = 0; i < COLOR_OF_GIF; i++) {
+    for (int i = 0; i < colorSubdivMapSize; i++) {
         for (int j = 0; j < NUM_OF_RGB; j++) {
             colorSubdivMap[i].rgbMin[j] = 0;
             colorSubdivMap[i].rgbWidth[j] = 0xFF;
@@ -433,7 +437,7 @@ uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
     colorInput.greenInput = greenInput;
     colorInput.blueInput = blueInput;
     InitColorCube(colorCoordinate, width, height, &colorInput);
-    InitColorSubdivMap(colorSubdivMap, width, height);
+    InitColorSubdivMap(colorSubdivMap, COLOR_OF_GIF, width, height);
     InitForQuantize(colorCoordinate, colorSubdivMap);
 
     if (BuildColorSubdivMap(colorSubdivMap, &colorSubdivMapSize)) {
@@ -444,12 +448,12 @@ uint32_t GifEncoder::doColorQuantize(uint16_t width, uint16_t height,
         memset_s(outputColorMap, sizeof(ColorType) * COLOR_MAP_SIZE, 0, sizeof(ColorType) * COLOR_MAP_SIZE);
     }
 
-    for (int i = 0; i < colorSubdivMapSize; i++) {
+    for (int i = 0; i < static_cast<int>(colorSubdivMapSize); i++) {
         if (colorSubdivMap[i].colorNum > 0) {
             ColorCoordinate *coordinate = colorSubdivMap[i].coordinate;
-            long red = 0;
-            long green = 0;
-            long blue = 0;
+            uint64_t red = 0;
+            uint64_t green = 0;
+            uint64_t blue = 0;
             while (coordinate) {
                 red += coordinate->rgb[R_IN_RGB];
                 green += coordinate->rgb[G_IN_RGB];
@@ -478,23 +482,25 @@ int32_t SortCmpRtn(const void *inEntry1, const void *inEntry2)
 {
     ColorCoordinate *entry1 = (*((ColorCoordinate **)inEntry1));
     ColorCoordinate *entry2 = (*((ColorCoordinate **)inEntry2));
-
-    int32_t hash1 = entry1->rgb[(g_sortRGBAxis + R_IN_RGB)] * COLOR_OF_GIF * COLOR_OF_GIF +
-                entry1->rgb[(g_sortRGBAxis + G_IN_RGB) % NUM_OF_RGB] * COLOR_OF_GIF +
-                entry1->rgb[(g_sortRGBAxis + B_IN_RGB) % NUM_OF_RGB];
-    int32_t hash2 = entry2->rgb[(g_sortRGBAxis + R_IN_RGB)] * COLOR_OF_GIF * COLOR_OF_GIF +
-                entry2->rgb[(g_sortRGBAxis + G_IN_RGB) % NUM_OF_RGB] * COLOR_OF_GIF +
-                entry2->rgb[(g_sortRGBAxis + B_IN_RGB) % NUM_OF_RGB];
-
+    int32_t hash1 = 0;
+    int32_t hash2 = 0;
+    if (g_sortRGBAxis >= 0 && g_sortRGBAxis < NUM_OF_RGB) {
+        hash1 = entry1->rgb[(g_sortRGBAxis + R_IN_RGB)] * COLOR_OF_GIF * COLOR_OF_GIF +
+                    entry1->rgb[(g_sortRGBAxis + G_IN_RGB) % NUM_OF_RGB] * COLOR_OF_GIF +
+                    entry1->rgb[(g_sortRGBAxis + B_IN_RGB) % NUM_OF_RGB];
+        hash2 = entry2->rgb[(g_sortRGBAxis + R_IN_RGB)] * COLOR_OF_GIF * COLOR_OF_GIF +
+                    entry2->rgb[(g_sortRGBAxis + G_IN_RGB) % NUM_OF_RGB] * COLOR_OF_GIF +
+                    entry2->rgb[(g_sortRGBAxis + B_IN_RGB) % NUM_OF_RGB];
+    }
     return (hash1 - hash2);
 }
 
 
-uint32_t PrepareSort(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize)
+int32_t PrepareSort(ColorSubdivMap *colorSubdivMap, uint32_t colorSubdivMapSize)
 {
     int maxSize = -1;
     int index = -1;
-    for (int i = 0; i < colorSubdivMapSize; i++) {
+    for (int i = 0; i < static_cast<int>(colorSubdivMapSize); i++) {
         for (int j = 0; j < NUM_OF_RGB; j++) {
             if ((static_cast<int>(colorSubdivMap[i].rgbWidth[j]) > maxSize) && (colorSubdivMap[i].colorNum > 1)) {
                 maxSize = colorSubdivMap[i].rgbWidth[j];
@@ -511,7 +517,7 @@ void doSort(ColorCoordinate **sortArray, ColorSubdivMap *colorSubdivMap, uint32_
     int i;
     ColorCoordinate *colorCoordinate = nullptr;
     for (i = 0, colorCoordinate = colorSubdivMap[index].coordinate;
-         i < colorSubdivMap[index].colorNum && colorCoordinate != NULL;
+         i < static_cast<int>(colorSubdivMap[index].colorNum) && colorCoordinate != NULL;
          i++, colorCoordinate = colorCoordinate->next) {
         sortArray[i] = colorCoordinate;
     }
@@ -521,33 +527,35 @@ void doSort(ColorCoordinate **sortArray, ColorSubdivMap *colorSubdivMap, uint32_
 void SubdivColorByPartition(ColorCoordinate *colorCoordinate, ColorSubdivMap *colorSubdivMap,
     uint32_t colorSubdivMapSize, int index)
 {
-    long sum = (colorSubdivMap[index].pixelNum >> 1) - colorCoordinate->pixelNum;
+    long sum =
+        static_cast<long>(static_cast<uint64_t>(colorSubdivMap[index].pixelNum) >> 1) - colorCoordinate->pixelNum;
     uint32_t colorNum = 1;
     long pixelNum = colorCoordinate->pixelNum;
-    while (colorCoordinate->next != NULL &&
-        (sum -= colorCoordinate->next->pixelNum) >= 0 &&
-           colorCoordinate->next->next != NULL) {
+    while (colorCoordinate->next != NULL && sum >= 0 && colorCoordinate->next->next != NULL) {
         colorCoordinate = colorCoordinate->next;
         colorNum++;
         pixelNum += colorCoordinate->pixelNum;
+        sum -= colorCoordinate->next->pixelNum;
     }
-    uint32_t maxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
-    uint32_t minColor = colorCoordinate->next->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
-    colorSubdivMap[colorSubdivMapSize].coordinate = colorCoordinate->next;
-    colorCoordinate->next = NULL;
-    colorSubdivMap[colorSubdivMapSize].pixelNum = colorSubdivMap[index].pixelNum - pixelNum;
-    colorSubdivMap[index].pixelNum = pixelNum;
-    colorSubdivMap[colorSubdivMapSize].colorNum = colorSubdivMap[index].colorNum - colorNum;
-    colorSubdivMap[index].colorNum = colorNum;
-    for (int i = 0; i < NUM_OF_RGB; i++) {
-        colorSubdivMap[colorSubdivMapSize].rgbMin[i] = colorSubdivMap[index].rgbMin[i];
-        colorSubdivMap[colorSubdivMapSize].rgbWidth[i] = colorSubdivMap[index].rgbWidth[i];
+    if (g_sortRGBAxis >= 0 && g_sortRGBAxis < NUM_OF_RGB) {
+        uint32_t maxColor = colorCoordinate->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
+        uint32_t minColor = colorCoordinate->next->rgb[g_sortRGBAxis] << (BITS_IN_BYTE - BITS_PER_PRIM_COLOR);
+        colorSubdivMap[colorSubdivMapSize].coordinate = colorCoordinate->next;
+        colorCoordinate->next = NULL;
+        colorSubdivMap[colorSubdivMapSize].pixelNum = colorSubdivMap[index].pixelNum - pixelNum;
+        colorSubdivMap[index].pixelNum = pixelNum;
+        colorSubdivMap[colorSubdivMapSize].colorNum = colorSubdivMap[index].colorNum - colorNum;
+        colorSubdivMap[index].colorNum = colorNum;
+        for (int i = 0; i < NUM_OF_RGB; i++) {
+            colorSubdivMap[colorSubdivMapSize].rgbMin[i] = colorSubdivMap[index].rgbMin[i];
+            colorSubdivMap[colorSubdivMapSize].rgbWidth[i] = colorSubdivMap[index].rgbWidth[i];
+        }
+        colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] =
+            colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] +
+            colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] - minColor;
+        colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] = minColor;
+        colorSubdivMap[index].rgbWidth[g_sortRGBAxis] = maxColor - colorSubdivMap[index].rgbMin[g_sortRGBAxis];
     }
-    colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] =
-        colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] +
-        colorSubdivMap[colorSubdivMapSize].rgbWidth[g_sortRGBAxis] - minColor;
-    colorSubdivMap[colorSubdivMapSize].rgbMin[g_sortRGBAxis] = minColor;
-    colorSubdivMap[index].rgbWidth[g_sortRGBAxis] = maxColor - colorSubdivMap[index].rgbMin[g_sortRGBAxis];
 }
 
 uint32_t GifEncoder::BuildColorSubdivMap(ColorSubdivMap *colorSubdivMap, uint32_t *colorSubdivMapSize)
@@ -564,9 +572,9 @@ uint32_t GifEncoder::BuildColorSubdivMap(ColorSubdivMap *colorSubdivMap, uint32_
         if (sortArray == NULL) {
             return ERR_IMAGE_ENCODE_FAILED;
         }
-        doSort(sortArray, colorSubdivMap, index);
+        doSort(sortArray, colorSubdivMap, static_cast<uint32_t>(index));
 
-        for (int i = 0; i < colorSubdivMap[index].colorNum - 1; i++) {
+        for (int i = 0; i < static_cast<int>(colorSubdivMap[index].colorNum - 1); i++) {
             sortArray[i]->next = sortArray[i + 1];
         }
         sortArray[colorSubdivMap[index].colorNum - 1]->next = NULL;
@@ -601,7 +609,7 @@ int GifEncoder::IsInDictionary(uint32_t Key)
         if (Key == DKey) {
             return (dictionary_[key] & 0x0FFF);
         }
-        key = (key + 1) & 0x1FFF;
+        key = static_cast<uint32_t>(key + 1) & 0x1FFF;
     }
     return -1;
 }
@@ -610,9 +618,9 @@ void GifEncoder::AddToDictionary(uint32_t Key, int Code)
 {
     int key = ((Key >> LZ_BITS) ^ Key) & 0x1FFF;
     while ((dictionary_[key] >> LZ_BITS) != 0xFFFFFL) {
-        key = (key + 1) & 0x1FFF;
+        key = static_cast<uint32_t>(key + 1) & 0x1FFF;
     }
-    dictionary_[key] = (Key << LZ_BITS) | (Code & 0x0FFF);
+    dictionary_[key] = (Key << LZ_BITS) | (static_cast<uint32_t>(Code) & 0x0FFF);
 }
 
 uint32_t GifEncoder::LZWEncodeFrame(uint8_t *outputBuffer, uint16_t width, uint16_t height)
@@ -698,7 +706,7 @@ uint32_t GifEncoder::LZWWriteOut(int Code)
             ret = ERROR;
         }
     } else {
-        crntShiftDWord_ |= ((long)Code) << crntShiftState_;
+        crntShiftDWord_ |= static_cast<uint64_t>(Code) << crntShiftState_;
         crntShiftState_ += runningBits_;
         while (crntShiftState_ >= BITS_IN_BYTE) {
             if (LZWBufferOutput(crntShiftDWord_ & 0xFF)) {
