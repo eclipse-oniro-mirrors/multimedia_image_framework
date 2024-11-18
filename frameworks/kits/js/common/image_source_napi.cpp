@@ -426,7 +426,7 @@ static void ImageSourceCallbackRoutine(napi_env env, ImageSourceAsyncContext* &c
         napi_delete_reference(env, context->callbackRef);
     }
 
-    napi_delete_reference(env, context->callbackRef);
+    napi_delete_async_work(env, context->work);
 
     if (context != nullptr) {
         delete context;
