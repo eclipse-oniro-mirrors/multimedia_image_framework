@@ -24,8 +24,8 @@ namespace OHOS {
 namespace ImagePlugin {
 enum class SutProfile {
     EXTREME_SPEED = 0,
-    EXTREME_SPEED_WITH_ALPHA,
-    LOSSLESS_LZ4,
+    EXTREME_SPEED_A,
+    HIGH_CR_LEVEL1,
     SKIP_SUT = 255
 }; // the profile of superCompress for texture
 
