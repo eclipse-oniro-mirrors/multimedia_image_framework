@@ -2516,6 +2516,9 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetAstc(isAstc);
 
     allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
+    if (memInfo.allocatorType == AllocatorType::DEFAULT || memInfo.allocatorType == AllocatorType::CUSTOM_ALLOC) {
+        memInfo.allocatorType = AllocatorType::HEAP_ALLOC;
+    }
 
     int32_t csm = parcel.ReadInt32();
     if (csm != ERR_MEDIA_INVALID_VALUE) {
