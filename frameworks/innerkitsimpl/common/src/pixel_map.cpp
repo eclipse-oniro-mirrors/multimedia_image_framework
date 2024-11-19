@@ -2582,7 +2582,10 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel& parcel, PixelMap*& pixelMap, Ima
     memInfo.isAstc = parcel.ReadBool();
     pixelMap->SetAstc(memInfo.isAstc);
     memInfo.allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
-    // PixelMap's allocator type should only be set after SetImageInfo()
+    if (memInfo.allocatorType == AllocatorType::DEFAULT || memInfo.allocatorType == AllocatorType::CUSTOM_ALLOC) {
+        memInfo.allocatorType = AllocatorType::HEAP_ALLOC;
+    }
+    // PixelMap's allocator type should not be set before SetImageInfo()
 
     int32_t csm = parcel.ReadInt32();
     if (csm != ERR_MEDIA_INVALID_VALUE) {
