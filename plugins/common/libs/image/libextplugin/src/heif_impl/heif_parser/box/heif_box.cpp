@@ -202,6 +202,12 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
     return box;
 }
 
+bool ParserBoxContentChildren(std::shared_ptr<HeifBox> box)
+{
+    return box->GetBoxType() == BOX_TYPE_IPRP || box->GetBoxType() == BOX_TYPE_IPCO ||
+        box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF;
+}
+
 heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
     std::shared_ptr<HeifBox> *result, uint32_t &recursionCount)
 {
@@ -223,8 +229,7 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
         return heif_error_eof;
     }
     HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), boxContentSize);
-    if (box->GetBoxType() == BOX_TYPE_IPRP || box->GetBoxType() == BOX_TYPE_IPCO ||
-        box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF) {
+    if (ParserBoxContentChildren(box)) {
         err = box->ParseContentChildren(contentReader, recursionCount);
     } else {
         err = box->ParseContent(contentReader);

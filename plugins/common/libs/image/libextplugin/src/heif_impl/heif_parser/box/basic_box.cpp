@@ -15,10 +15,6 @@
 
 #include "box/basic_box.h"
 
-namespace {
-    const uint32_t MAX_RECURSION_COUNT = 300;
-}
-
 namespace OHOS {
 namespace ImagePlugin {
 heif_error HeifFtypBox::ParseContent(HeifStreamReader &reader)

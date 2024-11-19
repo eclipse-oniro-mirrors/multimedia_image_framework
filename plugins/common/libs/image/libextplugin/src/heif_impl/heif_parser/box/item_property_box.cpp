@@ -19,7 +19,6 @@
 
 namespace {
     const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
-    const uint32_t MAX_RECURSION_COUNT = 300;
 }
 
 namespace OHOS {
