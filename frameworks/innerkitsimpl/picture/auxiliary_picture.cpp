@@ -262,14 +262,6 @@ AuxiliaryPictureInfo AuxiliaryPicture::GetAuxiliaryPictureInfo()
 void AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
     auxiliaryPictureInfo_ = auxiliaryPictureInfo;
-    if (content_ != nullptr) {
-        ImageInfo imageInfo;
-        content_->GetImageInfo(imageInfo);
-        imageInfo.size = auxiliaryPictureInfo_.size;
-        imageInfo.pixelFormat = auxiliaryPictureInfo_.pixelFormat;
-        imageInfo.colorSpace = auxiliaryPictureInfo_.colorSpace;
-        content_->SetImageInfo(imageInfo, true);
-    }
 }
 
 } // namespace Media
