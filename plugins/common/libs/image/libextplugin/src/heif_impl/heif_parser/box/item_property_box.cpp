@@ -19,18 +19,27 @@
 
 namespace {
     const uint8_t LARGE_PROPERTY_INDEX_FLAG = 1;
+    const uint32_t MAX_RECURSION_COUNT = 300;
 }
 
 namespace OHOS {
 namespace ImagePlugin {
-heif_error HeifIprpBox::ParseContent(HeifStreamReader &reader)
+heif_error HeifIprpBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
-    return ReadChildren(reader);
+    recursionCount++;
+    if (recursionCount > MAX_RECURSION_COUNT) {
+        return heif_error_too_many_recursion;
+    }
+    return ReadChildren(reader, recursionCount);
 }
 
-heif_error HeifIpcoBox::ParseContent(HeifStreamReader &reader)
+heif_error HeifIpcoBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
-    return ReadChildren(reader);
+    recursionCount++;
+    if (recursionCount > MAX_RECURSION_COUNT) {
+        return heif_error_too_many_recursion;
+    }
+    return ReadChildren(reader, recursionCount);
 }
 
 heif_error HeifIpcoBox::GetProperties(uint32_t itemId, const std::shared_ptr<class HeifIpmaBox> &ipma,

@@ -35,7 +35,7 @@ public:
     HeifIprpBox() : HeifBox(BOX_TYPE_IPRP) {}
 
 protected:
-    heif_error ParseContent(HeifStreamReader &reader) override;
+    heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount) override;
 };
 
 class HeifIpcoBox : public HeifBox {
@@ -51,7 +51,7 @@ public:
                                          uint32_t boxType) const;
 
 protected:
-    heif_error ParseContent(HeifStreamReader &reader) override;
+    heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount) override;
 };
 
 class HeifIpmaBox : public HeifFullBox {

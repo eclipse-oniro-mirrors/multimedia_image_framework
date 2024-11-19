@@ -15,17 +15,25 @@
 
 #include "box/item_info_box.h"
 
+namespace {
+    const uint32_t MAX_RECURSION_COUNT = 300;
+}
+
 namespace OHOS {
 namespace ImagePlugin {
-heif_error HeifIinfBox::ParseContent(HeifStreamReader &reader)
+heif_error HeifIinfBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
+    recursionCount++;
+    if (recursionCount > MAX_RECURSION_COUNT) {
+        return heif_error_too_many_recursion;
+    }
     ParseFullHeader(reader);
     uint8_t boxVersion = GetVersion();
     uint32_t entryCount = (boxVersion == HEIF_BOX_VERSION_ZERO) ? reader.Read16() : reader.Read32();
     if (entryCount == 0) {
         return heif_error_ok;
     }
-    return ReadChildren(reader);
+    return ReadChildren(reader, recursionCount);
 }
 
 void HeifIinfBox::InferFullBoxVersion()

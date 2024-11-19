@@ -39,7 +39,7 @@ public:
     HeifMetaBox() : HeifFullBox(BOX_TYPE_META) {}
 
 protected:
-    heif_error ParseContent(HeifStreamReader &reader) override;
+    heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount) override;
 };
 
 class HeifHdlrBox : public HeifFullBox {

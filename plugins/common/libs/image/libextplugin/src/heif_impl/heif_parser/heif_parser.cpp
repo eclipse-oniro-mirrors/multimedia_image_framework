@@ -92,7 +92,8 @@ heif_error HeifParser::AssembleBoxes(HeifStreamReader &reader)
 {
     while (true) {
         std::shared_ptr<HeifBox> box;
-        heif_error error = HeifBox::MakeFromReader(reader, &box);
+        uint32_t recursionCount = 0;
+        heif_error error = HeifBox::MakeFromReader(reader, &box, recursionCount);
         if (reader.IsAtEnd() || error == heif_error_eof) {
             break;
         }

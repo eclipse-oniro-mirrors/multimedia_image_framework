@@ -43,6 +43,7 @@ enum heif_error {
     heif_invalid_mirror_direction = 21,
     heif_error_grid_too_large = 22,
     heif_error_too_many_item = 23,
+    heif_error_too_many_recursion = 24;
 };
 } // namespace ImagePlugin
 } // namespace OHOS
