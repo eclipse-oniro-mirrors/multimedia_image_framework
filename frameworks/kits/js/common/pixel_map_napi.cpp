@@ -701,6 +701,13 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_GetImageInf
     return OHOS_IMAGE_RESULT_SUCCESS;
 }
 
+static bool CheckAstc(PixelFormat format)
+{
+    return format == PixelFormat::ASTC_4x4 ||
+        format == PixelFormat::ASTC_6x6 ||
+        format == PixelFormat::ASTC_8x8;
+}
+
 extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixels(napi_env env, napi_value value,
     uint8_t** addrPtr)
 {
@@ -716,6 +723,11 @@ extern "C" __attribute__((visibility("default"))) int32_t OHOS_MEDIA_AccessPixel
     std::shared_ptr<PixelMap> pixelMap = pixmapNapi->GetPixelNapiInner();
     if (pixelMap == nullptr) {
         IMAGE_LOGE("pixelMap is nullptr");
+        return OHOS_IMAGE_RESULT_BAD_PARAMETER;
+    }
+
+    if (CheckAstc(pixelMap->GetPixelFormat())) {
+        IMAGE_LOGE("ASTC is not supported");
         return OHOS_IMAGE_RESULT_BAD_PARAMETER;
     }
 
