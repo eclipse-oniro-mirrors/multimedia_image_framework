@@ -2249,7 +2249,6 @@ bool PixelMap::WriteMemInfoToParcel(Parcel &parcel, const int32_t &bufferSize) c
         }
         if (!CheckAshmemSize(*fd, bufferSize, isAstc_)) {
             IMAGE_LOGE("write pixel map check ashmem size failed, fd:[%{public}d].", *fd);
-            ::close(*fd);
             return false;
         }
         if (!WriteFileDescriptor(parcel, *fd)) {
