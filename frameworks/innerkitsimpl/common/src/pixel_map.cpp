@@ -2689,7 +2689,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
-    } else {
+    } else { // Any other allocator types will malloc HEAP memory
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
