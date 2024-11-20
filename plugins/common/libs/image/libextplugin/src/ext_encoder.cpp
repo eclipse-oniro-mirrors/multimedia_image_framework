@@ -1583,12 +1583,15 @@ uint32_t ExtEncoder::EncodeHeifPicture(sptr<SurfaceBuffer>& mainSptr, SkImageInf
 
 void ExtEncoder::CheckJpegAuxiliaryTagName()
 {
+    if (picture_ == nullptr) {
+        return;
+    }
     auto auxTypes = ImageUtils::GetAllAuxiliaryPictureType();
     for (AuxiliaryPictureType auxType : auxTypes) {
-        if (!picture_->HasAuxiliaryPicture(auxType)) {
+        auto auxPicture = picture_->GetAuxiliaryPicture(auxType);
+        if (auxPicture == nullptr) {
             continue;
         }
-        auto auxPicture  = picture_->GetAuxiliaryPicture(auxType);
         AuxiliaryPictureInfo auxInfo = auxPicture->GetAuxiliaryPictureInfo();
         auto iter = DEFAULT_AUXILIARY_TAG_MAP.find(auxType);
         if (auxInfo.jpegTagName.size() == 0 && iter != DEFAULT_AUXILIARY_TAG_MAP.end()) {
