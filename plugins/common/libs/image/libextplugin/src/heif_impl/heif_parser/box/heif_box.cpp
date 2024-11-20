@@ -202,7 +202,7 @@ std::shared_ptr<HeifBox> HeifBox::MakeBox(uint32_t boxType)
     return box;
 }
 
-bool ParserBoxContentChildren(std::shared_ptr<HeifBox> box)
+bool BoxContentChildren(std::shared_ptr<HeifBox> box)
 {
     return box->GetBoxType() == BOX_TYPE_IPRP || box->GetBoxType() == BOX_TYPE_IPCO ||
         box->GetBoxType() == BOX_TYPE_META || box->GetBoxType() == BOX_TYPE_IINF;
@@ -229,7 +229,7 @@ heif_error HeifBox::MakeFromReader(HeifStreamReader &reader,
         return heif_error_eof;
     }
     HeifStreamReader contentReader(reader.GetStream(), reader.GetStream()->Tell(), boxContentSize);
-    if (ParserBoxContentChildren(box)) {
+    if (BoxContentChildren(box)) {
         err = box->ParseContentChildren(contentReader, recursionCount);
     } else {
         err = box->ParseContent(contentReader);
