@@ -34,6 +34,8 @@ extern "C" {
 
 constexpr size_t SIZE_ZERO = 0;
 constexpr int32_t IMAGE_BASE = 62980096;
+constexpr int32_t MASK_2 = 0x3;
+constexpr int32_t MASK_16 = 0xffff;
 static constexpr int32_t IMAGE_BASE_19 = 19;
 static constexpr int32_t IMAGE_BASE_16 = 16;
 static constexpr int32_t IMAGE_BASE_17 = 17;
@@ -69,7 +71,7 @@ struct OH_PackingOptionsForSequence {
     size_t delayTimeListLength;
     uint32_t* disposalTypes;
     size_t disposalTypesLength;
-    uint32_t loopCount = 0;
+    uint32_t loopCount = 1;
 };
 
 static Image_ErrorCode ToNewErrorCode(int code)
@@ -356,7 +358,7 @@ Image_ErrorCode OH_PackingOptionsForSequence_SetFrameCount(OH_PackingOptionsForS
     if (options == nullptr) {
         return IMAGE_BAD_PARAMETER;
     }
-    options->frameCount = frameCount;
+    options->frameCount = static_cast<int32_t>(frameCount);
     return IMAGE_SUCCESS;
 }
 
@@ -380,12 +382,6 @@ Image_ErrorCode OH_PackingOptionsForSequence_SetDelayTimeList(OH_PackingOptionsF
     }
     options->delayTimeList = delayTimeList;
     options->delayTimeListLength = delayTimeListLength;
-    if (options->frameCount > options->delayTimeListLength) {
-        for (uint32_t i = delayTimeListLength; i < options->frameCount; i++) {
-            options->delayTimeList[i] = delayTimeList[options->delayTimeListLength - 1];
-        }
-        options->delayTimeListLength = options->frameCount;
-    }
     return IMAGE_SUCCESS;
 }
 
@@ -566,34 +562,59 @@ Image_ErrorCode OH_ImagePackerNative_PackToFileFromPicture(OH_ImagePackerNative 
     return ToNewErrorCode(imagePacker->PackToFileFromPicture(&packOption, picture, fd));
 }
 
+static bool HandlePackingOptionsForSequence(OH_PackingOptionsForSequence *options, PackOption *packOption)
+{
+    packOption->format = "image/gif";
+    packOption->loop = static_cast<uint16_t>(options->loopCount & MASK_16);
+    for (uint32_t i = 0; i < options->delayTimeListLength; i++) {
+        if (options->delayTimeList[i] <= 0 || options->delayTimeList[i] > MASK_16) {
+            return false;
+        }
+        packOption->delayTimes.push_back(static_cast<uint16_t>(options->delayTimeList[i] & MASK_16));
+    }
+    if (options->delayTimeListLength < options->frameCount) {
+        for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
+            packOption->delayTimes.push_back(
+                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1] & MASK_16));
+        }
+    }
+    for (uint32_t i = 0; i < options->disposalTypesLength; i++) {
+        if (options->disposalTypes[i] > MASK_2) {
+            return false;
+        }
+        packOption->disposalTypes.push_back(options->disposalTypes[i] & MASK_2);
+    }
+    return true;
+}
+
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToDataFromPixelmapSequence(OH_ImagePackerNative *imagePacker,
     OH_PackingOptionsForSequence *options, OH_PixelmapNative **pixelmapSequence,
     size_t sequenceLength, uint8_t *outData, size_t *outDataSize)
 {
-    if (imagePacker == nullptr || options == nullptr || pixelmapSequence == nullptr || outData == nullptr) {
+    if (imagePacker == nullptr || options == nullptr || pixelmapSequence == nullptr || outData == nullptr ||
+        options->delayTimeListLength == 0 || sequenceLength == 0 || options->loopCount > MASK_16 ||
+        options->frameCount <= 0) {
         return IMAGE_BAD_PARAMETER;
     }
-    std::vector<OH_PixelmapNative*> pixelmap;
+    std::vector<OH_PixelmapNative*> pixelmaps;
     PackOption packOption;
-    packOption.format = "image/gif";
-    packOption.loop = static_cast<uint16_t>(options->loopCount);
-    for (uint32_t i = 0; i < options->delayTimeListLength; i++) {
-        packOption.delayTimes.push_back(static_cast<uint16_t>(options->delayTimeList[i]));
+    if (!HandlePackingOptionsForSequence(options, &packOption)) {
+        return IMAGE_BAD_PARAMETER;
     }
-    if (options->frameCount > options->delayTimeListLength && options->delayTimeListLength != 0) {
-        for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
-            packOption.delayTimes.push_back(
-                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1]));
+    if (sequenceLength >= static_cast<size_t>(options->frameCount)) {
+        for (int i = 0; i < options->frameCount; i++) {
+            pixelmaps.push_back(pixelmapSequence[i]);
+        }
+    } else {
+        for (size_t i = 0; i < sequenceLength; i++) {
+            pixelmaps.push_back(pixelmapSequence[i]);
+        }
+        for (int i = sequenceLength; i < options->frameCount; i++) {
+            pixelmaps.push_back(pixelmapSequence[sequenceLength - 1]);
         }
     }
-    for (uint32_t i = 0; i < options->disposalTypesLength; i++) {
-        packOption.disposalTypes.push_back(options->disposalTypes[i]);
-    }
-    for (int i = 0; i < sequenceLength; i++) {
-        pixelmap.push_back(pixelmapSequence[i]);
-    }
-    return ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmap, outData,
+    return ToNewErrorCode(imagePacker->PackToDataMultiFrames(&packOption, pixelmaps, outData,
         reinterpret_cast<int64_t*>(outDataSize)));
 }
 
@@ -601,31 +622,30 @@ MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_PackToFileFromPixelmapSequence(OH_ImagePackerNative *imagePacker,
     OH_PackingOptionsForSequence *options, OH_PixelmapNative **pixelmapSequence, size_t sequenceLength, int32_t fd)
 {
-    if (imagePacker == nullptr || options == nullptr || pixelmapSequence == nullptr) {
+    if (imagePacker == nullptr || options == nullptr || pixelmapSequence == nullptr ||
+        options->delayTimeListLength == 0 || sequenceLength == 0 || options->loopCount > MASK_16 ||
+        options->frameCount <= 0) {
         return IMAGE_BAD_PARAMETER;
     }
-    std::vector<OH_PixelmapNative*> pixelmap;
+    std::vector<OH_PixelmapNative*> pixelmaps;
     PackOption packOption;
-    packOption.format = "image/gif";
-    packOption.loop = static_cast<uint16_t>(options->loopCount);
-    for (uint32_t i = 0; i < options->delayTimeListLength; i++) {
-        packOption.delayTimes.push_back(static_cast<uint16_t>(options->delayTimeList[i]));
+    if (!HandlePackingOptionsForSequence(options, &packOption)) {
+        return IMAGE_BAD_PARAMETER;
     }
-    if (options->frameCount > options->delayTimeListLength && options->delayTimeListLength != 0) {
-        for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
-            packOption.delayTimes.push_back(
-                static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1]));
+    if (sequenceLength >= static_cast<size_t>(options->frameCount)) {
+        for (int i = 0; i < options->frameCount; i++) {
+            pixelmaps.push_back(pixelmapSequence[i]);
+        }
+    } else {
+        for (size_t i = 0; i < sequenceLength; i++) {
+            pixelmaps.push_back(pixelmapSequence[i]);
+        }
+        for (int i = sequenceLength; i < options->frameCount; i++) {
+            pixelmaps.push_back(pixelmapSequence[sequenceLength - 1]);
         }
     }
-    for (uint32_t i = 0; i < options->disposalTypesLength; i++) {
-        packOption.disposalTypes.push_back(options->disposalTypes[i]);
-    }
-    for (int i = 0; i < sequenceLength; i++) {
-        pixelmap.push_back(pixelmapSequence[i]);
-    }
-    return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmap, fd));
+    return ToNewErrorCode(imagePacker->PackToFileMultiFrames(&packOption, pixelmaps, fd));
 }
-
 
 MIDK_EXPORT
 Image_ErrorCode OH_ImagePackerNative_Release(OH_ImagePackerNative *imagePacker)

@@ -81,16 +81,16 @@ private:
     OutputDataStream *outputStream_ {nullptr};
     std::vector<Media::PixelMap*> pixelMaps_;
     PlEncodeOptions encodeOpts_;
-    int lastCode_;
-    int eofCode_;
-    int runningCode_;
-    int clearCode_;
-    int runningBits_;
-    int maxCode_;
-    int crntShiftState_;
-    uint32_t crntShiftDWord_;
-    uint32_t dictionary_[DICTIONARY_SIZE];
-    uint8_t outputLZWBuffer_[256];
+    int lastCode_ = 0;
+    int eofCode_ = 0;
+    int runningCode_ = 0;
+    int clearCode_ = 0;
+    int runningBits_ = 0;
+    int maxCode_ = 0;
+    int crntShiftState_ = 0;
+    uint32_t crntShiftDWord_ = 0;
+    uint32_t dictionary_[DICTIONARY_SIZE] = {0};
+    uint8_t outputLZWBuffer_[256] = {0};
 };
 
 } // namespace ImagePlugin

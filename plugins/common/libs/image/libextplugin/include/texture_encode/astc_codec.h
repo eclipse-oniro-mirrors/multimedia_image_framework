@@ -39,8 +39,8 @@ public:
     bool InitAstcExtendInfo(AstcExtendInfo &extendInfo);
     void ReleaseExtendInfoMemory(AstcExtendInfo &extendInfo);
     void WriteAstcExtendInfo(uint8_t* outBuffer, uint32_t offset, AstcExtendInfo &extendInfo);
-    void InitTextureEncodeOptions(TextureEncodeOptions &param);
-    bool DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo);
+    void InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData);
+    bool TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo);
 private:
     DISALLOW_COPY_AND_MOVE(AstcCodec);
     OutputDataStream* astcOutput_ = nullptr;

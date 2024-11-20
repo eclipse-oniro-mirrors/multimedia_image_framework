@@ -217,6 +217,7 @@ STATIC_EXEC_FUNC(CreateAuxiliaryPicture)
     InitializationOptions opts;
     opts.size = context->size;
     opts.editable = true;
+    opts.useDMA = true;
     auto colors = static_cast<uint32_t*>(context->arrayBuffer);
     if (colors == nullptr) {
         return;

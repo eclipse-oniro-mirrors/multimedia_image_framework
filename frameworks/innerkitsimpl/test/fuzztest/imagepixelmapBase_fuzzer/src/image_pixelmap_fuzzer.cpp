@@ -31,7 +31,6 @@ constexpr uint32_t MAX_LENGTH_MODULO = 1024;
 constexpr uint32_t PIXELFORMAT_MODULO = 8;
 constexpr uint32_t ALPHATYPE_MODULO = 4;
 constexpr uint32_t SCALEMODE_MODULO = 2;
-constexpr uint32_t COLORSPACENAME_MODULO = 10;
 
 constexpr uint32_t DIVISOR = 2;
 constexpr uint32_t NUM_1 = 1;
@@ -540,10 +539,11 @@ bool PixelMapInterfaceTest(std::unique_ptr<Media::PixelMap> &pixelMap)
  */
 bool PixelMapCSTest(std::unique_ptr<Media::PixelMap> &pixelMap)
 {
+#ifdef IMAGE_COLORSPACE_FLAG
+    constexpr uint32_t COLORSPACENAME_MODULO = 10;
     OHOS::ColorManager::ColorSpaceName colorSpaceName =
         static_cast<OHOS::ColorManager::ColorSpaceName>(GetData<int32_t>() % COLORSPACENAME_MODULO);
     OHOS::ColorManager::ColorSpace grColorSpace = OHOS::ColorManager::ColorSpace(colorSpaceName);
-#ifdef IMAGE_COLORSPACE_FLAG
     pixelMap->InnerSetColorSpace(grColorSpace);
     pixelMap->InnerSetColorSpace(grColorSpace, true);
     pixelMap->InnerGetGrColorSpace();

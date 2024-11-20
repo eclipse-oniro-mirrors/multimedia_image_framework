@@ -24,6 +24,7 @@ namespace OHOS {
 namespace Media {
 
 const static uint64_t MAX_PICTURE_META_TYPE_COUNT = 64;
+const static uint64_t MAX_JPEG_TAG_NAME_LENGTH = 100;
 AuxiliaryPicture::~AuxiliaryPicture() {}
 
 std::unique_ptr<AuxiliaryPicture> AuxiliaryPicture::Create(std::shared_ptr<PixelMap> &content,
@@ -103,6 +104,11 @@ std::shared_ptr<ImageMetadata> AuxiliaryPicture::GetMetadata(MetadataType type)
 
 void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata)
 {
+    if (metadatas_.size() >= MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("Failed to set metadata, the size of metadata exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_PICTURE_META_TYPE_COUNT));
+        return;
+    }
     if (metadata != nullptr) {
         metadatas_[type] = metadata;
     }
@@ -110,21 +116,12 @@ void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetad
 
 bool AuxiliaryPicture::HasMetadata(MetadataType type)
 {
-    return metadatas_.find(type) != metadatas_.end() && metadatas_[type] != nullptr;
+    auto item = metadatas_.find(type);
+    return item != metadatas_.end() && item->second != nullptr;
 }
 
-bool AuxiliaryPicture::Marshalling(Parcel &data) const
+bool AuxiliaryPicture::WriteAuxPictureInfoToParcel(Parcel &data) const
 {
-    if (content_ == nullptr) {
-        IMAGE_LOGE("Auxiliary picture is null.");
-        return false;
-    }
-
-    if (!content_->Marshalling(data)) {
-        IMAGE_LOGE("Failed to marshal auxiliary picture.");
-        return false;
-    }
-
     if (!data.WriteInt32(static_cast<int32_t>(auxiliaryPictureInfo_.auxiliaryPictureType))) {
         IMAGE_LOGE("Failed to write type of auxiliary pictures.");
         return false;
@@ -150,11 +147,39 @@ bool AuxiliaryPicture::Marshalling(Parcel &data) const
         return false;
     }
 
+    if (auxiliaryPictureInfo_.jpegTagName.length() > MAX_JPEG_TAG_NAME_LENGTH) {
+        IMAGE_LOGE("The length of jpeg tag name exceeds the maximum limit.");
+        return false;
+    }
     if (!data.WriteString(auxiliaryPictureInfo_.jpegTagName)) {
         IMAGE_LOGE("Failed to write jpegTagName of auxiliary pictures.");
         return false;
     }
+    
+    return true;
+}
 
+bool AuxiliaryPicture::Marshalling(Parcel &data) const
+{
+    if (content_ == nullptr) {
+        IMAGE_LOGE("Auxiliary picture is null.");
+        return false;
+    }
+
+    if (!content_->Marshalling(data)) {
+        IMAGE_LOGE("Failed to marshal auxiliary picture.");
+        return false;
+    }
+
+    if (!WriteAuxPictureInfoToParcel(data)) {
+        IMAGE_LOGE("write auxiliary picture info to parcel failed.");
+        return false;
+    }
+
+    if (metadatas_.size() > MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("The number of metadatas exceeds the maximum limit.");
+        return false;
+    }
     if (!data.WriteUint64(static_cast<uint64_t>(metadatas_.size()))) {
         return false;
     }
@@ -242,14 +267,6 @@ AuxiliaryPictureInfo AuxiliaryPicture::GetAuxiliaryPictureInfo()
 void AuxiliaryPicture::SetAuxiliaryPictureInfo(const AuxiliaryPictureInfo &auxiliaryPictureInfo)
 {
     auxiliaryPictureInfo_ = auxiliaryPictureInfo;
-    if (content_ != nullptr) {
-        ImageInfo imageInfo;
-        content_->GetImageInfo(imageInfo);
-        imageInfo.size = auxiliaryPictureInfo_.size;
-        imageInfo.pixelFormat = auxiliaryPictureInfo_.pixelFormat;
-        imageInfo.colorSpace = auxiliaryPictureInfo_.colorSpace;
-        content_->SetImageInfo(imageInfo, true);
-    }
 }
 
 } // namespace Media

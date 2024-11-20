@@ -44,7 +44,6 @@ constexpr uint8_t ASTC_HEADER_SIZE = 16;
 constexpr uint8_t ASTC_NUM_24 = 24;
 static const uint32_t ASTC_MAGIC_ID = 0x5CA1AB13;
 constexpr uint8_t DEFAULT_DIM = 4;
-constexpr uint8_t HIGH_SPEED_PROFILE_MAP_QUALITY = 20; // quality level is 20 for thumbnail
 constexpr uint8_t RGBA_BYTES_PIXEL_LOG2 = 2;
 constexpr uint8_t MASKBITS_FOR_8BITS = 255;
 constexpr uint8_t UINT32_1TH_BYTES = 8;
@@ -61,6 +60,24 @@ static bool CheckClBinIsExist(const std::string &name)
     return (access(name.c_str(), F_OK) != -1); // -1 means that the file is  not exist
 }
 #endif
+
+enum class AstcQuality : uint8_t {
+    ASTC_HIGH_SPEED_PROFILE = 20, // quality level is 20 for thumbnail
+    ASTC_BALANCE_PROFILE = 30,
+    ASTC_HIGH_QUALITY_PROFILE = 100,
+};
+
+enum class SutQuality : uint8_t {
+    SUT_EXTREME_SPEED_PROFILE = 20,
+    SUT_BALANCE_PROFILE = 30,
+    SUT_HIGH_QUILITY_PROFILE = 90,
+};
+
+static const std::map<QualityProfile, float> ASTC_PRIFLE_QULITY = {
+    {HIGH_SPEED_PROFILE, ASTCENC_PRE_FAST},
+    {CUSTOMIZED_PROFILE, ASTCENC_PRE_THOROUGH},
+    {HIGH_QUALITY_PROFILE, ASTCENC_PRE_THOROUGH}
+};
 
 #ifdef SUT_ENCODE_ENABLE
 constexpr uint8_t EXPAND_ASTC_INFO_MAX_ENC = 16;
@@ -177,6 +194,10 @@ uint32_t InitAstcencConfig(AstcEncoder* work, TextureEncodeOptions* option)
     unsigned int blockZ = 1;
 
     float quality = ASTCENC_PRE_FAST;
+    auto node = ASTC_PRIFLE_QULITY.find(option->privateProfile_);
+    if (node != ASTC_PRIFLE_QULITY.end()) {
+        quality = node->second;
+    }
     unsigned int flags = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
     astcenc_error status = astcenc_config_init(work->profile, blockX, blockY,
         blockZ, quality, flags, &work->config);
@@ -369,18 +390,22 @@ bool AstcCodec::AstcSoftwareEncodeCore(TextureEncodeOptions &param, uint8_t *pix
     return true;
 }
 
-static QualityProfile GetAstcQuality(int32_t quality)
+static bool GetAstcProfile(AstcQuality astcQuality, QualityProfile &privateProfile)
 {
-    QualityProfile privateProfile;
-    switch (quality) {
-        case HIGH_SPEED_PROFILE_MAP_QUALITY:
+    switch (astcQuality) {
+        case AstcQuality::ASTC_HIGH_SPEED_PROFILE:
             privateProfile = HIGH_SPEED_PROFILE;
             break;
-        default:
+        case AstcQuality::ASTC_BALANCE_PROFILE:
+            privateProfile = CUSTOMIZED_PROFILE;
+            break;
+        case AstcQuality::ASTC_HIGH_QUALITY_PROFILE:
             privateProfile = HIGH_QUALITY_PROFILE;
             break;
+        default:
+            return false;
     }
-    return privateProfile;
+    return true;
 }
 
 #ifdef ENABLE_ASTC_ENCODE_BASED_GPU
@@ -438,10 +463,17 @@ static bool FillAstcSutInfo(AstcInInfo &astcInfo, SutOutInfo &sutInfo, TextureEn
     }
     return true;
 }
+
+bool CheckPrivateProfile(QualityProfile privateProfile)
+{
+    return !ASTC_PRIFLE_QULITY.empty() &&
+        ASTC_PRIFLE_QULITY.find(privateProfile) != ASTC_PRIFLE_QULITY.end();
+}
+
 bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *astcBuffer)
 {
     bool skipSutEnc = (param.sutProfile == SutProfile::SKIP_SUT) ||
-        ((!param.hardwareFlag) && (param.privateProfile_ != HIGH_SPEED_PROFILE)) ||
+        ((!param.hardwareFlag) && !CheckPrivateProfile(param.privateProfile_)) ||
         (param.blockX_ != DEFAULT_DIM && param.blockY_ != DEFAULT_DIM);
     if (skipSutEnc) {
         IMAGE_LOGD("astc is not suit to be compressed to sut!");
@@ -489,17 +521,58 @@ bool AstcCodec::TryTextureSuperCompress(TextureEncodeOptions &param, uint8_t *as
 }
 #endif
 
+static bool IsSUT(const std::string &format)
+{
+    return format.find("image/sut") == 0;
+}
+
+static bool GetSutQualityAndProfile(SutQuality sutQuality,
+    AstcQuality &astcQuality, SutProfile &profile)
+{
+    switch (sutQuality) {
+        case SutQuality::SUT_EXTREME_SPEED_PROFILE:
+            profile = SutProfile::EXTREME_SPEED_A;
+            astcQuality = AstcQuality::ASTC_HIGH_SPEED_PROFILE;
+            break;
+        case SutQuality::SUT_BALANCE_PROFILE:
+            profile = SutProfile::HIGH_CR_LEVEL1;
+            astcQuality = AstcQuality::ASTC_BALANCE_PROFILE;
+            break;
+        case SutQuality::SUT_HIGH_QUILITY_PROFILE:
+            profile = SutProfile::HIGH_CR_LEVEL1;
+            astcQuality = AstcQuality::ASTC_HIGH_QUALITY_PROFILE;
+            break;
+        default:
+            profile = SutProfile::SKIP_SUT;
+            return false;
+    }
+    return true;
+}
+
 static bool InitAstcEncPara(TextureEncodeOptions &param,
     int32_t width, int32_t height, int32_t stride, PlEncodeOptions &astcOpts)
 {
+    SutProfile sutProfile;
+    QualityProfile qualityProfile;
+    SutQuality sutQuality = SutQuality(astcOpts.quality);
+    AstcQuality astcQuality = AstcQuality(astcOpts.quality);
+    if (IsSUT(astcOpts.format) && !GetSutQualityAndProfile(sutQuality, astcQuality, sutProfile)) {
+        IMAGE_LOGE("GetSutQualityAndProfile failed %{public}d is invalid!", astcOpts.quality);
+        return false;
+    }
+    if (!GetAstcProfile(astcQuality, qualityProfile)) {
+        IMAGE_LOGE("GetAstcQuality failed %{public}d is invalid!", astcOpts.quality);
+        return false;
+    }
     param.enableQualityCheck = false;
     param.hardwareFlag = false;
     param.sutProfile =
-        ImageSystemProperties::GetSutEncodeEnabled() ? SutProfile::EXTREME_SPEED : SutProfile::SKIP_SUT;
+        (ImageSystemProperties::GetSutEncodeEnabled() && IsSUT(astcOpts.format)) ?
+        sutProfile : SutProfile::SKIP_SUT;
     param.width_ = width;
     param.height_ = height;
     param.stride_ = stride;
-    param.privateProfile_ = GetAstcQuality(astcOpts.quality);
+    param.privateProfile_ = qualityProfile;
     param.outIsSut = false;
     extractDimensions(astcOpts.format, param);
     if ((param.blockX_ < DEFAULT_DIM) || (param.blockY_ < DEFAULT_DIM)) { // DEFAULT_DIM = 4
@@ -555,19 +628,18 @@ static bool AstcEncProcess(TextureEncodeOptions &param, uint8_t *pixmapIn, uint8
     return true;
 }
 
-void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param)
+void AstcCodec::InitTextureEncodeOptions(TextureEncodeOptions &param, uint8_t &colorData)
 {
     param.expandNums = 1;
     param.extInfoBytes = 1;
 #ifdef IMAGE_COLORSPACE_FLAG
-    uint8_t colorData = static_cast<uint8_t>(astcPixelMap_->InnerGetGrColorSpace().GetColorSpaceName());
+    colorData = static_cast<uint8_t>(astcPixelMap_->InnerGetGrColorSpace().GetColorSpaceName());
 #else
-    uint8_t colorData = 0;
+    colorData = 0;
 #endif
-    param.extInfoBuf = &colorData;
 }
 
-bool AstcCodec::DoSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
+bool AstcCodec::TryEncSUT(TextureEncodeOptions &param, uint8_t* astcBuffer, AstcExtendInfo &extendInfo)
 {
 #ifdef SUT_ENCODE_ENABLE
     if (!TryTextureSuperCompress(param, astcBuffer)) {
@@ -586,10 +658,12 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
     ImageInfo imageInfo;
     astcPixelMap_->GetImageInfo(imageInfo);
     TextureEncodeOptions param;
-    InitTextureEncodeOptions(param);
+    uint8_t colorData;
+    InitTextureEncodeOptions(param, colorData);
+    param.extInfoBuf = &colorData;
     uint8_t *pixmapIn = static_cast<uint8_t *>(astcPixelMap_->GetWritablePixels());
-    int32_t stride = astcPixelMap_->GetRowStride() >> RGBA_BYTES_PIXEL_LOG2;
-    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, stride, astcOpts_)) {
+    uint32_t stride = static_cast<uint32_t>(astcPixelMap_->GetRowStride()) >> RGBA_BYTES_PIXEL_LOG2;
+    if (!InitAstcEncPara(param, imageInfo.size.width, imageInfo.size.height, static_cast<int32_t>(stride), astcOpts_)) {
         IMAGE_LOGE("InitAstcEncPara failed");
         return ERROR;
     }
@@ -612,7 +686,7 @@ uint32_t AstcCodec::ASTCEncode() __attribute__((no_sanitize("cfi")))
         free(astcBuffer);
         return ERROR;
     }
-    if (!DoSUT(param, astcBuffer, extendInfo)) {
+    if (!TryEncSUT(param, astcBuffer, extendInfo)) {
         return ERROR;
     }
     if (!param.outIsSut) { // only support astc for color space

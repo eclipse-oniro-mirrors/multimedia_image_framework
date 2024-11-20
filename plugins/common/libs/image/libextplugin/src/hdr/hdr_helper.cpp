@@ -1109,9 +1109,7 @@ static bool PackVividMetadata(vector<uint8_t>& bytes, uint32_t& index, HdrMetada
         UINT16_BYTE_COUNT + VIVID_STATIC_METADATA_SIZE_IN_IMAGE + UINT16_BYTE_COUNT + dynamicMetadataSize;
     PackVividPreInfo(bytes, index, false, false);
     ImageUtils::Uint16ToBytes(metadataSize, bytes, index);
-    if (!PackVividStaticMetadata(bytes, index, metadata.staticMetadata)) {
-        return false;
-    }
+    PackVividStaticMetadata(bytes, index, metadata.staticMetadata);
     ImageUtils::Uint16ToBytes(dynamicMetadataSize, bytes, index);
     if (memcpy_s(bytes.data() + index, bytes.size() - index,
         metadata.dynamicMetadata.data(), metadata.dynamicMetadata.size()) != EOK) {
