@@ -45,7 +45,7 @@ heif_error HeifFtypBox::Write(HeifStreamWriter &writer) const
     return heif_error_ok;
 }
 
-heif_error HeifMetaBox::ParseContentChildren(HeifStreamReader &reader, uint32_t recursionCount)
+heif_error HeifMetaBox::ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount)
 {
     recursionCount++;
     if (recursionCount > MAX_RECURSION_COUNT) {
