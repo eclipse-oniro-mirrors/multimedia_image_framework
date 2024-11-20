@@ -3784,7 +3784,7 @@ uint32_t PixelMap::crop(const Rect &rect)
     MemoryData memoryData = {nullptr, dst.info.computeMinByteSize(), "Trans ImageData", desiredSize,
                              imageInfo.pixelFormat};
     auto m = MemoryManager::CreateMemory(allocatorType_, memoryData);
-    if (m == nullptr || m->extend.data == nullptr || m->data.data == nullptr) {
+    if (m == nullptr || m->data.data == nullptr) {
         return ERR_IMAGE_CROP;
     }
     uint64_t rowStride = dst.info.minRowBytes();
