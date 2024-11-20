@@ -211,6 +211,11 @@ bool PostProc::CopyPixels(PixelMap& pixelMap, uint8_t* dstPixels, const Size& ds
         srcRowStride = srcRowBytes;
     }
     uint8_t *srcPixels = const_cast<uint8_t *>(pixelMap.GetPixels()) + top * srcRowStride + left * pixelBytes;
+    if (ImageUtils::CheckMulOverflow(std::min(srcWidth, targetWidth), pixelBytes)) {
+        IMAGE_LOGE("[PostProc]invalid params, srcWidth:%{public}d, targetWidth:%{public}d, pixelBytes:%{public}d",
+                   srcWidth, targetWidth, pixelBytes);
+        return false;
+    }
     uint32_t copyRowBytes = static_cast<uint32_t>(std::min(srcWidth, targetWidth) * pixelBytes);
     for (int32_t scanLine = 0; scanLine < std::min(srcHeight, targetHeight); scanLine++) {
         dstStartPixel = dstPixels + scanLine * targetRowStride;
@@ -935,7 +940,7 @@ bool PostProc::ScalePixelMapEx(const Size &desiredSize, PixelMap &pixelMap, cons
         uint64_t byteCount = static_cast<uint64_t>(srcRowStride[0]) * static_cast<uint64_t>(srcHeight);
         uint64_t allocSize = static_cast<uint64_t>(srcWidth + 1) * static_cast<uint64_t>(srcHeight) *
             static_cast<uint64_t>(ImageUtils::GetPixelBytes(imgInfo.pixelFormat));
-        if (srcRowStride[0] <= 0 || byteCount > UINT_MAX || allocSize < byteCount) {
+        if (srcRowStride[0] <= 0 || byteCount > UINT_MAX || allocSize < byteCount || allocSize > UINT_MAX) {
             mem->Release();
             IMAGE_LOGE("ScalePixelMapEx invalid srcRowStride or pixelMap size too large");
             return false;

@@ -338,7 +338,7 @@ void UpdateYUVDataInfo(int32_t width, int32_t height, YUVDataInfo &yuvInfo)
     yuvInfo.uvHeight = static_cast<uint32_t>((height + 1) / NUM_2);
     yuvInfo.yStride = static_cast<uint32_t>(width);
     yuvInfo.uvStride = static_cast<uint32_t>(((width + 1) / NUM_2) * NUM_2);
-    yuvInfo.uvOffset = static_cast<uint32_t>(width * height);
+    yuvInfo.uvOffset = static_cast<uint32_t>(width) * height;
 }
 
 static bool ChoosePixelmap(unique_ptr<PixelMap> &dstPixelMap, PixelFormat pixelFormat, int &errorCode)
@@ -372,6 +372,12 @@ static void SetYUVDataInfoToPixelMap(unique_ptr<PixelMap> &dstPixelMap)
 static int AllocPixelMapMemory(std::unique_ptr<AbsMemory> &dstMemory, int32_t &dstRowStride,
     const ImageInfo &dstImageInfo, bool useDMA)
 {
+    if (ImageUtils::CheckMulOverflow(dstImageInfo.size.width, dstImageInfo.size.height,
+                                     ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat))) {
+        IMAGE_LOGE("[PixelMap]Create: pixelmap size overflow: width = %{public}d, height = %{public}d",
+                   dstImageInfo.size.width, dstImageInfo.size.height);
+        return IMAGE_RESULT_BAD_PARAMETER;
+    }
     size_t bufferSize = static_cast<size_t>(dstImageInfo.size.width) * static_cast<size_t>(dstImageInfo.size.height) *
         static_cast<size_t>(ImageUtils::GetPixelBytes(dstImageInfo.pixelFormat));
     if (bufferSize > UINT_MAX) {
@@ -2369,6 +2375,11 @@ bool PixelMap::WriteAstcRealSizeToParcel(Parcel &parcel) const
 bool PixelMap::Marshalling(Parcel &parcel) const
 {
     int32_t PIXEL_MAP_INFO_MAX_LENGTH = 128;
+    if (ImageUtils::CheckMulOverflow(imageInfo_.size.height, rowDataSize_)) {
+        IMAGE_LOGE("pixelmap invalid params, height:%{public}d, rowDataSize:%{public}d.",
+                   imageInfo_.size.height, rowDataSize_);
+        return false;
+    }
     int32_t bufferSize = rowDataSize_ * imageInfo_.size.height;
     if (isAstc_ || IsYUV(imageInfo_.pixelFormat) || imageInfo_.pixelFormat == PixelFormat::RGBA_F16) {
         bufferSize = pixelsSize_;

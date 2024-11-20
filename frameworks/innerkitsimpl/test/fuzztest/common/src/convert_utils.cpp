@@ -49,7 +49,7 @@ int ConvertDataToFd(const uint8_t* data, size_t size, std::string encodeFormat)
         opts.size.height = 1;
     }
     auto pixelMap = PixelMap::Create(reinterpret_cast<const uint32_t*>(data),
-        static_cast<uint32_t>(picturePixels * FOUR_BYTES_PER_PIXEL), opts);
+        static_cast<uint32_t>(picturePixels) * FOUR_BYTES_PER_PIXEL, opts);
     if (pixelMap == nullptr) {
         return -1;
     }

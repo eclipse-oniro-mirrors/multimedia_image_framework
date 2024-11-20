@@ -2858,7 +2858,11 @@ unique_ptr<PixelMap> ImageSource::CreatePixelMapForYUV(uint32_t &errorCode)
         IMAGE_LOGE("Error updating pixelmap info. Return code: %{public}u.", errorCode);
         return nullptr;
     }
-
+    if (ImageUtils::CheckMulOverflow(pixelMap->GetWidth(), pixelMap->GetHeight(), pixelMap->GetPixelBytes())) {
+        IMAGE_LOGE("Invalid pixelmap params width:%{public}d, height:%{public}d",
+                   pixelMap->GetWidth(), pixelMap->GetHeight());
+        return nullptr;
+    }
     size_t bufferSize = static_cast<size_t>(pixelMap->GetWidth() * pixelMap->GetHeight() * pixelMap->GetPixelBytes());
     auto buffer = malloc(bufferSize);
     if (buffer == nullptr) {
