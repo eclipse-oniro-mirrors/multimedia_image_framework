@@ -42,6 +42,7 @@ public:
     static AlphaType GetValidAlphaTypeByFormat(const AlphaType &dstType, const PixelFormat &format);
     static AllocatorType GetPixelMapAllocatorType(const Size &size, const PixelFormat &format, bool preferDma);
     static bool IsValidImageInfo(const ImageInfo &info);
+    static bool IsValidAuxiliaryInfo(const std::shared_ptr<PixelMap> &pixelMap, const AuxiliaryPictureInfo &info);
     static bool IsAstc(PixelFormat format);
     static bool IsWidthAligned(const int32_t &width);
     static bool IsSizeSupportDma(const Size &size);
