@@ -100,6 +100,9 @@ static std::shared_ptr<Picture> CreatePictureByImageSourceUri(std::shared_ptr<Im
     DecodingOptionsForPicture opts;
     uint32_t errorCode = 0;
     std::unique_ptr<Picture> tmpPicture = imageSource->CreatePicture(opts, errorCode);
+    if (tmpPicture == nullptr) {
+        return nullptr;
+    }
     return std::move(tmpPicture);
 }
 
