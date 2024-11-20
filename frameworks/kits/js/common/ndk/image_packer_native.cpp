@@ -572,8 +572,8 @@ static bool HandlePackingOptionsForSequence(OH_PackingOptionsForSequence *option
         }
         packOption->delayTimes.push_back(static_cast<uint16_t>(options->delayTimeList[i] & MASK_16));
     }
-    if (options->delayTimeListLength < options->frameCount) {
-        for (uint32_t i = options->delayTimeListLength; i < options->frameCount; i++) {
+    if (options->delayTimeListLength < static_cast<size_t>(options->frameCount)) {
+        for (size_t i = options->delayTimeListLength; i < static_cast<size_t>(options->frameCount); i++) {
             packOption->delayTimes.push_back(
                 static_cast<uint16_t>(options->delayTimeList[options->delayTimeListLength - 1] & MASK_16));
         }
