@@ -104,6 +104,11 @@ std::shared_ptr<ImageMetadata> AuxiliaryPicture::GetMetadata(MetadataType type)
 
 void AuxiliaryPicture::SetMetadata(MetadataType type, std::shared_ptr<ImageMetadata> metadata)
 {
+    if (metadatas_.size() >= MAX_PICTURE_META_TYPE_COUNT) {
+        IMAGE_LOGE("Failed to set metadata, the size of metadata exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_PICTURE_META_TYPE_COUNT));
+        return;
+    }
     if (metadata != nullptr) {
         metadatas_[type] = metadata;
     }

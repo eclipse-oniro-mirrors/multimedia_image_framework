@@ -80,6 +80,16 @@ bool FragmentMetadata::SetValue(const std::string &key, const std::string &value
         return false;
     }
 
+    if (properties_->size() >= MAX_FRAGMENT_MAP_META_COUNT) {
+        IMAGE_LOGE("Failed to set value, the size of metadata properties exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_FRAGMENT_MAP_META_COUNT));
+        return false;
+    }
+    if (key.length() > MAX_FRAGMENT_MAP_META_LENGTH || value.length() > MAX_FRAGMENT_MAP_META_LENGTH) {
+        IMAGE_LOGE("Failed to set value, the length of fragment string exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_FRAGMENT_MAP_META_LENGTH));
+        return false;
+    }
     (*properties_)[key] = value;
     return true;
 }
@@ -112,6 +122,11 @@ const ImageMetadata::PropertyMapPtr FragmentMetadata::GetAllProperties()
 
 std::shared_ptr<ImageMetadata> FragmentMetadata::CloneMetadata()
 {
+    if (properties_->size() > MAX_FRAGMENT_MAP_META_COUNT) {
+        IMAGE_LOGE("Failed to clone, the size of metadata properties exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_FRAGMENT_MAP_META_COUNT));
+        return nullptr;
+    }
     return std::make_shared<FragmentMetadata>(*this);
 }
 
