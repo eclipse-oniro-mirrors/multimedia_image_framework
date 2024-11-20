@@ -2440,6 +2440,10 @@ bool PixelMap::Marshalling(Parcel &parcel) const
         return false;
     }
 
+    if (isMemoryDirty_) {
+        ImageUtils::FlushSurfaceBuffer(const_cast<PixelMap*>(this));
+        isMemoryDirty_ = false;
+    }
     return true;
 }
 
