@@ -285,6 +285,11 @@ std::shared_ptr<ExifMetadata> ExifMetadata::Clone()
         return nullptr;
     }
 
+    if (size > MAX_EXIFMETADATA_MAX_SIZE) {
+        IMAGE_LOGE("Failed to clone, the size of exif metadata exceeds the maximum limit %{public}llu.",
+            static_cast<unsigned long long>(MAX_EXIFMETADATA_MAX_SIZE));
+        return nullptr;
+    }
     ExifData *newExifData = nullptr;
     TiffParser::Decode(dataBlob, size, &newExifData);
     if (newExifData == nullptr) {
