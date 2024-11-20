@@ -52,6 +52,7 @@ struct TextureEncodeOptions {
     uint8_t expandNums;
     uint8_t *extInfoBuf;
     int32_t extInfoBytes;
+    std::string encodeFormat;
 };
 
 struct AstcEncoder {
