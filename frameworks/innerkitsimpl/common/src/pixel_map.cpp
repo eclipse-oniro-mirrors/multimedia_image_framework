@@ -2741,12 +2741,10 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel)
     return dstPixelMap;
 }
 
-PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
+PixelMap *PixelMap::StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
+    PixelMemInfo& pixelMemInfo, PIXEL_MAP_ERR &error)
 {
-    ImageInfo imgInfo;
     PixelMap* pixelMap = nullptr;
-    PixelMemInfo pixelMemInfo;
-
     if (!ReadPropertiesFromParcel(parcel, pixelMap, imgInfo, pixelMemInfo)) {
         if (pixelMap == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_PIXELMAP_CREATE_FAILED, "PixelMap creation failed");
@@ -2763,9 +2761,13 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         delete pixelMap;
         return nullptr;
     }
-    if (!ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
-        IMAGE_LOGE("Unmarshalling: read memInfo failed");
-        delete pixelMap;
+    return pixelMap;
+}
+
+PixelMap *PixelMap::FinishUnmarshalling(PixelMap *pixelMap, Parcel &parcel,
+    ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error)
+{
+    if (!pixelMap) {
         return nullptr;
     }
     if (!UpdatePixelMapMemInfo(pixelMap, imgInfo, pixelMemInfo)) {
@@ -2783,8 +2785,20 @@ PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
         delete pixelMap;
         return nullptr;
     }
-
     return pixelMap;
+}
+
+PixelMap *PixelMap::Unmarshalling(Parcel &parcel, PIXEL_MAP_ERR &error)
+{
+    ImageInfo imgInfo;
+    PixelMemInfo pixelMemInfo;
+    PixelMap* pixelMap = StartUnmarshalling(parcel, imgInfo, pixelMemInfo, error);
+    if (pixelMap && !ReadMemInfoFromParcel(parcel, pixelMemInfo, error)) {
+        IMAGE_LOGE("Unmarshalling: read memInfo failed");
+        delete pixelMap;
+        return nullptr;
+    }
+    return FinishUnmarshalling(pixelMap, parcel, imgInfo, pixelMemInfo, error);
 }
 
 void PixelMap::WriteUint8(std::vector<uint8_t> &buff, uint8_t value) const

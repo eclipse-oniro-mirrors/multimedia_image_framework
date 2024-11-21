@@ -31,6 +31,11 @@
 #include "purgeable_mem_builder.h"
 #endif
 
+namespace OHOS::Rosen {
+class PixelMapStorage;
+class RSProfiler;
+};
+
 namespace OHOS {
 namespace Media {
 struct HdrMetadata;
@@ -389,6 +394,8 @@ protected:
     static constexpr size_t MAX_IMAGEDATA_SIZE = 128 * 1024 * 1024; // 128M
     static constexpr size_t MIN_IMAGEDATA_SIZE = 32 * 1024;         // 32k
     friend class ImageSource;
+    friend class OHOS::Rosen::PixelMapStorage;
+    friend class OHOS::Rosen::RSProfiler;
     static bool ALPHA8ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool RGB565ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
     static bool ARGB8888ToARGB(const uint8_t *in, uint32_t inCount, uint32_t *out, uint32_t outCount);
@@ -451,6 +458,11 @@ protected:
                    ? false
                    : true;
     }
+
+    static PixelMap *StartUnmarshalling(Parcel &parcel, ImageInfo &imgInfo,
+        PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
+    static PixelMap *FinishUnmarshalling(PixelMap* pixelMap, Parcel &parcel,
+        ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo, PIXEL_MAP_ERR &error);
 
     static void ReleaseMemory(AllocatorType allocType, void *addr, void *context, uint32_t size);
     static bool UpdatePixelMapMemInfo(PixelMap *pixelMap, ImageInfo &imgInfo, PixelMemInfo &pixelMemInfo);
