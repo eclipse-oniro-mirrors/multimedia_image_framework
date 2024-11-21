@@ -222,14 +222,19 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
     return yuvCvtFuncMap;
 }();
 
-static const std::set<PixelFormat> conversions = {
-    PixelFormat::NV12,
-    PixelFormat::NV21,
-    PixelFormat::RGB_565,
-    PixelFormat::RGBA_8888,
-    PixelFormat::BGRA_8888,
-    PixelFormat::RGB_888,
-    PixelFormat::RGBA_F16
+static const std::set<std::pair<PixelFormat, PixelFormat>> conversions = {
+    PixelFormat::NV12, PixelFormat::RGBA_1010102,
+    PixelFormat::NV21, PixelFormat::RGBA_1010102,
+    PixelFormat::RGB_565, PixelFormat::YCBCR_P010,
+    PixelFormat::RGBA_8888, PixelFormat::YCBCR_P010,
+    PixelFormat::BGRA_8888, PixelFormat::YCBCR_P010,
+    PixelFormat::RGB_888, PixelFormat::YCBCR_P010,
+    PixelFormat::RGBA_F16, PixelFormat::YCBCR_P010,
+    PixelFormat::RGB_565, PixelFormat::YCRCB_P010,
+    PixelFormat::RGBA_8888, PixelFormat::YCRCB_P010,
+    PixelFormat::BGRA_8888, PixelFormat::YCRCB_P010,
+    PixelFormat::RGB_888, PixelFormat::YCRCB_P010,
+    PixelFormat::RGBA_F16, PixelFormat::YCRCB_P010
 };
 
 static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
@@ -708,8 +713,7 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
 
 bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)
 {
-    if (conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
-        || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
+    if (conversions.find({inputFormat, outputFormat}) != conversions.end()) {
         return true;
     }
     return false;
