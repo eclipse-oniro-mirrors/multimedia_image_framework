@@ -222,6 +222,16 @@ static const std::map<std::pair<PixelFormat, PixelFormat>, YUVConvertFunction> g
     return yuvCvtFuncMap;
 }();
 
+static const std::set<PixelFormat> conversions = {
+    PixelFormat::NV12,
+    PixelFormat::NV21,
+    PixelFormat::RGB_565,
+    PixelFormat::RGBA_8888,
+    PixelFormat::BGRA_8888,
+    PixelFormat::RGB_888,
+    PixelFormat::RGBA_F16
+};
+
 static void CalcRGBStride(PixelFormat format, uint32_t width, uint32_t &stride)
 {
     switch (format) {
@@ -698,15 +708,6 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
 
 bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)
 {
-    std::set<PixelFormat> conversions = {
-        PixelFormat::NV12,
-        PixelFormat::NV21,
-        PixelFormat::RGB_565,
-        PixelFormat::RGBA_8888,
-        PixelFormat::BGRA_8888,
-        PixelFormat::RGB_888,
-        PixelFormat::RGBA_F16
-    };
     if (conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
         || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
         return true;
