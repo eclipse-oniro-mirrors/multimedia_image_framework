@@ -707,9 +707,9 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
         PixelFormat::RGB_888,
         PixelFormat::RGBA_F16
     };
-    if(conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
-       || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
-       return true;
+    if (conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
+        || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
+        return true;
     }
 }
 
