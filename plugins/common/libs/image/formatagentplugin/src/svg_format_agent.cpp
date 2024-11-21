@@ -33,7 +33,9 @@ using namespace MultimediaPlugin;
 namespace {
 static const std::string FORMAT_TYPE = "image/svg+xml";
 static const char SVG_STAMP[] = "<?xml";
+static const char SVG_SIGN[] = "<svg ";
 static constexpr uint8_t SVG_STAMP_LEN = 5;
+static constexpr uint8_t SVG_SIGN_LEN = 5;
 }
 
 std::string SvgFormatAgent::GetFormatType()
@@ -58,7 +60,7 @@ bool SvgFormatAgent::CheckFormat(const void *headerData, uint32_t dataSize)
         return false;
     }
 
-    if (memcmp(SVG_STAMP, headerData, SVG_STAMP_LEN) != 0) {
+    if (memcmp(SVG_STAMP, headerData, SVG_STAMP_LEN) != 0 && memcmp(SVG_SIGN, headerData, SVG_SIGN_LEN) != 0) {
         IMAGE_LOGD("header stamp mismatch.");
         return false;
     }
