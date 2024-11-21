@@ -371,6 +371,17 @@ public:
         return unMapCount_;
     }
 
+    // pixelmap with DMA memory should be marked dirty when memory was changed
+    NATIVEEXPORT void MarkDirty()
+    {
+        isMemoryDirty_ = true;
+    }
+
+    NATIVEEXPORT bool IsMemoryDirty()
+    {
+        return isMemoryDirty_;
+    }
+
     static int32_t GetRGBxRowDataSize(const ImageInfo& info);
     static int32_t GetRGBxByteCount(const ImageInfo& info);
     static int32_t GetYUVByteCount(const ImageInfo& info);
@@ -543,6 +554,9 @@ private:
     uint64_t useCount_ = 0ULL;
     uint64_t unMapCount_ = 0;
     std::shared_ptr<std::mutex> unmapMutex_ = std::make_shared<std::mutex>();
+
+    // used to mark whether DMA memory should be refreshed
+    mutable bool isMemoryDirty_;
 };
 } // namespace Media
 } // namespace OHOS
