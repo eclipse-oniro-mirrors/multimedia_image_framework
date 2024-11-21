@@ -711,6 +711,7 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
         || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
         return true;
     }
+    return false;
 }
 
 ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
