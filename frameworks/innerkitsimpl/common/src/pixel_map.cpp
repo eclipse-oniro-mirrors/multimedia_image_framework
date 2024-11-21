@@ -2527,6 +2527,9 @@ bool PixelMap::ReadPropertiesFromParcel(Parcel &parcel, ImageInfo &imgInfo,
     SetAstc(isAstc);
 
     allocatorType = static_cast<AllocatorType>(parcel.ReadInt32());
+    if (allocatorType == AllocatorType::DEFAULT || allocatorType == AllocatorType::CUSTOM_ALLOC) {
+        allocatorType = AllocatorType::HEAP_ALLOC;
+    }
 
     int32_t csm = parcel.ReadInt32();
     if (csm != ERR_MEDIA_INVALID_VALUE) {
@@ -2613,7 +2616,7 @@ bool PixelMap::ReadMemInfoFromParcel(Parcel &parcel, PixelMemInfo &pixelMemInfo,
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadFromMessageParcel failed");
             return false;
         }
-    } else {
+    } else { // Any other allocator types will malloc HEAP memory
         pixelMemInfo.base = ReadImageData(parcel, pixelMemInfo.bufferSize);
         if (pixelMemInfo.base == nullptr) {
             PixelMap::ConstructPixelMapError(error, ERR_IMAGE_GET_DATA_ABNORMAL, "ReadImageData failed");
