@@ -214,6 +214,36 @@ HWTEST_F(ImageCreatorTest, OnBufferRelease001, TestSize.Level3)
 }
 
 /**
+ * @tc.name: OnBufferRelease002
+ * @tc.desc: test OnBufferRelease
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferRelease002, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease002 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    OHOS::sptr<OHOS::SurfaceBuffer> buffer = nullptr;
+    GSError ret = ImageCreator::OnBufferRelease(buffer);
+    ASSERT_EQ(ret, GSERROR_NO_ENTRY);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease002 end";
+}
+
+/**
+ * @tc.name: OnBufferRelease003
+ * @tc.desc: test OnBufferRelease
+ * @tc.type: FUNC
+ */
+HWTEST_F(ImageCreatorTest, OnBufferRelease003, TestSize.Level3)
+{
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease003 start";
+    std::shared_ptr<ImageCreator> creator = ImageCreator::CreateImageCreator(1, 1, 1, 1);
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    GSError ret = ImageCreator::OnBufferRelease(buffer);
+    ASSERT_EQ(ret, GSERROR_NO_ENTRY);
+    GTEST_LOG_(INFO) << "ImageCreatorTest: OnBufferRelease003 end";
+}
+
+/**
  * @tc.name: QueueImage001
  * @tc.desc: test QueueImage
  * @tc.type: FUNC
