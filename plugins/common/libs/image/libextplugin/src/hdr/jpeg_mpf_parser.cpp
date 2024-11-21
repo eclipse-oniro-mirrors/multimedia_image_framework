@@ -194,9 +194,6 @@ static bool FindAuxiliaryTags(const uint8_t* data, uint32_t size, std::string& f
         return false;
     }
     for (const auto &[tagName, _] : AUXILIARY_TAG_TYPE_MAP) {
-        if (tagName == AUXILIARY_TAG_UNREFOCUS_MAP) {
-            continue;
-        }
         if (memcmp(data, tagName.c_str(), tagName.size()) == 0) {
             foundTag = tagName;
             return true;
