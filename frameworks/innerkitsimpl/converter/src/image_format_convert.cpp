@@ -705,7 +705,7 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
         PixelFormat::RGBA_8888,
         PixelFormat::BGRA_8888,
         PixelFormat::RGB_888,
-        PixelFormat::RGBA_F16,
+        PixelFormat::RGBA_F16
     };
     if(conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
        || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
