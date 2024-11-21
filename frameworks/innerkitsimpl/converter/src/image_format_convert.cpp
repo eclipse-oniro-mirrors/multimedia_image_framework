@@ -713,6 +713,34 @@ bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat o
     }
 }
 
+bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)
+{
+    std::set<PixelFormat> conversions = {
+        PixelFormat::NV12,
+        PixelFormat::NV21,
+        PixelFormat::RGB_565,
+        PixelFormat::RGBA_8888,
+        PixelFormat::BGRA_8888,
+        PixelFormat::RGB_888,
+        PixelFormat::RGBA_F16,
+    };
+    if(conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
+       || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
+       return true;
+    }
+}
+
+ImageInfo SetImageInfo(ImageInfo &srcImageinfo, DestConvertInfo &destInfo)
+{
+    ImageInfo info;
+    info.alphaType = srcImageinfo.alphaType;
+    info.baseDensity = srcImageinfo.baseDensity;
+    info.colorSpace = srcImageinfo.colorSpace;
+    info.pixelFormat = destInfo.format;
+    info.size = {destInfo.width, destInfo.height};
+    return info;
+}
+
 uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
                                               DestConvertInfo &destInfo, void *context)
 {
@@ -720,12 +748,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         || destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
         return ERR_IMAGE_INVALID_PARAMETER;
     }
-    ImageInfo info;
-    info.alphaType = srcImageinfo.alphaType;
-    info.baseDensity = srcImageinfo.baseDensity;
-    info.colorSpace = srcImageinfo.colorSpace;
-    info.pixelFormat = destInfo.format;
-    info.size = {destInfo.width, destInfo.height};
+    ImageInfo info = SetImageInfo(srcImageinfo, destInfo);
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
@@ -775,12 +798,7 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         destInfo.height == 0 || destInfo.format == PixelFormat::UNKNOWN) {
             return ERR_IMAGE_INVALID_PARAMETER;
     }
-    ImageInfo info;
-    info.alphaType = srcImageinfo.alphaType;
-    info.baseDensity = srcImageinfo.baseDensity;
-    info.colorSpace = srcImageinfo.colorSpace;
-    info.pixelFormat = destInfo.format;
-    info.size = {destInfo.width, destInfo.height};
+    ImageInfo info = SetImageInfo(srcImageinfo, destInfo);
     auto allcatorType = destInfo.allocType;
     std::unique_ptr<PixelMap> pixelMap;
     if (info.pixelFormat == PixelFormat::NV21 || info.pixelFormat == PixelFormat::NV12 ||
