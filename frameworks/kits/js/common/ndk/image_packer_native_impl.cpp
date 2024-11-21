@@ -222,7 +222,10 @@ int32_t OH_ImagePackerNative::PackToFileMultiFrames(OHOS::Media::PackOption *opt
     if (ret != IMAGE_SUCCESS) {
         return ret;
     }
-    for (int i = 0; i < pixelmap.size(); i++) {
+    for (int i = 0; i < static_cast<int>(pixelmap.size()); i++) {
+        if (pixelmap[i] == nullptr) {
+            return IMAGE_BAD_PARAMETER;
+        }
         ret = imagePacker->AddImage(*(pixelmap[i]->GetInnerPixelmap().get()));
     }
     if (ret != IMAGE_SUCCESS) {

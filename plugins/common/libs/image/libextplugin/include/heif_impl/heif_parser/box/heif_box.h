@@ -31,7 +31,8 @@ public:
 
     virtual ~HeifBox() = default;
 
-    static heif_error MakeFromReader(HeifStreamReader &reader, std::shared_ptr<HeifBox> *result);
+    static heif_error MakeFromReader(HeifStreamReader &reader,
+        std::shared_ptr<HeifBox> *result, uint32_t &recursionCount);
 
     virtual heif_error Write(HeifStreamWriter &writer) const;
 
@@ -88,6 +89,8 @@ public:
         return (int) children_.size() - 1;
     }
 
+    const uint32_t MAX_RECURSION_COUNT = 300;
+
 private:
     uint64_t boxSize_ = 0;
     uint32_t boxType_ = 0;
@@ -100,7 +103,9 @@ protected:
 
     virtual heif_error ParseContent(HeifStreamReader &reader);
 
-    heif_error ReadChildren(HeifStreamReader &reader);
+    virtual heif_error ParseContentChildren(HeifStreamReader &reader, uint32_t &recursionCount);
+
+    heif_error ReadChildren(HeifStreamReader &reader, uint32_t &recursionCount);
 
     heif_error WriteChildren(HeifStreamWriter &writer) const;
 
