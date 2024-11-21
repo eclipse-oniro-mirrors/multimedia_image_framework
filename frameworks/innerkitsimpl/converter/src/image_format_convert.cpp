@@ -696,6 +696,23 @@ uint32_t ImageFormatConvert::YUVConvertImageFormatOption(std::shared_ptr<PixelMa
     return ret;
 }
 
+bool NeedProtectionConversion(const PixelFormat inputFormat, const PixelFormat outputFormat)
+{
+    std::set<PixelFormat> conversions = {
+        PixelFormat::NV12,
+        PixelFormat::NV21,
+        PixelFormat::RGB_565,
+        PixelFormat::RGBA_8888,
+        PixelFormat::BGRA_8888,
+        PixelFormat::RGB_888,
+        PixelFormat::RGBA_F16,
+    };
+    if(conversions.find(inputFormat) != conversions.end() && (outputFormat == PixelFormat::YCBCR_P010
+       || outputFormat == PixelFormat::YCBCR_P010 || outputFormat == PixelFormat::RGBA_1010102)) {
+       return true;
+    }
+}
+
 uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPixelMap, ImageInfo &srcImageinfo,
                                               DestConvertInfo &destInfo, void *context)
 {
@@ -741,7 +758,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMap(std::shared_ptr<PixelMap> &destPix
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
+        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+    } else {
+        pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    }
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
@@ -792,7 +813,11 @@ uint32_t ImageFormatConvert::MakeDestPixelMapUnique(std::unique_ptr<PixelMap> &d
         return ret;
     }
 #ifdef IMAGE_COLORSPACE_FLAG
-    pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    if (NeedProtectionConversion(srcImageinfo.pixelFormat, info.pixelFormat)) {
+        pixelMap->InnerSetColorSpace(OHOS::ColorManager::ColorSpace(ColorManager::ColorSpaceName::BT2020_HLG));
+    } else {
+        pixelMap->InnerSetColorSpace(destPixelMap->InnerGetGrColorSpace());
+    }
 #endif
     destPixelMap = std::move(pixelMap);
     return SUCCESS;
